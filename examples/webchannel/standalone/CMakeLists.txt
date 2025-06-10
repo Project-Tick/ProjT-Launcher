@@ -7,12 +7,6 @@ project(standalone LANGUAGES CXX)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
-if(NOT DEFINED INSTALL_EXAMPLESDIR)
-    set(INSTALL_EXAMPLESDIR "examples")
-endif()
-
-set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/webchannel/standalone")
-
 find_package(Qt6 REQUIRED COMPONENTS Core Gui WebChannel WebSockets Widgets)
 
 qt_add_executable(standalone
@@ -41,6 +35,15 @@ target_link_libraries(standalone PUBLIC
     Qt::Widgets
 )
 
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/qwebchannel.js
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${QT_QWEBCHANNEL_JS_PATH}
+            ${CMAKE_CURRENT_BINARY_DIR}/qwebchannel.js
+    DEPENDS ${QT_QWEBCHANNEL_JS_PATH}
+    VERBATIM
+)
+
 if (NOT CMAKE_CURRENT_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/index.html
@@ -52,15 +55,6 @@ if (NOT CMAKE_CURRENT_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     )
 endif()
 
-add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/qwebchannel.js
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/../shared/qwebchannel.js
-            ${CMAKE_CURRENT_BINARY_DIR}/qwebchannel.js
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../shared/qwebchannel.js
-    VERBATIM
-)
-
 add_custom_target(output_target ALL
     DEPENDS
     ${CMAKE_CURRENT_BINARY_DIR}/index.html
@@ -68,14 +62,3 @@ add_custom_target(output_target ALL
 )
 
 add_dependencies(standalone output_target)
-
-install(TARGETS standalone
-    RUNTIME DESTINATION "${INSTALL_EXAMPLEDIR}"
-    BUNDLE DESTINATION "${INSTALL_EXAMPLEDIR}"
-    LIBRARY DESTINATION "${INSTALL_EXAMPLEDIR}"
-)
-
-install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/index.html ${CMAKE_CURRENT_BINARY_DIR}/qwebchannel.js
-    DESTINATION "${INSTALL_EXAMPLEDIR}"
-)

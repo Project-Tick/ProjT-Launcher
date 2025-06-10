@@ -7,7 +7,7 @@ import QtQuick.Dialogs
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtWebSockets
-import "../shared/qwebchannel.js" as WebChannel
+import "qrc:/qwebchannel.js" as WebChannel
 
 ApplicationWindow {
     id: root
