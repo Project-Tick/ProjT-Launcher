@@ -170,6 +170,22 @@ void QQmlWebChannel::disconnectFrom(QObject *transport)
     }
 }
 
+/*!
+    \property QQmlWebChannel::registeredObjects
+
+    This property holds the list of objects which should be accessible to remote clients.
+
+    The objects must have the attached id property set to an identifier, under which the
+    object is then known on the HTML side.
+
+    Once registered, all signals and property changes are automatically propagated to the clients.
+    Public invokable methods, including slots, are also accessible to the clients.
+
+    If one needs to register objects which are not available when the component is created, use the
+    imperative registerObjects method.
+
+    \sa registerObjects(), id
+*/
 QQmlListProperty<QObject> QQmlWebChannel::registeredObjects()
 {
     return QQmlListProperty<QObject>(this, nullptr, registeredObjects_append,
@@ -223,6 +239,14 @@ void QQmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
     return channel->d_func()->registeredObjects.clear();
 }
 
+/*!
+    \property QQmlWebChannel::transports
+
+    This property holds a list of transport objects, which implement QWebChannelAbstractTransport.
+    The transports are used to talk to the remote clients.
+
+    \sa connectTo(), disconnectFrom()
+*/
 QQmlListProperty<QObject> QQmlWebChannel::transports()
 {
     return QQmlListProperty<QObject>(this, nullptr, transports_append, transports_count,
