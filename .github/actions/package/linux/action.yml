@@ -1,5 +1,5 @@
 name: Package for Linux
-description: Create Linux packages for Prism Launcher
+description: Create Linux packages for ProjT Launcher
 
 inputs:
   version:
@@ -64,10 +64,10 @@ runs:
       run: |
         cmake --install ${{ env.BUILD_DIR }} --prefix ${{ env.INSTALL_APPIMAGE_DIR }}/usr
 
-        mv ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/org.prismlauncher.PrismLauncher.metainfo.xml ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/org.prismlauncher.PrismLauncher.appdata.xml
+        mv ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/tr.org.yongdohyun.ProjTLauncher.metainfo.xml ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/tr.org.yongdohyun.ProjTLauncher.appdata.xml
         export "NO_APPSTREAM=1" # we have to skip appstream checking because appstream on ubuntu 20.04 is outdated
 
-        export OUTPUT="PrismLauncher-Linux-$APPIMAGE_ARCH.AppImage"
+        export OUTPUT="ProjTLauncher-Linux-$APPIMAGE_ARCH.AppImage"
 
         chmod +x linuxdeploy-*.AppImage
 
@@ -86,7 +86,7 @@ runs:
         chmod +x AppImageUpdate-"$APPIMAGE_ARCH".AppImage
         cp AppImageUpdate-"$APPIMAGE_ARCH".AppImage ${{ env.INSTALL_APPIMAGE_DIR }}/usr/bin
 
-        export UPDATE_INFORMATION="gh-releases-zsync|${{ github.repository_owner }}|${{ github.event.repository.name }}|latest|PrismLauncher-Linux-$APPIMAGE_ARCH.AppImage.zsync"
+        export UPDATE_INFORMATION="gh-releases-zsync|${{ github.repository_owner }}|${{ github.event.repository.name }}|latest|ProjTLauncher-Linux-$APPIMAGE_ARCH.AppImage.zsync"
 
         if [ '${{ inputs.gpg-private-key-id }}' != '' ]; then
           export SIGN=1
@@ -98,9 +98,9 @@ runs:
           echo ":warning: Skipped code signing for Linux AppImage, as gpg key was not present." >> $GITHUB_STEP_SUMMARY
         fi
 
-        ./linuxdeploy-"$APPIMAGE_ARCH".AppImage --appdir ${{ env.INSTALL_APPIMAGE_DIR }} --output appimage --plugin qt -i ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/icons/hicolor/scalable/apps/org.prismlauncher.PrismLauncher.svg
+        ./linuxdeploy-"$APPIMAGE_ARCH".AppImage --appdir ${{ env.INSTALL_APPIMAGE_DIR }} --output appimage --plugin qt -i ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/icons/hicolor/scalable/apps/org.prismlauncher.ProjTLauncher.svg
 
-        mv "PrismLauncher-Linux-$APPIMAGE_ARCH.AppImage" "PrismLauncher-Linux-${{ env.VERSION }}-${{ inputs.build-type }}-$APPIMAGE_ARCH.AppImage"
+        mv "ProjTLauncher-Linux-$APPIMAGE_ARCH.AppImage" "ProjTLauncher-Linux-${{ env.VERSION }}-${{ inputs.build-type }}-$APPIMAGE_ARCH.AppImage"
 
     - name: Package portable tarball
       shell: bash
@@ -116,22 +116,22 @@ runs:
 
         for l in $(find ${{ env.INSTALL_PORTABLE_DIR }} -type f); do l=${l#$(pwd)/}; l=${l#${{ env.INSTALL_PORTABLE_DIR }}/}; l=${l#./}; echo $l; done > ${{ env.INSTALL_PORTABLE_DIR }}/manifest.txt
         cd ${{ env.INSTALL_PORTABLE_DIR }}
-        tar -czf ../PrismLauncher-portable.tar.gz *
+        tar -czf ../ProjTLauncher-portable.tar.gz *
 
     - name: Upload binary tarball
       uses: actions/upload-artifact@v5
       with:
-        name: PrismLauncher-${{ inputs.artifact-name }}-Qt6-Portable-${{ inputs.version }}-${{ inputs.build-type }}
-        path: PrismLauncher-portable.tar.gz
+        name: ProjTLauncher-${{ inputs.artifact-name }}-Qt6-Portable-${{ inputs.version }}-${{ inputs.build-type }}
+        path: ProjTLauncher-portable.tar.gz
 
     - name: Upload AppImage
       uses: actions/upload-artifact@v5
       with:
-        name: PrismLauncher-${{ runner.os }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage
-        path: PrismLauncher-${{ runner.os }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage
+        name: ProjTLauncher-${{ runner.os }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage
+        path: ProjTLauncher-${{ runner.os }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage
 
     - name: Upload AppImage Zsync
       uses: actions/upload-artifact@v5
       with:
-        name: PrismLauncher-${{ runner.os }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage.zsync
-        path: PrismLauncher-${{ runner.os }}-${{ env.APPIMAGE_ARCH }}.AppImage.zsync
+        name: ProjTLauncher-${{ runner.os }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage.zsync
+        path: ProjTLauncher-${{ runner.os }}-${{ env.APPIMAGE_ARCH }}.AppImage.zsync
