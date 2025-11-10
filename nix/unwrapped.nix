@@ -42,7 +42,7 @@ let
 in
 
 stdenv.mkDerivation {
-  pname = "prismlauncher-unwrapped";
+  pname = "projtlauncher-unwrapped";
   version = "10.0-unstable-${date}";
 
   src = lib.fileset.toSource {
@@ -115,13 +115,13 @@ stdenv.mkDerivation {
       their own mods, texture packs, saves, etc) and helps you manage them and
       their associated options with a simple interface.
     '';
-    homepage = "https://prismlauncher.org/";
+    homepage = "https://projtlauncher.yongdohyun.org.tr/";
     license = lib.licenses.gpl3Only;
     maintainers = with lib.maintainers; [
       Scrumplex
       getchoo
     ];
-    mainProgram = "prismlauncher";
+    mainProgram = "projtlauncher";
     platforms = lib.platforms.linux ++ lib.platforms.darwin;
   };
 }

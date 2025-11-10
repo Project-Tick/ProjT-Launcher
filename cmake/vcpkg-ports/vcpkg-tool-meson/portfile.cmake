@@ -10,7 +10,7 @@ set(patches
   adjust-args.patch
   remove-freebsd-pcfile-specialization.patch
   fix-libcpp-enable-assertions.patch # https://github.com/mesonbuild/meson/pull/14548, Remove in 1.8.3
-  universal-osx.patch # NOTE(@getchoo): THIS IS THE ONLY CHANGE NEEDED FOR PRISM
+  universal-osx.patch # NOTE(@getchoo): THIS IS THE ONLY CHANGE NEEDED FOR PROJT
 )
 set(scripts
   vcpkg-port-config.cmake

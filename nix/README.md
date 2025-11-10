@@ -1,10 +1,13 @@
-# Prism Launcher Nix Packaging
+# ProjT Launcher Nix Packaging
 
 ## Installing a stable release (nixpkgs)
 
-Prism Launcher is packaged in [nixpkgs](https://github.com/NixOS/nixpkgs/) since 22.11.
+> **Note**  
+> Some examples still reference the upstream `PrismLauncher/PrismLauncher` repository. Replace those occurrences with the Git host/owner of ProjT Launcher once your mirror is public.
 
-Check the [NixOS Wiki](https://wiki.nixos.org/wiki/Prism_Launcher) for up-to-date instructions.
+ProjT Launcher currently reuses the upstream `prismlauncher` packages that have been in [nixpkgs](https://github.com/NixOS/nixpkgs/) since 22.11.
+
+Check the upstream [Prism Launcher entry on the NixOS Wiki](https://wiki.nixos.org/wiki/Prism_Launcher) for up-to-date instructions until our dedicated documentation is published.
 
 ## Installing a development release (flake)
 
@@ -17,10 +20,10 @@ Example (NixOS):
 ```nix
 {
   nix.settings = {
-    trusted-substituters = [ "https://prismlauncher.cachix.org" ];
+    trusted-substituters = [ "https://projectticklauncher.cachix.org" ];
 
     trusted-public-keys = [
-      "prismlauncher.cachix.org-1:9/n/FGyABA2jLUVfY+DEp4hKds/rwO+SCOtbOkDzd+c="
+      "projectticklauncher.cachix.org-1:5l6UYRUvTCxbcRHK2yD6Ovfgzgc/W9RVwx39JaDJknQ="
     ];
   };
 }
@@ -69,7 +72,7 @@ Example:
 ### Using the overlay
 
 Alternatively, if you don't want to use our `packages` output, you can add our overlay to your nixpkgs instance.
-This will ensure Prism is built with your system's packages.
+This will ensure ProjT Launcher is built with your system's packages.
 
 > [!WARNING]
 > Depending on what revision of nixpkgs your system uses, this may result in binaries that differ from the above `packages` output
@@ -137,10 +140,10 @@ Example (NixOS):
 ```nix
 {
   nix.settings = {
-    trusted-substituters = [ "https://prismlauncher.cachix.org" ];
+    trusted-substituters = [ "https://projectticklauncher.cachix.org" ];
 
     trusted-public-keys = [
-      "prismlauncher.cachix.org-1:9/n/FGyABA2jLUVfY+DEp4hKds/rwO+SCOtbOkDzd+c="
+      "projectticklauncher.cachix.org-1:5l6UYRUvTCxbcRHK2yD6Ovfgzgc/W9RVwx39JaDJknQ="
     ];
   };
 }
@@ -166,7 +169,7 @@ Example:
 ### Using the overlay (`fetchTarball`)
 
 Alternatively, if you don't want to use our `packages` output, you can add our overlay to your instance of nixpkgs.
-This results in Prism using your system's libraries
+This results in ProjT Launcher using your system's libraries
 
 Example:
 

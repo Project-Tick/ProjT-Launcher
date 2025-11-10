@@ -1,10 +1,10 @@
 {
-  description = "A custom launcher for Minecraft that allows you to easily manage multiple installations of Minecraft at once (Fork of MultiMC)";
+  description = "ProjT Launcher is a custom launcher for Minecraft that allows you to easily manage multiple installations of Minecraft at once (Fork of PrismLauncher)";
 
   nixConfig = {
-    extra-substituters = [ "https://prismlauncher.cachix.org" ];
+    extra-substituters = [ "https://projectticklauncher.cachix.org" ];
     extra-trusted-public-keys = [
-      "prismlauncher.cachix.org-1:9/n/FGyABA2jLUVfY+DEp4hKds/rwO+SCOtbOkDzd+c="
+      "projectticklauncher.cachix.org-1:5l6UYRUvTCxbcRHK2yD6Ovfgzgc/W9RVwx39JaDJknQ="
     ];
   };
 
@@ -96,7 +96,7 @@
           packages' = self.packages.${system};
 
           welcomeMessage = ''
-            Welcome to the Prism Launcher repository! 🌈
+            Welcome to the ProjT Launcher repository! ✨
 
             We just set some things up for you. To get building, you can run:
 
@@ -120,7 +120,7 @@
             # Required to use script-based makeWrapper below
             strictDeps = true;
 
-            # We don't need/want the unwrapped Prism package
+            # We don't need/want the unwrapped ProjT package
             paths = [ ];
 
             nativeBuildInputs = old.nativeBuildInputs or [ ] ++ [

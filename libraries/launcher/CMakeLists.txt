@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(launcher Java)
 find_package(Java 1.7 REQUIRED COMPONENTS Development)
+set(JARS_DEST_DIR "${CMAKE_INSTALL_PREFIX}/jars")
 
 include(UseJava)
 set(CMAKE_JAVA_JAR_ENTRY_POINT org.prismlauncher.EntryPoint)
