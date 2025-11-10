@@ -98,7 +98,7 @@ runs:
           echo ":warning: Skipped code signing for Linux AppImage, as gpg key was not present." >> $GITHUB_STEP_SUMMARY
         fi
 
-        ./linuxdeploy-"$APPIMAGE_ARCH".AppImage --appdir ${{ env.INSTALL_APPIMAGE_DIR }} --output appimage --plugin qt -i ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/icons/hicolor/scalable/apps/org.prismlauncher.ProjTLauncher.svg
+        ./linuxdeploy-"$APPIMAGE_ARCH".AppImage --appdir ${{ env.INSTALL_APPIMAGE_DIR }} --output appimage --plugin qt -i ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/icons/hicolor/scalable/apps/tr.org.yongdohyun.ProjTLauncher.svg
 
         mv "ProjTLauncher-Linux-$APPIMAGE_ARCH.AppImage" "ProjTLauncher-Linux-${{ env.VERSION }}-${{ inputs.build-type }}-$APPIMAGE_ARCH.AppImage"
 
