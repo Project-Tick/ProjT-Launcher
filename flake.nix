@@ -107,14 +107,14 @@
             ```
 
             Feel free to ask any questions in our Discord server or Matrix space:
-              - https://prismlauncher.org/discord
-              - https://matrix.to/#/#prismlauncher:matrix.org
+              - https://projtlauncher.yongdohyun.org.tr/discord
+              - https://matrix.to/#/#projtlauncher:matrix.org
 
             And thanks for helping out :)
           '';
 
           # Re-use our package wrapper to wrap our development environment
-          qt-wrapper-env = packages'.prismlauncher.overrideAttrs (old: {
+          qt-wrapper-env = packages'.projtlauncher.overrideAttrs (old: {
             name = "qt-wrapper-env";
 
             # Required to use script-based makeWrapper below
@@ -138,9 +138,9 @@
 
         {
           default = pkgs.mkShell {
-            name = "prism-launcher";
+            name = "projt-launcher";
 
-            inputsFrom = [ packages'.prismlauncher-unwrapped ];
+            inputsFrom = [ packages'.projtlauncher-unwrapped ];
 
             packages = with pkgs; [
               ccache
@@ -148,7 +148,7 @@
             ];
 
             cmakeBuildType = "Debug";
-            cmakeFlags = [ "-GNinja" ] ++ packages'.prismlauncher.cmakeFlags;
+            cmakeFlags = [ "-GNinja" ] ++ packages'.projtlauncher.cmakeFlags;
             dontFixCmake = true;
 
             shellHook = ''
@@ -172,7 +172,7 @@
       formatter = forAllSystems (system: nixpkgsFor.${system}.nixfmt-rfc-style);
 
       overlays.default = final: prev: {
-        prismlauncher-unwrapped = prev.callPackage ./nix/unwrapped.nix {
+        projtlauncher-unwrapped = prev.callPackage ./nix/unwrapped.nix {
           inherit
             libnbtplusplus
             qrcodegenerator
@@ -180,7 +180,7 @@
             ;
         };
 
-        prismlauncher = final.callPackage ./nix/wrapper.nix { };
+        projtlauncher = final.callPackage ./nix/wrapper.nix { };
       };
 
       packages = forAllSystems (
@@ -190,12 +190,12 @@
           pkgs = nixpkgsFor.${system};
 
           # Build a scope from our overlay
-          prismPackages = lib.makeScope pkgs.newScope (final: self.overlays.default final pkgs);
+          projtPackages = lib.makeScope pkgs.newScope (final: self.overlays.default final pkgs);
 
           # Grab our packages from it and set the default
           packages = {
-            inherit (prismPackages) prismlauncher-unwrapped prismlauncher;
-            default = prismPackages.prismlauncher;
+            inherit (projtPackages) projtlauncher-unwrapped projtlauncher;
+            default = projtPackages.projtlauncher;
           };
         in
 
@@ -213,11 +213,11 @@
         in
 
         {
-          prismlauncher-debug = packages'.prismlauncher.override {
-            prismlauncher-unwrapped = legacyPackages'.prismlauncher-unwrapped-debug;
+          projtlauncher-debug = packages'.projtlauncher.override {
+            projtlauncher-unwrapped = legacyPackages'.projtlauncher-unwrapped-debug;
           };
 
-          prismlauncher-unwrapped-debug = packages'.prismlauncher-unwrapped.overrideAttrs {
+          projtlauncher-unwrapped-debug = packages'.projtlauncher-unwrapped.overrideAttrs {
             cmakeBuildType = "Debug";
             dontStrip = true;
           };

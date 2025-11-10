@@ -17,7 +17,7 @@ jobs:
       - name: Publish on Winget
         uses: vedantmgoyal2009/winget-releaser@v2
         with:
-          identifier: PrismLauncher.PrismLauncher
+          identifier: Project-Tick.ProjTLauncher
           version: ${{ github.event.release.tag_name }}
-          installers-regex: 'PrismLauncher-Windows-MSVC(:?-arm64|-Legacy)?-Setup-.+\.exe$'
+          installers-regex: 'ProjTLauncher-Windows-MSVC(:?-arm64|-Legacy)?-Setup-.+\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
