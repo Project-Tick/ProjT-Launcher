@@ -54,6 +54,11 @@ on:
       - ".github/actions/setup-dependencies/**"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  security-events: write
+
+
 jobs:
   CodeQL:
     runs-on: ubuntu-latest
