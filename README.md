@@ -1,8 +1,8 @@
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="/program_info/org.prismlauncher.PrismLauncher.logo-darkmode.svg">
-  <source media="(prefers-color-scheme: light)" srcset="/program_info/org.prismlauncher.PrismLauncher.logo.svg">
-  <img alt="ProjT Launcher" src="/program_info/org.prismlauncher.PrismLauncher.logo.svg" width="40%">
+  <source media="(prefers-color-scheme: dark)" srcset="/program_info/tr.org.yongdohyun.ProjTLauncher.logo-darkmode.svg">
+  <source media="(prefers-color-scheme: light)" srcset="/program_info/tr.org.yongdohyun.ProjTLauncher.logo.svg">
+  <img alt="ProjT Launcher" src="/program_info/tr.org.yongdohyun.ProjTLauncher.logo.svg" width="40%">
 </picture>
 </p>
 
@@ -30,7 +30,7 @@ Please understand that these builds are not intended for most users. There may b
 Automated development builds for ProjT Launcher are still being wired up. In the meantime you can:
 
 - Build locally via CMake (`cmake -S launcher -B build && cmake --build build`).
-- Use Nix with `nix build .#prismlauncher` (the package name will be renamed once the rebranding work lands everywhere).
+- Use Nix with `nix build .#projtlauncher` (the package name will be renamed once the rebranding work lands everywhere).
 - Consume artifacts produced via this repository's GitHub Actions runs.
 
 ## Community & Support
@@ -39,7 +39,7 @@ Feel free to create a GitHub issue if you find a bug or want to suggest a new fe
 
 ## Translations
 
-We are preparing our own translation workflow for ProjT Launcher. Until it is available you can temporarily rely on the upstream Prism Launcher strings and contribute improvements through this repository.
+We are preparing our own translation workflow for ProjT Launcher. Until it is available you can temporarily rely on the upstream ProjT Launcher strings and contribute improvements through this repository.
 
 ## Building
 
