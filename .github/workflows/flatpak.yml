@@ -97,5 +97,5 @@ jobs:
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: ProjTLauncher-${{ runner.os }}-${{ env.VERSION }}-Flatpak.flatpak
-          manifest-path: flatpak/tr.org.projtlauncher.ProjTLauncher.yml
+          manifest-path: flatpak/tr.org.yongdohyun.ProjTLauncher.yml
           arch: ${{ matrix.arch }}
