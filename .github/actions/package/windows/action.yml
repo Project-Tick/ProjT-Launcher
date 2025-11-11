@@ -1,5 +1,5 @@
 name: Package for Windows
-description: Create a Windows package for Prism Launcher
+description: Create a Windows package for ProjT Launcher
 
 inputs:
   version:
@@ -63,7 +63,7 @@ runs:
         if (Get-Content ./codesign.pfx){
           cd ${{ env.INSTALL_DIR }}
           # We ship the exact same executable for portable and non-portable editions, so signing just once is fine
-          SignTool sign /fd sha256 /td sha256 /f ../codesign.pfx /p '${{ inputs.windows-codesign-password }}' /tr http://timestamp.digicert.com prismlauncher.exe prismlauncher_updater.exe prismlauncher_filelink.exe 
+          SignTool sign /fd sha256 /td sha256 /f ../codesign.pfx /p '${{ inputs.windows-codesign-password }}' /tr http://timestamp.digicert.com projtlauncher.exe projtlauncher_updater.exe projtlauncher_filelink.exe 
         } else {
           ":warning: Skipped code signing for Windows, as certificate was not present." >> $env:GITHUB_STEP_SUMMARY
         }
@@ -118,7 +118,7 @@ runs:
       shell: pwsh
       run: |
         if (Get-Content ./codesign.pfx){
-          SignTool sign /fd sha256 /td sha256 /f codesign.pfx /p '${{ inputs.windows-codesign-password }}' /tr http://timestamp.digicert.com PrismLauncher-Setup.exe
+          SignTool sign /fd sha256 /td sha256 /f codesign.pfx /p '${{ inputs.windows-codesign-password }}' /tr http://timestamp.digicert.com ProjTLauncher-Setup.exe
         } else {
           ":warning: Skipped code signing for Windows, as certificate was not present." >> $env:GITHUB_STEP_SUMMARY
         }
@@ -126,17 +126,17 @@ runs:
     - name: Upload binary zip
       uses: actions/upload-artifact@v5
       with:
-        name: PrismLauncher-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}
+        name: ProjTLauncher-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}
         path: install/**
 
     - name: Upload portable zip
       uses: actions/upload-artifact@v5
       with:
-        name: PrismLauncher-${{ inputs.artifact-name }}-Portable-${{ inputs.version }}-${{ inputs.build-type }}
+        name: ProjTLauncher-${{ inputs.artifact-name }}-Portable-${{ inputs.version }}-${{ inputs.build-type }}
         path: install-portable/**
 
     - name: Upload installer
       uses: actions/upload-artifact@v5
       with:
-        name: PrismLauncher-${{ inputs.artifact-name }}-Setup-${{ inputs.version }}-${{ inputs.build-type }}
-        path: PrismLauncher-Setup.exe
+        name: ProjTLauncher-${{ inputs.artifact-name }}-Setup-${{ inputs.version }}-${{ inputs.build-type }}
+        path: ProjTLauncher-Setup.exe
