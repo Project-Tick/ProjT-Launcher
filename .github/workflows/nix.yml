@@ -116,6 +116,7 @@ jobs:
           {
             echo "substituters = https://cache.yongdohyun.org.tr https://cache.nixos.org"
             echo "trusted-public-keys = cache.yongdohyun.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+            echo "experimental-features = nix-command flakes"
           } | sudo tee /etc/nix/nix.conf
 
       - name: Run Flake checks
