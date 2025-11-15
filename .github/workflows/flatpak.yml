@@ -70,10 +70,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             arch: x86_64
 
-          - os: ubuntu-22.04-arm
+          - os: ubuntu-24.04-arm
             arch: aarch64
 
     runs-on: ${{ matrix.os }}
