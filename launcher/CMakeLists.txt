@@ -5,7 +5,7 @@ project(application)
 ######## Sources and headers ########
 
 set(CORE_SOURCES
-    # LOGIC - Base classes and infrastructure
+    # LOGIC - Base classes and infrastructure 
     BaseInstaller.h
     BaseInstaller.cpp
     BaseVersionList.h
