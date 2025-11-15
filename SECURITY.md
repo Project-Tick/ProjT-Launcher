@@ -9,13 +9,11 @@
 | 8.x    | ✔️ |
 | < 8.0  | ❌ |
 
-
 ## How to report
 
 If you discover a security vulnerability, please report it via email:
 
 - [`froster12@naver.com`](mailto:froster12@naver.com)
-
 
 ## What to include
 
