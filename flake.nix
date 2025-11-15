@@ -2,9 +2,9 @@
   description = "ProjT Launcher is a custom launcher for Minecraft that allows you to easily manage multiple installations of Minecraft at once (Fork of PrismLauncher)";
 
   nixConfig = {
-    extra-substituters = [ "https://projectticklauncher.cachix.org" ];
+    extra-substituters = [ "https://cache.yongdohyun.org.tr" ];
     extra-trusted-public-keys = [
-      "projectticklauncher.cachix.org-1:5l6UYRUvTCxbcRHK2yD6Ovfgzgc/W9RVwx39JaDJknQ="
+      "cache.yongdohyun.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
     ];
   };
 
