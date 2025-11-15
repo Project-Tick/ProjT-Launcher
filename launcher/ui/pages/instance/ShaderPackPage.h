@@ -1,7 +1,23 @@
-// SPDX-FileCopyrightText: 2023 flowln <flowlnlnln@gmail.com>
-//
-// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
 /*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ *
+ * === Upstream License Block (Do Not Modify) ==============================
+ *
+ * // SPDX-FileCopyrightText: 2023 flowln <flowlnlnln@gmail.com>
+ * //
+ * // SPDX-License-Identifier: GPL-3.0-only
+ *
+ *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2022 Jamie Mansfield <jmansfield@cadixdev.org>
  *
@@ -33,7 +49,8 @@
  *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *      See the License for the specific language governing permissions and
  *      limitations under the License.
- */
+ *
+ * ======================================================================== */
 
 #pragma once
 
