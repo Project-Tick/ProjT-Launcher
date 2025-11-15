@@ -10,7 +10,7 @@
  *
  *  If this file includes work from previous open-source projects,
  *  their original copyright and license notices are preserved below.
- * 
+ *
  * === Upstream License Block (Do Not Modify) ==============================
  *
  * // SPDX-License-Identifier: GPL-3.0-only

@@ -12,7 +12,7 @@
  *  their original copyright and license notices are preserved below.
  */
 /* === Upstream License Block (Do Not Modify) ==============================
-  // SPDX-License-Identifier: GPL-3.0-only 
+  // SPDX-License-Identifier: GPL-3.0-only
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later 
+// SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -48,8 +48,6 @@
  *      See the License for the specific language governing permissions and
  *      limitations under the License.
    ======================================================================== */
-
-
 
 #include "FileSystem.h"
 #include <QPair>

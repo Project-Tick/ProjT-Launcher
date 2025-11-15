@@ -9,7 +9,7 @@
  *  the GNU General Public License version 3 or later.
  *
  *  If this file includes work from previous open-source projects,
- *  their original copyright and license notices are preserved below. 
+ *  their original copyright and license notices are preserved below.
  * === Upstream License Block (Do Not Modify) ==============================
  * Copyright 2013-2021 MultiMC Contributors
  *
