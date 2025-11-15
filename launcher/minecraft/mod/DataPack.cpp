@@ -1,8 +1,23 @@
-// SPDX-FileCopyrightText: 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
-//
-// SPDX-License-Identifier: GPL-3.0-only
-
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
 /*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ *
+ * === Upstream License Block (Do Not Modify) ==============================
+ *
+ * // SPDX-FileCopyrightText: 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
+ * //
+ * // SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+ *
+ *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
  *
@@ -17,7 +32,8 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+ *
+ * ======================================================================== */
 
 #include "DataPack.h"
 
@@ -75,7 +91,29 @@ static const QMap<int, std::pair<Version, Version>> s_pack_format_versions = { {
                                                                                { 45, { Version("21w21a"), Version("21w21b") } },
                                                                                { 46, { Version("1.21-pre1"), Version("1.21-pre1") } },
                                                                                { 47, { Version("1.21-pre2"), Version("1.21-pre2") } },
-                                                                               { 48, { Version("1.21"), Version("1.21") } } };
+                                                                               { 48, { Version("1.21-pre3"), Version("1.21.1") } },
+                                                                               { 49, { Version("24w33a"), Version("24w33a") } },
+                                                                               { 50, { Version("24w34a"), Version("24w34a") } },
+                                                                               { 51, { Version("24w35a"), Version("24w35a") } },
+                                                                               { 52, { Version("24w36a"), Version("24w36a") } },
+                                                                               { 53, { Version("24w37a"), Version("24w37a") } },
+                                                                               { 54, { Version("24w38a"), Version("24w38a") } },
+                                                                               { 55, { Version("24w39a"), Version("24w39a") } },
+                                                                               { 56, { Version("24w40a"), Version("24w40a") } },
+                                                                               { 57, { Version("1.21.2-pre1"), Version("1.21.3") } },
+                                                                               { 58, { Version("24w44a"), Version("24w39a") } },
+                                                                               { 59, { Version("24w45a"), Version("24w39a") } },
+                                                                               { 60, { Version("24w46a"), Version("1.21.4-pre1") } },
+                                                                               { 61, { Version("1.21.4-pre2"), Version("1.21.4") } },
+                                                                               { 62, { Version("25w02a"), Version("25w02a") } },
+                                                                               { 63, { Version("25w03a"), Version("25w03a") } },
+                                                                               { 64, { Version("25w04a"), Version("25w04a") } },
+                                                                               { 65, { Version("25w05a"), Version("25w05a") } },
+                                                                               { 66, { Version("25w06a"), Version("25w06a") } },
+                                                                               { 67, { Version("25w07a"), Version("25w07a") } },
+                                                                               { 68, { Version("25w08a"), Version("25w08a") } },
+                                                                               { 69, { Version("25w09a"), Version("25w09b") } },
+                                                                               { 70, { Version("25w10a"), Version("1.21.5-pre1") } } };
 
 void DataPack::setPackFormat(int new_format_id)
 {
