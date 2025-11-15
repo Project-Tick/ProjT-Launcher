@@ -222,7 +222,7 @@ set(Launcher_UPDATER_GITHUB_REPO "https://github.com/Project-Tick/ProjT-Launcher
 set(Launcher_BUILD_ARTIFACT "" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
 
 # The metadata server
-set(Launcher_META_URL "https://meta.projtlauncher.yongdohyun.org.tr/v1/" CACHE STRING "URL to fetch Launcher's meta files from.")
+set(Launcher_META_URL "http://meta.yongdohyun.org.tr/" CACHE STRING "URL to fetch Launcher's meta files from.")
 
 # Imgur API Client ID
 set(Launcher_IMGUR_CLIENT_ID "5b97b0713fba4a3" CACHE STRING "Client ID you can get from Imgur when you register an application")
@@ -232,7 +232,7 @@ set(Launcher_BUG_TRACKER_URL "https://github.com/Project-Tick/ProjT-Launcher/iss
 
 # Translations Platform URL
 set(Launcher_TRANSLATIONS_URL "https://hosted.weblate.org/projects/projectticklauncher/launcher/" CACHE STRING "URL for the translations platform.")
-set(Launcher_TRANSLATION_FILES_URL "https://i18n.projtlauncher.yongdohyun.org.tr/" CACHE STRING "URL for the translations files.")
+set(Launcher_TRANSLATION_FILES_URL "http://i18n.yongdohyun.org.tr/" CACHE STRING "URL for the translations files.")
 
 # Matrix Space
 set(Launcher_MATRIX_URL "https://projtlauncher.yongdohyun.org.tr/matrix" CACHE STRING "URL to the Matrix Space")
