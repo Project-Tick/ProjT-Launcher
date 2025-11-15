@@ -21,13 +21,13 @@ Security fixes are applied only to supported branches. Older versions must be up
 If you discover a security issue, please report it responsibly.
 
 ### How to report
-Send an email to:
 
-**froster12@naver.com**
+If you found a security issue, please contact us via:
 
-This inbox is monitored by the Yong Do-Hyun.
+- Email: [`froster12@naver.com`](mailto:froster12@naver.com)
 
 ### What to include
+
 Please provide:
 
 - A clear description of the issue  
