@@ -40,8 +40,7 @@
 				"base_ci",
 				"linux_base"
 			],
-			"displayName": "Linux (CI)",
-			"installDir": "/usr"
+			"displayName": "Linux (CI)"
 		}
 	],
 	"buildPresets": [
