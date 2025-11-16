@@ -93,12 +93,25 @@ runs:
           GNUPGHOME="$(mktemp -d)"
           chmod 700 "$GNUPGHOME"
           export GNUPGHOME
+
+          # Private key import
           printf '%s' "$LINUX_GPG_KEY" > "$GNUPGHOME/private.key"
           chmod 600 "$GNUPGHOME/private.key"
+
           gpg --batch --yes --pinentry-mode loopback --import "$GNUPGHOME/private.key"
+
+          # 🚀 FIX: gpg.conf and gpg-agent.conf so signing never requires TTY
+          echo "pinentry-mode loopback" >> "$GNUPGHOME/gpg.conf"
+          echo "allow-loopback-pinentry" >> "$GNUPGHOME/gpg-agent.conf"
+
+          # Restart gpg-agent to apply configs
+          gpgconf --kill gpg-agent
+          gpg-connect-agent reloadagent /bye
+
         else
           echo ":warning: Skipped code signing for Linux AppImage, as gpg key was not present." >> $GITHUB_STEP_SUMMARY
         fi
+
 
         ./linuxdeploy-"$APPIMAGE_ARCH".AppImage --appdir ${{ env.INSTALL_APPIMAGE_DIR }} --output appimage --plugin qt -i ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/icons/hicolor/scalable/apps/tr.org.yongdohyun.ProjTLauncher.svg
 
