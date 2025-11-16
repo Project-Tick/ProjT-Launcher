@@ -87,8 +87,8 @@ runs:
       shell: powershell
       run: choco install nsis -y
 
-    - name: Add NSIS to PATH (MSVC)
-      if: ${{ runner.os == 'Windows' && inputs.msystem == '' }}
+    - name: Add NSIS to PATH
+      if: ${{ runner.os == 'Windows'}}
       shell: powershell
       run: |
         $nsisPath = "C:\Program Files (x86)\NSIS"
