@@ -90,9 +90,12 @@ runs:
         if [ '${{ inputs.gpg-private-key-id }}' != '' ]; then
           export SIGN=1
           export SIGN_KEY=${{ inputs.gpg-private-key-id }}
-          mkdir -p ~/.gnupg/
-          echo "$LINUX_GPG_KEY" > ~/.gnupg/private.key
-          gpg --import ~/.gnupg/private.key
+          GNUPGHOME="$(mktemp -d)"
+          chmod 700 "$GNUPGHOME"
+          export GNUPGHOME
+          printf '%s' "$LINUX_GPG_KEY" > "$GNUPGHOME/private.key"
+          chmod 600 "$GNUPGHOME/private.key"
+          gpg --batch --yes --pinentry-mode loopback --import "$GNUPGHOME/private.key"
         else
           echo ":warning: Skipped code signing for Linux AppImage, as gpg key was not present." >> $GITHUB_STEP_SUMMARY
         fi
