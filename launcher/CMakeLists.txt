@@ -1392,7 +1392,7 @@ if(Launcher_BUILD_UPDATER)
     target_include_directories(prism_updater_logic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(prism_updater_logic
         QuaZip::QuaZip
-        ZLIB::ZLIB
+        ${ZLIB_LIBRARIES}
         systeminfo
         BuildConfig
         Qt${QT_VERSION_MAJOR}::Widgets
@@ -1443,7 +1443,7 @@ if(WIN32 OR (DEFINED Launcher_BUILD_FILELINKER AND Launcher_BUILD_FILELINKER))
         Qt${QT_VERSION_MAJOR}::Network
         # Qt${QT_VERSION_MAJOR}::Concurrent
         ${Launcher_QT_LIBS}
-        ZLIB::ZLIB
+        ${ZLIB_LIBRARIES}
     )
 
     add_executable("${Launcher_Name}_filelink" WIN32 filelink/filelink_main.cpp)
