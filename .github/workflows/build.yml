@@ -101,7 +101,7 @@ jobs:
             msystem: CLANGARM64
             vcvars-arch: arm64
 
-          - os: windows-2025
+          - os: windows-2022
             artifact-name: Windows-MSVC
             base-cmake-preset: windows_msvc
             # TODO(@getchoo): This is the default in setup-dependencies/windows. Why isn't it working?!?!
