@@ -1443,7 +1443,6 @@ if(WIN32 OR (DEFINED Launcher_BUILD_FILELINKER AND Launcher_BUILD_FILELINKER))
         Qt${QT_VERSION_MAJOR}::Network
         # Qt${QT_VERSION_MAJOR}::Concurrent
         ${Launcher_QT_LIBS}
-        ${ZLIB_LIBRARIES}
     )
 
     add_executable("${Launcher_Name}_filelink" WIN32 filelink/filelink_main.cpp)
