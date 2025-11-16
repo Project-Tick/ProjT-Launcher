@@ -140,10 +140,10 @@ Example (NixOS):
 ```nix
 {
   nix.settings = {
-    trusted-substituters = [ "https://projectticklauncher.cachix.org" ];
+    trusted-substituters = [ "https://cache.yongdohyun.org.tr" ];
 
     trusted-public-keys = [
-      "projectticklauncher.cachix.org-1:5l6UYRUvTCxbcRHK2yD6Ovfgzgc/W9RVwx39JaDJknQ="
+      "cache.yongdohyun.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
     ];
   };
 }
