@@ -23,6 +23,32 @@
 - Official ProjT Launcher downloads are not published yet; please follow the build instructions below or use the provided Nix flake.
 - Build and test status is available from this repository's GitHub Actions tab.
 
+### Development Builds
+
+Please understand that these builds are not intended for most users. There may be bugs and other instabilities. You have been warned.
+
+Automated development builds for ProjT Launcher are still being wired up. In the meantime you can:
+
+- Build locally via CMake (`cmake -S launcher -B build && cmake --build build`).
+- Use Nix with `nix build .#projtlauncher` (the package name will be renamed once the rebranding work lands everywhere).
+- Consume artifacts produced via this repository's GitHub Actions runs.
+
+## Community & Support
+
+Feel free to create a GitHub issue if you find a bug or want to suggest a new feature. Dedicated community spaces for ProjT Launcher (Discord, Matrix, etc.) will be announced once they are ready—thanks for your patience while we set them up.
+
+## Translations
+
+We are preparing our own translation workflow for ProjT Launcher. Until it is available you can temporarily rely on the upstream ProjT Launcher strings and contribute improvements through this repository.
+
+## Building
+
+If you want to build ProjT Launcher yourself, check out:
+
+- [`nix/README.md`](nix/README.md) for flake-based builds.
+- [`CMakeLists.txt`](CMakeLists.txt) plus the `cmake/` helpers for a traditional CMake toolchain.
+- The GitHub Actions workflows (coming soon) for concrete build examples on each platform.
+
 ## ⚠️ Deprecation Notice: End of Support for macOS Intel (x86_64-darwin)
 
 Beginning with upcoming releases, ProjT Launcher will no longer provide builds or official support for macOS Intel (x86_64-darwin).
@@ -90,31 +116,6 @@ Apple Silicon builds avoid all of these.
 Globally, over 95% of active macOS players run Apple Silicon hardware (M1, M2, M3, M4).
 Intel user share is now below 3–4%, continuing to fall rapidly.
 
-### Development Builds
-
-Please understand that these builds are not intended for most users. There may be bugs and other instabilities. You have been warned.
-
-Automated development builds for ProjT Launcher are still being wired up. In the meantime you can:
-
-- Build locally via CMake (`cmake -S launcher -B build && cmake --build build`).
-- Use Nix with `nix build .#projtlauncher` (the package name will be renamed once the rebranding work lands everywhere).
-- Consume artifacts produced via this repository's GitHub Actions runs.
-
-## Community & Support
-
-Feel free to create a GitHub issue if you find a bug or want to suggest a new feature. Dedicated community spaces for ProjT Launcher (Discord, Matrix, etc.) will be announced once they are ready—thanks for your patience while we set them up.
-
-## Translations
-
-We are preparing our own translation workflow for ProjT Launcher. Until it is available you can temporarily rely on the upstream ProjT Launcher strings and contribute improvements through this repository.
-
-## Building
-
-If you want to build ProjT Launcher yourself, check out:
-
-- [`nix/README.md`](nix/README.md) for flake-based builds.
-- [`CMakeLists.txt`](CMakeLists.txt) plus the `cmake/` helpers for a traditional CMake toolchain.
-- The GitHub Actions workflows (coming soon) for concrete build examples on each platform.
 
 ## Sponsors & Partners
 
