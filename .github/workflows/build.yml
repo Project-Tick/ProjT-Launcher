@@ -89,7 +89,7 @@ jobs:
             artifact-name: Linux-aarch64
             base-cmake-preset: linux
 
-          - os: windows-2025
+          - os: windows-2022
             artifact-name: Windows-MinGW-w64
             base-cmake-preset: windows_mingw
             msystem: CLANG64
