@@ -1298,6 +1298,7 @@ target_link_libraries(Launcher_logic
     BuildConfig
     Qt${QT_VERSION_MAJOR}::Widgets
     qrcodegenerator
+    ZLIB::ZLIB
 )
 if(TARGET PkgConfig::tomlplusplus)
     target_link_libraries(Launcher_logic PkgConfig::tomlplusplus)
@@ -1310,7 +1311,6 @@ if (UNIX AND NOT CYGWIN AND NOT APPLE)
         gamemode
     )
 endif()
-
 target_link_libraries(Launcher_logic
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Xml
@@ -1392,7 +1392,7 @@ if(Launcher_BUILD_UPDATER)
     target_include_directories(prism_updater_logic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(prism_updater_logic
         QuaZip::QuaZip
-        ${ZLIB_LIBRARIES}
+        ZLIB::ZLIB
         systeminfo
         BuildConfig
         Qt${QT_VERSION_MAJOR}::Widgets
@@ -1443,6 +1443,7 @@ if(WIN32 OR (DEFINED Launcher_BUILD_FILELINKER AND Launcher_BUILD_FILELINKER))
         Qt${QT_VERSION_MAJOR}::Network
         # Qt${QT_VERSION_MAJOR}::Concurrent
         ${Launcher_QT_LIBS}
+        ZLIB::ZLIB
     )
 
     add_executable("${Launcher_Name}_filelink" WIN32 filelink/filelink_main.cpp)
