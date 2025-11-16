@@ -23,14 +23,14 @@
 - Official ProjT Launcher downloads are not published yet; please follow the build instructions below or use the provided Nix flake.
 - Build and test status is available from this repository's GitHub Actions tab.
 
-### ⚠️ Deprecation Notice: End of Support for macOS Intel (x86_64-darwin)
+## ⚠️ Deprecation Notice: End of Support for macOS Intel (x86_64-darwin)
 
 Beginning with upcoming releases, ProjT Launcher will no longer provide builds or official support for macOS Intel (x86_64-darwin).
 Only Apple Silicon (aarch64-darwin) builds will continue to be maintained.
 
 This decision aligns with both industry trends and Apple's official roadmap, where macOS 27 is expected to be the final version supporting Intel-based Macs.
 
-## 🛑 Why Intel macOS support is being discontinued
+### 🛑 Why Intel macOS support is being discontinued
 1. Apple has shifted entirely to ARM
 
 Apple ended the transition period and now focuses all macOS, Xcode, and system-level optimizations on Apple Silicon.
