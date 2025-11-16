@@ -1181,10 +1181,6 @@ if(WIN32)
     )
 endif()
 
-if(MSVC)
-    target_link_libraries(Launcher PRIVATE zlibstatic)
-endif()
-
 qt_wrap_ui(LAUNCHER_UI
     ui/MainWindow.ui
     ui/setupwizard/PasteWizardPage.ui
@@ -1384,6 +1380,9 @@ install(TARGETS ${Launcher_Name}
     RUNTIME DESTINATION ${BINARY_DEST_DIR} COMPONENT Runtime
     FRAMEWORK DESTINATION ${FRAMEWORK_DEST_DIR} COMPONENT Runtime
 )
+if(WIN32 AND FORCE_BUNDLED_ZLIB)
+    install(FILES $<TARGET_FILE:zlib> DESTINATION ${BINARY_DEST_DIR} COMPONENT Runtime)
+endif()
 
 # Deploy PDBs
 if(WIN32 AND (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
