@@ -155,7 +155,7 @@ jobs:
         id: cmake-preset
         env:
           BASE_CMAKE_PRESET: ${{ matrix.base-cmake-preset }}
-          PRESET_TYPE: ${{ (inputs.build-type || 'Debug') == 'Debug' && 'debug' || 'release' }}
+          PRESET_TYPE: ${{ (inputs.build-type || 'Debug') == 'Debug' && 'debug' || 'ci' }}
         run: |
           echo preset="$BASE_CMAKE_PRESET"_"$PRESET_TYPE" >> "$GITHUB_OUTPUT"
 
