@@ -100,7 +100,7 @@ runs:
 
           gpg --batch --yes --pinentry-mode loopback --import "$GNUPGHOME/private.key"
 
-          # 🚀 FIX: gpg.conf and gpg-agent.conf so signing never requires TTY
+          #FIX: gpg.conf and gpg-agent.conf so signing never requires TTY
           echo "pinentry-mode loopback" >> "$GNUPGHOME/gpg.conf"
           echo "allow-loopback-pinentry" >> "$GNUPGHOME/gpg-agent.conf"
 
