@@ -57,12 +57,13 @@ Only Apple Silicon (aarch64-darwin) builds will continue to be maintained.
 This decision aligns with both industry trends and Apple's official roadmap, where macOS 27 is expected to be the final version supporting Intel-based Macs.
 
 ### 🛑 Why Intel macOS support is being discontinued
+
 1. Apple has shifted entirely to ARM
 
 Apple ended the transition period and now focuses all macOS, Xcode, and system-level optimizations on Apple Silicon.
 Intel Macs receive reduced testing, slower updates, and soon no OS-level innovation.
 
-2. Xcode and modern toolchains are ARM-first
+1. Xcode and modern toolchains are ARM-first
 
 The latest development ecosystem is optimized for ARM64:
 
@@ -82,7 +83,7 @@ WebEngine / Chromium dependencies
 
 Intel builds are becoming unstable, slower, and increasingly unsupported.
 
-3. CI environments no longer provide Intel macOS builders
+1. CI environments no longer provide Intel macOS builders
 
 GitHub Actions, GitLab, Azure Pipelines, and most cloud CI platforms support only ARM-based macOS runners.
 Maintaining Intel builds now requires:
@@ -95,7 +96,7 @@ Non-standard environment setup
 
 This greatly slows down development and increases maintenance cost.
 
-4. Performance and stability issues on Intel Macs
+1. Performance and stability issues on Intel Macs
 
 During testing, Intel builds showed:
 
@@ -111,11 +112,10 @@ Memory pressure issues with GPU acceleration
 
 Apple Silicon builds avoid all of these.
 
-5. Extremely low usage share
+1. Extremely low usage share
 
 Globally, over 95% of active macOS players run Apple Silicon hardware (M1, M2, M3, M4).
 Intel user share is now below 3–4%, continuing to fall rapidly.
-
 
 ## Sponsors & Partners
 
