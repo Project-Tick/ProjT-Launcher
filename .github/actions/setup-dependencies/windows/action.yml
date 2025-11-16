@@ -82,6 +82,16 @@ runs:
           tomlplusplus:p
           quazip-qt6:p
 
+    - name: Install NSIS (MSVC)
+      if: ${{ runner.os == 'Windows' && inputs.msystem == '' }}
+      shell: powershell
+      run: choco install nsis -y
+
+    - name: Install NSIS (MSYS2)
+      if: ${{ runner.os == 'Windows' && inputs.msystem != '' }}
+      shell: msys2 {0}
+      run: pacman -S --needed --noconfirm nsis
+
     - name: List pacman packages (MinGW)
       if: ${{ inputs.msystem != '' }}
       shell: msys2 {0}
