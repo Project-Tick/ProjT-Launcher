@@ -1181,6 +1181,10 @@ if(WIN32)
     )
 endif()
 
+if(MSVC)
+    target_link_libraries(Launcher PRIVATE zlibstatic)
+endif()
+
 qt_wrap_ui(LAUNCHER_UI
     ui/MainWindow.ui
     ui/setupwizard/PasteWizardPage.ui
