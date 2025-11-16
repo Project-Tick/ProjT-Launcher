@@ -19,6 +19,9 @@ jobs:
       - uses: actions/checkout@v5
       - uses: cachix/install-nix-action@fd24c48048070c1be9acd18c9d369a83f0fe94d7 # v31
 
+      - name: Use PAT
+        run: echo "GITHUB_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
+
       - uses: DeterminateSystems/update-flake-lock@v27
         with:
           commit-msg: "chore(nix): update lockfile"

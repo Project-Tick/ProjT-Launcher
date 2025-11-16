@@ -112,7 +112,12 @@ jobs:
             base-cmake-preset: windows_msvc
             vcvars-arch: arm64
 
-          - os: macos-15
+          - os: macos-26
+            artifact-name: macOS
+            base-cmake-preset: ${{ (inputs.build-type || 'Debug') == 'Debug' && 'macos_universal' || 'macos' }}
+            macosx-deployment-target: 12.0
+
+          - os: macos-15-intel
             artifact-name: macOS
             base-cmake-preset: ${{ (inputs.build-type || 'Debug') == 'Debug' && 'macos_universal' || 'macos' }}
             macosx-deployment-target: 12.0
@@ -145,6 +150,13 @@ jobs:
           msystem: ${{ matrix.msystem }}
           vcvars-arch: ${{ matrix.vcvars-arch }}
           qt-architecture: ${{ matrix.qt-architecture }}
+
+      - name: Install mono (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install mono
+
 
       ##
       # BUILD
@@ -205,6 +217,11 @@ jobs:
           apple-notarize-team-id: ${{ secrets.APPLE_NOTARIZE_TEAM_ID }}
           apple-notarize-password: ${{ secrets.APPLE-NOTARIZE_PASSWORD }}
           sparkle-ed25519-key: ${{ secrets.SPARKLE-ED25519_KEY }}
+
+      - name: Install NSIS (makensis)
+        if: runner.os == 'Windows'
+        run: choco install nsis -y
+
 
       - name: Package (Windows)
         if: ${{ runner.os == 'Windows' }}

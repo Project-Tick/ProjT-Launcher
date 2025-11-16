@@ -138,38 +138,3 @@ jobs:
         run: |
           nix build --no-link --print-out-paths .#projtlauncher \
             | tee -a "$GITHUB_STEP_SUMMARY" \
-  
-      - name: Setup SSH
-        if: ${{ github.event_name == 'push' }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.CACHE_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan cache.yongdohyun.org.tr >> ~/.ssh/known_hosts
-
-      - name: Upload to private cache
-        if: ${{ github.event_name == 'push' }}
-        run: |
-          rsync -avz \
-            /nix/var/nix/binary-cache/ \
-            root@cache.yongdohyun.org.tr:/var/www/cache/
-
-      - name: Upload to private Nix cache
-        if: ${{ env.DEBUG == 'false' }}
-        env:
-          PRIVATE_KEY: ${{ secrets.CACHE_PRIVATE_KEY }}
-        run: |
-          echo "$PRIVATE_KEY" > signing.key
-          chmod 600 signing.key
-
-          # Configure Nix to sign with your key
-          echo "secret-key = signing.key" >> ~/.config/nix/nix.conf
-
-          # Build path list
-          OUT=$(nix build --no-link .#projtlauncher --print-out-paths)
-
-          echo "Uploading $OUT to cache.yongdohyun.org.tr"
-
-          nix copy \
-            --to "https://cache.yongdohyun.org.tr?trusted=yes" \
-            $OUT
