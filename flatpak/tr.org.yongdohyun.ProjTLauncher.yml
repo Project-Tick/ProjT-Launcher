@@ -46,8 +46,8 @@ modules:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
     build-options:
       env:
-        JAVA_HOME: /usr/lib/sdk/openjdk21/jvm/openjdk-21
-        JAVA_COMPILER: /usr/lib/sdk/openjdk21/jvm/openjdk-21/bin/javac
+        JAVA_HOME: /usr/lib/sdk/openjdk17/jvm/openjdk-17
+        JAVA_COMPILER: /usr/lib/sdk/openjdk17/jvm/openjdk-17/bin/javac
     run-tests: true
     sources:
       - type: dir
