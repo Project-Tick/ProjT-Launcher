@@ -28,10 +28,6 @@ compile_commands.json
 build
 /build-*
 
-# Install dirs
-install
-/install-*
-
 # Ctags File
 tags
 

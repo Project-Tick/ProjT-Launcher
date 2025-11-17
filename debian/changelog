@@ -1,0 +1,5 @@
+projt-launcher (0.0.1-1) unstable; urgency=medium
+
+  * Initial release of ProjT Launcher for Debian packaging.
+
+ -- Yong Do Hyun <froster12@naver.com>  Mon, 18 Nov 2025 20:00:00 +0300

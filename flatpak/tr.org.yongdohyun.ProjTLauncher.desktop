@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=ProjT Launcher
+Comment=Discover, manage, and play Minecraft instances
+Type=Application
+Terminal=false
+Exec=projtlauncher %U
+StartupNotify=true
+Icon=tr.org.yongdohyun.ProjTLauncher
+Categories=Game;ActionGame;AdventureGame;Simulation;PackageManager;
+Keywords=game;minecraft;mc;
+StartupWMClass=ProjTLauncher
+MimeType=application/zip;application/x-modrinth-modpack+zip;x-scheme-handler/curseforge;x-scheme-handler/projtlauncher;

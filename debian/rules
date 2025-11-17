@@ -1,0 +1,37 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@ --buildsystem=cmake+ninja --parallel
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=lib \
+		-DLAUNCHER_BUILD_PLATFORM=debian \
+		-DLAUNCHER_ENABLE_TELEMETRY=OFF \
+		-DLAUNCHER_ENABLE_UPDATER=OFF \
+		-DLAUNCHER_QT6=ON
+
+override_dh_auto_build:
+	dh_auto_build -- VERBOSE=1
+
+override_dh_auto_install:
+	dh_auto_install
+
+	# Qt6 QML dosyalarını doğru yere taşı (Debian policy)
+	find debian/projt-launcher -type d -name "qml" -exec \
+		mv {} debian/projt-launcher/usr/lib/qt6/qml/ \; 2>/dev/null || true
+
+	# Masaüstü dosyası varsa validate et
+	desktop-file-validate debian/projt-launcher/usr/share/applications/*.desktop || true
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf obj-*
+
+override_dh_missing:
+	dh_missing --fail-missing

@@ -1,0 +1,58 @@
+Source: projt-launcher
+Section: games
+Priority: optional
+Maintainer: Yong Do Hyun <froster12@naver.com>
+Uploaders: Yong Do Hyun <froster12@naver.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ cmake,
+ ninja-build,
+ pkg-config,
+ qt6-base-dev,
+ qt6-declarative-dev,
+ qt6-tools-dev,
+ qt6-tools-dev-tools,
+ qt6-wayland-dev,
+ qt6-svg-dev,
+ zlib1g-dev,
+ libcurl4-openssl-dev,
+ libssl-dev,
+ libglib2.0-dev,
+ libyaml-cpp-dev,
+ libjansson-dev,
+ libzip-dev,
+ desktop-file-utils,
+ shared-mime-info
+Standards-Version: 4.7.2
+Homepage: https://projtlauncher.yongdohyun.org.tr
+Vcs-Git: https://github.com/Project-Tick/ProjT-Launcher.git
+Vcs-Browser: https://github.com/Project-Tick/ProjT-Launcher
+Rules-Requires-Root: no
+
+Package: projt-launcher
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends}
+Recommends:
+ default-jre | openjdk-21-jre | openjdk-17-jre | openjdk-11-jre,
+ xdg-utils
+Suggests:
+ minecraft-installer,
+ projt-launcher-doc
+Description: ProjT Launcher — cross-platform Minecraft launcher
+ ProjT Launcher is a fork of Prism Launcher, providing a modern,
+ cross-platform Minecraft launcher with advanced instance management,
+ mod handling, multiple loader support and a polished Qt-based user
+ interface.
+ .
+ This package contains the main launcher executable and desktop
+ integration files.
+
+Package: projt-launcher-data
+Architecture: all
+Depends:
+ ${misc:Depends}
+Description: Data files for ProjT Launcher
+ This package contains architecture-independent data files for
+ ProjT Launcher such as icons, translations and static resources.
