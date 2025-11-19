@@ -24,40 +24,6 @@
       <li>And cat :3</li>
     </ul>
   </description>
-  <screenshots>
-    <screenshot type="default">
-      <caption>The main ProjT Launcher window</caption>
-      <image type="source" width="1030" height="764">https://projtlauncher.yongdohyun.org.tr/img/screenshots/LauncherDark.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Modpack installation</caption>
-      <image type="source" width="1126" height="850">https://projtlauncher.yongdohyun.org.tr/img/screenshots/ModpackInstallDark.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Modpack updating</caption>
-      <image type="source" width="930" height="677">https://projtlauncher.yongdohyun.org.tr/img/screenshots/ModpackUpdateDark.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Mod installation</caption>
-      <image type="source" width="848" height="558">https://projtlauncher.yongdohyun.org.tr/img/screenshots/ModInstallDark.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Mod updating</caption>
-      <image type="source" width="860" height="748">https://projtlauncher.yongdohyun.org.tr/img/screenshots/ModUpdateDark.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Instance management</caption>
-      <image type="source" width="960" height="659">https://projtlauncher.yongdohyun.org.tr/img/screenshots/PropertiesDark.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Cat :3</caption>
-      <image type="source" width="1042" height="754">https://projtlauncher.yongdohyun.org.tr/img/screenshots/LauncherCatDark.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Customization</caption>
-      <image type="source" width="1040" height="752">https://projtlauncher.yongdohyun.org.tr/img/screenshots/CustomizeDark.png</image>
-    </screenshot>
-  </screenshots>
   <releases>
     <release version="@Launcher_VERSION_NAME@" date="@Launcher_BUILD_TIMESTAMP@"></release>
   </releases>

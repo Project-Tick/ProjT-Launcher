@@ -1,17 +1,16 @@
 id: tr.org.yongdohyun.ProjTLauncher
 runtime: org.kde.Platform
-runtime-version: '6.8'
+runtime-version: '6.10'
 sdk: org.kde.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.openjdk17
-appstream-compose: false
 
 command: projtlauncher
 finish-args:
   - --share=ipc
-  - --socket=x11
   - --socket=wayland
-  - --device=all
+  - --socket=fallback-x11
+  - --device=all # Grant access to all device nodes, often required by certain game mods for accessing specialized hardware like controllers, joysticks, or other input peripherals that use non-standard device paths.
   - --share=network
   - --socket=pulseaudio
     # for Discord RPC mods
@@ -19,7 +18,7 @@ finish-args:
     # Mod drag&drop
   - --filesystem=xdg-download:ro
     # FTBApp import
-  - --filesystem=~/.ftba:ro
+  - --persist=.ftba
     # Userspace visibility for manual hugepages configuration
     # Required for -XX:+UseLargePages
   - --filesystem=/sys/kernel/mm/hugepages:ro
@@ -27,16 +26,12 @@ finish-args:
     # Required for -XX:+UseTransparentHugePages
   - --filesystem=/sys/kernel/mm/transparent_hugepage:ro
 
+cleanup:
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+
 modules:
-  # Might be needed by some Controller mods (see https://github.com/isXander/Controlify/issues/31)
-  - shared-modules/libusb/libusb.json
-
-  # Needed for proper Wayland support
-  - libdecor.json
-
-  # Text to Speech in the game
-  - flite.json
-
   - name: projtlauncher
     buildsystem: cmake-ninja
     builddir: true
@@ -51,8 +46,16 @@ modules:
         JAVA_COMPILER: /usr/lib/sdk/openjdk17/jvm/openjdk-17/bin/javac
     run-tests: true
     sources:
-      - type: dir
-        path: ../
+      - type: file
+        path: libdecor.json
+      - type: file
+        path: flite.json
+      - type: git
+        url: https://github.com/Project-Tick/ProjT-Launcher.git
+        tag: 0.0.1
+        commit: 0154de9edd0b0a53bb5a8f674ed86a04ed213c17
+    build-commands:
+      - git submodule update --init --recursive
 
   - name: glfw
     buildsystem: cmake-ninja
@@ -110,7 +113,16 @@ modules:
     cleanup:
       - /include
       - /lib/pkgconfig
-      - /lib/libgamemodeauto.a
+      - '*.a'
+  - name: glu
+    buildsystem: autotools
+    sources:
+      - type: archive
+        url: https://mesa.freedesktop.org/archive/glu/glu-9.0.2.tar.xz
+        sha256: 6e7280ff585c6a1d9dfcdf2fca489251634b3377bfc33c29e4002466a38d02d4
+    cleanup:
+      - /bin
+      - /lib/pkgconfig
 
   - name: glxinfo
     buildsystem: meson
@@ -136,8 +148,6 @@ modules:
       - /include
       - /mesa-demos
       - /share
-    modules:
-      - shared-modules/glu/glu-9.json
 
   - name: enhance
     buildsystem: simple
