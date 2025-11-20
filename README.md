@@ -15,11 +15,11 @@
 > ProjT Launcher is still establishing its own infrastructure. Some assets and links may temporarily point to upstream Prism Launcher resources until we finish migrating.
 
 ## Installation
-<!--
-<a href="https://repology.org/project/prismlauncher/versions">
-    <img src="https://repology.org/badge/vertical-allrepos/prismlauncher.svg" alt="Packaging status" align="right">
+
+<a href="https://repology.org/project/projtlauncher/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/projtlauncher.svg" alt="Packaging status" align="right">
 </a>
- -->
+
 - Official ProjT Launcher downloads are not published yet; please follow the build instructions below or use the provided Nix flake.
 - Build and test status is available from this repository's GitHub Actions tab.
 
