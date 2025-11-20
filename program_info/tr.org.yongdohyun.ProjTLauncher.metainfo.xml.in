@@ -24,6 +24,12 @@
       <li>And cat :3</li>
     </ul>
   </description>
+  <screenshots>
+	<screenshot type="default">
+		<caption>The main ProjT Launcher window</caption>
+		<image type="source" width="1030" height="764">https://projtlauncher.yongdohyun.org.tr/img/screenshots/launcher.png</image>
+	</screenshot>
+  </screenshots>
   <releases>
     <release version="@Launcher_VERSION_NAME@" date="@Launcher_BUILD_TIMESTAMP@"></release>
   </releases>
