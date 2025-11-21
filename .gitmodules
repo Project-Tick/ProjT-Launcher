@@ -22,9 +22,6 @@
 [submodule "libraries/qrcodegenerator"]
 	path = libraries/qrcodegenerator
 	url = https://github.com/nayuki/QR-Code-generator
-[submodule "libraries/javacheck"]
-	path = libraries/javacheck
-	url = https://github.com/Project-Tick/JavaCheck.git
 [submodule "libraries/launcher"]
 	path = libraries/launcher
 	url = https://github.com/Project-Tick/PTLLauncherSM.git
