@@ -102,8 +102,7 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v13
         with:
           diagnostic-endpoint: ""
-          use-flakehub: true
-          flakehub-token: ${{ secrets.FLAKEHUB_TOKEN }}
+          use-flakehub: false
 
         # For in-tree builds
       - name: Configure Nix binary cache
