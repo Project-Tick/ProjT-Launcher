@@ -25,3 +25,6 @@
 [submodule "libraries/launcher"]
 	path = libraries/launcher
 	url = https://github.com/Project-Tick/PTLLauncherSM.git
+[submodule "libraries/javacheck"]
+	path = libraries/javacheck
+	url = https://github.com/Project-Tick/JavaCheck.git
