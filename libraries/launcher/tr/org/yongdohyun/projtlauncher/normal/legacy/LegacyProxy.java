@@ -55,11 +55,11 @@ package tr.org.yongdohyun.projtlauncher.normal.legacy;
 import tr.org.yongdohyun.projtlauncher.normal.launcher.Launcher;
 import tr.org.yongdohyun.projtlauncher.normal.utils.Parameters;
 
-// used as a fallback if NewLaunchLegacy is not on the classpath
+// used as a fallback if ProjTLaunchLegacy is not on the classpath
 // if it is, this class will be replaced
 public final class LegacyProxy {
     public static Launcher createLauncher(Parameters params) {
-        throw new AssertionError("NewLaunchLegacy is not loaded");
+        throw new AssertionError("ProjTLaunchLegacy is not loaded");
     }
 
     public static void applyOnlineFixes(Parameters params) {}

@@ -4,7 +4,7 @@ find_package(Java 1.7 REQUIRED COMPONENTS Development)
 set(JARS_DEST_DIR "${CMAKE_INSTALL_PREFIX}/jars")
 
 include(UseJava)
-set(CMAKE_JAVA_JAR_ENTRY_POINT org.prismlauncher.EntryPoint)
+set(CMAKE_JAVA_JAR_ENTRY_POINT tr.org.yongdohyun.projtlauncher.EntryPoint)
 set(CMAKE_JAVA_COMPILE_FLAGS -target 7 -source 7)
 
 set(SRC
@@ -39,7 +39,7 @@ set(LEGACY_SRC
     tr/org/yongdohyun/projtlauncher/legacy/LegacyProxy.java
 )
 
-add_jar(NewLaunch ${SRC})
-add_jar(NewLaunchLegacy ${LEGACY_SRC} INCLUDE_JARS NewLaunch)
-install_jar(NewLaunch "${JARS_DEST_DIR}")
-install_jar(NewLaunchLegacy "${JARS_DEST_DIR}")
+add_jar(ProjTLaunch ${SRC})
+add_jar(ProjTLaunchLegacy ${LEGACY_SRC} INCLUDE_JARS ProjTLaunch)
+install_jar(ProjTLaunch "${JARS_DEST_DIR}")
+install_jar(ProjTLaunchLegacy "${JARS_DEST_DIR}")

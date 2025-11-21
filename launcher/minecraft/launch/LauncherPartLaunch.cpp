@@ -87,7 +87,7 @@ LauncherPartLaunch::LauncherPartLaunch(LaunchTask* parent)
 
 void LauncherPartLaunch::executeTask()
 {
-    QString jarPath = APPLICATION->getJarPath("NewLaunch.jar");
+    QString jarPath = APPLICATION->getJarPath("ProjTLaunch.jar");
     if (jarPath.isEmpty()) {
         const char* reason = QT_TR_NOOP("Launcher library could not be found. Please check your installation.");
         emit logLine(tr(reason), MessageLevel::Fatal);
@@ -99,7 +99,7 @@ void LauncherPartLaunch::executeTask()
 
     QString legacyJarPath;
     if (instance->getLauncher() == "legacy" || instance->shouldApplyOnlineFixes()) {
-        legacyJarPath = APPLICATION->getJarPath("NewLaunchLegacy.jar");
+        legacyJarPath = APPLICATION->getJarPath("ProjTLaunchLegacy.jar");
         if (legacyJarPath.isEmpty()) {
             const char* reason = QT_TR_NOOP("Legacy launcher library could not be found. Please check your installation.");
             emit logLine(tr(reason), MessageLevel::Fatal);
