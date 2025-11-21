@@ -12,6 +12,8 @@
   qrcodegenerator,
   ninja,
   self,
+  launcher,
+  javacheck,
   stripJavaArchivesHook,
   tomlplusplus,
   zlib,
@@ -39,32 +41,6 @@ let
       ]
     else
       "unknown";
-  javacheck = pkgs.stdenv.mkDerivation {
-    pname = "javacheck";
-    version = "1.0";
-    src = builtins.fetchGit {
-      url = "https://github.com/Project-Tick/javacheck.git";
-      rev = "13c75395fcbe4b282e429c53065d820a14b701b2";
-    };
-    buildInputs = [ pkgs.jdk ];
-    installPhase = ''
-      mkdir -p javacheck
-      cp -r * javacheck/
-    '';
-  };
-  launchersm = pkgs.stdenv.mkDerivation {
-    pname = "launchersm";
-    version = "1.0";
-    src = builtins.fetchGit {
-      url = "https://github.com/Project-Tick/PTLLauncherSM.git";
-      rev = "ae13360ed8e5a490ff6d8198286fbac677b28b05";
-    };
-    buildInputs = [ pkgs.jdk ];
-    installPhase = ''
-      mkdir -p launchersm
-      cp -r * launchersm/
-    '';
-  };
 in
 
 stdenv.mkDerivation {
@@ -94,10 +70,10 @@ stdenv.mkDerivation {
     ln -s ${qrcodegenerator} source/libraries/qrcodegenerator
 
     rm -rf source/libraries/javacheck
-    ln -s javacheck/ source/libraries/javacheck
+    ln -s ${javacheck} source/libraries/javacheck
 
     rm -rf source/libraries/launcher
-    ln -s launchersm/ source/libraries/launcher
+    ln -s ${launcher} source/libraries/launcher
   '';
 
   nativeBuildInputs = [
