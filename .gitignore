@@ -58,3 +58,5 @@ flatbuild
 
 # Snap
 *.snap
+
+vcpkg_installed/

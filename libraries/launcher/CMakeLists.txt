@@ -8,35 +8,35 @@ set(CMAKE_JAVA_JAR_ENTRY_POINT org.prismlauncher.EntryPoint)
 set(CMAKE_JAVA_COMPILE_FLAGS -target 7 -source 7)
 
 set(SRC
-    org/prismlauncher/EntryPoint.java
-    org/prismlauncher/launcher/Launcher.java
-    org/prismlauncher/launcher/impl/AbstractLauncher.java
-    org/prismlauncher/launcher/impl/StandardLauncher.java
-    org/prismlauncher/exception/ParameterNotFoundException.java
-    org/prismlauncher/exception/ParseException.java
-    org/prismlauncher/utils/Parameters.java
-    org/prismlauncher/utils/ReflectionUtils.java
-    org/prismlauncher/utils/logging/Level.java
-    org/prismlauncher/utils/logging/Log.java
-    org/prismlauncher/legacy/LegacyProxy.java
+    tr/org/yongdohyun/projtlauncher/normal/EntryPoint.java
+    tr/org/yongdohyun/projtlauncher/normal/launcher/Launcher.java
+    tr/org/yongdohyun/projtlauncher/normal/launcher/impl/AbstractLauncher.java
+    tr/org/yongdohyun/projtlauncher/normal/launcher/impl/StandardLauncher.java
+    tr/org/yongdohyun/projtlauncher/normal/exception/ParameterNotFoundException.java
+    tr/org/yongdohyun/projtlauncher/normal/exception/ParseException.java
+    tr/org/yongdohyun/projtlauncher/normal/utils/Parameters.java
+    tr/org/yongdohyun/projtlauncher/normal/utils/ReflectionUtils.java
+    tr/org/yongdohyun/projtlauncher/normal/utils/logging/Level.java
+    tr/org/yongdohyun/projtlauncher/normal/utils/logging/Log.java
+    tr/org/yongdohyun/projtlauncher/normal/legacy/LegacyProxy.java
 )
 
 set(LEGACY_SRC
-    legacy/org/prismlauncher/legacy/LegacyFrame.java
-    legacy/org/prismlauncher/legacy/LegacyLauncher.java
-    legacy/org/prismlauncher/legacy/fix/online/Handler.java
-    legacy/org/prismlauncher/legacy/fix/online/OnlineFixes.java
-    legacy/org/prismlauncher/legacy/fix/online/OnlineModeFix.java
-    legacy/org/prismlauncher/legacy/fix/online/SkinFix.java
-    legacy/org/prismlauncher/legacy/utils/Base64.java
-    legacy/org/prismlauncher/legacy/utils/api/MojangApi.java
-    legacy/org/prismlauncher/legacy/utils/api/Texture.java
-    legacy/org/prismlauncher/legacy/utils/json/JsonParseException.java
-    legacy/org/prismlauncher/legacy/utils/json/JsonParser.java
-    legacy/org/prismlauncher/legacy/utils/url/ByteArrayUrlConnection.java
-    legacy/org/prismlauncher/legacy/utils/url/UrlUtils.java
-    legacy/net/minecraft/Launcher.java
-    legacy/org/prismlauncher/legacy/LegacyProxy.java
+    tr/org/yongdohyun/projtlauncher/legacy/LegacyFrame.java
+    tr/org/yongdohyun/projtlauncher/legacy/LegacyLauncher.java
+    tr/org/yongdohyun/projtlauncher/legacy/fix/online/Handler.java
+    tr/org/yongdohyun/projtlauncher/legacy/fix/online/OnlineFixes.java
+    tr/org/yongdohyun/projtlauncher/legacy/fix/online/OnlineModeFix.java
+    tr/org/yongdohyun/projtlauncher/legacy/fix/online/SkinFix.java
+    tr/org/yongdohyun/projtlauncher/legacy/utils/Base64.java
+    tr/org/yongdohyun/projtlauncher/legacy/utils/api/MojangApi.java
+    tr/org/yongdohyun/projtlauncher/legacy/utils/api/Texture.java
+    tr/org/yongdohyun/projtlauncher/legacy/utils/json/JsonParseException.java
+    tr/org/yongdohyun/projtlauncher/legacy/utils/json/JsonParser.java
+    tr/org/yongdohyun/projtlauncher/legacy/utils/url/ByteArrayUrlConnection.java
+    tr/org/yongdohyun/projtlauncher/legacy/utils/url/UrlUtils.java
+    net/minecraft/Launcher.java
+    tr/org/yongdohyun/projtlauncher/legacy/LegacyProxy.java
 )
 
 add_jar(NewLaunch ${SRC})
