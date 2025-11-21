@@ -64,6 +64,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 env:
   DEBUG: ${{ github.ref_type != 'tag' }}
@@ -107,7 +108,8 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v13
         with:
           diagnostic-endpoint: ""
-          use-flakehub: false
+          use-flakehub: true
+          flakehub-token: ${{ secrets.FLAKEHUB_TOKEN }}
 
         # For in-tree builds
       - name: Configure Nix binary cache
