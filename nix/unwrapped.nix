@@ -15,6 +15,8 @@
   stripJavaArchivesHook,
   tomlplusplus,
   zlib,
+  javacheck,
+  launcher,
   msaClientID ? null,
   gamemodeSupport ? stdenv.hostPlatform.isLinux,
 }:
@@ -66,6 +68,12 @@ stdenv.mkDerivation {
 
     rm -rf source/libraries/qrcodegenerator
     ln -s ${qrcodegenerator} source/libraries/qrcodegenerator
+
+    rm -rf source/libraries/javacheck
+    ln -s ${javacheck} source/libraries/javacheck
+
+    rm -rf source/libraries/launcher
+    ln -s ${launcher} source/libraries/launcher
   '';
 
   nativeBuildInputs = [
