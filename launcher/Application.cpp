@@ -1521,7 +1521,7 @@ bool Application::launch(InstancePtr instance,
         // Auto-backup before launch if enabled
         if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
             qDebug() << "Creating auto-backup before launch...";
-            
+
             // Show status bar message
             if (m_mainWindow) {
                 m_mainWindow->statusBar()->showMessage("Creating backup before launch...", 0);
