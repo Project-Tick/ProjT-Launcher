@@ -144,20 +144,70 @@ bool BackupManager::createBackup(InstancePtr instance, const QString& backupName
 
 bool BackupManager::compressBackup(const QString& sourcePath, const QString& backupPath, const BackupOptions& options)
 {
-    QStringList filters;
+    QFileInfoList files;
+    QDir sourceDir(sourcePath);
     
-    if (options.includeSaves) filters << "saves";
-    if (options.includeConfig) filters << "config";
-    if (options.includeMods) filters << "mods";
-    if (options.includeResourcePacks) filters << "resourcepacks";
-    if (options.includeShaderPacks) filters << "shaderpacks";
-    if (options.includeScreenshots) filters << "screenshots";
+    if (options.includeSaves) {
+        QDir savesDir(sourceDir.filePath("saves"));
+        if (savesDir.exists()) {
+            for (const QFileInfo& file : savesDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
+                files.append(file);
+            }
+        }
+    }
+    if (options.includeConfig) {
+        QDir configDir(sourceDir.filePath("config"));
+        if (configDir.exists()) {
+            for (const QFileInfo& file : configDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
+                files.append(file);
+            }
+        }
+    }
+    if (options.includeMods) {
+        QDir modsDir(sourceDir.filePath("mods"));
+        if (modsDir.exists()) {
+            for (const QFileInfo& file : modsDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
+                files.append(file);
+            }
+        }
+    }
+    if (options.includeResourcePacks) {
+        QDir rpDir(sourceDir.filePath("resourcepacks"));
+        if (rpDir.exists()) {
+            for (const QFileInfo& file : rpDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
+                files.append(file);
+            }
+        }
+    }
+    if (options.includeShaderPacks) {
+        QDir spDir(sourceDir.filePath("shaderpacks"));
+        if (spDir.exists()) {
+            for (const QFileInfo& file : spDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
+                files.append(file);
+            }
+        }
+    }
+    if (options.includeScreenshots) {
+        QDir ssDir(sourceDir.filePath("screenshots"));
+        if (ssDir.exists()) {
+            for (const QFileInfo& file : ssDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
+                files.append(file);
+            }
+        }
+    }
     if (options.includeOptions) {
-        filters << "options.txt" << "optionsof.txt";
+        QFileInfo optionsFile(sourceDir.filePath("options.txt"));
+        if (optionsFile.exists()) {
+            files.append(optionsFile);
+        }
+        QFileInfo optionsOfFile(sourceDir.filePath("optionsof.txt"));
+        if (optionsOfFile.exists()) {
+            files.append(optionsOfFile);
+        }
     }
     
     // Use MMCZip to compress
-    return MMCZip::compressDirFiles(backupPath, sourcePath, filters);
+    return MMCZip::compressDirFiles(backupPath, sourcePath, files);
 }
 
 bool BackupManager::restoreBackup(InstancePtr instance, const InstanceBackup& backup, bool createBackupBeforeRestore)
@@ -183,7 +233,8 @@ bool BackupManager::restoreBackup(InstancePtr instance, const InstanceBackup& ba
 
 bool BackupManager::extractBackup(const QString& backupPath, const QString& targetPath)
 {
-    return MMCZip::extractDir(backupPath, targetPath);
+    auto result = MMCZip::extractDir(backupPath, targetPath);
+    return result.has_value();
 }
 
 QList<InstanceBackup> BackupManager::listBackups(InstancePtr instance) const
