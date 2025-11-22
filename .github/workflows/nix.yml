@@ -101,15 +101,6 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-
-        # For PRs
-      - name: Setup Nix Magic Cache
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: DeterminateSystems/magic-nix-cache-action@v13
-        with:
-          diagnostic-endpoint: ""
-          use-flakehub: false
-
         # For in-tree builds
       - name: Configure Nix binary cache
         run: |
