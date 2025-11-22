@@ -2069,21 +2069,24 @@ void Application::migratePastebinSettings()
     m_settings->registerSetting("PastebinType", PasteUpload::PasteType::Mclogs);
     m_settings->registerSetting("PastebinCustomAPIBase", "");
 
+    // Early exit if no legacy URL exists - no migration needed
     QString pastebinURL = m_settings->get("PastebinURL").toString();
+    if (pastebinURL.isEmpty()) {
+        // Still validate PastebinType even without migration
+        bool ok;
+        int pasteType = m_settings->get("PastebinType").toInt(&ok);
+        if (!ok || !(PasteUpload::PasteType::First <= pasteType && pasteType <= PasteUpload::PasteType::Last)) {
+            m_settings->reset("PastebinType");
+            m_settings->reset("PastebinCustomAPIBase");
+        }
+        return;
+    }
 
     // Migrate from legacy 0x0.st URL to new format
     bool userHadDefaultPastebin = pastebinURL == "https://0x0.st";
-    if (!pastebinURL.isEmpty() && !userHadDefaultPastebin) {
+    if (!userHadDefaultPastebin) {
         m_settings->set("PastebinType", PasteUpload::PasteType::NullPointer);
         m_settings->set("PastebinCustomAPIBase", pastebinURL);
-        m_settings->reset("PastebinURL");
     }
-
-    // Validate PastebinType and reset if invalid
-    bool ok;
-    int pasteType = m_settings->get("PastebinType").toInt(&ok);
-    if (!ok || !(PasteUpload::PasteType::First <= pasteType && pasteType <= PasteUpload::PasteType::Last)) {
-        m_settings->reset("PastebinType");
-        m_settings->reset("PastebinCustomAPIBase");
-    }
+    m_settings->reset("PastebinURL");
 }
