@@ -17,6 +17,7 @@
 #include "FileSystem.h"
 #include "MMCZip.h"
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
@@ -145,68 +146,67 @@ bool BackupManager::createBackup(InstancePtr instance, const QString& backupName
 bool BackupManager::compressBackup(const QString& sourcePath, const QString& backupPath, const BackupOptions& options)
 {
     QFileInfoList files;
-    QDir sourceDir(sourcePath);
+    
+    // Helper lambda to recursively collect files
+    auto collectFilesRecursive = [&files](const QString& dirPath) {
+        QDirIterator it(dirPath, QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+        while (it.hasNext()) {
+            files.append(QFileInfo(it.next()));
+        }
+    };
     
     if (options.includeSaves) {
-        QDir savesDir(sourceDir.filePath("saves"));
-        if (savesDir.exists()) {
-            for (const QFileInfo& file : savesDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
-                files.append(file);
-            }
+        QString savesPath = FS::PathCombine(sourcePath, "saves");
+        if (QDir(savesPath).exists()) {
+            collectFilesRecursive(savesPath);
         }
     }
     if (options.includeConfig) {
-        QDir configDir(sourceDir.filePath("config"));
-        if (configDir.exists()) {
-            for (const QFileInfo& file : configDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
-                files.append(file);
-            }
+        QString configPath = FS::PathCombine(sourcePath, "config");
+        if (QDir(configPath).exists()) {
+            collectFilesRecursive(configPath);
         }
     }
     if (options.includeMods) {
-        QDir modsDir(sourceDir.filePath("mods"));
-        if (modsDir.exists()) {
-            for (const QFileInfo& file : modsDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
-                files.append(file);
-            }
+        QString modsPath = FS::PathCombine(sourcePath, "mods");
+        if (QDir(modsPath).exists()) {
+            collectFilesRecursive(modsPath);
         }
     }
     if (options.includeResourcePacks) {
-        QDir rpDir(sourceDir.filePath("resourcepacks"));
-        if (rpDir.exists()) {
-            for (const QFileInfo& file : rpDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
-                files.append(file);
-            }
+        QString rpPath = FS::PathCombine(sourcePath, "resourcepacks");
+        if (QDir(rpPath).exists()) {
+            collectFilesRecursive(rpPath);
         }
     }
     if (options.includeShaderPacks) {
-        QDir spDir(sourceDir.filePath("shaderpacks"));
-        if (spDir.exists()) {
-            for (const QFileInfo& file : spDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
-                files.append(file);
-            }
+        QString spPath = FS::PathCombine(sourcePath, "shaderpacks");
+        if (QDir(spPath).exists()) {
+            collectFilesRecursive(spPath);
         }
     }
     if (options.includeScreenshots) {
-        QDir ssDir(sourceDir.filePath("screenshots"));
-        if (ssDir.exists()) {
-            for (const QFileInfo& file : ssDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot)) {
-                files.append(file);
-            }
+        QString ssPath = FS::PathCombine(sourcePath, "screenshots");
+        if (QDir(ssPath).exists()) {
+            collectFilesRecursive(ssPath);
         }
     }
     if (options.includeOptions) {
-        QFileInfo optionsFile(sourceDir.filePath("options.txt"));
+        QFileInfo optionsFile(FS::PathCombine(sourcePath, "options.txt"));
         if (optionsFile.exists()) {
             files.append(optionsFile);
         }
-        QFileInfo optionsOfFile(sourceDir.filePath("optionsof.txt"));
+        QFileInfo optionsOfFile(FS::PathCombine(sourcePath, "optionsof.txt"));
         if (optionsOfFile.exists()) {
             files.append(optionsOfFile);
         }
     }
     
-    // Use MMCZip to compress
+    if (files.isEmpty()) {
+        return false; // Nothing to backup
+    }
+    
+    // Use MMCZip to compress - sourcePath is the base directory for relative paths
     return MMCZip::compressDirFiles(backupPath, sourcePath, files);
 }
 
