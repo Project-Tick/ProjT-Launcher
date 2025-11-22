@@ -181,9 +181,10 @@ void AppearanceWidget::applyCatTheme(int index)
 
 void AppearanceWidget::loadThemeSettings()
 {
-    qDebug() << "[AppearanceWidget] loadThemeSettings() called - refreshing themes...";
-    APPLICATION->themeManager()->refresh();
-    qDebug() << "[AppearanceWidget] Theme refresh complete";
+    qDebug() << "[AppearanceWidget] loadThemeSettings() called - skipping refresh, using cached themes";
+    // Don't refresh themes here - they're already loaded at startup
+    // Refreshing causes 2+ second delay when opening dialogs
+    // APPLICATION->themeManager()->refresh();
 
     m_ui->iconsComboBox->blockSignals(true);
     m_ui->widgetStyleComboBox->blockSignals(true);
