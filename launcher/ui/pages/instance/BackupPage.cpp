@@ -9,35 +9,61 @@
  *  the GNU General Public License version 3 or later.
  */
 
-#include "BackupDialog.h"
+#include "BackupPage.h"
 #include "ui_BackupDialog.h"
 #include <QMessageBox>
 #include <QInputDialog>
+#include "Application.h"
 
-BackupDialog::BackupDialog(InstancePtr instance, QWidget* parent)
-    : QDialog(parent), ui(new Ui::BackupDialog), m_instance(instance), m_backupManager(new BackupManager(this))
+BackupPage::BackupPage(MinecraftInstance* inst, QWidget* parent)
+    : QWidget(parent), ui(new Ui::BackupDialog), m_instance(inst), m_backupManager(new BackupManager(this))
 {
     ui->setupUi(this);
-    
-    setWindowTitle(tr("Manage Backups - %1").arg(instance->name()));
-    
-    // Connect signals
-    connect(m_backupManager, &BackupManager::backupCreated, this, &BackupDialog::onBackupCreated);
-    connect(m_backupManager, &BackupManager::backupRestored, this, &BackupDialog::onBackupRestored);
-    
-    // Load backups
-    refreshBackupList();
+    setupConnections();
 }
 
-BackupDialog::~BackupDialog()
+BackupPage::~BackupPage()
 {
     delete ui;
 }
 
-void BackupDialog::refreshBackupList()
+QIcon BackupPage::icon() const
+{
+    return APPLICATION->getThemedIcon("screenshot-placeholder");
+}
+
+void BackupPage::retranslate()
+{
+    ui->retranslateUi(this);
+}
+
+void BackupPage::openedImpl()
+{
+    refreshBackupList();
+}
+
+void BackupPage::closedImpl()
+{
+    // Nothing to do
+}
+
+void BackupPage::setupConnections()
+{
+    connect(ui->createButton, &QPushButton::clicked, this, &BackupPage::on_createButton_clicked);
+    connect(ui->restoreButton, &QPushButton::clicked, this, &BackupPage::on_restoreButton_clicked);
+    connect(ui->deleteButton, &QPushButton::clicked, this, &BackupPage::on_deleteButton_clicked);
+    connect(ui->backupList, &QListWidget::currentRowChanged, this, &BackupPage::on_backupList_currentRowChanged);
+    connect(ui->addCustomPathButton, &QPushButton::clicked, this, &BackupPage::on_addCustomPathButton_clicked);
+    connect(ui->removeCustomPathButton, &QPushButton::clicked, this, &BackupPage::on_removeCustomPathButton_clicked);
+}
+
+void BackupPage::refreshBackupList()
 {
     ui->backupList->clear();
-    m_backups = m_backupManager->listBackups(m_instance);
+    
+    // Convert MinecraftInstance* to InstancePtr
+    auto instancePtr = m_instance->shared_from_this();
+    m_backups = m_backupManager->listBackups(instancePtr);
     
     for (const InstanceBackup& backup : m_backups) {
         QString displayText = QString("%1 - %2 (%3)")
@@ -47,14 +73,16 @@ void BackupDialog::refreshBackupList()
         ui->backupList->addItem(displayText);
     }
     
-    updateButtons();
+    updateBackupDetails();
 }
 
-void BackupDialog::updateBackupDetails()
+void BackupPage::updateBackupDetails()
 {
     int currentRow = ui->backupList->currentRow();
     if (currentRow < 0 || currentRow >= m_backups.size()) {
         ui->backupDetails->clear();
+        ui->restoreButton->setEnabled(false);
+        ui->deleteButton->setEnabled(false);
         return;
     }
     
@@ -74,16 +102,11 @@ void BackupDialog::updateBackupDetails()
     }
     
     ui->backupDetails->setHtml(details);
+    ui->restoreButton->setEnabled(true);
+    ui->deleteButton->setEnabled(true);
 }
 
-void BackupDialog::updateButtons()
-{
-    bool hasSelection = ui->backupList->currentRow() >= 0;
-    ui->restoreButton->setEnabled(hasSelection);
-    ui->deleteButton->setEnabled(hasSelection);
-}
-
-void BackupDialog::on_createButton_clicked()
+void BackupPage::on_createButton_clicked()
 {
     bool ok;
     QString backupName = QInputDialog::getText(
@@ -129,10 +152,11 @@ void BackupDialog::on_createButton_clicked()
         disconnect(m_backupManager, &BackupManager::backupFailed, this, nullptr);
     }, Qt::SingleShotConnection);
     
-    m_backupManager->createBackupAsync(m_instance, backupName, options);
+    auto instancePtr = m_instance->shared_from_this();
+    m_backupManager->createBackupAsync(instancePtr, backupName, options);
 }
 
-void BackupDialog::on_restoreButton_clicked()
+void BackupPage::on_restoreButton_clicked()
 {
     int currentRow = ui->backupList->currentRow();
     if (currentRow < 0 || currentRow >= m_backups.size()) {
@@ -189,10 +213,11 @@ void BackupDialog::on_restoreButton_clicked()
         disconnect(m_backupManager, &BackupManager::restoreFailed, this, nullptr);
     }, Qt::SingleShotConnection);
     
-    m_backupManager->restoreBackupAsync(m_instance, backup, createSafetyBackup);
+    auto instancePtr = m_instance->shared_from_this();
+    m_backupManager->restoreBackupAsync(instancePtr, backup, createSafetyBackup);
 }
 
-void BackupDialog::on_deleteButton_clicked()
+void BackupPage::on_deleteButton_clicked()
 {
     int currentRow = ui->backupList->currentRow();
     if (currentRow < 0 || currentRow >= m_backups.size()) {
@@ -221,32 +246,12 @@ void BackupDialog::on_deleteButton_clicked()
     }
 }
 
-void BackupDialog::on_refreshButton_clicked()
-{
-    refreshBackupList();
-}
-
-void BackupDialog::on_backupList_currentRowChanged(int)
+void BackupPage::on_backupList_currentRowChanged(int)
 {
     updateBackupDetails();
-    updateButtons();
 }
 
-void BackupDialog::onBackupCreated(const QString& instanceId, const QString& backupName)
-{
-    if (instanceId == m_instance->id()) {
-        refreshBackupList();
-    }
-}
-
-void BackupDialog::onBackupRestored(const QString& instanceId, const QString& backupName)
-{
-    if (instanceId == m_instance->id()) {
-        refreshBackupList();
-    }
-}
-
-BackupOptions BackupDialog::getSelectedOptions() const
+BackupOptions BackupPage::getSelectedOptions() const
 {
     BackupOptions options;
     options.includeSaves = ui->includeSaves->isChecked();
@@ -256,11 +261,18 @@ BackupOptions BackupDialog::getSelectedOptions() const
     options.includeShaderPacks = ui->includeShaderPacks->isChecked();
     options.includeScreenshots = ui->includeScreenshots->isChecked();
     options.includeOptions = ui->includeOptions->isChecked();
-    options.customPaths = m_customPaths;
+    
+    // Get custom paths from list widget
+    QStringList customPaths;
+    for (int i = 0; i < ui->customPathsList->count(); ++i) {
+        customPaths.append(ui->customPathsList->item(i)->text());
+    }
+    options.customPaths = customPaths;
+    
     return options;
 }
 
-void BackupDialog::on_addCustomPathButton_clicked()
+void BackupPage::on_addCustomPathButton_clicked()
 {
     QString path = QInputDialog::getText(
         this,
@@ -271,17 +283,21 @@ void BackupDialog::on_addCustomPathButton_clicked()
         nullptr
     );
     
-    if (!path.isEmpty() && !m_customPaths.contains(path)) {
-        m_customPaths.append(path);
+    if (!path.isEmpty()) {
+        // Check if already exists
+        for (int i = 0; i < ui->customPathsList->count(); ++i) {
+            if (ui->customPathsList->item(i)->text() == path) {
+                return;  // Already exists
+            }
+        }
         ui->customPathsList->addItem(path);
     }
 }
 
-void BackupDialog::on_removeCustomPathButton_clicked()
+void BackupPage::on_removeCustomPathButton_clicked()
 {
     int currentRow = ui->customPathsList->currentRow();
-    if (currentRow >= 0 && currentRow < m_customPaths.size()) {
-        m_customPaths.removeAt(currentRow);
+    if (currentRow >= 0) {
         delete ui->customPathsList->takeItem(currentRow);
     }
 }

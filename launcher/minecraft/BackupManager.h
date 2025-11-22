@@ -19,6 +19,7 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QFutureWatcher>
 #include "BaseInstance.h"
 
 struct BackupOptions {
@@ -69,10 +70,16 @@ class BackupManager : public QObject {
 public:
     explicit BackupManager(QObject* parent = nullptr);
     
-    // Create a new backup
+    // Create a new backup (async)
+    void createBackupAsync(InstancePtr instance, const QString& backupName, const BackupOptions& options);
+    
+    // Create a new backup (blocking)
     bool createBackup(InstancePtr instance, const QString& backupName, const BackupOptions& options);
     
-    // Restore from backup
+    // Restore from backup (async)
+    void restoreBackupAsync(InstancePtr instance, const InstanceBackup& backup, bool createBackupBeforeRestore = true);
+    
+    // Restore from backup (blocking)
     bool restoreBackup(InstancePtr instance, const InstanceBackup& backup, bool createBackupBeforeRestore = true);
     
     // List all backups for an instance
@@ -95,6 +102,10 @@ signals:
     void backupRestored(const QString& instanceId, const QString& backupName);
     void backupDeleted(const QString& instanceId, const QString& backupName);
     void backupProgress(int current, int total, const QString& currentFile);
+    void backupStarted(const QString& instanceId, const QString& backupName);
+    void backupFailed(const QString& instanceId, const QString& error);
+    void restoreStarted(const QString& instanceId, const QString& backupName);
+    void restoreFailed(const QString& instanceId, const QString& error);
     
 private:
     bool compressBackup(const QString& sourcePath, const QString& backupPath, const BackupOptions& options);

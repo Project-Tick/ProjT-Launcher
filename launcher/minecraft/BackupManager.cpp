@@ -23,6 +23,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QtConcurrent>
 
 // BackupOptions implementation
 qint64 BackupOptions::estimateSize() const
@@ -159,6 +160,61 @@ bool BackupManager::createBackup(InstancePtr instance, const QString& backupName
     return true;
 }
 
+void BackupManager::createBackupAsync(InstancePtr instance, const QString& backupName, const BackupOptions& options)
+{
+    if (!instance) {
+        emit backupFailed(QString(), "Instance is null");
+        return;
+    }
+    
+    QString instanceId = instance->id();
+    emit backupStarted(instanceId, backupName);
+    
+    // Run backup in background thread
+    auto future = QtConcurrent::run([this, instance, backupName, options]() {
+        return createBackup(instance, backupName, options);
+    });
+    
+    // Watch for completion
+    auto watcher = new QFutureWatcher<bool>(this);
+    connect(watcher, &QFutureWatcher<bool>::finished, this, [this, watcher, instanceId, backupName]() {
+        bool success = watcher->result();
+        if (!success) {
+            emit backupFailed(instanceId, "Backup creation failed");
+        }
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
+}
+
+void BackupManager::restoreBackupAsync(InstancePtr instance, const InstanceBackup& backup, bool createBackupBeforeRestore)
+{
+    if (!instance) {
+        emit restoreFailed(QString(), "Instance is null");
+        return;
+    }
+    
+    QString instanceId = instance->id();
+    QString backupName = backup.name();
+    emit restoreStarted(instanceId, backupName);
+    
+    // Run restore in background thread
+    auto future = QtConcurrent::run([this, instance, backup, createBackupBeforeRestore]() {
+        return restoreBackup(instance, backup, createBackupBeforeRestore);
+    });
+    
+    // Watch for completion
+    auto watcher = new QFutureWatcher<bool>(this);
+    connect(watcher, &QFutureWatcher<bool>::finished, this, [this, watcher, instanceId, backupName]() {
+        bool success = watcher->result();
+        if (!success) {
+            emit restoreFailed(instanceId, "Backup restoration failed");
+        }
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
+}
+
 bool BackupManager::compressBackup(const QString& sourcePath, const QString& backupPath, const BackupOptions& options)
 {
     QFileInfoList files;
@@ -291,28 +347,60 @@ bool BackupManager::compressBackup(const QString& sourcePath, const QString& bac
 bool BackupManager::restoreBackup(InstancePtr instance, const InstanceBackup& backup, bool createBackupBeforeRestore)
 {
     if (!instance || !backup.isValid()) {
+        qWarning() << "BackupManager: invalid instance or backup";
         return false;
     }
     
+    // Get the game root (where .minecraft files are)
+    auto minecraftInstance = std::dynamic_pointer_cast<MinecraftInstance>(instance);
+    QString gameRoot = minecraftInstance ? minecraftInstance->gameRoot() : instance->instanceRoot();
+    
+    qDebug() << "BackupManager: restoring backup to game root:" << gameRoot;
+    
     // Create safety backup before restore
     if (createBackupBeforeRestore) {
+        qDebug() << "BackupManager: creating safety backup before restore";
         BackupOptions safetyOptions;
+        safetyOptions.includeSaves = true;
+        safetyOptions.includeConfig = true;
+        safetyOptions.includeMods = true;
+        safetyOptions.includeResourcePacks = true;
+        safetyOptions.includeShaderPacks = true;
+        safetyOptions.includeScreenshots = true;
+        safetyOptions.includeOptions = true;
         createBackup(instance, "pre-restore_" + backup.name(), safetyOptions);
     }
     
     // Extract backup
-    if (!extractBackup(backup.backupPath(), instance->instanceRoot())) {
+    qDebug() << "BackupManager: extracting backup from" << backup.backupPath() << "to" << gameRoot;
+    if (!extractBackup(backup.backupPath(), gameRoot)) {
+        qWarning() << "BackupManager: failed to extract backup";
         return false;
     }
     
+    qDebug() << "BackupManager: backup restored successfully";
     emit backupRestored(instance->id(), backup.name());
     return true;
 }
 
 bool BackupManager::extractBackup(const QString& backupPath, const QString& targetPath)
 {
+    qDebug() << "BackupManager: extracting" << backupPath << "to" << targetPath;
+    
+    if (!QFile::exists(backupPath)) {
+        qWarning() << "BackupManager: backup file does not exist:" << backupPath;
+        return false;
+    }
+    
     auto result = MMCZip::extractDir(backupPath, targetPath);
-    return result.has_value();
+    
+    if (!result.has_value()) {
+        qWarning() << "BackupManager: extraction failed";
+        return false;
+    }
+    
+    qDebug() << "BackupManager: extraction successful";
+    return true;
 }
 
 QList<InstanceBackup> BackupManager::listBackups(InstancePtr instance) const

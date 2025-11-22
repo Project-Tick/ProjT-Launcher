@@ -921,6 +921,8 @@ SET(LAUNCHER_SOURCES
     ui/pages/instance/LogPage.cpp
     ui/pages/instance/LogPage.h
     ui/pages/instance/InstanceSettingsPage.h
+    ui/pages/instance/BackupPage.cpp
+    ui/pages/instance/BackupPage.h
     ui/pages/instance/ScreenshotsPage.cpp
     ui/pages/instance/ScreenshotsPage.h
     ui/pages/instance/OtherLogsPage.cpp

@@ -106,7 +106,6 @@
 #include "ui/GuiUtil.h"
 #include "ui/ViewLogWindow.h"
 #include "ui/dialogs/AboutDialog.h"
-#include "ui/dialogs/BackupDialog.h"
 #include "ui/dialogs/CopyInstanceDialog.h"
 #include "ui/dialogs/CreateShortcutDialog.h"
 #include "ui/dialogs/CustomMessageBox.h"
@@ -1493,8 +1492,7 @@ void MainWindow::on_actionExportInstanceFlamePack_triggered()
 void MainWindow::on_actionManageBackups_triggered()
 {
     if (m_selectedInstance) {
-        BackupDialog dlg(m_selectedInstance, this);
-        dlg.exec();
+        APPLICATION->showInstanceWindow(m_selectedInstance, "backups");
     }
 }
 
