@@ -159,6 +159,11 @@ jobs:
         run: |
           echo preset="$BASE_CMAKE_PRESET"_"$PRESET_TYPE" >> "$GITHUB_OUTPUT"
 
+      - name: Clean build directory for Release builds
+        if: ${{ (inputs.build-type || 'Debug') == 'Release' }}
+        run: |
+          rm -rf build
+
       - name: Run CMake workflow
         env:
           CMAKE_PRESET: ${{ steps.cmake-preset.outputs.preset }}
