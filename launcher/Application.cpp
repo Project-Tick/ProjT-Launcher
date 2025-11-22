@@ -2068,25 +2068,33 @@ void Application::migratePastebinSettings()
     m_settings->registerSetting("PastebinURL", "");
     m_settings->registerSetting("PastebinType", PasteUpload::PasteType::Mclogs);
     m_settings->registerSetting("PastebinCustomAPIBase", "");
+    m_settings->registerSetting("PastebinMigrationDone", false);
 
-    // Early exit if no legacy URL exists - no migration needed
-    QString pastebinURL = m_settings->get("PastebinURL").toString();
-    if (pastebinURL.isEmpty()) {
-        // Still validate PastebinType even without migration
-        bool ok;
-        int pasteType = m_settings->get("PastebinType").toInt(&ok);
-        if (!ok || !(PasteUpload::PasteType::First <= pasteType && pasteType <= PasteUpload::PasteType::Last)) {
-            m_settings->reset("PastebinType");
-            m_settings->reset("PastebinCustomAPIBase");
-        }
+    // Skip if migration already completed
+    if (m_settings->get("PastebinMigrationDone").toBool()) {
         return;
     }
 
-    // Migrate from legacy 0x0.st URL to new format
-    bool userHadDefaultPastebin = pastebinURL == "https://0x0.st";
-    if (!userHadDefaultPastebin) {
-        m_settings->set("PastebinType", PasteUpload::PasteType::NullPointer);
-        m_settings->set("PastebinCustomAPIBase", pastebinURL);
+    // Check if legacy URL exists
+    QString pastebinURL = m_settings->get("PastebinURL").toString();
+    if (!pastebinURL.isEmpty()) {
+        // Migrate from legacy 0x0.st URL to new format
+        bool userHadDefaultPastebin = pastebinURL == "https://0x0.st";
+        if (!userHadDefaultPastebin) {
+            m_settings->set("PastebinType", PasteUpload::PasteType::NullPointer);
+            m_settings->set("PastebinCustomAPIBase", pastebinURL);
+        }
+        m_settings->reset("PastebinURL");
     }
-    m_settings->reset("PastebinURL");
+
+    // Validate PastebinType
+    bool ok;
+    int pasteType = m_settings->get("PastebinType").toInt(&ok);
+    if (!ok || !(PasteUpload::PasteType::First <= pasteType && pasteType <= PasteUpload::PasteType::Last)) {
+        m_settings->reset("PastebinType");
+        m_settings->reset("PastebinCustomAPIBase");
+    }
+
+    // Mark migration as complete
+    m_settings->set("PastebinMigrationDone", true);
 }

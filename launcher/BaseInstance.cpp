@@ -428,16 +428,21 @@ void BaseInstance::registerShortcut(const ShortcutData& data)
 
 void BaseInstance::setShortcuts(const QList<ShortcutData>& shortcuts)
 {
-    if (this->shortcuts() == shortcuts)
-        return;
-    QJsonArray array;
+    // Convert new shortcuts to JSON for comparison
+    QJsonArray newArray;
     for (const auto& elem : shortcuts) {
-        array.append(QJsonObject{ { "name", elem.name }, { "filePath", elem.filePath }, { "target", static_cast<int>(elem.target) } });
+        newArray.append(QJsonObject{ { "name", elem.name }, { "filePath", elem.filePath }, { "target", static_cast<int>(elem.target) } });
     }
+    QJsonDocument newDocument;
+    newDocument.setArray(newArray);
+    QString newJson = QString::fromUtf8(newDocument.toJson(QJsonDocument::Compact));
 
-    QJsonDocument document;
-    document.setArray(array);
-    m_settings->set("shortcuts", QString::fromUtf8(document.toJson(QJsonDocument::Compact)));
+    // Fast comparison: check if JSON strings are identical (avoids parsing and disk I/O)
+    QString currentJson = m_settings->get("shortcuts").toString();
+    if (currentJson == newJson)
+        return;
+
+    m_settings->set("shortcuts", newJson);
 }
 
 QList<ShortcutData> BaseInstance::shortcuts() const
