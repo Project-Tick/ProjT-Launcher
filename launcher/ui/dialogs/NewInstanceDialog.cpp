@@ -88,16 +88,13 @@ NewInstanceDialog::NewInstanceDialog(const QString& initialGroup,
                                      QWidget* parent)
     : QDialog(parent), ui(new Ui::NewInstanceDialog)
 {
-    qDebug() << "[NewInstanceDialog] Constructor started";
     ui->setupUi(this);
-    qDebug() << "[NewInstanceDialog] UI setup complete";
 
     setWindowIcon(QIcon::fromTheme("new"));
 
     InstIconKey = "default";
     ui->iconButton->setIcon(APPLICATION->icons()->getIcon(InstIconKey));
 
-    qDebug() << "[NewInstanceDialog] Getting groups...";
     QStringList groups = APPLICATION->instances()->getGroups();
     groups.prepend("");
     int index = groups.indexOf(initialGroup);
@@ -108,18 +105,15 @@ NewInstanceDialog::NewInstanceDialog(const QString& initialGroup,
     ui->groupBox->addItems(groups);
     ui->groupBox->setCurrentIndex(index);
     ui->groupBox->lineEdit()->setPlaceholderText(tr("No group"));
-    qDebug() << "[NewInstanceDialog] Groups setup complete";
 
     // NOTE: m_buttons must be initialized before PageContainer, because it indirectly accesses m_buttons through setSuggestedPack! Do not
     // move this below.
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Help | QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
-    qDebug() << "[NewInstanceDialog] Creating PageContainer...";
     m_container = new PageContainer(this, {}, this);
     m_container->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
     m_container->layout()->setContentsMargins(0, 0, 0, 0);
     ui->verticalLayout->insertWidget(2, m_container);
-    qDebug() << "[NewInstanceDialog] PageContainer created";
 
     // Block updates while setting up buttons to avoid multiple layout recalculations
     setUpdatesEnabled(false);
@@ -159,9 +153,7 @@ NewInstanceDialog::NewInstanceDialog(const QString& initialGroup,
         importPage->setExtraInfo(extra_info);
     }
 
-    qDebug() << "[NewInstanceDialog] Updating dialog state...";
     updateDialogState();
-    qDebug() << "[NewInstanceDialog] Dialog state updated";
 
     if (APPLICATION->settings()->get("NewInstanceGeometry").isValid()) {
         restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("NewInstanceGeometry").toString().toUtf8()));
@@ -172,7 +164,6 @@ NewInstanceDialog::NewInstanceDialog(const QString& initialGroup,
     }
 
     connect(m_container, &PageContainer::selectedPageChanged, this, &NewInstanceDialog::selectedPageChanged);
-    qDebug() << "[NewInstanceDialog] Constructor finished";
 }
 
 void NewInstanceDialog::reject()
@@ -293,15 +284,11 @@ InstanceTask* NewInstanceDialog::extractTask()
 
 void NewInstanceDialog::updateDialogState()
 {
-    qDebug() << "[NewInstanceDialog] updateDialogState: start";
     auto allowOK = creationTask && !instName().isEmpty();
-    qDebug() << "[NewInstanceDialog] updateDialogState: got allowOK";
     auto OkButton = m_buttons->button(QDialogButtonBox::Ok);
-    qDebug() << "[NewInstanceDialog] updateDialogState: got button";
     if (OkButton->isEnabled() != allowOK) {
         OkButton->setEnabled(allowOK);
     }
-    qDebug() << "[NewInstanceDialog] updateDialogState: finished";
 }
 
 QString NewInstanceDialog::instName() const

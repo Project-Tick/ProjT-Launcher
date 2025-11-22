@@ -97,16 +97,13 @@ PageContainer::PageContainer(BasePageProvider* pageProvider, QString defaultId, 
     m_proxyModel = new PageEntryFilterModel(this);
     int counter = 0;
     auto pages = pageProvider->getPages();
-    qDebug() << "[PageContainer] Loading" << pages.size() << "pages...";
     for (auto page : pages) {
-        qDebug() << "[PageContainer] Creating page:" << page->displayName();
         auto widget = dynamic_cast<QWidget*>(page);
         widget->setParent(this);
         page->stackIndex = m_pageStack->addWidget(widget);
         page->listIndex = counter;
         page->setParentContainer(this);
         counter++;
-        qDebug() << "[PageContainer] Page" << page->displayName() << "created";
         page->updateExtraInfo = [this](QString id, QString info) {
             if (m_currentPage && id == m_currentPage->id())
                 m_header->setText(m_currentPage->displayName() + info);
