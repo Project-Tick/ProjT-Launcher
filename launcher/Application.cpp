@@ -1522,27 +1522,28 @@ bool Application::launch(InstancePtr instance,
         if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
             qDebug() << "Creating auto-backup before launch...";
 
-            // Show status bar message
-            if (m_mainWindow) {
-                m_mainWindow->statusBar()->showMessage("Creating backup before launch...", 0);
-            }
+            // Show simple progress dialog
+            QProgressDialog progress("Creating backup before launch...", "Skip", 0, 0, m_mainWindow);
+            progress.setWindowModality(Qt::WindowModal);
+            progress.setMinimumDuration(0);
+            progress.setValue(0);
+            progress.show();
+            QApplication::processEvents();
 
-            // Run backup synchronously
-            BackupManager backupManager;
-            bool backupSuccess = backupManager.autoBackupBeforeLaunch(instance);
+            // Check if user clicked Skip
+            if (!progress.wasCanceled()) {
+                // Run backup synchronously
+                BackupManager backupManager;
+                bool backupSuccess = backupManager.autoBackupBeforeLaunch(instance);
 
-            // Clear status message
-            if (m_mainWindow) {
-                if (backupSuccess) {
-                    m_mainWindow->statusBar()->showMessage("Backup created successfully", 2000);
-                } else {
-                    m_mainWindow->statusBar()->showMessage("Backup failed, continuing with launch", 3000);
+                if (!backupSuccess) {
+                    qWarning() << "Auto-backup before launch failed, but continuing with launch";
                 }
+            } else {
+                qDebug() << "User skipped backup creation";
             }
 
-            if (!backupSuccess) {
-                qWarning() << "Auto-backup before launch failed, but continuing with launch";
-            }
+            progress.close();
         }
 
         QMutexLocker locker(&m_instanceExtrasMutex);
