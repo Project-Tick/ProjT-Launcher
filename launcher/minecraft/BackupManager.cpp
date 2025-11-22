@@ -14,6 +14,7 @@
  */
 
 #include "BackupManager.h"
+#include "MinecraftInstance.h"
 #include "FileSystem.h"
 #include "MMCZip.h"
 #include <QDir>
@@ -139,9 +140,14 @@ bool BackupManager::createBackup(InstancePtr instance, const QString& backupName
         qWarning() << "BackupManager: failed to write metadata file";
     }
     
+    // Get the game root (where .minecraft files are)
+    auto minecraftInstance = std::dynamic_pointer_cast<MinecraftInstance>(instance);
+    QString gameRoot = minecraftInstance ? minecraftInstance->gameRoot() : instance->instanceRoot();
+    
     // Compress backup
     qDebug() << "BackupManager: starting compression...";
-    if (!compressBackup(instance->instanceRoot(), backupPath, options)) {
+    qDebug() << "BackupManager: game root is:" << gameRoot;
+    if (!compressBackup(gameRoot, backupPath, options)) {
         qWarning() << "BackupManager: compression failed";
         QFile::remove(backupPath);
         QFile::remove(backupPath + ".json");
