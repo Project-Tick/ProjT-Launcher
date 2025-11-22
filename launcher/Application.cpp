@@ -57,6 +57,7 @@
 
 #include "DataMigrationTask.h"
 #include "java/JavaInstallList.h"
+#include "minecraft/BackupManager.h"
 #include "net/PasteUpload.h"
 #include "tasks/Task.h"
 #include "tools/GenericProfiler.h"
@@ -1518,8 +1519,8 @@ bool Application::launch(InstancePtr instance,
         // Auto-backup before launch if enabled
         if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
             qDebug() << "Creating auto-backup before launch...";
-            auto backupManager = instance->backupManager();
-            if (backupManager && !backupManager->autoBackupBeforeLaunch(instance)) {
+            BackupManager backupManager;
+            if (!backupManager.autoBackupBeforeLaunch(instance)) {
                 qWarning() << "Auto-backup before launch failed, but continuing with launch";
             }
         }
