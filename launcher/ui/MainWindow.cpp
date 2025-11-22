@@ -106,6 +106,7 @@
 #include "ui/GuiUtil.h"
 #include "ui/ViewLogWindow.h"
 #include "ui/dialogs/AboutDialog.h"
+#include "ui/dialogs/BackupDialog.h"
 #include "ui/dialogs/CopyInstanceDialog.h"
 #include "ui/dialogs/CreateShortcutDialog.h"
 #include "ui/dialogs/CustomMessageBox.h"
@@ -549,6 +550,12 @@ void MainWindow::showInstanceContextMenu(const QPoint& pos)
         actions.removeFirst();
         actions.removeLast();
         actions.removeLast();
+
+        // add backup action after export actions
+        int exportIndex = actions.indexOf(ui->actionExportInstance);
+        if (exportIndex >= 0) {
+            actions.insert(exportIndex + 1, ui->actionManageBackups);
+        }
 
         actions.prepend(ui->actionChangeInstIcon);
         actions.prepend(ui->actionRenameInstance);
@@ -1480,6 +1487,14 @@ void MainWindow::on_actionExportInstanceFlamePack_triggered()
             ExportPackDialog dlg(instance, this, ModPlatform::ResourceProvider::FLAME);
             dlg.exec();
         }
+    }
+}
+
+void MainWindow::on_actionManageBackups_triggered()
+{
+    if (m_selectedInstance) {
+        BackupDialog dlg(m_selectedInstance, this);
+        dlg.exec();
     }
 }
 

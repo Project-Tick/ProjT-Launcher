@@ -121,6 +121,7 @@
    <addaction name="actionChangeInstGroup"/>
    <addaction name="actionViewSelectedInstFolder"/>
    <addaction name="actionExportInstance"/>
+   <addaction name="actionManageBackups"/>
    <addaction name="actionCopyInstance"/>
    <addaction name="actionDeleteInstance"/>
    <addaction name="actionCreateInstanceShortcut"/>
@@ -474,6 +475,17 @@
    </property>
    <property name="text">
     <string>CurseForge (zip)</string>
+   </property>
+  </action>
+  <action name="actionManageBackups">
+   <property name="icon">
+    <iconset theme="checkupdate"/>
+   </property>
+   <property name="text">
+    <string>Manage Backups...</string>
+   </property>
+   <property name="toolTip">
+    <string>Create, restore, and manage instance backups</string>
    </property>
   </action>
   <action name="actionCreateInstanceShortcut">

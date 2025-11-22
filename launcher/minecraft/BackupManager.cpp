@@ -1,0 +1,270 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ *
+ */
+
+#include "BackupManager.h"
+#include "FileSystem.h"
+#include "MMCZip.h"
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
+
+// BackupOptions implementation
+qint64 BackupOptions::estimateSize() const
+{
+    // TODO: Implement size estimation
+    return 0;
+}
+
+// InstanceBackup implementation
+InstanceBackup::InstanceBackup(const QString& path) : m_backupPath(path)
+{
+    QFileInfo info(path);
+    if (!info.exists()) {
+        return;
+    }
+    
+    m_size = info.size();
+    m_createdAt = info.birthTime();
+    m_name = info.completeBaseName();
+    
+    // Try to load metadata
+    QString metaPath = path + ".json";
+    if (QFile::exists(metaPath)) {
+        QFile metaFile(metaPath);
+        if (metaFile.open(QIODevice::ReadOnly)) {
+            QJsonDocument doc = QJsonDocument::fromJson(metaFile.readAll());
+            QJsonObject obj = doc.object();
+            
+            if (obj.contains("name"))
+                m_name = obj["name"].toString();
+            if (obj.contains("description"))
+                m_description = obj["description"].toString();
+            if (obj.contains("created"))
+                m_createdAt = QDateTime::fromString(obj["created"].toString(), Qt::ISODate);
+            if (obj.contains("includedPaths"))
+                m_includedPaths = obj["includedPaths"].toVariant().toStringList();
+        }
+    }
+}
+
+bool InstanceBackup::isValid() const
+{
+    return QFile::exists(m_backupPath) && m_size > 0;
+}
+
+QString InstanceBackup::displaySize() const
+{
+    double size = m_size;
+    QStringList units = { "B", "KB", "MB", "GB" };
+    int unitIndex = 0;
+    
+    while (size >= 1024.0 && unitIndex < units.size() - 1) {
+        size /= 1024.0;
+        unitIndex++;
+    }
+    
+    return QString::number(size, 'f', 2) + " " + units[unitIndex];
+}
+
+// BackupManager implementation
+BackupManager::BackupManager(QObject* parent) : QObject(parent)
+{
+}
+
+QString BackupManager::getBackupDirectory(InstancePtr instance)
+{
+    if (!instance) {
+        return QString();
+    }
+    
+    QString backupDir = FS::PathCombine(instance->instanceRoot(), "backups");
+    FS::ensureFolderPathExists(backupDir);
+    return backupDir;
+}
+
+bool BackupManager::createBackup(InstancePtr instance, const QString& backupName, const BackupOptions& options)
+{
+    if (!instance) {
+        return false;
+    }
+    
+    QString backupDir = getBackupDirectory(instance);
+    QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+    QString safeName = backupName.isEmpty() ? timestamp : backupName + "_" + timestamp;
+    QString backupPath = FS::PathCombine(backupDir, safeName + ".zip");
+    
+    // Create metadata
+    QJsonObject metadata;
+    metadata["name"] = backupName.isEmpty() ? timestamp : backupName;
+    metadata["created"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    metadata["instanceName"] = instance->name();
+    
+    QStringList includedPaths;
+    if (options.includeSaves) includedPaths << "saves";
+    if (options.includeConfig) includedPaths << "config";
+    if (options.includeMods) includedPaths << "mods";
+    if (options.includeResourcePacks) includedPaths << "resourcepacks";
+    if (options.includeShaderPacks) includedPaths << "shaderpacks";
+    if (options.includeScreenshots) includedPaths << "screenshots";
+    if (options.includeOptions) includedPaths << "options.txt" << "optionsof.txt";
+    
+    metadata["includedPaths"] = QJsonArray::fromStringList(includedPaths);
+    
+    // Save metadata
+    QFile metaFile(backupPath + ".json");
+    if (metaFile.open(QIODevice::WriteOnly)) {
+        metaFile.write(QJsonDocument(metadata).toJson());
+        metaFile.close();
+    }
+    
+    // Compress backup
+    if (!compressBackup(instance->instanceRoot(), backupPath, options)) {
+        QFile::remove(backupPath);
+        QFile::remove(backupPath + ".json");
+        return false;
+    }
+    
+    emit backupCreated(instance->id(), backupName);
+    return true;
+}
+
+bool BackupManager::compressBackup(const QString& sourcePath, const QString& backupPath, const BackupOptions& options)
+{
+    QStringList filters;
+    
+    if (options.includeSaves) filters << "saves";
+    if (options.includeConfig) filters << "config";
+    if (options.includeMods) filters << "mods";
+    if (options.includeResourcePacks) filters << "resourcepacks";
+    if (options.includeShaderPacks) filters << "shaderpacks";
+    if (options.includeScreenshots) filters << "screenshots";
+    if (options.includeOptions) {
+        filters << "options.txt" << "optionsof.txt";
+    }
+    
+    // Use MMCZip to compress
+    return MMCZip::compressDirFiles(backupPath, sourcePath, filters);
+}
+
+bool BackupManager::restoreBackup(InstancePtr instance, const InstanceBackup& backup, bool createBackupBeforeRestore)
+{
+    if (!instance || !backup.isValid()) {
+        return false;
+    }
+    
+    // Create safety backup before restore
+    if (createBackupBeforeRestore) {
+        BackupOptions safetyOptions;
+        createBackup(instance, "pre-restore_" + backup.name(), safetyOptions);
+    }
+    
+    // Extract backup
+    if (!extractBackup(backup.backupPath(), instance->instanceRoot())) {
+        return false;
+    }
+    
+    emit backupRestored(instance->id(), backup.name());
+    return true;
+}
+
+bool BackupManager::extractBackup(const QString& backupPath, const QString& targetPath)
+{
+    return MMCZip::extractDir(backupPath, targetPath);
+}
+
+QList<InstanceBackup> BackupManager::listBackups(InstancePtr instance) const
+{
+    if (!instance) {
+        return {};
+    }
+    
+    QString backupDir = getBackupDirectory(instance);
+    return scanBackupDirectory(backupDir);
+}
+
+QList<InstanceBackup> BackupManager::scanBackupDirectory(const QString& backupDir) const
+{
+    QList<InstanceBackup> backups;
+    QDir dir(backupDir);
+    
+    if (!dir.exists()) {
+        return backups;
+    }
+    
+    QStringList zipFiles = dir.entryList(QStringList() << "*.zip", QDir::Files, QDir::Time);
+    
+    for (const QString& zipFile : zipFiles) {
+        QString fullPath = dir.absoluteFilePath(zipFile);
+        InstanceBackup backup(fullPath);
+        
+        if (backup.isValid()) {
+            backups.append(backup);
+        }
+    }
+    
+    return backups;
+}
+
+int BackupManager::deleteOldBackups(InstancePtr instance, int maxCount)
+{
+    if (!instance || maxCount < 1) {
+        return 0;
+    }
+    
+    QList<InstanceBackup> backups = listBackups(instance);
+    
+    if (backups.size() <= maxCount) {
+        return 0;
+    }
+    
+    // Sort by date (newest first)
+    std::sort(backups.begin(), backups.end(), [](const InstanceBackup& a, const InstanceBackup& b) {
+        return a.createdAt() > b.createdAt();
+    });
+    
+    int deletedCount = 0;
+    for (int i = maxCount; i < backups.size(); i++) {
+        if (deleteBackup(backups[i])) {
+            deletedCount++;
+        }
+    }
+    
+    return deletedCount;
+}
+
+bool BackupManager::deleteBackup(const InstanceBackup& backup)
+{
+    if (!backup.isValid()) {
+        return false;
+    }
+    
+    bool success = QFile::remove(backup.backupPath());
+    QFile::remove(backup.backupPath() + ".json"); // Remove metadata too
+    
+    return success;
+}
+
+bool BackupManager::autoBackupBeforeLaunch(InstancePtr instance)
+{
+    BackupOptions options;
+    options.includeSaves = true;
+    options.includeConfig = true;
+    options.includeOptions = true;
+    options.includeMods = false; // Don't backup mods by default (too large)
+    
+    return createBackup(instance, "auto", options);
+}

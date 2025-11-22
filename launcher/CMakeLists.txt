@@ -207,6 +207,10 @@ set(MINECRAFT_SOURCES
     minecraft/Logging.h
     minecraft/Logging.cpp
 
+    # Backup system
+    minecraft/BackupManager.h
+    minecraft/BackupManager.cpp
+
     # Minecraft support
     minecraft/auth/AccountData.cpp
     minecraft/auth/AccountData.h
@@ -1031,6 +1035,8 @@ SET(LAUNCHER_SOURCES
     # GUI - dialogs
     ui/dialogs/AboutDialog.cpp
     ui/dialogs/AboutDialog.h
+    ui/dialogs/BackupDialog.cpp
+    ui/dialogs/BackupDialog.h
     ui/dialogs/ProfileSelectDialog.cpp
     ui/dialogs/ProfileSelectDialog.h
     ui/dialogs/ProfileSetupDialog.cpp
@@ -1220,6 +1226,7 @@ qt_wrap_ui(LAUNCHER_UI
     ui/widgets/AppearanceWidget.ui
     ui/widgets/MinecraftSettingsWidget.ui
     ui/widgets/JavaSettingsWidget.ui
+    ui/dialogs/BackupDialog.ui
     ui/dialogs/CopyInstanceDialog.ui
     ui/dialogs/CreateShortcutDialog.ui
     ui/dialogs/ProfileSetupDialog.ui
