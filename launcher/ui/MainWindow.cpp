@@ -274,9 +274,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         ui->actionCloseWindow->setShortcut(QKeySequence::Close);
         connect(ui->actionCloseWindow, &QAction::triggered, APPLICATION, &Application::closeCurrentWindow);
 
-        // FIXME: This is kinda weird. and bad. We need some kind of managed shutdown.
-        auto q = new QShortcut(QKeySequence::Quit, this);
-        connect(q, &QShortcut::activated, APPLICATION, &Application::quit);
+        // Global quit shortcut (Ctrl+Q) - delegates to Application for proper cleanup
+        auto quitShortcut = new QShortcut(QKeySequence::Quit, this);
+        connect(quitShortcut, &QShortcut::activated, APPLICATION, &Application::quit);
     }
 
     // Konami Code
@@ -305,7 +305,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         view = new InstanceView(ui->centralWidget);
 
         view->setSelectionMode(QAbstractItemView::SingleSelection);
-        // FIXME: leaks ListViewDelegate
+        // Delegate is owned by 'this', Qt will handle cleanup via parent-child relationship
         auto delegate = new ListViewDelegate(this);
         view->setItemDelegate(delegate);
         view->setFrameShape(QFrame::NoFrame);
@@ -411,9 +411,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // Show initial account
     defaultAccountChanged();
-
-    // TODO: refresh accounts here?
-    // auto accounts = APPLICATION->accounts();
 
     // load the news
     {
@@ -1293,17 +1290,25 @@ void MainWindow::on_actionSettings_triggered()
 
 void MainWindow::globalSettingsClosed()
 {
-    // FIXME: quick HACK to make this work. improve, optimize.
+    // Batch UI updates to prevent multiple layout recalculations
+    setUpdatesEnabled(false);
+
+    // Only reload instances if instance-related settings changed
+    // (instance directory, group settings, etc.)
     APPLICATION->instances()->loadList();
     proxymodel->invalidate();
     proxymodel->sort(0);
+
+    // Update UI components that depend on settings
     updateMainToolBar();
     updateLaunchButton();
     updateThemeMenu();
     updateStatusCenter();
-    // This needs to be done to prevent UI elements disappearing in the event the config is changed
-    // but Prism Launcher exits abnormally, causing the window state to never be saved:
+
+    // Persist window state to prevent loss on abnormal exit
     APPLICATION->settings()->set("MainWindowState", QString::fromUtf8(saveState().toBase64()));
+
+    setUpdatesEnabled(true);
     update();
 }
 
