@@ -1521,27 +1521,27 @@ bool Application::launch(InstancePtr instance,
         // Auto-backup before launch if enabled
         if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
             qDebug() << "Creating auto-backup before launch...";
-            
+
             // Show progress dialog
             ProgressDialog backupProgress(m_mainWindow);
             backupProgress.setSkipButton(true, tr("Skip"));
             backupProgress.setWindowTitle(tr("Creating Backup"));
             backupProgress.setLabelText(tr("Creating backup before launch...\nThis may take a while for large instances."));
-            
+
             // Create backup in background
             BackupManager backupManager;
             bool backupSuccess = false;
-            
+
             QFutureWatcher<bool> watcher;
             connect(&watcher, &QFutureWatcher<bool>::finished, &backupProgress, &ProgressDialog::accept);
-            
+
             auto future = QtConcurrent::run([&backupManager, instance]() {
                 return backupManager.autoBackupBeforeLaunch(instance);
             });
             watcher.setFuture(future);
-            
+
             int result = backupProgress.execWithTask(nullptr);
-            
+
             if (result == QDialog::Rejected) {
                 qDebug() << "User skipped backup creation";
             } else {
