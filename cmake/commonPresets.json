@@ -40,7 +40,8 @@
 				"base_release"
 			],
 			"cacheVariables": {
-				"Launcher_FORCE_BUNDLED_LIBS": "ON"
+				"Launcher_FORCE_BUNDLED_LIBS": "ON",
+				"CMAKE_DISABLE_FIND_PACKAGE_ZLIB": "ON"
 			}
 		}
 	],
