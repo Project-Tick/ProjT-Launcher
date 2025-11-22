@@ -121,6 +121,9 @@ NewInstanceDialog::NewInstanceDialog(const QString& initialGroup,
     ui->verticalLayout->insertWidget(2, m_container);
     qDebug() << "[NewInstanceDialog] PageContainer created";
 
+    // Block updates while setting up buttons to avoid multiple layout recalculations
+    setUpdatesEnabled(false);
+
     m_container->addButtons(m_buttons);
     connect(m_container, &PageContainer::selectedPageChanged, this, [this](BasePage* previous, BasePage* selected) {
         m_buttons->button(QDialogButtonBox::Ok)->setEnabled(creationTask && !instName().isEmpty());
@@ -145,6 +148,9 @@ NewInstanceDialog::NewInstanceDialog(const QString& initialGroup,
     HelpButton->setAutoDefault(false);
     HelpButton->setText(tr("Help"));
     connect(HelpButton, &QPushButton::clicked, m_container, &PageContainer::help);
+
+    // Re-enable updates after all setup is complete
+    setUpdatesEnabled(true);
 
     if (!url.isEmpty()) {
         QUrl actualUrl(url);
