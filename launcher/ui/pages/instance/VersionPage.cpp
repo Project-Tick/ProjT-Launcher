@@ -304,7 +304,7 @@ void VersionPage::on_actionRemove_triggered()
         if (response != QMessageBox::Yes)
             return;
     }
-    // FIXME: use actual model, not reloading.
+    // TODO: Optimize by using model signals instead of full profile reload
     if (!m_profile->remove(index)) {
         QMessageBox::critical(this, tr("Error"), tr("Couldn't remove file"));
     }
@@ -457,8 +457,10 @@ void VersionPage::on_actionDownload_All_triggered()
     }
     ProgressDialog tDialog(this);
     connect(task.get(), &Task::failed, this, &VersionPage::onGameUpdateError);
-    // FIXME: unused return value
-    tDialog.execWithTask(task.get());
+    int result = tDialog.execWithTask(task.get());
+    if (result == QDialog::Rejected) {
+        qDebug() << "Update task was cancelled by user";
+    }
     updateButtons();
     m_container->refreshContainer();
 }
@@ -548,11 +550,13 @@ void VersionPage::on_actionCustomize_triggered()
     }
     auto patch = m_profile->getComponent(version);
     if (!patch->getVersionFile()) {
-        // TODO: wait for the update task to finish here...
+        QMessageBox::information(this, tr("Version Update"), 
+                                tr("Please wait for the version file to load before customizing."));
         return;
     }
     if (!m_profile->customize(version)) {
-        // TODO: some error box here
+        QMessageBox::critical(this, tr("Error"), 
+                            tr("Failed to customize version. The version file may be read-only."));
     }
     updateButtons();
     preselect(currentIdx);
@@ -592,7 +596,8 @@ void VersionPage::on_actionRevert_triggered()
         return;
 
     if (!m_profile->revertToBase(version)) {
-        // TODO: some error box here
+        QMessageBox::critical(this, tr("Error"), 
+                            tr("Failed to revert version. The version may not have any customizations."));
     }
     updateButtons();
     preselect(currentIdx);

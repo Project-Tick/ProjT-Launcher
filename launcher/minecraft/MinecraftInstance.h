@@ -140,7 +140,7 @@ class MinecraftInstance : public BaseInstance {
     //////  Launch stuff //////
     QList<Task::Ptr> createUpdateTask() override;
     shared_qobject_ptr<LaunchTask> createLaunchTask(AuthSessionPtr account, MinecraftTarget::Ptr targetToJoin) override;
-    QStringList extraArguments() override;
+    QStringList extraArguments();
     QStringList verboseDescription(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin) override;
     QList<Mod*> getJarMods() const;
     QString createLaunchScript(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin);
