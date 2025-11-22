@@ -104,6 +104,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QFileOpenEvent>
+#include <QFutureWatcher>
 #include <QIcon>
 #include <QLibraryInfo>
 #include <QList>
@@ -113,6 +114,7 @@
 #include <QStyleFactory>
 #include <QTranslator>
 #include <QWindow>
+#include <QtConcurrent>
 
 #include "InstanceList.h"
 #include "MTPixmapCache.h"
@@ -1519,9 +1521,34 @@ bool Application::launch(InstancePtr instance,
         // Auto-backup before launch if enabled
         if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
             qDebug() << "Creating auto-backup before launch...";
+            
+            // Show progress dialog
+            ProgressDialog backupProgress(m_mainWindow);
+            backupProgress.setSkipButton(true, tr("Skip"));
+            backupProgress.setWindowTitle(tr("Creating Backup"));
+            backupProgress.setLabelText(tr("Creating backup before launch...\nThis may take a while for large instances."));
+            
+            // Create backup in background
             BackupManager backupManager;
-            if (!backupManager.autoBackupBeforeLaunch(instance)) {
-                qWarning() << "Auto-backup before launch failed, but continuing with launch";
+            bool backupSuccess = false;
+            
+            QFutureWatcher<bool> watcher;
+            connect(&watcher, &QFutureWatcher<bool>::finished, &backupProgress, &ProgressDialog::accept);
+            
+            auto future = QtConcurrent::run([&backupManager, instance]() {
+                return backupManager.autoBackupBeforeLaunch(instance);
+            });
+            watcher.setFuture(future);
+            
+            int result = backupProgress.execWithTask(nullptr);
+            
+            if (result == QDialog::Rejected) {
+                qDebug() << "User skipped backup creation";
+            } else {
+                backupSuccess = watcher.result();
+                if (!backupSuccess) {
+                    qWarning() << "Auto-backup before launch failed, but continuing with launch";
+                }
             }
         }
 
