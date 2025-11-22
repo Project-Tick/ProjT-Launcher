@@ -287,11 +287,15 @@ InstanceTask* NewInstanceDialog::extractTask()
 
 void NewInstanceDialog::updateDialogState()
 {
+    qDebug() << "[NewInstanceDialog] updateDialogState: start";
     auto allowOK = creationTask && !instName().isEmpty();
+    qDebug() << "[NewInstanceDialog] updateDialogState: got allowOK";
     auto OkButton = m_buttons->button(QDialogButtonBox::Ok);
+    qDebug() << "[NewInstanceDialog] updateDialogState: got button";
     if (OkButton->isEnabled() != allowOK) {
         OkButton->setEnabled(allowOK);
     }
+    qDebug() << "[NewInstanceDialog] updateDialogState: finished";
 }
 
 QString NewInstanceDialog::instName() const
