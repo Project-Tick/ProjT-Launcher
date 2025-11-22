@@ -479,7 +479,7 @@
   </action>
   <action name="actionManageBackups">
    <property name="icon">
-    <iconset theme="checkupdate"/>
+    <iconset theme="screenshot-placeholder"/>
    </property>
    <property name="text">
     <string>Manage Backups...</string>

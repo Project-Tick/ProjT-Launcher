@@ -29,6 +29,7 @@ struct BackupOptions {
     bool includeShaderPacks = false;
     bool includeScreenshots = false;
     bool includeOptions = true;
+    QStringList customPaths;  // Relative paths to include (e.g., "logs", "crash-reports")
     
     qint64 estimateSize() const;
 };

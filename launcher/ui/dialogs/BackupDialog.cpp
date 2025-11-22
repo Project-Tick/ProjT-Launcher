@@ -208,5 +208,34 @@ BackupOptions BackupDialog::getSelectedOptions() const
     options.includeShaderPacks = ui->includeShaderPacks->isChecked();
     options.includeScreenshots = ui->includeScreenshots->isChecked();
     options.includeOptions = ui->includeOptions->isChecked();
+    options.customPaths = m_customPaths;
+    return options;
+}
+
+void BackupDialog::on_addCustomPathButton_clicked()
+{
+    QString path = QInputDialog::getText(
+        this,
+        tr("Add Custom Path"),
+        tr("Enter relative path to include (e.g., \"logs\", \"crash-reports\"):"),
+        QLineEdit::Normal,
+        QString(),
+        nullptr
+    );
+    
+    if (!path.isEmpty() && !m_customPaths.contains(path)) {
+        m_customPaths.append(path);
+        ui->customPathsList->addItem(path);
+    }
+}
+
+void BackupDialog::on_removeCustomPathButton_clicked()
+{
+    int currentRow = ui->customPathsList->currentRow();
+    if (currentRow >= 0 && currentRow < m_customPaths.size()) {
+        m_customPaths.removeAt(currentRow);
+        delete ui->customPathsList->takeItem(currentRow);
+    }
+}
     return options;
 }

@@ -202,6 +202,18 @@ bool BackupManager::compressBackup(const QString& sourcePath, const QString& bac
         }
     }
     
+    // Include custom paths
+    for (const QString& customPath : options.customPaths) {
+        QString fullPath = FS::PathCombine(sourcePath, customPath);
+        QFileInfo info(fullPath);
+        
+        if (info.isFile()) {
+            files.append(info);
+        } else if (info.isDir()) {
+            collectFilesRecursive(fullPath);
+        }
+    }
+    
     if (files.isEmpty()) {
         return false; // Nothing to backup
     }
