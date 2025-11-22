@@ -1,8 +1,0 @@
-build/install-appdir/usr/bin/projtlauncher usr/bin/
-build/install-appdir/usr/bin/projtlauncher_updater usr/bin/
-build/install-appdir/usr/share/applications/* usr/share/applications/
-build/install-appdir/usr/share/icons/hicolor/* usr/share/icons/hicolor/
-build/install-appdir/usr/share/metainfo/* usr/share/metainfo/
-build/install-appdir/usr/share/mime/packages/* usr/share/mime/packages/
-build/install-appdir/usr/share/man/man6/* usr/share/man/man6/
-build/install-appdir/usr/share/qlogging-categories6/* usr/share/qlogging-categories6/

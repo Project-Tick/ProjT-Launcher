@@ -59,4 +59,7 @@ flatbuild
 # Snap
 *.snap
 
+# News
 vcpkg_installed/
+obj-*/
+*.log
