@@ -100,13 +100,18 @@ QString BackupManager::getBackupDirectory(InstancePtr instance)
 bool BackupManager::createBackup(InstancePtr instance, const QString& backupName, const BackupOptions& options)
 {
     if (!instance) {
+        qWarning() << "BackupManager: instance is null";
         return false;
     }
     
     QString backupDir = getBackupDirectory(instance);
+    qDebug() << "BackupManager: backup directory:" << backupDir;
+    
     QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
     QString safeName = backupName.isEmpty() ? timestamp : backupName + "_" + timestamp;
     QString backupPath = FS::PathCombine(backupDir, safeName + ".zip");
+    
+    qDebug() << "BackupManager: creating backup at:" << backupPath;
     
     // Create metadata
     QJsonObject metadata;
@@ -130,15 +135,20 @@ bool BackupManager::createBackup(InstancePtr instance, const QString& backupName
     if (metaFile.open(QIODevice::WriteOnly)) {
         metaFile.write(QJsonDocument(metadata).toJson());
         metaFile.close();
+    } else {
+        qWarning() << "BackupManager: failed to write metadata file";
     }
     
     // Compress backup
+    qDebug() << "BackupManager: starting compression...";
     if (!compressBackup(instance->instanceRoot(), backupPath, options)) {
+        qWarning() << "BackupManager: compression failed";
         QFile::remove(backupPath);
         QFile::remove(backupPath + ".json");
         return false;
     }
     
+    qDebug() << "BackupManager: backup created successfully";
     emit backupCreated(instance->id(), backupName);
     return true;
 }
@@ -146,6 +156,8 @@ bool BackupManager::createBackup(InstancePtr instance, const QString& backupName
 bool BackupManager::compressBackup(const QString& sourcePath, const QString& backupPath, const BackupOptions& options)
 {
     QFileInfoList files;
+    
+    qDebug() << "BackupManager: compressing from" << sourcePath << "to" << backupPath;
     
     // Helper lambda to recursively collect files
     auto collectFilesRecursive = [&files](const QString& dirPath) {
@@ -215,11 +227,20 @@ bool BackupManager::compressBackup(const QString& sourcePath, const QString& bac
     }
     
     if (files.isEmpty()) {
+        qWarning() << "BackupManager: no files to backup!";
         return false; // Nothing to backup
     }
     
+    qDebug() << "BackupManager: collected" << files.size() << "files";
+    
     // Use MMCZip to compress - sourcePath is the base directory for relative paths
-    return MMCZip::compressDirFiles(backupPath, sourcePath, files);
+    bool result = MMCZip::compressDirFiles(backupPath, sourcePath, files);
+    
+    if (!result) {
+        qWarning() << "BackupManager: MMCZip::compressDirFiles failed";
+    }
+    
+    return result;
 }
 
 bool BackupManager::restoreBackup(InstancePtr instance, const InstanceBackup& backup, bool createBackupBeforeRestore)
