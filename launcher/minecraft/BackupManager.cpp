@@ -158,13 +158,26 @@ bool BackupManager::compressBackup(const QString& sourcePath, const QString& bac
     QFileInfoList files;
     
     qDebug() << "BackupManager: compressing from" << sourcePath << "to" << backupPath;
+    qDebug() << "BackupManager: backup options - saves:" << options.includeSaves
+             << "config:" << options.includeConfig
+             << "mods:" << options.includeMods
+             << "resourcepacks:" << options.includeResourcePacks
+             << "shaderpacks:" << options.includeShaderPacks
+             << "screenshots:" << options.includeScreenshots
+             << "options:" << options.includeOptions
+             << "customPaths:" << options.customPaths;
     
     // Helper lambda to recursively collect files
     auto collectFilesRecursive = [&files](const QString& dirPath) {
-        QDirIterator it(dirPath, QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+        qDebug() << "BackupManager: scanning directory" << dirPath;
+        int count = 0;
+        QDirIterator it(dirPath, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
         while (it.hasNext()) {
-            files.append(QFileInfo(it.next()));
+            QFileInfo info(it.next());
+            files.append(info);
+            count++;
         }
+        qDebug() << "BackupManager: found" << count << "files in" << dirPath;
     };
     
     if (options.includeSaves) {
