@@ -181,7 +181,9 @@ void AppearanceWidget::applyCatTheme(int index)
 
 void AppearanceWidget::loadThemeSettings()
 {
+    qDebug() << "[AppearanceWidget] loadThemeSettings() called - refreshing themes...";
     APPLICATION->themeManager()->refresh();
+    qDebug() << "[AppearanceWidget] Theme refresh complete";
 
     m_ui->iconsComboBox->blockSignals(true);
     m_ui->widgetStyleComboBox->blockSignals(true);
