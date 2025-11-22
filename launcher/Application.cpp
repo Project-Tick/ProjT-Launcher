@@ -68,6 +68,8 @@
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/instanceview/AccessibleInstanceView.h"
 
+#include <QStatusBar>
+
 #include "ui/pages/BasePageProvider.h"
 #include "ui/pages/global/APIPage.h"
 #include "ui/pages/global/AccountListPage.h"
