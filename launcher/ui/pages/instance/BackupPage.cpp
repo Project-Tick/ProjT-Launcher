@@ -50,12 +50,8 @@ void BackupPage::closedImpl()
 
 void BackupPage::setupConnections()
 {
-    connect(ui->createButton, &QPushButton::clicked, this, &BackupPage::on_createButton_clicked);
-    connect(ui->restoreButton, &QPushButton::clicked, this, &BackupPage::on_restoreButton_clicked);
-    connect(ui->deleteButton, &QPushButton::clicked, this, &BackupPage::on_deleteButton_clicked);
-    connect(ui->backupList, &QListWidget::currentRowChanged, this, &BackupPage::on_backupList_currentRowChanged);
-    connect(ui->addCustomPathButton, &QPushButton::clicked, this, &BackupPage::on_addCustomPathButton_clicked);
-    connect(ui->removeCustomPathButton, &QPushButton::clicked, this, &BackupPage::on_removeCustomPathButton_clicked);
+    // Note: Qt auto-connects slots with on_widgetName_signal naming pattern
+    // No manual connections needed for standard UI interactions
 }
 
 void BackupPage::refreshBackupList()
