@@ -100,10 +100,7 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
-
-      - name: Setup GitHub token for Nix
-        run: |
-          echo "access-tokens = github.com=${{ secrets.TOKEN }}" | sudo tee -a /etc/nix/nix.conf
+            access-tokens = github.com=${{ secrets.TOKEN }}
 
         # For in-tree builds
       - name: Configure Nix binary cache
