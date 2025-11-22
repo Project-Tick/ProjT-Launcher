@@ -483,5 +483,5 @@ bool BackupManager::autoBackupBeforeLaunch(InstancePtr instance)
     options.includeOptions = true;
     options.includeMods = false; // Don't backup mods by default (too large)
     
-    return createBackup(instance, "auto", options);
+    return createBackup(instance, "auto-backup-pre-launch", options);
 }

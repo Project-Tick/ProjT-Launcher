@@ -797,6 +797,9 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         // Minecraft offline player name
         m_settings->registerSetting("LastOfflinePlayerName", "");
 
+        // Backup settings
+        m_settings->registerSetting("AutoBackupBeforeLaunch", false);
+
         // Wrapper command for launch
         m_settings->registerSetting("WrapperCommand", "");
 
@@ -1512,6 +1515,15 @@ bool Application::launch(InstancePtr instance,
     if (m_updateRunning) {
         qDebug() << "Cannot launch instances while an update is running. Please try again when updates are completed.";
     } else if (instance->canLaunch()) {
+        // Auto-backup before launch if enabled
+        if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
+            qDebug() << "Creating auto-backup before launch...";
+            auto backupManager = instance->backupManager();
+            if (backupManager && !backupManager->autoBackupBeforeLaunch(instance)) {
+                qWarning() << "Auto-backup before launch failed, but continuing with launch";
+            }
+        }
+
         QMutexLocker locker(&m_instanceExtrasMutex);
         auto& extras = m_instanceExtras[instance->id()];
         auto window = extras.window;
