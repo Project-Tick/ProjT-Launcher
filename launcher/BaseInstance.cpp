@@ -373,14 +373,16 @@ qint64 BaseInstance::lastLaunch() const
 
 void BaseInstance::setLastLaunch(qint64 val)
 {
-    // FIXME: if no change, do not set. setting involves saving a file.
+    if (lastLaunch() == val)
+        return;
     m_settings->set("lastLaunchTime", val);
     emit propertiesChanged(this);
 }
 
 void BaseInstance::setNotes(QString val)
 {
-    // FIXME: if no change, do not set. setting involves saving a file.
+    if (notes() == val)
+        return;
     m_settings->set("notes", val);
 }
 
@@ -391,7 +393,8 @@ QString BaseInstance::notes() const
 
 void BaseInstance::setIconKey(QString val)
 {
-    // FIXME: if no change, do not set. setting involves saving a file.
+    if (iconKey() == val)
+        return;
     m_settings->set("iconKey", val);
     emit propertiesChanged(this);
 }
@@ -403,7 +406,8 @@ QString BaseInstance::iconKey() const
 
 void BaseInstance::setName(QString val)
 {
-    // FIXME: if no change, do not set. setting involves saving a file.
+    if (name() == val)
+        return;
     m_settings->set("name", val);
     emit propertiesChanged(this);
 }
@@ -424,7 +428,8 @@ void BaseInstance::registerShortcut(const ShortcutData& data)
 
 void BaseInstance::setShortcuts(const QList<ShortcutData>& shortcuts)
 {
-    // FIXME: if no change, do not set. setting involves saving a file.
+    if (this->shortcuts() == shortcuts)
+        return;
     QJsonArray array;
     for (const auto& elem : shortcuts) {
         array.append(QJsonObject{ { "name", elem.name }, { "filePath", elem.filePath }, { "target", static_cast<int>(elem.target) } });
@@ -473,12 +478,6 @@ QString BaseInstance::name() const
 QString BaseInstance::windowTitle() const
 {
     return BuildConfig.LAUNCHER_DISPLAYNAME + ": " + name();
-}
-
-// FIXME: why is this here? move it to MinecraftInstance!!!
-QStringList BaseInstance::extraArguments()
-{
-    return Commandline::splitArgs(settings()->get("JvmArgs").toString());
 }
 
 shared_qobject_ptr<LaunchTask> BaseInstance::getLaunchTask()

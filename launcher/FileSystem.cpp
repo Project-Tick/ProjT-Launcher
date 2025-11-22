@@ -698,7 +698,9 @@ bool deletePath(QString path)
 
 bool trash(QString path, QString* pathInTrash)
 {
-    // FIXME: Figure out trash in Flatpak. Qt seemingly doesn't use the Trash portal
+    // TODO: Implement Flatpak trash using org.freedesktop.portal.Trash D-Bus interface
+    // See: https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Trash.html
+    // This requires D-Bus integration with the Trash portal for proper sandboxed file deletion
     if (DesktopServices::isFlatpak())
         return false;
 #if defined Q_OS_WIN32

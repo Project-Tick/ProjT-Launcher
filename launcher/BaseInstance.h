@@ -89,6 +89,11 @@ struct ShortcutData {
     QString name;
     QString filePath;
     ShortcutTarget target = ShortcutTarget::Other;
+
+    bool operator==(const ShortcutData& other) const
+    {
+        return name == other.name && filePath == other.filePath && target == other.target;
+    }
 };
 
 /// Console settings

@@ -40,5 +40,8 @@ struct MinecraftTarget {
 
     QString world;
     static MinecraftTarget parse(const QString& fullAddress, bool useWorld);
+    
+    bool isValid() const { return !address.isEmpty() || !world.isEmpty(); }
+    
     using Ptr = std::shared_ptr<MinecraftTarget>;
 };

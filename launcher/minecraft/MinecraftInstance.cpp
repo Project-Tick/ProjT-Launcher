@@ -501,7 +501,7 @@ QStringList MinecraftInstance::getNativeJars()
 
 QStringList MinecraftInstance::extraArguments()
 {
-    auto list = BaseInstance::extraArguments();
+    auto list = Commandline::splitArgs(settings()->get("JvmArgs").toString());
     auto version = getPackProfile();
     if (!version)
         return list;

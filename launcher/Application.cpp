@@ -473,7 +473,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
      */
     auto appID = ApplicationId::fromPathAndVersion(QDir::currentPath(), BuildConfig.printableVersionString());
     {
-        // FIXME: you can run the same binaries with multiple data dirs and they won't clash. This could cause issues for updates.
+        // TODO: Multiple instances with different data dirs can run from same binary path
+        // This can cause update conflicts - consider using data path in ApplicationId
         m_peerInstance = new LocalPeer(this, appID);
         connect(m_peerInstance, &LocalPeer::messageReceived, this, &Application::messageReceived);
         if (m_peerInstance->isClient()) {
@@ -842,29 +843,9 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         // in future, more pages may be added - so this name is chosen to avoid needing migration
         m_settings->registerSetting("WorldManagementGeometry", "");
 
-        // HACK: This code feels so stupid is there a less stupid way of doing this?
-        {
-            m_settings->registerSetting("PastebinURL", "");
-            m_settings->registerSetting("PastebinType", PasteUpload::PasteType::Mclogs);
-            m_settings->registerSetting("PastebinCustomAPIBase", "");
-
-            QString pastebinURL = m_settings->get("PastebinURL").toString();
-
-            bool userHadDefaultPastebin = pastebinURL == "https://0x0.st";
-            if (!pastebinURL.isEmpty() && !userHadDefaultPastebin) {
-                m_settings->set("PastebinType", PasteUpload::PasteType::NullPointer);
-                m_settings->set("PastebinCustomAPIBase", pastebinURL);
-                m_settings->reset("PastebinURL");
-            }
-
-            bool ok;
-            int pasteType = m_settings->get("PastebinType").toInt(&ok);
-            // If PastebinType is invalid then reset the related settings.
-            if (!ok || !(PasteUpload::PasteType::First <= pasteType && pasteType <= PasteUpload::PasteType::Last)) {
-                m_settings->reset("PastebinType");
-                m_settings->reset("PastebinCustomAPIBase");
-            }
-        }
+        // Pastebin settings with automatic migration from legacy format
+        migratePastebinSettings();
+        
         {
             // Meta URL
             m_settings->registerSetting("MetaURLOverride", "");
@@ -1022,7 +1003,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
     // now we have network, download translation updates
     m_translations->downloadIndex();
 
-    // FIXME: what to do with these?
+    // Register Java profiler integrations
     m_profilers.insert("jprofiler", std::shared_ptr<BaseProfilerFactory>(new JProfilerFactory()));
     m_profilers.insert("jvisualvm", std::shared_ptr<BaseProfilerFactory>(new JVisualVMFactory()));
     m_profilers.insert("generic", std::shared_ptr<BaseProfilerFactory>(new GenericProfilerFactory()));
@@ -1333,9 +1314,13 @@ void Application::performMainStartupAction()
 
             qDebug() << "<> Instance" << m_instanceIdToLaunch << "launching";
             if (!m_serverToJoin.isEmpty()) {
-                // FIXME: validate the server string
-                targetToJoin.reset(new MinecraftTarget(MinecraftTarget::parse(m_serverToJoin, false)));
-                qDebug() << "   Launching with server" << m_serverToJoin;
+                auto parsedTarget = MinecraftTarget::parse(m_serverToJoin, false);
+                if (!parsedTarget.isValid()) {
+                    qWarning() << "Invalid server address:" << m_serverToJoin;
+                } else {
+                    targetToJoin.reset(new MinecraftTarget(parsedTarget));
+                    qDebug() << "   Launching with server" << m_serverToJoin;
+                }
             } else if (!m_worldToJoin.isEmpty()) {
                 targetToJoin.reset(new MinecraftTarget(MinecraftTarget::parse(m_worldToJoin, true)));
                 qDebug() << "   Launching with world" << m_worldToJoin;
@@ -2076,4 +2061,29 @@ bool Application::checkQSavePath(QString path)
         }
     }
     return false;
+}
+
+void Application::migratePastebinSettings()
+{
+    m_settings->registerSetting("PastebinURL", "");
+    m_settings->registerSetting("PastebinType", PasteUpload::PasteType::Mclogs);
+    m_settings->registerSetting("PastebinCustomAPIBase", "");
+
+    QString pastebinURL = m_settings->get("PastebinURL").toString();
+
+    // Migrate from legacy 0x0.st URL to new format
+    bool userHadDefaultPastebin = pastebinURL == "https://0x0.st";
+    if (!pastebinURL.isEmpty() && !userHadDefaultPastebin) {
+        m_settings->set("PastebinType", PasteUpload::PasteType::NullPointer);
+        m_settings->set("PastebinCustomAPIBase", pastebinURL);
+        m_settings->reset("PastebinURL");
+    }
+
+    // Validate PastebinType and reset if invalid
+    bool ok;
+    int pasteType = m_settings->get("PastebinType").toInt(&ok);
+    if (!ok || !(PasteUpload::PasteType::First <= pasteType && pasteType <= PasteUpload::PasteType::Last)) {
+        m_settings->reset("PastebinType");
+        m_settings->reset("PastebinCustomAPIBase");
+    }
 }
