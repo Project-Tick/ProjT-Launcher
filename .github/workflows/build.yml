@@ -163,6 +163,7 @@ jobs:
         if: ${{ (inputs.build-type || 'Debug') == 'Release' }}
         run: |
           rm -rf build
+          git clean -fdx libraries/zlib/
 
       - name: Run CMake workflow
         env:
