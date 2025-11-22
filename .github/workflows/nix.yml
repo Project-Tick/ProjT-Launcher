@@ -95,15 +95,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Setup GitHub token for Nix
-        run: |
-          echo "access-tokens = github.com=${{ secrets.TOKEN }}" | sudo tee -a /etc/nix/nix.conf
-
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
+
+      - name: Setup GitHub token for Nix
+        run: |
+          echo "access-tokens = github.com=${{ secrets.TOKEN }}" | sudo tee -a /etc/nix/nix.conf
 
         # For in-tree builds
       - name: Configure Nix binary cache
