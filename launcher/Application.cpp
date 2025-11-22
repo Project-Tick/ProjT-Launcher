@@ -1526,7 +1526,6 @@ bool Application::launch(InstancePtr instance,
             ProgressDialog backupProgress(m_mainWindow);
             backupProgress.setSkipButton(true, tr("Skip"));
             backupProgress.setWindowTitle(tr("Creating Backup"));
-            backupProgress.setLabelText(tr("Creating backup before launch...\nThis may take a while for large instances."));
 
             // Create backup in background
             BackupManager backupManager;
@@ -1540,6 +1539,7 @@ bool Application::launch(InstancePtr instance,
             });
             watcher.setFuture(future);
 
+            backupProgress.changeStatus(tr("Creating backup before launch...\nThis may take a while for large instances."));
             int result = backupProgress.execWithTask(nullptr);
 
             if (result == QDialog::Rejected) {
