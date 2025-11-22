@@ -845,7 +845,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 
         // Pastebin settings with automatic migration from legacy format
         migratePastebinSettings();
-        
+
         {
             // Meta URL
             m_settings->registerSetting("MetaURLOverride", "");

@@ -247,7 +247,7 @@ class Application : public QApplication {
     void addRunningInstance();
     void subRunningInstance();
     bool shouldExitNow() const;
-    
+
     /// Migrates legacy pastebin settings to new format
     void migratePastebinSettings();
 
