@@ -12,12 +12,20 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     libnbtplusplus = {
-      url = "github:PrismLauncher/libnbtplusplus";
+      url = "github:Project-Tick/libnbtplusplus";
       flake = false;
     };
 
     qrcodegenerator = {
       url = "github:nayuki/QR-Code-generator";
+      flake = false;
+    };
+    javacheck = {
+      url = "github:Project-Tick/javacheck";
+      flake = false;
+    };
+    launcher = {
+      url = "github:Project-Tick/PTLLauncherSM";
       flake = false;
     };
   };
@@ -28,6 +36,8 @@
       nixpkgs,
       libnbtplusplus,
       qrcodegenerator,
+      javacheck,
+      launcher,
     }:
 
     let
@@ -176,6 +186,8 @@
           inherit
             libnbtplusplus
             qrcodegenerator
+            javacheck
+            launcher
             self
             ;
         };

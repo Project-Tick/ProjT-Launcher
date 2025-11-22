@@ -12,6 +12,8 @@
   qrcodegenerator,
   ninja,
   self,
+  launcher,
+  javacheck,
   stripJavaArchivesHook,
   tomlplusplus,
   zlib,
@@ -43,7 +45,7 @@ in
 
 stdenv.mkDerivation {
   pname = "projtlauncher-unwrapped";
-  version = "10.0-unstable-${date}";
+  version = "0.0.2-unstable-${date}";
 
   src = lib.fileset.toSource {
     root = ../.;
@@ -66,6 +68,12 @@ stdenv.mkDerivation {
 
     rm -rf source/libraries/qrcodegenerator
     ln -s ${qrcodegenerator} source/libraries/qrcodegenerator
+
+    rm -rf source/libraries/javacheck
+    ln -s ${javacheck} source/libraries/javacheck
+
+    rm -rf source/libraries/launcher
+    ln -s ${launcher} source/libraries/launcher
   '';
 
   nativeBuildInputs = [
