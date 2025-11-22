@@ -1710,6 +1710,7 @@ void MainWindow::setInstanceActionsEnabled(bool enabled)
     ui->actionChangeInstGroup->setEnabled(enabled);
     ui->actionViewSelectedInstFolder->setEnabled(enabled);
     ui->actionExportInstance->setEnabled(enabled);
+    ui->actionManageBackups->setEnabled(enabled);
     ui->actionDeleteInstance->setEnabled(enabled);
     ui->actionCopyInstance->setEnabled(enabled);
     ui->actionCreateInstanceShortcut->setEnabled(enabled);
