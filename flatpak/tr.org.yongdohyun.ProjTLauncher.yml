@@ -26,11 +26,6 @@ finish-args:
     # Required for -XX:+UseTransparentHugePages
   - --filesystem=/sys/kernel/mm/transparent_hugepage:ro
 
-cleanup:
-  - /include
-  - /lib/cmake
-  - /lib/pkgconfig
-
 modules:
   - name: projtlauncher
     buildsystem: cmake-ninja
@@ -46,16 +41,10 @@ modules:
         JAVA_COMPILER: /usr/lib/sdk/openjdk17/jvm/openjdk-17/bin/javac
     run-tests: true
     sources:
-      - type: file
-        path: libdecor.json
-      - type: file
-        path: flite.json
       - type: git
         url: https://github.com/Project-Tick/ProjT-Launcher.git
-        tag: 0.0.1
-        commit: 0154de9edd0b0a53bb5a8f674ed86a04ed213c17
-    build-commands:
-      - git submodule update --init --recursive
+        tag: 0.0.2
+        commit: bfbf6d2211945c2112bf90c311c3e365da23aaed
 
   - name: glfw
     buildsystem: cmake-ninja
@@ -114,6 +103,7 @@ modules:
       - /include
       - /lib/pkgconfig
       - '*.a'
+
   - name: glu
     buildsystem: autotools
     sources:
