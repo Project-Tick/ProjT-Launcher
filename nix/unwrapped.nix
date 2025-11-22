@@ -3,7 +3,7 @@
   stdenv,
   cmake,
   cmark,
-  apple-sdk_13,
+  apple-sdk_14,
   extra-cmake-modules,
   gamemode,
   jdk17,
@@ -92,7 +92,7 @@ stdenv.mkDerivation {
     tomlplusplus
     zlib
   ]
-  ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_13 ]
+  ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_14 ]
   ++ lib.optional gamemodeSupport gamemode;
 
   hardeningEnable = lib.optionals stdenv.hostPlatform.isLinux [ "pie" ];
