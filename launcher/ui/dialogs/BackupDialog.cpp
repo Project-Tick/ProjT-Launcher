@@ -237,5 +237,3 @@ void BackupDialog::on_removeCustomPathButton_clicked()
         delete ui->customPathsList->takeItem(currentRow);
     }
 }
-    return options;
-}
