@@ -51,7 +51,7 @@ If you want to build ProjT Launcher yourself, check out:
 
 ## 🍎 macOS Support: Apple Silicon Only
 
-**As of version 0.0.3, ProjT Launcher exclusively supports Apple Silicon (ARM64) Macs.** Intel Mac (x86_64-darwin) support has been discontinued.
+**As of version 0.0.3, ProjT Launcher officially supports Apple Silicon (ARM64) only.** Intel Mac (x86_64-darwin) support has been discontinued.
 
 ### Why We Ended Intel Mac Support
 
@@ -67,16 +67,15 @@ Apple officially completed the transition to Apple Silicon in 2023 and has since
 
 Running a modern launcher on Intel macOS now means fighting deprecated toolchains, unstable libraries, and an OS with declining maintenance.
 
-#### 2. **CI/CD Infrastructure Unavailability**
+#### 2. **Nix Flake Infrastructure Issues**
 
-Major CI platforms (GitHub Actions, GitLab CI, Azure Pipelines, CircleCI) **no longer provide Intel macOS runners**. To support Intel builds, we would need:
+Our **Nix flake builds** (used for reproducible, official releases) are being discontinued for x86_64-darwin:
 
-- Self-hosted Intel Mac hardware (costly, requires maintenance)
-- Manual patching for deprecated dependencies
-- Separate test matrices that slow down release cycles
-- Custom build scripts for outdated Xcode versions
+- **3+ hour build times** on Intel vs. 30-40 minutes on ARM — Nix dependency resolution and sandboxed compilation hit severe performance issues on deprecated Intel toolchains
+- **No CI platform provides Intel macOS runners** anymore (GitHub Actions, GitLab, Azure all ARM-only)
+- Maintaining x86_64-darwin support in Nix requires self-hosted hardware, manual patching, and separate derivations
 
-Maintaining Intel support would double our CI complexity and delay feature releases for all users.
+**This affects Nix users only.** Our `.app` bundles (built with CMake) remain universal binaries that work on both platforms, but we no longer test or support Intel Macs officially.
 
 #### 3. **Real-World Usage Statistics**
 
