@@ -75,10 +75,18 @@ QString getDynamicPath()
     return {};
 }
 
-ListModel::ListModel(QObject* parent) : QAbstractListModel(parent), m_instances_path(getDynamicPath()) {}
+ListModel::ListModel(QObject* parent) : QAbstractListModel(parent) {}
+
+void ListModel::ensurePathInitialized()
+{
+    if (m_instances_path.isEmpty()) {
+        m_instances_path = getDynamicPath();
+    }
+}
 
 void ListModel::update()
 {
+    ensurePathInitialized();
     beginResetModel();
     m_modpacks.clear();
 
@@ -226,8 +234,10 @@ void ListModel::setPath(QString path)
 QString ListModel::getUserPath()
 {
     auto path = APPLICATION->settings()->get("FTBAppInstancesPath").toString();
-    if (path.isEmpty())
+    if (path.isEmpty()) {
+        ensurePathInitialized();
         path = m_instances_path;
+    }
     return path;
 }
 }  // namespace FTBImportAPP

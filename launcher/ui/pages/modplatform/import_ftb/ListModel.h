@@ -80,7 +80,8 @@ class ListModel : public QAbstractListModel {
     void setPath(QString path);
 
    private:
+    void ensurePathInitialized();
     ModpackList m_modpacks;
-    const QString m_instances_path;
+    QString m_instances_path;
 };
 }  // namespace FTBImportAPP
