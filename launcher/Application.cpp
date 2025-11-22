@@ -104,7 +104,6 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QFileOpenEvent>
-#include <QFutureWatcher>
 #include <QIcon>
 #include <QLibraryInfo>
 #include <QList>
@@ -114,7 +113,6 @@
 #include <QStyleFactory>
 #include <QTranslator>
 #include <QWindow>
-#include <QtConcurrent>
 
 #include "InstanceList.h"
 #include "MTPixmapCache.h"
@@ -1521,34 +1519,27 @@ bool Application::launch(InstancePtr instance,
         // Auto-backup before launch if enabled
         if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
             qDebug() << "Creating auto-backup before launch...";
+            
+            // Show status bar message
+            if (m_mainWindow) {
+                m_mainWindow->showMessage(tr("Creating backup before launch..."), 0);
+            }
 
-            // Show progress dialog
-            ProgressDialog backupProgress(m_mainWindow);
-            backupProgress.setSkipButton(true, tr("Skip"));
-            backupProgress.setWindowTitle(tr("Creating Backup"));
-
-            // Create backup in background
+            // Run backup synchronously
             BackupManager backupManager;
-            bool backupSuccess = false;
+            bool backupSuccess = backupManager.autoBackupBeforeLaunch(instance);
 
-            QFutureWatcher<bool> watcher;
-            connect(&watcher, &QFutureWatcher<bool>::finished, &backupProgress, &ProgressDialog::accept);
-
-            auto future = QtConcurrent::run([&backupManager, instance]() {
-                return backupManager.autoBackupBeforeLaunch(instance);
-            });
-            watcher.setFuture(future);
-
-            backupProgress.changeStatus(tr("Creating backup before launch...\nThis may take a while for large instances."));
-            int result = backupProgress.execWithTask(nullptr);
-
-            if (result == QDialog::Rejected) {
-                qDebug() << "User skipped backup creation";
-            } else {
-                backupSuccess = watcher.result();
-                if (!backupSuccess) {
-                    qWarning() << "Auto-backup before launch failed, but continuing with launch";
+            // Clear status message
+            if (m_mainWindow) {
+                if (backupSuccess) {
+                    m_mainWindow->showMessage(tr("Backup created successfully"), 2000);
+                } else {
+                    m_mainWindow->showMessage(tr("Backup failed, continuing with launch"), 3000);
                 }
+            }
+
+            if (!backupSuccess) {
+                qWarning() << "Auto-backup before launch failed, but continuing with launch";
             }
         }
 
