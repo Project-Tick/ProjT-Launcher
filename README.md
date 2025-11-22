@@ -8,8 +8,19 @@
 
 <p align="center">
   ProjT Launcher is a custom launcher for Minecraft that allows you to easily manage multiple installations of Minecraft at once.<br />
-  <br />This project started as a <b>fork</b> of Prism Launcher/MultiMC and is <b>not</b> endorsed by either upstream project.
+  <br />This project <b>originated as a fork</b> of Prism Launcher but is now <b>evolving into an independent project</b> with its own roadmap and features.
 </p>
+
+## 🚀 Why ProjT Launcher?
+
+As we move forward as an independent project, ProjT Launcher is diverging from Prism Launcher with features designed for modern workflows:
+
+- **Backup System** — Create, restore, and manage instance backups with granular control (saves, configs, mods, etc.)
+- **Performance-First** — Optimized UI rendering, faster instance launching, reduced memory overhead
+- **Apple Silicon Priority** — Native ARM64 builds for macOS, no Rosetta translation overhead
+- **Future Features** — Mod profile system, cloud sync, performance profiler (coming soon)
+
+While we maintain compatibility with Prism instances, **ProjT Launcher is charting its own path** to deliver unique value to the community.
 
 > **Heads-up**  
 > ProjT Launcher is still establishing its own infrastructure. Some assets and links may temporarily point to upstream Prism Launcher resources until we finish migrating.
