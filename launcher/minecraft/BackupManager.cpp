@@ -182,48 +182,74 @@ bool BackupManager::compressBackup(const QString& sourcePath, const QString& bac
     
     if (options.includeSaves) {
         QString savesPath = FS::PathCombine(sourcePath, "saves");
+        qDebug() << "BackupManager: checking saves path:" << savesPath;
         if (QDir(savesPath).exists()) {
             collectFilesRecursive(savesPath);
+        } else {
+            qDebug() << "BackupManager: saves directory does not exist";
         }
     }
     if (options.includeConfig) {
         QString configPath = FS::PathCombine(sourcePath, "config");
+        qDebug() << "BackupManager: checking config path:" << configPath;
         if (QDir(configPath).exists()) {
             collectFilesRecursive(configPath);
+        } else {
+            qDebug() << "BackupManager: config directory does not exist";
         }
     }
     if (options.includeMods) {
         QString modsPath = FS::PathCombine(sourcePath, "mods");
+        qDebug() << "BackupManager: checking mods path:" << modsPath;
         if (QDir(modsPath).exists()) {
             collectFilesRecursive(modsPath);
+        } else {
+            qDebug() << "BackupManager: mods directory does not exist";
         }
     }
     if (options.includeResourcePacks) {
         QString rpPath = FS::PathCombine(sourcePath, "resourcepacks");
+        qDebug() << "BackupManager: checking resourcepacks path:" << rpPath;
         if (QDir(rpPath).exists()) {
             collectFilesRecursive(rpPath);
+        } else {
+            qDebug() << "BackupManager: resourcepacks directory does not exist";
         }
     }
     if (options.includeShaderPacks) {
         QString spPath = FS::PathCombine(sourcePath, "shaderpacks");
+        qDebug() << "BackupManager: checking shaderpacks path:" << spPath;
         if (QDir(spPath).exists()) {
             collectFilesRecursive(spPath);
+        } else {
+            qDebug() << "BackupManager: shaderpacks directory does not exist";
         }
     }
     if (options.includeScreenshots) {
         QString ssPath = FS::PathCombine(sourcePath, "screenshots");
+        qDebug() << "BackupManager: checking screenshots path:" << ssPath;
         if (QDir(ssPath).exists()) {
             collectFilesRecursive(ssPath);
+        } else {
+            qDebug() << "BackupManager: screenshots directory does not exist";
         }
     }
     if (options.includeOptions) {
         QFileInfo optionsFile(FS::PathCombine(sourcePath, "options.txt"));
+        qDebug() << "BackupManager: checking options.txt:" << optionsFile.absoluteFilePath();
         if (optionsFile.exists()) {
+            qDebug() << "BackupManager: found options.txt";
             files.append(optionsFile);
+        } else {
+            qDebug() << "BackupManager: options.txt does not exist";
         }
         QFileInfo optionsOfFile(FS::PathCombine(sourcePath, "optionsof.txt"));
+        qDebug() << "BackupManager: checking optionsof.txt:" << optionsOfFile.absoluteFilePath();
         if (optionsOfFile.exists()) {
+            qDebug() << "BackupManager: found optionsof.txt";
             files.append(optionsOfFile);
+        } else {
+            qDebug() << "BackupManager: optionsof.txt does not exist";
         }
     }
     
