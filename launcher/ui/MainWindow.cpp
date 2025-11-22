@@ -903,6 +903,7 @@ void MainWindow::on_actionCopyInstance_triggered()
 
 void MainWindow::addInstance(const QString& url, const QMap<QString, QString>& extra_info)
 {
+    qDebug() << "[MainWindow] addInstance() called";
     QString groupName;
     do {
         QObject* obj = sender();
@@ -921,7 +922,9 @@ void MainWindow::addInstance(const QString& url, const QMap<QString, QString>& e
         groupName = APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString();
     }
 
+    qDebug() << "[MainWindow] Creating NewInstanceDialog...";
     NewInstanceDialog newInstDlg(groupName, url, extra_info, this);
+    qDebug() << "[MainWindow] NewInstanceDialog created, showing...";
     if (!newInstDlg.exec())
         return;
 
