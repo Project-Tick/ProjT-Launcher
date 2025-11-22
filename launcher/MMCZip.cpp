@@ -184,8 +184,12 @@ bool createModdedJar(QString sourceJarPath, QString targetJarPath, const QList<M
                 return false;
             }
         } else if (mod->type() == ResourceType::SINGLEFILE) {
-            // FIXME: buggy - does not work with addedFiles
             auto filename = mod->fileinfo();
+            // Check if file already added to avoid duplicates
+            if (addedFiles.contains(filename.fileName())) {
+                qDebug() << "Skipping duplicate file" << filename.fileName();
+                continue;
+            }
             if (!JlCompress::compressFile(&zipOut, filename.absoluteFilePath(), filename.fileName())) {
                 zipOut.close();
                 FS::deletePath(targetJarPath);
@@ -195,7 +199,6 @@ bool createModdedJar(QString sourceJarPath, QString targetJarPath, const QList<M
             addedFiles.insert(filename.fileName());
         } else if (mod->type() == ResourceType::FOLDER) {
             // untested, but seems to be unused / not possible to reach
-            // FIXME: buggy - does not work with addedFiles
             auto filename = mod->fileinfo();
             QString what_to_zip = filename.absoluteFilePath();
             QDir dir(what_to_zip);
@@ -204,6 +207,7 @@ bool createModdedJar(QString sourceJarPath, QString targetJarPath, const QList<M
             auto files = QFileInfoList();
             collectFileListRecursively(what_to_zip, nullptr, &files, nullptr);
 
+            // Remove files that have already been added to avoid duplicates
             for (auto e : files) {
                 if (addedFiles.contains(e.filePath()))
                     files.removeAll(e);

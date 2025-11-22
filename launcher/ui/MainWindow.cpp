@@ -677,7 +677,6 @@ void MainWindow::repopulateAccountsMenu()
         ui->actionNoAccountsAdded->setEnabled(false);
         ui->accountsMenu->addAction(ui->actionNoAccountsAdded);
     } else {
-        // TODO: Nicer way to iterate?
         for (int i = 0; i < accounts->count(); i++) {
             MinecraftAccountPtr account = accounts->at(i);
             auto profileLabel = profileInUseFilter(account->profileName(), account->isInUse());
@@ -758,7 +757,6 @@ void MainWindow::defaultAccountChanged()
 
     MinecraftAccountPtr account = APPLICATION->accounts()->defaultAccount();
 
-    // FIXME: this needs adjustment for MSA
     if (account && account->profileName() != "") {
         auto profileLabel = profileInUseFilter(account->profileName(), account->isInUse());
         ui->actionAccountsButton->setText(profileLabel);
