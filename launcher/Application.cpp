@@ -110,6 +110,7 @@
 #include <QLibraryInfo>
 #include <QList>
 #include <QNetworkAccessManager>
+#include <QProgressDialog>
 #include <QStringList>
 #include <QStringLiteral>
 #include <QStyleFactory>
