@@ -1522,7 +1522,7 @@ bool Application::launch(InstancePtr instance,
             
             // Show status bar message
             if (m_mainWindow) {
-                m_mainWindow->showMessage(tr("Creating backup before launch..."), 0);
+                m_mainWindow->statusBar()->showMessage("Creating backup before launch...", 0);
             }
 
             // Run backup synchronously
@@ -1532,9 +1532,9 @@ bool Application::launch(InstancePtr instance,
             // Clear status message
             if (m_mainWindow) {
                 if (backupSuccess) {
-                    m_mainWindow->showMessage(tr("Backup created successfully"), 2000);
+                    m_mainWindow->statusBar()->showMessage("Backup created successfully", 2000);
                 } else {
-                    m_mainWindow->showMessage(tr("Backup failed, continuing with launch"), 3000);
+                    m_mainWindow->statusBar()->showMessage("Backup failed, continuing with launch", 3000);
                 }
             }
 
