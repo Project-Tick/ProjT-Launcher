@@ -54,6 +54,7 @@
 #include "MinecraftInstance.h"
 #include "Application.h"
 #include "BuildConfig.h"
+#include "Commandline.h"
 #include "Json.h"
 #include "QObjectPtr.h"
 #include "minecraft/launch/AutoInstallJava.h"
