@@ -13,6 +13,7 @@
 #include "ui_BackupDialog.h"
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QCheckBox>
 #include "Application.h"
 
 BackupPage::BackupPage(MinecraftInstance* inst, QWidget* parent)
@@ -165,25 +166,25 @@ void BackupPage::on_restoreButton_clicked()
     
     const InstanceBackup& backup = m_backups[currentRow];
     
-    auto result = QMessageBox::question(
-        this,
-        tr("Restore Backup"),
-        tr("Are you sure you want to restore backup '%1'?\nThis will overwrite current instance data.").arg(backup.name()),
-        QMessageBox::Yes | QMessageBox::No,
-        QMessageBox::No
-    );
+    // Create custom dialog with checkbox
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Restore Backup"));
+    msgBox.setText(tr("Are you sure you want to restore backup '%1'?").arg(backup.name()));
+    msgBox.setInformativeText(tr("This will overwrite current instance data."));
+    msgBox.setIcon(QMessageBox::Question);
     
-    if (result != QMessageBox::Yes) {
+    QCheckBox* safetyCheckBox = new QCheckBox(tr("Create safety backup before restoring (recommended)"));
+    safetyCheckBox->setChecked(true);
+    msgBox.setCheckBox(safetyCheckBox);
+    
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::No);
+    
+    if (msgBox.exec() != QMessageBox::Yes) {
         return;
     }
     
-    bool createSafetyBackup = QMessageBox::question(
-        this,
-        tr("Safety Backup"),
-        tr("Create a safety backup before restoring?"),
-        QMessageBox::Yes | QMessageBox::No,
-        QMessageBox::Yes
-    ) == QMessageBox::Yes;
+    bool createSafetyBackup = safetyCheckBox->isChecked();
     
     // Disable UI during restore
     ui->createButton->setEnabled(false);
