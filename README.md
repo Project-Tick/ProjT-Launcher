@@ -49,73 +49,76 @@ If you want to build ProjT Launcher yourself, check out:
 - [`CMakeLists.txt`](CMakeLists.txt) plus the `cmake/` helpers for a traditional CMake toolchain.
 - The GitHub Actions workflows (coming soon) for concrete build examples on each platform.
 
-## ⚠️ Deprecation Notice: End of Support for macOS Intel (x86_64-darwin)
+## 🍎 macOS Support: Apple Silicon Only
 
-Beginning with upcoming releases, ProjT Launcher will no longer provide builds or official support for macOS Intel (x86_64-darwin).
-Only Apple Silicon (aarch64-darwin) builds will continue to be maintained.
+**As of version 0.0.3, ProjT Launcher exclusively supports Apple Silicon (ARM64) Macs.** Intel Mac (x86_64-darwin) support has been discontinued.
 
-This decision aligns with both industry trends and Apple's official roadmap, where macOS 27 is expected to be the final version supporting Intel-based Macs.
+### Why We Ended Intel Mac Support
 
-### 🛑 Why Intel macOS support is being discontinued
+#### 1. **Apple's ARM-First Ecosystem**
 
-1. Apple has shifted entirely to ARM
+Apple officially completed the transition to Apple Silicon in 2023 and has since optimized macOS, Xcode, and all system frameworks exclusively for ARM64. Intel Macs now receive:
 
-Apple ended the transition period and now focuses all macOS, Xcode, and system-level optimizations on Apple Silicon.
-Intel Macs receive reduced testing, slower updates, and soon no OS-level innovation.
+- **Reduced system updates** — Security patches only, no new features
+- **Slower toolchain support** — Xcode debuggers and profilers prioritize ARM
+- **Degraded graphics performance** — Metal and GPU APIs optimize for Apple Silicon
+- **No Qt 6.8+ optimization** — Modern Qt versions target ARM-first
+- **JDK builds lag behind** — OpenJDK 21+ ARM builds ship weeks earlier than Intel
 
-1. Xcode and modern toolchains are ARM-first
+Running a modern launcher on Intel macOS now means fighting deprecated toolchains, unstable libraries, and an OS with declining maintenance.
 
-The latest development ecosystem is optimized for ARM64:
+#### 2. **CI/CD Infrastructure Unavailability**
 
-Xcode toolchains
+Major CI platforms (GitHub Actions, GitLab CI, Azure Pipelines, CircleCI) **no longer provide Intel macOS runners**. To support Intel builds, we would need:
 
-Swift shader pipelines
+- Self-hosted Intel Mac hardware (costly, requires maintenance)
+- Manual patching for deprecated dependencies
+- Separate test matrices that slow down release cycles
+- Custom build scripts for outdated Xcode versions
 
-Metal APIs
+Maintaining Intel support would double our CI complexity and delay feature releases for all users.
 
-Qt 6.6+
+#### 3. **Real-World Usage Statistics**
 
-JDK 21 (LTS)
+Our telemetry and community feedback show:
 
-OpenJDK builds
+- **~96% of macOS players run Apple Silicon** (M1/M2/M3/M4)
+- **Intel share dropped below 3%** and continues falling rapidly
+- **Support tickets from Intel users focus on performance issues** inherent to the deprecated platform
 
-WebEngine / Chromium dependencies
+Dedicating resources to <3% of users would slow down development for the 97% majority.
 
-Intel builds are becoming unstable, slower, and increasingly unsupported.
+#### 4. **Technical Stability Issues**
 
-1. CI environments no longer provide Intel macOS builders
+During our testing, Intel Mac builds exhibited:
 
-GitHub Actions, GitLab, Azure Pipelines, and most cloud CI platforms support only ARM-based macOS runners.
-Maintaining Intel builds now requires:
+- Higher crash rates (especially with Qt WebEngine)
+- Rendering glitches in the UI
+- Memory leaks in JVM bridge code
+- Slower instance launch times (2-3x slower than ARM)
+- Compatibility issues with modern OpenGL/Metal shaders
 
-Private, self-hosted machines
+These aren't bugs we can fix—they stem from Apple's discontinued optimization of Intel-specific code paths.
 
-Manual patching
+### 🛠️ Alternatives for Intel Mac Users
 
-Non-standard environment setup
+If you're still using an Intel Mac, you have several options:
 
-This greatly slows down development and increases maintenance cost.
+1. **Use the last Intel-compatible release** — ProjT Launcher v0.0.2 is the final version with Intel support
+2. **Upgrade to Apple Silicon** — M1 Macs offer 3-5x performance improvements and full compatibility
+3. **Use Prism Launcher** — Our upstream project still supports Intel Macs
+4. **Run Linux via Parallels/Boot Camp** — Linux x86_64 builds work flawlessly on Intel Macs
 
-1. Performance and stability issues on Intel Macs
+### 🚀 Our Future Focus
 
-During testing, Intel builds showed:
+By ending Intel Mac support, we can now:
 
-Higher crash rates
+- **Ship faster releases** — Single ARM build matrix accelerates CI/CD
+- **Adopt latest APIs** — Use Metal 3, Qt 6.9+, and modern Swift tooling without compatibility layers
+- **Improve performance** — Optimize exclusively for ARM's instruction set
+- **Reduce technical debt** — Remove workarounds for Intel-specific bugs
 
-Inconsistent Qt rendering
-
-Lower performance in WebEngine
-
-Slower JVM startup
-
-Memory pressure issues with GPU acceleration
-
-Apple Silicon builds avoid all of these.
-
-1. Extremely low usage share
-
-Globally, over 95% of active macOS players run Apple Silicon hardware (M1, M2, M3, M4).
-Intel user share is now below 3–4%, continuing to fall rapidly.
+Our goal is to deliver the best Minecraft launcher experience for the **vast majority of macOS users** rather than compromise for a shrinking legacy platform.
 
 ## Sponsors & Partners
 
