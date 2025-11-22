@@ -29,7 +29,7 @@ BackupPage::~BackupPage()
 
 QIcon BackupPage::icon() const
 {
-    return APPLICATION->getThemedIcon("screenshot-placeholder");
+    return QIcon::fromTheme("screenshot-placeholder");
 }
 
 void BackupPage::retranslate()
