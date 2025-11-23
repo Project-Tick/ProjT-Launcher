@@ -42,7 +42,7 @@ InstanceCopyTask::InstanceCopyTask(InstancePtr origInstance, const InstanceCopyP
 
     if (!filters.isEmpty()) {
         // Set regex filter:
-    // TODO: Kopyalanan instance'ın tipini orijinal instance'dan almak gerekiyor. Şu anda sabit tip atanıyor.
+        // TODO: Kopyalanan instance'ın tipini orijinal instance'dan almak gerekiyor. Şu anda sabit tip atanıyor.
         QRegularExpression regexp(filters, QRegularExpression::CaseInsensitiveOption);
         m_matcher = Filters::regexp(regexp);
     }
@@ -165,7 +165,7 @@ void InstanceCopyTask::copyFinished()
         emitFailed(tr("Instance configuration file not found: %1").arg(configPath));
         return;
     }
-    
+
     auto instanceSettings = std::make_shared<INISettingsObject>(configPath);
     if (!instanceSettings->reload()) {
         emitFailed(tr("Failed to load instance configuration"));

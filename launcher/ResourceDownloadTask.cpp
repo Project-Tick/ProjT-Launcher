@@ -63,7 +63,7 @@ ResourceDownloadTask::ResourceDownloadTask(ModPlatform::IndexedPack::Ptr pack,
 
     QDir dir{ m_pack_model->dir() };
     {
-    // FIXME: Daha generic hale getirilmeli. IndexedVersion'a ek bilgi eklenmesi gerekebilir.
+        // FIXME: Daha generic hale getirilmeli. IndexedVersion'a ek bilgi eklenmesi gerekebilir.
         //        or adquiring a reference to the base instance.
         if (!m_custom_target_folder.isEmpty()) {
             dir.cdUp();

@@ -252,19 +252,19 @@ template <>
 QDir requireIsType<QDir>(const QJsonValue& value, const QString& what)
 {
     const QString string = requireIsType<QString>(value, what);
-    
+
     // Security: Prevent path traversal attacks
     if (QFileInfo(string).isAbsolute()) {
         throw JsonException(what + ": Absolute paths are not allowed");
     }
-    
+
     // Sanitize path - remove dangerous characters and sequences
     QString sanitized = string;
-    sanitized.replace("..", "");  // Remove parent directory references
-    sanitized.replace("\\", "/"); // Normalize separators
+    sanitized.replace("..", "");   // Remove parent directory references
+    sanitized.replace("\\", "/");  // Normalize separators
     // Remove other potentially dangerous characters
     sanitized.remove(QRegularExpression("[<>:\"|?*]"));
-    
+
     return QDir::current().absoluteFilePath(sanitized);
 }
 

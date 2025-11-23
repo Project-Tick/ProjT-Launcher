@@ -317,7 +317,7 @@ void InstanceImportTask::processFlame()
         inst_creation_task =
             makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, m_parent, pack_id, pack_version_id, original_instance_id);
     } else {
-    // TODO: Doğrudan import edilen ZIP dosyalarından instance ID'leri alınabilmeli. Şu anda ID'ler eksik kalıyor.
+        // TODO: Doğrudan import edilen ZIP dosyalarından instance ID'leri alınabilmeli. Şu anda ID'ler eksik kalıyor.
         inst_creation_task = makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, m_parent, QString(), QString());
     }
 
@@ -416,7 +416,7 @@ void InstanceImportTask::processModrinth()
             pack_id = s_regex.match(m_sourceUrl.toString()).captured(1);
         }
 
-    // TODO: Doğrudan import edilen ZIP dosyalarından instance ID'leri alınabilmeli. Şu anda ID'ler eksik kalıyor.
+        // TODO: Doğrudan import edilen ZIP dosyalarından instance ID'leri alınabilmeli. Şu anda ID'ler eksik kalıyor.
         inst_creation_task = makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, m_parent, pack_id);
     }
 
