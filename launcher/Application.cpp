@@ -1528,25 +1528,24 @@ bool Application::launch(InstancePtr instance,
             QApplication::processEvents();
 
             BackupManager* backupManager = new BackupManager(this);
-            connect(backupManager, &BackupManager::backupCreated, this,
-                    [this, instance, online, demo, offlineName, progress, backupManager](const QString& instanceId,
-                                                                                         const QString& backupName) {
-                        if (instanceId == instance->id()) {
-                            qDebug() << "Auto-backup before launch completed.";
-                            progress->close();
-                            progress->deleteLater();
-                            backupManager->deleteLater();
-                            // Launch işlemini ayrı slot ile başlat
-                            emit continueLaunchAfterBackup(instanceId, online, demo, offlineName);
-                        }
-                    });
-            connect(backupManager, &BackupManager::backupFailed, this,
-                    [progress, backupManager](const QString&, const QString& error) {
-                        qWarning() << "Auto-backup before launch failed:" << error;
+            connect(
+                backupManager, &BackupManager::backupCreated, this,
+                [this, instance, online, demo, offlineName, progress, backupManager](const QString& instanceId, const QString& backupName) {
+                    if (instanceId == instance->id()) {
+                        qDebug() << "Auto-backup before launch completed.";
                         progress->close();
                         progress->deleteLater();
                         backupManager->deleteLater();
-                    });
+                        // Launch işlemini ayrı slot ile başlat
+                        emit continueLaunchAfterBackup(instanceId, online, demo, offlineName);
+                    }
+                });
+            connect(backupManager, &BackupManager::backupFailed, this, [progress, backupManager](const QString&, const QString& error) {
+                qWarning() << "Auto-backup before launch failed:" << error;
+                progress->close();
+                progress->deleteLater();
+                backupManager->deleteLater();
+            });
             BackupOptions options;
             options.includeSaves = true;
             options.includeConfig = true;
