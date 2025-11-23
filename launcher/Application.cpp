@@ -274,7 +274,6 @@ void appDebugOutput(QtMsgType type, const QMessageLogContext& context, const QSt
 
     QTextStream(stderr) << out.toLocal8Bit();
     fflush(stderr);
-
 }
 
 std::tuple<QDateTime, QString, QString, QString, QString> read_lock_File(const QString& path)
@@ -1529,25 +1528,25 @@ bool Application::launch(InstancePtr instance,
             QApplication::processEvents();
 
             BackupManager* backupManager = new BackupManager(this);
-            connect(backupManager, &BackupManager::backupCreated, this, [this, instance, online, demo, offlineName, progress, backupManager](const QString& instanceId, const QString& backupName) {
-                if (instanceId == instance->id()) {
-                    qDebug() << "Auto-backup before launch completed.";
-                    progress->close();
-                    progress->deleteLater();
-                    backupManager->deleteLater();
-                    // Launch işlemini ayrı slot ile başlat
-                    emit continueLaunchAfterBackup(instanceId,
-                        online,
-                        demo,
-                        offlineName);
-                }
-            });
-            connect(backupManager, &BackupManager::backupFailed, this, [progress, backupManager](const QString&, const QString& error) {
-                qWarning() << "Auto-backup before launch failed:" << error;
-                progress->close();
-                progress->deleteLater();
-                backupManager->deleteLater();
-            });
+            connect(backupManager, &BackupManager::backupCreated, this,
+                    [this, instance, online, demo, offlineName, progress, backupManager](const QString& instanceId,
+                                                                                         const QString& backupName) {
+                        if (instanceId == instance->id()) {
+                            qDebug() << "Auto-backup before launch completed.";
+                            progress->close();
+                            progress->deleteLater();
+                            backupManager->deleteLater();
+                            // Launch işlemini ayrı slot ile başlat
+                            emit continueLaunchAfterBackup(instanceId, online, demo, offlineName);
+                        }
+                    });
+            connect(backupManager, &BackupManager::backupFailed, this,
+                    [progress, backupManager](const QString&, const QString& error) {
+                        qWarning() << "Auto-backup before launch failed:" << error;
+                        progress->close();
+                        progress->deleteLater();
+                        backupManager->deleteLater();
+                    });
             BackupOptions options;
             options.includeSaves = true;
             options.includeConfig = true;
@@ -1563,10 +1562,7 @@ bool Application::launch(InstancePtr instance,
     return false;
 }
 
-void Application::continueLaunchAfterBackup(QString instanceId,
-                                            bool online,
-                                            bool demo,
-                                            QString offlineName)
+void Application::continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName)
 {
     InstancePtr instance = instances()->getInstanceById(instanceId);
     QMutexLocker locker(&m_instanceExtrasMutex);
