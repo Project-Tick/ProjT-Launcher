@@ -83,7 +83,7 @@ Running a modern launcher on Intel macOS now means fighting deprecated toolchain
 Our **Nix flake builds** (used for reproducible, official releases) are being discontinued for x86_64-darwin:
 
 - **3+ hour build times** on Intel vs. 30-40 minutes on ARM — Nix dependency resolution and sandboxed compilation hit severe performance issues on deprecated Intel toolchains
-- **No CI platform provides Intel macOS runners** anymore (GitHub Actions, GitLab, Azure all ARM-only)
+- **No CI platform provides Intel macOS 26 runners** anymore (GitHub Actions, GitLab, Azure all ARM-only)
 - Maintaining x86_64-darwin support in Nix requires self-hosted hardware, manual patching, and separate derivations
 
 **This affects Nix users only.** Our `.app` bundles (built with CMake) remain universal binaries that work on both platforms, but we no longer test or support Intel Macs officially.
