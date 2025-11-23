@@ -1,28 +1,60 @@
 {
   "nodes": {
+    "javacheck": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1763750600,
+        "narHash": "sha256-nWZBSi4hLoGM4VjV0gQ7r0T49wPZc8LRkjDMZsflv/E=",
+        "owner": "Project-Tick",
+        "repo": "javacheck",
+        "rev": "13c75395fcbe4b282e429c53065d820a14b701b2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Project-Tick",
+        "repo": "javacheck",
+        "type": "github"
+      }
+    },
+    "launcher": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1763755590,
+        "narHash": "sha256-ykYd1XEDDgr3jX8/pvGjsxhBYOhRZRec2QBuGiXznbI=",
+        "owner": "Project-Tick",
+        "repo": "PTLLauncherSM",
+        "rev": "358dfc82da8cedaf197ed955d2465a051bad0ec3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Project-Tick",
+        "repo": "PTLLauncherSM",
+        "type": "github"
+      }
+    },
     "libnbtplusplus": {
       "flake": false,
       "locked": {
         "lastModified": 1744811532,
         "narHash": "sha256-qhmjaRkt+O7A+gu6HjUkl7QzOEb4r8y8vWZMG2R/C6o=",
-        "owner": "PrismLauncher",
+        "owner": "Project-Tick",
         "repo": "libnbtplusplus",
         "rev": "531449ba1c930c98e0bcf5d332b237a8566f9d78",
         "type": "github"
       },
       "original": {
-        "owner": "PrismLauncher",
+        "owner": "Project-Tick",
         "repo": "libnbtplusplus",
         "type": "github"
       }
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1762596750,
-        "narHash": "sha256-rXXuz51Bq7DHBlfIjN7jO8Bu3du5TV+3DSADBX7/9YQ=",
+        "lastModified": 1763678758,
+        "narHash": "sha256-+hBiJ+kG5IoffUOdlANKFflTT5nO3FrrR2CA3178Y5s=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b6a8526db03f735b89dd5ff348f53f752e7ddc8e",
+        "rev": "117cc7f94e8072499b0a7aa4c52084fa4e11cc9b",
         "type": "github"
       },
       "original": {
@@ -50,6 +82,8 @@
     },
     "root": {
       "inputs": {
+        "javacheck": "javacheck",
+        "launcher": "launcher",
         "libnbtplusplus": "libnbtplusplus",
         "nixpkgs": "nixpkgs",
         "qrcodegenerator": "qrcodegenerator"
