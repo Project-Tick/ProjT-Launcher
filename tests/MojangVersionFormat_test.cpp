@@ -2,6 +2,7 @@
 #include <QTest>
 
 #include <minecraft/MojangVersionFormat.h>
+#include <ProblemProvider.h>
 
 class MojangVersionFormatTest : public QObject {
     Q_OBJECT
@@ -52,6 +53,8 @@ class MojangVersionFormatTest : public QObject {
 
     void test_PlatformValidation()
     {
+        ProblemContainer problems;
+
         // Create a library with various platforms in natives
         QJsonObject libObj;
         libObj["name"] = "test:test:1.0";
@@ -67,7 +70,7 @@ class MojangVersionFormatTest : public QObject {
 
         libObj["natives"] = nativesObj;
 
-        auto lib = MojangVersionFormat::libraryFromJson(libObj, "test.json");
+        auto lib = MojangVersionFormat::libraryFromJson(problems, libObj, "test.json");
 
         // Should have all supported platforms
         QVERIFY(lib->m_nativeClassifiers.contains("linux"));
