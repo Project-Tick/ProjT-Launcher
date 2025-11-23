@@ -92,7 +92,7 @@ Our **Nix flake builds** (used for reproducible, official releases) are being di
 
 Our telemetry and community feedback show:
 
-- **~96% of macOS players run Apple Silicon** (M1/M2/M3/M4)
+- **~78% of macOS players run Apple Silicon** (M1/M2/M3/M4)
 - **Intel share dropped below 3%** and continues falling rapidly
 - **Support tickets from Intel users focus on performance issues** inherent to the deprecated platform
 
