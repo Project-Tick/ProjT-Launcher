@@ -1555,7 +1555,7 @@ bool Application::launch(InstancePtr instance,
             // launch işlemini backup tamamlanınca başlatıyoruz, burada return ile çıkıyoruz
             return true;
         }
-        showInstanceWindow(instance);
+        continueLaunchAfterBackup(instance->id(), online, demo, offlineName);
         return true;
     }
     return false;
@@ -1564,6 +1564,7 @@ bool Application::launch(InstancePtr instance,
 void Application::continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName)
 {
     InstancePtr instance = instances()->getInstanceById(instanceId);
+    showInstanceWindow(instance);
     QMutexLocker locker(&m_instanceExtrasMutex);
     auto& extras = m_instanceExtras[instanceId];
     auto window = extras.window;

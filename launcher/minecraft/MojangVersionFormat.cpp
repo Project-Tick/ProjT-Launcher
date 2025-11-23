@@ -328,8 +328,15 @@ LibraryPtr MojangVersionFormat::libraryFromJson(ProblemContainer& problems, cons
         for (auto it = nativesObj.begin(); it != nativesObj.end(); ++it) {
             if (!it.value().isString()) {
                 qWarning() << filename << "contains an invalid native (skipping)";
+                continue;
             }
-            // FIXME: Skip unknown platforms
+            // Skip unknown platforms
+            QString platform = it.key();
+            if (platform != "linux" && platform != "windows" && platform != "osx" && platform != "macos" && 
+                platform != "freebsd" && platform != "openbsd" && platform != "netbsd") {
+                qWarning() << filename << "contains unknown platform" << platform << "(skipping)";
+                continue;
+            }
             out->m_nativeClassifiers[it.key()] = it.value().toString();
         }
     }

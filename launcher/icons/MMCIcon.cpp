@@ -97,7 +97,7 @@ QIcon MMCIcon::icon() const
     auto& icon = m_images[m_current_type].icon;
     if (!icon.isNull())
         return icon;
-    // FIXME: inject this.
+    // TODO: Theme ikonları için dependency injection uygulanabilir. Şu anda doğrudan erişim var, test edilebilirlik ve özelleştirme için DI önerilir.
     return QIcon::fromTheme(m_images[m_current_type].key);
 }
 

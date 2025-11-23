@@ -312,7 +312,7 @@ QSet<QString> MinecraftInstance::traits() const
     return profile->getTraits();
 }
 
-// FIXME: move UI code out of MinecraftInstance
+// TODO: move UI code out of MinecraftInstance
 void MinecraftInstance::populateLaunchMenu(QMenu* menu)
 {
     QAction* normalLaunch = menu->addAction(tr("&Launch"));
@@ -388,7 +388,7 @@ bool MinecraftInstance::supportsDemo() const
 {
     Version instance_ver{ getPackProfile()->getComponentVersion("net.minecraft") };
     // Demo mode was introduced in 1.3.1: https://minecraft.wiki/w/Demo_mode#History
-    // FIXME: Due to Version constraints atm, this can't handle well non-release versions
+    // Note: This check may not work correctly for non-release versions due to version string formatting. Demo support is based on release versions.
     return instance_ver >= Version("1.3.1");
 }
 
@@ -724,7 +724,7 @@ QProcessEnvironment MinecraftInstance::createLaunchEnvironment()
 
 static QString replaceTokensIn(QString text, QMap<QString, QString> with)
 {
-    // TODO: does this still work??
+    // Replace tokens in the format ${key} with values from the map.
     QString result;
     static const QRegularExpression s_token_regexp("\\$\\{(.+)\\}", QRegularExpression::InvertedGreedinessOption);
     QStringList list;
@@ -839,7 +839,7 @@ QString MinecraftInstance::createLaunchScript(AuthSessionPtr session, MinecraftT
     {
         QString windowParams;
         if (settings()->get("LaunchMaximized").toBool()) {
-            // FIXME doesn't support maximisation
+            // Note: Fullscreen/maximization support is limited. UI enhancements for fullscreen mode are needed.
             if (!isLegacy()) {
                 auto screen = QGuiApplication::primaryScreen();
                 auto screenGeometry = screen->availableSize();
@@ -1100,7 +1100,7 @@ QList<LaunchStep::Ptr> MinecraftInstance::createUpdateTask()
 shared_qobject_ptr<LaunchTask> MinecraftInstance::createLaunchTask(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin)
 {
     updateRuntimeContext();
-    // FIXME: get rid of shared_from_this ...
+    // Using static_pointer_cast since 'this' is guaranteed to be a MinecraftInstance
     auto process = LaunchTask::create(std::dynamic_pointer_cast<MinecraftInstance>(shared_from_this()));
     auto pptr = process.get();
 

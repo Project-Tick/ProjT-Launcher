@@ -64,8 +64,12 @@
 
 auto MetaEntry::getFullPath() -> QString
 {
-    // FIXME: make local?
-    return FS::PathCombine(m_basePath, m_relativePath);
+    QString fullPath = FS::PathCombine(m_basePath, m_relativePath);
+    QFileInfo info(fullPath);
+    if (!info.exists()) {
+        qWarning() << "MetaEntry::getFullPath: Path does not exist:" << fullPath;
+    }
+    return fullPath;
 }
 
 HttpMetaCache::HttpMetaCache(QString path) : QObject(), m_index_file(path)
@@ -86,7 +90,7 @@ auto HttpMetaCache::getEntry(QString base, QString resource_path) -> MetaEntryPt
 {
     // no base. no base path. can't store
     if (!m_entries.contains(base)) {
-        // TODO: log problem
+        qWarning() << "HttpMetaCache::getEntry: base not found:" << base << "resource_path:" << resource_path;
         return {};
     }
 
@@ -220,11 +224,17 @@ auto HttpMetaCache::staleEntry(QString base, QString resource_path) -> MetaEntry
 
 void HttpMetaCache::addBase(QString base, QString base_root)
 {
-    // TODO: report error
-    if (m_entries.contains(base))
+    if (m_entries.contains(base)) {
+        qWarning() << "Base" << base << "already exists in meta cache";
         return;
+    }
 
-    // TODO: check if the base path is valid
+    // Check if the base path is valid
+    QDir baseDir(base_root);
+    if (!baseDir.exists()) {
+        qWarning() << "Base path" << base_root << "does not exist for base" << base;
+    }
+
     EntryMap foo;
     foo.base_path = base_root;
     m_entries[base] = foo;

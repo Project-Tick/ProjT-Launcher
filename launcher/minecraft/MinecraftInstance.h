@@ -172,6 +172,9 @@ class MinecraftInstance : public BaseInstance {
 
     virtual JavaVersion getJavaVersion();
 
+signals:
+    void profilerChanged();
+
    protected:
     QMap<QString, QString> createCensorFilterFromSession(AuthSessionPtr session);
 

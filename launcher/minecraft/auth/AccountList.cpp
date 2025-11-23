@@ -256,9 +256,12 @@ void AccountList::accountActivityChanged(bool active)
 
 void AccountList::onListChanged()
 {
-    if (m_autosave)
-        // TODO: Alert the user if this fails.
-        saveList();
+    if (m_autosave) {
+        if (!saveList()) {
+            qWarning() << "Failed to save account list automatically";
+            // TODO: Otomatik kaydetme başarısız olursa kullanıcıya bildirim gösterilmeli. Şu anda sadece loglanıyor.
+        }
+    }
 
     emit listChanged();
 }
@@ -434,9 +437,8 @@ bool AccountList::loadList()
     QFile file(m_listFilePath);
 
     // Try to open the file and fail if we can't.
-    // TODO: We should probably report this error to the user.
     if (!file.open(QIODevice::ReadOnly)) {
-        qCritical() << QString("Failed to read the account list file (%1).").arg(m_listFilePath).toUtf8();
+        qCritical() << QString("Failed to read the account list file (%1): %2").arg(m_listFilePath, file.errorString()).toUtf8();
         return false;
     }
 
@@ -551,9 +553,8 @@ bool AccountList::saveList()
     QSaveFile file(m_listFilePath);
 
     // Try to open the file and fail if we can't.
-    // TODO: We should probably report this error to the user.
     if (!file.open(QIODevice::WriteOnly)) {
-        qCritical() << QString("Failed to read the account list file (%1).").arg(m_listFilePath).toUtf8();
+        qCritical() << QString("Failed to write the account list file (%1): %2").arg(m_listFilePath, file.errorString()).toUtf8();
         return false;
     }
 

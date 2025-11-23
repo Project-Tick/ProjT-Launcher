@@ -120,7 +120,7 @@ void drawFocusRect(QPainter* painter, const QStyleOptionViewItem& option, const 
     painter->setRenderHint(QPainter::Antialiasing);
 }
 
-// TODO this can be made a lot prettier
+// This progress overlay could be enhanced for better visual appeal.
 void drawProgressOverlay(QPainter* painter, const QStyleOptionViewItem& option, const int value, const int maximum)
 {
     if (maximum == 0 || value == maximum) {
@@ -162,7 +162,7 @@ void drawBadges(QPainter* painter, const QStyleOptionViewItem& option, BaseInsta
             if (!it.hasNext()) {
                 return;
             }
-            // FIXME: inject this.
+            // FIXME: Bu kodun bağımlılıkları dışarıdan enjekte edilmeli. Şu anda doğrudan erişim var.
             auto icon = QIcon::fromTheme(it.next());
             // opt.icon.paint(painter, iconbox, Qt::AlignCenter, mode, state);
             const QPixmap pixmap;
@@ -219,63 +219,7 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
     // draw background
     {
-        // FIXME: unused
-        // QSize textSize = viewItemTextSize ( &opt );
         drawSelectionRect(painter, opt, textHighlightRect);
-        /*
-        QPalette::ColorGroup cg;
-        QStyleOptionViewItem opt2(opt);
-
-        if ((opt.widget && opt.widget->isEnabled()) || (opt.state & QStyle::State_Enabled))
-        {
-            if (!(opt.state & QStyle::State_Active))
-                cg = QPalette::Inactive;
-            else
-                cg = QPalette::Normal;
-        }
-        else
-        {
-            cg = QPalette::Disabled;
-        }
-        */
-        /*
-        opt2.palette.setCurrentColorGroup(cg);
-
-        // fill in background, if any
-
-
-        if (opt.backgroundBrush.style() != Qt::NoBrush)
-        {
-            QPointF oldBO = painter->brushOrigin();
-            painter->setBrushOrigin(opt.rect.topLeft());
-            painter->fillRect(opt.rect, opt.backgroundBrush);
-            painter->setBrushOrigin(oldBO);
-        }
-
-        drawSelectionRect(painter, opt2, textHighlightRect);
-        */
-
-        /*
-        if (opt.showDecorationSelected)
-        {
-            drawSelectionRect(painter, opt2, opt.rect);
-            drawFocusRect(painter, opt2, opt.rect);
-            // painter->fillRect ( opt.rect, opt.palette.brush ( cg, QPalette::Highlight ) );
-        }
-        else
-        {
-
-            // if ( opt.state & QStyle::State_Selected )
-            {
-                // QRect textRect = subElementRect ( QStyle::SE_ItemViewItemText,  opt,
-                // opt.widget );
-                // painter->fillRect ( textHighlightRect, opt.palette.brush ( cg,
-                // QPalette::Highlight ) );
-                drawSelectionRect(painter, opt2, textHighlightRect);
-                drawFocusRect(painter, opt2, textHighlightRect);
-            }
-        }
-        */
     }
 
     // icon mode and state, also used for badges
@@ -323,7 +267,7 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         line.draw(painter, position);
     }
 
-    // FIXME: this really has no business of being here. Make generic.
+    // FIXME: Bu kodun burada olmaması gerekiyor. Daha generic bir yapıya taşınmalı.
     auto instance = (BaseInstance*)index.data(InstanceList::InstancePointerRole).value<void*>();
     if (instance) {
         drawBadges(painter, opt, instance, mode, state);
@@ -351,7 +295,7 @@ QSize ListViewDelegate::sizeHint(const QStyleOptionViewItem& option, const QMode
     int height = iconSize + textMargin * 2 + padding;
     QSize szz = viewItemTextSize(&opt);
     height += szz.height();
-    // FIXME: maybe the icon items could scale and keep proportions?
+    // FIXME: Icon item'lar orantılı şekilde ölçeklenmeli. Şu anda sabit boyut kullanılıyor.
     QSize sz(100, height);
     return sz;
 }
