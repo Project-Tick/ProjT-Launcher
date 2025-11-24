@@ -245,8 +245,6 @@ static QString ansiLogFormat = QStringLiteral(
 #undef ansi_reset_bold
 #undef ansi_reset
 
-namespace {
-
 /** This is used so that we can output to the log file in addition to the CLI. */
 void appDebugOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
@@ -277,8 +275,6 @@ void appDebugOutput(QtMsgType type, const QMessageLogContext& context, const QSt
     QTextStream(stderr) << out.toLocal8Bit();
     fflush(stderr);
 }
-
-}  // namespace
 
 std::tuple<QDateTime, QString, QString, QString, QString> read_lock_File(const QString& path)
 {
@@ -1523,66 +1519,76 @@ bool Application::launch(InstancePtr instance,
         if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
             qDebug() << "Creating auto-backup before launch...";
 
-            // Show simple progress dialog
-            QProgressDialog progress("Creating backup before launch...", "Skip", 0, 0, m_mainWindow);
-            progress.setWindowModality(Qt::WindowModal);
-            progress.setMinimumDuration(0);
-            progress.setValue(0);
-            progress.show();
+            QProgressDialog* progress = new QProgressDialog("Creating backup before launch...", QString(), 0, 0, m_mainWindow);
+            progress->setWindowModality(Qt::WindowModal);
+            progress->setMinimumDuration(0);
+            progress->setValue(0);
+            progress->setCancelButton(nullptr);
+            progress->show();
             QApplication::processEvents();
 
-            // Check if user clicked Skip
-            if (!progress.wasCanceled()) {
-                // Run backup synchronously
-                BackupManager backupManager;
-                bool backupSuccess = backupManager.autoBackupBeforeLaunch(instance);
-
-                if (!backupSuccess) {
-                    qWarning() << "Auto-backup before launch failed, but continuing with launch";
-                }
-            } else {
-                qDebug() << "User skipped backup creation";
-            }
-
-            progress.close();
+            BackupManager* backupManager = new BackupManager(this);
+            connect(
+                backupManager, &BackupManager::backupCreated, this,
+                [this, instance, online, demo, offlineName, progress, backupManager](const QString& instanceId, const QString& backupName) {
+                    if (instanceId == instance->id()) {
+                        qDebug() << "Auto-backup before launch completed.";
+                        progress->close();
+                        progress->deleteLater();
+                        backupManager->deleteLater();
+                        // Launch işlemini ayrı slot ile başlat
+                        emit continueLaunchAfterBackup(instanceId, online, demo, offlineName);
+                    }
+                });
+            connect(backupManager, &BackupManager::backupFailed, this, [progress, backupManager](const QString&, const QString& error) {
+                qWarning() << "Auto-backup before launch failed:" << error;
+                progress->close();
+                progress->deleteLater();
+                backupManager->deleteLater();
+            });
+            BackupOptions options;
+            options.includeSaves = true;
+            options.includeConfig = true;
+            options.includeOptions = true;
+            options.includeMods = false;
+            backupManager->createBackupAsync(instance, "auto-backup-pre-launch", options);
+            // launch işlemini backup tamamlanınca başlatıyoruz, burada return ile çıkıyoruz
+            return true;
         }
-
-        QMutexLocker locker(&m_instanceExtrasMutex);
-        auto& extras = m_instanceExtras[instance->id()];
-        auto window = extras.window;
-        if (window) {
-            if (!window->saveAll()) {
-                return false;
-            }
-        }
-        auto& controller = extras.controller;
-        controller.reset(new LaunchController());
-        controller->setInstance(instance);
-        controller->setOnline(online);
-        controller->setDemo(demo);
-        controller->setProfiler(profilers().value(instance->settings()->get("Profiler").toString(), nullptr).get());
-        controller->setTargetToJoin(targetToJoin);
-        controller->setAccountToUse(accountToUse);
-        controller->setOfflineName(offlineName);
-        if (window) {
-            controller->setParentWidget(window);
-        } else if (m_mainWindow) {
-            controller->setParentWidget(m_mainWindow);
-        }
-        connect(controller.get(), &LaunchController::succeeded, this, &Application::controllerSucceeded);
-        connect(controller.get(), &LaunchController::failed, this, &Application::controllerFailed);
-        connect(controller.get(), &LaunchController::aborted, this, [this] { controllerFailed(tr("Aborted")); });
-        addRunningInstance();
-        QMetaObject::invokeMethod(controller.get(), &Task::start, Qt::QueuedConnection);
-        return true;
-    } else if (instance->isRunning()) {
-        showInstanceWindow(instance, "console");
-        return true;
-    } else if (instance->canEdit()) {
-        showInstanceWindow(instance);
+        continueLaunchAfterBackup(instance->id(), online, demo, offlineName);
         return true;
     }
     return false;
+}
+
+void Application::continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName)
+{
+    InstancePtr instance = instances()->getInstanceById(instanceId);
+    showInstanceWindow(instance);
+    QMutexLocker locker(&m_instanceExtrasMutex);
+    auto& extras = m_instanceExtras[instanceId];
+    auto window = extras.window;
+    if (window) {
+        if (!window->saveAll()) {
+            return;
+        }
+    }
+    auto& controller = extras.controller;
+    controller.reset(new LaunchController());
+    controller->setInstance(instance);
+    controller->setOnline(online);
+    controller->setDemo(demo);
+    controller->setProfiler(profilers().value(instance->settings()->get("Profiler").toString(), nullptr).get());
+    controller->setOfflineName(offlineName);
+    if (window) {
+        controller->setParentWidget(window);
+    } else if (m_mainWindow) {
+        controller->setParentWidget(m_mainWindow);
+    }
+    connect(controller.get(), &LaunchController::succeeded, this, &Application::controllerSucceeded);
+    connect(controller.get(), &LaunchController::failed, this, &Application::controllerFailed);
+    connect(controller.get(), &LaunchController::aborted, this, [this] { controllerFailed(tr("Aborted")); });
+    controller->executeTask();
 }
 
 bool Application::kill(InstancePtr instance)

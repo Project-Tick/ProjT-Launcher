@@ -234,6 +234,7 @@ class Application : public QApplication {
     void controllerSucceeded();
     void controllerFailed(const QString& error);
     void setupWizardFinished(int status);
+    void continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName);
 
    private:
     bool handleDataMigration(const QString& currentData, const QString& oldData, const QString& name, const QString& configFile) const;

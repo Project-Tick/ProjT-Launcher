@@ -41,6 +41,7 @@ void BackupPage::retranslate()
 void BackupPage::openedImpl()
 {
     refreshBackupList();
+    updateEstimatedSize();
 }
 
 void BackupPage::closedImpl()
@@ -48,10 +49,35 @@ void BackupPage::closedImpl()
     // Nothing to do
 }
 
+void BackupPage::updateEstimatedSize()
+{
+    BackupOptions options = getSelectedOptions();
+    qint64 estimatedSize = options.estimateSize();
+    
+    // Format size
+    double sizeMB = estimatedSize / (1024.0 * 1024.0);
+    QString sizeText = QString("Estimated Size: ~%1 MB").arg(sizeMB, 0, 'f', 1);
+    
+    ui->estimatedSizeLabel->setText(sizeText);
+}
+
 void BackupPage::setupConnections()
 {
-    // Note: Qt auto-connects slots with on_widgetName_signal naming pattern
-    // No manual connections needed for standard UI interactions
+    // Connect checkboxes to update estimated size
+    connect(ui->includeSaves, &QCheckBox::toggled, this, &BackupPage::updateEstimatedSize);
+    connect(ui->includeConfig, &QCheckBox::toggled, this, &BackupPage::updateEstimatedSize);
+    connect(ui->includeMods, &QCheckBox::toggled, this, &BackupPage::updateEstimatedSize);
+    connect(ui->includeResourcePacks, &QCheckBox::toggled, this, &BackupPage::updateEstimatedSize);
+    connect(ui->includeShaderPacks, &QCheckBox::toggled, this, &BackupPage::updateEstimatedSize);
+    connect(ui->includeScreenshots, &QCheckBox::toggled, this, &BackupPage::updateEstimatedSize);
+    connect(ui->includeOptions, &QCheckBox::toggled, this, &BackupPage::updateEstimatedSize);
+    
+    // Connect custom paths changes
+    connect(ui->customPathsList, &QListWidget::itemChanged, this, &BackupPage::updateEstimatedSize);
+    
+    // Other connections
+    connect(ui->refreshButton, &QPushButton::clicked, this, &BackupPage::refreshBackupList);
+    connect(ui->backupList, &QListWidget::currentRowChanged, this, &BackupPage::updateBackupDetails);
 }
 
 void BackupPage::refreshBackupList()
@@ -288,6 +314,7 @@ void BackupPage::on_addCustomPathButton_clicked()
             }
         }
         ui->customPathsList->addItem(path);
+        updateEstimatedSize();
     }
 }
 
@@ -296,5 +323,6 @@ void BackupPage::on_removeCustomPathButton_clicked()
     int currentRow = ui->customPathsList->currentRow();
     if (currentRow >= 0) {
         delete ui->customPathsList->takeItem(currentRow);
+        updateEstimatedSize();
     }
 }

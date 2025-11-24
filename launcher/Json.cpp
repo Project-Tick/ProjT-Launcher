@@ -86,7 +86,7 @@ static bool isBinaryJson(const QByteArray& data)
 QJsonDocument requireDocument(const QByteArray& data, const QString& what)
 {
     if (isBinaryJson(data)) {
-        // FIXME: Is this needed?
+        // Binary JSON is not supported by this application
         throw JsonException(what + ": Invalid JSON. Binary JSON unsupported");
     } else {
         QJsonParseError error;
@@ -209,6 +209,7 @@ double requireIsType<double>(const QJsonValue& value, const QString& what)
     if (!value.isDouble()) {
         throw JsonException(what + " is not a double");
     }
+    // Burada value'nin double'a çevrilmesi bekleniyor. Eğer value uygun değilse, Qt varsayılan olarak 0 döndürür.
     return value.toDouble();
 }
 
@@ -251,8 +252,20 @@ template <>
 QDir requireIsType<QDir>(const QJsonValue& value, const QString& what)
 {
     const QString string = requireIsType<QString>(value, what);
-    // FIXME: does not handle invalid characters!
-    return QDir::current().absoluteFilePath(string);
+
+    // Security: Prevent path traversal attacks
+    if (QFileInfo(string).isAbsolute()) {
+        throw JsonException(what + ": Absolute paths are not allowed");
+    }
+
+    // Sanitize path - remove dangerous characters and sequences
+    QString sanitized = string;
+    sanitized.replace("..", "");   // Remove parent directory references
+    sanitized.replace("\\", "/");  // Normalize separators
+    // Remove other potentially dangerous characters
+    sanitized.remove(QRegularExpression("[<>:\"|?*]"));
+
+    return QDir::current().absoluteFilePath(sanitized);
 }
 
 template <>

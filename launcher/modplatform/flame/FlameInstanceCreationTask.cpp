@@ -106,7 +106,7 @@ bool FlameCreationTask::updateInstance()
 {
     auto instance_list = APPLICATION->instances();
 
-    // FIXME: How to handle situations when there's more than one install already for a given modpack?
+    // FIXME: Aynı modpack için birden fazla kurulum varsa nasıl yönetileceği belirlenmeli.
     InstancePtr inst;
     if (auto original_id = originalInstanceID(); !original_id.isEmpty()) {
         inst = instance_list->getInstanceById(original_id);
@@ -183,8 +183,8 @@ bool FlameCreationTask::updateInstance()
         QDir old_minecraft_dir(inst->gameRoot());
 
         // We will remove all the previous overrides, to prevent duplicate files!
-        // TODO: Currently 'overrides' will always override the stuff on update. How do we preserve unchanged overrides?
-        // FIXME: We may want to do something about disabled mods.
+    // TODO: Şu anda 'overrides' güncellemede her şeyi ezmekte. Değişmeyen dosyalar korunmalı.
+    // FIXME: Disabled mod'lar için özel bir işlem yapılmalı.
         auto old_overrides = Override::readOverrides("overrides", old_index_folder);
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())
@@ -732,7 +732,7 @@ void FlameCreationTask::validateOtherResources(QEventLoop& loop)
                 break;
         }
     }
-    // TODO make this work with other sorts of resource
+    // TODO: Diğer kaynak tipleriyle de çalışacak şekilde genişletilmeli.
     auto task = makeShared<ConcurrentTask>("CreateModMetadata", APPLICATION->settings()->get("NumberOfConcurrentTasks").toInt());
     auto results = m_modIdResolver->getResults().files;
     auto folder = FS::PathCombine(m_stagingPath, "minecraft", "mods", ".index");

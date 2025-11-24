@@ -28,8 +28,19 @@
 // BackupOptions implementation
 qint64 BackupOptions::estimateSize() const
 {
-    // TODO: Implement size estimation
-    return 0;
+    // Rough estimation based on typical Minecraft instance sizes
+    // Note: This is a rough estimate for UI display. Actual size may vary.
+    qint64 size = 0;
+    if (includeSaves) size += 500LL * 1024 * 1024; // 500MB average for saves
+    if (includeConfig) size += 50LL * 1024 * 1024;  // 50MB for config
+    if (includeMods) size += 1000LL * 1024 * 1024;  // 1GB for mods
+    if (includeResourcePacks) size += 200LL * 1024 * 1024; // 200MB
+    if (includeShaderPacks) size += 100LL * 1024 * 1024;   // 100MB
+    if (includeScreenshots) size += 100LL * 1024 * 1024;   // 100MB
+    if (includeOptions) size += 1LL * 1024 * 1024;         // 1MB
+    // Add custom paths roughly - assume 50MB per path as placeholder
+    size += customPaths.size() * 50LL * 1024 * 1024; // 50MB per custom path
+    return size;
 }
 
 // InstanceBackup implementation
@@ -129,6 +140,9 @@ bool BackupManager::createBackup(InstancePtr instance, const QString& backupName
     if (options.includeShaderPacks) includedPaths << "shaderpacks";
     if (options.includeScreenshots) includedPaths << "screenshots";
     if (options.includeOptions) includedPaths << "options.txt" << "optionsof.txt";
+    
+    // Add custom paths to included paths list
+    includedPaths += options.customPaths;
     
     metadata["includedPaths"] = QJsonArray::fromStringList(includedPaths);
     
@@ -329,7 +343,8 @@ bool BackupManager::compressBackup(const QString& sourcePath, const QString& bac
     
     if (files.isEmpty()) {
         qWarning() << "BackupManager: no files to backup!";
-        return false; // Nothing to backup
+        // For new instances with no files, consider backup successful to allow launch
+        return true;
     }
     
     qDebug() << "BackupManager: collected" << files.size() << "files";

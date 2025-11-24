@@ -467,9 +467,10 @@ bool ResourceFolderModel::dropMimeData(const QMimeData* data, Qt::DropAction act
             if (!url.isLocalFile()) {
                 continue;
             }
-            // TODO: implement not only copy, but also move
-            // FIXME: handle errors here
-            installResource(url.toLocalFile());
+            // Sadece kopyalama destekleniyor, taşıma (move) desteği yok. FIXME kaldırıldı.
+            if (!installResource(url.toLocalFile())) {
+                qWarning() << "Failed to install resource from" << url.toLocalFile();
+            }
         }
         return true;
     }

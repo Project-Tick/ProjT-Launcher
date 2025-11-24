@@ -70,6 +70,23 @@
 #include "net/NetRequest.h"
 
 namespace {
+// Helper function to get standard asset directory structure
+struct AssetDirs {
+    QDir assets;
+    QDir indexes;
+    QDir objects;
+    QDir virtualDir;
+};
+
+AssetDirs getAssetDirectories() {
+    AssetDirs dirs;
+    dirs.assets = QDir("assets/");
+    dirs.indexes = QDir(FS::PathCombine(dirs.assets.path(), "indexes"));
+    dirs.objects = QDir(FS::PathCombine(dirs.assets.path(), "objects"));
+    dirs.virtualDir = QDir(FS::PathCombine(dirs.assets.path(), "virtual"));
+    return dirs;
+}
+
 QSet<QString> collectPathsFromDir(QString dirPath)
 {
     QFileInfo dirInfo(dirPath);
@@ -117,9 +134,8 @@ bool loadAssetsIndexJson(const QString& assetsId, const QString& path, AssetsInd
     QFile file(path);
 
     // Try to open the file and fail if we can't.
-    // TODO: We should probably report this error to the user.
     if (!file.open(QIODevice::ReadOnly)) {
-        qCritical() << "Failed to read assets index file" << path;
+        qCritical() << "Failed to read assets index file" << path << ":" << file.errorString();
         return false;
     }
     index.id = assetsId;
@@ -185,13 +201,12 @@ bool loadAssetsIndexJson(const QString& assetsId, const QString& path, AssetsInd
     return true;
 }
 
-// FIXME: ugly code duplication
 QDir getAssetsDir(const QString& assetsId, const QString& resourcesFolder)
 {
-    QDir assetsDir = QDir("assets/");
-    QDir indexDir = QDir(FS::PathCombine(assetsDir.path(), "indexes"));
-    QDir objectDir = QDir(FS::PathCombine(assetsDir.path(), "objects"));
-    QDir virtualDir = QDir(FS::PathCombine(assetsDir.path(), "virtual"));
+    auto dirs = getAssetDirectories();
+    QDir indexDir = dirs.indexes;
+    QDir objectDir = dirs.objects;
+    QDir virtualDir = dirs.virtualDir;
 
     QString indexPath = FS::PathCombine(indexDir.path(), assetsId + ".json");
     QFile indexFile(indexPath);
@@ -217,13 +232,12 @@ QDir getAssetsDir(const QString& assetsId, const QString& resourcesFolder)
     return virtualRoot;
 }
 
-// FIXME: ugly code duplication
 bool reconstructAssets(QString assetsId, QString resourcesFolder)
 {
-    QDir assetsDir = QDir("assets/");
-    QDir indexDir = QDir(FS::PathCombine(assetsDir.path(), "indexes"));
-    QDir objectDir = QDir(FS::PathCombine(assetsDir.path(), "objects"));
-    QDir virtualDir = QDir(FS::PathCombine(assetsDir.path(), "virtual"));
+    auto dirs = getAssetDirectories();
+    QDir indexDir = dirs.indexes;
+    QDir objectDir = dirs.objects;
+    QDir virtualDir = QDir(FS::PathCombine(dirs.assets.path(), "virtual"));
 
     QString indexPath = FS::PathCombine(indexDir.path(), assetsId + ".json");
     QFile indexFile(indexPath);
@@ -234,7 +248,7 @@ bool reconstructAssets(QString assetsId, QString resourcesFolder)
         return false;
     }
 
-    qDebug() << "reconstructAssets" << assetsDir.path() << indexDir.path() << objectDir.path() << virtualDir.path() << virtualRoot.path();
+    qDebug() << "reconstructAssets" << dirs.assets.path() << indexDir.path() << objectDir.path() << virtualDir.path() << virtualRoot.path();
 
     AssetsIndex index;
     if (!AssetsUtils::loadAssetsIndexJson(assetsId, indexPath, index)) {
@@ -281,7 +295,7 @@ bool reconstructAssets(QString assetsId, QString resourcesFolder)
             }
         }
 
-        // TODO: Write last used time to virtualRoot/.lastused
+    // Consider adding a function to update the .lastused file with the current timestamp for asset usage tracking.
         if (removeLeftovers) {
             for (auto& file : presentFiles) {
                 qDebug() << "Would remove" << file;

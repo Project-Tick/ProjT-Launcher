@@ -27,25 +27,6 @@ finish-args:
   - --filesystem=/sys/kernel/mm/transparent_hugepage:ro
 
 modules:
-  - name: projtlauncher
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DLauncher_BUILD_PLATFORM=flatpak
-      # This allows us to manage and update Java independently of this Flatpak
-      - -DLauncher_ENABLE_JAVA_DOWNLOADER=ON
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-    build-options:
-      env:
-        JAVA_HOME: /usr/lib/sdk/openjdk17/jvm/openjdk-17
-        JAVA_COMPILER: /usr/lib/sdk/openjdk17/jvm/openjdk-17/bin/javac
-    run-tests: true
-    sources:
-      - type: git
-        url: https://github.com/Project-Tick/ProjT-Launcher.git
-        tag: 0.0.2
-        commit: bfbf6d2211945c2112bf90c311c3e365da23aaed
-
   - name: glfw
     buildsystem: cmake-ninja
     config-opts:
@@ -56,6 +37,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/glfw/glfw.git
+        tag: '3.4'
         commit: 7b6aead9fb88b3623e3b3725ebb42670cbe4c579 # 3.4
       - type: patch
         path: patches/0009-Defer-setting-cursor-position-until-the-cursor-is-lo.patch
@@ -104,48 +86,28 @@ modules:
       - /lib/pkgconfig
       - '*.a'
 
-  - name: glu
-    buildsystem: autotools
-    sources:
-      - type: archive
-        url: https://mesa.freedesktop.org/archive/glu/glu-9.0.2.tar.xz
-        sha256: 6e7280ff585c6a1d9dfcdf2fca489251634b3377bfc33c29e4002466a38d02d4
-    cleanup:
-      - /bin
-      - /lib/pkgconfig
-
-  - name: glxinfo
-    buildsystem: meson
+  - name: projtlauncher
+    buildsystem: cmake-ninja
+    builddir: true
     config-opts:
-      - --bindir=/app/mesa-demos
-      - -Degl=disabled
-      - -Dglut=disabled
-      - -Dosmesa=disabled
-      - -Dvulkan=disabled
-      - -Dwayland=disabled
+      - -DLauncher_BUILD_PLATFORM=flatpak
+      # This allows us to manage and update Java independently of this Flatpak
+      - -DLauncher_ENABLE_JAVA_DOWNLOADER=ON
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    build-options:
+      env:
+        JAVA_HOME: /usr/lib/sdk/openjdk17/jvm/openjdk-17
+        JAVA_COMPILER: /usr/lib/sdk/openjdk17/jvm/openjdk-17/bin/javac
+    run-tests: true
     post-install:
-      - mv -v /app/mesa-demos/glxinfo /app/bin
-    sources:
-      - type: archive
-        url: https://archive.mesa3d.org/demos/mesa-demos-9.0.0.tar.xz
-        sha256: 3046a3d26a7b051af7ebdd257a5f23bfeb160cad6ed952329cdff1e9f1ed496b
-        x-checker-data:
-          type: anitya
-          project-id: 16781
-          stable-only: true
-          url-template: https://archive.mesa3d.org/demos/mesa-demos-$version.tar.xz
-    cleanup:
-      - /include
-      - /mesa-demos
-      - /share
-
-  - name: enhance
-    buildsystem: simple
-    build-commands:
-      - install -Dm755 prime-run /app/bin/prime-run
+      - install -Dm755 ../prime-run -t /app/bin
       - mv /app/bin/projtlauncher /app/bin/projtrun
-      - install -Dm755 projtlauncher /app/bin/projtlauncher
+      - install -Dm755 ../projtlauncher -t /app/bin
     sources:
+      - type: git
+        url: https://github.com/Project-Tick/ProjT-Launcher.git
+        tag: 0.0.2
+        commit: bfbf6d2211945c2112bf90c311c3e365da23aaed
       - type: file
         path: prime-run
       - type: file

@@ -108,7 +108,7 @@ void ManifestDownloadTask::downloadJava(const QJsonDocument& doc)
                 QFile::link(path, file);
             }
         } else if (type == "file") {
-            // TODO download compressed version if it exists ?
+            // TODO: Eğer varsa sıkıştırılmış versiyonu da indirilmeli. Şu anda sadece normal dosya indiriliyor.
             auto raw = Json::ensureObject(Json::ensureObject(meta, "downloads"), "raw");
             auto isExec = Json::ensureBoolean(meta, "executable", false);
             auto url = Json::ensureString(raw, "url");

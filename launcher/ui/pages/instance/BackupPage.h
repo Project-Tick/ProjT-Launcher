@@ -48,6 +48,7 @@ private slots:
 
     void refreshBackupList();
     void updateBackupDetails();
+    void updateEstimatedSize();
 
 private:
     BackupOptions getSelectedOptions() const;

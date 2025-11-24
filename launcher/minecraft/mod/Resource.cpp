@@ -138,7 +138,7 @@ int Resource::compare(const Resource& other, SortType type) const
             QString this_name{ name() };
             QString other_name{ other.name() };
 
-            // TODO do we need this? it could result in 0 being returned
+            // TODO: removeThePrefix fonksiyonu gerekli mi? 0 döndürme ihtimali var, test edilmeli.
             removeThePrefix(this_name);
             removeThePrefix(other_name);
 
@@ -207,9 +207,10 @@ bool Resource::enable(EnableAction action)
 
     if (enable) {
         // m_enabled is false, but there's no '.disabled' suffix.
-        // TODO: Report error?
-        if (!path.endsWith(".disabled"))
+        if (!path.endsWith(".disabled")) {
+            qWarning() << "Cannot enable resource" << name() << ": file does not have .disabled suffix";
             return false;
+        }
         path.chop(9);
     } else {
         path += ".disabled";

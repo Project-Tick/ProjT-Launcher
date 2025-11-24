@@ -159,7 +159,7 @@ void V1::updateModIndex(const QDir& index_dir, Mod& mod)
         index_file.rename(normalized_fname);
 
     // There's already data on there!
-    // TODO: We should do more stuff here, as the user is likely trying to
+    // TODO: Burada daha fazla işlem yapılmalı, çünkü kullanıcı muhtemelen modun üstüne yazmak istiyor.
     // override a file. In this case, check versions and ask the user what
     // they want to do!
     if (index_file.exists()) {

@@ -55,7 +55,7 @@ bool ModrinthCreationTask::updateInstance()
 {
     auto instance_list = APPLICATION->instances();
 
-    // FIXME: How to handle situations when there's more than one install already for a given modpack?
+    // FIXME: Aynı modpack için birden fazla kurulum varsa nasıl yönetileceği belirlenmeli.
     InstancePtr inst;
     if (auto original_id = originalInstanceID(); !original_id.isEmpty()) {
         inst = instance_list->getInstanceById(original_id);
@@ -142,8 +142,8 @@ bool ModrinthCreationTask::updateInstance()
         }
 
         // We will remove all the previous overrides, to prevent duplicate files!
-        // TODO: Currently 'overrides' will always override the stuff on update. How do we preserve unchanged overrides?
-        // FIXME: We may want to do something about disabled mods.
+    // TODO: Şu anda 'overrides' güncellemede her şeyi ezmekte. Değişmeyen dosyalar korunmalı.
+    // FIXME: Disabled mod'lar için özel bir işlem yapılmalı.
         auto old_overrides = Override::readOverrides("overrides", old_index_folder);
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())
@@ -260,7 +260,7 @@ bool ModrinthCreationTask::createInstance()
 
     auto root_modpack_path = FS::PathCombine(m_stagingPath, m_root_path);
     auto root_modpack_url = QUrl::fromLocalFile(root_modpack_path);
-    // TODO make this work with other sorts of resource
+    // TODO: Diğer kaynak tipleriyle de çalışacak şekilde genişletilmeli.
     QHash<QString, Resource*> resources;
     for (auto& file : m_files) {
         auto fileName = file.path;
@@ -288,7 +288,7 @@ bool ModrinthCreationTask::createInstance()
         dl->addValidator(new Net::ChecksumValidator(file.hashAlgorithm, file.hash));
         downloadMods->addNetAction(dl);
         if (!file.downloads.empty()) {
-            // FIXME: This really needs to be put into a ConcurrentTask of
+            // FIXME: Bu işlem ConcurrentTask'a taşınmalı, şu anda senkron çalışıyor.
             // MultipleOptionsTask's , once those exist :)
             auto param = dl.toWeakRef();
             connect(dl.get(), &Task::failed, [&file, file_path, param, downloadMods] {
