@@ -59,7 +59,7 @@ runs:
         BUILD_DIR: build
         INSTALL_DIR: install
       run: |
-        cmake --install ${{ env.BUILD_DIR }}
+        cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }}
 
         cp ${{ env.INSTALL_DIR }}/jars/* ${{ env.INSTALL_DIR }}/ProjTLauncher.app/Contents/MacOS/jars/
 
