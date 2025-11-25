@@ -61,8 +61,6 @@ runs:
       run: |
         cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }}
 
-        cp ${{ env.INSTALL_DIR }}/jars/* ${{ env.INSTALL_DIR }}/ProjTLauncher.app/Contents/MacOS/jars/
-
         cd ${{ env.INSTALL_DIR }}
         chmod +x "ProjTLauncher.app/Contents/MacOS/projtlauncher"
 
