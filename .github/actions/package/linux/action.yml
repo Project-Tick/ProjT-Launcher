@@ -64,7 +64,31 @@ runs:
         cmake --install ${{ env.BUILD_DIR }} --prefix ${{ env.INSTALL_APPIMAGE_DIR }}/usr
 
         # Move jars to /usr/jars for AppImage
-        mv ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/ProjTLauncher ${{ env.INSTALL_APPIMAGE_DIR }}/usr/jars
+        # BACKUP: mv ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/ProjTLauncher ${{ env.INSTALL_APPIMAGE_DIR }}/usr/jars
+        # Safer copy: ensure target exists, search for ProjTLaunch jars and copy them into usr/jars
+        mkdir -p ${{ env.INSTALL_APPIMAGE_DIR }}/usr/jars
+        echo "Searching for ProjTLaunch jars under ${{ env.INSTALL_APPIMAGE_DIR }}..."
+        found=0
+        # If upstream CMake put an entire directory, copy it first
+        if [ -d "${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/ProjTLauncher" ]; then
+          cp -a "${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/ProjTLauncher" "${{ env.INSTALL_APPIMAGE_DIR }}/usr/jars/" && found=$((found+1)) || echo "Warning: failed to copy ProjTLauncher dir" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        # Find individual jars (including ProjTLaunch.jar and ProjTLaunchLegacy.jar)
+        while IFS= read -r jar; do
+          echo "Found jar: $jar"
+          # compute a target directory under usr/jars that preserves relative layout
+          relpath="${jar#${{ env.INSTALL_APPIMAGE_DIR }}/}"
+          target_dir="${{ env.INSTALL_APPIMAGE_DIR }}/usr/jars/$(dirname "$relpath")"
+          mkdir -p "$target_dir"
+          cp -a "$jar" "$target_dir/" && found=$((found+1)) || echo "Warning: failed to cp $jar -> $target_dir" >> $GITHUB_STEP_SUMMARY
+        done < <(find "${{ env.INSTALL_APPIMAGE_DIR }}" -type f \( -iname 'ProjTLaunch*.jar' -o -iname 'ProjTLaunchLegacy*.jar' -o -path '*/ProjTLauncher/*.jar' \) -print)
+
+        if [ "$found" -eq 0 ]; then
+          echo ":warning: No ProjTLaunch jars were found under ${{ env.INSTALL_APPIMAGE_DIR }} (tried find). Please check CMake install paths." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Copied $found jar(s) to ${{ env.INSTALL_APPIMAGE_DIR }}/usr/jars"
+        fi
 
         mv ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/tr.org.yongdohyun.ProjTLauncher.metainfo.xml ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/tr.org.yongdohyun.ProjTLauncher.appdata.xml
         export "NO_APPSTREAM=1" # we have to skip appstream checking because appstream on ubuntu 20.04 is outdated
@@ -133,7 +157,25 @@ runs:
         cmake --install ${{ env.BUILD_DIR }} --prefix ${{ env.INSTALL_PORTABLE_DIR }} --component portable
 
         # Move jars to /jars for portable
-        mv ${{ env.INSTALL_PORTABLE_DIR }}/share/ProjTLauncher ${{ env.INSTALL_PORTABLE_DIR }}/jars
+        # BACKUP: mv ${{ env.INSTALL_PORTABLE_DIR }}/share/ProjTLauncher ${{ env.INSTALL_PORTABLE_DIR }}/jars
+        mkdir -p ${{ env.INSTALL_PORTABLE_DIR }}/jars
+        echo "Searching for ProjTLaunch jars under ${{ env.INSTALL_PORTABLE_DIR }}..."
+        found=0
+        if [ -d "${{ env.INSTALL_PORTABLE_DIR }}/share/ProjTLauncher" ]; then
+          cp -a "${{ env.INSTALL_PORTABLE_DIR }}/share/ProjTLauncher" "${{ env.INSTALL_PORTABLE_DIR }}/jars/" && found=$((found+1)) || echo "Warning: failed to copy ProjTLauncher dir" >> $GITHUB_STEP_SUMMARY
+        fi
+        while IFS= read -r jar; do
+          echo "Found jar: $jar"
+          relpath="${jar#${{ env.INSTALL_PORTABLE_DIR }}/}"
+          target_dir="${{ env.INSTALL_PORTABLE_DIR }}/jars/$(dirname "$relpath")"
+          mkdir -p "$target_dir"
+          cp -a "$jar" "$target_dir/" && found=$((found+1)) || echo "Warning: failed to cp $jar -> $target_dir" >> $GITHUB_STEP_SUMMARY
+        done < <(find "${{ env.INSTALL_PORTABLE_DIR }}" -type f \( -iname 'ProjTLaunch*.jar' -o -iname 'ProjTLaunchLegacy*.jar' -o -path '*/ProjTLauncher/*.jar' \) -print)
+        if [ "$found" -eq 0 ]; then
+          echo ":warning: No ProjTLaunch jars were found under ${{ env.INSTALL_PORTABLE_DIR }}. Check CMake install/component layout." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Copied $found jar(s) to ${{ env.INSTALL_PORTABLE_DIR }}/jars"
+        fi
 
         for l in $(find ${{ env.INSTALL_PORTABLE_DIR }} -type f); do l=${l#$(pwd)/}; l=${l#${{ env.INSTALL_PORTABLE_DIR }}/}; l=${l#./}; echo $l; done > ${{ env.INSTALL_PORTABLE_DIR }}/manifest.txt
         cd ${{ env.INSTALL_PORTABLE_DIR }}
