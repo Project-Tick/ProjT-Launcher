@@ -11,7 +11,14 @@ runs:
         sudo apt-get -y install \
           dpkg-dev \
           ninja-build extra-cmake-modules scdoc \
-          appstream libxcb-cursor-dev
+          appstream libxcb-cursor-dev \
+          openjdk-17-jdk
+
+    - name: Set JAVA_HOME
+      shell: bash
+      run: |
+        echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> "$GITHUB_ENV"
+        echo "PATH=$JAVA_HOME/bin:$PATH" >> "$GITHUB_ENV"
 
     - name: Setup AppImage tooling
       shell: bash

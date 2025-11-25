@@ -20,6 +20,7 @@ runs:
       shell: bash
       run: |
         echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> "$GITHUB_ENV"
+        echo "PATH=$JAVA_HOME/bin:$PATH" >> "$GITHUB_ENV"
 
     - name: Setup vcpkg cache
       if: ${{ inputs.build-type == 'Debug' }}
