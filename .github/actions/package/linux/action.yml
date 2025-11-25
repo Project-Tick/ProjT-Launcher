@@ -67,11 +67,25 @@ runs:
         # BACKUP: mv ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/ProjTLauncher ${{ env.INSTALL_APPIMAGE_DIR }}/usr/jars
         # Safer copy: ensure target exists, search for ProjTLaunch jars and copy them into usr/jars
         mkdir -p ${{ env.INSTALL_APPIMAGE_DIR }}/usr/jars
-        echo "Searching for ProjTLaunch jars under ${{ env.INSTALL_APPIMAGE_DIR }}..."
+        echo "Listing top-level install and install-appdir for debugging..."
+        ls -la "${{ runner.workspace }}/install" || true
+        ls -la "${{ env.INSTALL_APPIMAGE_DIR }}" || true
         found=0
         # If upstream CMake put an entire directory, copy it first
         if [ -d "${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/ProjTLauncher" ]; then
           cp -a "${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/ProjTLauncher" "${{ env.INSTALL_APPIMAGE_DIR }}/usr/jars/" && found=$((found+1)) || echo "Warning: failed to copy ProjTLauncher dir" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        # Also check top-level install/jars placed by CMake
+        if [ -d "${{ runner.workspace }}/install/jars" ]; then
+          echo "Top-level install/jars exists, listing..."
+          ls -la "${{ runner.workspace }}/install/jars" || true
+          while IFS= read -r jar; do
+            echo "Found top-level jar: $jar"
+            target_dir="${{ env.INSTALL_APPIMAGE_DIR }}/usr/jars"
+            mkdir -p "$target_dir"
+            cp -a "$jar" "$target_dir/" && found=$((found+1)) || echo "Warning: failed to cp $jar -> $target_dir" >> $GITHUB_STEP_SUMMARY
+          done < <(find "${{ runner.workspace }}/install/jars" -type f \( -iname 'ProjTLaunch*.jar' -o -iname 'ProjTLaunchLegacy*.jar' \) -print)
         fi
 
         # Find individual jars (including ProjTLaunch.jar and ProjTLaunchLegacy.jar)
@@ -159,10 +173,24 @@ runs:
         # Move jars to /jars for portable
         # BACKUP: mv ${{ env.INSTALL_PORTABLE_DIR }}/share/ProjTLauncher ${{ env.INSTALL_PORTABLE_DIR }}/jars
         mkdir -p ${{ env.INSTALL_PORTABLE_DIR }}/jars
+        echo "Listing top-level install and install-portable for debugging..."
+        ls -la "${{ runner.workspace }}/install" || true
+        ls -la "${{ env.INSTALL_PORTABLE_DIR }}" || true
         echo "Searching for ProjTLaunch jars under ${{ env.INSTALL_PORTABLE_DIR }}..."
         found=0
         if [ -d "${{ env.INSTALL_PORTABLE_DIR }}/share/ProjTLauncher" ]; then
           cp -a "${{ env.INSTALL_PORTABLE_DIR }}/share/ProjTLauncher" "${{ env.INSTALL_PORTABLE_DIR }}/jars/" && found=$((found+1)) || echo "Warning: failed to copy ProjTLauncher dir" >> $GITHUB_STEP_SUMMARY
+        fi
+        # Also check top-level install/jars placed by CMake
+        if [ -d "${{ runner.workspace }}/install/jars" ]; then
+          echo "Top-level install/jars exists, listing..."
+          ls -la "${{ runner.workspace }}/install/jars" || true
+          while IFS= read -r jar; do
+            echo "Found top-level jar: $jar"
+            target_dir="${{ env.INSTALL_PORTABLE_DIR }}/jars"
+            mkdir -p "$target_dir"
+            cp -a "$jar" "$target_dir/" && found=$((found+1)) || echo "Warning: failed to cp $jar -> $target_dir" >> $GITHUB_STEP_SUMMARY
+          done < <(find "${{ runner.workspace }}/install/jars" -type f \( -iname 'ProjTLaunch*.jar' -o -iname 'ProjTLaunchLegacy*.jar' \) -print)
         fi
         while IFS= read -r jar; do
           echo "Found jar: $jar"
