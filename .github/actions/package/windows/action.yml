@@ -53,20 +53,20 @@ runs:
     - name: Fetch codesign certificate
       shell: bash # yes, we are not using MSYS2 or PowerShell here
       run: |
-          echo '${{ inputs.windows-codesign-cert }}' | base64 --decode > codesign.pfx
+        echo '${{ inputs.windows-codesign-cert }}' | base64 --decode > codesign.pfx
 
-          - name: Sign executable
-            shell: pwsh
-            env:
-              INSTALL_DIR: install
-            run: |
-              if (Get-Content ./codesign.pfx){
-                cd ${{ env.INSTALL_DIR }}
-                # We ship the exact same executable for portable and non-portable editions, so signing just once is fine
-                SignTool sign /fd sha256 /td sha256 /f ../codesign.pfx /p '${{ inputs.windows-codesign-password }}' /tr http://timestamp.digicert.com projtlauncher.exe projtlauncher_updater.exe projtlauncher_filelink.exe 
-              } else {
-                ":warning: Skipped code signing for Windows, as certificate was not present." >> $env:GITHUB_STEP_SUMMARY
-              }
+    - name: Sign executable
+      shell: pwsh
+      env:
+        INSTALL_DIR: install
+      run: |
+        if (Get-Content ./codesign.pfx){
+          cd ${{ env.INSTALL_DIR }}
+            # We ship the exact same executable for portable and non-portable editions, so signing just once is fine
+            SignTool sign /fd sha256 /td sha256 /f ../codesign.pfx /p '${{ inputs.windows-codesign-password }}' /tr http://timestamp.digicert.com projtlauncher.exe projtlauncher_updater.exe projtlauncher_filelink.exe 
+        } else {
+          ":warning: Skipped code signing for Windows, as certificate was not present." >> $env:GITHUB_STEP_SUMMARY
+        }
 
     - name: Package (MinGW, portable)
       if: ${{ inputs.msystem != '' }}
