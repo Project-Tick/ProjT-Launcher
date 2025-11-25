@@ -115,8 +115,8 @@ runs:
         makensis -NOCD "${{ github.workspace }}/${{ env.BUILD_DIR }}/program_info/win_install.nsi"
 
     - name: Sign installer
-        shell: pwsh
-        run: |
+      shell: pwsh
+      run: |
           if (Get-Content ./codesign.pfx){
             SignTool sign /fd sha256 /td sha256 /f codesign.pfx /p '${{ inputs.windows-codesign-password }}' /tr http://timestamp.digicert.com ProjTLauncher-Setup.exe
           } else {
