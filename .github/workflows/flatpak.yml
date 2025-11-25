@@ -79,7 +79,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.8
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
       options: --privileged
 
     steps:
@@ -92,11 +92,6 @@ jobs:
         shell: bash
         run: |
           echo "VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
-
-      - name: Add Flathub remote
-        shell: bash
-        run: |
-          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Build Flatpak
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
