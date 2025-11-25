@@ -51,8 +51,8 @@ runs:
         Get-ChildItem ${{ env.INSTALL_DIR }} -Recurse | ForEach FullName | Resolve-Path -Relative | %{ $_.TrimStart('.\') } | %{ $_.TrimStart('${{ env.INSTALL_DIR }}') } | %{ $_.TrimStart('\') } | Out-File -FilePath ${{ env.INSTALL_DIR }}/manifest.txt
 
     - name: Fetch codesign certificate
-        shell: bash # yes, we are not using MSYS2 or PowerShell here
-        run: |
+      shell: bash # yes, we are not using MSYS2 or PowerShell here
+      run: |
           echo '${{ inputs.windows-codesign-cert }}' | base64 --decode > codesign.pfx
 
           - name: Sign executable
