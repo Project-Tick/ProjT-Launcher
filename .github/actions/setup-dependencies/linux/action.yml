@@ -11,7 +11,8 @@ runs:
         sudo apt-get -y install \
           dpkg-dev \
           ninja-build extra-cmake-modules scdoc \
-          appstream libxcb-cursor-dev
+          appstream libxcb-cursor-dev \
+          openjdk-17-jdk
 
     - name: Setup AppImage tooling
       shell: bash

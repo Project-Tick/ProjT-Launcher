@@ -81,10 +81,6 @@ jobs:
             artifact-name: Linux
             base-cmake-preset: linux
 
-            # NOTE(@getchoo): Yes, we're intentionally using 24.04 here!!!
-            #
-            # It's not really documented anywhere AFAICT, but upstream Qt binaries
-            # *for the same version* are compiled against 24.04 on ARM, and *not* 22.04 like x64
           - os: ubuntu-24.04-arm
             artifact-name: Linux-aarch64
             base-cmake-preset: linux
@@ -104,7 +100,6 @@ jobs:
           - os: windows-2022
             artifact-name: Windows-MSVC
             base-cmake-preset: windows_msvc
-            # TODO(@getchoo): This is the default in setup-dependencies/windows. Why isn't it working?!?!
             vcvars-arch: amd64
 
           - os: windows-11-arm
