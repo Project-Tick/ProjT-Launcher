@@ -81,7 +81,6 @@ runs:
           cmark:p
           tomlplusplus:p
           quazip-qt6:p
-          openjdk17:p
 
     - name: Install NSIS (MSVC)
       if: ${{ runner.os == 'Windows' && inputs.msystem == '' }}
