@@ -55,6 +55,7 @@
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QToolTip>
+#include <QRegularExpression>
 
 #include "InfoFrame.h"
 #include "ui_InfoFrame.h"
