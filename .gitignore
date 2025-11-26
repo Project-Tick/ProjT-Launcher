@@ -63,4 +63,4 @@ flatbuild
 vcpkg_installed/
 obj-*/
 *.log
-docs
+docs/TODO_FIXME_REPORT.md
