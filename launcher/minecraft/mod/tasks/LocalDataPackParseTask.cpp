@@ -341,7 +341,7 @@ bool processPackPNG(const DataPack* pack)
             } else {
                 return png_invalid();  // pack.png does not exists or is not a valid file.
             }
-            return false;  // not processed correctly; https://github.com/Project-Tick/ProjT-Launcher/issues/1740
+            return false;
         }
         case ResourceType::ZIPFILE: {
             QuaZip zip(pack->fileinfo().filePath());
@@ -367,7 +367,7 @@ bool processPackPNG(const DataPack* pack)
             } else {
                 return png_invalid();  // could not set pack.mcmeta as current file.
             }
-            return false;  // not processed correctly; https://github.com/Project-Tick/ProjT-Launcher/issues/1740
+            return false;
         }
         default:
             qWarning() << "Invalid type for data pack parse task!";
