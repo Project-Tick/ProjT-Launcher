@@ -44,7 +44,7 @@ MinecraftTarget MinecraftTarget::parse(const QString& fullAddress, bool useWorld
 
     // The logic below replicates the exact logic minecraft uses for parsing server addresses.
     // While the conversion is not lossless and eats errors, it ensures the same behavior
-    // within Minecraft and Prism Launcher when entering server addresses.
+    // within Minecraft and ProjT Launcher when entering server addresses.
     if (fullAddress.startsWith("[")) {
         int bracket = fullAddress.indexOf("]");
         if (bracket > 0) {

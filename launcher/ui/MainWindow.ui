@@ -458,7 +458,7 @@
     <iconset theme="launcher"/>
    </property>
    <property name="text">
-    <string>Prism Launcher (zip)</string>
+    <string>ProjT Launcher (zip)</string>
    </property>
   </action>
   <action name="actionExportInstanceMrPack">
