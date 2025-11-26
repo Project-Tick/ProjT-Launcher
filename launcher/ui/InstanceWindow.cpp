@@ -82,7 +82,10 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent) : QMainWin
     // Add page container
     {
         auto provider = std::make_shared<InstancePageProvider>(m_instance);
-        m_container = new PageContainer(provider.get(), "console", this);
+        // Do not force the console page as the default when creating the window.
+        // Creating the window should not automatically open the console; the
+        // console will still be shown explicitly on error or when requested.
+        m_container = new PageContainer(provider.get(), QString(), this);
         m_container->setParentContainer(this);
         setCentralWidget(m_container);
         setContentsMargins(0, 0, 0, 0);
