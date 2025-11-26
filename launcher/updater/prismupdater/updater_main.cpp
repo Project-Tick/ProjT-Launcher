@@ -40,16 +40,16 @@
 #include "PrismUpdater.h"
 int main(int argc, char* argv[])
 {
-    PrismUpdaterApp wUpApp(argc, argv);
+    ProjTUpdaterApp wUpApp(argc, argv);
 
     switch (wUpApp.status()) {
-        case PrismUpdaterApp::Starting:
-        case PrismUpdaterApp::Initialized: {
+        case ProjTUpdaterApp::Starting:
+        case ProjTUpdaterApp::Initialized: {
             return wUpApp.exec();
         }
-        case PrismUpdaterApp::Failed:
+        case ProjTUpdaterApp::Failed:
             return 1;
-        case PrismUpdaterApp::Succeeded:
+        case ProjTUpdaterApp::Succeeded:
             return 0;
         default:
             return -1;
