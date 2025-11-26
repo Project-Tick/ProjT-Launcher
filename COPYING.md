@@ -18,6 +18,18 @@
     This file incorporates work covered by the following copyright and
     permission notice:
 
+        This project includes a modified version of the Prism Launcher logo.
+
+        Original logo:
+        Prism Launcher Logo
+        © Prism Launcher Contributors
+        Licensed under CC BY-SA 4.0
+
+        Modified version:
+        ProjT Launcher Logo
+        © 2025 ProjT Launcher Contributors
+        Licensed under CC BY-SA 4.0
+
         Prism Launcher - Minecraft Launcher
         Copyright 2022-2025 Prism Launcher Contributors
 
