@@ -62,13 +62,13 @@
 
 #include "GitHubRelease.h"
 
-class PrismUpdaterApp : public QApplication {
+class ProjTUpdaterApp : public QApplication {
     // friends for the purpose of limiting access to deprecated stuff
     Q_OBJECT
    public:
     enum Status { Starting, Failed, Succeeded, Initialized, Aborted };
-    PrismUpdaterApp(int& argc, char** argv);
-    virtual ~PrismUpdaterApp();
+    ProjTUpdaterApp(int& argc, char** argv);
+    virtual ~ProjTUpdaterApp();
     void loadReleaseList();
     void run();
     Status status() const { return m_status; }
@@ -78,7 +78,7 @@ class PrismUpdaterApp : public QApplication {
     void abort(const QString& reason);
     void showFatalErrorMessage(const QString& title, const QString& content);
 
-    bool loadPrismVersionFromExe(const QString& exe_path);
+    bool loadProjTVersionFromExe(const QString& exe_path);
 
     void downloadReleasePage(const QString& api_url, int page);
     int parseReleasePage(const QByteArray* response);
@@ -122,8 +122,8 @@ class PrismUpdaterApp : public QApplication {
     bool m_isAppimage = false;
     bool m_isFlatpak = false;
     QString m_appimagePath;
-    QString m_prismExecutable;
-    QUrl m_prismRepoUrl;
+    QString m_projtExecutable;
+    QUrl m_projtRepoUrl;
     Version m_userSelectedVersion;
     bool m_checkOnly;
     bool m_forceUpdate;
@@ -134,13 +134,13 @@ class PrismUpdaterApp : public QApplication {
 
     QString m_updateLogPath;
 
-    QString m_prismBinaryName;
-    QString m_prismVersion;
-    int m_prismVersionMajor = -1;
-    int m_prismVersionMinor = -1;
-    int m_prismVersionPatch = -1;
+    QString m_projtBinaryName;
+    QString m_projtVersion;
+    int m_projtVersionMajor = -1;
+    int m_projtVersionMinor = -1;
+    int m_projtVersionPatch = -1;
     QString m_prsimVersionChannel;
-    QString m_prismGitCommit;
+    QString m_projtGitCommit;
 
     GitHubRelease m_install_release;
 
