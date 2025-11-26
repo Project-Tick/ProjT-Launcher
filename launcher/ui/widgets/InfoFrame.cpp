@@ -55,6 +55,7 @@
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QToolTip>
+#include <QRegularExpression>
 
 #include "InfoFrame.h"
 #include "ui_InfoFrame.h"
@@ -189,6 +190,12 @@ QString InfoFrame::renderColorCodes(QString input)
                                                    { 'c', "#FF5555" }, { 'd', "#FF55FF" }, { 'e', "#FFFF55" }, { 'f', "#FFFFFF" } };
     // https://minecraft.wiki/w/Formatting_codes#Formatting_codes
     const QMap<QChar, QString> formatting_codes_map = { { 'l', "b" }, { 'm', "s" }, { 'n', "u" }, { 'o', "i" } };
+
+    // Linkify plain http/https URLs so they become clickable when we render HTML below.
+    // This is intentionally simple and conservative: we only match basic http(s) URLs
+    // and wrap them in an anchor tag.
+    static const QRegularExpression urlRe(R"((https?://[^\s"'<>]+))", QRegularExpression::CaseInsensitiveOption);
+    input.replace(urlRe, "<a href=\"\\1\">\\1</a>");
 
     QString html("<html>");
     QList<QString> tags{};

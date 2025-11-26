@@ -98,8 +98,11 @@ static LoadResult loadComponent(ComponentPtr component, Task::Ptr& loadTask, Net
             fileChanged = true;
         }
         if (fileChanged) {
-            // FIXME: @QUALITY do not ignore return value
-            ProfileUtils::saveJsonFile(OneSixVersionFormat::versionFileToJson(file), customPatchFilename);
+            // Ensure we don't ignore failures when writing back a fixed json file.
+            bool saved = ProfileUtils::saveJsonFile(OneSixVersionFormat::versionFileToJson(file), customPatchFilename);
+            if (!saved) {
+                qCWarning(instanceProfileResolveC) << "Failed to save modified component file:" << customPatchFilename;
+            }
         }
 
         component->m_file = file;

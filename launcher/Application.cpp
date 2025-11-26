@@ -1564,10 +1564,16 @@ bool Application::launch(InstancePtr instance,
 void Application::continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName)
 {
     InstancePtr instance = instances()->getInstanceById(instanceId);
-    showInstanceWindow(instance);
+    InstanceWindow* window = nullptr;
+
+    if (instance->settings()->get("ShowConsole").toBool()) {
+        window = showInstanceWindow(instance);
+    }
     QMutexLocker locker(&m_instanceExtrasMutex);
     auto& extras = m_instanceExtras[instanceId];
-    auto window = extras.window;
+    if (!window) {
+        window = extras.window;
+    }
     if (window) {
         if (!window->saveAll()) {
             return;

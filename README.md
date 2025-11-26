@@ -60,75 +60,11 @@ If you want to build ProjT Launcher yourself, check out:
 - [`CMakeLists.txt`](CMakeLists.txt) plus the `cmake/` helpers for a traditional CMake toolchain.
 - The GitHub Actions workflows (coming soon) for concrete build examples on each platform.
 
-## 🍎 macOS Support: Apple Silicon Only
+## 🍎 macOS Support
 
-**As of version 0.0.3, ProjT Launcher officially supports Apple Silicon (ARM64) only.** Intel Mac (x86_64-darwin) support has been discontinued.
+As of v0.0.3 the project targets Apple Silicon (ARM64) for official builds and day-to-day testing. Universal `.app` bundles produced via CMake remain generally compatible with Intel macOS (x86_64), but Intel-specific build pipelines (notably Nix flake builds) and active Intel testing are deprecated.
 
-### Why We Ended Intel Mac Support
-
-#### 1. **Apple's ARM-First Ecosystem**
-
-Apple officially completed the transition to Apple Silicon in 2023 and has since optimized macOS, Xcode, and all system frameworks exclusively for ARM64. Intel Macs now receive:
-
-- **Reduced system updates** — Security patches only, no new features
-- **Slower toolchain support** — Xcode debuggers and profilers prioritize ARM
-- **Degraded graphics performance** — Metal and GPU APIs optimize for Apple Silicon
-- **No Qt 6.8+ optimization** — Modern Qt versions target ARM-first
-- **JDK builds lag behind** — OpenJDK 21+ ARM builds ship weeks earlier than Intel
-
-Running a modern launcher on Intel macOS now means fighting deprecated toolchains, unstable libraries, and an OS with declining maintenance.
-
-#### 2. **Nix Flake Infrastructure Issues**
-
-Our **Nix flake builds** (used for reproducible, official releases) are being discontinued for x86_64-darwin:
-
-- **3+ hour build times** on Intel vs. 30-40 minutes on ARM — Nix dependency resolution and sandboxed compilation hit severe performance issues on deprecated Intel toolchains
-- **No CI platform provides Intel macOS 26 runners** anymore (GitHub Actions, GitLab, Azure all ARM-only)
-- Maintaining x86_64-darwin support in Nix requires self-hosted hardware, manual patching, and separate derivations
-
-**This affects Nix users only.** Our `.app` bundles (built with CMake) remain universal binaries that work on both platforms, but we no longer test or support Intel Macs officially.
-
-#### 3. **Real-World Usage Statistics**
-
-Our telemetry and community feedback show:
-
-- **~78% of macOS players run Apple Silicon** (M1/M2/M3/M4)
-- **Intel share dropped below 3%** and continues falling rapidly
-- **Support tickets from Intel users focus on performance issues** inherent to the deprecated platform
-
-Dedicating resources to <3% of users would slow down development for the 97% majority.
-
-#### 4. **Technical Stability Issues**
-
-During our testing, Intel Mac builds exhibited:
-
-- Higher crash rates (especially with Qt WebEngine)
-- Rendering glitches in the UI
-- Memory leaks in JVM bridge code
-- Slower instance launch times (2-3x slower than ARM)
-- Compatibility issues with modern OpenGL/Metal shaders
-
-These aren't bugs we can fix—they stem from Apple's discontinued optimization of Intel-specific code paths.
-
-### 🛠️ Alternatives for Intel Mac Users
-
-If you're still using an Intel Mac, you have several options:
-
-1. **Use the last Intel-compatible release** — ProjT Launcher v0.0.2 is the final version with Intel support
-2. **Upgrade to Apple Silicon** — M1 Macs offer 3-5x performance improvements and full compatibility
-3. **Use Prism Launcher** — Our upstream project still supports Intel Macs
-4. **Run Linux via Parallels/Boot Camp** — Linux x86_64 builds work flawlessly on Intel Macs
-
-### 🚀 Our Future Focus
-
-By ending Intel Mac support, we can now:
-
-- **Ship faster releases** — Single ARM build matrix accelerates CI/CD
-- **Adopt latest APIs** — Use Metal 3, Qt 6.9+, and modern Swift tooling without compatibility layers
-- **Improve performance** — Optimize exclusively for ARM's instruction set
-- **Reduce technical debt** — Remove workarounds for Intel-specific bugs
-
-Our goal is to deliver the best Minecraft launcher experience for the **vast majority of macOS users** rather than compromise for a shrinking legacy platform.
+For the full technical rationale, migration notes, and alternatives for Intel users, see `docs/APPLE_SILICON_RATIONALE.md`.
 
 ## Sponsors & Partners
 
