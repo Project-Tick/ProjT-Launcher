@@ -47,7 +47,7 @@ class Setting : public QObject {
      * Construct a Setting
      *
      * Synonyms are all the possible names used in the settings object, in order of preference.
-     * First synonym is the ID, which identifies the setting in Prism Launcher.
+     * First synonym is the ID, which identifies the setting in ProjT Launcher.
      *
      * defVal is the default value that will be returned when the settings object
      * doesn't have any value for this setting.

@@ -96,6 +96,6 @@ void JavaWizardPage::retranslate()
 {
     setTitle(tr("Java"));
     setSubTitle(
-        tr("Please select how much memory to allocate to instances and if Prism Launcher should manage Java automatically or manually."));
+        tr("Please select how much memory to allocate to instances and if ProjT Launcher should manage Java automatically or manually."));
     m_java_widget->retranslate();
 }

@@ -168,7 +168,7 @@ class Library {
     QString getCompatibleNative(const RuntimeContext& runtimeContext) const;
 
    private: /* methods */
-    /// the default storage prefix used by Prism Launcher
+    /// the default storage prefix used by ProjT Launcher
     static QString defaultStoragePrefix();
 
     /// Get the prefix - root of the storage to be used
@@ -186,23 +186,23 @@ class Library {
     /// DEPRECATED URL prefix of the maven repo where the file can be downloaded
     QString m_repositoryURL;
 
-    /// DEPRECATED: Prism Launcher-specific absolute URL. takes precedence over the implicit maven repo URL, if defined
+    /// DEPRECATED: ProjT Launcher-specific absolute URL. takes precedence over the implicit maven repo URL, if defined
     QString m_absoluteURL;
 
-    /// Prism Launcher extension - filename override
+    /// ProjT Launcher extension - filename override
     QString m_filename;
 
-    /// DEPRECATED Prism Launcher extension - display name
+    /// DEPRECATED ProjT Launcher extension - display name
     QString m_displayname;
 
     /**
-     * Prism Launcher-specific type hint - modifies how the library is treated
+     * ProjT Launcher-specific type hint - modifies how the library is treated
      */
     QString m_hint;
 
     /**
-     * storage - by default the local libraries folder in Prism Launcher, but could be elsewhere
-     * Prism Launcher specific, because of FTB.
+     * storage - by default the local libraries folder in ProjT Launcher, but could be elsewhere
+     * ProjT Launcher specific, because of FTB.
      */
     QString m_storagePrefix;
 

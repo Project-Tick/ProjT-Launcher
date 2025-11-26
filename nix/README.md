@@ -1,13 +1,13 @@
 # ProjT Launcher Nix Packaging
 
-## Installing a stable release (nixpkgs)
+<!-- ## Installing a stable release (nixpkgs) -->
 
-> **Note**  
-> Some examples still reference the upstream `PrismLauncher/PrismLauncher` repository. Replace those occurrences with the Git host/owner of ProjT Launcher once your mirror is public.
+<!-- > **Note**  
+> Some examples still reference the upstream `Project-Tick/ProjT-Launcher` repository. Replace those occurrences with the Git host/owner of ProjT Launcher once your mirror is public. -->
 
-ProjT Launcher currently reuses the upstream `prismlauncher` packages that have been in [nixpkgs](https://github.com/NixOS/nixpkgs/) since 22.11.
+<!-- ProjT Launcher currently reuses the upstream `projtlauncher` packages that have been in [nixpkgs](https://github.com/NixOS/nixpkgs/) since 22.11. -->
 
-Check the upstream [Prism Launcher entry on the NixOS Wiki](https://wiki.nixos.org/wiki/Prism_Launcher) for up-to-date instructions until our dedicated documentation is published.
+<!-- Check the upstream [ProjT Launcher entry on the NixOS Wiki](https://wiki.nixos.org/wiki/ProjT_Launcher) for up-to-date instructions until our dedicated documentation is published. -->
 
 ## Installing a development release (flake)
 
@@ -31,7 +31,7 @@ Example (NixOS):
 
 ### Installing the package directly
 
-After adding `github:PrismLauncher/PrismLauncher` to your flake inputs, you can access the flake's `packages` output.
+After adding `github:Project-Tick/ProjT-Launcher` to your flake inputs, you can access the flake's `packages` output.
 
 Example:
 
@@ -40,10 +40,10 @@ Example:
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    prismlauncher = {
-      url = "github:PrismLauncher/PrismLauncher";
+    projtlauncher = {
+      url = "github:Project-Tick/ProjT-Launcher";
 
-      # Optional: Override the nixpkgs input of prismlauncher to use the same revision as the rest of your flake
+      # Optional: Override the nixpkgs input of projtlauncher to use the same revision as the rest of your flake
       # Note that this may break the reproducibility mentioned above, and you might not be able to access the binary cache
       #
       # inputs.nixpkgs.follows = "nixpkgs";
@@ -51,7 +51,7 @@ Example:
   };
 
   outputs =
-    { nixpkgs, prismlauncher, ... }:
+    { nixpkgs, projtlauncher, ... }:
     {
       nixosConfigurations.foo = nixpkgs.lib.nixosSystem {
         modules = [
@@ -60,7 +60,7 @@ Example:
           (
             { pkgs, ... }:
             {
-              environment.systemPackages = [ prismlauncher.packages.${pkgs.system}.prismlauncher ];
+              environment.systemPackages = [ projtlauncher.packages.${pkgs.system}.projtlauncher ];
             }
           )
         ];
@@ -85,10 +85,10 @@ Example:
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    prismlauncher = {
-      url = "github:PrismLauncher/PrismLauncher";
+    projtlauncher = {
+      url = "github:Project-Tick/ProjT-Launcher";
 
-      # Optional: Override the nixpkgs input of prismlauncher to use the same revision as the rest of your flake
+      # Optional: Override the nixpkgs input of projtlauncher to use the same revision as the rest of your flake
       # Note that this may break the reproducibility mentioned above, and you might not be able to access the binary cache
       #
       # inputs.nixpkgs.follows = "nixpkgs";
@@ -96,7 +96,7 @@ Example:
   };
 
   outputs =
-    { nixpkgs, prismlauncher, ... }:
+    { nixpkgs, projtlauncher, ... }:
     {
       nixosConfigurations.foo = nixpkgs.lib.nixosSystem {
         modules = [
@@ -105,9 +105,9 @@ Example:
           (
             { pkgs, ... }:
             {
-              nixpkgs.overlays = [ prismlauncher.overlays.default ];
+              nixpkgs.overlays = [ projtlauncher.overlays.default ];
 
-              environment.systemPackages = [ pkgs.prismlauncher ];
+              environment.systemPackages = [ pkgs.projtlauncher ];
             }
           )
         ];
@@ -123,11 +123,11 @@ You can simply call the default package of this flake.
 Example:
 
 ```shell
-nix run github:PrismLauncher/PrismLauncher
+nix run github:Project-Tick/ProjT-Launcher
 
-nix shell github:PrismLauncher/PrismLauncher
+nix shell github:Project-Tick/ProjT-Launcher
 
-nix profile install github:PrismLauncher/PrismLauncher
+nix profile install github:Project-Tick/ProjT-Launcher
 ```
 
 ## Installing a development release (without flakes)
@@ -160,8 +160,8 @@ Example:
 {
   environment.systemPackages = [
     (import (
-      builtins.fetchTarball "https://github.com/PrismLauncher/PrismLauncher/archive/develop.tar.gz"
-    )).packages.${pkgs.system}.prismlauncher
+      builtins.fetchTarball "https://github.com/Project-Tick/ProjT-Launcher/archive/develop.tar.gz"
+    )).packages.${pkgs.system}.projtlauncher
   ];
 }
 ```
@@ -178,11 +178,11 @@ Example:
 {
   nixpkgs.overlays = [
     (import (
-      builtins.fetchTarball "https://github.com/PrismLauncher/PrismLauncher/archive/develop.tar.gz"
+      builtins.fetchTarball "https://github.com/Project-Tick/ProjT-Launcher/archive/develop.tar.gz"
     )).overlays.default
   ];
 
-  environment.systemPackages = [ pkgs.prismlauncher ];
+  environment.systemPackages = [ pkgs.projtlauncher ];
 }
 ```
 
@@ -193,23 +193,23 @@ You can add this repository as a channel and install its packages that way.
 Example:
 
 ```shell
-nix-channel --add https://github.com/PrismLauncher/PrismLauncher/archive/develop.tar.gz prismlauncher
+nix-channel --add https://github.com/Project-Tick/ProjT-Launcher/archive/develop.tar.gz projtlauncher
 
-nix-channel --update prismlauncher
+nix-channel --update projtlauncher
 
-nix-env -iA prismlauncher.prismlauncher
+nix-env -iA projtlauncher.projtlauncher
 ```
 
 ## Package variants
 
 Both Nixpkgs and this repository offer the following packages:
 
-- `prismlauncher` - The preferred build, wrapped with everything necessary to run the launcher and Minecraft
-- `prismlauncher-unwrapped` - A minimal build that allows for advanced customization of the launcher's runtime environment
+- `projtlauncher` - The preferred build, wrapped with everything necessary to run the launcher and Minecraft
+- `projtlauncher-unwrapped` - A minimal build that allows for advanced customization of the launcher's runtime environment
 
 ### Customizing wrapped packages
 
-The wrapped package (`prismlauncher`) offers some build parameters to further customize the launcher's environment.
+The wrapped package (`projtlauncher`) offers some build parameters to further customize the launcher's environment.
 
 The following parameters can be overridden:
 
