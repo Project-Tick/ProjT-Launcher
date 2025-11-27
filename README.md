@@ -6,6 +6,10 @@
 </p>
 
 <p align="center">
+  <img alt="ProjT Launcher Main Menu" src="https://projtlauncher.yongdohyun.org.tr/img/screenshots/launcher.png" width="80%">
+</p>
+
+<p align="center">
   <strong>ProjT Launcher</strong><br>
   Custom Minecraft launcher for managing multiple installations with ease.<br>
   <em>A fork of Prism Launcher, evolving into an independent project.</em>
