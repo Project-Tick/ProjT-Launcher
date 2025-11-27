@@ -15,7 +15,6 @@
       url = "github:Project-Tick/libnbtplusplus";
       flake = false;
     };
-
     qrcodegenerator = {
       url = "github:nayuki/QR-Code-generator";
       flake = false;

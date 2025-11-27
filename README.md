@@ -88,8 +88,8 @@ Note that if you build this software without removing the provided API keys in [
 
 If you do not agree with these terms and conditions, then remove the associated API keys from the [CMakeLists.txt](CMakeLists.txt) file by setting them to an empty string (`""`).
 
-## License [![GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-C4282D?logo=gnu)](LICENSE)
+## License [![GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-C4282D?logo=gnu)](LICENSE)
 
-All launcher code is available under the GPL-3.0-only license.
+All launcher code is available under the GPL-3.0-or-later and GPL-3.0-only license.
 
 The logo and related assets are under the CC BY-SA 4.0 license.
