@@ -10,7 +10,7 @@
 
 If you discover a security vulnerability, please report it via email:
 
-- [`froster12@naver.com`](mailto:froster12@naver.com)
+- [`yongdohyun@projtlauncher.yongdohyun.org.tr`](mailto:yongdohyun@projtlauncher.yongdohyun.org.tr)
 
 ## What to include
 
