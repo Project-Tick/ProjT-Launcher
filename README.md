@@ -45,11 +45,15 @@ ProjT Launcher is a powerful, user-friendly launcher for Minecraft that lets you
 
 > **Note**: Infrastructure is still being built. Some links/assets may point to Prism Launcher temporarily.
 
-## Installation
+## Packaging Status
 
 <a href="https://repology.org/project/projtlauncher/versions">
   <img src="https://repology.org/badge/vertical-allrepos/projtlauncher.svg" alt="Packaging status" align="right">
 </a>
+
+ProjT Launcher is available in various package repositories. Check the badge above for current distributions and versions.
+
+## Installation
 
 Official releases aren't available yet. Use development builds or build from source.
 
