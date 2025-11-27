@@ -115,4 +115,4 @@ Assets: CC BY-SA 4.0
 
 ---
 
-<p align="center">Made with love for the Minecraft community.</p>
+<p align="center">Made with love for the ProjT contributors.</p>
