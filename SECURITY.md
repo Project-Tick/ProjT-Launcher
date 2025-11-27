@@ -4,16 +4,13 @@
 
 | Version | Supported |
 | -------- | ----------- |
-| 10.x | ✔️ |
-| 9.x | ✔️ |
-| 8.x | ✔️ |
-| < 8.0 | ✔️ |
+| 0.0.x | ✔️ |
 
 ## How to report
 
 If you discover a security vulnerability, please report it via email:
 
-- [`froster12@naver.com`](mailto:froster12@naver.com)
+- [`yongdohyun@projtlauncher.yongdohyun.org.tr`](mailto:yongdohyun@projtlauncher.yongdohyun.org.tr)
 
 ## What to include
 
