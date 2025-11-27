@@ -146,6 +146,11 @@ jobs:
           vcvars-arch: ${{ matrix.vcvars-arch }}
           qt-architecture: ${{ matrix.qt-architecture }}
 
+      - name: Clean build directory for Release builds
+        if: ${{ (inputs.build-type || 'Debug') == 'Release' }}
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
 
       ##
       # BUILD
@@ -154,12 +159,6 @@ jobs:
       - name: Configure Preset
         run: |
           cmake --preset "$CMAKE_PRESET"
-
-      - name: Clean build directory for Release builds
-        if: ${{ (inputs.build-type || 'Debug') == 'Release' }}
-        run: |
-          rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Run Build
         run: |
