@@ -178,6 +178,18 @@ MainWindow::MainWindow(QWidget* parent)
 #ifndef QT_NO_ACCESSIBILITY
     setAccessibleName(m_launcherViewModel->displayName());
 #endif
+    m_launcherViewModel->setDisplayName(APPLICATION->applicationDisplayName());
+    m_launcherViewModel->setVersionString(
+        QStringLiteral("%1.%2.%3").arg(BuildConfig.VERSION_MAJOR).arg(BuildConfig.VERSION_MINOR).arg(BuildConfig.VERSION_PATCH));
+    m_launcherViewModel->setGitRef(BuildConfig.LAUNCHER_GIT);
+    m_launcherViewModel->setGitCommit(BuildConfig.LAUNCHER_GIT);
+    m_launcherViewModel->setAboutHtml(
+        tr("<b>%1</b><br/>Version: %2<br/>Git: %3<br/><br/>%4")
+            .arg(APPLICATION->applicationDisplayName(),
+                 QStringLiteral("%1.%2.%3").arg(BuildConfig.VERSION_MAJOR).arg(BuildConfig.VERSION_MINOR).arg(BuildConfig.VERSION_PATCH),
+                 BuildConfig.LAUNCHER_GIT, BuildConfig.LAUNCHER_COPYRIGHT));
+    m_launcherViewModel->setCurrentPage(LauncherViewModel::Page::Instances);
+    m_settingsViewModel->setCurrentCategory(QStringLiteral("java"));
 
     // instance toolbar stuff
     {
@@ -265,7 +277,10 @@ MainWindow::MainWindow(QWidget* parent)
     }
 
     {  // logs viewing
-        connect(ui->actionViewLog, &QAction::triggered, this, [] { APPLICATION->showLogWindow(); });
+        connect(ui->actionViewLog, &QAction::triggered, this, [this] {
+            m_launcherViewModel->setCurrentPage(LauncherViewModel::Page::Logs);
+            APPLICATION->showLogWindow();
+        });
     }
 
     // add the toolbar toggles to the view menu
@@ -333,7 +348,21 @@ MainWindow::MainWindow(QWidget* parent)
         });
         connect(m_newsViewModel, &NewsViewModel::newsUpdated, this, &MainWindow::updateNewsLabel);
         connect(m_newsViewModel, &NewsViewModel::busyChanged, this, &MainWindow::updateNewsLabel);
+        connect(m_newsViewModel, &NewsViewModel::openLinkRequested, this, [](const QString& link) {
+            if (link.isEmpty()) {
+                return;
+            }
+            DesktopServices::openUrl(QUrl(link));
+        });
         updateNewsLabel();
+    }
+
+    // Instance ViewModel hooks for QML shell actions
+    {
+        connect(m_instanceListViewModel, &InstanceListViewModel::renameRequested, this,
+                &MainWindow::handleInstanceRenameRequest);
+        connect(m_instanceListViewModel, &InstanceListViewModel::duplicateRequested, this,
+                &MainWindow::handleInstanceDuplicateRequest);
     }
 
     // Experimental QML preview dock (hidden by default)
@@ -428,6 +457,10 @@ MainWindow::MainWindow(QWidget* parent)
 
     // track the selection -- update the instance toolbar
     connect(view->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::instanceChanged);
+    if (m_instanceListViewModel) {
+        connect(m_instanceListViewModel, &InstanceListViewModel::selectedInstanceIdChanged, this,
+                &MainWindow::syncSelectionFromViewModel);
+    }
 
     // track icon changes and update the toolbar!
     connect(APPLICATION->icons().get(), &IconList::iconUpdated, this, &MainWindow::iconUpdated);
@@ -1216,14 +1249,23 @@ void MainWindow::updateInstanceToolIcon(QString new_icon)
 
 void MainWindow::setSelectedInstanceById(const QString& id)
 {
-    if (id.isNull())
+    if (!view || !view->selectionModel()) {
         return;
-    const QModelIndex index = APPLICATION->instances()->getInstanceIndexById(id);
-    if (index.isValid()) {
-        QModelIndex selectionIndex = proxymodel->mapFromSource(index);
-        view->selectionModel()->setCurrentIndex(selectionIndex, QItemSelectionModel::ClearAndSelect);
-        updateStatusCenter();
     }
+    if (id.isEmpty()) {
+        view->selectionModel()->clear();
+        selectionBad();
+        return;
+    }
+    const QModelIndex index = APPLICATION->instances()->getInstanceIndexById(id);
+    if (!index.isValid()) {
+        view->selectionModel()->clear();
+        selectionBad();
+        return;
+    }
+    QModelIndex selectionIndex = proxymodel->mapFromSource(index);
+    view->selectionModel()->setCurrentIndex(selectionIndex, QItemSelectionModel::ClearAndSelect);
+    updateStatusCenter();
 }
 
 void MainWindow::updateInstanceListMetrics()
@@ -1233,18 +1275,25 @@ void MainWindow::updateInstanceListMetrics()
     }
     const auto instances = APPLICATION->instances();
     m_instanceListViewModel->setTotalCount(instances->count());
-    const auto selectedId = m_selectedInstance ? m_selectedInstance->id() : QString();
-    m_instanceListViewModel->setSelectedInstanceId(selectedId);
     QStringList instanceNames;
+    QStringList instanceIds;
+    QStringList instanceIcons;
+    QStringList instanceGroups;
     instanceNames.reserve(instances->count());
+    instanceIds.reserve(instances->count());
+    instanceIcons.reserve(instances->count());
+    instanceGroups.reserve(instances->count());
     for (int i = 0; i < instances->count(); ++i) {
         const auto instance = instances->at(i);
         if (!instance) {
             continue;
         }
+        instanceIds.append(instance->id());
         instanceNames.append(instance->name());
+        instanceIcons.append(instance->iconKey());
+        instanceGroups.append(instances->getInstanceGroup(instance->id()));
     }
-    m_instanceListViewModel->setInstanceNames(instanceNames);
+    m_instanceListViewModel->setInstanceLists(instanceIds, instanceNames, instanceIcons, instanceGroups);
 }
 
 void MainWindow::on_actionChangeInstGroup_triggered()
@@ -1359,14 +1408,34 @@ void MainWindow::on_actionViewJavaFolder_triggered()
 
 void MainWindow::refreshInstances()
 {
-    if (m_instanceListViewModel) {
-        m_instanceListViewModel->setBusy(true);
+    if (!m_instanceListViewModel) {
+        return;
     }
-    APPLICATION->instances()->loadList();
-    if (m_instanceListViewModel) {
-        m_instanceListViewModel->setBusy(false);
+    m_instanceListViewModel->refreshInstances();
+    updateInstanceListMetrics();
+}
+
+void MainWindow::handleInstanceRenameRequest(const QString& id, const QString& newName)
+{
+    if (!id.isEmpty()) {
+        setSelectedInstanceById(id);
+    }
+    if (!newName.isEmpty() && m_selectedInstance) {
+        m_selectedInstance->setName(newName);
+        APPLICATION->instances()->saveNow();
         updateInstanceListMetrics();
+        return;
     }
+    on_actionRenameInstance_triggered();
+}
+
+void MainWindow::handleInstanceDuplicateRequest(const QString& id, const QString& newName)
+{
+    if (!id.isEmpty()) {
+        setSelectedInstanceById(id);
+    }
+    Q_UNUSED(newName);
+    on_actionCopyInstance_triggered();
 }
 
 void MainWindow::checkForUpdates()
@@ -1380,6 +1449,9 @@ void MainWindow::checkForUpdates()
 
 void MainWindow::on_actionSettings_triggered()
 {
+    if (m_launcherViewModel) {
+        m_launcherViewModel->setCurrentPage(LauncherViewModel::Page::Settings);
+    }
     APPLICATION->ShowGlobalSettings(this, "global-settings");
 }
 
@@ -1478,12 +1550,18 @@ void MainWindow::on_actionOpenWiki_triggered()
 
 void MainWindow::on_actionMoreNews_triggered()
 {
+    if (m_launcherViewModel) {
+        m_launcherViewModel->setCurrentPage(LauncherViewModel::Page::News);
+    }
     NewsDialog news_dialog(m_newsViewModel, this);
     news_dialog.exec();
 }
 
 void MainWindow::newsButtonClicked()
 {
+    if (m_launcherViewModel) {
+        m_launcherViewModel->setCurrentPage(LauncherViewModel::Page::News);
+    }
     NewsDialog news_dialog(m_newsViewModel, this);
     news_dialog.toggleArticleList();
     news_dialog.exec();
@@ -1496,13 +1574,16 @@ void MainWindow::onCatChanged(int)
 
 void MainWindow::on_actionAbout_triggered()
 {
+    if (m_launcherViewModel) {
+        m_launcherViewModel->setCurrentPage(LauncherViewModel::Page::About);
+    }
     AboutDialog dialog(this);
     dialog.exec();
 }
 
 void MainWindow::on_actionDeleteInstance_triggered()
 {
-    if (!m_selectedInstance) {
+    if (!m_selectedInstance || !m_instanceListViewModel) {
         return;
     }
 
@@ -1534,11 +1615,8 @@ void MainWindow::on_actionDeleteInstance_triggered()
     if (!checkLinkedInstances(id, this, tr("Deleting")))
         return;
 
-    if (APPLICATION->instances()->trashInstance(id)) {
-        ui->actionUndoTrashInstance->setEnabled(APPLICATION->instances()->trashedSomething());
-    } else {
-        APPLICATION->instances()->deleteInstance(id);
-    }
+    m_instanceListViewModel->deleteInstance(id);
+    ui->actionUndoTrashInstance->setEnabled(APPLICATION->instances()->trashedSomething());
     APPLICATION->settings()->set("SelectedInstance", QString());
     selectionBad();
 }
@@ -1634,14 +1712,18 @@ void MainWindow::instanceActivated(QModelIndex index)
 
 void MainWindow::on_actionLaunchInstance_triggered()
 {
-    if (m_selectedInstance && !m_selectedInstance->isRunning()) {
-        APPLICATION->launch(m_selectedInstance);
+    if (!m_instanceListViewModel || !m_selectedInstance) {
+        return;
     }
+    m_instanceListViewModel->launchInstance(m_selectedInstance->id());
 }
 
 void MainWindow::activateInstance(InstancePtr instance)
 {
-    APPLICATION->launch(instance);
+    if (!instance || !m_instanceListViewModel) {
+        return;
+    }
+    m_instanceListViewModel->launchInstance(instance->id());
 }
 
 void MainWindow::on_actionKillInstance_triggered()
@@ -1717,6 +1799,12 @@ void MainWindow::instanceChanged(const QModelIndex& current, [[maybe_unused]] co
         selectionBad();
         return;
     }
+    if (m_settingsViewModel) {
+        m_settingsViewModel->setInstanceId(m_selectedInstance->id());
+    }
+    if (m_instanceListViewModel && !m_syncingSelectionFromViewModel) {
+        m_instanceListViewModel->setSelectedInstanceId(m_selectedInstance->id());
+    }
     updateInstanceListMetrics();
 }
 
@@ -1734,21 +1822,38 @@ void MainWindow::instanceDataChanged(const QModelIndex& topLeft, const QModelInd
     }
 }
 
-void MainWindow::selectionBad()
+void MainWindow::applyNoSelectionState()
 {
-    // start by reseting everything...
     m_selectedInstance = nullptr;
     m_statusLeft->setText(tr("No instance selected"));
-
     statusBar()->clearMessage();
     ui->instanceToolBar->setEnabled(false);
     setInstanceActionsEnabled(false);
     updateLaunchButton();
     renameButton->setText(tr("Rename Instance"));
     updateInstanceToolIcon("grass");
+    if (m_settingsViewModel) {
+        m_settingsViewModel->setInstanceId(QString());
+    }
+}
+
+void MainWindow::selectionBad()
+{
+    applyNoSelectionState();
+
+    if (m_instanceListViewModel && !m_syncingSelectionFromViewModel) {
+        m_instanceListViewModel->setSelectedInstanceId(QString());
+    }
 
     // ...and then see if we can enable the previously selected instance
-    setSelectedInstanceById(APPLICATION->settings()->get("SelectedInstance").toString());
+    if (!m_syncingSelectionFromViewModel && !m_restoringSelection) {
+        const QString storedId = APPLICATION->settings()->get("SelectedInstance").toString();
+        if (!storedId.isEmpty()) {
+            m_restoringSelection = true;
+            setSelectedInstanceById(storedId);
+            m_restoringSelection = false;
+        }
+    }
     updateInstanceListMetrics();
 }
 
@@ -1814,4 +1919,35 @@ void MainWindow::refreshCurrentInstance()
 {
     auto current = view->selectionModel()->currentIndex();
     instanceChanged(current, current);
+}
+
+void MainWindow::syncSelectionFromViewModel()
+{
+    if (!m_instanceListViewModel) {
+        return;
+    }
+    const QString desiredId = m_instanceListViewModel->selectedInstanceId();
+    const QString currentId = m_selectedInstance ? m_selectedInstance->id() : QString();
+    if (!view || !view->selectionModel()) {
+        return;
+    }
+    if (desiredId == currentId) {
+        return;
+    }
+
+    m_syncingSelectionFromViewModel = true;
+    if (desiredId.isEmpty()) {
+        view->selectionModel()->clear();
+        APPLICATION->settings()->set("SelectedInstance", QString());
+        applyNoSelectionState();
+        updateInstanceListMetrics();
+    } else {
+        setSelectedInstanceById(desiredId);
+    }
+    m_syncingSelectionFromViewModel = false;
+
+    const QString resolvedId = m_selectedInstance ? m_selectedInstance->id() : QString();
+    if (m_instanceListViewModel && resolvedId != desiredId) {
+        m_instanceListViewModel->setSelectedInstanceId(resolvedId);
+    }
 }

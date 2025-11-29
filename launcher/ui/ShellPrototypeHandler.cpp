@@ -19,6 +19,7 @@
 #include <QFileInfo>
 #include <QCoreApplication>
 #include <QQmlContext>
+#include <QQmlEngine>
 #include <QQmlPropertyMap>
 #include <QQuickWidget>
 #include <QUrl>
@@ -128,6 +129,17 @@ static QUrl resolveQmlUrl(const QString& fileName)
     return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
 }
 
+namespace {
+bool registerLauncherViewModelEnums()
+{
+    qmlRegisterUncreatableMetaObject(LauncherViewModel::staticMetaObject, "ProjTLauncher", 1, 0, "LauncherViewModelEnums",
+                                     QStringLiteral("Enums are exposed via existing context objects."));
+    return true;
+}
+
+const bool s_launcherVmEnumsRegistered = registerLauncherViewModelEnums();
+}  // namespace
+
 ShellPrototypeHandler::ShellPrototypeHandler(LauncherViewModel* launcherViewModel, InstanceListViewModel* instanceListViewModel,
                                              NewsViewModel* newsViewModel, SettingsViewModel* settingsViewModel, QWidget* parent)
     : QDockWidget(parent)
@@ -191,6 +203,18 @@ void ShellPrototypeHandler::exposeContextProperties(LauncherViewModel* launcherV
     if (settingsViewModel) {
         ctx->setContextProperty(QStringLiteral("settingsVM"), settingsViewModel);
         ctx->setContextProperty(QStringLiteral("settingsViewModel"), settingsViewModel);
+    }
+
+    if (launcherViewModel && m_stateBridge) {
+        launcherViewModel->setCurrentPage(LauncherViewModel::stringToPage(m_stateBridge->lastPageRoute()));
+        connect(m_stateBridge, &ShellStateBridge::lastPageRouteChanged, launcherViewModel, [this, launcherViewModel]() {
+            launcherViewModel->setCurrentPage(LauncherViewModel::stringToPage(m_stateBridge->lastPageRoute()));
+        });
+        connect(launcherViewModel, &LauncherViewModel::currentPageChanged, this, [this, launcherViewModel]() {
+            if (m_stateBridge) {
+                m_stateBridge->setLastPageRoute(LauncherViewModel::pageToString(launcherViewModel->currentPage()));
+            }
+        });
     }
 
     if (m_stateBridge && m_stateBridge->dockVisible()) {

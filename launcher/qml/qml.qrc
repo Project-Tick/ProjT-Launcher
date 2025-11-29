@@ -2,11 +2,13 @@
     <qresource prefix="/qml">
         <file>TestShell.qml</file>
         <file>ShellPrototype.qml</file>
-        <file>NavigationController.js</file>
         <file>ShellRoot.qml</file>
         <file>InstancePage.qml</file>
         <file>NewsPage.qml</file>
         <file>SettingsPage.qml</file>
         <file>AboutPage.qml</file>
+        <file>components/PageHeader.qml</file>
+        <file>LogsPage.qml</file>
+        <file>settings/JavaSettingsPage.qml</file>
     </qresource>
 </RCC>

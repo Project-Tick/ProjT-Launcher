@@ -14,6 +14,12 @@
 
 #include "SettingsViewModel.h"
 
+#include <QCoreApplication>
+
+#include "Application.h"
+#include "BaseInstance.h"
+#include "InstanceList.h"
+
 SettingsViewModel::SettingsViewModel(QObject* parent) : QObject(parent) {}
 
 QString SettingsViewModel::instanceId() const
@@ -29,6 +35,26 @@ QString SettingsViewModel::currentCategory() const
 bool SettingsViewModel::isBusy() const
 {
     return m_busy;
+}
+
+QString SettingsViewModel::javaPath() const
+{
+    return m_javaPath;
+}
+
+bool SettingsViewModel::overrideJavaLocation() const
+{
+    return m_overrideJavaLocation;
+}
+
+bool SettingsViewModel::saveBusy() const
+{
+    return m_saveBusy;
+}
+
+QString SettingsViewModel::lastErrorMessage() const
+{
+    return m_lastErrorMessage;
 }
 
 void SettingsViewModel::setInstanceId(const QString& id)
@@ -58,6 +84,42 @@ void SettingsViewModel::setBusy(bool busy)
     emit busyChanged();
 }
 
+void SettingsViewModel::setJavaPath(const QString& path)
+{
+    if (m_javaPath == path) {
+        return;
+    }
+    m_javaPath = path;
+    emit javaPathChanged();
+}
+
+void SettingsViewModel::setOverrideJavaLocation(bool value)
+{
+    if (m_overrideJavaLocation == value) {
+        return;
+    }
+    m_overrideJavaLocation = value;
+    emit overrideJavaLocationChanged();
+}
+
+void SettingsViewModel::setSaveBusy(bool busy)
+{
+    if (m_saveBusy == busy) {
+        return;
+    }
+    m_saveBusy = busy;
+    emit saveBusyChanged();
+}
+
+void SettingsViewModel::setLastErrorMessage(const QString& message)
+{
+    if (m_lastErrorMessage == message) {
+        return;
+    }
+    m_lastErrorMessage = message;
+    emit lastErrorMessageChanged();
+}
+
 void SettingsViewModel::notifySettingsLoaded()
 {
     emit settingsLoaded();
@@ -71,4 +133,74 @@ void SettingsViewModel::notifySettingsChanged()
 void SettingsViewModel::notifySaveRequested()
 {
     emit saveRequested();
+}
+
+void SettingsViewModel::refresh()
+{
+    loadCurrentSettings();
+    notifySettingsLoaded();
+}
+
+void SettingsViewModel::saveAll()
+{
+    auto instances = APPLICATION ? APPLICATION->instances() : nullptr;
+    if (!instances) {
+        return;
+    }
+    auto inst = instances->getInstanceById(m_instanceId);
+    if (!inst) {
+        return;
+    }
+
+    setSaveBusy(true);
+    auto settings = inst->settings();
+    if (settings) {
+        settings->set("JavaPath", m_javaPath);
+        settings->set("OverrideJavaLocation", m_overrideJavaLocation);
+    }
+    inst->saveNow();
+    setSaveBusy(false);
+    notifySettingsChanged();
+}
+
+void SettingsViewModel::resetToDefaultsForCurrentCategory()
+{
+    resetJavaCategory();
+}
+
+void SettingsViewModel::loadCurrentSettings()
+{
+    auto instances = APPLICATION ? APPLICATION->instances() : nullptr;
+    if (!instances) {
+        return;
+    }
+    auto inst = instances->getInstanceById(m_instanceId);
+    if (!inst) {
+        return;
+    }
+    auto settings = inst->settings();
+    if (!settings) {
+        return;
+    }
+    setJavaPath(settings->get("JavaPath").toString());
+    setOverrideJavaLocation(settings->get("OverrideJavaLocation").toBool());
+}
+
+void SettingsViewModel::resetJavaCategory()
+{
+    auto instances = APPLICATION ? APPLICATION->instances() : nullptr;
+    if (!instances) {
+        return;
+    }
+    auto inst = instances->getInstanceById(m_instanceId);
+    if (!inst) {
+        return;
+    }
+    auto settings = inst->settings();
+    if (!settings) {
+        return;
+    }
+    settings->reset("JavaPath");
+    settings->reset("OverrideJavaLocation");
+    loadCurrentSettings();
 }
