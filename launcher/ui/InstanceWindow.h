@@ -71,6 +71,7 @@
 
 class QPushButton;
 class PageContainer;
+class SettingsViewModel;
 class InstanceWindow : public QMainWindow, public BasePageContainer {
     Q_OBJECT
 
@@ -103,8 +104,11 @@ class InstanceWindow : public QMainWindow, public BasePageContainer {
 
    private:
     void updateButtons();
+    void restoreWindowStateFromSettings();
+    void saveWindowStateToSettings() const;
+    void hookPageSelectionSignals();
 
-   private:
+  private:
     shared_qobject_ptr<LaunchTask> m_proc;
     InstancePtr m_instance;
     bool m_doNotSave = false;
@@ -112,4 +116,5 @@ class InstanceWindow : public QMainWindow, public BasePageContainer {
     QPushButton* m_closeButton = nullptr;
     QToolButton* m_launchButton = nullptr;
     QPushButton* m_killButton = nullptr;
+    SettingsViewModel* m_settingsViewModel = nullptr;
 };

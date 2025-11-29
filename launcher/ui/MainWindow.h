@@ -72,6 +72,10 @@ class NewsChecker;
 class QToolButton;
 class InstanceProxyModel;
 class LabeledToolButton;
+class LauncherViewModel;
+class InstanceListViewModel;
+class NewsViewModel;
+class TestQmlPanel;
 class QLabel;
 class MinecraftLauncher;
 class BaseProfilerFactory;
@@ -100,12 +104,12 @@ class MainWindow : public QMainWindow {
 
     void processURLs(QList<QUrl> urls);
    signals:
-    void isClosing();
+   void isClosing();
 
-   protected:
+  protected:
     QMenu* createPopupMenu() override;
 
-   private slots:
+  private slots:
     void onCatToggled(bool);
 
     void onCatChanged(int);
@@ -244,14 +248,19 @@ class MainWindow : public QMainWindow {
     void setCatBackground(bool enabled);
     void updateInstanceToolIcon(QString new_icon);
     void setSelectedInstanceById(const QString& id);
+    void updateInstanceListMetrics();
     void updateStatusCenter();
     void setInstanceActionsEnabled(bool enabled);
 
-    void runModalTask(Task* task);
+   void runModalTask(Task* task);
     void instanceFromInstanceTask(InstanceTask* task);
 
    private:
     Ui::MainWindow* ui;
+    LauncherViewModel* m_launcherViewModel = nullptr;
+    InstanceListViewModel* m_instanceListViewModel = nullptr;
+    NewsViewModel* m_newsViewModel = nullptr;
+    TestQmlPanel* m_testQmlPanel = nullptr;
     // these are managed by Qt's memory management model!
     InstanceView* view = nullptr;
     InstanceProxyModel* proxymodel = nullptr;
