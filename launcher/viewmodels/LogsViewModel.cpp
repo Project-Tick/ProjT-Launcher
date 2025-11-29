@@ -62,6 +62,16 @@ QAbstractItemModel* LogsViewModel::proxyModel() const
     return m_proxy.get();
 }
 
+bool LogsViewModel::wrapLines() const
+{
+    return m_model ? m_model->wrapLines() : true;
+}
+
+bool LogsViewModel::colorLines() const
+{
+    return m_model ? m_model->colorLines() : true;
+}
+
 void LogsViewModel::setLogText(const QString& text)
 {
     if (m_logText == text) {
