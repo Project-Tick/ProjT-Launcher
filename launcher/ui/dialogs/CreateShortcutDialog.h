@@ -32,6 +32,7 @@
 
 #include <QDialog>
 #include "BaseInstance.h"
+#include "minecraft/ShortcutUtils.h"
 
 class BaseInstance;
 
@@ -46,6 +47,7 @@ class CreateShortcutDialog : public QDialog {
     explicit CreateShortcutDialog(InstancePtr instance, QWidget* parent = nullptr);
     ~CreateShortcutDialog();
 
+    ShortcutUtils::Shortcut buildShortcutArgs() const;
     void createShortcut();
 
    private slots:

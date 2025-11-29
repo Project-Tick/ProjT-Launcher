@@ -14,9 +14,8 @@
 #pragma once
 
 #include <QDialog>
-#include <QHash>
 
-#include "news/NewsEntry.h"
+class NewsViewModel;
 
 namespace Ui {
 class NewsDialog;
@@ -26,7 +25,7 @@ class NewsDialog : public QDialog {
     Q_OBJECT
 
    public:
-    NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent = nullptr);
+    NewsDialog(NewsViewModel* viewModel, QWidget* parent = nullptr);
     ~NewsDialog();
 
    public slots:
@@ -36,8 +35,11 @@ class NewsDialog : public QDialog {
     void selectedArticleChanged(const QString& new_title);
 
    private:
+    void refreshArticles();
+    void applyCurrentArticle();
+
     Ui::NewsDialog* ui;
 
-    QHash<QString, NewsEntryPtr> m_entries;
+    NewsViewModel* m_viewModel = nullptr;
     bool m_article_list_hidden = false;
 };

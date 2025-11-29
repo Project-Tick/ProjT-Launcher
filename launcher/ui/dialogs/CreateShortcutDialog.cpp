@@ -207,7 +207,7 @@ void CreateShortcutDialog::stateChanged()
 }
 
 // Real work
-void CreateShortcutDialog::createShortcut()
+ShortcutUtils::Shortcut CreateShortcutDialog::buildShortcutArgs() const
 {
     QString targetString = tr("instance");
     QStringList extraArgs;
@@ -228,10 +228,16 @@ void CreateShortcutDialog::createShortcut()
     if (ui->overrideAccountCheckbox->isChecked())
         extraArgs.append({ "--profile", ui->accountSelectionBox->currentData().toString() });
 
-    ShortcutUtils::Shortcut args{ m_instance.get(), name, targetString, this, extraArgs, InstIconKey, target };
-    if (target == ShortcutTarget::Desktop)
+    return ShortcutUtils::Shortcut{ m_instance.get(), name, targetString, const_cast<CreateShortcutDialog*>(this), extraArgs,
+                                    InstIconKey, target };
+}
+
+void CreateShortcutDialog::createShortcut()
+{
+    const auto args = buildShortcutArgs();
+    if (args.target == ShortcutTarget::Desktop)
         ShortcutUtils::createInstanceShortcutOnDesktop(args);
-    else if (target == ShortcutTarget::Applications)
+    else if (args.target == ShortcutTarget::Applications)
         ShortcutUtils::createInstanceShortcutInApplications(args);
     else
         ShortcutUtils::createInstanceShortcutInOther(args);

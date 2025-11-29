@@ -796,6 +796,18 @@ SET(LAUNCHER_SOURCES
     Markdown.h
     Markdown.cpp
 
+    # View models
+    viewmodels/LauncherViewModel.h
+    viewmodels/LauncherViewModel.cpp
+    viewmodels/InstanceListViewModel.h
+    viewmodels/InstanceListViewModel.cpp
+    viewmodels/SettingsViewModel.h
+    viewmodels/SettingsViewModel.cpp
+    viewmodels/LogsViewModel.h
+    viewmodels/LogsViewModel.cpp
+    viewmodels/NewsViewModel.h
+    viewmodels/NewsViewModel.cpp
+
     # Super secret!
     KonamiCode.h
     KonamiCode.cpp
@@ -815,6 +827,7 @@ SET(LAUNCHER_SOURCES
     resources/flat_white/flat_white.qrc
     resources/documents/documents.qrc
     resources/shaders/shaders.qrc
+    qml/qml.qrc
     "${CMAKE_CURRENT_BINARY_DIR}/../${Launcher_Branding_LogoQRC}"
 
     # Icons
@@ -836,6 +849,10 @@ SET(LAUNCHER_SOURCES
     ui/InstanceWindow.cpp
     ui/ViewLogWindow.h
     ui/ViewLogWindow.cpp
+    ui/TestQmlPanel.h
+    ui/TestQmlPanel.cpp
+    ui/ShellPrototypeHandler.h
+    ui/ShellPrototypeHandler.cpp
 
     # FIXME: maybe find a better home for this.
     FileIgnoreProxy.cpp
@@ -1272,8 +1289,10 @@ qt_add_resources(LAUNCHER_RESOURCES
     resources/OSX/OSX.qrc
     resources/iOS/iOS.qrc
     resources/flat/flat.qrc
+    resources/flat_white/flat_white.qrc
     resources/documents/documents.qrc
     resources/shaders/shaders.qrc
+    qml/qml.qrc
     "${CMAKE_CURRENT_BINARY_DIR}/../${Launcher_Branding_LogoQRC}"
 )
 
@@ -1329,6 +1348,9 @@ target_link_libraries(Launcher_logic
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::NetworkAuth
     Qt${QT_VERSION_MAJOR}::OpenGL
+    Qt${QT_VERSION_MAJOR}::Qml
+    Qt${QT_VERSION_MAJOR}::Quick
+    Qt${QT_VERSION_MAJOR}::QuickWidgets
     ${Launcher_QT_DBUS}
     ${Launcher_QT_LIBS}
 )

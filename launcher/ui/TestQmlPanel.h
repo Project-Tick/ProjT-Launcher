@@ -11,28 +11,20 @@
  *  If this file includes work from previous open-source projects,
  *  their original copyright and license notices are preserved below.
  */
+
 #pragma once
 
-#include <QMainWindow>
+#include <QDockWidget>
 
-#include "Application.h"
+class LauncherViewModel;
+class QQuickWidget;
 
-class OtherLogsPage;
-class LogsViewModel;
-
-class ViewLogWindow : public QMainWindow {
+class TestQmlPanel : public QDockWidget {
     Q_OBJECT
 
    public:
-    explicit ViewLogWindow(QWidget* parent = nullptr);
-
-   signals:
-    void isClosing();
-
-   protected:
-    void closeEvent(QCloseEvent*) override;
+    explicit TestQmlPanel(LauncherViewModel* viewModel, QWidget* parent = nullptr);
 
    private:
-    LogsViewModel* m_logsViewModel;
-    OtherLogsPage* m_page;
+    QQuickWidget* m_quickWidget = nullptr;
 };
