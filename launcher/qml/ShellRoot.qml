@@ -32,9 +32,11 @@ Rectangle {
                 shellState.lastPageRoute = route
             }
         })
-        if (!Navigation.go(initialRoute)) {
-            Navigation.go("instances")
-        }
+        Qt.callLater(function() {
+            if (!Navigation.go(initialRoute)) {
+                Navigation.go("instances")
+            }
+        })
     }
 
     RowLayout {
@@ -90,6 +92,9 @@ Rectangle {
             id: stackView
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            initialItem: undefined
+
             onCurrentItemChanged: {
                 if (shellState) {
                     shellState.lastPageRoute = Navigation.currentRoute()

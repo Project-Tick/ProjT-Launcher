@@ -16,12 +16,14 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
 class InstanceListViewModel : public QObject {
     Q_OBJECT
     Q_PROPERTY(int totalCount READ totalCount NOTIFY totalCountChanged)
     Q_PROPERTY(QString selectedInstanceId READ selectedInstanceId NOTIFY selectedInstanceIdChanged)
     Q_PROPERTY(bool busy READ isBusy WRITE setBusy NOTIFY busyChanged)
+    Q_PROPERTY(QStringList instanceNames READ instanceNames NOTIFY instanceNamesChanged)
 
    public:
     explicit InstanceListViewModel(QObject* parent = nullptr);
@@ -29,18 +31,25 @@ class InstanceListViewModel : public QObject {
     int totalCount() const;
     QString selectedInstanceId() const;
     bool isBusy() const;
+    QStringList instanceNames() const;
 
     void setTotalCount(int count);
     void setSelectedInstanceId(const QString& id);
     void setBusy(bool busy);
+    void setInstanceNames(const QStringList& names);
+
+    Q_INVOKABLE void selectInstance(const QString& id);
 
    signals:
     void totalCountChanged();
     void selectedInstanceIdChanged();
     void busyChanged();
+    void instanceNamesChanged();
+    void instanceSelected(const QString& id);
 
    private:
     int m_totalCount = 0;
     QString m_selectedInstanceId;
     bool m_busy = false;
+    QStringList m_instanceNames;
 };

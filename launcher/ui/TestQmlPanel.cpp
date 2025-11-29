@@ -14,12 +14,34 @@
 
 #include "TestQmlPanel.h"
 
+#include <QCoreApplication>
 #include <QQmlContext>
 #include <QQuickWidget>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 
 #include "viewmodels/LauncherViewModel.h"
+
+namespace {
+QUrl resolveQmlUrl(const QString& fileName)
+{
+    const QString resourcePath = QStringLiteral(":/qml/%1").arg(fileName);
+    if (QFile::exists(resourcePath)) {
+        return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
+    }
+    QDir dir(QCoreApplication::applicationDirPath());
+    if (dir.cdUp() && dir.cd(QStringLiteral("launcher/qml"))) {
+        const QFileInfo info(dir.filePath(fileName));
+        if (info.exists()) {
+            return QUrl::fromLocalFile(info.absoluteFilePath());
+        }
+    }
+    return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
+}
+}  // namespace
 
 TestQmlPanel::TestQmlPanel(LauncherViewModel* viewModel, QWidget* parent)
     : QDockWidget(parent)
@@ -38,7 +60,7 @@ TestQmlPanel::TestQmlPanel(LauncherViewModel* viewModel, QWidget* parent)
     if (viewModel) {
         m_quickWidget->rootContext()->setContextProperty(QStringLiteral("launcherViewModel"), viewModel);
     }
-    m_quickWidget->setSource(QUrl(QStringLiteral("qrc:/qml/TestShell.qml")));
+    m_quickWidget->setSource(resolveQmlUrl(QStringLiteral("TestShell.qml")));
 
     layout->addWidget(m_quickWidget);
     setWidget(container);

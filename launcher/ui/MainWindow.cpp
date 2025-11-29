@@ -107,6 +107,7 @@
 #include "viewmodels/InstanceListViewModel.h"
 #include "viewmodels/LauncherViewModel.h"
 #include "viewmodels/NewsViewModel.h"
+#include "viewmodels/SettingsViewModel.h"
 #include "ui/GuiUtil.h"
 #include "ui/ViewLogWindow.h"
 #include "ui/dialogs/AboutDialog.h"
@@ -119,6 +120,7 @@
 #include "ui/dialogs/ImportResourceDialog.h"
 #include "ui/dialogs/NewInstanceDialog.h"
 #include "ui/dialogs/NewsDialog.h"
+#include "ui/ShellPrototypeHandler.h"
 #include "ui/TestQmlPanel.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/instanceview/InstanceDelegate.h"
@@ -166,7 +168,8 @@ MainWindow::MainWindow(QWidget* parent)
       ui(new Ui::MainWindow),
       m_launcherViewModel(new LauncherViewModel(this)),
       m_instanceListViewModel(new InstanceListViewModel(this)),
-      m_newsViewModel(new NewsViewModel(this))
+      m_newsViewModel(new NewsViewModel(this)),
+      m_settingsViewModel(new SettingsViewModel(this))
 {
     ui->setupUi(this);
 
@@ -339,6 +342,15 @@ MainWindow::MainWindow(QWidget* parent)
         addDockWidget(Qt::BottomDockWidgetArea, m_testQmlPanel);
         m_testQmlPanel->hide();
         ui->viewMenu->addAction(m_testQmlPanel->toggleViewAction());
+    }
+
+    // QML shell prototype (developer-only)
+    {
+        m_shellPrototypeHandler =
+            new ShellPrototypeHandler(m_launcherViewModel, m_instanceListViewModel, m_newsViewModel, m_settingsViewModel, this);
+        addDockWidget(Qt::RightDockWidgetArea, m_shellPrototypeHandler);
+        m_shellPrototypeHandler->hide();
+        ui->viewMenu->addAction(m_shellPrototypeHandler->toggleViewAction());
     }
 
     // Create the instance list widget
@@ -1219,9 +1231,20 @@ void MainWindow::updateInstanceListMetrics()
     if (!m_instanceListViewModel) {
         return;
     }
-    m_instanceListViewModel->setTotalCount(APPLICATION->instances()->count());
+    const auto instances = APPLICATION->instances();
+    m_instanceListViewModel->setTotalCount(instances->count());
     const auto selectedId = m_selectedInstance ? m_selectedInstance->id() : QString();
     m_instanceListViewModel->setSelectedInstanceId(selectedId);
+    QStringList instanceNames;
+    instanceNames.reserve(instances->count());
+    for (int i = 0; i < instances->count(); ++i) {
+        const auto instance = instances->at(i);
+        if (!instance) {
+            continue;
+        }
+        instanceNames.append(instance->name());
+    }
+    m_instanceListViewModel->setInstanceNames(instanceNames);
 }
 
 void MainWindow::on_actionChangeInstGroup_triggered()
