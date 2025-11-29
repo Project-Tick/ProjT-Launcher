@@ -18,6 +18,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #pragma once
+
 #include <FileSystem.h>
 #include <ui/pages/instance/DataPackPage.h>
 #include "minecraft/MinecraftInstance.h"
@@ -44,9 +45,7 @@ class InstancePageProvider : protected QObject, public BasePageProvider {
     Q_OBJECT
    public:
     explicit InstancePageProvider(InstancePtr parent, InstanceListViewModel* viewModel, SettingsViewModel* settingsViewModel)
-        : inst(parent), m_instanceViewModel(viewModel), m_settingsViewModel(settingsViewModel)
-    {
-    }
+        : inst(parent), m_instanceViewModel(viewModel), m_settingsViewModel(settingsViewModel) {}
 
     virtual ~InstancePageProvider() = default;
     virtual QList<BasePage*> getPages() override
