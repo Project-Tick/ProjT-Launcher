@@ -14,6 +14,8 @@
 
 #include "NewsViewModel.h"
 
+#include <algorithm>
+
 NewsViewModel::NewsViewModel(QObject* parent) : QObject(parent) {}
 
 QString NewsViewModel::currentContent() const
@@ -29,6 +31,41 @@ QString NewsViewModel::currentTitle() const
 QString NewsViewModel::currentLink() const
 {
     return m_currentLink;
+}
+
+QStringList NewsViewModel::titles() const
+{
+    QStringList list;
+    list.reserve(m_entries.size());
+    for (const auto& entry : m_entries) {
+        list.append(entry ? entry->title : QString());
+    }
+    return list;
+}
+
+QStringList NewsViewModel::links() const
+{
+    QStringList list;
+    list.reserve(m_entries.size());
+    for (const auto& entry : m_entries) {
+        list.append(entry ? entry->link : QString());
+    }
+    return list;
+}
+
+QStringList NewsViewModel::htmlBodies() const
+{
+    QStringList list;
+    list.reserve(m_entries.size());
+    for (const auto& entry : m_entries) {
+        list.append(entry ? entry->content : QString());
+    }
+    return list;
+}
+
+int NewsViewModel::currentIndex() const
+{
+    return m_currentIndex;
 }
 
 bool NewsViewModel::isBusy() const
@@ -50,10 +87,13 @@ void NewsViewModel::setEntries(const QList<NewsEntryPtr>& entries)
 {
     m_entries = entries;
     if (!m_entries.isEmpty()) {
-        updateCurrentFromEntry(m_entries.front());
+        const int maxIndex = m_entries.size() - 1;
+        const int safeIndex = std::clamp(m_currentIndex, 0, maxIndex);
+        updateCurrentFromEntry(m_entries.value(safeIndex));
     } else {
         updateCurrentFromEntry(nullptr);
     }
+    emit entriesChanged();
     emit newsUpdated();
 }
 
@@ -102,12 +142,32 @@ void NewsViewModel::requestRefresh()
     emit refreshRequested();
 }
 
+void NewsViewModel::refresh()
+{
+    emit refreshRequested();
+}
+
+void NewsViewModel::selectByIndex(int index)
+{
+    setCurrentIndex(index);
+}
+
+void NewsViewModel::openCurrentLink()
+{
+    if (m_currentLink.isEmpty()) {
+        return;
+    }
+    emit openLinkRequested(m_currentLink);
+}
+
 void NewsViewModel::updateCurrentFromEntry(const NewsEntryPtr& entry)
 {
     QString newTitle;
     QString newContent;
     QString newLink;
+    int newIndex = -1;
     if (entry) {
+        newIndex = m_entries.indexOf(entry);
         newTitle = entry->title;
         newContent = entry->content;
         newLink = entry->link;
@@ -115,12 +175,14 @@ void NewsViewModel::updateCurrentFromEntry(const NewsEntryPtr& entry)
     const bool titleChanged = m_currentTitle != newTitle;
     const bool contentChanged = m_currentContent != newContent;
     const bool linkChanged = m_currentLink != newLink;
-    if (!titleChanged && !contentChanged && !linkChanged) {
+    const bool indexChanged = m_currentIndex != newIndex;
+    if (!titleChanged && !contentChanged && !linkChanged && !indexChanged) {
         return;
     }
     m_currentTitle = newTitle;
     m_currentContent = newContent;
     m_currentLink = newLink;
+    m_currentIndex = newIndex;
     if (contentChanged) {
         emit currentContentChanged();
     }
@@ -130,4 +192,21 @@ void NewsViewModel::updateCurrentFromEntry(const NewsEntryPtr& entry)
     if (linkChanged) {
         emit currentLinkChanged();
     }
+    if (indexChanged) {
+        emit currentIndexChanged();
+    }
+}
+
+void NewsViewModel::setCurrentIndex(int index)
+{
+    if (index < 0 || index >= m_entries.size()) {
+        m_currentIndex = -1;
+        updateCurrentFromEntry(nullptr);
+        return;
+    }
+    if (m_currentIndex == index) {
+        return;
+    }
+    m_currentIndex = index;
+    updateCurrentFromEntry(m_entries.value(index));
 }

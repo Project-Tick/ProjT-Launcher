@@ -17,7 +17,7 @@ import QtQuick.Layouts 1.15
 import "components"
 
 Rectangle {
-    objectName: "about"
+    objectName: "logs"
     color: "#1b1b1b"
     width: parent ? parent.width : 640
     height: parent ? parent.height : 480
@@ -29,20 +29,17 @@ Rectangle {
 
         PageHeader {
             Layout.fillWidth: true
-            title: ProjT.launcherVM ? ProjT.launcherVM.displayName + " " + ProjT.launcherVM.versionString : qsTr("About")
-            subtitle: ProjT.launcherVM ? ProjT.launcherVM.gitRef + " (" + ProjT.launcherVM.gitCommit + ")" : ""
+            title: qsTr("Logs")
+            subtitle: qsTr("Log viewer integration is coming soon.")
         }
 
-        ScrollView {
+        Frame {
             Layout.fillWidth: true
             Layout.fillHeight: true
-
-            Text {
-                width: parent ? parent.width : implicitWidth
-                wrapMode: Text.WordWrap
-                textFormat: Text.RichText
+            Label {
+                anchors.centerIn: parent
                 color: "#cfd8dc"
-                text: ProjT.launcherVM ? ProjT.launcherVM.aboutHtml : ""
+                text: qsTr("Logs page placeholder")
             }
         }
     }

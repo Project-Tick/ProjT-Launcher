@@ -32,9 +32,29 @@ QString LauncherViewModel::versionString() const
     return m_versionString;
 }
 
+QString LauncherViewModel::gitRef() const
+{
+    return m_gitRef;
+}
+
+QString LauncherViewModel::gitCommit() const
+{
+    return m_gitCommit;
+}
+
+QString LauncherViewModel::aboutHtml() const
+{
+    return m_aboutHtml;
+}
+
 bool LauncherViewModel::isBusy() const
 {
     return m_busy;
+}
+
+LauncherViewModel::Page LauncherViewModel::currentPage() const
+{
+    return m_currentPage;
 }
 
 void LauncherViewModel::setDisplayName(const QString& name)
@@ -62,4 +82,75 @@ void LauncherViewModel::setBusy(bool busy)
     }
     m_busy = busy;
     emit busyChanged();
+}
+
+void LauncherViewModel::setGitRef(const QString& ref)
+{
+    if (m_gitRef == ref) {
+        return;
+    }
+    m_gitRef = ref;
+    emit gitRefChanged();
+}
+
+void LauncherViewModel::setGitCommit(const QString& commit)
+{
+    if (m_gitCommit == commit) {
+        return;
+    }
+    m_gitCommit = commit;
+    emit gitCommitChanged();
+}
+
+void LauncherViewModel::setAboutHtml(const QString& html)
+{
+    if (m_aboutHtml == html) {
+        return;
+    }
+    m_aboutHtml = html;
+    emit aboutHtmlChanged();
+}
+
+void LauncherViewModel::setCurrentPage(Page page)
+{
+    if (m_currentPage == page) {
+        return;
+    }
+    m_currentPage = page;
+    emit currentPageChanged();
+}
+
+QString LauncherViewModel::pageToString(Page page)
+{
+    switch (page) {
+    case Page::News:
+        return QStringLiteral("news");
+    case Page::Settings:
+        return QStringLiteral("settings");
+    case Page::About:
+        return QStringLiteral("about");
+    case Page::Logs:
+        return QStringLiteral("logs");
+    case Page::Instances:
+    default:
+        return QStringLiteral("instances");
+    }
+}
+
+LauncherViewModel::Page LauncherViewModel::stringToPage(const QString& route)
+{
+    const auto lower = route.trimmed().toLower();
+    if (lower == QStringLiteral("news")) {
+        return Page::News;
+    }
+    if (lower == QStringLiteral("settings")) {
+        return Page::Settings;
+    }
+    if (lower == QStringLiteral("about")) {
+        return Page::About;
+    }
+    if (lower == QStringLiteral("logs")) {
+        return Page::Logs;
+    }
+    return Page::Instances;
 }

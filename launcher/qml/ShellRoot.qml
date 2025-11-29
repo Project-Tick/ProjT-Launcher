@@ -1,42 +1,40 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
-import "NavigationController.js" as Navigation
+import QtQuick.Window 2.15
+import ProjTLauncher 1.0
+import "components"
 
 Rectangle {
     id: root
     color: "#1b1b1b"
     anchors.fill: parent
-    property string initialRoute: shellState ? shellState.lastPageRoute : "instances"
     property int storedSidebarWidth: shellState ? shellState.sidebarWidth : 200
 
-    function busyState() {
-        return (ProjT.launcherVM && ProjT.launcherVM.busy) ||
-               (ProjT.instancesVM && ProjT.instancesVM.busy) ||
-               (ProjT.newsVM && ProjT.newsVM.busy) ||
-               (ProjT.settingsVM && ProjT.settingsVM.busy)
-    }
+    property var navEntries: [
+        { title: qsTr("Instances"), page: LauncherViewModelEnums.Page.Instances, source: "InstancePage.qml" },
+        { title: qsTr("News"), page: LauncherViewModelEnums.Page.News, source: "NewsPage.qml" },
+        { title: qsTr("Settings"), page: LauncherViewModelEnums.Page.Settings, source: "SettingsPage.qml" },
+        { title: qsTr("Logs"), page: LauncherViewModelEnums.Page.Logs, source: "LogsPage.qml" },
+        { title: qsTr("About"), page: LauncherViewModelEnums.Page.About, source: "AboutPage.qml" }
+    ]
 
-    ListModel {
-        id: navModel
-        ListElement { route: "instances"; title: qsTr("Instances"); source: "InstancePage.qml" }
-        ListElement { route: "news"; title: qsTr("News"); source: "NewsPage.qml" }
-        ListElement { route: "settings"; title: qsTr("Settings"); source: "SettingsPage.qml" }
-        ListElement { route: "about"; title: qsTr("About"); source: "AboutPage.qml" }
-    }
-
-    Component.onCompleted: {
-        Navigation.configure(stackView, navModel, busyState, function(route) {
-            if (shellState) {
-                shellState.lastPageRoute = route
-            }
-        })
-        Qt.callLater(function() {
-            if (!Navigation.go(initialRoute)) {
-                Navigation.go("instances")
-            }
-        })
+    function pageSource(page) {
+        switch (page) {
+        case LauncherViewModelEnums.Page.News:
+            return "NewsPage.qml"
+        case LauncherViewModelEnums.Page.Settings:
+            return "SettingsPage.qml"
+        case LauncherViewModelEnums.Page.About:
+            return "AboutPage.qml"
+        case LauncherViewModelEnums.Page.Logs:
+            return "LogsPage.qml"
+        case LauncherViewModelEnums.Page.Instances:
+        default:
+            return "InstancePage.qml"
+        }
     }
 
     RowLayout {
@@ -46,17 +44,13 @@ Rectangle {
         Rectangle {
             id: sidebar
             color: "#222327"
-            Layout.preferredWidth: storedSidebarWidth > 80 ? storedSidebarWidth : 200
+            width: 180
+            Layout.preferredWidth: 180
             Layout.fillHeight: true
-            onWidthChanged: {
-                if (shellState && width > 0 && Math.abs(width - shellState.sidebarWidth) > 1) {
-                    shellState.sidebarWidth = width
-                }
-            }
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
-                spacing: 8
+                spacing: 6
 
                 Label {
                     text: ProjT.launcherVM ? ProjT.launcherVM.displayName : qsTr("ProjT Launcher")
@@ -75,31 +69,32 @@ Rectangle {
                 ToolSeparator { Layout.fillWidth: true }
 
                 Repeater {
-                    model: navModel
+                    model: navEntries
                     delegate: Button {
-                        text: title
+                        text: modelData.title
                         checkable: true
-                        checked: Navigation.currentRoute() === route
-                        Layout.fillWidth: true
-                        onClicked: Navigation.go(route)
+                        property int targetPage: modelData.page
+                        checked: ProjT.launcherVM && ProjT.launcherVM.currentPage === targetPage
+                        implicitHeight: 40
+                        implicitWidth: (contentItem ? contentItem.implicitWidth : 96) + 24
+                        Layout.preferredWidth: implicitWidth
+                        Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                        onClicked: {
+                            if (ProjT.launcherVM) {
+                                ProjT.launcherVM.currentPage = targetPage
+                            }
+                        }
                     }
                 }
                 Item { Layout.fillHeight: true }
             }
         }
 
-        StackView {
-            id: stackView
+        Loader {
+            id: pageLoader
             Layout.fillWidth: true
             Layout.fillHeight: true
-
-            initialItem: undefined
-
-            onCurrentItemChanged: {
-                if (shellState) {
-                    shellState.lastPageRoute = Navigation.currentRoute()
-                }
-            }
+            source: pageSource(ProjT.launcherVM ? ProjT.launcherVM.currentPage : LauncherViewModelEnums.Page.Instances)
         }
     }
 }

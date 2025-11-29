@@ -27,6 +27,10 @@ class NewsViewModel : public QObject {
     Q_PROPERTY(QString currentTitle READ currentTitle NOTIFY currentTitleChanged)
     Q_PROPERTY(QString currentLink READ currentLink NOTIFY currentLinkChanged)
     Q_PROPERTY(QString currentArticleHtml READ currentContent NOTIFY currentContentChanged)
+    Q_PROPERTY(QStringList titles READ titles NOTIFY entriesChanged)
+    Q_PROPERTY(QStringList links READ links NOTIFY entriesChanged)
+    Q_PROPERTY(QStringList htmlBodies READ htmlBodies NOTIFY entriesChanged)
+    Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
 
    public:
     explicit NewsViewModel(QObject* parent = nullptr);
@@ -36,10 +40,15 @@ class NewsViewModel : public QObject {
     QString currentLink() const;
     bool isBusy() const;
     QDateTime lastUpdated() const;
+    QStringList titles() const;
+    QStringList links() const;
+    QStringList htmlBodies() const;
+    int currentIndex() const;
 
     QList<NewsEntryPtr> entries() const;
     void setEntries(const QList<NewsEntryPtr>& entries);
     void selectArticle(const QString& title);
+    void setCurrentIndex(int index);
     NewsEntryPtr entryForTitle(const QString& title) const;
 
     void setBusy(bool busy);
@@ -47,6 +56,9 @@ class NewsViewModel : public QObject {
 
    public slots:
     void requestRefresh();
+    void refresh();
+    void selectByIndex(int index);
+    void openCurrentLink();
 
    signals:
     void currentContentChanged();
@@ -56,6 +68,9 @@ class NewsViewModel : public QObject {
     void lastUpdatedChanged();
     void newsUpdated();
     void refreshRequested();
+    void entriesChanged();
+    void currentIndexChanged();
+    void openLinkRequested(const QString& link);
 
    private:
     void updateCurrentFromEntry(const NewsEntryPtr& entry);
@@ -66,4 +81,5 @@ class NewsViewModel : public QObject {
     QString m_currentLink;
     bool m_busy = false;
     QDateTime m_lastUpdated;
+    int m_currentIndex = -1;
 };

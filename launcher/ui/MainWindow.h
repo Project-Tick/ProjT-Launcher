@@ -149,6 +149,8 @@ class MainWindow : public QMainWindow {
     void on_actionViewSelectedInstFolder_triggered();
 
     void refreshInstances();
+    void handleInstanceRenameRequest(const QString& id, const QString& newName);
+    void handleInstanceDuplicateRequest(const QString& id, const QString& newName);
 
     void checkForUpdates();
 
@@ -253,8 +255,10 @@ class MainWindow : public QMainWindow {
     void updateInstanceListMetrics();
     void updateStatusCenter();
     void setInstanceActionsEnabled(bool enabled);
+    void syncSelectionFromViewModel();
+    void applyNoSelectionState();
 
-   void runModalTask(Task* task);
+    void runModalTask(Task* task);
     void instanceFromInstanceTask(InstanceTask* task);
 
    private:
@@ -282,6 +286,8 @@ class MainWindow : public QMainWindow {
 
     InstancePtr m_selectedInstance;
     QString m_currentInstIcon;
+    bool m_syncingSelectionFromViewModel = false;
+    bool m_restoringSelection = false;
 
     // managed by the application object
     Task* m_versionLoadTask = nullptr;

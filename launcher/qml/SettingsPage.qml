@@ -14,6 +14,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import "components"
 
 Rectangle {
     objectName: "settings"
@@ -26,11 +27,74 @@ Rectangle {
         anchors.margins: 12
         spacing: 8
 
-        Label {
-            text: qsTr("Settings (placeholder)")
-            color: "#eceff1"
-            font.pixelSize: 18
-            font.bold: true
+        PageHeader {
+            Layout.fillWidth: true
+            title: qsTr("Instance Settings")
+            subtitle: qsTr("Manage configuration for the selected instance")
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 12
+
+            ListView {
+                id: categoryList
+                Layout.preferredWidth: 180
+                Layout.fillHeight: true
+                model: ["Java"]
+                delegate: Rectangle {
+                    width: categoryList.width
+                    height: 36
+                    color: (ProjT.settingsVM && ProjT.settingsVM.currentCategory === modelData.toLowerCase()) ? "#2c3440" : "#23262b"
+                    border.color: "#323742"
+                    radius: 4
+                    Text {
+                        anchors.centerIn: parent
+                        text: modelData
+                        color: "#e0e0e0"
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            if (ProjT.settingsVM) {
+                                ProjT.settingsVM.currentCategory = modelData.toLowerCase()
+                            }
+                        }
+                    }
+                }
+            }
+
+            Loader {
+                id: categoryLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                source: ProjT.settingsVM && ProjT.settingsVM.currentCategory === "java"
+                        ? Qt.resolvedUrl("settings/JavaSettingsPage.qml")
+                        : ""
+            }
+        }
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            color: "#000000"
+            opacity: ProjT.settingsVM && ProjT.settingsVM.busy ? 0.25 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 150 } }
+            BusyIndicator {
+                anchors.centerIn: parent
+                running: ProjT.settingsVM ? ProjT.settingsVM.busy : false
+                visible: running
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        if (ProjT.settingsVM) {
+            if (!ProjT.settingsVM.currentCategory || ProjT.settingsVM.currentCategory.length === 0) {
+                ProjT.settingsVM.currentCategory = "java"
+            }
+            ProjT.settingsVM.refresh()
         }
     }
 }
