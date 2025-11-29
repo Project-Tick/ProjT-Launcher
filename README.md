@@ -8,7 +8,6 @@
 <p align="center">
   <img alt="ProjT Launcher Main Menu" src="https://projtlauncher.yongdohyun.org.tr/img/screenshots/launcher.png" width="80%">
 </p>
-````markdown
 <p align="center">
   <strong>ProjT Launcher — QML Migration</strong>
 </p>
