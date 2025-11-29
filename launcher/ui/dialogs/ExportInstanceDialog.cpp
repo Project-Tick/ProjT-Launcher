@@ -59,8 +59,6 @@
 #include <QMessageBox>
 #include "FileIgnoreProxy.h"
 #include "QObjectPtr.h"
-#include "ui/dialogs/CustomMessageBox.h"
-#include "ui/dialogs/ProgressDialog.h"
 #include "ui_ExportInstanceDialog.h"
 
 #include <FileSystem.h>
@@ -112,78 +110,33 @@ ExportInstanceDialog::~ExportInstanceDialog()
     delete m_ui;
 }
 
-/// Save icon to instance's folder is needed
-void SaveIcon(InstancePtr m_instance)
-{
-    auto iconKey = m_instance->iconKey();
-    auto iconList = APPLICATION->icons();
-    auto mmcIcon = iconList->icon(iconKey);
-    if (!mmcIcon || mmcIcon->isBuiltIn()) {
-        return;
-    }
-    auto path = mmcIcon->getFilePath();
-    if (!path.isNull()) {
-        QFileInfo inInfo(path);
-        FS::copy(path, FS::PathCombine(m_instance->instanceRoot(), inInfo.fileName()))();
-        return;
-    }
-    auto& image = mmcIcon->m_images[mmcIcon->type()];
-    auto& icon = image.icon;
-    auto sizes = icon.availableSizes();
-    if (sizes.size() == 0) {
-        return;
-    }
-    auto areaOf = [](QSize size) { return size.width() * size.height(); };
-    QSize largest = sizes[0];
-    // find variant with largest area
-    for (auto size : sizes) {
-        if (areaOf(largest) < areaOf(size)) {
-            largest = size;
-        }
-    }
-    auto pixmap = icon.pixmap(largest);
-    pixmap.save(FS::PathCombine(m_instance->instanceRoot(), iconKey + ".png"));
-}
-
-void ExportInstanceDialog::doExport()
+bool ExportInstanceDialog::prepareExport()
 {
     auto name = FS::RemoveInvalidFilenameChars(m_instance->name());
 
-    const QString output = QFileDialog::getSaveFileName(this, tr("Export %1").arg(m_instance->name()),
-                                                        FS::PathCombine(QDir::homePath(), name + ".zip"), "Zip (*.zip)", nullptr);
-    if (output.isEmpty()) {
-        QDialog::done(QDialog::Rejected);
-        return;
+    m_outputPath = QFileDialog::getSaveFileName(this, tr("Export %1").arg(m_instance->name()),
+                                                FS::PathCombine(QDir::homePath(), name + ".zip"), "Zip (*.zip)", nullptr);
+    if (m_outputPath.isEmpty()) {
+        return false;
     }
 
-    SaveIcon(m_instance);
-
-    auto files = QFileInfoList();
-    if (!MMCZip::collectFileListRecursively(m_instance->instanceRoot(), nullptr, &files,
+    m_files.clear();
+    if (!MMCZip::collectFileListRecursively(m_instance->instanceRoot(), nullptr, &m_files,
                                             std::bind(&FileIgnoreProxy::filterFile, m_proxyModel, std::placeholders::_1))) {
-        QMessageBox::warning(this, tr("Error"), tr("Unable to export instance"));
-        QDialog::done(QDialog::Rejected);
-        return;
+        QMessageBox::warning(this, tr("Error"), tr("Unable to collect files to export"));
+        return false;
     }
-
-    auto task = makeShared<MMCZip::ExportToZipTask>(output, m_instance->instanceRoot(), files, "", true, true);
-
-    connect(task.get(), &Task::failed, this,
-            [this, output](QString reason) { CustomMessageBox::selectable(this, tr("Error"), reason, QMessageBox::Critical)->show(); });
-    connect(task.get(), &Task::finished, this, [task] { task->deleteLater(); });
-
-    ProgressDialog progress(this);
-    progress.setSkipButton(true, tr("Abort"));
-    auto result = progress.execWithTask(task.get());
-    QDialog::done(result);
+    return true;
 }
 
 void ExportInstanceDialog::done(int result)
 {
     m_proxyModel->saveBlockedPathsToFile(ignoreFileName());
     if (result == QDialog::Accepted) {
-        doExport();
-        return;
+        if (!prepareExport()) {
+            QDialog::done(QDialog::Rejected);
+            return;
+        }
     }
     QDialog::done(result);
 }

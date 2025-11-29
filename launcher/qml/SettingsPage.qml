@@ -42,7 +42,7 @@ Rectangle {
                 id: categoryList
                 Layout.preferredWidth: 180
                 Layout.fillHeight: true
-                model: ["Java"]
+                model: ProjT.settingsVM ? ProjT.settingsVM.categoryList : ["Java"]
                 delegate: Rectangle {
                     width: categoryList.width
                     height: 36
@@ -58,7 +58,7 @@ Rectangle {
                         anchors.fill: parent
                         onClicked: {
                             if (ProjT.settingsVM) {
-                                ProjT.settingsVM.currentCategory = modelData.toLowerCase()
+                                ProjT.settingsVM.loadCategory(modelData.toLowerCase())
                             }
                         }
                     }
@@ -73,6 +73,21 @@ Rectangle {
                         ? Qt.resolvedUrl("settings/JavaSettingsPage.qml")
                         : ""
             }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+            Button {
+                text: qsTr("Apply")
+                enabled: ProjT.settingsVM && !ProjT.settingsVM.busy
+                onClicked: { if (ProjT.settingsVM) ProjT.settingsVM.applyChanges() }
+            }
+            Button {
+                text: qsTr("Reset")
+                enabled: ProjT.settingsVM && !ProjT.settingsVM.busy
+                onClicked: { if (ProjT.settingsVM) ProjT.settingsVM.resetChanges() }
+            }
+            Rectangle { Layout.fillWidth: true; color: "transparent" }
         }
         Rectangle {
             Layout.fillWidth: true

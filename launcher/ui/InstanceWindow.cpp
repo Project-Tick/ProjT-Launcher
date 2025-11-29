@@ -66,11 +66,13 @@
 #include "InstancePageProvider.h"
 
 #include "icons/IconList.h"
+#include "viewmodels/InstanceListViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
 
 InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
     : QMainWindow(parent),
       m_instance(instance),
+      m_instanceListViewModel(new InstanceListViewModel(this)),
       m_settingsViewModel(new SettingsViewModel(this))
 {
     setAttribute(Qt::WA_DeleteOnClose);
@@ -87,7 +89,7 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
 
     // Add page container
     {
-        auto provider = std::make_shared<InstancePageProvider>(m_instance);
+        auto provider = std::make_shared<InstancePageProvider>(m_instance, m_instanceListViewModel, m_settingsViewModel);
         // Do not force the console page as the default when creating the window.
         // Creating the window should not automatically open the console; the
         // console will still be shown explicitly on error or when requested.
@@ -97,6 +99,15 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
         setContentsMargins(0, 0, 0, 0);
         hookPageSelectionSignals();
     }
+    // Let the ViewModel drive apply/reset by delegating to the container hooks.
+    m_settingsViewModel->setApplyHook([this]() {
+        return m_container ? m_container->saveAll() : true;
+    });
+    m_settingsViewModel->setResetHook([this]() {
+        if (m_container) {
+            m_container->refreshContainer();
+        }
+    });
 
     // Add custom buttons to the page container layout.
     {
@@ -222,11 +233,11 @@ void InstanceWindow::hookPageSelectionSignals()
     }
     connect(m_container, &PageContainer::selectedPageChanged, this, [this](BasePage*, BasePage* selected) {
         const QString pageId = selected ? selected->id() : QString();
-        m_settingsViewModel->setCurrentCategory(pageId);
+        m_settingsViewModel->loadCategory(pageId);
     });
 
     if (auto* current = m_container->selectedPage()) {
-        m_settingsViewModel->setCurrentCategory(current->id());
+        m_settingsViewModel->loadCategory(current->id());
     }
 }
 
@@ -250,16 +261,9 @@ bool InstanceWindow::saveAll()
 {
     if (m_settingsViewModel) {
         m_settingsViewModel->notifySaveRequested();
-        m_settingsViewModel->setBusy(true);
+        m_settingsViewModel->applyChanges();
     }
-    const bool saved = m_container->saveAll();
-    if (m_settingsViewModel) {
-        m_settingsViewModel->setBusy(false);
-        if (saved) {
-            m_settingsViewModel->notifySettingsChanged();
-        }
-    }
-    return saved;
+    return m_container->saveAll();
 }
 
 QString InstanceWindow::instanceId()
@@ -271,20 +275,16 @@ bool InstanceWindow::selectPage(QString pageId)
 {
     const bool result = m_container->selectPage(pageId);
     if (result && m_settingsViewModel) {
-        m_settingsViewModel->setCurrentCategory(pageId);
+        m_settingsViewModel->loadCategory(pageId);
     }
     return result;
 }
 
 void InstanceWindow::refreshContainer()
 {
-    if (m_settingsViewModel) {
-        m_settingsViewModel->setBusy(true);
-    }
     m_container->refreshContainer();
     if (m_settingsViewModel) {
-        m_settingsViewModel->setBusy(false);
-        m_settingsViewModel->notifySettingsLoaded();
+        m_settingsViewModel->refresh();
     }
 }
 

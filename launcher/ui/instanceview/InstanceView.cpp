@@ -659,6 +659,7 @@ void InstanceView::dropEvent(QDropEvent* event)
             }
             auto instanceId = QString::fromUtf8(mimedata->data("application/x-instanceid"));
             auto instanceList = APPLICATION->instances().get();
+            // delegate group changes to the view model through the list
             instanceList->setInstanceGroup(instanceId, group->text);
             event->setDropAction(Qt::MoveAction);
             event->accept();

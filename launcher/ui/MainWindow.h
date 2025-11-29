@@ -62,7 +62,6 @@
 #include "minecraft/auth/MinecraftAccount.h"
 
 class LaunchController;
-class NewsChecker;
 class QToolButton;
 class InstanceProxyModel;
 class LabeledToolButton;
@@ -248,7 +247,7 @@ class MainWindow : public QMainWindow {
     void setSelectedInstanceById(const QString& id);
     void updateInstanceListMetrics();
     void updateStatusCenter();
-    void setInstanceActionsEnabled(bool enabled);
+    void updateInstanceActions();
     void syncSelectionFromViewModel();
     void applyNoSelectionState();
 
@@ -275,8 +274,6 @@ class MainWindow : public QMainWindow {
     KonamiCode* secretEventFilter = nullptr;
 
     std::shared_ptr<Setting> instanceToolbarSetting = nullptr;
-
-    unique_qobject_ptr<NewsChecker> m_newsChecker;
 
     InstancePtr m_selectedInstance;
     QString m_currentInstIcon;

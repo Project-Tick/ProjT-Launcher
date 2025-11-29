@@ -31,11 +31,16 @@
 #include "ui/pages/instance/TexturePackPage.h"
 #include "ui/pages/instance/VersionPage.h"
 #include "ui/pages/instance/WorldListPage.h"
+#include "viewmodels/InstanceListViewModel.h"
+#include "viewmodels/SettingsViewModel.h"
 
 class InstancePageProvider : protected QObject, public BasePageProvider {
     Q_OBJECT
    public:
-    explicit InstancePageProvider(InstancePtr parent) { inst = parent; }
+    explicit InstancePageProvider(InstancePtr parent, InstanceListViewModel* viewModel, SettingsViewModel* settingsViewModel)
+        : inst(parent), m_instanceViewModel(viewModel), m_settingsViewModel(settingsViewModel)
+    {
+    }
 
     virtual ~InstancePageProvider() = default;
     virtual QList<BasePage*> getPages() override
@@ -54,12 +59,12 @@ class InstancePageProvider : protected QObject, public BasePageProvider {
         values.append(new GlobalDataPackPage(onesix.get()));
         values.append(new TexturePackPage(onesix.get(), onesix->texturePackList()));
         values.append(new ShaderPackPage(onesix.get(), onesix->shaderPackList()));
-        values.append(new NotesPage(onesix.get()));
+        values.append(new NotesPage(onesix.get(), m_instanceViewModel));
         values.append(new WorldListPage(onesix, onesix->worldList()));
         values.append(new ServersPage(onesix));
         values.append(new ScreenshotsPage(FS::PathCombine(onesix->gameRoot(), "screenshots")));
         values.append(new BackupPage(onesix.get()));
-        values.append(new InstanceSettingsPage(onesix));
+        values.append(new InstanceSettingsPage(onesix, m_settingsViewModel));
         values.append(new OtherLogsPage("logs", tr("Other Logs"), "Other-Logs", inst));
         return values;
     }
@@ -68,4 +73,6 @@ class InstancePageProvider : protected QObject, public BasePageProvider {
 
    protected:
     InstancePtr inst;
+    InstanceListViewModel* m_instanceViewModel = nullptr;
+    SettingsViewModel* m_settingsViewModel = nullptr;
 };

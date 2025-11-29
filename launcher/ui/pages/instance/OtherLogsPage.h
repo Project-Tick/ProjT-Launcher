@@ -53,16 +53,12 @@
 
 #include <QWidget>
 
-#include <Application.h>
-#include <QFileSystemWatcher>
-#include "LogPage.h"
+#include "BaseInstance.h"
 #include "ui/pages/BasePage.h"
 
 namespace Ui {
 class OtherLogsPage;
 }
-
-class RecursiveFileSystemWatcher;
 
 class LogsViewModel;
 
@@ -105,16 +101,11 @@ class OtherLogsPage : public QWidget, public BasePage {
 
    private:
     void reload();
-    void handleManualRefresh();
-    void handleRefreshRequest(const QString& category);
     void modelStateToUI();
-    void UIToModelState();
     void setControlsEnabled(bool enabled);
     void syncViewModel();
     void updateViewModelCategory() const;
     QString currentCategoryLabel() const;
-
-    QStringList getPaths();
 
    private:
     QString m_id;
@@ -122,14 +113,6 @@ class OtherLogsPage : public QWidget, public BasePage {
     QString m_helpPage;
 
     Ui::OtherLogsPage* ui;
-    InstancePtr m_instance;
-    /** Path to display log paths relative to. */
-    QString m_basePath;
-    QStringList m_logSearchPaths;
     QString m_currentFile;
-    QFileSystemWatcher m_watcher;
-
-    LogFormatProxyModel* m_proxy;
-    shared_qobject_ptr<LogModel> m_model;
     LogsViewModel* m_logsViewModel = nullptr;
 };
