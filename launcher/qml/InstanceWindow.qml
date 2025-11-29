@@ -14,28 +14,56 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import "components"
 
-Rectangle {
-    objectName: "settings"
-    color: "#1b1b1b"
-    width: parent ? parent.width : 640
-    height: parent ? parent.height : 480
-
+Item {
+    id: root
+    width: 840
+    height: 560
+    visible: true
     property var vm: ProjT.settingsVM
-    property var categoriesModel: vm && vm.categoryList && vm.categoryList.length
-                                   ? vm.categoryList
-                                   : [ "java", "memory", "args", "commands", "env", "loader", "game", "notes", "icon", "overrides" ]
+
+    property var categoriesModel: [
+        { key: "java", title: qsTr("Java") },
+        { key: "memory", title: qsTr("Memory") },
+        { key: "args", title: qsTr("Args") },
+        { key: "commands", title: qsTr("Commands") },
+        { key: "env", title: qsTr("Environment") },
+        { key: "loader", title: qsTr("Loader") },
+        { key: "game", title: qsTr("Game") },
+        { key: "notes", title: qsTr("Notes") },
+        { key: "overrides", title: qsTr("Overrides") }
+    ]
 
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 12
-        spacing: 8
+        spacing: 10
 
-        PageHeader {
+        RowLayout {
             Layout.fillWidth: true
-            title: qsTr("Instance Settings")
-            subtitle: qsTr("Manage configuration for the selected instance")
+            spacing: 8
+            Label {
+                text: qsTr("Instance Settings")
+                color: "#e0e0e0"
+                font.pixelSize: 18
+                font.bold: true
+            }
+            Label {
+                text: vm ? vm.instanceId : ""
+                color: "#b0bec5"
+                font.pixelSize: 12
+            }
+            Rectangle { Layout.fillWidth: true; color: "transparent" }
+            Button {
+                text: qsTr("Apply")
+                enabled: vm && !vm.busy
+                onClicked: vm ? vm.applyChanges() : undefined
+            }
+            Button {
+                text: qsTr("Reset")
+                enabled: vm && !vm.busy
+                onClicked: vm ? vm.resetChanges() : undefined
+            }
         }
 
         RowLayout {
@@ -45,27 +73,34 @@ Rectangle {
 
             ListView {
                 id: categoryList
+                width: 180
                 Layout.preferredWidth: 180
                 Layout.fillHeight: true
+                clip: true
                 spacing: 6
                 model: categoriesModel
-                delegate: Rectangle {
-                    width: categoryList.width
-                    height: 36
-                    color: (vm && vm.currentCategory === modelData) ? "#2c3440" : "#23262b"
-                    border.color: "#323742"
-                    radius: 6
-                    Text {
-                        anchors.centerIn: parent
-                        text: modelData.charAt(0).toUpperCase() + modelData.slice(1)
-                        color: "#e0e0e0"
+                delegate: Button {
+                    id: catButton
+                    text: modelData.title
+                    checkable: true
+                    checked: vm && vm.currentCategory === modelData.key
+                    implicitHeight: 36
+                    Layout.fillWidth: true
+                    background: Rectangle {
+                        radius: 6
+                        color: catButton.checked ? "#2c3440" : (catButton.hovered ? "#262a31" : "transparent")
+                        border.color: catButton.checked ? "#4c93ff" : "#323742"
+                        border.width: catButton.checked ? 1 : 0
                     }
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            if (vm) {
-                                vm.loadCategory(modelData)
-                            }
+                    contentItem: Text {
+                        text: catButton.text
+                        anchors.centerIn: parent
+                        color: catButton.checked ? "#e6f0ff" : "#e0e0e0"
+                        font.pointSize: 12
+                    }
+                    onClicked: {
+                        if (vm) {
+                            vm.loadCategory(modelData.key)
                         }
                     }
                 }
@@ -77,39 +112,23 @@ Rectangle {
                 padding: 10
 
                 StackLayout {
-                    id: stack
+                    id: pages
                     anchors.fill: parent
                     currentIndex: {
                         if (!vm) return 0
-                        const idx = categoriesModel.indexOf(vm.currentCategory)
+                        const idx = categoriesModel.findIndex(function(item) { return item.key === vm.currentCategory })
                         return idx >= 0 ? idx : 0
                     }
 
                     Repeater {
                         model: categoriesModel.length
                         delegate: Loader {
-                            property string categoryName: categoriesModel[index]
+                            property string categoryName: categoriesModel[index].key
                             sourceComponent: categoryComponent(categoryName)
                         }
                     }
                 }
             }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 8
-            Button {
-                text: qsTr("Apply")
-                enabled: vm && !vm.busy
-                onClicked: { if (vm) vm.applyChanges() }
-            }
-            Button {
-                text: qsTr("Reset")
-                enabled: vm && !vm.busy
-                onClicked: { if (vm) vm.resetChanges() }
-            }
-            Rectangle { Layout.fillWidth: true; color: "transparent" }
         }
     }
 
@@ -134,28 +153,20 @@ Rectangle {
         }
     }
 
-    Component.onCompleted: {
-        if (vm) {
-            if (!vm.currentCategory || vm.currentCategory.length === 0) {
-                vm.currentCategory = "java"
-            }
-            vm.refresh()
-        }
-    }
-
     function categoryComponent(name) {
         switch (name) {
-        case "java": return javaCategory
-        case "memory": return memoryCategory
-        case "args": return argsCategory
-        case "commands": return commandsCategory
-        case "env": return envCategory
-        case "loader": return loaderCategory
-        case "game": return gameCategory
-        case "notes": return notesCategory
-        case "icon": return iconCategory
-        case "overrides": return overridesCategory
-        default: return placeholderCategory
+        case "java":
+            return javaCategory
+        case "memory":
+            return memoryCategory
+        case "args":
+            return argsCategory
+        case "commands":
+            return commandsCategory
+        case "env":
+            return envCategory
+        default:
+            return placeholderCategory
         }
     }
 
@@ -168,7 +179,10 @@ Rectangle {
             ColumnLayout {
                 anchors.fill: parent
                 spacing: 8
-                Label { text: qsTr("This category is not yet ported to QML."); color: "#e0e0e0" }
+                Label {
+                    text: qsTr("This category is not yet ported to QML.")
+                    color: "#e0e0e0"
+                }
             }
         }
     }
@@ -177,7 +191,7 @@ Rectangle {
         id: javaCategory
         Flickable {
             contentWidth: width
-            contentHeight: 360
+            contentHeight: 320
             clip: true
             ColumnLayout {
                 anchors.fill: parent
@@ -188,21 +202,45 @@ Rectangle {
                     Layout.fillWidth: true
                     placeholderText: qsTr("Java path")
                     text: vm ? vm.javaPath : ""
-                    onEditingFinished: vm ? vm.setJavaPath(vm.instanceId, text) : undefined
+                    onEditingFinished: {
+                        if (vm) {
+                            vm.setJavaPath(vm.instanceId, text)
+                        }
+                    }
                 }
-                CheckBox {
-                    text: qsTr("Override Java location")
-                    checked: vm ? vm.overrideJavaLocation : false
-                    onToggled: vm ? vm.setOverrideJavaLocation(vm.instanceId, checked) : undefined
+                RowLayout {
+                    spacing: 8
+                    CheckBox {
+                        text: qsTr("Override Java location")
+                        checked: vm ? vm.overrideJavaLocation : false
+                        onToggled: vm ? vm.setOverrideJavaLocation(vm.instanceId, checked) : undefined
+                    }
                 }
                 Label { text: qsTr("Memory"); color: "#e0e0e0"; font.bold: true }
                 RowLayout {
                     spacing: 8
                     Label { text: qsTr("Min (MiB)"); color: "#b0bec5" }
-                    SpinBox { id: minMemJava; from: 0; to: 16384; value: vm ? vm.minMemory : 0 }
+                    SpinBox {
+                        id: minMemJava
+                        from: 0
+                        to: 16384
+                        value: vm ? vm.minMemory : 0
+                    }
                     Label { text: qsTr("Max (MiB)"); color: "#b0bec5" }
-                    SpinBox { id: maxMemJava; from: 0; to: 32768; value: vm ? vm.maxMemory : 0 }
-                    Button { text: qsTr("Apply"); onClicked: vm ? vm.setMemorySettings(vm.instanceId, minMemJava.value, maxMemJava.value) : undefined }
+                    SpinBox {
+                        id: maxMemJava
+                        from: 0
+                        to: 32768
+                        value: vm ? vm.maxMemory : 0
+                    }
+                    Button {
+                        text: qsTr("Apply")
+                        onClicked: {
+                            if (vm) {
+                                vm.setMemorySettings(vm.instanceId, minMemJava.value, maxMemJava.value)
+                            }
+                        }
+                    }
                 }
                 Label { text: qsTr("JVM Arguments"); color: "#e0e0e0"; font.bold: true }
                 TextArea {
@@ -211,7 +249,11 @@ Rectangle {
                     wrapMode: Text.Wrap
                     placeholderText: qsTr("-Xmx2G ...")
                     text: vm ? vm.jvmArgs : ""
-                    onTextChanged: vm ? vm.setJVMArguments(vm.instanceId, text) : undefined
+                    onTextChanged: {
+                        if (vm) {
+                            vm.setJVMArguments(vm.instanceId, text)
+                        }
+                    }
                 }
             }
         }
@@ -226,15 +268,32 @@ Rectangle {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 4
-                spacing: 10
+                spacing: 12
                 Label { text: qsTr("Memory"); color: "#e0e0e0"; font.bold: true }
                 RowLayout {
                     spacing: 8
                     Label { text: qsTr("Min (MiB)"); color: "#b0bec5" }
-                    SpinBox { id: memMin; from: 0; to: 16384; value: vm ? vm.minMemory : 0 }
+                    SpinBox {
+                        id: minMem
+                        from: 0
+                        to: 16384
+                        value: vm ? vm.minMemory : 0
+                    }
                     Label { text: qsTr("Max (MiB)"); color: "#b0bec5" }
-                    SpinBox { id: memMax; from: 0; to: 32768; value: vm ? vm.maxMemory : 0 }
-                    Button { text: qsTr("Apply memory"); onClicked: vm ? vm.setMemorySettings(vm.instanceId, memMin.value, memMax.value) : undefined }
+                    SpinBox {
+                        id: maxMem
+                        from: 0
+                        to: 32768
+                        value: vm ? vm.maxMemory : 0
+                    }
+                    Button {
+                        text: qsTr("Apply memory")
+                        onClicked: {
+                            if (vm) {
+                                vm.setMemorySettings(vm.instanceId, minMem.value, maxMem.value)
+                            }
+                        }
+                    }
                 }
                 CheckBox {
                     text: qsTr("Override memory settings")
@@ -249,7 +308,7 @@ Rectangle {
         id: argsCategory
         Flickable {
             contentWidth: width
-            contentHeight: 220
+            contentHeight: 260
             clip: true
             ColumnLayout {
                 anchors.fill: parent
@@ -262,7 +321,11 @@ Rectangle {
                     wrapMode: Text.Wrap
                     placeholderText: qsTr("-Xmx2G ...")
                     text: vm ? vm.jvmArgs : ""
-                    onTextChanged: vm ? vm.setJVMArguments(vm.instanceId, text) : undefined
+                    onTextChanged: {
+                        if (vm) {
+                            vm.setJVMArguments(vm.instanceId, text)
+                        }
+                    }
                 }
             }
         }
@@ -322,7 +385,10 @@ Rectangle {
                             spacing: 6
                             Label { text: modelData; color: "#e0e0e0"; Layout.fillWidth: true }
                             Label { text: vm ? vm.environmentValue(vm.instanceId, modelData) : ""; color: "#b0bec5"; Layout.fillWidth: true }
-                            Button { text: qsTr("Remove"); onClicked: vm ? vm.removeEnvironmentVar(vm.instanceId, modelData) : undefined }
+                            Button {
+                                text: qsTr("Remove")
+                                onClicked: vm ? vm.removeEnvironmentVar(vm.instanceId, modelData) : undefined
+                            }
                         }
                     }
                 }
@@ -363,26 +429,33 @@ Rectangle {
                 Label { text: qsTr("Loader"); color: "#e0e0e0"; font.bold: true }
                 RowLayout {
                     spacing: 8
-                    ComboBox {
-                        id: loaderTypeCombo
-                        model: vm ? vm.availableLoaderTypes : []
+                    TextField {
+                        id: loaderTypeField
+                        placeholderText: qsTr("Loader type (Fabric/Forge/Quilt/NeoForge)")
                         Layout.fillWidth: true
-                        currentIndex: vm && vm.availableLoaderTypes ? vm.availableLoaderTypes.indexOf(vm.loaderType) : -1
-                        onActivated: vm ? vm.setLoaderType(vm.instanceId, currentText) : undefined
+                        text: vm ? vm.loaderType : ""
                     }
-                    Button { text: qsTr("Refresh"); onClicked: vm ? vm.refreshLoaderVersions(vm.instanceId) : undefined }
+                    Button {
+                        text: qsTr("Set type")
+                        onClicked: vm ? vm.setLoaderType(vm.instanceId, loaderTypeField.text) : undefined
+                    }
                 }
                 RowLayout {
                     spacing: 8
-                    ComboBox {
-                        id: loaderVersionCombo
-                        model: vm ? vm.availableLoaderVersions : []
+                    TextField {
+                        id: loaderVersionField
+                        placeholderText: qsTr("Loader version")
                         Layout.fillWidth: true
-                        currentIndex: vm && vm.availableLoaderVersions ? vm.availableLoaderVersions.indexOf(vm.loaderVersion) : -1
-                        editable: true
-                        onActivated: vm ? vm.setLoaderVersion(vm.instanceId, currentText) : undefined
+                        text: vm ? vm.loaderVersion : ""
                     }
-                    Button { text: qsTr("Apply"); onClicked: vm ? vm.setLoaderVersion(vm.instanceId, loaderVersionCombo.editText || loaderVersionCombo.currentText) : undefined }
+                    Button {
+                        text: qsTr("Set version")
+                        onClicked: vm ? vm.setLoaderVersion(vm.instanceId, loaderVersionField.text) : undefined
+                    }
+                    Button {
+                        text: qsTr("Refresh")
+                        onClicked: vm ? vm.refreshLoaderVersions(vm.instanceId) : undefined
+                    }
                 }
                 CheckBox {
                     text: qsTr("Override loader settings")
@@ -397,33 +470,56 @@ Rectangle {
         id: gameCategory
         Flickable {
             contentWidth: width
-            contentHeight: 260
+            contentHeight: 220
             clip: true
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 10
-                Label { text: qsTr("Game Settings"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Game Arguments"); color: "#e0e0e0"; font.bold: true }
                 TextArea {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     wrapMode: Text.Wrap
                     placeholderText: qsTr("--fullscreen --width 1280 --height 720")
                     text: vm ? vm.gameArgs : ""
-                    onTextChanged: vm ? vm.setGameArgs(vm.instanceId, text) : undefined
+                    onTextChanged: {
+                        if (vm) {
+                            vm.setGameArgs(vm.instanceId, text)
+                        }
+                    }
                 }
                 RowLayout {
                     spacing: 8
-                    CheckBox { text: qsTr("Fullscreen"); checked: vm ? vm.fullscreen : false; onToggled: vm ? vm.setFullscreen(vm.instanceId, checked) : undefined }
+                    CheckBox {
+                        text: qsTr("Fullscreen")
+                        checked: vm ? vm.fullscreen : false
+                        onToggled: vm ? vm.setFullscreen(vm.instanceId, checked) : undefined
+                    }
                     Label { text: qsTr("Width"); color: "#b0bec5" }
-                    SpinBox { id: gameW; from: 640; to: 3840; value: vm ? vm.resolutionWidth : 0 }
+                    SpinBox {
+                        id: resWidth
+                        from: 640; to: 3840
+                        value: vm ? vm.resolutionWidth : 0
+                    }
                     Label { text: qsTr("Height"); color: "#b0bec5" }
-                    SpinBox { id: gameH; from: 480; to: 2160; value: vm ? vm.resolutionHeight : 0 }
-                    Button { text: qsTr("Apply size"); onClicked: vm ? vm.setResolution(vm.instanceId, gameW.value, gameH.value) : undefined }
+                    SpinBox {
+                        id: resHeight
+                        from: 480; to: 2160
+                        value: vm ? vm.resolutionHeight : 0
+                    }
+                    Button {
+                        text: qsTr("Apply size")
+                        onClicked: vm ? vm.setResolution(vm.instanceId, resWidth.value, resHeight.value) : undefined
+                    }
                 }
                 RowLayout {
                     spacing: 8
-                    CheckBox { text: qsTr("Override game directory"); checked: vm ? vm.overrideGameDir : false; onToggled: vm ? vm.setOverrideGameDir(vm.instanceId, checked) : undefined }
+                    CheckBox {
+                        text: qsTr("Override game directory")
+                        checked: vm ? vm.overrideGameDir : false
+                        onToggled: vm ? vm.setOverrideGameDir(vm.instanceId, checked) : undefined
+                    }
                     TextField {
                         id: gameDirField
                         Layout.fillWidth: true
@@ -448,34 +544,28 @@ Rectangle {
                 spacing: 10
                 Label { text: qsTr("Notes"); color: "#e0e0e0"; font.bold: true }
                 TextArea {
+                    id: notesField
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     wrapMode: Text.Wrap
                     placeholderText: qsTr("Notes for this instance")
                     text: vm ? vm.notes : ""
-                    onTextChanged: vm ? vm.setNotes(vm.instanceId, text) : undefined
+                    onTextChanged: {
+                        if (vm) {
+                            vm.setNotes(vm.instanceId, text)
+                        }
+                    }
                 }
-            }
-        }
-    }
-
-    Component {
-        id: iconCategory
-        Flickable {
-            contentWidth: width
-            contentHeight: 180
-            clip: true
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 4
-                spacing: 10
-                Label { text: qsTr("Icon"); color: "#e0e0e0"; font.bold: true }
-                ComboBox {
-                    id: iconCombo
-                    model: vm ? vm.availableIcons : []
-                    Layout.fillWidth: true
-                    currentIndex: vm && vm.availableIcons ? vm.availableIcons.indexOf(vm.iconKey) : -1
-                    onActivated: vm ? vm.setIconKey(vm.instanceId, currentText) : undefined
+                RowLayout {
+                    spacing: 8
+                    Label { text: qsTr("Icon"); color: "#e0e0e0"; Layout.alignment: Qt.AlignVCenter }
+                    ComboBox {
+                        id: iconCombo
+                        model: vm ? vm.availableIcons : []
+                        Layout.fillWidth: true
+                        currentIndex: vm && vm.availableIcons ? vm.availableIcons.indexOf(vm.iconKey) : -1
+                        onActivated: vm ? vm.setIconKey(vm.instanceId, currentText) : undefined
+                    }
                 }
             }
         }
@@ -492,10 +582,26 @@ Rectangle {
                 anchors.margins: 4
                 spacing: 10
                 Label { text: qsTr("Overrides"); color: "#e0e0e0"; font.bold: true }
-                CheckBox { text: qsTr("Override Java"); checked: vm ? vm.overrideJavaLocation : false; onToggled: vm ? vm.setOverrideJavaLocation(vm.instanceId, checked) : undefined }
-                CheckBox { text: qsTr("Override Memory"); checked: vm ? vm.overrideMemory : false; onToggled: vm ? vm.setOverrideMemory(vm.instanceId, checked) : undefined }
-                CheckBox { text: qsTr("Override Loader"); checked: vm ? vm.overrideLoader : false; onToggled: vm ? vm.setOverrideLoader(vm.instanceId, checked) : undefined }
-                CheckBox { text: qsTr("Override Environment"); checked: vm ? vm.overrideEnv : false; onToggled: vm ? vm.setOverrideEnv(vm.instanceId, checked) : undefined }
+                CheckBox {
+                    text: qsTr("Override Java")
+                    checked: vm ? vm.overrideJavaLocation : false
+                    onToggled: vm ? vm.setOverrideJavaLocation(vm.instanceId, checked) : undefined
+                }
+                CheckBox {
+                    text: qsTr("Override Memory")
+                    checked: vm ? vm.overrideMemory : false
+                    onToggled: vm ? vm.setOverrideMemory(vm.instanceId, checked) : undefined
+                }
+                CheckBox {
+                    text: qsTr("Override Loader")
+                    checked: vm ? vm.overrideLoader : false
+                    onToggled: vm ? vm.setOverrideLoader(vm.instanceId, checked) : undefined
+                }
+                CheckBox {
+                    text: qsTr("Override Environment")
+                    checked: vm ? vm.overrideEnv : false
+                    onToggled: vm ? vm.setOverrideEnv(vm.instanceId, checked) : undefined
+                }
             }
         }
     }

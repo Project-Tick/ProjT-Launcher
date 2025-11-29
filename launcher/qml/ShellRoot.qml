@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
 import ProjTLauncher 1.0
 import "components"
+import "Theme.js" as Theme
 
 Rectangle {
     id: root
-    color: "#1b1b1b"
+    color: Theme.background
     anchors.fill: parent
     property int storedSidebarWidth: shellState ? shellState.sidebarWidth : 200
 
@@ -37,31 +37,36 @@ Rectangle {
         }
     }
 
+    Component.onCompleted: {
+        console.log("Theme singleton in ShellRoot:", Theme)
+        console.log("Theme.background in ShellRoot:", Theme.background)
+    }
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
 
         Rectangle {
             id: sidebar
-            color: "#222327"
+            color: Theme.surface
             width: 180
             Layout.preferredWidth: 180
             Layout.fillHeight: true
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 12
-                spacing: 6
+                anchors.margins: Theme.spacingM
+                spacing: Theme.spacingS
 
                 Label {
                     text: ProjT.launcherVM ? ProjT.launcherVM.displayName : qsTr("ProjT Launcher")
-                    color: "#f5f5f5"
+                    color: Theme.textPrimary
                     font.pointSize: 14
                     font.bold: true
                     wrapMode: Text.WordWrap
                 }
                 Label {
                     text: ProjT.launcherVM ? ProjT.launcherVM.versionString : ""
-                    color: "#b0bec5"
+                    color: Theme.textSecondary
                     font.pointSize: 11
                     wrapMode: Text.WordWrap
                 }
@@ -71,14 +76,27 @@ Rectangle {
                 Repeater {
                     model: navEntries
                     delegate: Button {
+                        id: control
                         text: modelData.title
                         checkable: true
                         property int targetPage: modelData.page
                         checked: ProjT.launcherVM && ProjT.launcherVM.currentPage === targetPage
                         implicitHeight: 40
-                        implicitWidth: (contentItem ? contentItem.implicitWidth : 96) + 24
+                        implicitWidth: (contentItem ? contentItem.implicitWidth : 96) + 32
                         Layout.preferredWidth: implicitWidth
                         Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                        background: Rectangle {
+                            radius: Theme.radius
+                            color: control.checked ? "#2c3440" : (control.hovered ? "#2a2d33" : "transparent")
+                            border.color: control.checked ? Theme.accent : "#323742"
+                            border.width: control.checked ? 1 : 0
+                        }
+                        contentItem: Text {
+                            text: control.text
+                            anchors.centerIn: parent
+                            color: control.checked ? "#e6f0ff" : Theme.textPrimary
+                            font.pointSize: 12
+                        }
                         onClicked: {
                             if (ProjT.launcherVM) {
                                 ProjT.launcherVM.currentPage = targetPage

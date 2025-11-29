@@ -25,6 +25,7 @@
 #include "java/JavaInstall.h"
 #include "java/JavaInstallList.h"
 #include "java/JavaUtils.h"
+#include "icons/IconList.h"
 #include "settings/SettingsObject.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/VersionSelectDialog.h"
@@ -148,6 +149,16 @@ void SettingsViewModel::setBusy(bool busy)
     emit busyChanged();
 }
 
+void SettingsViewModel::setLoaderTypeProperty(const QString& type)
+{
+    setLoaderType(m_instanceId, type);
+}
+
+void SettingsViewModel::setLoaderVersionProperty(const QString& version)
+{
+    setLoaderVersion(m_instanceId, version);
+}
+
 void SettingsViewModel::setJavaPath(const QString& path)
 {
     if (m_javaPath == path) {
@@ -213,7 +224,8 @@ void SettingsViewModel::loadCategory(const QString& category)
 
 void SettingsViewModel::applyChanges()
 {
-    emit started(tr("Applying settings"));
+    m_busyReason = tr("Applying settings");
+    emit started(m_busyReason);
     setBusy(true);
     bool ok = true;
     if (m_applyHook) {
@@ -230,7 +242,8 @@ void SettingsViewModel::applyChanges()
 
 void SettingsViewModel::resetChanges()
 {
-    emit started(tr("Resetting settings"));
+    m_busyReason = tr("Resetting settings");
+    emit started(m_busyReason);
     setBusy(true);
     if (m_resetHook) {
         m_resetHook();
@@ -464,6 +477,98 @@ void SettingsViewModel::setOverrideLoader(const QString& instanceId, bool value)
     setLoaderPreferences(instanceId, {}, value);
 }
 
+void SettingsViewModel::setGameArgs(const QString& instanceId, const QString& args)
+{
+    auto settings = settingsForInstance(instanceId);
+    if (!settings) {
+        return;
+    }
+    m_gameArgs = args;
+    SettingsObject::Lock lock(settings);
+    settings->set("WrapperCommand", args);
+    emit gameSettingsChanged();
+}
+
+void SettingsViewModel::setFullscreen(const QString& instanceId, bool enabled)
+{
+    auto settings = settingsForInstance(instanceId);
+    if (!settings) {
+        return;
+    }
+    m_fullscreen = enabled;
+    SettingsObject::Lock lock(settings);
+    settings->set("LaunchMaximized", enabled);
+    emit gameSettingsChanged();
+}
+
+void SettingsViewModel::setResolution(const QString& instanceId, int width, int height)
+{
+    auto settings = settingsForInstance(instanceId);
+    if (!settings) {
+        return;
+    }
+    m_resolutionWidth = width;
+    m_resolutionHeight = height;
+    SettingsObject::Lock lock(settings);
+    settings->set("MinecraftWinWidth", width);
+    settings->set("MinecraftWinHeight", height);
+    emit gameSettingsChanged();
+}
+
+void SettingsViewModel::setOverrideGameDir(const QString& instanceId, bool value)
+{
+    auto settings = settingsForInstance(instanceId);
+    if (!settings) {
+        return;
+    }
+    m_overrideGameDir = value;
+    SettingsObject::Lock lock(settings);
+    settings->set("OverrideGameDir", value);
+    emit gameSettingsChanged();
+}
+
+void SettingsViewModel::setCustomGameDir(const QString& instanceId, const QString& path)
+{
+    auto settings = settingsForInstance(instanceId);
+    if (!settings) {
+        return;
+    }
+    m_customGameDir = path;
+    SettingsObject::Lock lock(settings);
+    settings->set("GameDir", path);
+    emit gameSettingsChanged();
+}
+
+void SettingsViewModel::setNotes(const QString& instanceId, const QString& notes)
+{
+    auto instances = APPLICATION ? APPLICATION->instances() : nullptr;
+    if (!instances) {
+        return;
+    }
+    auto inst = instances->getInstanceById(instanceId);
+    if (!inst) {
+        return;
+    }
+    m_notes = notes;
+    inst->setNotes(notes);
+    emit notesChanged();
+}
+
+void SettingsViewModel::setIconKey(const QString& instanceId, const QString& iconKey)
+{
+    auto instances = APPLICATION ? APPLICATION->instances() : nullptr;
+    if (!instances) {
+        return;
+    }
+    auto inst = instances->getInstanceById(instanceId);
+    if (!inst) {
+        return;
+    }
+    m_iconKey = iconKey;
+    inst->setIconKey(iconKey);
+    emit iconChanged();
+}
+
 void SettingsViewModel::setOverrideEnv(const QString& instanceId, bool value)
 {
     auto settings = settingsForInstance(instanceId);
@@ -522,12 +627,39 @@ void SettingsViewModel::loadCurrentSettings()
     m_overrideMemory = settings->get("OverrideMemory").toBool();
     m_overrideLoader = settings->get("OverrideModDownloadLoaders").toBool();
     m_overrideEnv = settings->get("OverrideEnv").toBool();
+    m_loaderType = settings->get("ModDownloadLoaders").toStringList().value(0);
+    m_availableLoaderTypes = settings->get("ModDownloadLoaders").toStringList();
+    if (m_availableLoaderTypes.isEmpty()) {
+        m_availableLoaderTypes = QStringList{ "Fabric", "Forge", "Quilt", "NeoForge" };
+    }
+    m_loaderVersion = settings->get("PreferredLoaderVersion").toString();
+    m_availableLoaderVersions.clear();
+    m_gameArgs = settings->get("WrapperCommand").toString();
+    m_fullscreen = settings->get("LaunchMaximized").toBool();
+    m_resolutionWidth = settings->get("MinecraftWinWidth").toInt();
+    m_resolutionHeight = settings->get("MinecraftWinHeight").toInt();
+    m_overrideGameDir = settings->get("OverrideGameDir").toBool();
+    m_customGameDir = settings->get("GameDir").toString();
+    m_notes = inst->notes();
+    m_iconKey = inst->iconKey();
+    m_availableIcons.clear();
+    if (auto iconList = APPLICATION->icons()) {
+        const int rows = iconList->rowCount();
+        for (int row = 0; row < rows; ++row) {
+            const auto idx = iconList->index(row, 0);
+            m_availableIcons.append(iconList->data(idx, Qt::UserRole).toString());
+        }
+    }
     emit customCommandsChanged();
     emit memoryChanged();
     emit jvmArgsChanged();
     emit overrideMemoryChanged();
     emit overrideLoaderChanged();
     emit overrideEnvChanged();
+    emit loaderSettingsChanged();
+    emit gameSettingsChanged();
+    emit notesChanged();
+    emit iconChanged();
 }
 
 void SettingsViewModel::resetJavaCategory()

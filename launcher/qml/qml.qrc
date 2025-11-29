@@ -3,10 +3,13 @@
         <file>TestShell.qml</file>
         <file>ShellPrototype.qml</file>
         <file>ShellRoot.qml</file>
+        <file>InstanceWindow.qml</file>
         <file>InstancePage.qml</file>
         <file>NewsPage.qml</file>
         <file>SettingsPage.qml</file>
         <file>AboutPage.qml</file>
+        <file>Theme.qml</file>
+        <file>Theme.js</file>
         <file>components/PageHeader.qml</file>
         <file>LogsPage.qml</file>
         <file>settings/JavaSettingsPage.qml</file>
