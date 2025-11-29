@@ -31,6 +31,11 @@ bool InstanceListViewModel::isBusy() const
     return m_busy;
 }
 
+QStringList InstanceListViewModel::instanceNames() const
+{
+    return m_instanceNames;
+}
+
 void InstanceListViewModel::setTotalCount(int count)
 {
     if (m_totalCount == count) {
@@ -56,4 +61,19 @@ void InstanceListViewModel::setBusy(bool busy)
     }
     m_busy = busy;
     emit busyChanged();
+}
+
+void InstanceListViewModel::setInstanceNames(const QStringList& names)
+{
+    if (m_instanceNames == names) {
+        return;
+    }
+    m_instanceNames = names;
+    emit instanceNamesChanged();
+}
+
+void InstanceListViewModel::selectInstance(const QString& id)
+{
+    setSelectedInstanceId(id);
+    emit instanceSelected(id);
 }

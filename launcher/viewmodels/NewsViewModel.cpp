@@ -112,11 +112,22 @@ void NewsViewModel::updateCurrentFromEntry(const NewsEntryPtr& entry)
         newContent = entry->content;
         newLink = entry->link;
     }
-    if (m_currentTitle == newTitle && m_currentContent == newContent && m_currentLink == newLink) {
+    const bool titleChanged = m_currentTitle != newTitle;
+    const bool contentChanged = m_currentContent != newContent;
+    const bool linkChanged = m_currentLink != newLink;
+    if (!titleChanged && !contentChanged && !linkChanged) {
         return;
     }
     m_currentTitle = newTitle;
     m_currentContent = newContent;
     m_currentLink = newLink;
-    emit currentContentChanged();
+    if (contentChanged) {
+        emit currentContentChanged();
+    }
+    if (titleChanged) {
+        emit currentTitleChanged();
+    }
+    if (linkChanged) {
+        emit currentLinkChanged();
+    }
 }

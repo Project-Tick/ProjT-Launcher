@@ -1,5 +1,12 @@
 <RCC>
     <qresource prefix="/qml">
         <file>TestShell.qml</file>
+        <file>ShellPrototype.qml</file>
+        <file>NavigationController.js</file>
+        <file>ShellRoot.qml</file>
+        <file>InstancePage.qml</file>
+        <file>NewsPage.qml</file>
+        <file>SettingsPage.qml</file>
+        <file>AboutPage.qml</file>
     </qresource>
 </RCC>

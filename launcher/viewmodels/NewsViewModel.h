@@ -24,6 +24,9 @@ class NewsViewModel : public QObject {
     Q_PROPERTY(QString currentContent READ currentContent NOTIFY currentContentChanged)
     Q_PROPERTY(bool busy READ isBusy NOTIFY busyChanged)
     Q_PROPERTY(QDateTime lastUpdated READ lastUpdated NOTIFY lastUpdatedChanged)
+    Q_PROPERTY(QString currentTitle READ currentTitle NOTIFY currentTitleChanged)
+    Q_PROPERTY(QString currentLink READ currentLink NOTIFY currentLinkChanged)
+    Q_PROPERTY(QString currentArticleHtml READ currentContent NOTIFY currentContentChanged)
 
    public:
     explicit NewsViewModel(QObject* parent = nullptr);
@@ -47,6 +50,8 @@ class NewsViewModel : public QObject {
 
    signals:
     void currentContentChanged();
+    void currentTitleChanged();
+    void currentLinkChanged();
     void busyChanged();
     void lastUpdatedChanged();
     void newsUpdated();
