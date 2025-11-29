@@ -16,9 +16,12 @@
 #include "ViewLogWindow.h"
 
 #include "ui/pages/instance/OtherLogsPage.h"
+#include "viewmodels/LogsViewModel.h"
 
 ViewLogWindow::ViewLogWindow(QWidget* parent)
-    : QMainWindow(parent), m_page(new OtherLogsPage("launcher-logs", tr("Launcher Logs"), "Launcher-Logs", nullptr, parent))
+    : QMainWindow(parent)
+    , m_logsViewModel(new LogsViewModel(this))
+    , m_page(new OtherLogsPage("launcher-logs", tr("Launcher Logs"), "Launcher-Logs", nullptr, parent))
 {
     setAttribute(Qt::WA_DeleteOnClose);
     setWindowIcon(QIcon::fromTheme("log"));
@@ -26,6 +29,7 @@ ViewLogWindow::ViewLogWindow(QWidget* parent)
     setCentralWidget(m_page);
     setMinimumSize(m_page->size());
     setContentsMargins(0, 0, 0, 0);
+    m_page->setLogsViewModel(m_logsViewModel);
     m_page->opened();
     show();
 }

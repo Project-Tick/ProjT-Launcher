@@ -54,9 +54,11 @@
 #include "ui_OtherLogsPage.h"
 
 #include <QMessageBox>
+#include <QScopeGuard>
 
 #include "ui/GuiUtil.h"
 #include "ui/themes/ThemeManager.h"
+#include "viewmodels/LogsViewModel.h"
 
 #include <FileSystem.h>
 #include <GZip.h>
@@ -125,6 +127,22 @@ OtherLogsPage::OtherLogsPage(QString id, QString displayName, QString helpPage, 
 OtherLogsPage::~OtherLogsPage()
 {
     delete ui;
+}
+
+void OtherLogsPage::setLogsViewModel(LogsViewModel* viewModel)
+{
+    if (m_logsViewModel == viewModel) {
+        return;
+    }
+    if (m_logsViewModel) {
+        disconnect(m_logsViewModel, nullptr, this, nullptr);
+    }
+    m_logsViewModel = viewModel;
+    if (!m_logsViewModel) {
+        return;
+    }
+    connect(m_logsViewModel, &LogsViewModel::refreshRequested, this, &OtherLogsPage::handleRefreshRequest);
+    syncViewModel();
 }
 
 void OtherLogsPage::modelStateToUI()
@@ -233,6 +251,7 @@ void OtherLogsPage::on_selectLogBox_currentIndexChanged(const int index)
         m_currentFile = QString();
         ui->text->clear();
         setControlsEnabled(false);
+        syncViewModel();
     } else {
         m_currentFile = file;
         reload();
@@ -242,19 +261,26 @@ void OtherLogsPage::on_selectLogBox_currentIndexChanged(const int index)
 
 void OtherLogsPage::on_btnReload_clicked()
 {
-    if (!m_instance && m_currentFile.isEmpty()) {
-        if (!m_model)
-            return;
-        m_model->clear();
-        if (m_container)
-            m_container->refreshContainer();
-    } else {
-        reload();
+    if (m_logsViewModel) {
+        m_logsViewModel->requestRefresh();
+        return;
     }
+    handleManualRefresh();
 }
 
 void OtherLogsPage::reload()
 {
+    const bool viewModelActive = m_logsViewModel != nullptr;
+    if (viewModelActive) {
+        m_logsViewModel->setBusy(true);
+    }
+    const auto busyGuard = qScopeGuard([this, viewModelActive]() {
+        if (viewModelActive && m_logsViewModel) {
+            m_logsViewModel->setBusy(false);
+            syncViewModel();
+        }
+    });
+
     if (m_currentFile.isEmpty()) {
         if (m_instance) {
             setControlsEnabled(false);
@@ -370,6 +396,44 @@ void OtherLogsPage::reload()
             setControlsEnabled(true);
         }
     }
+}
+
+void OtherLogsPage::handleManualRefresh()
+{
+    if (!m_instance && m_currentFile.isEmpty()) {
+        const bool viewModelActive = m_logsViewModel != nullptr;
+        if (viewModelActive) {
+            m_logsViewModel->setBusy(true);
+        }
+        const auto guard = qScopeGuard([this, viewModelActive]() {
+            if (viewModelActive && m_logsViewModel) {
+                m_logsViewModel->setBusy(false);
+                syncViewModel();
+            }
+        });
+        if (!m_model) {
+            return;
+        }
+        m_model->clear();
+        if (m_container) {
+            m_container->refreshContainer();
+        }
+        return;
+    }
+
+    reload();
+}
+
+void OtherLogsPage::handleRefreshRequest(const QString& category)
+{
+    if (!m_logsViewModel) {
+        return;
+    }
+    const QString currentCategory = currentCategoryLabel();
+    if (!category.isEmpty() && category != currentCategory) {
+        return;
+    }
+    handleManualRefresh();
 }
 
 void OtherLogsPage::on_btnPaste_clicked()
@@ -514,6 +578,27 @@ void OtherLogsPage::setControlsEnabled(const bool enabled)
     ui->btnCopy->setEnabled(enabled);
     ui->btnPaste->setEnabled(enabled);
     ui->text->setEnabled(enabled);
+}
+
+void OtherLogsPage::syncViewModel()
+{
+    if (m_logsViewModel) {
+        m_logsViewModel->setLogText(ui->text->toPlainText());
+        updateViewModelCategory();
+    }
+}
+
+void OtherLogsPage::updateViewModelCategory() const
+{
+    if (!m_logsViewModel) {
+        return;
+    }
+    m_logsViewModel->setCategory(currentCategoryLabel());
+}
+
+QString OtherLogsPage::currentCategoryLabel() const
+{
+    return m_currentFile.isEmpty() ? m_displayName : m_currentFile;
 }
 
 QStringList OtherLogsPage::getPaths()

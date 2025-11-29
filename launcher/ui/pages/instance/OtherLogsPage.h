@@ -64,12 +64,16 @@ class OtherLogsPage;
 
 class RecursiveFileSystemWatcher;
 
+class LogsViewModel;
+
 class OtherLogsPage : public QWidget, public BasePage {
     Q_OBJECT
 
    public:
     explicit OtherLogsPage(QString id, QString displayName, QString helpPage, InstancePtr instance = nullptr, QWidget* parent = 0);
     ~OtherLogsPage();
+
+    void setLogsViewModel(LogsViewModel* viewModel);
 
     QString id() const override { return m_id; }
     QString displayName() const override { return m_displayName; }
@@ -101,9 +105,14 @@ class OtherLogsPage : public QWidget, public BasePage {
 
    private:
     void reload();
+    void handleManualRefresh();
+    void handleRefreshRequest(const QString& category);
     void modelStateToUI();
     void UIToModelState();
     void setControlsEnabled(bool enabled);
+    void syncViewModel();
+    void updateViewModelCategory() const;
+    QString currentCategoryLabel() const;
 
     QStringList getPaths();
 
@@ -122,4 +131,5 @@ class OtherLogsPage : public QWidget, public BasePage {
 
     LogFormatProxyModel* m_proxy;
     shared_qobject_ptr<LogModel> m_model;
+    LogsViewModel* m_logsViewModel = nullptr;
 };

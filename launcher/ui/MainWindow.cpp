@@ -57,6 +57,7 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
+#include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QUrl>
@@ -103,6 +104,9 @@
 #include <updater/ExternalUpdater.h>
 #include "InstanceWindow.h"
 
+#include "viewmodels/InstanceListViewModel.h"
+#include "viewmodels/LauncherViewModel.h"
+#include "viewmodels/NewsViewModel.h"
 #include "ui/GuiUtil.h"
 #include "ui/ViewLogWindow.h"
 #include "ui/dialogs/AboutDialog.h"
@@ -115,6 +119,7 @@
 #include "ui/dialogs/ImportResourceDialog.h"
 #include "ui/dialogs/NewInstanceDialog.h"
 #include "ui/dialogs/NewsDialog.h"
+#include "ui/TestQmlPanel.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/instanceview/InstanceDelegate.h"
 #include "ui/instanceview/InstanceProxyModel.h"
@@ -156,14 +161,19 @@ QString profileInUseFilter(const QString& profile, bool used)
 }
 }  // namespace
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget* parent)
+    : QMainWindow(parent),
+      ui(new Ui::MainWindow),
+      m_launcherViewModel(new LauncherViewModel(this)),
+      m_instanceListViewModel(new InstanceListViewModel(this)),
+      m_newsViewModel(new NewsViewModel(this))
 {
     ui->setupUi(this);
 
     setWindowIcon(APPLICATION->logo());
     setWindowTitle(APPLICATION->applicationDisplayName());
 #ifndef QT_NO_ACCESSIBILITY
-    setAccessibleName(BuildConfig.LAUNCHER_DISPLAYNAME);
+    setAccessibleName(m_launcherViewModel->displayName());
 #endif
 
     // instance toolbar stuff
@@ -296,8 +306,39 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         ui->newsToolBar->insertWidget(ui->actionMoreNews, newsLabel);
 
         connect(newsLabel, &QAbstractButton::clicked, this, &MainWindow::newsButtonClicked);
-        connect(m_newsChecker.get(), &NewsChecker::newsLoaded, this, &MainWindow::updateNewsLabel);
+        connect(m_newsChecker.get(), &NewsChecker::newsLoaded, this, [this]() {
+            if (!m_newsViewModel) {
+                return;
+            }
+            m_newsViewModel->setBusy(false);
+            m_newsViewModel->setEntries(m_newsChecker->getNewsEntries());
+            m_newsViewModel->setLastUpdated(QDateTime::currentDateTimeUtc());
+        });
+        connect(m_newsChecker.get(), &NewsChecker::newsLoadingFailed, this, [this](const QString&) {
+            if (!m_newsViewModel) {
+                return;
+            }
+            m_newsViewModel->setBusy(false);
+            updateNewsLabel();
+        });
+        connect(m_newsViewModel, &NewsViewModel::refreshRequested, this, [this]() {
+            if (!m_newsChecker || m_newsChecker->isLoadingNews()) {
+                return;
+            }
+            m_newsViewModel->setBusy(true);
+            m_newsChecker->reloadNews();
+        });
+        connect(m_newsViewModel, &NewsViewModel::newsUpdated, this, &MainWindow::updateNewsLabel);
+        connect(m_newsViewModel, &NewsViewModel::busyChanged, this, &MainWindow::updateNewsLabel);
         updateNewsLabel();
+    }
+
+    // Experimental QML preview dock (hidden by default)
+    {
+        m_testQmlPanel = new TestQmlPanel(m_launcherViewModel, this);
+        addDockWidget(Qt::BottomDockWidgetArea, m_testQmlPanel);
+        m_testQmlPanel->hide();
+        ui->viewMenu->addAction(m_testQmlPanel->toggleViewAction());
     }
 
     // Create the instance list widget
@@ -384,6 +425,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // handle newly added instances
     connect(APPLICATION->instances().get(), &InstanceList::instanceSelectRequest, this, &MainWindow::instanceSelectRequest);
+    connect(APPLICATION->instances().get(), &InstanceList::instancesChanged, this,
+            [this] { updateInstanceListMetrics(); });
 
     // When the global settings page closes, we want to know about it and update our state
     connect(APPLICATION, &Application::globalSettingsApplied, this, &MainWindow::globalSettingsClosed);
@@ -414,8 +457,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // load the news
     {
+        if (m_newsViewModel) {
+            m_newsViewModel->setBusy(true);
+        }
         m_newsChecker->reloadNews();
-        updateNewsLabel();
     }
 
     if (APPLICATION->updaterEnabled()) {
@@ -435,6 +480,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->actionUndoTrashInstance, &QAction::triggered, this, &MainWindow::undoTrashInstance);
 
     setSelectedInstanceById(APPLICATION->settings()->get("SelectedInstance").toString());
+    updateInstanceListMetrics();
 
     // removing this looks stupid
     view->setFocus();
@@ -463,6 +509,7 @@ void MainWindow::retranslateUi()
     }
 
     ui->retranslateUi(this);
+    const auto displayName = m_launcherViewModel->displayName();
 
     MinecraftAccountPtr defaultAccount = APPLICATION->accounts()->defaultAccount();
     if (defaultAccount) {
@@ -475,13 +522,13 @@ void MainWindow::retranslateUi()
 
     // replace the %1 with the launcher display name in some actions
     if (helpMenuButton->toolTip().contains("%1"))
-        helpMenuButton->setToolTip(helpMenuButton->toolTip().arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+        helpMenuButton->setToolTip(helpMenuButton->toolTip().arg(displayName));
 
     for (auto action : ui->helpMenu->actions()) {
         if (action->text().contains("%1"))
-            action->setText(action->text().arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+            action->setText(action->text().arg(displayName));
         if (action->toolTip().contains("%1"))
-            action->setToolTip(action->toolTip().arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+            action->setToolTip(action->toolTip().arg(displayName));
     }
 }
 
@@ -567,7 +614,8 @@ void MainWindow::showInstanceContextMenu(const QPoint& pos)
     } else {
         auto group = view->groupNameAt(pos);
 
-        QAction* actionVoid = new QAction(group.isNull() ? BuildConfig.LAUNCHER_DISPLAYNAME : group, this);
+        QAction* actionVoid =
+            new QAction(group.isNull() ? m_launcherViewModel->displayName() : group, this);
         actionVoid->setEnabled(false);
 
         QAction* actionCreateInstance = new QAction(tr("&Create instance"), this);
@@ -812,12 +860,15 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
 
 void MainWindow::updateNewsLabel()
 {
-    if (m_newsChecker->isLoadingNews()) {
+    if (!m_newsViewModel) {
+        return;
+    }
+    if (m_newsViewModel->isBusy()) {
         newsLabel->setText(tr("Loading news..."));
         newsLabel->setEnabled(false);
         ui->actionMoreNews->setVisible(false);
     } else {
-        QList<NewsEntryPtr> entries = m_newsChecker->getNewsEntries();
+        QList<NewsEntryPtr> entries = m_newsViewModel->entries();
         if (entries.length() > 0) {
             newsLabel->setText(entries[0]->title);
             newsLabel->setEnabled(true);
@@ -1163,6 +1214,16 @@ void MainWindow::setSelectedInstanceById(const QString& id)
     }
 }
 
+void MainWindow::updateInstanceListMetrics()
+{
+    if (!m_instanceListViewModel) {
+        return;
+    }
+    m_instanceListViewModel->setTotalCount(APPLICATION->instances()->count());
+    const auto selectedId = m_selectedInstance ? m_selectedInstance->id() : QString();
+    m_instanceListViewModel->setSelectedInstanceId(selectedId);
+}
+
 void MainWindow::on_actionChangeInstGroup_triggered()
 {
     if (!m_selectedInstance)
@@ -1275,7 +1336,14 @@ void MainWindow::on_actionViewJavaFolder_triggered()
 
 void MainWindow::refreshInstances()
 {
+    if (m_instanceListViewModel) {
+        m_instanceListViewModel->setBusy(true);
+    }
     APPLICATION->instances()->loadList();
+    if (m_instanceListViewModel) {
+        m_instanceListViewModel->setBusy(false);
+        updateInstanceListMetrics();
+    }
 }
 
 void MainWindow::checkForUpdates()
@@ -1302,6 +1370,7 @@ void MainWindow::globalSettingsClosed()
     APPLICATION->instances()->loadList();
     proxymodel->invalidate();
     proxymodel->sort(0);
+    updateInstanceListMetrics();
 
     // Update UI components that depend on settings
     updateMainToolBar();
@@ -1367,13 +1436,14 @@ void MainWindow::on_actionAddToPATH_triggered()
     args << QString("do shell script \"mkdir -p /usr/local/bin && ln -sf '%1' '%2'\" with administrator privileges")
                 .arg(binaryPath, targetPath);
     auto outcome = QProcess::execute("/usr/bin/osascript", args);
+    const auto displayName = m_launcherViewModel->displayName();
     if (!outcome) {
-        QMessageBox::information(this, tr("Successfully added %1 to PATH").arg(BuildConfig.LAUNCHER_DISPLAYNAME),
+        QMessageBox::information(this, tr("Successfully added %1 to PATH").arg(displayName),
                                  tr("%1 was successfully added to your PATH. You can now start it by running `%2`.")
-                                     .arg(BuildConfig.LAUNCHER_DISPLAYNAME, BuildConfig.LAUNCHER_APP_BINARY_NAME));
+                                     .arg(displayName, BuildConfig.LAUNCHER_APP_BINARY_NAME));
     } else {
-        QMessageBox::critical(this, tr("Failed to add %1 to PATH").arg(BuildConfig.LAUNCHER_DISPLAYNAME),
-                              tr("An error occurred while trying to add %1 to PATH").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+        QMessageBox::critical(this, tr("Failed to add %1 to PATH").arg(displayName),
+                              tr("An error occurred while trying to add %1 to PATH").arg(displayName));
     }
 }
 #endif
@@ -1385,15 +1455,13 @@ void MainWindow::on_actionOpenWiki_triggered()
 
 void MainWindow::on_actionMoreNews_triggered()
 {
-    auto entries = m_newsChecker->getNewsEntries();
-    NewsDialog news_dialog(entries, this);
+    NewsDialog news_dialog(m_newsViewModel, this);
     news_dialog.exec();
 }
 
 void MainWindow::newsButtonClicked()
 {
-    auto entries = m_newsChecker->getNewsEntries();
-    NewsDialog news_dialog(entries, this);
+    NewsDialog news_dialog(m_newsViewModel, this);
     news_dialog.toggleArticleList();
     news_dialog.exec();
 }
@@ -1578,12 +1646,15 @@ void MainWindow::taskEnd()
         m_versionLoadTask = NULL;
 
     sender->deleteLater();
+    m_launcherViewModel->setBusy(false);
 }
 
 void MainWindow::startTask(Task* task)
 {
     connect(task, &Task::succeeded, this, &MainWindow::taskEnd);
     connect(task, &Task::failed, this, &MainWindow::taskEnd);
+    connect(task, &Task::aborted, this, &MainWindow::taskEnd);
+    m_launcherViewModel->setBusy(true);
     task->start();
 }
 
@@ -1623,6 +1694,7 @@ void MainWindow::instanceChanged(const QModelIndex& current, [[maybe_unused]] co
         selectionBad();
         return;
     }
+    updateInstanceListMetrics();
 }
 
 void MainWindow::instanceSelectRequest(QString id)
@@ -1654,6 +1726,7 @@ void MainWindow::selectionBad()
 
     // ...and then see if we can enable the previously selected instance
     setSelectedInstanceById(APPLICATION->settings()->get("SelectedInstance").toString());
+    updateInstanceListMetrics();
 }
 
 void MainWindow::checkInstancePathForProblems()
@@ -1665,7 +1738,7 @@ void MainWindow::checkInstancePathForProblems()
         warning.setInformativeText(tr("You have now two options: <br/>"
                                       " - change the instance folder in the settings <br/>"
                                       " - move this installation of %1 to a different folder")
-                                       .arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+                                       .arg(m_launcherViewModel->displayName()));
         warning.setDefaultButton(QMessageBox::Ok);
         warning.exec();
     }

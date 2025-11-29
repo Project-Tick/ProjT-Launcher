@@ -61,17 +61,23 @@
 #include <QScrollBar>
 
 #include "ui/widgets/PageContainer.h"
+#include "ui/pages/BasePage.h"
 
 #include "InstancePageProvider.h"
 
 #include "icons/IconList.h"
+#include "viewmodels/SettingsViewModel.h"
 
-InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent) : QMainWindow(parent), m_instance(instance)
+InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
+    : QMainWindow(parent),
+      m_instance(instance),
+      m_settingsViewModel(new SettingsViewModel(this))
 {
     setAttribute(Qt::WA_DeleteOnClose);
 
     auto icon = APPLICATION->icons()->getIcon(m_instance->iconKey());
     QString windowTitle = tr("Console window for ") + m_instance->name();
+    m_settingsViewModel->setInstanceId(m_instance->id());
 
     // Set window properties
     {
@@ -89,6 +95,7 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent) : QMainWin
         m_container->setParentContainer(this);
         setCentralWidget(m_container);
         setContentsMargins(0, 0, 0, 0);
+        hookPageSelectionSignals();
     }
 
     // Add custom buttons to the page container layout.
@@ -134,12 +141,7 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent) : QMainWin
     }
 
     // restore window state
-    {
-        auto base64State = APPLICATION->settings()->get("ConsoleWindowState").toString().toUtf8();
-        restoreState(QByteArray::fromBase64(base64State));
-        auto base64Geometry = APPLICATION->settings()->get("ConsoleWindowGeometry").toString().toUtf8();
-        restoreGeometry(QByteArray::fromBase64(base64Geometry));
-    }
+    restoreWindowStateFromSettings();
 
     // set up instance and launch process recognition
     {
@@ -159,6 +161,7 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent) : QMainWin
         static_cast<ManagedPackPage*>(m_container->getPage("managed_pack"))->setInstanceWindow(this);
     }
 
+    m_settingsViewModel->notifySettingsLoaded();
     show();
 }
 
@@ -198,6 +201,35 @@ void InstanceWindow::runningStateChanged(bool running)
     }
 }
 
+void InstanceWindow::restoreWindowStateFromSettings()
+{
+    auto base64State = APPLICATION->settings()->get("ConsoleWindowState").toString().toUtf8();
+    restoreState(QByteArray::fromBase64(base64State));
+    auto base64Geometry = APPLICATION->settings()->get("ConsoleWindowGeometry").toString().toUtf8();
+    restoreGeometry(QByteArray::fromBase64(base64Geometry));
+}
+
+void InstanceWindow::saveWindowStateToSettings() const
+{
+    APPLICATION->settings()->set("ConsoleWindowState", QString::fromUtf8(saveState().toBase64()));
+    APPLICATION->settings()->set("ConsoleWindowGeometry", QString::fromUtf8(saveGeometry().toBase64()));
+}
+
+void InstanceWindow::hookPageSelectionSignals()
+{
+    if (!m_container || !m_settingsViewModel) {
+        return;
+    }
+    connect(m_container, &PageContainer::selectedPageChanged, this, [this](BasePage*, BasePage* selected) {
+        const QString pageId = selected ? selected->id() : QString();
+        m_settingsViewModel->setCurrentCategory(pageId);
+    });
+
+    if (auto* current = m_container->selectedPage()) {
+        m_settingsViewModel->setCurrentCategory(current->id());
+    }
+}
+
 void InstanceWindow::closeEvent(QCloseEvent* event)
 {
     bool proceed = true;
@@ -209,15 +241,25 @@ void InstanceWindow::closeEvent(QCloseEvent* event)
         return;
     }
 
-    APPLICATION->settings()->set("ConsoleWindowState", QString::fromUtf8(saveState().toBase64()));
-    APPLICATION->settings()->set("ConsoleWindowGeometry", QString::fromUtf8(saveGeometry().toBase64()));
+    saveWindowStateToSettings();
     emit isClosing();
     event->accept();
 }
 
 bool InstanceWindow::saveAll()
 {
-    return m_container->saveAll();
+    if (m_settingsViewModel) {
+        m_settingsViewModel->notifySaveRequested();
+        m_settingsViewModel->setBusy(true);
+    }
+    const bool saved = m_container->saveAll();
+    if (m_settingsViewModel) {
+        m_settingsViewModel->setBusy(false);
+        if (saved) {
+            m_settingsViewModel->notifySettingsChanged();
+        }
+    }
+    return saved;
 }
 
 QString InstanceWindow::instanceId()
@@ -227,12 +269,23 @@ QString InstanceWindow::instanceId()
 
 bool InstanceWindow::selectPage(QString pageId)
 {
-    return m_container->selectPage(pageId);
+    const bool result = m_container->selectPage(pageId);
+    if (result && m_settingsViewModel) {
+        m_settingsViewModel->setCurrentCategory(pageId);
+    }
+    return result;
 }
 
 void InstanceWindow::refreshContainer()
 {
+    if (m_settingsViewModel) {
+        m_settingsViewModel->setBusy(true);
+    }
     m_container->refreshContainer();
+    if (m_settingsViewModel) {
+        m_settingsViewModel->setBusy(false);
+        m_settingsViewModel->notifySettingsLoaded();
+    }
 }
 
 BasePage* InstanceWindow::selectedPage() const

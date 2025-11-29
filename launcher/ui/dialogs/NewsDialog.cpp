@@ -14,28 +14,28 @@
 #include "NewsDialog.h"
 #include "ui_NewsDialog.h"
 
-NewsDialog::NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent) : QDialog(parent), ui(new Ui::NewsDialog())
+#include <QSignalBlocker>
+
+#include "viewmodels/NewsViewModel.h"
+
+NewsDialog::NewsDialog(NewsViewModel* viewModel, QWidget* parent)
+    : QDialog(parent), ui(new Ui::NewsDialog()), m_viewModel(viewModel)
 {
     ui->setupUi(this);
-
-    for (auto entry : entries) {
-        ui->articleListWidget->addItem(entry->title);
-        m_entries.insert(entry->title, entry);
-    }
 
     connect(ui->articleListWidget, &QListWidget::currentTextChanged, this, &NewsDialog::selectedArticleChanged);
     connect(ui->toggleListButton, &QPushButton::clicked, this, &NewsDialog::toggleArticleList);
 
     m_article_list_hidden = ui->articleListWidget->isHidden();
 
-    auto first_item = ui->articleListWidget->item(0);
-    first_item->setSelected(true);
-
-    auto article_entry = m_entries.constFind(first_item->text()).value();
-    ui->articleTitleLabel->setText(QString("<a href='%1'>%2</a>").arg(article_entry->link, first_item->text()));
-
-    ui->currentArticleContentBrowser->setText(article_entry->content);
-    ui->currentArticleContentBrowser->flush();
+    if (m_viewModel) {
+        connect(m_viewModel, &NewsViewModel::newsUpdated, this, &NewsDialog::refreshArticles);
+        connect(m_viewModel, &NewsViewModel::currentContentChanged, this, &NewsDialog::applyCurrentArticle);
+        refreshArticles();
+        applyCurrentArticle();
+    } else {
+        ui->articleListWidget->clear();
+    }
 }
 
 NewsDialog::~NewsDialog()
@@ -45,12 +45,10 @@ NewsDialog::~NewsDialog()
 
 void NewsDialog::selectedArticleChanged(const QString& new_title)
 {
-    auto article_entry = m_entries.constFind(new_title).value();
-
-    ui->articleTitleLabel->setText(QString("<a href='%1'>%2</a>").arg(article_entry->link, new_title));
-
-    ui->currentArticleContentBrowser->setText(article_entry->content);
-    ui->currentArticleContentBrowser->flush();
+    if (!m_viewModel || new_title.isEmpty()) {
+        return;
+    }
+    m_viewModel->selectArticle(new_title);
 }
 
 void NewsDialog::toggleArticleList()
@@ -63,4 +61,61 @@ void NewsDialog::toggleArticleList()
         ui->toggleListButton->setText(tr("Show article list"));
     else
         ui->toggleListButton->setText(tr("Hide article list"));
+}
+
+void NewsDialog::refreshArticles()
+{
+    if (!m_viewModel) {
+        return;
+    }
+    const auto entries = m_viewModel->entries();
+    QString fallbackTitle;
+    for (const auto& entry : entries) {
+        if (entry) {
+            fallbackTitle = entry->title;
+            break;
+        }
+    }
+    const QString desiredTitle =
+        !m_viewModel->currentTitle().isEmpty() ? m_viewModel->currentTitle() : fallbackTitle;
+    const QSignalBlocker blocker(ui->articleListWidget);
+    ui->articleListWidget->clear();
+    for (const auto& entry : entries) {
+        if (!entry) {
+            continue;
+        }
+        ui->articleListWidget->addItem(entry->title);
+    }
+    if (desiredTitle.isEmpty()) {
+        return;
+    }
+    const auto matches = ui->articleListWidget->findItems(desiredTitle, Qt::MatchExactly);
+    if (!matches.isEmpty()) {
+        ui->articleListWidget->setCurrentItem(matches.constFirst());
+    } else if (ui->articleListWidget->count() > 0) {
+        ui->articleListWidget->setCurrentRow(0);
+        auto currentItem = ui->articleListWidget->currentItem();
+        if (currentItem) {
+            m_viewModel->selectArticle(currentItem->text());
+        }
+    }
+}
+
+void NewsDialog::applyCurrentArticle()
+{
+    if (!m_viewModel) {
+        ui->articleTitleLabel->clear();
+        ui->currentArticleContentBrowser->clear();
+        return;
+    }
+    const QString title = m_viewModel->currentTitle();
+    const QString link = m_viewModel->currentLink();
+    if (title.isEmpty()) {
+        ui->articleTitleLabel->clear();
+        ui->currentArticleContentBrowser->clear();
+        return;
+    }
+    ui->articleTitleLabel->setText(QString("<a href='%1'>%2</a>").arg(link, title));
+    ui->currentArticleContentBrowser->setText(m_viewModel->currentContent());
+    ui->currentArticleContentBrowser->flush();
 }
