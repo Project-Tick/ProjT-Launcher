@@ -18,7 +18,9 @@
 #include <QObject>
 
 #include "news/NewsEntry.h"
+#include "QObjectPtr.h"
 
+class NewsChecker;
 class NewsViewModel : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString currentContent READ currentContent NOTIFY currentContentChanged)
@@ -55,25 +57,29 @@ class NewsViewModel : public QObject {
     void setLastUpdated(const QDateTime& timestamp);
 
    public slots:
-    void requestRefresh();
     void refresh();
     void selectByIndex(int index);
     void openCurrentLink();
 
    signals:
+    void started();
+    void finished();
+    void errorOccurred(const QString& message);
     void currentContentChanged();
     void currentTitleChanged();
     void currentLinkChanged();
     void busyChanged();
     void lastUpdatedChanged();
     void newsUpdated();
-    void refreshRequested();
     void entriesChanged();
     void currentIndexChanged();
     void openLinkRequested(const QString& link);
 
    private:
     void updateCurrentFromEntry(const NewsEntryPtr& entry);
+    void handleNewsLoaded();
+    void handleNewsLoadFailed(const QString& error);
+    void startRefresh();
 
     QList<NewsEntryPtr> m_entries;
     QString m_currentTitle;
@@ -82,4 +88,5 @@ class NewsViewModel : public QObject {
     bool m_busy = false;
     QDateTime m_lastUpdated;
     int m_currentIndex = -1;
+    unique_qobject_ptr<NewsChecker> m_newsChecker;
 };

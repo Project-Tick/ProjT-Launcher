@@ -16,7 +16,17 @@
 
 #include <algorithm>
 
-NewsViewModel::NewsViewModel(QObject* parent) : QObject(parent) {}
+#include "Application.h"
+#include "BuildConfig.h"
+#include "news/NewsChecker.h"
+#include "news/NewsEntry.h"
+
+NewsViewModel::NewsViewModel(QObject* parent) : QObject(parent)
+{
+    m_newsChecker.reset(new NewsChecker(APPLICATION->network(), BuildConfig.NEWS_RSS_URL));
+    connect(m_newsChecker.get(), &NewsChecker::newsLoaded, this, &NewsViewModel::handleNewsLoaded);
+    connect(m_newsChecker.get(), &NewsChecker::newsLoadingFailed, this, &NewsViewModel::handleNewsLoadFailed);
+}
 
 QString NewsViewModel::currentContent() const
 {
@@ -137,14 +147,13 @@ void NewsViewModel::setLastUpdated(const QDateTime& timestamp)
     emit lastUpdatedChanged();
 }
 
-void NewsViewModel::requestRefresh()
-{
-    emit refreshRequested();
-}
-
 void NewsViewModel::refresh()
 {
-    emit refreshRequested();
+    if (!m_newsChecker || m_newsChecker->isLoadingNews()) {
+        return;
+    }
+    startRefresh();
+    m_newsChecker->reloadNews();
 }
 
 void NewsViewModel::selectByIndex(int index)
@@ -209,4 +218,24 @@ void NewsViewModel::setCurrentIndex(int index)
     }
     m_currentIndex = index;
     updateCurrentFromEntry(m_entries.value(index));
+}
+
+void NewsViewModel::handleNewsLoaded()
+{
+    setBusy(false);
+    setEntries(m_newsChecker->getNewsEntries());
+    setLastUpdated(QDateTime::currentDateTimeUtc());
+    emit finished();
+}
+
+void NewsViewModel::handleNewsLoadFailed(const QString& error)
+{
+    setBusy(false);
+    emit errorOccurred(error);
+}
+
+void NewsViewModel::startRefresh()
+{
+    setBusy(true);
+    emit started();
 }

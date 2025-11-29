@@ -27,6 +27,10 @@ public:
     explicit BackupDialog(InstancePtr instance, QWidget* parent = nullptr);
     ~BackupDialog();
 
+    QString backupName() const { return m_pendingBackupName; }
+    BackupOptions options() const { return m_pendingOptions; }
+    bool hasRequest() const { return !m_pendingBackupName.isEmpty(); }
+
 private slots:
     void on_createButton_clicked();
     void on_restoreButton_clicked();
@@ -49,4 +53,6 @@ private:
     BackupManager* m_backupManager;
     QList<InstanceBackup> m_backups;
     QStringList m_customPaths;
+    QString m_pendingBackupName;
+    BackupOptions m_pendingOptions;
 };

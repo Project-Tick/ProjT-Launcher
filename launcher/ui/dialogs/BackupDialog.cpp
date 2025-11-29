@@ -98,38 +98,12 @@ void BackupDialog::on_createButton_clicked()
     if (!ok) {
         return;
     }
-    
+
     BackupOptions options = getSelectedOptions();
-    
-    // Disable UI during backup
-    ui->createButton->setEnabled(false);
-    ui->restoreButton->setEnabled(false);
-    ui->deleteButton->setEnabled(false);
-    ui->createButton->setText(tr("Creating..."));
-    
-    // Connect signals for this operation
-    connect(m_backupManager, &BackupManager::backupCreated, this, [this](const QString&, const QString&) {
-        ui->createButton->setEnabled(true);
-        ui->restoreButton->setEnabled(true);
-        ui->deleteButton->setEnabled(true);
-        ui->createButton->setText(tr("Create Backup"));
-        QMessageBox::information(this, tr("Success"), tr("Backup created successfully!"));
-        refreshBackupList();
-        disconnect(m_backupManager, &BackupManager::backupCreated, this, nullptr);
-        disconnect(m_backupManager, &BackupManager::backupFailed, this, nullptr);
-    }, Qt::SingleShotConnection);
-    
-    connect(m_backupManager, &BackupManager::backupFailed, this, [this](const QString&, const QString& error) {
-        ui->createButton->setEnabled(true);
-        ui->restoreButton->setEnabled(true);
-        ui->deleteButton->setEnabled(true);
-        ui->createButton->setText(tr("Create Backup"));
-        QMessageBox::critical(this, tr("Error"), tr("Failed to create backup: %1").arg(error));
-        disconnect(m_backupManager, &BackupManager::backupCreated, this, nullptr);
-        disconnect(m_backupManager, &BackupManager::backupFailed, this, nullptr);
-    }, Qt::SingleShotConnection);
-    
-    m_backupManager->createBackupAsync(m_instance, backupName, options);
+
+    m_pendingBackupName = backupName;
+    m_pendingOptions = options;
+    accept();
 }
 
 void BackupDialog::on_restoreButton_clicked()
