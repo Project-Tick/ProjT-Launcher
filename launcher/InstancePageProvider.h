@@ -39,10 +39,9 @@ class InstancePageProvider : protected QObject, public BasePageProvider {
     Q_OBJECT
    public:
     explicit InstancePageProvider(InstancePtr parent, InstanceListViewModel* viewModel, SettingsViewModel* settingsViewModel)
-        : inst(parent)
-        , m_instanceViewModel(viewModel)
-        , m_settingsViewModel(settingsViewModel)
-    {}
+        : inst(parent), m_instanceViewModel(viewModel), m_settingsViewModel(settingsViewModel)
+    {
+    }
 
     virtual ~InstancePageProvider() = default;
     virtual QList<BasePage*> getPages() override
