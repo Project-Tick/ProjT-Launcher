@@ -26,6 +26,11 @@ finish-args:
     # Required for -XX:+UseTransparentHugePages
   - --filesystem=/sys/kernel/mm/transparent_hugepage:ro
 
+cleanup:
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+
 modules:
   - name: glfw
     buildsystem: cmake-ninja
@@ -41,10 +46,6 @@ modules:
         commit: 7b6aead9fb88b3623e3b3725ebb42670cbe4c579 # 3.4
       - type: patch
         path: patches/0009-Defer-setting-cursor-position-until-the-cursor-is-lo.patch
-    cleanup:
-      - /include
-      - /lib/cmake
-      - /lib/pkgconfig
 
   - name: xrandr
     buildsystem: autotools
@@ -100,15 +101,12 @@ modules:
         JAVA_COMPILER: /usr/lib/sdk/openjdk17/jvm/openjdk-17/bin/javac
     run-tests: true
     post-install:
-      - install -Dm755 ../prime-run -t /app/bin
       - mv /app/bin/projtlauncher /app/bin/projtrun
       - install -Dm755 ../projtlauncher -t /app/bin
     sources:
       - type: git
         url: https://github.com/Project-Tick/ProjT-Launcher.git
-        tag: 0.0.2
-        commit: bfbf6d2211945c2112bf90c311c3e365da23aaed
-      - type: file
-        path: prime-run
+        tag: 0.0.3
+        commit: cf1d94b54808841033c9e5ffc20b4771975fae05 # 0.0.3
       - type: file
         path: projtlauncher
