@@ -64,3 +64,5 @@ vcpkg_installed/
 obj-*/
 *.log
 docs/TODO_FIXME_REPORT.md
+memory-bank/
+tree.txt
