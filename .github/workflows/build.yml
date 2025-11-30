@@ -5,6 +5,7 @@ on:
     branches:
       - "develop"
       - "release-*"
+      - "qml_migration"
     paths:
       # File types
       - "**.cpp"
