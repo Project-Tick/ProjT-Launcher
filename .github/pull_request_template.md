@@ -34,9 +34,9 @@ What does this PR change?
 
 List your changes here:
 
-- 
-- 
-- 
+-
+-
+-
 
 ---
 
