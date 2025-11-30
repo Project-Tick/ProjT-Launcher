@@ -25,10 +25,7 @@
     </ul>
   </description>
   <screenshots>
-<<<<<<< HEAD
     <screenshot>
-=======
->>>>>>> 6edd61cf6ef19ff2b6efe3452198c93e4362f269
       <caption>The main ProjT Launcher window</caption>
       <image type="source">https://projtlauncher.yongdohyun.org.tr/img/screenshots/projtlauncher_dark_main_window.png</image>
     </screenshot>
