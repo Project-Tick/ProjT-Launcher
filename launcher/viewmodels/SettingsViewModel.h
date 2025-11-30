@@ -40,6 +40,20 @@ class SettingsViewModel : public QObject {
     Q_PROPERTY(int minMemory READ minMemory NOTIFY memoryChanged)
     Q_PROPERTY(int maxMemory READ maxMemory NOTIFY memoryChanged)
     Q_PROPERTY(QString jvmArgs READ jvmArgs NOTIFY jvmArgsChanged)
+    Q_PROPERTY(QString loaderType READ loaderType WRITE setLoaderTypeProperty NOTIFY loaderSettingsChanged)
+    Q_PROPERTY(QStringList availableLoaderTypes READ availableLoaderTypes NOTIFY loaderSettingsChanged)
+    Q_PROPERTY(QString loaderVersion READ loaderVersion WRITE setLoaderVersionProperty NOTIFY loaderSettingsChanged)
+    Q_PROPERTY(QStringList availableLoaderVersions READ availableLoaderVersions NOTIFY loaderSettingsChanged)
+    Q_PROPERTY(QString gameArgs READ gameArgs NOTIFY gameSettingsChanged)
+    Q_PROPERTY(bool fullscreen READ fullscreen NOTIFY gameSettingsChanged)
+    Q_PROPERTY(int resolutionWidth READ resolutionWidth NOTIFY gameSettingsChanged)
+    Q_PROPERTY(int resolutionHeight READ resolutionHeight NOTIFY gameSettingsChanged)
+    Q_PROPERTY(bool overrideGameDir READ overrideGameDir NOTIFY gameSettingsChanged)
+    Q_PROPERTY(QString customGameDir READ customGameDir NOTIFY gameSettingsChanged)
+    Q_PROPERTY(QString notes READ notes NOTIFY notesChanged)
+    Q_PROPERTY(QString iconKey READ iconKey NOTIFY iconChanged)
+    Q_PROPERTY(QStringList availableIcons READ availableIcons NOTIFY iconChanged)
+    Q_PROPERTY(QString busyReason READ busyReason NOTIFY busyChanged)
 
    public:
     explicit SettingsViewModel(QObject* parent = nullptr);
@@ -60,6 +74,20 @@ class SettingsViewModel : public QObject {
     bool overrideMemory() const { return m_overrideMemory; }
     bool overrideLoader() const { return m_overrideLoader; }
     bool overrideEnv() const { return m_overrideEnv; }
+    QString loaderType() const { return m_loaderType; }
+    QStringList availableLoaderTypes() const { return m_availableLoaderTypes; }
+    QString loaderVersion() const { return m_loaderVersion; }
+    QStringList availableLoaderVersions() const { return m_availableLoaderVersions; }
+    QString gameArgs() const { return m_gameArgs; }
+    bool fullscreen() const { return m_fullscreen; }
+    int resolutionWidth() const { return m_resolutionWidth; }
+    int resolutionHeight() const { return m_resolutionHeight; }
+    bool overrideGameDir() const { return m_overrideGameDir; }
+    QString customGameDir() const { return m_customGameDir; }
+    QString notes() const { return m_notes; }
+    QString iconKey() const { return m_iconKey; }
+    QStringList availableIcons() const { return m_availableIcons; }
+    QString busyReason() const { return m_busyReason; }
 
     void setInstanceId(const QString& id);
     void setCurrentCategory(const QString& category);
@@ -104,6 +132,15 @@ class SettingsViewModel : public QObject {
     Q_INVOKABLE void setOverrideEnv(const QString& instanceId, bool value);
     void setApplyHook(std::function<bool()> hook);
     void setResetHook(std::function<void()> hook);
+    Q_INVOKABLE void setGameArgs(const QString& instanceId, const QString& args);
+    Q_INVOKABLE void setFullscreen(const QString& instanceId, bool enabled);
+    Q_INVOKABLE void setResolution(const QString& instanceId, int width, int height);
+    Q_INVOKABLE void setOverrideGameDir(const QString& instanceId, bool value);
+    Q_INVOKABLE void setCustomGameDir(const QString& instanceId, const QString& path);
+    Q_INVOKABLE void setNotes(const QString& instanceId, const QString& notes);
+    Q_INVOKABLE void setIconKey(const QString& instanceId, const QString& iconKey);
+    Q_INVOKABLE void setLoaderTypeProperty(const QString& type);
+    Q_INVOKABLE void setLoaderVersionProperty(const QString& version);
 
    signals:
     void instanceIdChanged();
@@ -128,6 +165,9 @@ class SettingsViewModel : public QObject {
     void started(const QString& reason = {});
     void finished();
     void errorOccurred(const QString& message);
+    void gameSettingsChanged();
+    void notesChanged();
+    void iconChanged();
 
    private:
     void loadCurrentSettings();
@@ -142,6 +182,7 @@ class SettingsViewModel : public QObject {
     QString m_currentCategory;
     QStringList m_categoryList{ QStringLiteral("java") };
     bool m_busy = false;
+    QString m_busyReason;
     QString m_javaPath;
     bool m_overrideJavaLocation = false;
     bool m_saveBusy = false;
@@ -154,4 +195,17 @@ class SettingsViewModel : public QObject {
     bool m_overrideMemory = false;
     bool m_overrideLoader = false;
     bool m_overrideEnv = false;
+    QString m_loaderType;
+    QStringList m_availableLoaderTypes;
+    QString m_loaderVersion;
+    QStringList m_availableLoaderVersions;
+    QString m_gameArgs;
+    bool m_fullscreen = false;
+    int m_resolutionWidth = 0;
+    int m_resolutionHeight = 0;
+    bool m_overrideGameDir = false;
+    QString m_customGameDir;
+    QString m_notes;
+    QString m_iconKey;
+    QStringList m_availableIcons;
 };

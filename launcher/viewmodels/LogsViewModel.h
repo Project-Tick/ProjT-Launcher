@@ -35,6 +35,8 @@ class LogsViewModel : public QObject {
     Q_PROPERTY(bool tailing READ isTailing WRITE setTailing NOTIFY tailingChanged)
     Q_PROPERTY(QAbstractItemModel* logModel READ logModel NOTIFY logModelChanged)
     Q_PROPERTY(QAbstractItemModel* proxyModel READ proxyModel NOTIFY logModelChanged)
+    Q_PROPERTY(bool wrapLines READ wrapLines NOTIFY logModelChanged)
+    Q_PROPERTY(bool colorLines READ colorLines NOTIFY logModelChanged)
 
    public:
     explicit LogsViewModel(QObject* parent = nullptr);
@@ -48,6 +50,8 @@ class LogsViewModel : public QObject {
     bool isTailing() const { return m_tailing; }
     QAbstractItemModel* logModel() const;
     QAbstractItemModel* proxyModel() const;
+    bool wrapLines() const;
+    bool colorLines() const;
 
     void setLogText(const QString& text);
     void setCategory(const QString& category);
@@ -60,8 +64,8 @@ class LogsViewModel : public QObject {
     Q_INVOKABLE void loadLogs(const QString& logId = {});
     Q_INVOKABLE void tailLogs(const QString& logId = {});
     Q_INVOKABLE void clearLogs(const QString& logId = {});
-    void setWrapLines(bool wrap);
-    void setColorLines(bool color);
+    Q_INVOKABLE void setWrapLines(bool wrap);
+    Q_INVOKABLE void setColorLines(bool color);
     void setSuspended(bool suspended);
     void setFont(const QFont& font);
     void configure(const InstancePtr& instance, const QString& basePath, const QStringList& searchPaths,

@@ -101,6 +101,11 @@ QStringList InstanceListViewModel::instanceIcons() const
     return m_instanceIcons;
 }
 
+QStringList InstanceListViewModel::instanceIconPaths() const
+{
+    return m_instanceIconPaths;
+}
+
 QStringList InstanceListViewModel::instanceGroups() const
 {
     return m_instanceGroups;
@@ -230,6 +235,16 @@ void InstanceListViewModel::setInstanceLists(const QStringList& ids, const QStri
     m_instanceIds = ids;
     m_instanceNames = names;
     m_instanceIcons = icons;
+    m_instanceIconPaths.clear();
+    m_instanceIconPaths.reserve(icons.size());
+    for (const auto& key : icons) {
+        const MMCIcon* icon = APPLICATION->icons()->icon(key);
+        QString path;
+        if (icon) {
+            path = icon->getFilePath();
+        }
+        m_instanceIconPaths.push_back(path);
+    }
     m_instanceGroups = groups;
     emit instanceListChanged();
     emit instanceNamesChanged();
@@ -383,6 +398,10 @@ void InstanceListViewModel::updateInstanceIcon(const QString& id, const QString&
         if (m_instanceIds[i] == id) {
             if (i < m_instanceIcons.size()) {
                 m_instanceIcons[i] = iconKey;
+            }
+            if (i < m_instanceIconPaths.size()) {
+                const MMCIcon* icon = APPLICATION->icons()->icon(iconKey);
+                m_instanceIconPaths[i] = icon ? icon->getFilePath() : QString();
             }
             break;
         }
