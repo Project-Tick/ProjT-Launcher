@@ -184,11 +184,33 @@ Rectangle {
                 anchors.margins: 4
                 spacing: 10
                 Label { text: qsTr("Java Runtime"); color: "#e0e0e0"; font.bold: true }
-                TextField {
+                RowLayout {
                     Layout.fillWidth: true
-                    placeholderText: qsTr("Java path")
-                    text: vm ? vm.javaPath : ""
-                    onEditingFinished: vm ? vm.setJavaPath(vm.instanceId, text) : undefined
+                    spacing: 8
+                    TextField {
+                        id: javaPathField
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Java path")
+                        text: vm ? vm.javaPath : ""
+                        onEditingFinished: vm ? vm.setJavaPath(vm.instanceId, text) : undefined
+                    }
+                    Button {
+                        text: qsTr("Browse")
+                        onClicked: {
+                            if (ProjT.launcherVM) {
+                                var path = ProjT.launcherVM.browseForFile(qsTr("Select Java Executable"), qsTr("Java Executable (*.exe *java*);;All Files (*)"))
+                                if (path.length > 0) {
+                                    if (vm) vm.setJavaPath(vm.instanceId, path)
+                                }
+                            }
+                        }
+                    }
+                    Button {
+                        text: qsTr("Auto-detect")
+                        enabled: false // TODO: Implement QML Java detection dialog
+                        ToolTip.text: qsTr("Not yet implemented in QML")
+                        ToolTip.visible: hovered
+                    }
                 }
                 CheckBox {
                     text: qsTr("Override Java location")
@@ -430,6 +452,18 @@ Rectangle {
                         placeholderText: qsTr("Custom game directory")
                         text: vm ? vm.customGameDir : ""
                         onEditingFinished: vm ? vm.setCustomGameDir(vm.instanceId, text) : undefined
+                    }
+                    Button {
+                        text: qsTr("Browse")
+                        enabled: vm && vm.overrideGameDir
+                        onClicked: {
+                            if (ProjT.launcherVM) {
+                                var path = ProjT.launcherVM.browseForDirectory(qsTr("Select Game Directory"))
+                                if (path.length > 0) {
+                                    if (vm) vm.setCustomGameDir(vm.instanceId, path)
+                                }
+                            }
+                        }
                     }
                 }
             }

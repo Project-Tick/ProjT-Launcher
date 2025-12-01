@@ -119,7 +119,7 @@
 #include "ui/dialogs/ImportResourceDialog.h"
 #include "ui/dialogs/NewInstanceDialog.h"
 #include "ui/dialogs/NewsDialog.h"
-#include "ui/ShellPrototypeHandler.h"
+#include "ui/QmlMainWindow.h"
 #include "ui/TestQmlPanel.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/instanceview/InstanceDelegate.h"
@@ -352,14 +352,7 @@ MainWindow::MainWindow(QWidget* parent)
         ui->viewMenu->addAction(m_testQmlPanel->toggleViewAction());
     }
 
-    // QML shell prototype (developer-only)
-    {
-        m_shellPrototypeHandler =
-            new ShellPrototypeHandler(m_launcherViewModel, m_instanceListViewModel, m_newsViewModel, m_settingsViewModel, this);
-        addDockWidget(Qt::RightDockWidgetArea, m_shellPrototypeHandler);
-        m_shellPrototypeHandler->hide();
-        ui->viewMenu->addAction(m_shellPrototypeHandler->toggleViewAction());
-    }
+    // QML shell removed - now handled by Application::showQmlMainWindow()
 
     // Create the instance list widget
     {

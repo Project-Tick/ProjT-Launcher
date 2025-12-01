@@ -12,7 +12,7 @@
  *  their original copyright and license notices are preserved below.
  */
 
-#include "ShellPrototypeHandler.h"
+#include "QmlMainWindow.h"
 
 #include <QDir>
 #include <QFile>
@@ -140,13 +140,13 @@ bool registerLauncherViewModelEnums()
 const bool s_launcherVmEnumsRegistered = registerLauncherViewModelEnums();
 }  // namespace
 
-ShellPrototypeHandler::ShellPrototypeHandler(LauncherViewModel* launcherViewModel, InstanceListViewModel* instanceListViewModel,
+QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel, InstanceListViewModel* instanceListViewModel,
                                              NewsViewModel* newsViewModel, SettingsViewModel* settingsViewModel, QWidget* parent)
-    : QDockWidget(parent)
+    : QMainWindow(parent)
 {
-    setObjectName(QStringLiteral("ShellPrototypeDock"));
-    setWindowTitle(tr("QML Shell Prototype"));
-    setAllowedAreas(Qt::AllDockWidgetAreas);
+    setObjectName(QStringLiteral("QmlMainWindow"));
+    setWindowTitle(tr("ProjT Launcher"));
+    resize(1000, 700);
 
     auto container = new QWidget(this);
     auto layout = new QVBoxLayout(container);
@@ -161,16 +161,12 @@ ShellPrototypeHandler::ShellPrototypeHandler(LauncherViewModel* launcherViewMode
     m_quickWidget->setSource(resolveQmlUrl(QStringLiteral("ShellRoot.qml")));
 
     layout->addWidget(m_quickWidget);
-    setWidget(container);
+    setCentralWidget(container);
 
-    connect(this, &QDockWidget::visibilityChanged, this, [this](bool visible) {
-        if (m_stateBridge) {
-            m_stateBridge->setDockVisible(visible);
-        }
-    });
+    m_stateBridge = new ShellStateBridge(APPLICATION->settings(), this);
 }
 
-void ShellPrototypeHandler::exposeContextProperties(LauncherViewModel* launcherViewModel,
+void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel,
                                                     InstanceListViewModel* instanceListViewModel,
                                                     NewsViewModel* newsViewModel,
                                                     SettingsViewModel* settingsViewModel,
@@ -222,4 +218,4 @@ void ShellPrototypeHandler::exposeContextProperties(LauncherViewModel* launcherV
     }
 }
 
-#include "ShellPrototypeHandler.moc"
+#include "QmlMainWindow.moc"

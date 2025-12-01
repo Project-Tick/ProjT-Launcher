@@ -24,6 +24,7 @@ var danger = "#d55f5f"
 
 // Layout
 var radius = 8
+var spacingXS = 4
 var spacingS = 8
 var spacingM = 12
 var spacingL = 16

@@ -11,7 +11,16 @@
         <file>Theme.qml</file>
         <file>Theme.js</file>
         <file>components/PageHeader.qml</file>
+        <file>components/Sidebar.qml</file>
+        <file>components/InstanceDelegate.qml</file>
+        <file>components/InstanceContextMenu.qml</file>
         <file>LogsPage.qml</file>
         <file>settings/JavaSettingsPage.qml</file>
+        <file>settings/MinecraftSettingsPage.qml</file>
+        <file>settings/ServersPage.qml</file>
+        <file>settings/WorldsPage.qml</file>
+        <file>settings/ScreenshotsPage.qml</file>
+        <file>settings/NotesPage.qml</file>
+        <file>settings/ManagedPackPage.qml</file>
     </qresource>
 </RCC>

@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include <QDockWidget>
+#include <QMainWindow>
 
 #include "settings/SettingsObject.h"
 
@@ -25,11 +25,11 @@ class SettingsViewModel;
 class ShellStateBridge;
 class QQuickWidget;
 
-class ShellPrototypeHandler : public QDockWidget {
+class QmlMainWindow : public QMainWindow {
     Q_OBJECT
 
    public:
-    ShellPrototypeHandler(LauncherViewModel* launcherViewModel,
+    QmlMainWindow(LauncherViewModel* launcherViewModel,
                           InstanceListViewModel* instanceListViewModel,
                           NewsViewModel* newsViewModel,
                           SettingsViewModel* settingsViewModel,

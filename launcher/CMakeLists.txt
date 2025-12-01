@@ -851,8 +851,8 @@ SET(LAUNCHER_SOURCES
     ui/ViewLogWindow.cpp
     ui/TestQmlPanel.h
     ui/TestQmlPanel.cpp
-    ui/ShellPrototypeHandler.h
-    ui/ShellPrototypeHandler.cpp
+    ui/QmlMainWindow.h
+    ui/QmlMainWindow.cpp
 
     # FIXME: maybe find a better home for this.
     FileIgnoreProxy.cpp
