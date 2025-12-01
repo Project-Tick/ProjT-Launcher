@@ -60,6 +60,14 @@ class LauncherViewModel : public QObject {
     static QString pageToString(Page page);
     static Page stringToPage(const QString& route);
 
+    Q_INVOKABLE void openDataFolder();
+    Q_INVOKABLE void openHelp();
+    Q_INVOKABLE void checkUpdates();
+
+    Q_INVOKABLE QString browseForFile(const QString& title, const QString& filter);
+    Q_INVOKABLE QString browseForDirectory(const QString& title);
+    Q_INVOKABLE QString browseForSave(const QString& title, const QString& filter);
+
    signals:
     void displayNameChanged();
     void versionStringChanged();

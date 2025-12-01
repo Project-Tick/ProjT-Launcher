@@ -15,6 +15,12 @@
 #include "LauncherViewModel.h"
 
 #include "BuildConfig.h"
+#include "Application.h"
+#include "DesktopServices.h"
+#include <QUrl>
+#include <QDebug>
+#include <QFileDialog>
+#include <QWidget>
 
 LauncherViewModel::LauncherViewModel(QObject* parent) : QObject(parent)
 {
@@ -153,4 +159,48 @@ LauncherViewModel::Page LauncherViewModel::stringToPage(const QString& route)
         return Page::Logs;
     }
     return Page::Instances;
+}
+
+void LauncherViewModel::openDataFolder()
+{
+    DesktopServices::openPath(APPLICATION->dataRoot());
+}
+
+void LauncherViewModel::openHelp()
+{
+    DesktopServices::openUrl(QUrl("https://proj-t.com/help"));
+}
+
+void LauncherViewModel::checkUpdates()
+{
+    qDebug() << "Update check requested (Not implemented yet)";
+    // TODO: Implement update check trigger
+}
+
+QString LauncherViewModel::browseForFile(const QString& title, const QString& filter)
+{
+    // We need a parent widget for the dialog to be modal
+    QWidget* parent = nullptr;
+    if (QApplication::activeWindow()) {
+        parent = QApplication::activeWindow();
+    }
+    return QFileDialog::getOpenFileName(parent, title, QString(), filter);
+}
+
+QString LauncherViewModel::browseForDirectory(const QString& title)
+{
+    QWidget* parent = nullptr;
+    if (QApplication::activeWindow()) {
+        parent = QApplication::activeWindow();
+    }
+    return QFileDialog::getExistingDirectory(parent, title);
+}
+
+QString LauncherViewModel::browseForSave(const QString& title, const QString& filter)
+{
+    QWidget* parent = nullptr;
+    if (QApplication::activeWindow()) {
+        parent = QApplication::activeWindow();
+    }
+    return QFileDialog::getSaveFileName(parent, title, QString(), filter);
 }

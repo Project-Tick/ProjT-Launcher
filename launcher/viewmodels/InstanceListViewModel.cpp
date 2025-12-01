@@ -111,6 +111,11 @@ QStringList InstanceListViewModel::instanceGroups() const
     return m_instanceGroups;
 }
 
+QStringList InstanceListViewModel::availableVersions() const
+{
+    return m_availableVersions;
+}
+
 bool InstanceListViewModel::hasSelection() const
 {
     return !m_selectedInstanceId.isEmpty() && !m_currentInstance.expired();
@@ -334,6 +339,42 @@ void InstanceListViewModel::refreshInstances()
     }
     setBusy(true, tr("Refreshing instances"));
     instances->loadList();
+    
+    // Populate the QStringLists from the instance list
+    QStringList ids;
+    QStringList names;
+    QStringList icons;
+    QStringList iconPaths;
+    QStringList groups;
+    
+    qDebug() << "[InstanceListViewModel::refreshInstances] Loading instances...";
+    
+    for (int i = 0; i < instances->count(); ++i) {
+        auto instance = instances->at(i);
+        if (!instance) continue;
+        
+        ids.append(instance->id());
+        names.append(instance->name());
+        icons.append(instance->iconKey());
+        iconPaths.append(instance->iconKey());  // Will be resolved by icon system
+        groups.append(instances->getInstanceGroup(instance->id()));
+        
+        qDebug() << "  Added instance:" << instance->id() << instance->name();
+    }
+    
+    qDebug() << "[InstanceListViewModel::refreshInstances] Total instances:" << ids.count();
+    
+    // Load available Minecraft versions
+    QStringList versions;
+    versions << "Latest" << "1.20.1" << "1.20" << "1.19.2" << "1.19" << "1.18.2" << "1.18" << "1.17.1" << "1.16.5";
+    if (m_availableVersions != versions) {
+        m_availableVersions = versions;
+        emit availableVersionsChanged();
+    }
+    
+    setInstanceLists(ids, names, icons, groups);
+    setTotalCount(ids.count());
+    
     setBusy(false);
     refreshInstanceState();
 }
@@ -369,6 +410,31 @@ void InstanceListViewModel::renameInstance(const QString& id, const QString& new
     refreshInstanceState();
 }
 
+void InstanceListViewModel::createNewInstance(const QString& name, const QString& version)
+{
+    if (name.isEmpty()) {
+        emit errorOccurred(tr("Instance name is required."));
+        return;
+    }
+    
+    qDebug() << "[InstanceListViewModel::createNewInstance] Creating instance:" << name << "version:" << version;
+    // Note: createInstanceRequested signal is for requesting dialog from Application
+    // This method is kept for backward compatibility
+    refreshInstances();
+}
+
+void InstanceListViewModel::importInstance(const QString& sourcePath, const QString& name)
+{
+    if (sourcePath.isEmpty()) {
+        emit errorOccurred(tr("Source path is required."));
+        return;
+    }
+    
+    qDebug() << "[InstanceListViewModel::importInstance] Importing from:" << sourcePath << "name:" << name;
+    emit importInstanceRequested();
+    refreshInstances();
+}
+
 void InstanceListViewModel::updateInstanceNotes(const QString& id, const QString& notes)
 {
     if (id.isEmpty()) {
@@ -381,6 +447,21 @@ void InstanceListViewModel::updateInstanceNotes(const QString& id, const QString
     }
     instance->setNotes(notes);
     APPLICATION->instances()->saveNow();
+}
+
+void InstanceListViewModel::openInstanceFolder(const QString& id)
+{
+    if (id.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+    auto instance = resolveInstance(id);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        return;
+    }
+    // TODO: Call DesktopServices::openFolder(instance->instanceRoot()) to open in file manager
+    qDebug() << "Opening folder for instance:" << instance->name() << "at path:" << instance->instanceRoot();
 }
 
 void InstanceListViewModel::updateInstanceIcon(const QString& id, const QString& iconKey)

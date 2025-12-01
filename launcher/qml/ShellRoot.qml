@@ -7,20 +7,28 @@ import ProjTLauncher 1.0
 import "components"
 import "Theme.js" as Theme
 
+/**
+ * Shell Root – Main Application Container
+ * 
+ * Serves as the top-level container for the QML UI shell.
+ * Manages:
+ * - Sidebar navigation (Phase 11.A)
+ * - Page loading and transitions
+ * - Theme application
+ * - Shell state persistence
+ * 
+ * Phase 11 Status: Refactored to use new Sidebar component
+ */
+
 Rectangle {
     id: root
     color: Theme.background
     anchors.fill: parent
+    
+    // Width persistence for sidebar
     property int storedSidebarWidth: shellState ? shellState.sidebarWidth : 200
-
-    property var navEntries: [
-        { title: qsTr("Instances"), page: LauncherViewModelEnums.Page.Instances, source: "InstancePage.qml" },
-        { title: qsTr("News"), page: LauncherViewModelEnums.Page.News, source: "NewsPage.qml" },
-        { title: qsTr("Settings"), page: LauncherViewModelEnums.Page.Settings, source: "SettingsPage.qml" },
-        { title: qsTr("Logs"), page: LauncherViewModelEnums.Page.Logs, source: "LogsPage.qml" },
-        { title: qsTr("About"), page: LauncherViewModelEnums.Page.About, source: "AboutPage.qml" }
-    ]
-
+    
+    // Page source mapping function
     function pageSource(page) {
         switch (page) {
         case LauncherViewModelEnums.Page.News:
@@ -38,81 +46,176 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        console.log("Theme singleton in ShellRoot:", Theme)
-        console.log("Theme.background in ShellRoot:", Theme.background)
+        console.log("[ShellRoot] Component loaded - Theme:", Theme.background)
+        console.log("[ShellRoot] LauncherVM available:", !!ProjT.launcherVM)
+        console.log("[ShellRoot] InstancesVM available:", !!ProjT.instancesVM)
+        
+        // Initialize instance list from backend
+        if (ProjT.instancesVM) {
+            console.log("[ShellRoot] Refreshing instances list...")
+            ProjT.instancesVM.refreshInstances()
+        }
     }
 
-    RowLayout {
-        anchors.fill: parent
-        spacing: 0
+    Dialog {
+        id: newInstanceDialog
+        title: qsTr("New Instance")
+        modal: true
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
+        width: 400
 
-        Rectangle {
-            id: sidebar
-            color: Theme.surface
-            width: 180
-            Layout.preferredWidth: 180
-            Layout.fillHeight: true
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingS
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 10
 
-                Label {
-                    text: ProjT.launcherVM ? ProjT.launcherVM.displayName : qsTr("ProjT Launcher")
-                    color: Theme.textPrimary
-                    font.pointSize: 14
-                    font.bold: true
-                    wrapMode: Text.WordWrap
-                }
-                Label {
-                    text: ProjT.launcherVM ? ProjT.launcherVM.versionString : ""
-                    color: Theme.textSecondary
-                    font.pointSize: 11
-                    wrapMode: Text.WordWrap
-                }
+            TextField {
+                id: instanceNameField
+                placeholderText: qsTr("Instance Name")
+                Layout.fillWidth: true
+                selectByMouse: true
+            }
 
-                ToolSeparator { Layout.fillWidth: true }
-
-                Repeater {
-                    model: navEntries
-                    delegate: Button {
-                        id: control
-                        text: modelData.title
-                        checkable: true
-                        property int targetPage: modelData.page
-                        checked: ProjT.launcherVM && ProjT.launcherVM.currentPage === targetPage
-                        implicitHeight: 40
-                        implicitWidth: (contentItem ? contentItem.implicitWidth : 96) + 32
-                        Layout.preferredWidth: implicitWidth
-                        Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                        background: Rectangle {
-                            radius: Theme.radius
-                            color: control.checked ? "#2c3440" : (control.hovered ? "#2a2d33" : "transparent")
-                            border.color: control.checked ? Theme.accent : "#323742"
-                            border.width: control.checked ? 1 : 0
-                        }
-                        contentItem: Text {
-                            text: control.text
-                            anchors.centerIn: parent
-                            color: control.checked ? "#e6f0ff" : Theme.textPrimary
-                            font.pointSize: 12
-                        }
-                        onClicked: {
-                            if (ProjT.launcherVM) {
-                                ProjT.launcherVM.currentPage = targetPage
-                            }
-                        }
-                    }
-                }
-                Item { Layout.fillHeight: true }
+            TextField {
+                id: instanceVersionField
+                placeholderText: qsTr("Version (e.g. 1.20.1)")
+                Layout.fillWidth: true
+                selectByMouse: true
             }
         }
 
-        Loader {
-            id: pageLoader
+        onAccepted: {
+            if (ProjT.instancesVM) {
+                ProjT.instancesVM.createNewInstance(instanceNameField.text, instanceVersionField.text)
+            }
+            instanceNameField.text = ""
+            instanceVersionField.text = ""
+        }
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
+        
+        // === TOP BAR ===
+        TopBar {
+            id: topBarComponent
+            Layout.fillWidth: true
+            Layout.preferredHeight: 48
+            
+            onCreateNewInstance: {
+                newInstanceDialog.open()
+            }
+            
+            onOpenFolders: {
+                if (ProjT.launcherVM) {
+                    ProjT.launcherVM.openDataFolder()
+                }
+            }
+            
+            onOpenSettings: {
+                if (ProjT.launcherVM) {
+                    ProjT.launcherVM.setCurrentPage(LauncherViewModelEnums.Page.Settings)
+                }
+            }
+            
+            onOpenHelp: {
+                if (ProjT.launcherVM) {
+                    ProjT.launcherVM.openHelp()
+                }
+            }
+            
+            onCheckUpdates: {
+                if (ProjT.launcherVM) {
+                    ProjT.launcherVM.checkUpdates()
+                }
+            }
+            
+            onCatAction: {
+                console.log("[ShellRoot] CAT action")
+            }
+            
+            onAccountsMenu: {
+                console.log("[ShellRoot] Accounts menu requested")
+            }
+        }
+
+        // === MAIN CONTENT AREA (Sidebar + Page) ===
+        RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            source: pageSource(ProjT.launcherVM ? ProjT.launcherVM.currentPage : LauncherViewModelEnums.Page.Instances)
+            spacing: 0
+
+            // === SIDEBAR (Phase 11.A) ===
+            Sidebar {
+                id: sidebarComponent
+                Layout.preferredWidth: storedSidebarWidth
+                Layout.fillHeight: true
+                
+                // Listen to page navigation requests
+                onPageRequested: function(page) {
+                    console.log("[ShellRoot] Page requested:", page)
+                    pageLoader.source = pageSource(page)
+                }
+                
+                // Listen to sidebar width changes for persistence
+                onPreferredWidthChanged: {
+                    Layout.preferredWidth = preferredWidth
+                    if (shellState) {
+                        shellState.sidebarWidth = preferredWidth
+                    }
+                }
+            }
+
+            // === PAGE CONTENT AREA ===
+            Loader {
+                id: pageLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                
+                source: pageSource(ProjT.launcherVM ? 
+                                   ProjT.launcherVM.currentPage : 
+                                   LauncherViewModelEnums.Page.Instances)
+                
+                // Re-load when page changes
+                Connections {
+                    target: ProjT.launcherVM
+                    function onCurrentPageChanged() {
+                        pageLoader.source = pageSource(ProjT.launcherVM.currentPage)
+                    }
+                }
+                
+                // Page transition animation
+                transitions: Transition {
+                    NumberAnimation {
+                        property: "opacity"
+                        from: 0
+                        to: 1
+                        duration: 150
+                        easing.type: Easing.OutQuad
+                    }
+                }
+                
+                asynchronous: true
+            }
+        }
+        
+        // === BOTTOM BAR ===
+        BottomBar {
+            id: bottomBarComponent
+            Layout.fillWidth: true
+            Layout.preferredHeight: 40
+            
+            statusMessage: qsTr("Ready")
+            
+            onMoreNewsRequested: {
+                if (ProjT.launcherVM) {
+                    ProjT.launcherVM.setCurrentPage(LauncherViewModelEnums.Page.News)
+                }
+            }
         }
     }
 }
+
+

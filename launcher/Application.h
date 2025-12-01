@@ -199,7 +199,8 @@ class Application : public QApplication {
     bool openJsonEditor(const QString& filename);
 
     InstanceWindow* showInstanceWindow(InstancePtr instance, QString page = QString());
-    MainWindow* showMainWindow(bool minimized = false);
+    MainWindow* showMainWindow(bool minimized = false);  // Legacy - redirects to QML
+    class QmlMainWindow* showQmlMainWindow(bool minimized = false);
     ViewLogWindow* showLogWindow();
 
     void updateIsRunning(bool running);
@@ -241,6 +242,10 @@ class Application : public QApplication {
     void controllerFailed(const QString& error);
     void setupWizardFinished(int status);
     void continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName);
+    
+    // QML ViewModel signal handlers
+    void onCreateInstanceRequested();
+    void onImportInstanceRequested();
 
    private:
     bool handleDataMigration(const QString& currentData, const QString& oldData, const QString& name, const QString& configFile) const;
@@ -310,7 +315,8 @@ class Application : public QApplication {
     bool m_updateRunning = false;
 
     // main window, if any
-    MainWindow* m_mainWindow = nullptr;
+    MainWindow* m_mainWindow = nullptr;  // Legacy Widgets window (deprecated)
+    class QmlMainWindow* m_qmlMainWindow = nullptr;  // New QML window
 
     // log window, if any
     ViewLogWindow* m_viewLogWindow = nullptr;
