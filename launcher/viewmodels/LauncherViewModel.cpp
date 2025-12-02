@@ -19,6 +19,7 @@
 #include "DesktopServices.h"
 #include <QUrl>
 #include <QDebug>
+#include <QDir>
 #include <QFileDialog>
 #include <QWidget>
 
@@ -176,6 +177,46 @@ void LauncherViewModel::openDataFolder()
     DesktopServices::openPath(APPLICATION->dataRoot());
 }
 
+void LauncherViewModel::openLauncherFolder()
+{
+    DesktopServices::openPath(APPLICATION->dataRoot());
+}
+
+void LauncherViewModel::openInstancesFolder()
+{
+    // Instances folder is typically at dataRoot/instances
+    QString instancesPath = QDir(APPLICATION->dataRoot()).absoluteFilePath("instances");
+    QDir instancesDir(instancesPath);
+    if (!instancesDir.exists()) {
+        // Fallback to dataRoot if instances subfolder doesn't exist
+        DesktopServices::openPath(APPLICATION->dataRoot());
+    } else {
+        DesktopServices::openPath(instancesPath);
+    }
+}
+
+void LauncherViewModel::openModsFolder()
+{
+    // Central mods folder (shared mods)
+    QString modsPath = QDir(APPLICATION->dataRoot()).absoluteFilePath("mods");
+    QDir modsDir(modsPath);
+    if (!modsDir.exists()) {
+        modsDir.mkpath(".");
+    }
+    DesktopServices::openPath(modsPath);
+}
+
+void LauncherViewModel::openSkinsFolder()
+{
+    // Skins folder
+    QString skinsPath = QDir(APPLICATION->dataRoot()).absoluteFilePath("skins");
+    QDir skinsDir(skinsPath);
+    if (!skinsDir.exists()) {
+        skinsDir.mkpath(".");
+    }
+    DesktopServices::openPath(skinsPath);
+}
+
 void LauncherViewModel::openHelp()
 {
     DesktopServices::openUrl(QUrl("https://proj-t.com/help"));
@@ -185,6 +226,12 @@ void LauncherViewModel::checkUpdates()
 {
     qDebug() << "Update check requested (Not implemented yet)";
     // TODO: Implement update check trigger
+}
+
+void LauncherViewModel::openAccountsManager()
+{
+    // Show accounts management dialog via Application
+    APPLICATION->ShowGlobalSettings(nullptr, "accounts");
 }
 
 QString LauncherViewModel::browseForFile(const QString& title, const QString& filter)

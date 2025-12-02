@@ -229,24 +229,33 @@ Rectangle {
         canLaunch: vm ? vm.canLaunchSelected : false
         isRunning: vm ? vm.isSelectedRunning : false
         
-        onLaunch: vm ? vm.launchSelectedInstance() : undefined
+        onLaunch: {
+            if (vm) {
+                if (isRunning) {
+                    vm.killSelectedInstance()
+                } else {
+                    vm.launchSelectedInstance()
+                }
+            }
+        }
         onEditSettings: {
-            console.log("[InstancePage] Edit settings for:", vm.selectedInstanceId)
-            // TODO: Open instance settings
+            if (vm) vm.openInstanceSettings()
         }
         onRename: renameDialog.open()
         onDuplicate: duplicateDialog.open()
         onOpenFolder: {
-            if (vm && vm.selectedInstanceId && vm.openInstanceFolder) {
-                vm.openInstanceFolder(vm.selectedInstanceId)
-            }
+            if (vm) vm.openInstanceFolder()
         }
-        onBackup: backupDialog.open()
-        onExportInstance: exportDialog.open()
+        onBackup: {
+            if (vm) vm.manageSelectedBackups()
+        }
+        onExportInstance: {
+            if (vm) vm.exportSelectedInstance()
+        }
         onDeleteInstance: deleteDialog.open()
         onCreateNew: {
-            // Delegate to ShellRoot's newInstanceDialog (via global signal or direct call)
-            console.log("[InstancePage] Create new instance requested - use TopBar + button")
+            // Open new instance dialog - handled by ShellRoot
+            console.log("[InstancePage] Create new instance - use Add Instance button in toolbar")
         }
         onImportInstance: importDialog.open()
     }
@@ -420,40 +429,6 @@ Rectangle {
         }
     }
 
-    // Backup Dialog
-    Dialog {
-        id: backupDialog
-        modal: true
-        title: qsTr("Backup Instance")
-        width: 400
-        x: (instancePage.width - width) / 2
-        y: (instancePage.height - height) / 2
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: Theme.spacingM
-            
-            Label {
-                text: qsTr("Backup name:")
-                color: Theme.textPrimary
-            }
-            
-            TextField {
-                id: backupNameField
-                Layout.fillWidth: true
-                text: selectedInstanceName + " - " + Qt.formatDate(new Date(), "yyyy-MM-dd")
-                selectByMouse: true
-            }
-        }
-        
-        onAccepted: {
-            if (vm && backupNameField.text.length > 0) {
-                vm.backupInstance(vm.selectedInstanceId, backupNameField.text)
-            }
-        }
-    }
-
     // Export Dialog
     Dialog {
         id: exportDialog
@@ -483,7 +458,12 @@ Rectangle {
                 }
                 Button {
                     text: qsTr("Browse...")
-                    // TODO: Implement directory picker
+                    onClicked: {
+                        var path = ProjT.launcherVM.browseForDirectory(qsTr("Select Export Location"))
+                        if (path.length > 0) {
+                            exportPathField.text = path
+                        }
+                    }
                 }
             }
             
@@ -495,15 +475,15 @@ Rectangle {
             ComboBox {
                 id: exportFormatCombo
                 Layout.fillWidth: true
-                model: [".zip", ".tar.gz", "Folder copy"]
+                model: [".zip", ".mrpack", "Folder copy"]
             }
         }
         
         onAccepted: {
             if (vm && exportPathField.text.length > 0) {
-                vm.exportInstance(vm.selectedInstanceId, exportPathField.text, exportFormatCombo.currentText)
+                // For now, just open the export page in InstanceWindow
+                vm.exportSelectedInstance()
             }
         }
     }
 }
-

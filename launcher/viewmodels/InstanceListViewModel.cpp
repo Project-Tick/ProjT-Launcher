@@ -899,3 +899,85 @@ void InstanceListViewModel::startTask(Task* task, const QString& busyReason)
     connect(task, &Task::aborted, this, [finish]() mutable { finish(tr("Task aborted.")); });
     task->start();
 }
+
+void InstanceListViewModel::setSelectedGroup(const QString& groupName)
+{
+    if (m_selectedInstanceId.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+    moveInstanceToGroup(m_selectedInstanceId, groupName);
+}
+
+void InstanceListViewModel::exportSelectedInstance()
+{
+    if (m_selectedInstanceId.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+    
+    auto instance = resolveInstance(m_selectedInstanceId);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        return;
+    }
+    
+    // Open export dialog via InstanceWindow export page
+    APPLICATION->showInstanceWindow(instance, "export");
+}
+
+void InstanceListViewModel::manageSelectedBackups()
+{
+    if (m_selectedInstanceId.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+    
+    auto instance = resolveInstance(m_selectedInstanceId);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        return;
+    }
+    
+    // Open backup manager via InstanceWindow backups page
+    APPLICATION->showInstanceWindow(instance, "backups");
+}
+
+void InstanceListViewModel::createSelectedShortcut()
+{
+    if (m_selectedInstanceId.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+    
+    auto instance = resolveInstance(m_selectedInstanceId);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        return;
+    }
+    
+    // Create desktop shortcut
+    ShortcutUtils::Shortcut shortcut;
+    shortcut.instance = instance.get();
+    shortcut.name = instance->name();
+    shortcut.iconKey = instance->iconKey();
+    
+    if (ShortcutUtils::createInstanceShortcutOnDesktop(shortcut)) {
+        qDebug() << "Shortcut created successfully for" << instance->name();
+    } else {
+        emit errorOccurred(tr("Failed to create shortcut."));
+    }
+}
+
+QString InstanceListViewModel::selectedInstanceName() const
+{
+    if (m_selectedInstanceId.isEmpty()) {
+        return QString();
+    }
+    
+    int idx = m_instanceIds.indexOf(m_selectedInstanceId);
+    if (idx >= 0 && idx < m_instanceNames.size()) {
+        return m_instanceNames[idx];
+    }
+    return QString();
+}
