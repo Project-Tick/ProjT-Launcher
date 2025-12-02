@@ -16,13 +16,18 @@
 
 #include "Application.h"
 #include "BaseInstance.h"
+#include "DesktopServices.h"
 #include "InstanceList.h"
 #include "QObjectPtr.h"
 #include "FileSystem.h"
 #include "MMCZip.h"
 #include "icons/IconList.h"
+#include "InstanceImportTask.h"
+#include "minecraft/VanillaInstanceCreationTask.h"
+#include "meta/Index.h"
 #include <QFileInfo>
 #include <QPixmap>
+#include <QUrl>
 
 namespace {
 void saveInstanceIcon(const std::shared_ptr<BaseInstance>& instance)
@@ -298,6 +303,39 @@ void InstanceListViewModel::launchInstance(const QString& id)
     APPLICATION->launch(instance);
 }
 
+void InstanceListViewModel::killSelectedInstance()
+{
+    if (m_selectedInstanceId.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+    auto instance = resolveInstance(m_selectedInstanceId);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        return;
+    }
+    if (!instance->isRunning()) {
+        emit errorOccurred(tr("The selected instance is not running."));
+        return;
+    }
+    APPLICATION->kill(instance);
+}
+
+void InstanceListViewModel::openInstanceSettings(const QString& id)
+{
+    QString instanceId = id.isEmpty() ? m_selectedInstanceId : id;
+    if (instanceId.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+    auto instance = resolveInstance(instanceId);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        return;
+    }
+    APPLICATION->showInstanceWindow(instance);
+}
+
 void InstanceListViewModel::deleteSelectedInstance()
 {
     deleteInstance(m_selectedInstanceId);
@@ -417,10 +455,42 @@ void InstanceListViewModel::createNewInstance(const QString& name, const QString
         return;
     }
     
-    qDebug() << "[InstanceListViewModel::createNewInstance] Creating instance:" << name << "version:" << version;
-    // Note: createInstanceRequested signal is for requesting dialog from Application
-    // This method is kept for backward compatibility
-    refreshInstances();
+    qDebug() << "[InstanceListViewModel::createNewInstance] Creating vanilla instance:" << name << "requested version:" << version;
+    
+    // Get the default group
+    QString groupName = APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString();
+    
+    // Get version from Meta index - use latest available Minecraft version
+    auto versionIndex = APPLICATION->metadataIndex();
+    if (!versionIndex) {
+        emit errorOccurred(tr("Version list not available."));
+        return;
+    }
+    
+    auto mcVersions = versionIndex->get("net.minecraft");
+    if (!mcVersions || mcVersions->versions().isEmpty()) {
+        emit errorOccurred(tr("No Minecraft versions available."));
+        return;
+    }
+    
+    // Use the latest available version
+    BaseVersion::Ptr selectedVersion = mcVersions->versions().first();
+    
+    if (!selectedVersion) {
+        emit errorOccurred(tr("Failed to select a Minecraft version."));
+        return;
+    }
+    
+    qDebug() << "[InstanceListViewModel::createNewInstance] Using Minecraft version:" << selectedVersion->name();
+    
+    // Create vanilla instance task with the selected version
+    auto task = new VanillaCreationTask(selectedVersion);
+    if (task) {
+        task->setName(name);
+        task->setGroup(groupName);
+        addInstance(task, tr("Creating instance: %1").arg(name));
+        APPLICATION->settings()->set("LastUsedGroupForNewInstance", groupName);
+    }
 }
 
 void InstanceListViewModel::importInstance(const QString& sourcePath, const QString& name)
@@ -431,8 +501,22 @@ void InstanceListViewModel::importInstance(const QString& sourcePath, const QStr
     }
     
     qDebug() << "[InstanceListViewModel::importInstance] Importing from:" << sourcePath << "name:" << name;
-    emit importInstanceRequested();
-    refreshInstances();
+    
+    // Get the default group
+    QString groupName = APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString();
+    
+    // Convert path to URL
+    QUrl importUrl = QUrl::fromLocalFile(sourcePath);
+    
+    // Create import task
+    auto task = new InstanceImportTask(importUrl, nullptr);  // nullptr = no parent widget
+    if (!name.isEmpty()) {
+        task->setName(name);
+    }
+    task->setGroup(groupName);
+    
+    addInstance(task, tr("Importing instance"));
+    APPLICATION->settings()->set("LastUsedGroupForNewInstance", groupName);
 }
 
 void InstanceListViewModel::updateInstanceNotes(const QString& id, const QString& notes)
@@ -451,17 +535,17 @@ void InstanceListViewModel::updateInstanceNotes(const QString& id, const QString
 
 void InstanceListViewModel::openInstanceFolder(const QString& id)
 {
-    if (id.isEmpty()) {
+    QString instanceId = id.isEmpty() ? m_selectedInstanceId : id;
+    if (instanceId.isEmpty()) {
         emit errorOccurred(tr("No instance selected."));
         return;
     }
-    auto instance = resolveInstance(id);
+    auto instance = resolveInstance(instanceId);
     if (!instance) {
         emit errorOccurred(tr("The selected instance could not be found."));
         return;
     }
-    // TODO: Call DesktopServices::openFolder(instance->instanceRoot()) to open in file manager
-    qDebug() << "Opening folder for instance:" << instance->name() << "at path:" << instance->instanceRoot();
+    DesktopServices::openPath(instance->instanceRoot());
 }
 
 void InstanceListViewModel::updateInstanceIcon(const QString& id, const QString& iconKey)

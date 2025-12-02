@@ -82,6 +82,8 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE void selectInstanceById(const QString& id);
     Q_INVOKABLE void launchSelectedInstance();
     Q_INVOKABLE void launchInstance(const QString& id);
+    Q_INVOKABLE void killSelectedInstance();
+    Q_INVOKABLE void openInstanceSettings(const QString& id = QString());
     Q_INVOKABLE void refreshInstances();
     Q_INVOKABLE void deleteSelectedInstance();
     Q_INVOKABLE void deleteInstance(const QString& id);
@@ -103,10 +105,6 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE void moveInstanceToGroup(const QString& instanceId, const QString& groupName);
     Q_INVOKABLE bool handleDragDrop(const QString& instanceId, const QString& targetGroup);
     Q_INVOKABLE void reorderInstances(const QString& groupName, const QStringList& orderedInstanceIds);
-    
-    // Public Q_INVOKABLE methods to emit signals from QML
-    Q_INVOKABLE void emitCreateInstanceRequested() { emit createInstanceRequested(); }
-    Q_INVOKABLE void emitImportInstanceRequested() { emit importInstanceRequested(); }
 
     void addInstance(InstanceTask* task, const QString& busyReason = QString());
     void copyInstance(InstanceTask* task, const QString& busyReason = QString());
@@ -128,8 +126,6 @@ class InstanceListViewModel : public QObject {
     void availableVersionsChanged();
     
     // Instance management request signals
-    void createInstanceRequested();
-    void importInstanceRequested();
     void editInstanceRequested(const QString& id);
     void copyInstanceRequested(const QString& id);
 

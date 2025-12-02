@@ -1745,10 +1745,6 @@ QmlMainWindow* Application::showQmlMainWindow(bool minimized)
         auto newsVM = new NewsViewModel(this);
         auto settingsVM = new SettingsViewModel(this);
         
-        // Connect ViewModel signals to handlers
-        connect(instancesVM, &InstanceListViewModel::createInstanceRequested, this, &Application::onCreateInstanceRequested);
-        connect(instancesVM, &InstanceListViewModel::importInstanceRequested, this, &Application::onImportInstanceRequested);
-        
         m_qmlMainWindow = new QmlMainWindow(launcherVM, instancesVM, newsVM, settingsVM);
         m_qmlMainWindow->restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("QmlMainWindowGeometry").toString().toUtf8()));
 
@@ -1831,6 +1827,12 @@ void Application::on_windowClose()
     auto mainWindow = qobject_cast<MainWindow*>(sender());
     if (mainWindow) {
         m_mainWindow = nullptr;
+    }
+    // Handle QML main window: persist geometry and clear pointer
+    auto qmlMain = qobject_cast<QmlMainWindow*>(sender());
+    if (qmlMain) {
+        APPLICATION->settings()->set("QmlMainWindowGeometry", QString::fromUtf8(qmlMain->saveGeometry().toBase64()));
+        m_qmlMainWindow = nullptr;
     }
     auto logWindow = qobject_cast<ViewLogWindow*>(sender());
     if (logWindow) {
@@ -2167,52 +2169,5 @@ void Application::migratePastebinSettings()
 
     // Mark migration as complete
     m_settings->set("PastebinMigrationDone", true);
-}
-
-void Application::onCreateInstanceRequested()
-{
-    // Get the InstanceListViewModel that emitted the signal
-    auto instancesVM = qobject_cast<InstanceListViewModel*>(sender());
-    if (!instancesVM) {
-        return;
-    }
-    
-    QString groupName = APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString();
-    
-    NewInstanceDialog newInstDlg(groupName, QString(), QMap<QString, QString>(), m_qmlMainWindow);
-    if (!newInstDlg.exec())
-        return;
-    
-    APPLICATION->settings()->set("LastUsedGroupForNewInstance", newInstDlg.instGroup());
-    
-    InstanceTask* creationTask = newInstDlg.extractTask();
-    if (creationTask) {
-        instancesVM->addInstance(creationTask, tr("Creating instance"));
-    }
-}
-
-void Application::onImportInstanceRequested()
-{
-    // Get the InstanceListViewModel that emitted the signal
-    auto instancesVM = qobject_cast<InstanceListViewModel*>(sender());
-    if (!instancesVM) {
-        return;
-    }
-    
-    const QMimeType zip = QMimeDatabase().mimeTypeForName("application/zip");
-    auto filter = tr("Supported files") + QString(" (%1 *.mrpack)").arg(zip.globPatterns().join(" "));
-    filter += ";;" + zip.filterString();
-    filter += ";;" + tr("Modrinth pack") + " (*.mrpack)";
-    
-    const QUrl url = QFileDialog::getOpenFileUrl(m_qmlMainWindow, tr("Choose modpack"), QDir::homePath(), filter);
-    if (!url.isValid()) {
-        return;
-    }
-    
-    QString groupName = APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString();
-    
-    auto importTask = new InstanceImportTask(url, m_qmlMainWindow);
-    importTask->setGroup(groupName);
-    instancesVM->addInstance(importTask, tr("Importing instance"));
 }
 
