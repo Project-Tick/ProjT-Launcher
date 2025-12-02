@@ -1,5 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
@@ -52,7 +63,7 @@ Rectangle {
         console.log("[InstanceDelegate] Created - name:", instanceName, "id:", instanceId)
     }
     
-    height: 64
+    height: 56
     color: isSelected ? "#2a3340" : (mouseArea.containsMouse ? "#1f2228" : Theme.surface)
     border.color: isSelected ? Theme.accent : "#323742"
     border.width: isSelected ? 1 : 0
@@ -64,13 +75,13 @@ Rectangle {
     
     RowLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        spacing: Theme.spacingM
+        anchors.margins: Theme.spacingS
+        spacing: Theme.spacingS
         
         // === Instance Icon ===
         Rectangle {
-            width: 48
-            height: 48
+            width: 40
+            height: 40
             radius: Theme.radius
             color: "#3d4d60"
             Layout.alignment: Qt.AlignVCenter
@@ -79,7 +90,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 2
                 source: iconPath ? ("file://" + iconPath) : ""
-                sourceSize: Qt.size(44, 44)
+                sourceSize: Qt.size(36, 36)
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 
@@ -92,7 +103,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: instanceName.charAt(0).toUpperCase()
-                        font.pointSize: 20
+                        font.pointSize: 16
                         font.bold: true
                         color: Theme.textPrimary
                     }
@@ -128,9 +139,10 @@ Rectangle {
                     
                     Text {
                         anchors.centerIn: parent
-                        text: "▶"
+                        text: qsTr("R")
                         color: "#7cff7c"
                         font.pointSize: 10
+                        font.bold: true
                     }
                 }
             }
@@ -161,9 +173,9 @@ Rectangle {
         // === Launch Button ===
         Button {
             id: playButton
-            text: isRunning ? qsTr("Running...") : "▶"
+            text: isRunning ? qsTr("Running...") : qsTr("Play")
             implicitHeight: 36
-            implicitWidth: 48
+            implicitWidth: 56
             enabled: !isRunning
             Layout.alignment: Qt.AlignVCenter
             

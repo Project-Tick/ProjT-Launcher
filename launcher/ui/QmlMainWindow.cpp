@@ -148,6 +148,10 @@ QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel, InstanceListV
     setWindowTitle(tr("ProjT Launcher"));
     resize(1000, 700);
 
+    // Ensure the window is deleted when closed so destroyed() is emitted
+    // and Application can track open windows correctly.
+    setAttribute(Qt::WA_DeleteOnClose, true);
+
     auto container = new QWidget(this);
     auto layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);

@@ -63,6 +63,16 @@ LauncherViewModel::Page LauncherViewModel::currentPage() const
     return m_currentPage;
 }
 
+bool LauncherViewModel::hasUpdate() const
+{
+    return m_hasUpdate;
+}
+
+QString LauncherViewModel::updateVersion() const
+{
+    return m_updateVersion;
+}
+
 void LauncherViewModel::setDisplayName(const QString& name)
 {
     if (m_displayName == name) {

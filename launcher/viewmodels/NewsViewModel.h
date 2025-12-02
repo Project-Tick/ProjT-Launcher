@@ -33,6 +33,7 @@ class NewsViewModel : public QObject {
     Q_PROPERTY(QStringList links READ links NOTIFY entriesChanged)
     Q_PROPERTY(QStringList htmlBodies READ htmlBodies NOTIFY entriesChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
+    Q_PROPERTY(QString latestHeadline READ latestHeadline NOTIFY entriesChanged)
 
    public:
     explicit NewsViewModel(QObject* parent = nullptr);
@@ -40,6 +41,7 @@ class NewsViewModel : public QObject {
     QString currentContent() const;
     QString currentTitle() const;
     QString currentLink() const;
+    QString latestHeadline() const;
     bool isBusy() const;
     QDateTime lastUpdated() const;
     QStringList titles() const;

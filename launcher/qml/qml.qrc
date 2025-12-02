@@ -12,6 +12,12 @@
         <file>Theme.js</file>
         <file>components/PageHeader.qml</file>
         <file>components/Sidebar.qml</file>
+        <file>components/TopBar.qml</file>
+        <file>components/BottomBar.qml</file>
+        <file>components/NavigationTopBar.qml</file>
+        <file>components/UpperBottomBar.qml</file>
+        <file>components/LowerBottomBar.qml</file>
+        <file>components/InstanceDetailSidebar.qml</file>
         <file>components/InstanceDelegate.qml</file>
         <file>components/InstanceContextMenu.qml</file>
         <file>LogsPage.qml</file>

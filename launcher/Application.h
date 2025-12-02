@@ -242,10 +242,6 @@ class Application : public QApplication {
     void controllerFailed(const QString& error);
     void setupWizardFinished(int status);
     void continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName);
-    
-    // QML ViewModel signal handlers
-    void onCreateInstanceRequested();
-    void onImportInstanceRequested();
 
    private:
     bool handleDataMigration(const QString& currentData, const QString& oldData, const QString& name, const QString& configFile) const;
