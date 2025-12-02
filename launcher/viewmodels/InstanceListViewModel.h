@@ -95,7 +95,7 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE void updateInstanceNotes(const QString& id, const QString& notes);
     Q_INVOKABLE void exportInstance(const QString& id, const QString& outputPath, const QFileInfoList& files);
     Q_INVOKABLE void backupInstance(const QString& id, const QString& backupName, const BackupOptions& options);
-    Q_INVOKABLE void openInstanceFolder(const QString& id);
+    Q_INVOKABLE void openInstanceFolder(const QString& id = QString());
     Q_INVOKABLE void updateInstanceIcon(const QString& id, const QString& iconKey);
     Q_INVOKABLE void refreshInstanceMetadata(const QString& id);
     Q_INVOKABLE void updateCustomProperty(const QString& id, const QString& key, const QVariant& value);
@@ -105,6 +105,13 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE void moveInstanceToGroup(const QString& instanceId, const QString& groupName);
     Q_INVOKABLE bool handleDragDrop(const QString& instanceId, const QString& targetGroup);
     Q_INVOKABLE void reorderInstances(const QString& groupName, const QStringList& orderedInstanceIds);
+    Q_INVOKABLE void setSelectedGroup(const QString& groupName);
+    
+    // Simple QML-callable actions for selected instance
+    Q_INVOKABLE void exportSelectedInstance();
+    Q_INVOKABLE void manageSelectedBackups();
+    Q_INVOKABLE void createSelectedShortcut();
+    Q_INVOKABLE QString selectedInstanceName() const;
 
     void addInstance(InstanceTask* task, const QString& busyReason = QString());
     void copyInstance(InstanceTask* task, const QString& busyReason = QString());

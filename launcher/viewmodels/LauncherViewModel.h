@@ -67,6 +67,15 @@ class LauncherViewModel : public QObject {
     Q_INVOKABLE void openDataFolder();
     Q_INVOKABLE void openHelp();
     Q_INVOKABLE void checkUpdates();
+    
+    // Folder actions
+    Q_INVOKABLE void openLauncherFolder();
+    Q_INVOKABLE void openInstancesFolder();
+    Q_INVOKABLE void openModsFolder();
+    Q_INVOKABLE void openSkinsFolder();
+    
+    // Dialog actions
+    Q_INVOKABLE void openAccountsManager();
 
     Q_INVOKABLE QString browseForFile(const QString& title, const QString& filter);
     Q_INVOKABLE QString browseForDirectory(const QString& title);

@@ -16,14 +16,21 @@
 // Dark palette
 var background = "#0a0c10"
 var surface = "#12151a"
+var surfaceBackground = "#12151a"
 var surfaceVariant = "#171c24"
 var textPrimary = "#dfe3e9"
 var textSecondary = "#9aa6b7"
 var accent = "#3c7be0"
 var danger = "#d55f5f"
+var success = "#4caf50"
+var warning = "#ff9800"
+var border = "#323742"
 
 // Layout
 var radius = 8
+var radiusS = 4
+var radiusM = 8
+var radiusL = 12
 var spacingXS = 4
 var spacingS = 8
 var spacingM = 12

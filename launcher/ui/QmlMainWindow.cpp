@@ -30,6 +30,7 @@
 #include "settings/SettingsObject.h"
 #include "viewmodels/InstanceListViewModel.h"
 #include "viewmodels/LauncherViewModel.h"
+#include "viewmodels/LauncherSettingsViewModel.h"
 #include "viewmodels/NewsViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
 
@@ -204,6 +205,11 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
         ctx->setContextProperty(QStringLiteral("settingsVM"), settingsViewModel);
         ctx->setContextProperty(QStringLiteral("settingsViewModel"), settingsViewModel);
     }
+
+    // Create and expose LauncherSettingsViewModel for global launcher settings
+    auto launcherSettingsViewModel = new LauncherSettingsViewModel(this);
+    ctx->setContextProperty(QStringLiteral("launcherSettingsVM"), launcherSettingsViewModel);
+    projt->insert(QStringLiteral("launcherSettingsVM"), QVariant::fromValue(launcherSettingsViewModel));
 
     if (launcherViewModel && m_stateBridge) {
         launcherViewModel->setCurrentPage(LauncherViewModel::stringToPage(m_stateBridge->lastPageRoute()));
