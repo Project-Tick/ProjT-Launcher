@@ -5,9 +5,13 @@
  *  ProjT Launcher - Minecraft Launcher
  *  Copyright (C) 2025 Project Tick
  *
- *  Custom version selection page for New Instance dialog
- *  Similar to Qt Widget CustomPage
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
+
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
@@ -18,7 +22,11 @@ Rectangle {
     color: Theme.background
     
     property string selectedVersion: ""
-    property var vm: ProjT.instancesVM
+    property var vm: ProjT.newInstanceVM
+    
+    // Signals for parent communication
+    signal versionSelected(string version)
+    signal createRequested(string instanceName, string version, string loader, string loaderVersion)
     
     ColumnLayout {
         anchors.fill: parent
@@ -52,29 +60,31 @@ Rectangle {
                 CheckBox {
                     id: showReleasesCheck
                     text: qsTr("Releases")
-                    checked: true
-                    onCheckedChanged: filterVersions()
+                    checked: vm ? vm.showReleases : true
+                    onCheckedChanged: {
+                        if (vm) vm.showReleases = checked
+                        filterVersions()
+                    }
                 }
                 
                 CheckBox {
                     id: showSnapshotsCheck
                     text: qsTr("Snapshots")
-                    checked: false
-                    onCheckedChanged: filterVersions()
+                    checked: vm ? vm.showSnapshots : false
+                    onCheckedChanged: {
+                        if (vm) vm.showSnapshots = checked
+                        filterVersions()
+                    }
                 }
                 
                 CheckBox {
                     id: showBetasCheck
-                    text: qsTr("Betas")
-                    checked: false
-                    onCheckedChanged: filterVersions()
-                }
-                
-                CheckBox {
-                    id: showAlphasCheck
-                    text: qsTr("Alphas")
-                    checked: false
-                    onCheckedChanged: filterVersions()
+                    text: qsTr("Old Versions")
+                    checked: vm ? vm.showOldVersions : false
+                    onCheckedChanged: {
+                        if (vm) vm.showOldVersions = checked
+                        filterVersions()
+                    }
                 }
                 
                 Item { Layout.fillWidth: true }
@@ -84,7 +94,7 @@ Rectangle {
                     icon.name: "view-refresh"
                     onClicked: {
                         if (vm) {
-                            vm.refreshVersionList()
+                            vm.loadMinecraftVersions()
                         }
                     }
                 }
@@ -106,7 +116,7 @@ Rectangle {
                 anchors.margins: 1
                 clip: true
                 
-                model: vm ? vm.filteredVersionList : []
+                model: vm ? vm.minecraftVersionsModel : []
                 
                 delegate: ItemDelegate {
                     width: versionListView.width
@@ -119,25 +129,18 @@ Rectangle {
                         Image {
                             Layout.preferredWidth: 16
                             Layout.preferredHeight: 16
-                            source: {
-                                var type = modelData.type || "release"
-                                if (type === "release") return "qrc:/icons/status/grass"
-                                if (type === "snapshot") return "qrc:/icons/status/enderpearl"
-                                if (type === "beta" || type === "old_beta") return "qrc:/icons/status/bug"
-                                if (type === "alpha" || type === "old_alpha") return "qrc:/icons/status/chicken"
-                                return "qrc:/icons/status/grass"
-                            }
+                            source: Theme.versionTypeIcon(model.versionType || "release")
                             fillMode: Image.PreserveAspectFit
                         }
                         
                         Label {
-                            text: modelData.version || modelData
+                            text: model.versionName || model.display || ""
                             color: Theme.textPrimary
                             Layout.fillWidth: true
                         }
                         
                         Label {
-                            text: modelData.type || ""
+                            text: model.versionType || ""
                             color: Theme.textSecondary
                             font.pointSize: 9
                         }
@@ -145,13 +148,18 @@ Rectangle {
                     
                     onClicked: {
                         versionListView.currentIndex = index
-                        customPage.selectedVersion = modelData.version || modelData
+                        var version = model.versionName || model.display || ""
+                        customPage.selectedVersion = version
+                        if (vm) vm.selectedMinecraftVersion = version
+                        versionSelected(version)
                     }
                     
                     onDoubleClicked: {
                         versionListView.currentIndex = index
-                        customPage.selectedVersion = modelData.version || modelData
-                        // Could trigger OK here
+                        var version = model.versionName || model.display || ""
+                        customPage.selectedVersion = version
+                        if (vm) vm.selectedMinecraftVersion = version
+                        versionSelected(version)
                     }
                 }
                 
@@ -180,13 +188,19 @@ Rectangle {
                     id: loaderCombo
                     Layout.preferredWidth: 150
                     model: ["None", "Forge", "Fabric", "Quilt", "NeoForge", "LiteLoader"]
+                    onCurrentTextChanged: {
+                        if (vm) vm.selectedModLoader = currentText
+                    }
                 }
                 
                 ComboBox {
                     id: loaderVersionCombo
                     Layout.fillWidth: true
                     enabled: loaderCombo.currentIndex > 0
-                    model: []
+                    model: vm ? vm.modLoaderVersionsModel : []
+                    onCurrentTextChanged: {
+                        if (vm) vm.selectedModLoaderVersion = currentText
+                    }
                     
                     Label {
                         anchors.centerIn: parent
@@ -197,22 +211,91 @@ Rectangle {
                 }
             }
         }
+        
+        // Instance name input
+        GroupBox {
+            Layout.fillWidth: true
+            title: qsTr("Instance Name")
+            
+            RowLayout {
+                anchors.fill: parent
+                spacing: Theme.spacingM
+                
+                TextField {
+                    id: instanceNameField
+                    Layout.fillWidth: true
+                    placeholderText: qsTr("Enter instance name...")
+                    text: vm ? vm.instanceName : ""
+                    onTextChanged: {
+                        if (vm) vm.instanceName = text
+                    }
+                }
+                
+                Button {
+                    text: qsTr("Create")
+                    enabled: customPage.selectedVersion !== "" && instanceNameField.text !== ""
+                    onClicked: {
+                        if (vm) {
+                            vm.createInstance()
+                        }
+                        createRequested(
+                            instanceNameField.text,
+                            customPage.selectedVersion,
+                            loaderCombo.currentText,
+                            loaderVersionCombo.currentText
+                        )
+                    }
+                }
+            }
+        }
+    }
+    
+    // Loading overlay
+    Rectangle {
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.5)
+        visible: vm ? vm.isLoading : false
+        
+        Column {
+            anchors.centerIn: parent
+            spacing: Theme.spacingM
+            
+            BusyIndicator {
+                anchors.horizontalCenter: parent.horizontalCenter
+                running: parent.visible
+            }
+            
+            Label {
+                text: qsTr("Creating instance...")
+                color: "white"
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+        }
     }
     
     function filterVersions() {
         if (vm) {
-            vm.setVersionFilter(
-                showReleasesCheck.checked,
-                showSnapshotsCheck.checked,
-                showBetasCheck.checked,
-                showAlphasCheck.checked
-            )
+            vm.filterVersions()
         }
     }
     
     Component.onCompleted: {
         if (vm) {
-            vm.refreshVersionList()
+            vm.loadMinecraftVersions()
+        }
+    }
+    
+    Connections {
+        target: vm
+        function onMinecraftVersionsModelChanged() {
+            console.log("Versions loaded")
+        }
+        function onInstanceCreationFinished(success, message) {
+            if (success) {
+                console.log("Instance created: " + message)
+            } else {
+                console.log("Creation failed: " + message)
+            }
         }
     }
 }

@@ -8,7 +8,8 @@
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
  *
- *  Global launcher settings ViewModel for QML Settings window
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
 
 #pragma once
@@ -40,6 +41,13 @@ class LauncherSettingsViewModel : public QObject {
     Q_PROPERTY(bool enableFeralGamemode READ enableFeralGamemode WRITE setEnableFeralGamemode NOTIFY enableFeralGamemodeChanged)
     Q_PROPERTY(bool enableDiscreteGpu READ enableDiscreteGpu WRITE setEnableDiscreteGpu NOTIFY enableDiscreteGpuChanged)
     Q_PROPERTY(bool enableMangoHud READ enableMangoHud WRITE setEnableMangoHud NOTIFY enableMangoHudChanged)
+    Q_PROPERTY(bool startMaximized READ startMaximized WRITE setStartMaximized NOTIFY startMaximizedChanged)
+    Q_PROPERTY(int windowWidth READ windowWidth WRITE setWindowWidth NOTIFY windowWidthChanged)
+    Q_PROPERTY(int windowHeight READ windowHeight WRITE setWindowHeight NOTIFY windowHeightChanged)
+    Q_PROPERTY(bool showGameLog READ showGameLog WRITE setShowGameLog NOTIFY showGameLogChanged)
+    Q_PROPERTY(bool useNativeOpenAL READ useNativeOpenAL WRITE setUseNativeOpenAL NOTIFY useNativeOpenALChanged)
+    Q_PROPERTY(bool useNativeGLFW READ useNativeGLFW WRITE setUseNativeGLFW NOTIFY useNativeGLFWChanged)
+    Q_PROPERTY(bool skipMigrationCheck READ skipMigrationCheck WRITE setSkipMigrationCheck NOTIFY skipMigrationCheckChanged)
     
     // === Java Page ===
     Q_PROPERTY(QString defaultJavaPath READ defaultJavaPath WRITE setDefaultJavaPath NOTIFY defaultJavaPathChanged)
@@ -65,6 +73,21 @@ class LauncherSettingsViewModel : public QObject {
     // === Language ===
     Q_PROPERTY(QString currentLanguage READ currentLanguage WRITE setCurrentLanguage NOTIFY currentLanguageChanged)
     Q_PROPERTY(QStringList availableLanguages READ availableLanguages NOTIFY availableLanguagesChanged)
+    
+    // === API Page ===
+    Q_PROPERTY(int pastebinType READ pastebinType WRITE setPastebinType NOTIFY pastebinTypeChanged)
+    Q_PROPERTY(QString pastebinCustomUrl READ pastebinCustomUrl WRITE setPastebinCustomUrl NOTIFY pastebinCustomUrlChanged)
+    Q_PROPERTY(QString msaClientId READ msaClientId WRITE setMsaClientId NOTIFY msaClientIdChanged)
+    Q_PROPERTY(QString curseforgeApiKey READ curseforgeApiKey WRITE setCurseforgeApiKey NOTIFY curseforgeApiKeyChanged)
+    Q_PROPERTY(QString modrinthToken READ modrinthToken WRITE setModrinthToken NOTIFY modrinthTokenChanged)
+    Q_PROPERTY(QString metaUrl READ metaUrl WRITE setMetaUrl NOTIFY metaUrlChanged)
+    Q_PROPERTY(QString userAgentOverride READ userAgentOverride WRITE setUserAgentOverride NOTIFY userAgentOverrideChanged)
+    
+    // === External Tools Page ===
+    Q_PROPERTY(QString jprofilerPath READ jprofilerPath WRITE setJprofilerPath NOTIFY jprofilerPathChanged)
+    Q_PROPERTY(QString jvisualvmPath READ jvisualvmPath WRITE setJvisualvmPath NOTIFY jvisualvmPathChanged)
+    Q_PROPERTY(QString mceditPath READ mceditPath WRITE setMceditPath NOTIFY mceditPathChanged)
+    Q_PROPERTY(QString jsonEditorPath READ jsonEditorPath WRITE setJsonEditorPath NOTIFY jsonEditorPathChanged)
 
 public:
     explicit LauncherSettingsViewModel(QObject* parent = nullptr);
@@ -101,6 +124,13 @@ public:
     bool enableFeralGamemode() const;
     bool enableDiscreteGpu() const;
     bool enableMangoHud() const;
+    bool startMaximized() const;
+    int windowWidth() const;
+    int windowHeight() const;
+    bool showGameLog() const;
+    bool useNativeOpenAL() const;
+    bool useNativeGLFW() const;
+    bool skipMigrationCheck() const;
     
     void setShowGameTime(bool value);
     void setShowGlobalGameTime(bool value);
@@ -108,6 +138,13 @@ public:
     void setEnableFeralGamemode(bool value);
     void setEnableDiscreteGpu(bool value);
     void setEnableMangoHud(bool value);
+    void setStartMaximized(bool value);
+    void setWindowWidth(int value);
+    void setWindowHeight(int value);
+    void setShowGameLog(bool value);
+    void setUseNativeOpenAL(bool value);
+    void setUseNativeGLFW(bool value);
+    void setSkipMigrationCheck(bool value);
     
     // Java Page
     QString defaultJavaPath() const;
@@ -153,6 +190,34 @@ public:
     QStringList availableLanguages() const;
     void setCurrentLanguage(const QString& lang);
     
+    // API Page
+    int pastebinType() const;
+    QString pastebinCustomUrl() const;
+    QString msaClientId() const;
+    QString curseforgeApiKey() const;
+    QString modrinthToken() const;
+    QString metaUrl() const;
+    QString userAgentOverride() const;
+    
+    void setPastebinType(int type);
+    void setPastebinCustomUrl(const QString& url);
+    void setMsaClientId(const QString& id);
+    void setCurseforgeApiKey(const QString& key);
+    void setModrinthToken(const QString& token);
+    void setMetaUrl(const QString& url);
+    void setUserAgentOverride(const QString& ua);
+    
+    // External Tools Page
+    QString jprofilerPath() const;
+    QString jvisualvmPath() const;
+    QString mceditPath() const;
+    QString jsonEditorPath() const;
+    
+    void setJprofilerPath(const QString& path);
+    void setJvisualvmPath(const QString& path);
+    void setMceditPath(const QString& path);
+    void setJsonEditorPath(const QString& path);
+    
     Q_INVOKABLE void loadSettings();
     Q_INVOKABLE void applySettings();
     Q_INVOKABLE void resetToDefaults();
@@ -177,6 +242,13 @@ signals:
     void enableFeralGamemodeChanged();
     void enableDiscreteGpuChanged();
     void enableMangoHudChanged();
+    void startMaximizedChanged();
+    void windowWidthChanged();
+    void windowHeightChanged();
+    void showGameLogChanged();
+    void useNativeOpenALChanged();
+    void useNativeGLFWChanged();
+    void skipMigrationCheckChanged();
     
     void defaultJavaPathChanged();
     void defaultMinMemoryChanged();
@@ -198,6 +270,19 @@ signals:
     
     void currentLanguageChanged();
     void availableLanguagesChanged();
+    
+    void pastebinTypeChanged();
+    void pastebinCustomUrlChanged();
+    void msaClientIdChanged();
+    void curseforgeApiKeyChanged();
+    void modrinthTokenChanged();
+    void metaUrlChanged();
+    void userAgentOverrideChanged();
+    
+    void jprofilerPathChanged();
+    void jvisualvmPathChanged();
+    void mceditPathChanged();
+    void jsonEditorPathChanged();
     
     void settingsApplied();
     void javaTestResult(bool success, const QString& message);
@@ -225,6 +310,13 @@ private:
     bool m_enableFeralGamemode = false;
     bool m_enableDiscreteGpu = false;
     bool m_enableMangoHud = false;
+    bool m_startMaximized = false;
+    int m_windowWidth = 854;
+    int m_windowHeight = 480;
+    bool m_showGameLog = true;
+    bool m_useNativeOpenAL = false;
+    bool m_useNativeGLFW = false;
+    bool m_skipMigrationCheck = false;
     
     QString m_defaultJavaPath;
     int m_defaultMinMemory = 512;
@@ -245,4 +337,19 @@ private:
     QString m_proxyPassword;
     
     QString m_currentLanguage = "en_US";
+    
+    // API Page
+    int m_pastebinType = 0;
+    QString m_pastebinCustomUrl;
+    QString m_msaClientId;
+    QString m_curseforgeApiKey;
+    QString m_modrinthToken;
+    QString m_metaUrl;
+    QString m_userAgentOverride;
+    
+    // External Tools Page
+    QString m_jprofilerPath;
+    QString m_jvisualvmPath;
+    QString m_mceditPath;
+    QString m_jsonEditorPath;
 };

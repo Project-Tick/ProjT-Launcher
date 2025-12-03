@@ -5,11 +5,17 @@
  *  ProjT Launcher - Minecraft Launcher
  *  Copyright (C) 2025 Project Tick
  *
- *  External tools settings page
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
+
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Dialogs
 import "../Theme.js" as Theme
 
 ScrollView {
@@ -42,32 +48,16 @@ ScrollView {
                     }
                     
                     TextField {
+                        id: jsonEditorField
                         Layout.fillWidth: true
                         placeholderText: qsTr("Leave empty to use system default")
+                        text: vm ? vm.jsonEditorPath : ""
+                        onTextChanged: if (vm) vm.jsonEditorPath = text
                     }
                     
                     Button {
                         text: qsTr("Browse...")
-                    }
-                }
-                
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Theme.spacingS
-                    
-                    Label {
-                        text: qsTr("Text Editor:")
-                        color: Theme.textPrimary
-                        Layout.preferredWidth: 100
-                    }
-                    
-                    TextField {
-                        Layout.fillWidth: true
-                        placeholderText: qsTr("Leave empty to use system default")
-                    }
-                    
-                    Button {
-                        text: qsTr("Browse...")
+                        onClicked: jsonEditorDialog.open()
                     }
                 }
             }
@@ -83,13 +73,15 @@ ScrollView {
                 spacing: Theme.spacingS
                 
                 CheckBox {
+                    id: jprofilerCheck
                     text: qsTr("Enable JProfiler integration")
-                    checked: false
+                    checked: vm ? vm.jprofilerPath.length > 0 : false
                 }
                 
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingS
+                    enabled: jprofilerCheck.checked
                     
                     Label {
                         text: qsTr("Path:")
@@ -97,14 +89,16 @@ ScrollView {
                     }
                     
                     TextField {
+                        id: jprofilerField
                         Layout.fillWidth: true
                         placeholderText: qsTr("/path/to/jprofiler")
-                        enabled: false
+                        text: vm ? vm.jprofilerPath : ""
+                        onTextChanged: if (vm) vm.jprofilerPath = text
                     }
                     
                     Button {
                         text: qsTr("Browse...")
-                        enabled: false
+                        onClicked: jprofilerDialog.open()
                     }
                 }
             }
@@ -120,13 +114,15 @@ ScrollView {
                 spacing: Theme.spacingS
                 
                 CheckBox {
+                    id: jvisualvmCheck
                     text: qsTr("Enable JVisualVM integration")
-                    checked: false
+                    checked: vm ? vm.jvisualvmPath.length > 0 : false
                 }
                 
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingS
+                    enabled: jvisualvmCheck.checked
                     
                     Label {
                         text: qsTr("Path:")
@@ -134,14 +130,16 @@ ScrollView {
                     }
                     
                     TextField {
+                        id: jvisualvmField
                         Layout.fillWidth: true
                         placeholderText: qsTr("/path/to/jvisualvm")
-                        enabled: false
+                        text: vm ? vm.jvisualvmPath : ""
+                        onTextChanged: if (vm) vm.jvisualvmPath = text
                     }
                     
                     Button {
                         text: qsTr("Browse...")
-                        enabled: false
+                        onClicked: jvisualvmDialog.open()
                     }
                 }
             }
@@ -157,13 +155,15 @@ ScrollView {
                 spacing: Theme.spacingS
                 
                 CheckBox {
+                    id: mceditCheck
                     text: qsTr("Enable MCEdit integration")
-                    checked: false
+                    checked: vm ? vm.mceditPath.length > 0 : false
                 }
                 
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingS
+                    enabled: mceditCheck.checked
                     
                     Label {
                         text: qsTr("Path:")
@@ -171,19 +171,54 @@ ScrollView {
                     }
                     
                     TextField {
+                        id: mceditField
                         Layout.fillWidth: true
                         placeholderText: qsTr("/path/to/mcedit")
-                        enabled: false
+                        text: vm ? vm.mceditPath : ""
+                        onTextChanged: if (vm) vm.mceditPath = text
                     }
                     
                     Button {
                         text: qsTr("Browse...")
-                        enabled: false
+                        onClicked: mceditDialog.open()
                     }
                 }
             }
         }
         
         Item { height: Theme.spacingL }
+    }
+    
+    // File dialogs
+    FileDialog {
+        id: jsonEditorDialog
+        title: qsTr("Select JSON Editor")
+        onAccepted: {
+            jsonEditorField.text = selectedFile.toString().replace("file://", "")
+        }
+    }
+    
+    FileDialog {
+        id: jprofilerDialog
+        title: qsTr("Select JProfiler Executable")
+        onAccepted: {
+            jprofilerField.text = selectedFile.toString().replace("file://", "")
+        }
+    }
+    
+    FileDialog {
+        id: jvisualvmDialog
+        title: qsTr("Select JVisualVM Executable")
+        onAccepted: {
+            jvisualvmField.text = selectedFile.toString().replace("file://", "")
+        }
+    }
+    
+    FileDialog {
+        id: mceditDialog
+        title: qsTr("Select MCEdit Executable")
+        onAccepted: {
+            mceditField.text = selectedFile.toString().replace("file://", "")
+        }
     }
 }

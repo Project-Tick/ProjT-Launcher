@@ -27,6 +27,21 @@ LauncherViewModel::LauncherViewModel(QObject* parent) : QObject(parent)
 {
     m_displayName = BuildConfig.LAUNCHER_DISPLAYNAME;
     m_versionString = BuildConfig.printableVersionString();
+    m_gitRef = BuildConfig.GIT_REFSPEC;
+    m_gitCommit = BuildConfig.GIT_COMMIT;
+    
+    // Build About HTML
+    m_aboutHtml = QObject::tr(
+        "<b>%1</b><br/>"
+        "Version: %2<br/>"
+        "Git: %3<br/><br/>"
+        "%4"
+    ).arg(
+        m_displayName,
+        m_versionString,
+        BuildConfig.LAUNCHER_GIT,
+        BuildConfig.LAUNCHER_COPYRIGHT
+    );
 }
 
 QString LauncherViewModel::displayName() const
