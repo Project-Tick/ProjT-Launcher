@@ -43,6 +43,14 @@ QString NewsViewModel::currentLink() const
     return m_currentLink;
 }
 
+QString NewsViewModel::latestHeadline() const
+{
+    if (!m_entries.isEmpty() && m_entries.first()) {
+        return m_entries.first()->title;
+    }
+    return tr("Welcome to ProjT Launcher");
+}
+
 QStringList NewsViewModel::titles() const
 {
     QStringList list;

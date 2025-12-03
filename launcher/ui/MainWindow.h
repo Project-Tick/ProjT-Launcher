@@ -70,7 +70,6 @@ class InstanceListViewModel;
 class NewsViewModel;
 class SettingsViewModel;
 class TestQmlPanel;
-class ShellPrototypeHandler;
 class QLabel;
 class MinecraftLauncher;
 class BaseProfilerFactory;
@@ -261,7 +260,6 @@ class MainWindow : public QMainWindow {
     NewsViewModel* m_newsViewModel = nullptr;
     SettingsViewModel* m_settingsViewModel = nullptr;
     TestQmlPanel* m_testQmlPanel = nullptr;
-    ShellPrototypeHandler* m_shellPrototypeHandler = nullptr;
     // these are managed by Qt's memory management model!
     InstanceView* view = nullptr;
     InstanceProxyModel* proxymodel = nullptr;

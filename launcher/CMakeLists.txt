@@ -807,6 +807,14 @@ SET(LAUNCHER_SOURCES
     viewmodels/LogsViewModel.cpp
     viewmodels/NewsViewModel.h
     viewmodels/NewsViewModel.cpp
+    viewmodels/LauncherSettingsViewModel.h
+    viewmodels/LauncherSettingsViewModel.cpp
+    viewmodels/AccountsViewModel.h
+    viewmodels/AccountsViewModel.cpp
+    viewmodels/NewInstanceViewModel.h
+    viewmodels/NewInstanceViewModel.cpp
+    viewmodels/InstanceViewModel.h
+    viewmodels/InstanceViewModel.cpp
 
     # Super secret!
     KonamiCode.h
@@ -851,8 +859,8 @@ SET(LAUNCHER_SOURCES
     ui/ViewLogWindow.cpp
     ui/TestQmlPanel.h
     ui/TestQmlPanel.cpp
-    ui/ShellPrototypeHandler.h
-    ui/ShellPrototypeHandler.cpp
+    ui/QmlMainWindow.h
+    ui/QmlMainWindow.cpp
 
     # FIXME: maybe find a better home for this.
     FileIgnoreProxy.cpp

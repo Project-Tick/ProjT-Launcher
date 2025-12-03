@@ -40,12 +40,14 @@ class InstanceListViewModel : public QObject {
     Q_PROPERTY(QStringList instanceIcons READ instanceIcons NOTIFY instanceListChanged)
     Q_PROPERTY(QStringList instanceIconPaths READ instanceIconPaths NOTIFY instanceListChanged)
     Q_PROPERTY(QStringList instanceGroups READ instanceGroups NOTIFY instanceListChanged)
+    Q_PROPERTY(QStringList instanceLastPlayed READ instanceLastPlayed NOTIFY instanceListChanged)
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY instanceStateChanged)
     Q_PROPERTY(bool canLaunchSelected READ canLaunchSelected NOTIFY instanceStateChanged)
     Q_PROPERTY(bool isSelectedRunning READ isSelectedRunning NOTIFY instanceStateChanged)
     Q_PROPERTY(bool canDeleteSelected READ canDeleteSelected NOTIFY instanceStateChanged)
     Q_PROPERTY(bool canExportSelected READ canExportSelected NOTIFY instanceStateChanged)
     Q_PROPERTY(bool canBackupSelected READ canBackupSelected NOTIFY instanceStateChanged)
+    Q_PROPERTY(QStringList availableVersions READ availableVersions NOTIFY availableVersionsChanged)
 
    public:
     explicit InstanceListViewModel(QObject* parent = nullptr);
@@ -59,12 +61,14 @@ class InstanceListViewModel : public QObject {
     QStringList instanceIcons() const;
     QStringList instanceIconPaths() const;
     QStringList instanceGroups() const;
+    QStringList instanceLastPlayed() const;
     bool hasSelection() const;
     bool canLaunchSelected() const;
     bool isSelectedRunning() const;
     bool canDeleteSelected() const;
     bool canExportSelected() const;
     bool canBackupSelected() const;
+    QStringList availableVersions() const;
 
     void setTotalCount(int count);
     void setSelectedInstanceId(const QString& id);
@@ -80,15 +84,20 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE void selectInstanceById(const QString& id);
     Q_INVOKABLE void launchSelectedInstance();
     Q_INVOKABLE void launchInstance(const QString& id);
+    Q_INVOKABLE void killSelectedInstance();
+    Q_INVOKABLE void openInstanceSettings(const QString& id = QString());
     Q_INVOKABLE void refreshInstances();
     Q_INVOKABLE void deleteSelectedInstance();
     Q_INVOKABLE void deleteInstance(const QString& id);
     Q_INVOKABLE void renameSelectedInstance(const QString& newName);
     Q_INVOKABLE void duplicateSelectedInstance(const QString& newIdOrName);
     Q_INVOKABLE void renameInstance(const QString& id, const QString& newName);
+    Q_INVOKABLE void createNewInstance(const QString& name, const QString& version);
+    Q_INVOKABLE void importInstance(const QString& sourcePath, const QString& name);
     Q_INVOKABLE void updateInstanceNotes(const QString& id, const QString& notes);
     Q_INVOKABLE void exportInstance(const QString& id, const QString& outputPath, const QFileInfoList& files);
     Q_INVOKABLE void backupInstance(const QString& id, const QString& backupName, const BackupOptions& options);
+    Q_INVOKABLE void openInstanceFolder(const QString& id = QString());
     Q_INVOKABLE void updateInstanceIcon(const QString& id, const QString& iconKey);
     Q_INVOKABLE void refreshInstanceMetadata(const QString& id);
     Q_INVOKABLE void updateCustomProperty(const QString& id, const QString& key, const QVariant& value);
@@ -98,6 +107,13 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE void moveInstanceToGroup(const QString& instanceId, const QString& groupName);
     Q_INVOKABLE bool handleDragDrop(const QString& instanceId, const QString& targetGroup);
     Q_INVOKABLE void reorderInstances(const QString& groupName, const QStringList& orderedInstanceIds);
+    Q_INVOKABLE void setSelectedGroup(const QString& groupName);
+    
+    // Simple QML-callable actions for selected instance
+    Q_INVOKABLE void exportSelectedInstance();
+    Q_INVOKABLE void manageSelectedBackups();
+    Q_INVOKABLE void createSelectedShortcut();
+    Q_INVOKABLE QString selectedInstanceName() const;
 
     void addInstance(InstanceTask* task, const QString& busyReason = QString());
     void copyInstance(InstanceTask* task, const QString& busyReason = QString());
@@ -116,6 +132,11 @@ class InstanceListViewModel : public QObject {
     void instanceSelected(const QString& id);
     void renameRequested(const QString& id, const QString& newName);
     void duplicateRequested(const QString& id, const QString& targetIdOrName);
+    void availableVersionsChanged();
+    
+    // Instance management request signals
+    void editInstanceRequested(const QString& id);
+    void copyInstanceRequested(const QString& id);
 
    private:
     InstanceList* instanceList() const;
@@ -142,5 +163,7 @@ class InstanceListViewModel : public QObject {
     QStringList m_instanceIcons;
     QStringList m_instanceIconPaths;
     QStringList m_instanceGroups;
+    QStringList m_instanceLastPlayed;
+    QStringList m_availableVersions;
     std::unique_ptr<BackupManager> m_backupManager;
 };

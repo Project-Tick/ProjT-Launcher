@@ -15,11 +15,33 @@
 #include "LauncherViewModel.h"
 
 #include "BuildConfig.h"
+#include "Application.h"
+#include "DesktopServices.h"
+#include <QUrl>
+#include <QDebug>
+#include <QDir>
+#include <QFileDialog>
+#include <QWidget>
 
 LauncherViewModel::LauncherViewModel(QObject* parent) : QObject(parent)
 {
     m_displayName = BuildConfig.LAUNCHER_DISPLAYNAME;
     m_versionString = BuildConfig.printableVersionString();
+    m_gitRef = BuildConfig.GIT_REFSPEC;
+    m_gitCommit = BuildConfig.GIT_COMMIT;
+    
+    // Build About HTML
+    m_aboutHtml = QObject::tr(
+        "<b>%1</b><br/>"
+        "Version: %2<br/>"
+        "Git: %3<br/><br/>"
+        "%4"
+    ).arg(
+        m_displayName,
+        m_versionString,
+        BuildConfig.LAUNCHER_GIT,
+        BuildConfig.LAUNCHER_COPYRIGHT
+    );
 }
 
 QString LauncherViewModel::displayName() const
@@ -55,6 +77,16 @@ bool LauncherViewModel::isBusy() const
 LauncherViewModel::Page LauncherViewModel::currentPage() const
 {
     return m_currentPage;
+}
+
+bool LauncherViewModel::hasUpdate() const
+{
+    return m_hasUpdate;
+}
+
+QString LauncherViewModel::updateVersion() const
+{
+    return m_updateVersion;
 }
 
 void LauncherViewModel::setDisplayName(const QString& name)
@@ -153,4 +185,94 @@ LauncherViewModel::Page LauncherViewModel::stringToPage(const QString& route)
         return Page::Logs;
     }
     return Page::Instances;
+}
+
+void LauncherViewModel::openDataFolder()
+{
+    DesktopServices::openPath(APPLICATION->dataRoot());
+}
+
+void LauncherViewModel::openLauncherFolder()
+{
+    DesktopServices::openPath(APPLICATION->dataRoot());
+}
+
+void LauncherViewModel::openInstancesFolder()
+{
+    // Instances folder is typically at dataRoot/instances
+    QString instancesPath = QDir(APPLICATION->dataRoot()).absoluteFilePath("instances");
+    QDir instancesDir(instancesPath);
+    if (!instancesDir.exists()) {
+        // Fallback to dataRoot if instances subfolder doesn't exist
+        DesktopServices::openPath(APPLICATION->dataRoot());
+    } else {
+        DesktopServices::openPath(instancesPath);
+    }
+}
+
+void LauncherViewModel::openModsFolder()
+{
+    // Central mods folder (shared mods)
+    QString modsPath = QDir(APPLICATION->dataRoot()).absoluteFilePath("mods");
+    QDir modsDir(modsPath);
+    if (!modsDir.exists()) {
+        modsDir.mkpath(".");
+    }
+    DesktopServices::openPath(modsPath);
+}
+
+void LauncherViewModel::openSkinsFolder()
+{
+    // Skins folder
+    QString skinsPath = QDir(APPLICATION->dataRoot()).absoluteFilePath("skins");
+    QDir skinsDir(skinsPath);
+    if (!skinsDir.exists()) {
+        skinsDir.mkpath(".");
+    }
+    DesktopServices::openPath(skinsPath);
+}
+
+void LauncherViewModel::openHelp()
+{
+    DesktopServices::openUrl(QUrl("https://proj-t.com/help"));
+}
+
+void LauncherViewModel::checkUpdates()
+{
+    qDebug() << "Update check requested (Not implemented yet)";
+    // TODO: Implement update check trigger
+}
+
+void LauncherViewModel::openAccountsManager()
+{
+    // Show accounts management dialog via Application
+    APPLICATION->ShowGlobalSettings(nullptr, "accounts");
+}
+
+QString LauncherViewModel::browseForFile(const QString& title, const QString& filter)
+{
+    // We need a parent widget for the dialog to be modal
+    QWidget* parent = nullptr;
+    if (QApplication::activeWindow()) {
+        parent = QApplication::activeWindow();
+    }
+    return QFileDialog::getOpenFileName(parent, title, QString(), filter);
+}
+
+QString LauncherViewModel::browseForDirectory(const QString& title)
+{
+    QWidget* parent = nullptr;
+    if (QApplication::activeWindow()) {
+        parent = QApplication::activeWindow();
+    }
+    return QFileDialog::getExistingDirectory(parent, title);
+}
+
+QString LauncherViewModel::browseForSave(const QString& title, const QString& filter)
+{
+    QWidget* parent = nullptr;
+    if (QApplication::activeWindow()) {
+        parent = QApplication::activeWindow();
+    }
+    return QFileDialog::getSaveFileName(parent, title, QString(), filter);
 }

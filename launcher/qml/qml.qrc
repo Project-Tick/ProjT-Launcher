@@ -10,8 +10,39 @@
         <file>AboutPage.qml</file>
         <file>Theme.qml</file>
         <file>Theme.js</file>
-        <file>components/PageHeader.qml</file>
         <file>LogsPage.qml</file>
+        <file>components/PageHeader.qml</file>
+        <file>components/Sidebar.qml</file>
+        <file>components/TopBar.qml</file>
+        <file>components/BottomBar.qml</file>
+        <file>components/NavigationTopBar.qml</file>
+        <file>components/UpperBottomBar.qml</file>
+        <file>components/LowerBottomBar.qml</file>
+        <file>components/InstanceDetailSidebar.qml</file>
+        <file>components/InstanceDelegate.qml</file>
+        <file>components/InstanceContextMenu.qml</file>
+        <file>components/MainToolBar.qml</file>
+        <file>components/InstanceToolBar.qml</file>
+        <file>components/NewsToolBar.qml</file>
+        <file>components/StatusBar.qml</file>
+        <file>components/NewInstanceCustomPage.qml</file>
+        <file>components/NewInstanceImportPage.qml</file>
+        <file>components/NewInstancePlaceholderPage.qml</file>
+        <file>components/SettingsLauncherPage.qml</file>
+        <file>components/SettingsAppearancePage.qml</file>
+        <file>components/SettingsMinecraftPage.qml</file>
+        <file>components/SettingsJavaPage.qml</file>
+        <file>components/SettingsLanguagePage.qml</file>
+        <file>components/SettingsExternalToolsPage.qml</file>
+        <file>components/SettingsAccountsPage.qml</file>
+        <file>components/SettingsAPIPage.qml</file>
+        <file>components/SettingsProxyPage.qml</file>
         <file>settings/JavaSettingsPage.qml</file>
+        <file>settings/MinecraftSettingsPage.qml</file>
+        <file>settings/ServersPage.qml</file>
+        <file>settings/WorldsPage.qml</file>
+        <file>settings/ScreenshotsPage.qml</file>
+        <file>settings/NotesPage.qml</file>
+        <file>settings/ManagedPackPage.qml</file>
     </qresource>
 </RCC>

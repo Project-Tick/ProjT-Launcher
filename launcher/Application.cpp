@@ -63,12 +63,20 @@
 #include "tools/GenericProfiler.h"
 #include "ui/InstanceWindow.h"
 #include "ui/MainWindow.h"
+#include "ui/QmlMainWindow.h"
 #include "ui/ViewLogWindow.h"
+#include "viewmodels/LauncherViewModel.h"
+#include "viewmodels/InstanceListViewModel.h"
+#include "viewmodels/NewsViewModel.h"
+#include "viewmodels/SettingsViewModel.h"
 
 #include "ui/dialogs/ProgressDialog.h"
+#include "ui/dialogs/NewInstanceDialog.h"
 #include "ui/instanceview/AccessibleInstanceView.h"
 
 #include <QStatusBar>
+#include <QFileDialog>
+#include <QMimeDatabase>
 
 #include "ui/pages/BasePageProvider.h"
 #include "ui/pages/global/APIPage.h"
@@ -118,6 +126,7 @@
 #include <QWindow>
 
 #include "InstanceList.h"
+#include "InstanceImportTask.h"
 #include "MTPixmapCache.h"
 
 #include <minecraft/auth/AccountList.h>
@@ -1349,10 +1358,10 @@ void Application::performMainStartupAction()
             return;
         }
     }
-    if (!m_mainWindow) {
-        // normal main window
-        showMainWindow(false);
-        qDebug() << "<> Main window shown.";
+    if (!m_qmlMainWindow) {
+        // normal main window - using QML
+        showQmlMainWindow(false);
+        qDebug() << "<> QML Main window shown.";
     }
 
     // initialize the updater
@@ -1718,27 +1727,37 @@ void Application::ShowGlobalSettings(class QWidget* parent, QString open_page)
 
 MainWindow* Application::showMainWindow(bool minimized)
 {
-    if (m_mainWindow) {
-        m_mainWindow->setWindowState(m_mainWindow->windowState() & ~Qt::WindowMinimized);
-        m_mainWindow->raise();
-        m_mainWindow->activateWindow();
+    // Legacy Widgets window - redirect to QML
+    showQmlMainWindow(minimized);
+    return m_mainWindow;  // Return nullptr or create minimal legacy window if needed
+}
+
+QmlMainWindow* Application::showQmlMainWindow(bool minimized)
+{
+    if (m_qmlMainWindow) {
+        m_qmlMainWindow->setWindowState(m_qmlMainWindow->windowState() & ~Qt::WindowMinimized);
+        m_qmlMainWindow->raise();
+        m_qmlMainWindow->activateWindow();
     } else {
-        m_mainWindow = new MainWindow();
-        m_mainWindow->restoreState(QByteArray::fromBase64(APPLICATION->settings()->get("MainWindowState").toString().toUtf8()));
-        m_mainWindow->restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("MainWindowGeometry").toString().toUtf8()));
+        // Create ViewModels
+        auto launcherVM = new LauncherViewModel(this);
+        auto instancesVM = new InstanceListViewModel(this);
+        auto newsVM = new NewsViewModel(this);
+        auto settingsVM = new SettingsViewModel(this);
+        
+        m_qmlMainWindow = new QmlMainWindow(launcherVM, instancesVM, newsVM, settingsVM);
+        m_qmlMainWindow->restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("QmlMainWindowGeometry").toString().toUtf8()));
 
         if (minimized) {
-            m_mainWindow->showMinimized();
+            m_qmlMainWindow->showMinimized();
         } else {
-            m_mainWindow->show();
+            m_qmlMainWindow->show();
         }
 
-        m_mainWindow->checkInstancePathForProblems();
-        connect(this, &Application::updateAllowedChanged, m_mainWindow, &MainWindow::updatesAllowedChanged);
-        connect(m_mainWindow, &MainWindow::isClosing, this, &Application::on_windowClose);
+        connect(m_qmlMainWindow, &QMainWindow::destroyed, this, &Application::on_windowClose);
         m_openWindows++;
     }
-    return m_mainWindow;
+    return m_qmlMainWindow;
 }
 
 ViewLogWindow* Application::showLogWindow()
@@ -1808,6 +1827,12 @@ void Application::on_windowClose()
     auto mainWindow = qobject_cast<MainWindow*>(sender());
     if (mainWindow) {
         m_mainWindow = nullptr;
+    }
+    // Handle QML main window: persist geometry and clear pointer
+    auto qmlMain = qobject_cast<QmlMainWindow*>(sender());
+    if (qmlMain) {
+        APPLICATION->settings()->set("QmlMainWindowGeometry", QString::fromUtf8(qmlMain->saveGeometry().toBase64()));
+        m_qmlMainWindow = nullptr;
     }
     auto logWindow = qobject_cast<ViewLogWindow*>(sender());
     if (logWindow) {
@@ -2145,3 +2170,4 @@ void Application::migratePastebinSettings()
     // Mark migration as complete
     m_settings->set("PastebinMigrationDone", true);
 }
+

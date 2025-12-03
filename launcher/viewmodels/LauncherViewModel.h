@@ -37,6 +37,8 @@ class LauncherViewModel : public QObject {
     Q_PROPERTY(QString aboutHtml READ aboutHtml NOTIFY aboutHtmlChanged)
     Q_PROPERTY(bool busy READ isBusy WRITE setBusy NOTIFY busyChanged)
     Q_PROPERTY(Page currentPage READ currentPage WRITE setCurrentPage NOTIFY currentPageChanged)
+    Q_PROPERTY(bool hasUpdate READ hasUpdate NOTIFY updateStatusChanged)
+    Q_PROPERTY(QString updateVersion READ updateVersion NOTIFY updateStatusChanged)
 
    public:
     explicit LauncherViewModel(QObject* parent = nullptr);
@@ -48,6 +50,8 @@ class LauncherViewModel : public QObject {
     QString aboutHtml() const;
     bool isBusy() const;
     Page currentPage() const;
+    bool hasUpdate() const;
+    QString updateVersion() const;
 
     void setDisplayName(const QString& name);
     void setVersionString(const QString& version);
@@ -60,6 +64,23 @@ class LauncherViewModel : public QObject {
     static QString pageToString(Page page);
     static Page stringToPage(const QString& route);
 
+    Q_INVOKABLE void openDataFolder();
+    Q_INVOKABLE void openHelp();
+    Q_INVOKABLE void checkUpdates();
+    
+    // Folder actions
+    Q_INVOKABLE void openLauncherFolder();
+    Q_INVOKABLE void openInstancesFolder();
+    Q_INVOKABLE void openModsFolder();
+    Q_INVOKABLE void openSkinsFolder();
+    
+    // Dialog actions
+    Q_INVOKABLE void openAccountsManager();
+
+    Q_INVOKABLE QString browseForFile(const QString& title, const QString& filter);
+    Q_INVOKABLE QString browseForDirectory(const QString& title);
+    Q_INVOKABLE QString browseForSave(const QString& title, const QString& filter);
+
    signals:
     void displayNameChanged();
     void versionStringChanged();
@@ -68,6 +89,7 @@ class LauncherViewModel : public QObject {
     void aboutHtmlChanged();
     void busyChanged();
     void currentPageChanged();
+    void updateStatusChanged();
 
    private:
     QString m_displayName;
@@ -77,4 +99,6 @@ class LauncherViewModel : public QObject {
     QString m_aboutHtml;
     bool m_busy = false;
     Page m_currentPage = Page::Instances;
+    bool m_hasUpdate = false;
+    QString m_updateVersion;
 };

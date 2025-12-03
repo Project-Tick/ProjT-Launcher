@@ -11,6 +11,7 @@
  *  If this file includes work from previous open-source projects,
  *  their original copyright and license notices are preserved below.
  */
+
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
@@ -18,102 +19,125 @@ import "components"
 import "Theme.js" as Theme
 
 Rectangle {
+    id: instancePage
     objectName: "instances"
     color: Theme.background
-    width: parent ? parent.width : 640
-    height: parent ? parent.height : 480
+    
     readonly property var vm: ProjT.instancesVM
+    
+    // Signals for parent components
+    signal createNewInstance()
+    
     property string selectedInstanceName: {
-        if (!vm) {
-            return ""
-        }
-        const ids = vm.instanceIds
-        const names = vm.instanceNames
-        const target = vm.selectedInstanceId
-        const idx = ids.indexOf(target)
-        if (idx >= 0 && idx < names.length) {
-            return names[idx]
-        }
-        return ""
+        if (!vm || !vm.instanceIds) return ""
+        const idx = vm.instanceIds.indexOf(vm.selectedInstanceId)
+        return idx >= 0 && idx < vm.instanceNames.length ? vm.instanceNames[idx] : ""
+    }
+
+    Component.onCompleted: {
+        console.log("[InstancePage] Initialized - count:", vm ? vm.totalCount : 0)
     }
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        spacing: Theme.spacingS
+        anchors.margins: Theme.spacingS
+        spacing: Theme.spacingXS
 
-        PageHeader {
-            Layout.fillWidth: true
-            title: qsTr("Instances")
-            subtitle: qsTr("Manage and launch your instances")
-        }
-
+        // === Compact Toolbar (Search + Quick Actions) ===
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
-            RowLayout {
-                spacing: 8
-                Layout.fillWidth: true
-
-                Button {
-                    text: qsTr("Launch")
-                    implicitHeight: 34
-                    implicitWidth: 90
-                    Layout.alignment: Qt.AlignVCenter
-                    enabled: vm && !vm.busy && vm.canLaunchSelected
-                    onClicked: vm ? vm.launchSelectedInstance() : undefined
+            Layout.preferredHeight: 36
+            spacing: Theme.spacingS
+            
+            // Instance count label
+            Label {
+                text: vm ? qsTr("%1 Instances").arg(vm.totalCount) : qsTr("No instances")
+                color: Theme.textPrimary
+                font.pointSize: 12
+                font.bold: true
+            }
+            
+            Item { Layout.fillWidth: true }
+            
+            // Quick action buttons (secondary, main actions in sidebar)
+            Button {
+                text: qsTr("Import")
+                implicitHeight: 28
+                implicitWidth: 60
+                flat: true
+                font.pointSize: 10
+                onClicked: importDialog.open()
+                
+                ToolTip.text: qsTr("Import an existing instance")
+                ToolTip.visible: hovered
+                ToolTip.delay: 500
+            }
+            
+            Button {
+                text: qsTr("Refresh")
+                implicitHeight: 28
+                implicitWidth: 65
+                flat: true
+                font.pointSize: 10
+                enabled: vm && !vm.busy
+                onClicked: vm ? vm.refreshInstances() : undefined
+                
+                ToolTip.text: qsTr("Refresh instance list")
+                ToolTip.visible: hovered
+                ToolTip.delay: 500
+            }
+            
+            // Search field
+            TextField {
+                id: searchField
+                placeholderText: qsTr("Search...")
+                implicitHeight: 28
+                font.pointSize: 10
+                Layout.preferredWidth: 150
+                
+                background: Rectangle {
+                    radius: Theme.radius
+                    color: "#1e2227"
+                    border.color: searchField.focus ? Theme.accent : "#323742"
+                    border.width: 1
                 }
-                Button {
-                    text: qsTr("Refresh")
-                    implicitHeight: 34
-                    implicitWidth: 90
-                    Layout.alignment: Qt.AlignVCenter
-                    enabled: vm && !vm.busy
-                    onClicked: vm ? vm.refreshInstances() : undefined
-                }
-                Button {
-                    text: qsTr("Delete")
-                    implicitHeight: 34
-                    implicitWidth: 90
-                    Layout.alignment: Qt.AlignVCenter
-                    enabled: vm && !vm.busy && vm.canDeleteSelected
-                    onClicked: {
-                        if (vm) {
-                            deleteDialog.open()
-                        }
+                
+                onTextChanged: {
+                    if (vm && text.length > 0) {
+                        instanceList.model = vm.instanceIds.filter(function(id, index) {
+                            const name = vm.instanceNames[index]
+                            return name.toLowerCase().includes(text.toLowerCase())
+                        })
+                    } else {
+                        instanceList.model = vm ? vm.instanceIds : []
                     }
                 }
-                Button {
-                    text: qsTr("Rename")
-                    implicitHeight: 34
-                    implicitWidth: 90
-                    Layout.alignment: Qt.AlignVCenter
-                    enabled: vm && !vm.busy && vm.hasSelection
-                    onClicked: {
-                        if (vm) {
-                            renameDialog.open()
-                        }
-                    }
-                }
-                Rectangle { Layout.fillWidth: true; color: "transparent" }
             }
         }
 
+        // === Instance List ===
         Frame {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Rectangle {
-                anchors.fill: parent
-                color: "#1b1b1b"
+            
+            background: Rectangle {
+                color: "#1a1d23"
+                border.color: "#323742"
+                border.width: 1
+                radius: Theme.radius
             }
-
+            
+            padding: 0
+            
             ListView {
                 id: instanceList
                 anchors.fill: parent
                 clip: true
-                spacing: 6
-                model: vm ? vm.instanceIds.length : 0
+                spacing: Theme.spacingS
+                
+                model: vm ? vm.instanceIds : []
                 currentIndex: vm ? vm.instanceIds.indexOf(vm.selectedInstanceId) : -1
+                
                 onCurrentIndexChanged: {
                     if (vm && currentIndex >= 0 && currentIndex < vm.instanceIds.length) {
                         const id = vm.instanceIds[currentIndex]
@@ -122,178 +146,353 @@ Rectangle {
                         }
                     }
                 }
-                delegate: Rectangle {
-                    width: instanceList.width
-                    height: 60
-                    radius: Theme.radius
-                    color: ListView.isCurrentItem ? "#2c3440" : (ma.containsMouse ? "#262a31" : Theme.surface)
-                    border.color: ListView.isCurrentItem ? Theme.accent : "#323742"
-                    border.width: 1
-
-                    MouseArea {
-                        id: ma
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        onClicked: {
-                            if (vm) {
-                                vm.selectInstanceByIndex(index)
-                            }
-                        }
-                        onPressed: function(mouse) {
-                            if (mouse.button === Qt.RightButton) {
-                                if (vm) {
-                                    vm.selectInstanceByIndex(index)
-                                }
-                                contextMenu.popup()
-                            }
-                        }
-                        onDoubleClicked: {
-                            if (vm) {
-                                vm.selectInstanceByIndex(index)
-                                vm.launchSelectedInstance()
-                            }
+                
+                delegate: InstanceDelegate {
+                    width: instanceList.width - (instanceList.ScrollBar.vertical.visible ? 16 : 0)
+                    
+                    instanceId: vm ? vm.instanceIds[index] : ""
+                    instanceName: vm ? vm.instanceNames[index] : ""
+                    instanceGroup: vm ? vm.instanceGroups[index] : ""
+                    iconPath: vm ? vm.instanceIconPaths[index] : ""
+                    isSelected: ListView.isCurrentItem
+                    isRunning: vm && vm.isSelectedRunning && vm.instanceIds[index] === vm.selectedInstanceId ? vm.isSelectedRunning : false
+                    lastPlayedText: vm && vm.instanceLastPlayed ? (vm.instanceLastPlayed[index] || "") : ""
+                    
+                    onClicked: function(id) {
+                        if (vm) vm.selectInstance(id)
+                    }
+                    
+                    onDoubleClicked: function(id) {
+                        if (vm) {
+                            vm.selectInstance(id)
+                            vm.launchSelectedInstance()
                         }
                     }
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingM
-                        spacing: Theme.spacingS
-
-                        Rectangle {
-                            width: 40
-                            height: 40
-                            radius: Theme.radius
-                            color: Theme.surfaceVariant
-                            border.color: "#2e333d"
-                            Image {
-                                anchors.centerIn: parent
-                                width: 32
-                                height: 32
-                                source: vm && vm.instanceIconPaths.length > index ? vm.instanceIconPaths[index] : ""
-                                fillMode: Image.PreserveAspectFit
-                                visible: source !== ""
-                            }
+                    
+                    onRightClicked: function(id, mouseX, mouseY) {
+                        if (vm) vm.selectInstance(id)
+                        // Get the delegate item and map its local coordinates to instancePage
+                        var delegateItem = instanceList.itemAtIndex(index)
+                        if (delegateItem) {
+                            var mappedPos = delegateItem.mapToItem(instancePage, mouseX, mouseY)
+                            contextMenu.popup(instancePage, mappedPos.x, mappedPos.y)
+                        } else {
+                            // Fallback: popup at cursor position relative to page
+                            contextMenu.popup()
                         }
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
-                            Label {
-                                text: vm ? vm.instanceNames[index] : ""
-                                color: Theme.textPrimary
-                                font.bold: true
-                                elide: Label.ElideRight
-                            }
-                            Label {
-                                text: vm ? vm.instanceGroups[index] : ""
-                                color: Theme.textSecondary
-                                font.pixelSize: 11
-                                elide: Label.ElideRight
-                            }
-                        }
-
-                        Button {
-                            text: qsTr("Play")
-                            implicitHeight: 32
-                            implicitWidth: 80
-                            Layout.alignment: Qt.AlignVCenter
-                            enabled: vm && vm.canLaunchSelected
-                            onClicked: {
-                                if (vm) {
-                                    vm.selectInstanceByIndex(index)
-                                    vm.launchSelectedInstance()
-                                }
-                            }
-                        }
-                    }
-
-                    Menu {
-                        id: contextMenu
-                        MenuItem { text: qsTr("Launch"); enabled: vm && vm.canLaunchSelected; onTriggered: vm ? vm.launchSelectedInstance() : undefined }
-                        MenuItem { text: qsTr("Edit (settings)"); enabled: vm && vm.hasSelection; onTriggered: vm ? vm.selectInstanceByIndex(index) : undefined }
-                        MenuItem { text: qsTr("Duplicate"); enabled: vm && vm.hasSelection; onTriggered: vm ? vm.duplicateSelectedInstance(vm.instanceNames[index] + qsTr(" Copy")) : undefined }
-                        MenuItem { text: qsTr("Rename"); enabled: vm && vm.hasSelection; onTriggered: renameDialog.open() }
-                        MenuItem { text: qsTr("Delete"); enabled: vm && vm.canDeleteSelected; onTriggered: deleteDialog.open() }
                     }
                 }
-
-                Connections {
-                    target: vm
-                    function onSelectedInstanceIdChanged() {
-                        if (!vm) {
-                            return
-                        }
-                        instanceList.currentIndex = vm.instanceIds.indexOf(vm.selectedInstanceId)
-                    }
-                    function onInstanceListChanged() {
-                        if (!vm) {
-                            return
-                        }
-                        instanceList.currentIndex = vm.instanceIds.indexOf(vm.selectedInstanceId)
-                    }
+                
+                // === Scrollbar ===
+                ScrollBar.vertical: ScrollBar {
+                    active: true
+                    policy: ScrollBar.AsNeeded
                 }
-            }
-            Rectangle {
-                anchors.fill: parent
-                color: "#000000"
-                opacity: vm && vm.busy ? 0.25 : 0
-                visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: 150 } }
-                BusyIndicator {
+                
+                // === Empty State ===
+                Text {
+                    visible: instanceList.count === 0
                     anchors.centerIn: parent
-                    running: vm ? vm.busy : false
-                    visible: running
+                    text: qsTr("No instances.\nClick 'New' to create one.")
+                    color: Theme.textSecondary
+                    font.pointSize: 14
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                
+                // === Busy Overlay ===
+                Rectangle {
+                    anchors.fill: parent
+                    color: "#000000"
+                    opacity: vm && vm.busy ? 0.3 : 0
+                    visible: opacity > 0
+                    z: 10
+                    
+                    Behavior on opacity {
+                        NumberAnimation { duration: 150 }
+                    }
+                    
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: Theme.spacingM
+                        
+                        BusyIndicator {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            running: vm ? vm.busy : false
+                            visible: running
+                        }
+                        
+                        Text {
+                            text: vm && vm.busyReason ? vm.busyReason : qsTr("Loading...")
+                            color: Theme.textPrimary
+                            font.pointSize: 12
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
                 }
             }
         }
     }
 
+    // === Context Menu ===
+    InstanceContextMenu {
+        id: contextMenu
+        instanceId: vm ? vm.selectedInstanceId : ""
+        canLaunch: vm ? vm.canLaunchSelected : false
+        isRunning: vm ? vm.isSelectedRunning : false
+        
+        onLaunch: {
+            if (vm) {
+                if (isRunning) {
+                    vm.killSelectedInstance()
+                } else {
+                    vm.launchSelectedInstance()
+                }
+            }
+        }
+        onEditSettings: {
+            if (vm) vm.openInstanceSettings()
+        }
+        onRename: renameDialog.open()
+        onDuplicate: duplicateDialog.open()
+        onOpenFolder: {
+            if (vm) vm.openInstanceFolder()
+        }
+        onBackup: {
+            if (vm) vm.manageSelectedBackups()
+        }
+        onExportInstance: {
+            if (vm) vm.exportSelectedInstance()
+        }
+        onDeleteInstance: deleteDialog.open()
+        onCreateNew: {
+            instancePage.createNewInstance()
+        }
+        onImportInstance: importDialog.open()
+    }
+
+    // === Dialogs (for context menu actions) ===
+    
+    // Rename Dialog
     Dialog {
         id: renameDialog
         modal: true
-        focus: true
-        standardButtons: Dialog.Ok | Dialog.Cancel
         title: qsTr("Rename Instance")
-        property alias newName: nameField.text
         width: 360
-        contentItem: ColumnLayout {
+        x: (instancePage.width - width) / 2
+        y: (instancePage.height - height) / 2
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        
+        ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 8
-            Label { text: qsTr("New name"); color: "#e0e0e0" }
-            TextField { id: nameField; Layout.fillWidth: true }
+            spacing: Theme.spacingM
+            
+            Label {
+                text: qsTr("New name:")
+                color: Theme.textPrimary
+            }
+            
+            TextField {
+                id: renameField
+                Layout.fillWidth: true
+                text: selectedInstanceName
+                selectByMouse: true
+                Keys.onReturnPressed: renameDialog.accept()
+            }
         }
+        
+        onOpened: {
+            renameField.text = selectedInstanceName
+            renameField.selectAll()
+            renameField.forceActiveFocus()
+        }
+        
         onAccepted: {
-            if (vm) {
-                vm.renameSelectedInstance(newName)
+            if (vm && renameField.text.length > 0) {
+                vm.renameSelectedInstance(renameField.text)
             }
         }
     }
 
+    // Duplicate Dialog
+    Dialog {
+        id: duplicateDialog
+        modal: true
+        title: qsTr("Duplicate Instance")
+        width: 360
+        x: (instancePage.width - width) / 2
+        y: (instancePage.height - height) / 2
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: Theme.spacingM
+            
+            Label {
+                text: qsTr("New instance name:")
+                color: Theme.textPrimary
+            }
+            
+            TextField {
+                id: duplicateField
+                Layout.fillWidth: true
+                placeholderText: qsTr("Instance Copy")
+                selectByMouse: true
+                Keys.onReturnPressed: duplicateDialog.accept()
+            }
+        }
+        
+        onOpened: {
+            duplicateField.text = selectedInstanceName + qsTr(" Copy")
+            duplicateField.selectAll()
+            duplicateField.forceActiveFocus()
+        }
+        
+        onAccepted: {
+            if (vm && duplicateField.text.length > 0) {
+                vm.duplicateSelectedInstance(duplicateField.text)
+            }
+        }
+    }
+
+    // Delete Confirmation Dialog
     Dialog {
         id: deleteDialog
         modal: true
-        focus: true
+        title: qsTr("Delete Instance")
+        width: 380
+        x: (instancePage.width - width) / 2
+        y: (instancePage.height - height) / 2
         standardButtons: Dialog.Yes | Dialog.No
-        title: qsTr("Confirm Deletion")
-        width: 360
-        contentItem: ColumnLayout {
+        
+        Label {
+            text: qsTr("Delete \"%1\"?\n\nThis action cannot be undone.").arg(selectedInstanceName)
+            color: "#ff6b6b"
+            wrapMode: Text.WordWrap
+            width: parent.width
+        }
+        
+        onAccepted: {
+            if (vm) vm.deleteSelectedInstance()
+        }
+    }
+
+    // Import Instance Dialog
+    Dialog {
+        id: importDialog
+        modal: true
+        title: qsTr("Import Instance")
+        width: 450
+        x: (instancePage.width - width) / 2
+        y: (instancePage.height - height) / 2
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        
+        ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 8
+            spacing: Theme.spacingM
+            
             Label {
-                wrapMode: Text.WordWrap
-                text: selectedInstanceName.length
-                      ? qsTr("You are about to delete \"%1\". This action may be permanent. Continue?").arg(selectedInstanceName)
-                      : qsTr("You are about to delete the selected instance. Continue?")
-                color: "#e0e0e0"
+                text: qsTr("Import from:")
+                color: Theme.textPrimary
+            }
+            
+            RowLayout {
+                Layout.fillWidth: true
+                TextField {
+                    id: importPathField
+                    Layout.fillWidth: true
+                    placeholderText: qsTr("/path/to/instance or instance.zip")
+                    selectByMouse: true
+                }
+                Button {
+                    text: qsTr("Browse...")
+                    onClicked: {
+                        var path = ProjT.launcherVM.browseForFile(
+                            qsTr("Import Instance"),
+                            qsTr("Archives (*.zip *.mrpack);;All files (*)")
+                        )
+                        if (path.length > 0) {
+                            importPathField.text = path
+                        }
+                    }
+                }
+            }
+            
+            Label {
+                text: qsTr("Instance name (optional):")
+                color: Theme.textPrimary
+            }
+            
+            TextField {
+                id: importNameField
+                Layout.fillWidth: true
+                placeholderText: qsTr("Leave empty to use archive name")
+                selectByMouse: true
             }
         }
+        
         onAccepted: {
-            if (vm) {
-                vm.deleteSelectedInstance()
+            if (vm && importPathField.text.length > 0) {
+                vm.importInstance(importPathField.text, importNameField.text)
+                importPathField.text = ""
+                importNameField.text = ""
+            }
+        }
+    }
+
+    // Export Dialog
+    Dialog {
+        id: exportDialog
+        modal: true
+        title: qsTr("Export Instance")
+        width: 450
+        x: (instancePage.width - width) / 2
+        y: (instancePage.height - height) / 2
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: Theme.spacingM
+            
+            Label {
+                text: qsTr("Export location:")
+                color: Theme.textPrimary
+            }
+            
+            RowLayout {
+                Layout.fillWidth: true
+                TextField {
+                    id: exportPathField
+                    Layout.fillWidth: true
+                    placeholderText: qsTr("/path/to/export")
+                    selectByMouse: true
+                }
+                Button {
+                    text: qsTr("Browse...")
+                    onClicked: {
+                        var path = ProjT.launcherVM.browseForDirectory(qsTr("Select Export Location"))
+                        if (path.length > 0) {
+                            exportPathField.text = path
+                        }
+                    }
+                }
+            }
+            
+            Label {
+                text: qsTr("Format:")
+                color: Theme.textPrimary
+            }
+            
+            ComboBox {
+                id: exportFormatCombo
+                Layout.fillWidth: true
+                model: [".zip", ".mrpack", "Folder copy"]
+            }
+        }
+        
+        onAccepted: {
+            if (vm && exportPathField.text.length > 0) {
+                // For now, just open the export page in InstanceWindow
+                vm.exportSelectedInstance()
             }
         }
     }

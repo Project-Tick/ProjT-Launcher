@@ -12,7 +12,7 @@
  *  their original copyright and license notices are preserved below.
  */
 
-#include "ShellPrototypeHandler.h"
+#include "QmlMainWindow.h"
 
 #include <QDir>
 #include <QFile>
@@ -28,8 +28,14 @@
 #include "Application.h"
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
+#include "translations/TranslationsModel.h"
+#include "viewmodels/AccountsViewModel.h"
 #include "viewmodels/InstanceListViewModel.h"
+#include "viewmodels/InstanceViewModel.h"
 #include "viewmodels/LauncherViewModel.h"
+#include "viewmodels/LauncherSettingsViewModel.h"
+#include "viewmodels/LogsViewModel.h"
+#include "viewmodels/NewInstanceViewModel.h"
 #include "viewmodels/NewsViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
 
@@ -140,13 +146,17 @@ bool registerLauncherViewModelEnums()
 const bool s_launcherVmEnumsRegistered = registerLauncherViewModelEnums();
 }  // namespace
 
-ShellPrototypeHandler::ShellPrototypeHandler(LauncherViewModel* launcherViewModel, InstanceListViewModel* instanceListViewModel,
+QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel, InstanceListViewModel* instanceListViewModel,
                                              NewsViewModel* newsViewModel, SettingsViewModel* settingsViewModel, QWidget* parent)
-    : QDockWidget(parent)
+    : QMainWindow(parent)
 {
-    setObjectName(QStringLiteral("ShellPrototypeDock"));
-    setWindowTitle(tr("QML Shell Prototype"));
-    setAllowedAreas(Qt::AllDockWidgetAreas);
+    setObjectName(QStringLiteral("QmlMainWindow"));
+    setWindowTitle(tr("ProjT Launcher"));
+    resize(1000, 700);
+
+    // Ensure the window is deleted when closed so destroyed() is emitted
+    // and Application can track open windows correctly.
+    setAttribute(Qt::WA_DeleteOnClose, true);
 
     auto container = new QWidget(this);
     auto layout = new QVBoxLayout(container);
@@ -161,16 +171,12 @@ ShellPrototypeHandler::ShellPrototypeHandler(LauncherViewModel* launcherViewMode
     m_quickWidget->setSource(resolveQmlUrl(QStringLiteral("ShellRoot.qml")));
 
     layout->addWidget(m_quickWidget);
-    setWidget(container);
+    setCentralWidget(container);
 
-    connect(this, &QDockWidget::visibilityChanged, this, [this](bool visible) {
-        if (m_stateBridge) {
-            m_stateBridge->setDockVisible(visible);
-        }
-    });
+    m_stateBridge = new ShellStateBridge(APPLICATION->settings(), this);
 }
 
-void ShellPrototypeHandler::exposeContextProperties(LauncherViewModel* launcherViewModel,
+void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel,
                                                     InstanceListViewModel* instanceListViewModel,
                                                     NewsViewModel* newsViewModel,
                                                     SettingsViewModel* settingsViewModel,
@@ -205,6 +211,38 @@ void ShellPrototypeHandler::exposeContextProperties(LauncherViewModel* launcherV
         ctx->setContextProperty(QStringLiteral("settingsViewModel"), settingsViewModel);
     }
 
+    // Create and expose LauncherSettingsViewModel for global launcher settings
+    auto launcherSettingsViewModel = new LauncherSettingsViewModel(this);
+    ctx->setContextProperty(QStringLiteral("launcherSettingsVM"), launcherSettingsViewModel);
+    projt->insert(QStringLiteral("launcherSettingsVM"), QVariant::fromValue(launcherSettingsViewModel));
+
+    // Create and expose AccountsViewModel for account management
+    auto accountsViewModel = new AccountsViewModel(this);
+    ctx->setContextProperty(QStringLiteral("accountsVM"), accountsViewModel);
+    ctx->setContextProperty(QStringLiteral("accountsViewModel"), accountsViewModel);
+    projt->insert(QStringLiteral("accountsVM"), QVariant::fromValue(accountsViewModel));
+
+    // Create and expose NewInstanceViewModel for instance creation
+    auto newInstanceViewModel = new NewInstanceViewModel(this);
+    ctx->setContextProperty(QStringLiteral("newInstanceVM"), newInstanceViewModel);
+    ctx->setContextProperty(QStringLiteral("newInstanceViewModel"), newInstanceViewModel);
+    projt->insert(QStringLiteral("newInstanceVM"), QVariant::fromValue(newInstanceViewModel));
+
+    // Create and expose InstanceViewModel for selected instance details
+    auto instanceViewModel = new InstanceViewModel(this);
+    ctx->setContextProperty(QStringLiteral("instanceVM"), instanceViewModel);
+    ctx->setContextProperty(QStringLiteral("instanceViewModel"), instanceViewModel);
+    projt->insert(QStringLiteral("instanceVM"), QVariant::fromValue(instanceViewModel));
+
+    // Create and expose LogsViewModel for logs page
+    auto logsViewModel = new LogsViewModel(this);
+    ctx->setContextProperty(QStringLiteral("logsVM"), logsViewModel);
+    ctx->setContextProperty(QStringLiteral("logsViewModel"), logsViewModel);
+    projt->insert(QStringLiteral("logsVM"), QVariant::fromValue(logsViewModel));
+
+    // Expose TranslationsModel for language selection
+    ctx->setContextProperty(QStringLiteral("translationsModel"), APPLICATION->translations().get());
+
     if (launcherViewModel && m_stateBridge) {
         launcherViewModel->setCurrentPage(LauncherViewModel::stringToPage(m_stateBridge->lastPageRoute()));
         connect(m_stateBridge, &ShellStateBridge::lastPageRouteChanged, launcherViewModel, [this, launcherViewModel]() {
@@ -222,4 +260,4 @@ void ShellPrototypeHandler::exposeContextProperties(LauncherViewModel* launcherV
     }
 }
 
-#include "ShellPrototypeHandler.moc"
+#include "QmlMainWindow.moc"
