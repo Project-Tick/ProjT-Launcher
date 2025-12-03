@@ -213,8 +213,9 @@ Rectangle {
             if (mouse.button === Qt.LeftButton) {
                 delegate.clicked(instanceId)
             } else if (mouse.button === Qt.RightButton) {
-                // Pass delegate-local mouse coordinates
-                delegate.rightClicked(instanceId, mouse.x, mouse.y)
+                // Map to global screen coordinates for context menu
+                var globalPos = mapToGlobal(mouse.x, mouse.y)
+                delegate.rightClicked(instanceId, globalPos.x, globalPos.y)
             }
         }
         

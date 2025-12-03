@@ -12,7 +12,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import QtQuick.Dialogs
 import "../Theme.js" as Theme
 
 ScrollView {
@@ -54,7 +53,7 @@ ScrollView {
                     
                     Button {
                         text: qsTr("Browse...")
-                        onClicked: jsonEditorDialog.open()
+                        onClicked: browseForJsonEditor()
                     }
                 }
             }
@@ -95,7 +94,7 @@ ScrollView {
                     
                     Button {
                         text: qsTr("Browse...")
-                        onClicked: jprofilerDialog.open()
+                        onClicked: browseForJProfiler()
                     }
                 }
             }
@@ -136,7 +135,7 @@ ScrollView {
                     
                     Button {
                         text: qsTr("Browse...")
-                        onClicked: jvisualvmDialog.open()
+                        onClicked: browseForJVisualVM()
                     }
                 }
             }
@@ -177,7 +176,7 @@ ScrollView {
                     
                     Button {
                         text: qsTr("Browse...")
-                        onClicked: mceditDialog.open()
+                        onClicked: browseForMCEdit()
                     }
                 }
             }
@@ -186,36 +185,44 @@ ScrollView {
         Item { height: Theme.spacingL }
     }
     
-    // File dialogs
-    FileDialog {
-        id: jsonEditorDialog
-        title: qsTr("Select JSON Editor")
-        onAccepted: {
-            jsonEditorField.text = selectedFile.toString().replace("file://", "")
+    // Browse functions (replaces FileDialog for Qt 6 compatibility)
+    function browseForJsonEditor() {
+        if (ProjT.launcherVM && ProjT.launcherVM.browseForFile) {
+            var result = ProjT.launcherVM.browseForFile(qsTr("Select JSON Editor"), "")
+            if (result && result.length > 0) {
+                jsonEditorField.text = result
+                if (vm) vm.jsonEditorPath = result
+            }
         }
     }
     
-    FileDialog {
-        id: jprofilerDialog
-        title: qsTr("Select JProfiler Executable")
-        onAccepted: {
-            jprofilerField.text = selectedFile.toString().replace("file://", "")
+    function browseForJProfiler() {
+        if (ProjT.launcherVM && ProjT.launcherVM.browseForFile) {
+            var result = ProjT.launcherVM.browseForFile(qsTr("Select JProfiler Executable"), "")
+            if (result && result.length > 0) {
+                jprofilerField.text = result
+                if (vm) vm.jprofilerPath = result
+            }
         }
     }
     
-    FileDialog {
-        id: jvisualvmDialog
-        title: qsTr("Select JVisualVM Executable")
-        onAccepted: {
-            jvisualvmField.text = selectedFile.toString().replace("file://", "")
+    function browseForJVisualVM() {
+        if (ProjT.launcherVM && ProjT.launcherVM.browseForFile) {
+            var result = ProjT.launcherVM.browseForFile(qsTr("Select JVisualVM Executable"), "")
+            if (result && result.length > 0) {
+                jvisualvmField.text = result
+                if (vm) vm.jvisualvmPath = result
+            }
         }
     }
     
-    FileDialog {
-        id: mceditDialog
-        title: qsTr("Select MCEdit Executable")
-        onAccepted: {
-            mceditField.text = selectedFile.toString().replace("file://", "")
+    function browseForMCEdit() {
+        if (ProjT.launcherVM && ProjT.launcherVM.browseForFile) {
+            var result = ProjT.launcherVM.browseForFile(qsTr("Select MCEdit Executable"), "")
+            if (result && result.length > 0) {
+                mceditField.text = result
+                if (vm) vm.mceditPath = result
+            }
         }
     }
 }

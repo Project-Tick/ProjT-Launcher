@@ -44,5 +44,47 @@
         <file>settings/ScreenshotsPage.qml</file>
         <file>settings/NotesPage.qml</file>
         <file>settings/ManagedPackPage.qml</file>
+        <!-- Instance Pages -->
+        <file>instance/ModsPage.qml</file>
+        <file>instance/ResourcePacksPage.qml</file>
+        <file>instance/ShaderPacksPage.qml</file>
+        <file>instance/TexturePacksPage.qml</file>
+        <file>instance/DataPacksPage.qml</file>
+        <file>instance/VersionPage.qml</file>
+        <file>instance/InstanceSettingsPage.qml</file>
+        <file>instance/GameOptionsPage.qml</file>
+        <file>instance/LogPage.qml</file>
+        <!-- Modplatform Pages -->
+        <file>modplatform/CurseForgePage.qml</file>
+        <file>modplatform/ModrinthPage.qml</file>
+        <file>modplatform/ATLauncherPage.qml</file>
+        <file>modplatform/FTBPage.qml</file>
+        <file>modplatform/TechnicPage.qml</file>
+        <!-- Dialogs -->
+        <file>dialogs/ExportDialog.qml</file>
+        <file>dialogs/BackupDialog.qml</file>
+        <file>dialogs/ProgressDialog.qml</file>
+        <file>dialogs/MSALoginDialog.qml</file>
+        <file>dialogs/UpdateDialog.qml</file>
+        <file>dialogs/IconPickerDialog.qml</file>
+        <file>dialogs/VersionSelectDialog.qml</file>
+        <file>dialogs/ProfileSelectDialog.qml</file>
+        <file>dialogs/CopyInstanceDialog.qml</file>
+        <file>dialogs/CreateShortcutDialog.qml</file>
+        <file>dialogs/BlockedModsDialog.qml</file>
+        <file>dialogs/ChooseProviderDialog.qml</file>
+        <file>dialogs/ImportResourceDialog.qml</file>
+        <file>dialogs/InstallLoaderDialog.qml</file>
+        <file>dialogs/ResourceDownloadDialog.qml</file>
+        <file>dialogs/ResourceUpdateDialog.qml</file>
+        <file>dialogs/NewComponentDialog.qml</file>
+        <file>dialogs/ReviewMessageBox.qml</file>
+        <file>dialogs/ScrollMessageBox.qml</file>
+        <file>dialogs/CustomMessageBox.qml</file>
+        <file>dialogs/NewInstanceDialog.qml</file>
+        <file>dialogs/OfflineLoginDialog.qml</file>
+        <file>dialogs/ProfileSetupDialog.qml</file>
+        <file>dialogs/NewsDialog.qml</file>
+        <file>dialogs/AboutDialog.qml</file>
     </qresource>
 </RCC>
