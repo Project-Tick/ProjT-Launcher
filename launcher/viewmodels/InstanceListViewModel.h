@@ -48,6 +48,7 @@ class InstanceListViewModel : public QObject {
     Q_PROPERTY(bool canExportSelected READ canExportSelected NOTIFY instanceStateChanged)
     Q_PROPERTY(bool canBackupSelected READ canBackupSelected NOTIFY instanceStateChanged)
     Q_PROPERTY(QStringList availableVersions READ availableVersions NOTIFY availableVersionsChanged)
+    Q_PROPERTY(QStringList groupList READ groupList NOTIFY groupListChanged)
 
    public:
     explicit InstanceListViewModel(QObject* parent = nullptr);
@@ -69,6 +70,7 @@ class InstanceListViewModel : public QObject {
     bool canExportSelected() const;
     bool canBackupSelected() const;
     QStringList availableVersions() const;
+    QStringList groupList() const;
 
     void setTotalCount(int count);
     void setSelectedInstanceId(const QString& id);
@@ -93,6 +95,7 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE void duplicateSelectedInstance(const QString& newIdOrName);
     Q_INVOKABLE void renameInstance(const QString& id, const QString& newName);
     Q_INVOKABLE void createNewInstance(const QString& name, const QString& version);
+    Q_INVOKABLE void createNewInstance(const QString& name, const QString& version, const QString& group);
     Q_INVOKABLE void importInstance(const QString& sourcePath, const QString& name);
     Q_INVOKABLE void updateInstanceNotes(const QString& id, const QString& notes);
     Q_INVOKABLE void exportInstance(const QString& id, const QString& outputPath, const QFileInfoList& files);
@@ -133,6 +136,7 @@ class InstanceListViewModel : public QObject {
     void renameRequested(const QString& id, const QString& newName);
     void duplicateRequested(const QString& id, const QString& targetIdOrName);
     void availableVersionsChanged();
+    void groupListChanged();
     
     // Instance management request signals
     void editInstanceRequested(const QString& id);

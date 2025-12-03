@@ -126,6 +126,15 @@ QStringList InstanceListViewModel::availableVersions() const
     return m_availableVersions;
 }
 
+QStringList InstanceListViewModel::groupList() const
+{
+    auto list = instanceList();
+    if (!list) {
+        return QStringList();
+    }
+    return list->getGroups();
+}
+
 bool InstanceListViewModel::hasSelection() const
 {
     return !m_selectedInstanceId.isEmpty() && !m_currentInstance.expired();
@@ -481,15 +490,21 @@ void InstanceListViewModel::renameInstance(const QString& id, const QString& new
 
 void InstanceListViewModel::createNewInstance(const QString& name, const QString& version)
 {
+    // Call the overload with empty group (will use default)
+    createNewInstance(name, version, QString());
+}
+
+void InstanceListViewModel::createNewInstance(const QString& name, const QString& version, const QString& group)
+{
     if (name.isEmpty()) {
         emit errorOccurred(tr("Instance name is required."));
         return;
     }
     
-    qDebug() << "[InstanceListViewModel::createNewInstance] Creating vanilla instance:" << name << "requested version:" << version;
+    qDebug() << "[InstanceListViewModel::createNewInstance] Creating vanilla instance:" << name << "requested version:" << version << "group:" << group;
     
-    // Get the default group
-    QString groupName = APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString();
+    // Use provided group or fall back to last used group
+    QString groupName = group.isEmpty() ? APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString() : group;
     
     // Get version from Meta index - use latest available Minecraft version
     auto versionIndex = APPLICATION->metadataIndex();

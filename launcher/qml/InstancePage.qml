@@ -169,17 +169,13 @@ Rectangle {
                         }
                     }
                     
-                    onRightClicked: function(id, mouseX, mouseY) {
+                    onRightClicked: function(id, globalX, globalY) {
                         if (vm) vm.selectInstance(id)
-                        // Get the delegate item and map its local coordinates to instancePage
-                        var delegateItem = instanceList.itemAtIndex(index)
-                        if (delegateItem) {
-                            var mappedPos = delegateItem.mapToItem(instancePage, mouseX, mouseY)
-                            contextMenu.popup(instancePage, mappedPos.x, mappedPos.y)
-                        } else {
-                            // Fallback: popup at cursor position relative to page
-                            contextMenu.popup()
-                        }
+                        // Convert global screen coordinates to local page coordinates for popup
+                        var localPos = instancePage.mapFromGlobal(globalX, globalY)
+                        contextMenu.x = localPos.x
+                        contextMenu.y = localPos.y
+                        contextMenu.open()
                     }
                 }
                 
@@ -250,7 +246,16 @@ Rectangle {
             }
         }
         onEditSettings: {
-            if (vm) vm.openInstanceSettings()
+            // Open instance settings window via root
+            var rootItem = instancePage
+            while (rootItem.parent) {
+                rootItem = rootItem.parent
+            }
+            if (rootItem.showInstanceSettingsWindow) {
+                rootItem.showInstanceSettingsWindow(vm.selectedInstanceId)
+            } else if (vm) {
+                vm.openInstanceSettings()
+            }
         }
         onRename: renameDialog.open()
         onDuplicate: duplicateDialog.open()
@@ -258,10 +263,28 @@ Rectangle {
             if (vm) vm.openInstanceFolder()
         }
         onBackup: {
-            if (vm) vm.manageSelectedBackups()
+            // Open backup dialog via root
+            var rootItem = instancePage
+            while (rootItem.parent) {
+                rootItem = rootItem.parent
+            }
+            if (rootItem.showBackupDialog) {
+                rootItem.showBackupDialog(vm.selectedInstanceId)
+            } else if (vm) {
+                vm.manageSelectedBackups()
+            }
         }
         onExportInstance: {
-            if (vm) vm.exportSelectedInstance()
+            // Open export dialog via root
+            var rootItem = instancePage
+            while (rootItem.parent) {
+                rootItem = rootItem.parent
+            }
+            if (rootItem.showExportDialog) {
+                rootItem.showExportDialog(vm.selectedInstanceId)
+            } else if (vm) {
+                vm.exportSelectedInstance()
+            }
         }
         onDeleteInstance: deleteDialog.open()
         onCreateNew: {

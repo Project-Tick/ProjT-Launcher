@@ -12,7 +12,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import QtQuick.Dialogs
 import "../Theme.js" as Theme
 
 ScrollView {
@@ -180,7 +179,7 @@ ScrollView {
                 
                 Button {
                     text: qsTr("Browse...")
-                    onClicked: instancesFolderDialog.open()
+                    onClicked: browseForInstancesFolder()
                 }
                 
                 Label {
@@ -197,7 +196,7 @@ ScrollView {
                 
                 Button {
                     text: qsTr("Browse...")
-                    onClicked: modsFolderDialog.open()
+                    onClicked: browseForModsFolder()
                 }
                 
                 Label {
@@ -214,7 +213,7 @@ ScrollView {
                 
                 Button {
                     text: qsTr("Browse...")
-                    onClicked: iconsFolderDialog.open()
+                    onClicked: browseForIconsFolder()
                 }
             }
         }
@@ -256,22 +255,31 @@ ScrollView {
         Item { height: Theme.spacingL }
     }
     
-    // Folder dialogs
-    FolderDialog {
-        id: instancesFolderDialog
-        title: qsTr("Select Instances Folder")
-        onAccepted: if (vm) vm.instancesFolder = selectedFolder.toString().replace("file://", "")
+    // Browse functions (replaces FolderDialog for Qt 6 compatibility)
+    function browseForInstancesFolder() {
+        if (ProjT.launcherVM && ProjT.launcherVM.browseForFolder) {
+            var result = ProjT.launcherVM.browseForFolder(qsTr("Select Instances Folder"))
+            if (result && result.length > 0) {
+                if (vm) vm.instancesFolder = result
+            }
+        }
     }
     
-    FolderDialog {
-        id: modsFolderDialog
-        title: qsTr("Select Mods Folder")
-        onAccepted: if (vm) vm.modsFolder = selectedFolder.toString().replace("file://", "")
+    function browseForModsFolder() {
+        if (ProjT.launcherVM && ProjT.launcherVM.browseForFolder) {
+            var result = ProjT.launcherVM.browseForFolder(qsTr("Select Mods Folder"))
+            if (result && result.length > 0) {
+                if (vm) vm.modsFolder = result
+            }
+        }
     }
     
-    FolderDialog {
-        id: iconsFolderDialog
-        title: qsTr("Select Icons Folder")
-        onAccepted: if (vm) vm.iconsFolder = selectedFolder.toString().replace("file://", "")
+    function browseForIconsFolder() {
+        if (ProjT.launcherVM && ProjT.launcherVM.browseForFolder) {
+            var result = ProjT.launcherVM.browseForFolder(qsTr("Select Icons Folder"))
+            if (result && result.length > 0) {
+                if (vm) vm.iconsFolder = result
+            }
+        }
     }
 }

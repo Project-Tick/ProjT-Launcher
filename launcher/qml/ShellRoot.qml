@@ -18,6 +18,9 @@ import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
 import ProjTLauncher 1.0
 import "components"
+import "dialogs"
+import "instance"
+import "modplatform"
 import "Theme.js" as Theme
 
 Rectangle {
@@ -304,34 +307,34 @@ Rectangle {
                             id: importPage
                         }
                         
-                        // ATLauncher placeholder
-                        NewInstancePlaceholderPage {
-                            pageName: "ATLauncher"
+                        // ATLauncher page
+                        Loader {
+                            source: "qrc:/qml/modplatform/ATLauncherPage.qml"
                         }
                         
-                        // CurseForge placeholder
-                        NewInstancePlaceholderPage {
-                            pageName: "CurseForge"
+                        // CurseForge page
+                        Loader {
+                            source: "qrc:/qml/modplatform/CurseForgePage.qml"
                         }
                         
-                        // FTB Legacy placeholder
-                        NewInstancePlaceholderPage {
-                            pageName: "FTB Legacy"
+                        // FTB Legacy placeholder (use FTBPage)
+                        Loader {
+                            source: "qrc:/qml/modplatform/FTBPage.qml"
                         }
                         
-                        // FTB App placeholder
-                        NewInstancePlaceholderPage {
-                            pageName: "FTB App"
+                        // FTB App (use same FTBPage)
+                        Loader {
+                            source: "qrc:/qml/modplatform/FTBPage.qml"
                         }
                         
-                        // Modrinth placeholder
-                        NewInstancePlaceholderPage {
-                            pageName: "Modrinth"
+                        // Modrinth page
+                        Loader {
+                            source: "qrc:/qml/modplatform/ModrinthPage.qml"
                         }
                         
-                        // Technic placeholder
-                        NewInstancePlaceholderPage {
-                            pageName: "Technic"
+                        // Technic page
+                        Loader {
+                            source: "qrc:/qml/modplatform/TechnicPage.qml"
                         }
                     }
                 }
@@ -646,8 +649,8 @@ Rectangle {
                 
                 onEditInstance: {
                     console.log("[ShellRoot] Edit instance requested")
-                    if (ProjT.instancesVM) {
-                        ProjT.instancesVM.openInstanceSettings()
+                    if (ProjT.instancesVM && ProjT.instancesVM.selectedInstanceId) {
+                        showInstanceSettingsWindow(ProjT.instancesVM.selectedInstanceId)
                     }
                 }
                 
@@ -655,15 +658,15 @@ Rectangle {
                 
                 onExportInstance: {
                     console.log("[ShellRoot] Export instance requested")
-                    if (ProjT.instancesVM) {
-                        ProjT.instancesVM.exportSelectedInstance()
+                    if (ProjT.instancesVM && ProjT.instancesVM.selectedInstanceId) {
+                        showExportDialog(ProjT.instancesVM.selectedInstanceId)
                     }
                 }
                 
                 onManageBackups: {
                     console.log("[ShellRoot] Manage backups requested")
-                    if (ProjT.instancesVM) {
-                        ProjT.instancesVM.manageSelectedBackups()
+                    if (ProjT.instancesVM && ProjT.instancesVM.selectedInstanceId) {
+                        showBackupDialog(ProjT.instancesVM.selectedInstanceId)
                     }
                 }
                 
@@ -673,9 +676,7 @@ Rectangle {
                 
                 onCreateShortcut: {
                     console.log("[ShellRoot] Create shortcut requested")
-                    if (ProjT.instancesVM) {
-                        ProjT.instancesVM.createSelectedShortcut()
-                    }
+                    createShortcutDialogLoader.active = true
                 }
             }
         }
@@ -731,6 +732,39 @@ Rectangle {
     function showLogsWindow() { logsWindowLoader.active = true }
     function showNewsWindow() { newsWindowLoader.active = true }
     function showAccountsWindow() { accountsWindowLoader.active = true }
+    
+    // New dialog helper functions
+    function showMSALoginDialog() { msaLoginDialogLoader.active = true }
+    function showOfflineLoginDialog() { offlineLoginDialogLoader.active = true }
+    function showProgressDialog(title, message) {
+        progressDialogLoader.dialogTitle = title || qsTr("Please wait...")
+        progressDialogLoader.dialogMessage = message || ""
+        progressDialogLoader.active = true
+    }
+    function hideProgressDialog() { progressDialogLoader.active = false }
+    function showUpdateDialog(currentVersion, newVersion, releaseNotes) {
+        updateDialogLoader.currentVersion = currentVersion || ""
+        updateDialogLoader.newVersion = newVersion || ""
+        updateDialogLoader.releaseNotes = releaseNotes || ""
+        updateDialogLoader.active = true
+    }
+    function showExportDialog(instanceId) {
+        exportDialogLoader.instanceId = instanceId || ""
+        exportDialogLoader.active = true
+    }
+    function showBackupDialog(instanceId) {
+        backupDialogLoader.instanceId = instanceId || ""
+        backupDialogLoader.active = true
+    }
+    function showIconPickerDialog() { iconPickerDialogLoader.active = true }
+    function showBlockedModsDialog(mods) {
+        blockedModsDialogLoader.blockedMods = mods || []
+        blockedModsDialogLoader.active = true
+    }
+    function showInstanceSettingsWindow(instanceId) {
+        instanceSettingsWindowLoader.instanceId = instanceId || ""
+        instanceSettingsWindowLoader.active = true
+    }
     
     // === Settings Window (PageContainer style like Qt Widget) ===
     Loader {
@@ -1064,9 +1098,14 @@ Rectangle {
                         text: qsTr("Add Microsoft Account")
                         icon.name: "list-add"
                         onClicked: {
-                            if (ProjT.launcherVM) {
-                                ProjT.launcherVM.openAccountsManager()
-                            }
+                            showMSALoginDialog()
+                        }
+                    }
+                    
+                    Button {
+                        text: qsTr("Add Offline Account")
+                        onClicked: {
+                            showOfflineLoginDialog()
                         }
                     }
                     
@@ -1079,5 +1118,428 @@ Rectangle {
                 }
             }
         }
+    }
+    
+    // ════════════════════════════════════════════════════════════════
+    // NEW DIALOG LOADERS
+    // ════════════════════════════════════════════════════════════════
+    
+    // MSA Login Dialog
+    Loader {
+        id: msaLoginDialogLoader
+        active: false
+        sourceComponent: MSALoginDialog {
+            id: msaLoginDialog
+            visible: true
+            onClosed: msaLoginDialogLoader.active = false
+        }
+    }
+    
+    // Offline Login Dialog
+    Loader {
+        id: offlineLoginDialogLoader
+        active: false
+        sourceComponent: OfflineLoginDialog {
+            id: offlineLoginDialog
+            visible: true
+            onClosed: offlineLoginDialogLoader.active = false
+        }
+    }
+    
+    // Progress Dialog
+    Loader {
+        id: progressDialogLoader
+        active: false
+        property string dialogTitle: ""
+        property string dialogMessage: ""
+        sourceComponent: ProgressDialog {
+            id: progressDialog
+            title: progressDialogLoader.dialogTitle
+            statusText: progressDialogLoader.dialogMessage
+            visible: true
+            onClosed: progressDialogLoader.active = false
+        }
+    }
+    
+    // Update Dialog
+    Loader {
+        id: updateDialogLoader
+        active: false
+        property string currentVersion: ""
+        property string newVersion: ""
+        property string releaseNotes: ""
+        sourceComponent: UpdateDialog {
+            id: updateDialog
+            currentVersion: updateDialogLoader.currentVersion
+            newVersion: updateDialogLoader.newVersion
+            releaseNotes: updateDialogLoader.releaseNotes
+            visible: true
+            onClosed: updateDialogLoader.active = false
+        }
+    }
+    
+    // Export Dialog
+    Loader {
+        id: exportDialogLoader
+        active: false
+        property string instanceId: ""
+        sourceComponent: ExportDialog {
+            id: exportDialog
+            visible: true
+            onClosed: exportDialogLoader.active = false
+        }
+    }
+    
+    // Backup Dialog
+    Loader {
+        id: backupDialogLoader
+        active: false
+        property string instanceId: ""
+        sourceComponent: BackupDialog {
+            id: backupDialog
+            visible: true
+            onClosed: backupDialogLoader.active = false
+        }
+    }
+    
+    // Icon Picker Dialog
+    Loader {
+        id: iconPickerDialogLoader
+        active: false
+        sourceComponent: IconPickerDialog {
+            id: iconPickerDialog
+            visible: true
+            onClosed: iconPickerDialogLoader.active = false
+            onIconSelected: function(iconKey) {
+                console.log("[ShellRoot] Icon selected:", iconKey)
+            }
+        }
+    }
+    
+    // Blocked Mods Dialog
+    Loader {
+        id: blockedModsDialogLoader
+        active: false
+        property var blockedMods: []
+        sourceComponent: BlockedModsDialog {
+            id: blockedModsDialog
+            blockedMods: blockedModsDialogLoader.blockedMods
+            visible: true
+            onClosed: blockedModsDialogLoader.active = false
+        }
+    }
+    
+    // Create Shortcut Dialog
+    Loader {
+        id: createShortcutDialogLoader
+        active: false
+        sourceComponent: CreateShortcutDialog {
+            id: createShortcutDialog
+            instance: ProjT.instancesVM ? {
+                id: ProjT.instancesVM.selectedInstanceId,
+                name: ProjT.instancesVM.selectedInstanceName,
+                iconPath: ProjT.instancesVM.selectedInstanceIcon,
+                version: ProjT.instancesVM.selectedInstanceVersion
+            } : null
+            visible: true
+            onClosed: createShortcutDialogLoader.active = false
+        }
+    }
+    
+    // Copy Instance Dialog
+    Loader {
+        id: copyInstanceDialogLoader
+        active: false
+        sourceComponent: CopyInstanceDialog {
+            id: copyInstanceDialog
+            sourceInstance: ProjT.instancesVM ? {
+                id: ProjT.instancesVM.selectedInstanceId,
+                name: ProjT.instancesVM.selectedInstanceName,
+                iconPath: ProjT.instancesVM.selectedInstanceIcon,
+                version: ProjT.instancesVM.selectedInstanceVersion
+            } : null
+            visible: true
+            onClosed: copyInstanceDialogLoader.active = false
+        }
+    }
+    
+    // Version Select Dialog
+    Loader {
+        id: versionSelectDialogLoader
+        active: false
+        sourceComponent: VersionSelectDialog {
+            id: versionSelectDialog
+            vm: ProjT.instanceVM
+            visible: true
+            onClosed: versionSelectDialogLoader.active = false
+        }
+    }
+    
+    // Install Loader Dialog
+    Loader {
+        id: installLoaderDialogLoader
+        active: false
+        property string minecraftVersion: ""
+        sourceComponent: InstallLoaderDialog {
+            id: installLoaderDialog
+            vm: ProjT.instanceVM
+            minecraftVersion: installLoaderDialogLoader.minecraftVersion
+            visible: true
+            onClosed: installLoaderDialogLoader.active = false
+        }
+    }
+    
+    // Resource Download Dialog
+    Loader {
+        id: resourceDownloadDialogLoader
+        active: false
+        property string resourceType: "mod"
+        sourceComponent: ResourceDownloadDialog {
+            id: resourceDownloadDialog
+            vm: ProjT.instanceVM
+            resourceType: resourceDownloadDialogLoader.resourceType
+            visible: true
+            onClosed: resourceDownloadDialogLoader.active = false
+        }
+    }
+    
+    // Resource Update Dialog
+    Loader {
+        id: resourceUpdateDialogLoader
+        active: false
+        sourceComponent: ResourceUpdateDialog {
+            id: resourceUpdateDialog
+            vm: ProjT.instanceVM
+            visible: true
+            onClosed: resourceUpdateDialogLoader.active = false
+        }
+    }
+    
+    // ════════════════════════════════════════════════════════════════
+    // INSTANCE SETTINGS WINDOW (Per-instance settings with tabs)
+    // ════════════════════════════════════════════════════════════════
+    Loader {
+        id: instanceSettingsWindowLoader
+        active: false
+        property string instanceId: ""
+        sourceComponent: Window {
+            id: instanceSettingsWindow
+            title: qsTr("Instance Settings")
+            width: 900
+            height: 650
+            minimumWidth: 700
+            minimumHeight: 500
+            color: Theme.background
+            flags: Qt.Window
+            visible: true
+            
+            onClosing: instanceSettingsWindowLoader.active = false
+            
+            property int currentPageIndex: 0
+            property var instanceVM: ProjT.instanceVM
+            
+            Component.onCompleted: {
+                if (instanceVM && instanceSettingsWindowLoader.instanceId) {
+                    instanceVM.loadInstance(instanceSettingsWindowLoader.instanceId)
+                }
+            }
+            
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: 0
+                
+                // Page Container Area
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 0
+                    
+                    // Left sidebar - Category list
+                    Rectangle {
+                        Layout.preferredWidth: 180
+                        Layout.fillHeight: true
+                        color: Theme.surfaceBackground
+                        
+                        ListView {
+                            id: instancePageList
+                            anchors.fill: parent
+                            anchors.margins: Theme.spacingS
+                            spacing: 2
+                            currentIndex: instanceSettingsWindow.currentPageIndex
+                            
+                            model: ListModel {
+                                ListElement { name: "Version"; iconName: "minecraft" }
+                                ListElement { name: "Mods"; iconName: "loadermods" }
+                                ListElement { name: "Resource Packs"; iconName: "resourcepacks" }
+                                ListElement { name: "Shader Packs"; iconName: "shaderpacks" }
+                                ListElement { name: "Texture Packs"; iconName: "resourcepacks" }
+                                ListElement { name: "Worlds"; iconName: "worlds" }
+                                ListElement { name: "Screenshots"; iconName: "screenshots" }
+                                ListElement { name: "Servers"; iconName: "servers" }
+                                ListElement { name: "Game Options"; iconName: "settings" }
+                                ListElement { name: "Settings"; iconName: "settings" }
+                                ListElement { name: "Notes"; iconName: "notes" }
+                                ListElement { name: "Log"; iconName: "log" }
+                            }
+                            
+                            delegate: ItemDelegate {
+                                width: instancePageList.width
+                                height: 40
+                                highlighted: instancePageList.currentIndex === index
+                                
+                                text: model.name
+                                
+                                onClicked: {
+                                    instancePageList.currentIndex = index
+                                    instanceSettingsWindow.currentPageIndex = index
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Separator
+                    Rectangle {
+                        Layout.preferredWidth: 1
+                        Layout.fillHeight: true
+                        color: Theme.border
+                    }
+                    
+                    // Right content area
+                    StackLayout {
+                        id: instancePageStack
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        currentIndex: instanceSettingsWindow.currentPageIndex
+                        
+                        // Version page
+                        VersionPage {}
+                        
+                        // Mods page
+                        ModsPage {}
+                        
+                        // Resource Packs page
+                        ResourcePacksPage {}
+                        
+                        // Shader Packs page
+                        ShaderPacksPage {}
+                        
+                        // Texture Packs page
+                        TexturePacksPage {}
+                        
+                        // Worlds page (from settings folder)
+                        Loader {
+                            source: "qrc:/qml/settings/WorldsPage.qml"
+                        }
+                        
+                        // Screenshots page (from settings folder)
+                        Loader {
+                            source: "qrc:/qml/settings/ScreenshotsPage.qml"
+                        }
+                        
+                        // Servers page (from settings folder)
+                        Loader {
+                            source: "qrc:/qml/settings/ServersPage.qml"
+                        }
+                        
+                        // Game Options page
+                        GameOptionsPage {}
+                        
+                        // Instance Settings page
+                        InstanceSettingsPage {}
+                        
+                        // Notes page (from settings folder)
+                        Loader {
+                            source: "qrc:/qml/settings/NotesPage.qml"
+                        }
+                        
+                        // Log page
+                        LogPage {}
+                    }
+                }
+                
+                // Bottom buttons
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 50
+                    color: Theme.surfaceBackground
+                    
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: Theme.spacingM
+                        spacing: Theme.spacingM
+                        
+                        Button {
+                            text: qsTr("Launch")
+                            highlighted: true
+                            icon.name: "media-playback-start"
+                            onClicked: {
+                                if (ProjT.instancesVM) {
+                                    ProjT.instancesVM.launchSelectedInstance()
+                                }
+                                instanceSettingsWindow.close()
+                            }
+                        }
+                        
+                        Item { Layout.fillWidth: true }
+                        
+                        Button {
+                            text: qsTr("Close")
+                            onClicked: instanceSettingsWindow.close()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // ════════════════════════════════════════════════════════════════
+    // MODPLATFORM BROWSER WINDOW
+    // ════════════════════════════════════════════════════════════════
+    Loader {
+        id: modplatformWindowLoader
+        active: false
+        property string platform: "curseforge"
+        sourceComponent: Window {
+            id: modplatformWindow
+            title: {
+                switch (modplatformWindowLoader.platform) {
+                    case "curseforge": return "CurseForge"
+                    case "modrinth": return "Modrinth"
+                    case "atlauncher": return "ATLauncher"
+                    case "ftb": return "FTB"
+                    case "technic": return "Technic"
+                    default: return qsTr("Browse Modpacks")
+                }
+            }
+            width: 900
+            height: 650
+            minimumWidth: 700
+            minimumHeight: 500
+            color: Theme.background
+            flags: Qt.Window
+            visible: true
+            
+            onClosing: modplatformWindowLoader.active = false
+            
+            Loader {
+                anchors.fill: parent
+                source: {
+                    switch (modplatformWindowLoader.platform) {
+                        case "curseforge": return "qrc:/qml/modplatform/CurseForgePage.qml"
+                        case "modrinth": return "qrc:/qml/modplatform/ModrinthPage.qml"
+                        case "atlauncher": return "qrc:/qml/modplatform/ATLauncherPage.qml"
+                        case "ftb": return "qrc:/qml/modplatform/FTBPage.qml"
+                        case "technic": return "qrc:/qml/modplatform/TechnicPage.qml"
+                        default: return ""
+                    }
+                }
+            }
+        }
+    }
+    
+    // Helper function to open modplatform browser
+    function showModplatformBrowser(platform) {
+        modplatformWindowLoader.platform = platform || "curseforge"
+        modplatformWindowLoader.active = true
     }
 }
