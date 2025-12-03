@@ -15,87 +15,208 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import "../Theme.js" as Theme
 
-Rectangle {
-    color: "#1b1b1b"
-    width: parent ? parent.width : 640
-    height: parent ? parent.height : 480
-
+ScrollView {
+    id: javaSettingsPage
+    clip: true
+    
+    property var vm: ProjT.instanceVM
+    
     ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 12
-        spacing: 8
-
+        width: javaSettingsPage.width - Theme.spacingL
+        spacing: Theme.spacingM
+        
+        // Header
         Label {
             text: qsTr("Java Settings")
-            color: "#eceff1"
-            font.pixelSize: 16
+            color: Theme.textPrimary
+            font.pointSize: 16
             font.bold: true
         }
-
-        CheckBox {
-            text: qsTr("Override Java location")
-            checked: ProjT.settingsVM ? ProjT.settingsVM.overrideJavaLocation : false
-            onToggled: {
-                if (ProjT.settingsVM) {
-                    ProjT.settingsVM.overrideJavaLocation = checked
-                }
-            }
-            enabled: ProjT.settingsVM && !ProjT.settingsVM.saveBusy
-        }
-
-        RowLayout {
+        
+        Label {
+            text: qsTr("Configure Java runtime settings for this instance")
+            color: Theme.textSecondary
+            wrapMode: Text.WordWrap
             Layout.fillWidth: true
-            spacing: 8
-            Label {
-                text: qsTr("Java path")
-                color: "#e0e0e0"
-                Layout.alignment: Qt.AlignVCenter
-            }
-            TextField {
-                Layout.fillWidth: true
-                text: ProjT.settingsVM ? ProjT.settingsVM.javaPath : ""
-                onTextChanged: {
-                    if (ProjT.settingsVM) {
-                        ProjT.settingsVM.javaPath = text
+        }
+        
+        // Java Override
+        GroupBox {
+            Layout.fillWidth: true
+            title: qsTr("Java Runtime")
+            
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: Theme.spacingS
+                
+                CheckBox {
+                    id: overrideJavaCheck
+                    text: qsTr("Override default Java settings")
+                    checked: vm ? vm.overrideJava : false
+                    onCheckedChanged: {
+                        if (vm) vm.overrideJava = checked
                     }
                 }
-                enabled: ProjT.settingsVM && !ProjT.settingsVM.saveBusy
+                
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: 3
+                    rowSpacing: Theme.spacingS
+                    columnSpacing: Theme.spacingM
+                    enabled: overrideJavaCheck.checked
+                    opacity: enabled ? 1.0 : 0.5
+                    
+                    Label {
+                        text: qsTr("Java path:")
+                        color: Theme.textPrimary
+                    }
+                    
+                    TextField {
+                        id: javaPathField
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("/usr/bin/java")
+                        text: vm ? vm.javaPath : ""
+                        onTextChanged: {
+                            if (vm) vm.javaPath = text
+                        }
+                    }
+                    
+                    Button {
+                        text: qsTr("Browse...")
+                        onClicked: {
+                            // TODO: File dialog for Java selection
+                        }
+                    }
+                    
+                    Label {
+                        text: qsTr("JVM arguments:")
+                        color: Theme.textPrimary
+                    }
+                    
+                    TextField {
+                        id: jvmArgsField
+                        Layout.fillWidth: true
+                        Layout.columnSpan: 2
+                        placeholderText: qsTr("-XX:+UseG1GC -XX:+ParallelRefProcEnabled")
+                        text: vm ? vm.jvmArgs : ""
+                        onTextChanged: {
+                            if (vm) vm.jvmArgs = text
+                        }
+                    }
+                }
             }
         }
-
+        
+        // Memory Override
+        GroupBox {
+            Layout.fillWidth: true
+            title: qsTr("Memory")
+            
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: Theme.spacingS
+                
+                CheckBox {
+                    id: overrideMemoryCheck
+                    text: qsTr("Override default memory settings")
+                    checked: vm ? vm.overrideMemory : false
+                    onCheckedChanged: {
+                        if (vm) vm.overrideMemory = checked
+                    }
+                }
+                
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: 3
+                    rowSpacing: Theme.spacingS
+                    columnSpacing: Theme.spacingM
+                    enabled: overrideMemoryCheck.checked
+                    opacity: enabled ? 1.0 : 0.5
+                    
+                    Label {
+                        text: qsTr("Minimum memory:")
+                        color: Theme.textPrimary
+                    }
+                    
+                    SpinBox {
+                        id: minMemSpin
+                        from: 256
+                        to: 65536
+                        stepSize: 128
+                        value: vm ? vm.minMemory : 512
+                        editable: true
+                        onValueModified: {
+                            if (vm) vm.minMemory = value
+                        }
+                    }
+                    
+                    Label {
+                        text: qsTr("MiB")
+                        color: Theme.textSecondary
+                    }
+                    
+                    Label {
+                        text: qsTr("Maximum memory:")
+                        color: Theme.textPrimary
+                    }
+                    
+                    SpinBox {
+                        id: maxMemSpin
+                        from: 256
+                        to: 65536
+                        stepSize: 128
+                        value: vm ? vm.maxMemory : 4096
+                        editable: true
+                        onValueModified: {
+                            if (vm) vm.maxMemory = value
+                        }
+                    }
+                    
+                    Label {
+                        text: qsTr("MiB")
+                        color: Theme.textSecondary
+                    }
+                }
+                
+                Label {
+                    text: qsTr("Note: Most modpacks work well with 4-8 GB of RAM")
+                    color: Theme.textSecondary
+                    font.pointSize: 9
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                }
+            }
+        }
+        
+        // Save buttons
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Theme.spacingM
+            
+            Item { Layout.fillWidth: true }
+            
+            Button {
+                text: qsTr("Reset to Defaults")
+                onClicked: {
+                    if (vm) {
+                        vm.overrideJava = false
+                        vm.overrideMemory = false
+                        vm.reloadSettings()
+                    }
+                }
+            }
+            
             Button {
                 text: qsTr("Save")
-                implicitHeight: 34
-                implicitWidth: 90
-                Layout.alignment: Qt.AlignVCenter
-                enabled: ProjT.settingsVM && !ProjT.settingsVM.saveBusy
-                onClicked: ProjT.settingsVM ? ProjT.settingsVM.saveAll() : undefined
-            }
-            Button {
-                text: qsTr("Reset")
-                implicitHeight: 34
-                implicitWidth: 90
-                Layout.alignment: Qt.AlignVCenter
-                enabled: ProjT.settingsVM && !ProjT.settingsVM.saveBusy
-                onClicked: ProjT.settingsVM ? ProjT.settingsVM.resetToDefaultsForCurrentCategory() : undefined
-            }
-            Rectangle { Layout.fillWidth: true; color: "transparent" }
-            BusyIndicator {
-                running: ProjT.settingsVM ? ProjT.settingsVM.saveBusy : false
-                visible: running
+                highlighted: true
+                onClicked: {
+                    if (vm) vm.saveSettings()
+                }
             }
         }
-
-        Label {
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            color: "#ef5350"
-            text: ProjT.settingsVM ? ProjT.settingsVM.lastErrorMessage : ""
-            visible: text.length > 0
-        }
+        
+        Item { height: Theme.spacingL }
     }
 }

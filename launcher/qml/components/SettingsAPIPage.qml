@@ -7,9 +7,6 @@
  *
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
- *
- *  If this file includes work from previous open-source projects,
- *  their original copyright and license notices are preserved below.
  */
 
 import QtQuick 2.15
@@ -21,7 +18,7 @@ ScrollView {
     id: apiPage
     clip: true
     
-    property var vm: launcherSettingsVM
+    property var vm: ProjT.launcherSettingsVM
     
     // Pastebin service options
     property var pastebinServices: ["0x0.st", "paste.gg", "mclo.gs", "hastebin"]

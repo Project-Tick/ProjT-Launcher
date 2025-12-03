@@ -362,6 +362,74 @@ void InstanceViewModel::setMaximizeWindow(bool maximize)
     }
 }
 
+bool InstanceViewModel::fullscreen() const
+{
+    if (!m_instance) return false;
+    auto settings = m_instance->settings();
+    return settings ? settings->get("LaunchFullscreen").toBool() : false;
+}
+
+void InstanceViewModel::setFullscreen(bool fs)
+{
+    if (!m_instance) return;
+    auto settings = m_instance->settings();
+    if (settings) {
+        settings->set("LaunchFullscreen", fs);
+        emit fullscreenChanged();
+    }
+}
+
+bool InstanceViewModel::showConsole() const
+{
+    if (!m_instance) return true;
+    auto settings = m_instance->settings();
+    return settings ? settings->get("ShowConsole").toBool() : true;
+}
+
+void InstanceViewModel::setShowConsole(bool show)
+{
+    if (!m_instance) return;
+    auto settings = m_instance->settings();
+    if (settings) {
+        settings->set("ShowConsole", show);
+        emit showConsoleChanged();
+    }
+}
+
+bool InstanceViewModel::closeOnLaunch() const
+{
+    if (!m_instance) return false;
+    auto settings = m_instance->settings();
+    return settings ? settings->get("CloseAfterLaunch").toBool() : false;
+}
+
+void InstanceViewModel::setCloseOnLaunch(bool close)
+{
+    if (!m_instance) return;
+    auto settings = m_instance->settings();
+    if (settings) {
+        settings->set("CloseAfterLaunch", close);
+        emit closeOnLaunchChanged();
+    }
+}
+
+bool InstanceViewModel::quitAfterGame() const
+{
+    if (!m_instance) return false;
+    auto settings = m_instance->settings();
+    return settings ? settings->get("QuitAfterGameStop").toBool() : false;
+}
+
+void InstanceViewModel::setQuitAfterGame(bool quit)
+{
+    if (!m_instance) return;
+    auto settings = m_instance->settings();
+    if (settings) {
+        settings->set("QuitAfterGameStop", quit);
+        emit quitAfterGameChanged();
+    }
+}
+
 QString InstanceViewModel::preLaunchCommand() const
 {
     return m_instance ? m_instance->getPreLaunchCommand() : QString();
@@ -596,6 +664,10 @@ void InstanceViewModel::emitAllChanged()
     emit windowWidthChanged();
     emit windowHeightChanged();
     emit maximizeWindowChanged();
+    emit fullscreenChanged();
+    emit showConsoleChanged();
+    emit closeOnLaunchChanged();
+    emit quitAfterGameChanged();
     emit preLaunchCommandChanged();
     emit postExitCommandChanged();
     emit wrapperCommandChanged();

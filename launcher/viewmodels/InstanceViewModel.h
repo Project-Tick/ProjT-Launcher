@@ -73,6 +73,12 @@ class InstanceViewModel : public QObject {
     Q_PROPERTY(int windowWidth READ windowWidth WRITE setWindowWidth NOTIFY windowWidthChanged)
     Q_PROPERTY(int windowHeight READ windowHeight WRITE setWindowHeight NOTIFY windowHeightChanged)
     Q_PROPERTY(bool maximizeWindow READ maximizeWindow WRITE setMaximizeWindow NOTIFY maximizeWindowChanged)
+    Q_PROPERTY(bool fullscreen READ fullscreen WRITE setFullscreen NOTIFY fullscreenChanged)
+    
+    // Game options
+    Q_PROPERTY(bool showConsole READ showConsole WRITE setShowConsole NOTIFY showConsoleChanged)
+    Q_PROPERTY(bool closeOnLaunch READ closeOnLaunch WRITE setCloseOnLaunch NOTIFY closeOnLaunchChanged)
+    Q_PROPERTY(bool quitAfterGame READ quitAfterGame WRITE setQuitAfterGame NOTIFY quitAfterGameChanged)
     
     // Commands
     Q_PROPERTY(QString preLaunchCommand READ preLaunchCommand WRITE setPreLaunchCommand NOTIFY preLaunchCommandChanged)
@@ -144,6 +150,16 @@ public:
     void setWindowHeight(int height);
     bool maximizeWindow() const;
     void setMaximizeWindow(bool maximize);
+    bool fullscreen() const;
+    void setFullscreen(bool fs);
+    
+    // Game options
+    bool showConsole() const;
+    void setShowConsole(bool show);
+    bool closeOnLaunch() const;
+    void setCloseOnLaunch(bool close);
+    bool quitAfterGame() const;
+    void setQuitAfterGame(bool quit);
     
     // Commands
     QString preLaunchCommand() const;
@@ -203,6 +219,10 @@ signals:
     void windowWidthChanged();
     void windowHeightChanged();
     void maximizeWindowChanged();
+    void fullscreenChanged();
+    void showConsoleChanged();
+    void closeOnLaunchChanged();
+    void quitAfterGameChanged();
     void preLaunchCommandChanged();
     void postExitCommandChanged();
     void wrapperCommandChanged();
