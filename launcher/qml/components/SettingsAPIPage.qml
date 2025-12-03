@@ -5,8 +5,13 @@
  *  ProjT Launcher - Minecraft Launcher
  *  Copyright (C) 2025 Project Tick
  *
- *  API settings page
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
+
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
@@ -17,6 +22,9 @@ ScrollView {
     clip: true
     
     property var vm: launcherSettingsVM
+    
+    // Pastebin service options
+    property var pastebinServices: ["0x0.st", "paste.gg", "mclo.gs", "hastebin"]
     
     ColumnLayout {
         width: apiPage.width - Theme.spacingL
@@ -41,8 +49,11 @@ ScrollView {
                     }
                     
                     ComboBox {
+                        id: pastebinTypeCombo
                         Layout.fillWidth: true
-                        model: ["0x0.st", "paste.gg", "mclo.gs", "hastebin"]
+                        model: pastebinServices
+                        currentIndex: vm ? vm.pastebinType : 0
+                        onActivated: if (vm) vm.pastebinType = currentIndex
                     }
                 }
                 
@@ -56,8 +67,11 @@ ScrollView {
                     }
                     
                     TextField {
+                        id: pastebinUrlField
                         Layout.fillWidth: true
                         placeholderText: qsTr("Leave empty to use default")
+                        text: vm ? vm.pastebinCustomUrl : ""
+                        onTextChanged: if (vm) vm.pastebinCustomUrl = text
                     }
                 }
             }
@@ -89,9 +103,12 @@ ScrollView {
                     }
                     
                     TextField {
+                        id: msaClientIdField
                         Layout.fillWidth: true
                         placeholderText: qsTr("Leave empty to use default")
                         echoMode: TextInput.Password
+                        text: vm ? vm.msaClientId : ""
+                        onTextChanged: if (vm) vm.msaClientId = text
                     }
                 }
             }
@@ -116,8 +133,11 @@ ScrollView {
                     }
                     
                     TextField {
+                        id: metaUrlField
                         Layout.fillWidth: true
                         placeholderText: qsTr("https://meta.prismlauncher.org/v1")
+                        text: vm ? vm.metaUrl : ""
+                        onTextChanged: if (vm) vm.metaUrl = text
                     }
                 }
                 
@@ -148,10 +168,78 @@ ScrollView {
                     }
                     
                     TextField {
+                        id: curseforgeKeyField
                         Layout.fillWidth: true
                         placeholderText: qsTr("Leave empty to use default")
                         echoMode: TextInput.Password
+                        text: vm ? vm.curseforgeApiKey : ""
+                        onTextChanged: if (vm) vm.curseforgeApiKey = text
                     }
+                }
+            }
+        }
+        
+        // Modrinth
+        GroupBox {
+            Layout.fillWidth: true
+            title: qsTr("Modrinth")
+            
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: Theme.spacingS
+                
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.spacingM
+                    
+                    Label {
+                        text: qsTr("API Token:")
+                        color: Theme.textPrimary
+                    }
+                    
+                    TextField {
+                        id: modrinthTokenField
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Leave empty to use default")
+                        echoMode: TextInput.Password
+                        text: vm ? vm.modrinthToken : ""
+                        onTextChanged: if (vm) vm.modrinthToken = text
+                    }
+                }
+            }
+        }
+        
+        // User Agent
+        GroupBox {
+            Layout.fillWidth: true
+            title: qsTr("User Agent")
+            
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: Theme.spacingS
+                
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.spacingM
+                    
+                    Label {
+                        text: qsTr("Override:")
+                        color: Theme.textPrimary
+                    }
+                    
+                    TextField {
+                        id: userAgentField
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Leave empty to use default")
+                        text: vm ? vm.userAgentOverride : ""
+                        onTextChanged: if (vm) vm.userAgentOverride = text
+                    }
+                }
+                
+                Label {
+                    text: qsTr("Custom user agent for network requests. Leave empty for default.")
+                    color: Theme.textSecondary
+                    font.pointSize: 9
                 }
             }
         }

@@ -8,21 +8,10 @@
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
  *
- *  Layout matches Qt Widget MainWindow:
- *  ┌────────────────────────────────────────────────────┐
- *  │ MainToolBar (top)                                  │
- *  ├────────────────────────────────────────────┬───────┤
- *  │                                            │       │
- *  │ Central Widget (Instance List / Pages)     │ Inst  │
- *  │                                            │ Tool  │
- *  │                                            │ Bar   │
- *  │                                            │       │
- *  ├────────────────────────────────────────────┴───────┤
- *  │ NewsToolBar (bottom)                               │
- *  ├────────────────────────────────────────────────────┤
- *  │ StatusBar                                          │
- *  └────────────────────────────────────────────────────┘
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
+
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
@@ -101,7 +90,7 @@ Rectangle {
                                 anchors.centerIn: parent
                                 width: 64
                                 height: 64
-                                source: "qrc:/icons/instances/" + newInstanceWindow.selectedIconKey
+                                source: Theme.instanceIconFromKey(newInstanceWindow.selectedIconKey)
                                 fillMode: Image.PreserveAspectFit
                             }
                             
@@ -144,11 +133,17 @@ Rectangle {
                                 id: groupCombo
                                 Layout.fillWidth: true
                                 editable: true
-                                model: ProjT.instancesVM ? ProjT.instancesVM.groupList : [""]
+                                model: {
+                                    var groups = ProjT.instancesVM ? ProjT.instancesVM.groupList : null
+                                    if (groups && groups.length > 0) {
+                                        return groups
+                                    }
+                                    return [""]
+                                }
                                 
                                 Component.onCompleted: {
                                     // Insert empty option for "No group"
-                                    if (model.length === 0 || model[0] !== "") {
+                                    if (model && model.length === 0) {
                                         // handled by model
                                     }
                                 }
@@ -184,14 +179,14 @@ Rectangle {
                             currentIndex: newInstanceWindow.currentPageIndex
                             
                             model: ListModel {
-                                ListElement { name: "Custom"; icon: "minecraft" }
-                                ListElement { name: "Import"; icon: "viewfolder" }
-                                ListElement { name: "ATLauncher"; icon: "atlauncher" }
-                                ListElement { name: "CurseForge"; icon: "flame" }
-                                ListElement { name: "FTB Legacy"; icon: "ftb_logo" }
-                                ListElement { name: "FTB App"; icon: "ftb_logo" }
-                                ListElement { name: "Modrinth"; icon: "modrinth" }
-                                ListElement { name: "Technic"; icon: "technic" }
+                                ListElement { name: "Custom"; icon: "minecraft"; platform: "" }
+                                ListElement { name: "Import"; icon: "viewfolder"; platform: "" }
+                                ListElement { name: "ATLauncher"; icon: "gear"; platform: "atlauncher" }
+                                ListElement { name: "CurseForge"; icon: "flame"; platform: "curseforge" }
+                                ListElement { name: "FTB Legacy"; icon: "ftb_logo"; platform: "ftb" }
+                                ListElement { name: "FTB App"; icon: "ftb_logo"; platform: "ftb" }
+                                ListElement { name: "Modrinth"; icon: "modrinth"; platform: "modrinth" }
+                                ListElement { name: "Technic"; icon: "brick"; platform: "technic" }
                             }
                             
                             delegate: ItemDelegate {
@@ -205,7 +200,9 @@ Rectangle {
                                     Image {
                                         Layout.preferredWidth: 20
                                         Layout.preferredHeight: 20
-                                        source: "qrc:/icons/instances/" + model.icon
+                                        source: model.platform ? Theme.platformIcon(model.platform) : 
+                                                (model.icon === "viewfolder" ? Theme.icon("viewfolder") : 
+                                                 "qrc:/icons/multimc/scalable/instances/" + model.icon + ".svg")
                                         fillMode: Image.PreserveAspectFit
                                     }
                                     

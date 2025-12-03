@@ -5,8 +5,13 @@
  *  ProjT Launcher - Minecraft Launcher
  *  Copyright (C) 2025 Project Tick
  *
- *  Minecraft settings page
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
+
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
@@ -34,7 +39,8 @@ ScrollView {
                 CheckBox {
                     id: maximizedCheck
                     text: qsTr("Start Minecraft maximized")
-                    checked: false
+                    checked: vm ? vm.startMaximized : false
+                    onCheckedChanged: if (vm) vm.startMaximized = checked
                 }
                 
                 RowLayout {
@@ -50,8 +56,9 @@ ScrollView {
                         id: windowWidthSpin
                         from: 256
                         to: 4096
-                        value: 854
+                        value: vm ? vm.windowWidth : 854
                         editable: true
+                        onValueChanged: if (vm) vm.windowWidth = value
                     }
                     
                     Label {
@@ -63,8 +70,9 @@ ScrollView {
                         id: windowHeightSpin
                         from: 256
                         to: 4096
-                        value: 480
+                        value: vm ? vm.windowHeight : 480
                         editable: true
+                        onValueChanged: if (vm) vm.windowHeight = value
                     }
                 }
             }
@@ -151,22 +159,26 @@ ScrollView {
                 
                 CheckBox {
                     text: qsTr("Show game log in console")
-                    checked: true
+                    checked: vm ? vm.showGameLog : true
+                    onCheckedChanged: if (vm) vm.showGameLog = checked
                 }
                 
                 CheckBox {
                     text: qsTr("Skip Mojang account migration check")
-                    checked: false
+                    checked: vm ? vm.skipMigrationCheck : false
+                    onCheckedChanged: if (vm) vm.skipMigrationCheck = checked
                 }
                 
                 CheckBox {
                     text: qsTr("Use native OpenAL")
-                    checked: false
+                    checked: vm ? vm.useNativeOpenAL : false
+                    onCheckedChanged: if (vm) vm.useNativeOpenAL = checked
                 }
                 
                 CheckBox {
                     text: qsTr("Use native GLFW")
-                    checked: false
+                    checked: vm ? vm.useNativeGLFW : false
+                    onCheckedChanged: if (vm) vm.useNativeGLFW = checked
                 }
             }
         }

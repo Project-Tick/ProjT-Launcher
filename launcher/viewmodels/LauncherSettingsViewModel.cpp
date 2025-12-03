@@ -8,7 +8,8 @@
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
  *
- *  Global launcher settings ViewModel implementation
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
 
 #include "LauncherSettingsViewModel.h"
@@ -37,12 +38,17 @@ void LauncherSettingsViewModel::loadFromApplication()
     
     // Launcher Page
     m_sortByName = s->get("InstSortMode").toString() == "Name";
-    m_renamingBehavior = s->get("InstanceRenamingMode").toString();
-    if (m_renamingBehavior.isEmpty()) m_renamingBehavior = "ask";
+    m_renamingBehavior = s->get("InstRenamingMode").toString();
+    // Map old values to new
+    if (m_renamingBehavior.isEmpty() || m_renamingBehavior == "AskEverytime") m_renamingBehavior = "ask";
+    else if (m_renamingBehavior == "AlwaysRename") m_renamingBehavior = "always";
+    else if (m_renamingBehavior == "NeverRename") m_renamingBehavior = "never";
     
-    QString launchBehavior = s->get("LaunchMaximized").toString();
-    if (launchBehavior == "hide") m_launchAction = "hideWindow";
-    else if (launchBehavior == "close") m_launchAction = "closeWindow";
+    // Launch action based on CloseAfterLaunch and QuitAfterGameStop settings
+    bool closeAfterLaunch = s->get("CloseAfterLaunch").toBool();
+    bool quitAfterGameStop = s->get("QuitAfterGameStop").toBool();
+    if (quitAfterGameStop) m_launchAction = "closeWindow";
+    else if (closeAfterLaunch) m_launchAction = "hideWindow";
     else m_launchAction = "doNothing";
     
     m_showConsole = s->get("ShowConsole").toBool();
@@ -58,12 +64,21 @@ void LauncherSettingsViewModel::loadFromApplication()
     m_validateDownloads = s->get("ValidateDownloads").toBool();
     
     // Minecraft Page
-    m_showGameTime = s->get("ShowGameTime").toBool();
+    m_showGameTime = s->get("RecordGameTime").toBool();
     m_showGlobalGameTime = s->get("ShowGlobalGameTime").toBool();
-    m_enableManageModsButton = s->get("ModsButtonVisible").toBool();
+    m_enableManageModsButton = true;  // ModsButtonVisible may not exist, default true
     m_enableFeralGamemode = s->get("EnableFeralGamemode").toBool();
     m_enableDiscreteGpu = s->get("UseDiscreteGpu").toBool();
-    m_enableMangoHud = s->get("UseMangoHud").toBool();
+    m_enableMangoHud = s->get("EnableMangoHud").toBool();
+    m_startMaximized = s->get("LaunchMaximized").toBool();
+    m_windowWidth = s->get("MinecraftWinWidth").toInt();
+    if (m_windowWidth <= 0) m_windowWidth = 854;
+    m_windowHeight = s->get("MinecraftWinHeight").toInt();
+    if (m_windowHeight <= 0) m_windowHeight = 480;
+    m_showGameLog = true;  // ShowGameLog setting may not exist, default true
+    m_useNativeOpenAL = s->get("UseNativeOpenAL").toBool();
+    m_useNativeGLFW = s->get("UseNativeGLFW").toBool();
+    m_skipMigrationCheck = false;  // Default false
     
     // Java Page
     m_defaultJavaPath = s->get("JavaPath").toString();
@@ -73,12 +88,12 @@ void LauncherSettingsViewModel::loadFromApplication()
     
     // Appearance Page
     m_theme = s->get("ApplicationTheme").toString();
-    if (m_theme.isEmpty()) m_theme = "Dark";
+    if (m_theme.isEmpty()) m_theme = "system";
     m_iconTheme = s->get("IconTheme").toString();
-    if (m_iconTheme.isEmpty()) m_iconTheme = "Default";
-    m_showToolbarText = s->get("ToolbarsLocked").toBool();
-    m_instanceListIcons = s->get("ShowInstanceListIcons").toBool();
-    m_showInstanceStatusLight = s->get("ShowInstanceStatusLight").toBool();
+    if (m_iconTheme.isEmpty()) m_iconTheme = "pe_colored";
+    m_showToolbarText = !s->get("ToolbarsLocked").toBool();  // inverted: ToolbarsLocked means toolbar text not shown
+    m_instanceListIcons = true;  // Not stored in settings, default true
+    m_showInstanceStatusLight = true;  // Not stored in settings, default true
     m_enableCat = s->get("TheCat").toBool();
     
     // Proxy Page
@@ -98,6 +113,21 @@ void LauncherSettingsViewModel::loadFromApplication()
     m_currentLanguage = s->get("Language").toString();
     if (m_currentLanguage.isEmpty()) m_currentLanguage = "en_US";
     
+    // API Page
+    m_pastebinType = s->get("PastebinType").toInt();
+    m_pastebinCustomUrl = s->get("PastebinCustomAPIBase").toString();
+    m_msaClientId = s->get("MSAClientIDOverride").toString();
+    m_curseforgeApiKey = s->get("FlameKeyOverride").toString();
+    m_modrinthToken = s->get("ModrinthToken").toString();
+    m_metaUrl = s->get("MetaURLOverride").toString();
+    m_userAgentOverride = s->get("UserAgentOverride").toString();
+    
+    // External Tools Page
+    m_jprofilerPath = s->get("JProfilerPath").toString();
+    m_jvisualvmPath = s->get("JVisualVMPath").toString();
+    m_mceditPath = s->get("MCEditPath").toString();
+    m_jsonEditorPath = s->get("JsonEditor").toString();
+    
     // Emit all signals
     emit sortByNameChanged();
     emit renamingBehaviorChanged();
@@ -116,6 +146,13 @@ void LauncherSettingsViewModel::loadFromApplication()
     emit enableFeralGamemodeChanged();
     emit enableDiscreteGpuChanged();
     emit enableMangoHudChanged();
+    emit startMaximizedChanged();
+    emit windowWidthChanged();
+    emit windowHeightChanged();
+    emit showGameLogChanged();
+    emit useNativeOpenALChanged();
+    emit useNativeGLFWChanged();
+    emit skipMigrationCheckChanged();
     emit defaultJavaPathChanged();
     emit defaultMinMemoryChanged();
     emit defaultMaxMemoryChanged();
@@ -132,6 +169,17 @@ void LauncherSettingsViewModel::loadFromApplication()
     emit proxyUsernameChanged();
     emit proxyPasswordChanged();
     emit currentLanguageChanged();
+    emit pastebinTypeChanged();
+    emit pastebinCustomUrlChanged();
+    emit msaClientIdChanged();
+    emit curseforgeApiKeyChanged();
+    emit modrinthTokenChanged();
+    emit metaUrlChanged();
+    emit userAgentOverrideChanged();
+    emit jprofilerPathChanged();
+    emit jvisualvmPathChanged();
+    emit mceditPathChanged();
+    emit jsonEditorPathChanged();
 }
 
 void LauncherSettingsViewModel::saveToApplication()
@@ -139,11 +187,19 @@ void LauncherSettingsViewModel::saveToApplication()
     auto s = APPLICATION->settings();
     
     s->set("InstSortMode", m_sortByName ? "Name" : "LastLaunch");
-    s->set("InstanceRenamingMode", m_renamingBehavior);
     
-    if (m_launchAction == "hideWindow") s->set("LaunchMaximized", "hide");
-    else if (m_launchAction == "closeWindow") s->set("LaunchMaximized", "close");
-    else s->set("LaunchMaximized", "none");
+    // Map internal values back to setting values
+    QString instRenamingMode = "AskEverytime";
+    if (m_renamingBehavior == "always") instRenamingMode = "AlwaysRename";
+    else if (m_renamingBehavior == "never") instRenamingMode = "NeverRename";
+    s->set("InstRenamingMode", instRenamingMode);
+    
+    if (m_launchAction == "hideWindow") s->set("CloseAfterLaunch", true);
+    else if (m_launchAction == "closeWindow") s->set("QuitAfterGameStop", true);
+    else {
+        s->set("CloseAfterLaunch", false);
+        s->set("QuitAfterGameStop", false);
+    }
     
     s->set("ShowConsole", m_showConsole);
     s->set("AutoCloseConsole", m_autoCloseConsole);
@@ -156,12 +212,19 @@ void LauncherSettingsViewModel::saveToApplication()
     s->set("NumberOfConcurrentDownloads", m_concurrentDownloads);
     s->set("ValidateDownloads", m_validateDownloads);
     
-    s->set("ShowGameTime", m_showGameTime);
+    s->set("RecordGameTime", m_showGameTime);
     s->set("ShowGlobalGameTime", m_showGlobalGameTime);
-    s->set("ModsButtonVisible", m_enableManageModsButton);
+    // ModsButtonVisible not in settings
     s->set("EnableFeralGamemode", m_enableFeralGamemode);
     s->set("UseDiscreteGpu", m_enableDiscreteGpu);
-    s->set("UseMangoHud", m_enableMangoHud);
+    s->set("EnableMangoHud", m_enableMangoHud);
+    s->set("LaunchMaximized", m_startMaximized);
+    s->set("MinecraftWinWidth", m_windowWidth);
+    s->set("MinecraftWinHeight", m_windowHeight);
+    // ShowGameLog not in settings
+    s->set("UseNativeOpenAL", m_useNativeOpenAL);
+    s->set("UseNativeGLFW", m_useNativeGLFW);
+    // SkipMigrationCheck not in settings
     
     s->set("JavaPath", m_defaultJavaPath);
     s->set("MinMemAlloc", m_defaultMinMemory);
@@ -186,6 +249,21 @@ void LauncherSettingsViewModel::saveToApplication()
     s->set("ProxyPass", m_proxyPassword);
     
     s->set("Language", m_currentLanguage);
+    
+    // API Page
+    s->set("PastebinType", m_pastebinType);
+    s->set("PastebinCustomAPIBase", m_pastebinCustomUrl);
+    s->set("MSAClientIDOverride", m_msaClientId);
+    s->set("FlameKeyOverride", m_curseforgeApiKey);
+    s->set("ModrinthToken", m_modrinthToken);
+    s->set("MetaURLOverride", m_metaUrl);
+    s->set("UserAgentOverride", m_userAgentOverride);
+    
+    // External Tools Page
+    s->set("JProfilerPath", m_jprofilerPath);
+    s->set("JVisualVMPath", m_jvisualvmPath);
+    s->set("MCEditPath", m_mceditPath);
+    s->set("JsonEditor", m_jsonEditorPath);
 }
 
 void LauncherSettingsViewModel::applySettings()
@@ -390,6 +468,13 @@ bool LauncherSettingsViewModel::enableManageModsButton() const { return m_enable
 bool LauncherSettingsViewModel::enableFeralGamemode() const { return m_enableFeralGamemode; }
 bool LauncherSettingsViewModel::enableDiscreteGpu() const { return m_enableDiscreteGpu; }
 bool LauncherSettingsViewModel::enableMangoHud() const { return m_enableMangoHud; }
+bool LauncherSettingsViewModel::startMaximized() const { return m_startMaximized; }
+int LauncherSettingsViewModel::windowWidth() const { return m_windowWidth; }
+int LauncherSettingsViewModel::windowHeight() const { return m_windowHeight; }
+bool LauncherSettingsViewModel::showGameLog() const { return m_showGameLog; }
+bool LauncherSettingsViewModel::useNativeOpenAL() const { return m_useNativeOpenAL; }
+bool LauncherSettingsViewModel::useNativeGLFW() const { return m_useNativeGLFW; }
+bool LauncherSettingsViewModel::skipMigrationCheck() const { return m_skipMigrationCheck; }
 
 // === Minecraft Page Setters ===
 
@@ -397,7 +482,7 @@ void LauncherSettingsViewModel::setShowGameTime(bool value)
 {
     if (m_showGameTime != value) {
         m_showGameTime = value;
-        APPLICATION->settings()->set("ShowGameTime", value);
+        APPLICATION->settings()->set("RecordGameTime", value);
         emit showGameTimeChanged();
     }
 }
@@ -442,8 +527,71 @@ void LauncherSettingsViewModel::setEnableMangoHud(bool value)
 {
     if (m_enableMangoHud != value) {
         m_enableMangoHud = value;
-        APPLICATION->settings()->set("UseMangoHud", value);
+        APPLICATION->settings()->set("EnableMangoHud", value);
         emit enableMangoHudChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setStartMaximized(bool value)
+{
+    if (m_startMaximized != value) {
+        m_startMaximized = value;
+        APPLICATION->settings()->set("LaunchMaximized", value);
+        emit startMaximizedChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setWindowWidth(int value)
+{
+    if (m_windowWidth != value) {
+        m_windowWidth = value;
+        APPLICATION->settings()->set("MinecraftWinWidth", value);
+        emit windowWidthChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setWindowHeight(int value)
+{
+    if (m_windowHeight != value) {
+        m_windowHeight = value;
+        APPLICATION->settings()->set("MinecraftWinHeight", value);
+        emit windowHeightChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setShowGameLog(bool value)
+{
+    if (m_showGameLog != value) {
+        m_showGameLog = value;
+        APPLICATION->settings()->set("ShowGameLog", value);
+        emit showGameLogChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setUseNativeOpenAL(bool value)
+{
+    if (m_useNativeOpenAL != value) {
+        m_useNativeOpenAL = value;
+        APPLICATION->settings()->set("UseNativeOpenAL", value);
+        emit useNativeOpenALChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setUseNativeGLFW(bool value)
+{
+    if (m_useNativeGLFW != value) {
+        m_useNativeGLFW = value;
+        APPLICATION->settings()->set("UseNativeGLFW", value);
+        emit useNativeGLFWChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setSkipMigrationCheck(bool value)
+{
+    if (m_skipMigrationCheck != value) {
+        m_skipMigrationCheck = value;
+        APPLICATION->settings()->set("SkipMigrationCheck", value);
+        emit skipMigrationCheckChanged();
     }
 }
 
@@ -634,5 +782,125 @@ void LauncherSettingsViewModel::setCurrentLanguage(const QString& lang)
         m_currentLanguage = lang;
         APPLICATION->settings()->set("Language", lang);
         emit currentLanguageChanged();
+    }
+}
+
+// === API Page Getters ===
+
+int LauncherSettingsViewModel::pastebinType() const { return m_pastebinType; }
+QString LauncherSettingsViewModel::pastebinCustomUrl() const { return m_pastebinCustomUrl; }
+QString LauncherSettingsViewModel::msaClientId() const { return m_msaClientId; }
+QString LauncherSettingsViewModel::curseforgeApiKey() const { return m_curseforgeApiKey; }
+QString LauncherSettingsViewModel::modrinthToken() const { return m_modrinthToken; }
+QString LauncherSettingsViewModel::metaUrl() const { return m_metaUrl; }
+QString LauncherSettingsViewModel::userAgentOverride() const { return m_userAgentOverride; }
+
+// === API Page Setters ===
+
+void LauncherSettingsViewModel::setPastebinType(int type)
+{
+    if (m_pastebinType != type) {
+        m_pastebinType = type;
+        APPLICATION->settings()->set("PastebinType", type);
+        emit pastebinTypeChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setPastebinCustomUrl(const QString& url)
+{
+    if (m_pastebinCustomUrl != url) {
+        m_pastebinCustomUrl = url;
+        APPLICATION->settings()->set("PastebinCustomAPIBase", url);
+        emit pastebinCustomUrlChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setMsaClientId(const QString& id)
+{
+    if (m_msaClientId != id) {
+        m_msaClientId = id;
+        APPLICATION->settings()->set("MSAClientIDOverride", id);
+        emit msaClientIdChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setCurseforgeApiKey(const QString& key)
+{
+    if (m_curseforgeApiKey != key) {
+        m_curseforgeApiKey = key;
+        APPLICATION->settings()->set("FlameKeyOverride", key);
+        emit curseforgeApiKeyChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setModrinthToken(const QString& token)
+{
+    if (m_modrinthToken != token) {
+        m_modrinthToken = token;
+        APPLICATION->settings()->set("ModrinthToken", token);
+        emit modrinthTokenChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setMetaUrl(const QString& url)
+{
+    if (m_metaUrl != url) {
+        m_metaUrl = url;
+        APPLICATION->settings()->set("MetaURLOverride", url);
+        emit metaUrlChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setUserAgentOverride(const QString& ua)
+{
+    if (m_userAgentOverride != ua) {
+        m_userAgentOverride = ua;
+        APPLICATION->settings()->set("UserAgentOverride", ua);
+        emit userAgentOverrideChanged();
+    }
+}
+
+// === External Tools Page Getters ===
+
+QString LauncherSettingsViewModel::jprofilerPath() const { return m_jprofilerPath; }
+QString LauncherSettingsViewModel::jvisualvmPath() const { return m_jvisualvmPath; }
+QString LauncherSettingsViewModel::mceditPath() const { return m_mceditPath; }
+QString LauncherSettingsViewModel::jsonEditorPath() const { return m_jsonEditorPath; }
+
+// === External Tools Page Setters ===
+
+void LauncherSettingsViewModel::setJprofilerPath(const QString& path)
+{
+    if (m_jprofilerPath != path) {
+        m_jprofilerPath = path;
+        APPLICATION->settings()->set("JProfilerPath", path);
+        emit jprofilerPathChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setJvisualvmPath(const QString& path)
+{
+    if (m_jvisualvmPath != path) {
+        m_jvisualvmPath = path;
+        APPLICATION->settings()->set("JVisualVMPath", path);
+        emit jvisualvmPathChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setMceditPath(const QString& path)
+{
+    if (m_mceditPath != path) {
+        m_mceditPath = path;
+        APPLICATION->settings()->set("MCEditPath", path);
+        emit mceditPathChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setJsonEditorPath(const QString& path)
+{
+    if (m_jsonEditorPath != path) {
+        m_jsonEditorPath = path;
+        APPLICATION->settings()->set("JsonEditor", path);
+        emit jsonEditorPathChanged();
     }
 }

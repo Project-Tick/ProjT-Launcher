@@ -11,6 +11,7 @@
  *  If this file includes work from previous open-source projects,
  *  their original copyright and license notices are preserved below.
  */
+
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
@@ -187,8 +188,8 @@ Rectangle {
             // Account Selector
             Button {
                 id: accountButton
-                text: ProjT.accountsVM && ProjT.accountsVM.currentAccountName ? 
-                      ProjT.accountsVM.currentAccountName : 
+                text: ProjT.accountsVM && ProjT.accountsVM.defaultAccountName ? 
+                      ProjT.accountsVM.defaultAccountName : 
                       qsTr("No Account")
                 
                 implicitHeight: 40
@@ -262,35 +263,189 @@ Rectangle {
                     id: accountMenu
                     y: accountButton.height
                     
-                    // TODO: Populate from AccountsViewModel when available
-                    // For now, show static account management option
+                    // Dynamic account list from AccountsViewModel
+                    Repeater {
+                        model: ProjT.accountsVM ? ProjT.accountsVM.model : null
+                        
+                        MenuItem {
+                            text: model.name || model.display || ""
+                            checkable: true
+                            checked: ProjT.accountsVM && 
+                                     ProjT.accountsVM.defaultAccountIndex === index
+                            
+                            onTriggered: {
+                                if (ProjT.accountsVM) {
+                                    ProjT.accountsVM.setDefaultAccount(index)
+                                    sidebar.accountRequested(index)
+                                }
+                            }
+                        }
+                    }
                     
-                    // Placeholder: In future, this will be populated dynamically:
-                    // Repeater {
-                    //     model: accountsVM ? accountsVM.accounts : []
-                    //     MenuItem {
-                    //         text: modelData.name
-                    //         onTriggered: accountsVM.selectAccount(modelData.id)
-                    //     }
-                    // }
+                    MenuSeparator { 
+                        visible: ProjT.accountsVM && ProjT.accountsVM.count > 0
+                    }
                     
                     MenuItem {
-                        text: qsTr("Manage Accounts...")
+                        text: qsTr("Add Microsoft Account...")
                         onTriggered: {
-                            console.log("Account management requested")
-                            // Will open settings dialog or full accounts page
+                            if (ProjT.accountsVM) {
+                                ProjT.accountsVM.addMicrosoftAccount()
+                            }
+                        }
+                    }
+                    
+                    MenuItem {
+                        text: qsTr("Add Offline Account...")
+                        onTriggered: {
+                            offlineAccountDialog.open()
                         }
                     }
                     
                     MenuSeparator { }
                     
                     MenuItem {
-                        text: qsTr("Logout")
+                        text: qsTr("Manage Accounts...")
                         onTriggered: {
-                            console.log("Logout requested")
+                            console.log("Account management requested")
+                            // Navigate to accounts settings page
+                            if (ProjT.launcherVM) {
+                                ProjT.launcherVM.currentPage = LauncherViewModelEnums.Page.Settings
+                            }
+                            sidebar.pageRequested(LauncherViewModelEnums.Page.Settings)
+                        }
+                    }
+                    
+                    MenuItem {
+                        text: qsTr("Refresh All Accounts")
+                        enabled: ProjT.accountsVM && ProjT.accountsVM.count > 0
+                        onTriggered: {
+                            if (ProjT.accountsVM) {
+                                ProjT.accountsVM.refreshAllAccounts()
+                            }
                         }
                     }
                 }
+            }
+            
+            // Offline Account Dialog
+            Dialog {
+                id: offlineAccountDialog
+                title: qsTr("Add Offline Account")
+                standardButtons: Dialog.Ok | Dialog.Cancel
+                modal: true
+                anchors.centerIn: Overlay.overlay
+                width: 300
+                
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: Theme.spacingM
+                    
+                    Label {
+                        text: qsTr("Username:")
+                        color: Theme.textPrimary
+                    }
+                    
+                    TextField {
+                        id: offlineUsernameField
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Enter username...")
+                    }
+                }
+                
+                onAccepted: {
+                    if (offlineUsernameField.text.trim() !== "" && ProjT.accountsVM) {
+                        ProjT.accountsVM.addOfflineAccount(offlineUsernameField.text.trim())
+                        offlineUsernameField.text = ""
+                    }
+                }
+                
+                onRejected: {
+                    offlineUsernameField.text = ""
+                }
+            }
+            
+            // MS Login URL Dialog
+            Dialog {
+                id: msLoginUrlDialog
+                title: qsTr("Microsoft Login")
+                standardButtons: Dialog.Close
+                modal: true
+                anchors.centerIn: Overlay.overlay
+                width: 400
+                
+                property string loginUrl: ""
+                property string deviceCode: ""
+                
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: Theme.spacingM
+                    
+                    Label {
+                        text: qsTr("Please open the following URL in your browser and enter the code:")
+                        color: Theme.textPrimary
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    
+                    TextField {
+                        id: urlField
+                        text: msLoginUrlDialog.loginUrl
+                        readOnly: true
+                        selectByMouse: true
+                        Layout.fillWidth: true
+                    }
+                    
+                    Label {
+                        text: qsTr("Code: ") + msLoginUrlDialog.deviceCode
+                        font.bold: true
+                        font.pointSize: 14
+                        color: Theme.accent
+                    }
+                    
+                    Button {
+                        text: qsTr("Copy URL")
+                        onClicked: {
+                            urlField.selectAll()
+                            urlField.copy()
+                        }
+                    }
+                    
+                    BusyIndicator {
+                        Layout.alignment: Qt.AlignHCenter
+                        running: msLoginUrlDialog.visible
+                    }
+                    
+                    Label {
+                        text: qsTr("Waiting for authentication...")
+                        color: Theme.textSecondary
+                        Layout.alignment: Qt.AlignHCenter
+                    }
+                }
+            }
+            
+            // Connect to AccountsViewModel signals
+            Connections {
+                target: ProjT.accountsVM
+                
+                function onLoginUrlReady(url, code) {
+                    msLoginUrlDialog.loginUrl = url
+                    msLoginUrlDialog.deviceCode = code || ""
+                    msLoginUrlDialog.open()
+                }
+                
+                function onLoginFinished(success) {
+                    msLoginUrlDialog.close()
+                    if (success) {
+                        console.log("Login successful")
+                    }
+                }
+                
+                function onLoginFailed(error) {
+                    msLoginUrlDialog.close()
+                    console.log("Login failed:", error)
+                }
+            }
             }
             
             // Theme Toggle

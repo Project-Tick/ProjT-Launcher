@@ -809,6 +809,12 @@ SET(LAUNCHER_SOURCES
     viewmodels/NewsViewModel.cpp
     viewmodels/LauncherSettingsViewModel.h
     viewmodels/LauncherSettingsViewModel.cpp
+    viewmodels/AccountsViewModel.h
+    viewmodels/AccountsViewModel.cpp
+    viewmodels/NewInstanceViewModel.h
+    viewmodels/NewInstanceViewModel.cpp
+    viewmodels/InstanceViewModel.h
+    viewmodels/InstanceViewModel.cpp
 
     # Super secret!
     KonamiCode.h

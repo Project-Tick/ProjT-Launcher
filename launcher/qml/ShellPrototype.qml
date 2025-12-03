@@ -11,6 +11,7 @@
  *  If this file includes work from previous open-source projects,
  *  their original copyright and license notices are preserved below.
  */
+
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15

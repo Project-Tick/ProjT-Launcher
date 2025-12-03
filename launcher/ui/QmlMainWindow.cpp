@@ -28,9 +28,13 @@
 #include "Application.h"
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
+#include "translations/TranslationsModel.h"
+#include "viewmodels/AccountsViewModel.h"
 #include "viewmodels/InstanceListViewModel.h"
+#include "viewmodels/InstanceViewModel.h"
 #include "viewmodels/LauncherViewModel.h"
 #include "viewmodels/LauncherSettingsViewModel.h"
+#include "viewmodels/NewInstanceViewModel.h"
 #include "viewmodels/NewsViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
 
@@ -210,6 +214,27 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
     auto launcherSettingsViewModel = new LauncherSettingsViewModel(this);
     ctx->setContextProperty(QStringLiteral("launcherSettingsVM"), launcherSettingsViewModel);
     projt->insert(QStringLiteral("launcherSettingsVM"), QVariant::fromValue(launcherSettingsViewModel));
+
+    // Create and expose AccountsViewModel for account management
+    auto accountsViewModel = new AccountsViewModel(this);
+    ctx->setContextProperty(QStringLiteral("accountsVM"), accountsViewModel);
+    ctx->setContextProperty(QStringLiteral("accountsViewModel"), accountsViewModel);
+    projt->insert(QStringLiteral("accountsVM"), QVariant::fromValue(accountsViewModel));
+
+    // Create and expose NewInstanceViewModel for instance creation
+    auto newInstanceViewModel = new NewInstanceViewModel(this);
+    ctx->setContextProperty(QStringLiteral("newInstanceVM"), newInstanceViewModel);
+    ctx->setContextProperty(QStringLiteral("newInstanceViewModel"), newInstanceViewModel);
+    projt->insert(QStringLiteral("newInstanceVM"), QVariant::fromValue(newInstanceViewModel));
+
+    // Create and expose InstanceViewModel for selected instance details
+    auto instanceViewModel = new InstanceViewModel(this);
+    ctx->setContextProperty(QStringLiteral("instanceVM"), instanceViewModel);
+    ctx->setContextProperty(QStringLiteral("instanceViewModel"), instanceViewModel);
+    projt->insert(QStringLiteral("instanceVM"), QVariant::fromValue(instanceViewModel));
+
+    // Expose TranslationsModel for language selection
+    ctx->setContextProperty(QStringLiteral("translationsModel"), APPLICATION->translations().get());
 
     if (launcherViewModel && m_stateBridge) {
         launcherViewModel->setCurrentPage(LauncherViewModel::stringToPage(m_stateBridge->lastPageRoute()));
