@@ -20,6 +20,21 @@ ScrollView {
     clip: true
     
     property var vm: ProjT.launcherSettingsVM
+    property var detectedJavas: []
+    
+    Connections {
+        target: vm
+        function onJavaAutoDetected(javaPaths) {
+            detectedJavas = javaPaths
+            if (javaPaths.length > 0) {
+                javaSelectionDialog.open()
+            }
+        }
+        function onJavaTestResult(success, message) {
+            javaTestResultLabel.text = message
+            javaTestResultLabel.color = success ? Theme.success : Theme.error
+        }
+    }
     
     ColumnLayout {
         width: javaPage.width - Theme.spacingL
@@ -74,10 +89,21 @@ ScrollView {
                     }
                 }
                 
+                Label {
+                    id: javaTestResultLabel
+                    text: ""
+                    color: Theme.textSecondary
+                    font.pointSize: 9
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                }
+                
                 Button {
                     text: qsTr("Auto-detect Java installations...")
                     onClicked: {
-                        // TODO: Open Java detection dialog
+                        if (vm && vm.autoDetectJava) {
+                            vm.autoDetectJava()
+                        }
                     }
                 }
             }
@@ -189,6 +215,50 @@ ScrollView {
         onAccepted: {
             javaPathField.text = selectedFile.toString().replace("file://", "")
             if (vm) vm.defaultJavaPath = javaPathField.text
+        }
+    }
+    
+    // Java selection dialog
+    Dialog {
+        id: javaSelectionDialog
+        title: qsTr("Select Java Installation")
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        modal: true
+        anchors.centerIn: parent
+        width: 500
+        
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: Theme.spacingM
+            
+            Label {
+                text: qsTr("Found %1 Java installation(s):").arg(detectedJavas.length)
+                color: Theme.textPrimary
+            }
+            
+            ListView {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.min(200, detectedJavas.length * 40)
+                clip: true
+                model: detectedJavas
+                
+                delegate: ItemDelegate {
+                    width: parent.width
+                    text: modelData
+                    highlighted: ListView.isCurrentItem
+                    onClicked: ListView.view.currentIndex = index
+                }
+                
+                ScrollBar.vertical: ScrollBar {}
+            }
+        }
+        
+        onAccepted: {
+            var listView = contentItem.children[0].children[1]  // Get ListView
+            if (listView && listView.currentIndex >= 0 && listView.currentIndex < detectedJavas.length) {
+                javaPathField.text = detectedJavas[listView.currentIndex]
+                if (vm) vm.defaultJavaPath = javaPathField.text
+            }
         }
     }
 }

@@ -84,6 +84,14 @@ class InstanceViewModel : public QObject {
     Q_PROPERTY(QString preLaunchCommand READ preLaunchCommand WRITE setPreLaunchCommand NOTIFY preLaunchCommandChanged)
     Q_PROPERTY(QString postExitCommand READ postExitCommand WRITE setPostExitCommand NOTIFY postExitCommandChanged)
     Q_PROPERTY(QString wrapperCommand READ wrapperCommand WRITE setWrapperCommand NOTIFY wrapperCommandChanged)
+    
+    // Screenshots list
+    Q_PROPERTY(QStringList screenshotPaths READ screenshotPaths NOTIFY screenshotPathsChanged)
+    Q_PROPERTY(QStringList screenshotNames READ screenshotNames NOTIFY screenshotPathsChanged)
+    
+    // Worlds list  
+    Q_PROPERTY(QStringList worldPaths READ worldPaths NOTIFY worldPathsChanged)
+    Q_PROPERTY(QStringList worldNames READ worldNames NOTIFY worldPathsChanged)
 
 public:
     explicit InstanceViewModel(QObject* parent = nullptr);
@@ -124,6 +132,41 @@ public:
     QString managedPackType() const;
     QString managedPackName() const;
     QString managedPackVersionName() const;
+    Q_PROPERTY(QString managedPackUrl READ managedPackUrl NOTIFY managedPackUrlChanged)
+    QString managedPackUrl() const;
+    
+    // Managed pack actions
+    Q_INVOKABLE void checkForPackUpdates();
+    Q_INVOKABLE void updatePack();
+    Q_INVOKABLE void exportPack();
+    
+    // Screenshots actions
+    Q_INVOKABLE void refreshScreenshots();
+    Q_INVOKABLE void copyScreenshotToClipboard(int index);
+    Q_INVOKABLE void deleteScreenshot(int index);
+    Q_INVOKABLE void openScreenshot(int index);
+    
+    // Servers actions
+    Q_INVOKABLE void refreshServers();
+    Q_INVOKABLE void addServer(const QString& name, const QString& address);
+    Q_INVOKABLE void editServer(int index, const QString& name, const QString& address);
+    Q_INVOKABLE void deleteServer(int index);
+    Q_INVOKABLE void moveServerUp(int index);
+    Q_INVOKABLE void moveServerDown(int index);
+    
+    // Worlds actions
+    Q_INVOKABLE void refreshWorlds();
+    Q_INVOKABLE void importWorld();
+    Q_INVOKABLE void copyWorld(int index);
+    Q_INVOKABLE void backupWorld(int index);
+    Q_INVOKABLE void deleteWorld(int index);
+    Q_INVOKABLE void openWorldFolder(int index);
+    
+    // Screenshots/Worlds lists
+    QStringList screenshotPaths() const;
+    QStringList screenshotNames() const;
+    QStringList worldPaths() const;
+    QStringList worldNames() const;
     
     // Java settings
     bool overrideJava() const;
@@ -132,6 +175,7 @@ public:
     void setJavaPath(const QString& path);
     QString jvmArgs() const;
     void setJvmArgs(const QString& args);
+    Q_INVOKABLE void autoDetectJava(const QString& instanceId);
     
     // Memory settings
     bool overrideMemory() const;
@@ -209,6 +253,7 @@ signals:
     void managedPackTypeChanged();
     void managedPackNameChanged();
     void managedPackVersionNameChanged();
+    void managedPackUrlChanged();
     void overrideJavaChanged();
     void javaPathChanged();
     void jvmArgsChanged();
@@ -226,6 +271,9 @@ signals:
     void preLaunchCommandChanged();
     void postExitCommandChanged();
     void wrapperCommandChanged();
+    void screenshotPathsChanged();
+    void worldPathsChanged();
+    void javaAutoDetected(const QStringList& javaPaths);
     
     void launchRequested(const QString& instanceId);
     void launchOfflineRequested(const QString& instanceId);
@@ -238,7 +286,13 @@ private:
     void loadFromInstance();
     void emitAllChanged();
     QString formatTime(qint64 seconds) const;
+    void scanScreenshots();
+    void scanWorlds();
     
     QString m_instanceId;
     InstancePtr m_instance;
+    QStringList m_screenshotPaths;
+    QStringList m_screenshotNames;
+    QStringList m_worldPaths;
+    QStringList m_worldNames;
 };

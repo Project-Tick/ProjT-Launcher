@@ -213,6 +213,7 @@ Rectangle {
             if (mouse.button === Qt.LeftButton) {
                 delegate.clicked(instanceId)
             } else if (mouse.button === Qt.RightButton) {
+                // Pass delegate-local mouse coordinates
                 delegate.rightClicked(instanceId, mouse.x, mouse.y)
             }
         }

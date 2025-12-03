@@ -15,6 +15,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Dialogs 1.3 as Dialogs
 import "../Theme.js" as Theme
 
 ScrollView {
@@ -85,8 +86,18 @@ ScrollView {
                     
                     Button {
                         text: qsTr("Browse...")
-                        onClicked: {
-                            // TODO: File dialog for Java selection
+                        onClicked: javaFileDialog.open()
+                    }
+                    
+                    Dialogs.FileDialog {
+                        id: javaFileDialog
+                        title: qsTr("Select Java Executable")
+                        folder: shortcuts.home
+                        nameFilters: ["Java Executable (java*)"]
+                        onAccepted: {
+                            var path = fileUrl.toString().replace("file://", "")
+                            javaPathField.text = path
+                            if (vm) vm.javaPath = path
                         }
                     }
                     

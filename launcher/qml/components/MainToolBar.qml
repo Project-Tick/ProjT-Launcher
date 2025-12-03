@@ -146,7 +146,7 @@ Rectangle {
                 icon.name: "update-none"
                 display: AbstractButton.TextBesideIcon
                 Layout.preferredHeight: 32
-                visible: true  // TODO: Check if updates are enabled
+                visible: ProjT.launcherSettingsVM ? ProjT.launcherSettingsVM.checkForUpdates : true
                 
                 onClicked: toolbar.checkUpdate()
                 

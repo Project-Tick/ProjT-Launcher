@@ -14,11 +14,18 @@
 
 #include "InstanceViewModel.h"
 
+#include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QGuiApplication>
+#include <QImage>
+#include <QMimeData>
 #include <QUrl>
 
 #include "Application.h"
+#include "FileSystem.h"
 #include "InstanceList.h"
 
 InstanceViewModel::InstanceViewModel(QObject* parent)
@@ -192,6 +199,215 @@ QString InstanceViewModel::managedPackVersionName() const
     return m_instance ? m_instance->getManagedPackVersionName() : QString();
 }
 
+QString InstanceViewModel::managedPackUrl() const
+{
+    // Return pack URL based on platform type
+    if (!m_instance) return QString();
+    
+    QString packId = m_instance->getManagedPackID();
+    QString platform = managedPackType().toLower();
+    
+    if (platform == "modrinth") {
+        return QString("https://modrinth.com/modpack/%1").arg(packId);
+    } else if (platform == "curseforge" || platform == "flame") {
+        return QString("https://www.curseforge.com/minecraft/modpacks/%1").arg(packId);
+    }
+    return QString();
+}
+
+void InstanceViewModel::checkForPackUpdates()
+{
+    qDebug() << "[InstanceViewModel] Checking for pack updates for:" << m_instanceId;
+    // TODO: Implement actual update check through ManagedPackPage logic
+    // For now, this is a placeholder that can be connected to the existing update system
+}
+
+void InstanceViewModel::updatePack()
+{
+    qDebug() << "[InstanceViewModel] Updating pack for:" << m_instanceId;
+    // TODO: Implement actual pack update through ManagedPackPage logic
+}
+
+void InstanceViewModel::exportPack()
+{
+    qDebug() << "[InstanceViewModel] Exporting pack for:" << m_instanceId;
+    // TODO: Open export dialog or perform export
+}
+
+void InstanceViewModel::refreshScreenshots()
+{
+    qDebug() << "[InstanceViewModel] Refreshing screenshots for:" << m_instanceId;
+    scanScreenshots();
+}
+
+void InstanceViewModel::copyScreenshotToClipboard(int index)
+{
+    if (index < 0 || index >= m_screenshotPaths.size()) {
+        qWarning() << "[InstanceViewModel] Invalid screenshot index:" << index;
+        return;
+    }
+    
+    QString path = m_screenshotPaths.at(index);
+    QImage image(path);
+    if (!image.isNull()) {
+        QClipboard* clipboard = QGuiApplication::clipboard();
+        clipboard->setImage(image);
+        qDebug() << "[InstanceViewModel] Copied screenshot to clipboard:" << path;
+    } else {
+        qWarning() << "[InstanceViewModel] Failed to load screenshot:" << path;
+    }
+}
+
+void InstanceViewModel::deleteScreenshot(int index)
+{
+    if (index < 0 || index >= m_screenshotPaths.size()) {
+        qWarning() << "[InstanceViewModel] Invalid screenshot index:" << index;
+        return;
+    }
+    
+    QString path = m_screenshotPaths.at(index);
+    if (QFile::remove(path)) {
+        qDebug() << "[InstanceViewModel] Deleted screenshot:" << path;
+        scanScreenshots();
+    } else {
+        qWarning() << "[InstanceViewModel] Failed to delete screenshot:" << path;
+    }
+}
+
+void InstanceViewModel::openScreenshot(int index)
+{
+    if (index < 0 || index >= m_screenshotPaths.size()) {
+        qWarning() << "[InstanceViewModel] Invalid screenshot index:" << index;
+        return;
+    }
+    
+    QString path = m_screenshotPaths.at(index);
+    QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+}
+
+void InstanceViewModel::refreshServers()
+{
+    qDebug() << "[InstanceViewModel] Refreshing servers for:" << m_instanceId;
+    // TODO: Re-read servers.dat
+}
+
+void InstanceViewModel::addServer(const QString& name, const QString& address)
+{
+    qDebug() << "[InstanceViewModel] Adding server:" << name << address;
+    // TODO: Modify servers.dat
+}
+
+void InstanceViewModel::editServer(int index, const QString& name, const QString& address)
+{
+    qDebug() << "[InstanceViewModel] Editing server" << index << ":" << name << address;
+    // TODO: Modify servers.dat
+}
+
+void InstanceViewModel::deleteServer(int index)
+{
+    qDebug() << "[InstanceViewModel] Deleting server" << index;
+    // TODO: Modify servers.dat
+}
+
+void InstanceViewModel::moveServerUp(int index)
+{
+    qDebug() << "[InstanceViewModel] Moving server up:" << index;
+    // TODO: Modify servers.dat order
+}
+
+void InstanceViewModel::moveServerDown(int index)
+{
+    qDebug() << "[InstanceViewModel] Moving server down:" << index;
+    // TODO: Modify servers.dat order
+}
+
+void InstanceViewModel::refreshWorlds()
+{
+    qDebug() << "[InstanceViewModel] Refreshing worlds for:" << m_instanceId;
+    scanWorlds();
+}
+
+void InstanceViewModel::importWorld()
+{
+    qDebug() << "[InstanceViewModel] Importing world for:" << m_instanceId;
+    // TODO: This should open a file dialog - needs to be done via signal to QML
+}
+
+void InstanceViewModel::copyWorld(int index)
+{
+    if (index < 0 || index >= m_worldPaths.size()) {
+        qWarning() << "[InstanceViewModel] Invalid world index:" << index;
+        return;
+    }
+    
+    QString srcPath = m_worldPaths.at(index);
+    QString srcName = m_worldNames.at(index);
+    QString dstName = srcName + " - Copy";
+    QString dstPath = QFileInfo(srcPath).absolutePath() + "/" + dstName;
+    
+    // Make unique name
+    int counter = 1;
+    while (QDir(dstPath).exists()) {
+        dstPath = QFileInfo(srcPath).absolutePath() + "/" + srcName + QString(" - Copy %1").arg(counter++);
+    }
+    
+    if (FS::copy(srcPath, dstPath)()) {
+        qDebug() << "[InstanceViewModel] Copied world to:" << dstPath;
+        scanWorlds();
+    } else {
+        qWarning() << "[InstanceViewModel] Failed to copy world";
+    }
+}
+
+void InstanceViewModel::backupWorld(int index)
+{
+    if (index < 0 || index >= m_worldPaths.size()) {
+        qWarning() << "[InstanceViewModel] Invalid world index:" << index;
+        return;
+    }
+    
+    QString worldPath = m_worldPaths.at(index);
+    QString worldName = m_worldNames.at(index);
+    
+    // Create backup in instance folder with timestamp
+    QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+    QString backupName = QString("%1_backup_%2.zip").arg(worldName, timestamp);
+    QString backupPath = gameRoot() + "/world_backups/" + backupName;
+    
+    // Ensure backup directory exists
+    QDir().mkpath(gameRoot() + "/world_backups");
+    
+    // TODO: Implement zip creation - for now just log
+    qDebug() << "[InstanceViewModel] Would backup world to:" << backupPath;
+}
+
+void InstanceViewModel::deleteWorld(int index)
+{
+    if (index < 0 || index >= m_worldPaths.size()) {
+        qWarning() << "[InstanceViewModel] Invalid world index:" << index;
+        return;
+    }
+    
+    QString path = m_worldPaths.at(index);
+    if (FS::deletePath(path)) {
+        qDebug() << "[InstanceViewModel] Deleted world:" << path;
+        scanWorlds();
+    } else {
+        qWarning() << "[InstanceViewModel] Failed to delete world:" << path;
+    }
+}
+
+void InstanceViewModel::openWorldFolder(int index)
+{
+    if (index < 0 || index >= m_worldPaths.size()) {
+        qWarning() << "[InstanceViewModel] Invalid world index:" << index;
+        return;
+    }
+    
+    QString path = m_worldPaths.at(index);
+    QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+}
+
 bool InstanceViewModel::overrideJava() const
 {
     if (!m_instance) return false;
@@ -241,6 +457,67 @@ void InstanceViewModel::setJvmArgs(const QString& args)
         settings->set("JvmArgs", args);
         emit jvmArgsChanged();
     }
+}
+
+void InstanceViewModel::autoDetectJava(const QString& instanceId)
+{
+    Q_UNUSED(instanceId)
+    // Search for Java installations in common paths
+    QStringList javaPaths;
+    
+#ifdef Q_OS_WIN
+    javaPaths << "C:/Program Files/Java"
+              << "C:/Program Files (x86)/Java"
+              << "C:/Program Files/Eclipse Adoptium"
+              << "C:/Program Files/AdoptOpenJDK"
+              << QDir::homePath() + "/.jdks";
+#elif defined(Q_OS_MAC)
+    javaPaths << "/Library/Java/JavaVirtualMachines"
+              << "/System/Library/Frameworks/JavaVM.framework/Versions"
+              << QDir::homePath() + "/Library/Java/JavaVirtualMachines";
+#else
+    javaPaths << "/usr/lib/jvm"
+              << "/usr/lib64/jvm"
+              << "/usr/local/lib/jvm"
+              << QDir::homePath() + "/.jdks"
+              << QDir::homePath() + "/.sdkman/candidates/java";
+#endif
+
+    QStringList foundJavas;
+    for (const QString& basePath : javaPaths) {
+        QDir dir(basePath);
+        if (!dir.exists()) continue;
+        
+        QStringList jdkDirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString& jdkDir : jdkDirs) {
+            QString javaExe = basePath + "/" + jdkDir + "/bin/java";
+#ifdef Q_OS_WIN
+            javaExe += ".exe";
+#endif
+            if (QFile::exists(javaExe)) {
+                foundJavas << javaExe;
+            }
+        }
+    }
+    
+    // Also check PATH
+    QString pathEnv = qgetenv("PATH");
+#ifdef Q_OS_WIN
+    QStringList pathDirs = pathEnv.split(';');
+#else
+    QStringList pathDirs = pathEnv.split(':');
+#endif
+    for (const QString& pathDir : pathDirs) {
+        QString javaExe = pathDir + "/java";
+#ifdef Q_OS_WIN
+        javaExe += ".exe";
+#endif
+        if (QFile::exists(javaExe) && !foundJavas.contains(javaExe)) {
+            foundJavas.prepend(javaExe);
+        }
+    }
+    
+    emit javaAutoDetected(foundJavas);
 }
 
 bool InstanceViewModel::overrideMemory() const
@@ -654,6 +931,7 @@ void InstanceViewModel::emitAllChanged()
     emit managedPackTypeChanged();
     emit managedPackNameChanged();
     emit managedPackVersionNameChanged();
+    emit managedPackUrlChanged();
     emit overrideJavaChanged();
     emit javaPathChanged();
     emit jvmArgsChanged();
@@ -689,4 +967,82 @@ QString InstanceViewModel::formatTime(qint64 seconds) const
     } else {
         return tr("Less than a minute");
     }
+}
+
+QStringList InstanceViewModel::screenshotPaths() const
+{
+    return m_screenshotPaths;
+}
+
+QStringList InstanceViewModel::screenshotNames() const
+{
+    return m_screenshotNames;
+}
+
+QStringList InstanceViewModel::worldPaths() const
+{
+    return m_worldPaths;
+}
+
+QStringList InstanceViewModel::worldNames() const
+{
+    return m_worldNames;
+}
+
+void InstanceViewModel::scanScreenshots()
+{
+    m_screenshotPaths.clear();
+    m_screenshotNames.clear();
+    
+    if (!m_instance) {
+        emit screenshotPathsChanged();
+        return;
+    }
+    
+    QString screenshotsPath = gameRoot() + "/screenshots";
+    QDir dir(screenshotsPath);
+    
+    if (dir.exists()) {
+        QStringList filters;
+        filters << "*.png" << "*.jpg" << "*.jpeg";
+        dir.setNameFilters(filters);
+        dir.setSorting(QDir::Time | QDir::Reversed);
+        
+        QFileInfoList files = dir.entryInfoList(QDir::Files);
+        for (const QFileInfo& file : files) {
+            m_screenshotPaths.append(file.absoluteFilePath());
+            m_screenshotNames.append(file.fileName());
+        }
+    }
+    
+    emit screenshotPathsChanged();
+    qDebug() << "[InstanceViewModel] Found" << m_screenshotPaths.size() << "screenshots";
+}
+
+void InstanceViewModel::scanWorlds()
+{
+    m_worldPaths.clear();
+    m_worldNames.clear();
+    
+    if (!m_instance) {
+        emit worldPathsChanged();
+        return;
+    }
+    
+    QString savesPath = gameRoot() + "/saves";
+    QDir dir(savesPath);
+    
+    if (dir.exists()) {
+        QFileInfoList entries = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QFileInfo& entry : entries) {
+            // Check if it's a valid world folder (has level.dat)
+            if (QFile::exists(entry.absoluteFilePath() + "/level.dat")) {
+                m_worldPaths.append(entry.absoluteFilePath());
+                m_worldNames.append(entry.fileName());
+            }
+        }
+    }
+    
+    emit worldPathsChanged();
+    qDebug() << "[InstanceViewModel] Found" << m_worldPaths.size() << "worlds";
 }

@@ -208,8 +208,12 @@ Rectangle {
                     }
                     Button {
                         text: qsTr("Auto-detect")
-                        enabled: false // TODO: Implement QML Java detection dialog
-                        ToolTip.text: qsTr("Not yet implemented in QML")
+                        onClicked: {
+                            if (vm && vm.autoDetectJava) {
+                                vm.autoDetectJava(vm.instanceId)
+                            }
+                        }
+                        ToolTip.text: qsTr("Automatically detect installed Java versions")
                         ToolTip.visible: hovered
                     }
                 }

@@ -80,6 +80,7 @@ Rectangle {
             
             Button {
                 text: qsTr("Add")
+                onClicked: addServerDialog.open()
                 
                 background: Rectangle {
                     color: parent.hovered ? Theme.surface1 : Theme.surface0
@@ -99,6 +100,12 @@ Rectangle {
             Button {
                 text: qsTr("Edit")
                 enabled: serversList.currentIndex >= 0
+                onClicked: {
+                    if (serversList.currentIndex >= 0) {
+                        editServerDialog.serverIndex = serversList.currentIndex
+                        editServerDialog.open()
+                    }
+                }
                 
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
@@ -118,6 +125,7 @@ Rectangle {
             Button {
                 text: qsTr("Delete")
                 enabled: serversList.currentIndex >= 0
+                onClicked: deleteServerDialog.open()
                 
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? Theme.red : Theme.surface0) : Theme.mantle
@@ -143,6 +151,11 @@ Rectangle {
             Button {
                 text: qsTr("Move Up")
                 enabled: serversList.currentIndex > 0
+                onClicked: {
+                    if (root.vm && serversList.currentIndex > 0) {
+                        root.vm.moveServerUp(serversList.currentIndex)
+                    }
+                }
                 
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
@@ -162,6 +175,11 @@ Rectangle {
             Button {
                 text: qsTr("Move Down")
                 enabled: serversList.currentIndex >= 0 && serversList.currentIndex < serversList.count - 1
+                onClicked: {
+                    if (root.vm && serversList.currentIndex >= 0) {
+                        root.vm.moveServerDown(serversList.currentIndex)
+                    }
+                }
                 
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
@@ -182,6 +200,9 @@ Rectangle {
             
             Button {
                 text: qsTr("Refresh")
+                onClicked: {
+                    if (root.vm) root.vm.refreshServers()
+                }
                 
                 background: Rectangle {
                     color: parent.hovered ? Theme.surface1 : Theme.surface0
@@ -235,6 +256,8 @@ Rectangle {
                     onClicked: serversList.currentIndex = index
                     onDoubleClicked: {
                         // Edit server
+                        editServerDialog.serverIndex = index
+                        editServerDialog.open()
                     }
                 }
                 
@@ -320,6 +343,126 @@ Rectangle {
                         }
                     }
                 }
+            }
+        }
+    }
+    
+    // Add Server Dialog
+    Dialog {
+        id: addServerDialog
+        title: qsTr("Add Server")
+        modal: true
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+        width: 400
+        
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: Theme.spacingS
+            
+            Label {
+                text: qsTr("Server Name:")
+                color: Theme.foreground
+            }
+            
+            TextField {
+                id: newServerNameField
+                Layout.fillWidth: true
+                placeholderText: qsTr("My Server")
+            }
+            
+            Label {
+                text: qsTr("Server Address:")
+                color: Theme.foreground
+            }
+            
+            TextField {
+                id: newServerAddressField
+                Layout.fillWidth: true
+                placeholderText: qsTr("server.example.com:25565")
+            }
+        }
+        
+        onAccepted: {
+            if (root.vm && newServerNameField.text.length > 0 && newServerAddressField.text.length > 0) {
+                root.vm.addServer(newServerNameField.text, newServerAddressField.text)
+                newServerNameField.text = ""
+                newServerAddressField.text = ""
+            }
+        }
+    }
+    
+    // Edit Server Dialog
+    Dialog {
+        id: editServerDialog
+        title: qsTr("Edit Server")
+        modal: true
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+        width: 400
+        
+        property int serverIndex: -1
+        
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: Theme.spacingS
+            
+            Label {
+                text: qsTr("Server Name:")
+                color: Theme.foreground
+            }
+            
+            TextField {
+                id: editServerNameField
+                Layout.fillWidth: true
+            }
+            
+            Label {
+                text: qsTr("Server Address:")
+                color: Theme.foreground
+            }
+            
+            TextField {
+                id: editServerAddressField
+                Layout.fillWidth: true
+            }
+        }
+        
+        onOpened: {
+            if (serverIndex >= 0 && root.vm) {
+                // Load current server data
+                editServerNameField.text = serversModel.get(serverIndex).name || ""
+                editServerAddressField.text = serversModel.get(serverIndex).address || ""
+            }
+        }
+        
+        onAccepted: {
+            if (root.vm && serverIndex >= 0) {
+                root.vm.editServer(serverIndex, editServerNameField.text, editServerAddressField.text)
+            }
+        }
+    }
+    
+    // Delete Server Dialog
+    Dialog {
+        id: deleteServerDialog
+        title: qsTr("Delete Server")
+        modal: true
+        standardButtons: Dialog.Yes | Dialog.No
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+        
+        Label {
+            text: qsTr("Are you sure you want to delete this server?")
+            color: Theme.red
+            wrapMode: Text.WordWrap
+        }
+        
+        onAccepted: {
+            if (root.vm && serversList.currentIndex >= 0) {
+                root.vm.deleteServer(serversList.currentIndex)
             }
         }
     }
