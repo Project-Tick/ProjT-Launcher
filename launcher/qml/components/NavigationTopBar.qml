@@ -152,32 +152,16 @@ Rectangle {
             // === Accounts Button ===
             Button {
                 id: accountsBtn
-                text: "👤"
-                Layout.preferredWidth: 40
+                text: ProjT.accountsVM && ProjT.accountsVM.defaultAccountName 
+                      ? "👤 " + ProjT.accountsVM.defaultAccountName.substring(0, 10) 
+                      : "👤"
                 Layout.preferredHeight: 32
                 
-                onClicked: accountsMenu.open()
+                onClicked: topBar.accountsMenuRequested()
                 
-                ToolTip.text: qsTr("Manage accounts")
+                ToolTip.text: qsTr("Open account settings")
                 ToolTip.visible: hovered
                 ToolTip.delay: 500
-                
-                Menu {
-                    id: accountsMenu
-                    y: accountsBtn.height
-                    
-                    MenuItem {
-                        text: qsTr("Manage Accounts")
-                        onTriggered: topBar.accountsMenuRequested()
-                    }
-                    
-                    MenuSeparator {}
-                    
-                    MenuItem {
-                        text: qsTr("No Accounts")
-                        enabled: false
-                    }
-                }
             }
         }
     }

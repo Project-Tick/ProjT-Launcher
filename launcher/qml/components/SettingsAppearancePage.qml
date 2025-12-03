@@ -7,9 +7,6 @@
  *
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
- *
- *  If this file includes work from previous open-source projects,
- *  their original copyright and license notices are preserved below.
  */
 
 import QtQuick 2.15
@@ -21,7 +18,7 @@ ScrollView {
     id: appearancePage
     clip: true
     
-    property var vm: launcherSettingsVM
+    property var vm: ProjT.launcherSettingsVM
     
     property var themeOptions: ["System", "Light", "Dark", "Custom"]
     property var iconThemeOptions: ["Default", "Flat", "Flat (White)", "Legacy", "Simple (Dark)", "Simple (Light)"]

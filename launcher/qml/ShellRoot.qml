@@ -515,8 +515,8 @@ Rectangle {
             }
             
             onAccountsMenuRequested: {
-                console.log("[ShellRoot] Accounts menu requested")
-                showAccountsWindow()
+                console.log("[ShellRoot] Accounts menu requested - opening Settings > Accounts")
+                showSettingsOnAccountsPage()
             }
             
             // Folder actions (using DesktopServices)
@@ -643,7 +643,21 @@ Rectangle {
     // ════════════════════════════════════════════════════════════════
     
     // Helper function to show windows
-    function showSettingsWindow() { settingsWindowLoader.active = true }
+    function showSettingsWindow(pageIndex) {
+        settingsWindowLoader.active = true
+        if (pageIndex !== undefined && settingsWindowLoader.item) {
+            settingsWindowLoader.item.currentPageIndex = pageIndex
+        }
+    }
+    function showSettingsOnAccountsPage() {
+        settingsWindowLoader.active = true
+        // Accounts page is at index 6
+        Qt.callLater(function() {
+            if (settingsWindowLoader.item) {
+                settingsWindowLoader.item.currentPageIndex = 6
+            }
+        })
+    }
     function showAboutWindow() { aboutWindowLoader.active = true }
     function showLogsWindow() { logsWindowLoader.active = true }
     function showNewsWindow() { newsWindowLoader.active = true }

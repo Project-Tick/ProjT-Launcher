@@ -34,6 +34,7 @@
 #include "viewmodels/InstanceViewModel.h"
 #include "viewmodels/LauncherViewModel.h"
 #include "viewmodels/LauncherSettingsViewModel.h"
+#include "viewmodels/LogsViewModel.h"
 #include "viewmodels/NewInstanceViewModel.h"
 #include "viewmodels/NewsViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
@@ -232,6 +233,12 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
     ctx->setContextProperty(QStringLiteral("instanceVM"), instanceViewModel);
     ctx->setContextProperty(QStringLiteral("instanceViewModel"), instanceViewModel);
     projt->insert(QStringLiteral("instanceVM"), QVariant::fromValue(instanceViewModel));
+
+    // Create and expose LogsViewModel for logs page
+    auto logsViewModel = new LogsViewModel(this);
+    ctx->setContextProperty(QStringLiteral("logsVM"), logsViewModel);
+    ctx->setContextProperty(QStringLiteral("logsViewModel"), logsViewModel);
+    projt->insert(QStringLiteral("logsVM"), QVariant::fromValue(logsViewModel));
 
     // Expose TranslationsModel for language selection
     ctx->setContextProperty(QStringLiteral("translationsModel"), APPLICATION->translations().get());

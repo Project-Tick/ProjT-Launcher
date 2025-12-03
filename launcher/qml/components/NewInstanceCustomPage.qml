@@ -129,18 +129,18 @@ Rectangle {
                         Image {
                             Layout.preferredWidth: 16
                             Layout.preferredHeight: 16
-                            source: Theme.versionTypeIcon(model.versionType || "release")
+                            source: Theme.versionTypeIcon(model.type || "release")
                             fillMode: Image.PreserveAspectFit
                         }
                         
                         Label {
-                            text: model.versionName || model.display || ""
+                            text: model.version || model.versionId || ""
                             color: Theme.textPrimary
                             Layout.fillWidth: true
                         }
                         
                         Label {
-                            text: model.versionType || ""
+                            text: model.type || ""
                             color: Theme.textSecondary
                             font.pointSize: 9
                         }
@@ -148,7 +148,7 @@ Rectangle {
                     
                     onClicked: {
                         versionListView.currentIndex = index
-                        var version = model.versionName || model.display || ""
+                        var version = model.version || model.versionId || ""
                         customPage.selectedVersion = version
                         if (vm) vm.selectedMinecraftVersion = version
                         versionSelected(version)
@@ -156,7 +156,7 @@ Rectangle {
                     
                     onDoubleClicked: {
                         versionListView.currentIndex = index
-                        var version = model.versionName || model.display || ""
+                        var version = model.version || model.versionId || ""
                         customPage.selectedVersion = version
                         if (vm) vm.selectedMinecraftVersion = version
                         versionSelected(version)
@@ -212,39 +212,34 @@ Rectangle {
             }
         }
         
-        // Instance name input
+        // Selected version info
         GroupBox {
             Layout.fillWidth: true
-            title: qsTr("Instance Name")
+            title: qsTr("Selected Version")
+            visible: customPage.selectedVersion !== ""
             
             RowLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingM
                 
-                TextField {
-                    id: instanceNameField
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Enter instance name...")
-                    text: vm ? vm.instanceName : ""
-                    onTextChanged: {
-                        if (vm) vm.instanceName = text
-                    }
+                Image {
+                    Layout.preferredWidth: 24
+                    Layout.preferredHeight: 24
+                    source: Theme.icon("minecraft")
+                    fillMode: Image.PreserveAspectFit
                 }
                 
-                Button {
-                    text: qsTr("Create")
-                    enabled: customPage.selectedVersion !== "" && instanceNameField.text !== ""
-                    onClicked: {
-                        if (vm) {
-                            vm.createInstance()
-                        }
-                        createRequested(
-                            instanceNameField.text,
-                            customPage.selectedVersion,
-                            loaderCombo.currentText,
-                            loaderVersionCombo.currentText
-                        )
-                    }
+                Label {
+                    text: customPage.selectedVersion
+                    color: Theme.textPrimary
+                    font.bold: true
+                    Layout.fillWidth: true
+                }
+                
+                Label {
+                    text: loaderCombo.currentIndex > 0 ? ("+ " + loaderCombo.currentText) : ""
+                    color: Theme.accent
+                    visible: loaderCombo.currentIndex > 0
                 }
             }
         }

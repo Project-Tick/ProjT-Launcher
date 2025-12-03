@@ -17,14 +17,18 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "../Theme.js" as Theme
 
+
 /**
  * Notes Page – Phase 11.C.3
  * Instance notes editor
  */
 
 Rectangle {
+    id: root
     objectName: "notesPage"
     color: Theme.background
+    
+    property var vm: ProjT.instanceVM
     
     ColumnLayout {
         anchors.fill: parent
@@ -33,23 +37,88 @@ Rectangle {
         
         Text {
             text: qsTr("Notes")
-            font.pixelSize: 20
+            font.pixelSize: 24
             font.weight: Font.Bold
             color: Theme.foreground
         }
         
-        TextArea {
+        Text {
+            text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
+            font.pixelSize: 14
+            color: Theme.mutedForeground
+            visible: root.vm !== null
+        }
+        
+        ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            placeholderText: qsTr("Add notes about this instance...")
-            text: qsTr("This is a Fabric instance with mods.\nManaged by Project Tick Launcher.")
+            
+            TextArea {
+                id: notesTextArea
+                placeholderText: qsTr("Add notes about this instance...")
+                text: root.vm ? root.vm.notes : ""
+                wrapMode: TextEdit.Wrap
+                selectByMouse: true
+                
+                background: Rectangle {
+                    color: Theme.surface0
+                    border.color: notesTextArea.activeFocus ? Theme.accent : Theme.surface1
+                    border.width: 1
+                    radius: Theme.radiusS
+                }
+                
+                color: Theme.foreground
+                placeholderTextColor: Theme.mutedForeground
+            }
         }
         
         RowLayout {
-            spacing: Theme.spacingS
-            Button { text: qsTr("Save"); width: 80 }
-            Button { text: qsTr("Clear"); width: 80 }
+            Layout.fillWidth: true
+            spacing: Theme.spacingM
+            
             Item { Layout.fillWidth: true }
+            
+            Button {
+                text: qsTr("Clear")
+                onClicked: notesTextArea.text = ""
+                
+                background: Rectangle {
+                    color: parent.hovered ? Theme.surface1 : Theme.surface0
+                    border.color: Theme.surface2
+                    border.width: 1
+                    radius: Theme.radiusS
+                }
+                
+                contentItem: Text {
+                    text: parent.text
+                    color: Theme.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+            
+            Button {
+                text: qsTr("Save")
+                onClicked: {
+                    if (root.vm) {
+                        root.vm.notes = notesTextArea.text;
+                        root.vm.saveSettings();
+                    }
+                }
+                
+                background: Rectangle {
+                    color: parent.hovered ? Qt.lighter(Theme.accent, 1.1) : Theme.accent
+                    radius: Theme.radiusS
+                }
+                
+                contentItem: Text {
+                    text: parent.text
+                    color: Theme.base
+                    font.weight: Font.DemiBold
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
         }
     }
 }

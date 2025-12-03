@@ -7,9 +7,6 @@
  *
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
- *
- *  If this file includes work from previous open-source projects,
- *  their original copyright and license notices are preserved below.
  */
 
 import QtQuick 2.15
@@ -17,68 +14,208 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "../Theme.js" as Theme
 
+
 /**
  * Screenshots Page – Phase 11.C.2
- * Screenshots gallery
+ * Screenshots gallery for instance
  */
 
 Rectangle {
+    id: root
     objectName: "screenshotsPage"
     color: Theme.background
+    
+    property var vm: ProjT.instanceVM
     
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
         spacing: Theme.spacingM
         
-        Text {
-            text: qsTr("Screenshots")
-            font.pixelSize: 20
-            font.weight: Font.Bold
-            color: Theme.foreground
-        }
-        
+        // Header
         RowLayout {
-            spacing: Theme.spacingS
-            Button { text: qsTr("Open Folder"); width: 100 }
-            Button { text: qsTr("Copy"); width: 80 }
+            Layout.fillWidth: true
+            spacing: Theme.spacingM
+            
+            Text {
+                text: qsTr("Screenshots")
+                font.pixelSize: 24
+                font.weight: Font.Bold
+                color: Theme.foreground
+            }
+            
             Item { Layout.fillWidth: true }
+            
+            Button {
+                text: qsTr("Open Folder")
+                onClicked: if (root.vm) root.vm.openScreenshotsFolder()
+                
+                background: Rectangle {
+                    color: parent.hovered ? Theme.surface1 : Theme.surface0
+                    border.color: Theme.surface2
+                    border.width: 1
+                    radius: Theme.radiusS
+                }
+                
+                contentItem: Text {
+                    text: parent.text
+                    color: Theme.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
         }
         
+        Text {
+            text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
+            font.pixelSize: 14
+            color: Theme.mutedForeground
+            visible: root.vm !== null
+        }
+        
+        // Toolbar
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacingS
+            
+            Button {
+                text: qsTr("Copy")
+                enabled: gridView.currentIndex >= 0
+                
+                background: Rectangle {
+                    color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
+                    border.color: Theme.surface2
+                    border.width: 1
+                    radius: Theme.radiusS
+                }
+                
+                contentItem: Text {
+                    text: parent.text
+                    color: parent.enabled ? Theme.foreground : Theme.mutedForeground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+            
+            Button {
+                text: qsTr("Delete")
+                enabled: gridView.currentIndex >= 0
+                
+                background: Rectangle {
+                    color: parent.enabled ? (parent.hovered ? Theme.red : Theme.surface0) : Theme.mantle
+                    border.color: parent.enabled ? Theme.red : Theme.surface2
+                    border.width: 1
+                    radius: Theme.radiusS
+                }
+                
+                contentItem: Text {
+                    text: parent.text
+                    color: parent.enabled ? (parent.hovered ? Theme.base : Theme.red) : Theme.mutedForeground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+            
+            Item { Layout.fillWidth: true }
+            
+            Button {
+                text: qsTr("Refresh")
+                
+                background: Rectangle {
+                    color: parent.hovered ? Theme.surface1 : Theme.surface0
+                    border.color: Theme.surface2
+                    border.width: 1
+                    radius: Theme.radiusS
+                }
+                
+                contentItem: Text {
+                    text: parent.text
+                    color: Theme.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+        }
+        
+        // Screenshots Grid
         GridView {
+            id: gridView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            cellWidth: 200
-            cellHeight: 150
+            cellWidth: 210
+            cellHeight: 170
             
-            model: 6
+            // Placeholder model - will be replaced with actual screenshots model
+            model: ListModel {
+                id: screenshotsModel
+            }
+            
+            // Empty state
+            Text {
+                anchors.centerIn: parent
+                text: qsTr("No screenshots found.\nTake screenshots in-game (F2) and they will appear here.")
+                horizontalAlignment: Text.AlignHCenter
+                color: Theme.mutedForeground
+                font.pixelSize: 14
+                visible: gridView.count === 0
+            }
+            
             delegate: Rectangle {
-                width: 180
-                height: 130
-                color: Theme.secondary
-                border.color: Theme.accent
+                width: 200
+                height: 160
+                color: gridView.currentIndex === index ? Theme.selection : Theme.surface0
+                border.color: gridView.currentIndex === index ? Theme.accent : Theme.surface1
                 border.width: 1
+                radius: Theme.radiusS
+                
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: gridView.currentIndex = index
+                    onDoubleClicked: {
+                        // Open screenshot
+                    }
+                }
                 
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: Theme.spacingS
+                    spacing: Theme.spacingXS
                     
+                    // Thumbnail placeholder
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        color: "#333"
+                        color: Theme.mantle
+                        radius: Theme.radiusXS
+                        
+                        Image {
+                            anchors.fill: parent
+                            anchors.margins: 2
+                            source: model.path || ""
+                            fillMode: Image.PreserveAspectCrop
+                            visible: source !== ""
+                        }
                         
                         Text {
                             anchors.centerIn: parent
-                            text: qsTr("Screenshot")
-                            color: Theme.foreground
+                            text: "🖼️"
+                            font.pixelSize: 32
+                            visible: !model.path
                         }
                     }
                     
                     Text {
-                        text: qsTr("2025-12-01")
+                        text: model.name || qsTr("Screenshot %1").arg(index + 1)
                         color: Theme.foreground
+                        font.pixelSize: 11
+                        elide: Text.ElideMiddle
+                        Layout.fillWidth: true
+                    }
+                    
+                    Text {
+                        text: model.date || ""
+                        color: Theme.mutedForeground
                         font.pixelSize: 10
                     }
                 }
