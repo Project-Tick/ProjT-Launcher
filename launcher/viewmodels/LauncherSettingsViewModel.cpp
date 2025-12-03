@@ -92,9 +92,12 @@ void LauncherSettingsViewModel::loadFromApplication()
     m_iconTheme = s->get("IconTheme").toString();
     if (m_iconTheme.isEmpty()) m_iconTheme = "pe_colored";
     m_showToolbarText = !s->get("ToolbarsLocked").toBool();  // inverted: ToolbarsLocked means toolbar text not shown
+    m_buttonStyle = s->get("ToolbarButtonStyle").toInt();
+    if (m_buttonStyle < 0 || m_buttonStyle > 3) m_buttonStyle = 3;  // Default: TextUnderIcon
     m_instanceListIcons = true;  // Not stored in settings, default true
     m_showInstanceStatusLight = true;  // Not stored in settings, default true
     m_enableCat = s->get("TheCat").toBool();
+    m_checkForUpdates = s->get("AutoUpdate").toBool();
     
     // Proxy Page
     int proxyTypeInt = s->get("ProxyType").toInt();
@@ -340,6 +343,69 @@ void LauncherSettingsViewModel::testJavaPath(const QString& path)
     } else {
         emit javaTestResult(false, tr("Invalid Java installation"));
     }
+}
+
+void LauncherSettingsViewModel::autoDetectJava()
+{
+    // Search for Java installations in common paths
+    QStringList javaPaths;
+    
+#ifdef Q_OS_WIN
+    // Windows paths
+    javaPaths << "C:/Program Files/Java"
+              << "C:/Program Files (x86)/Java"
+              << "C:/Program Files/Eclipse Adoptium"
+              << "C:/Program Files/AdoptOpenJDK"
+              << QDir::homePath() + "/.jdks";
+#elif defined(Q_OS_MAC)
+    // macOS paths
+    javaPaths << "/Library/Java/JavaVirtualMachines"
+              << "/System/Library/Frameworks/JavaVM.framework/Versions"
+              << QDir::homePath() + "/Library/Java/JavaVirtualMachines";
+#else
+    // Linux paths
+    javaPaths << "/usr/lib/jvm"
+              << "/usr/lib64/jvm"
+              << "/usr/local/lib/jvm"
+              << QDir::homePath() + "/.jdks"
+              << QDir::homePath() + "/.sdkman/candidates/java";
+#endif
+
+    QStringList foundJavas;
+    for (const QString& basePath : javaPaths) {
+        QDir dir(basePath);
+        if (!dir.exists()) continue;
+        
+        QStringList jdkDirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString& jdkDir : jdkDirs) {
+            QString javaExe = basePath + "/" + jdkDir + "/bin/java";
+#ifdef Q_OS_WIN
+            javaExe += ".exe";
+#endif
+            if (QFile::exists(javaExe)) {
+                foundJavas << javaExe;
+            }
+        }
+    }
+    
+    // Also check PATH
+    QString pathEnv = qgetenv("PATH");
+#ifdef Q_OS_WIN
+    QStringList pathDirs = pathEnv.split(';');
+#else
+    QStringList pathDirs = pathEnv.split(':');
+#endif
+    for (const QString& pathDir : pathDirs) {
+        QString javaExe = pathDir + "/java";
+#ifdef Q_OS_WIN
+        javaExe += ".exe";
+#endif
+        if (QFile::exists(javaExe) && !foundJavas.contains(javaExe)) {
+            foundJavas.prepend(javaExe);  // PATH java first
+        }
+    }
+    
+    emit javaAutoDetected(foundJavas);
 }
 
 // === Launcher Page Getters ===
@@ -702,6 +768,30 @@ void LauncherSettingsViewModel::setEnableCat(bool value)
         m_enableCat = value;
         APPLICATION->settings()->set("TheCat", value);
         emit enableCatChanged();
+    }
+}
+
+// === Button Style and Updates ===
+
+int LauncherSettingsViewModel::buttonStyle() const { return m_buttonStyle; }
+
+void LauncherSettingsViewModel::setButtonStyle(int value)
+{
+    if (m_buttonStyle != value) {
+        m_buttonStyle = value;
+        APPLICATION->settings()->set("ToolbarButtonStyle", value);
+        emit buttonStyleChanged();
+    }
+}
+
+bool LauncherSettingsViewModel::checkForUpdates() const { return m_checkForUpdates; }
+
+void LauncherSettingsViewModel::setCheckForUpdates(bool value)
+{
+    if (m_checkForUpdates != value) {
+        m_checkForUpdates = value;
+        APPLICATION->settings()->set("AutoUpdate", value);
+        emit checkForUpdatesChanged();
     }
 }
 

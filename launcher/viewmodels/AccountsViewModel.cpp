@@ -120,6 +120,9 @@ void AccountsViewModel::addMicrosoftAccount()
                 this, [this](const QUrl& url) {
                     emit loginUrlReady(url.toString(), QString());
                 });
+        
+        // Start the login task
+        m_currentLoginTask->start();
     }
 }
 
@@ -151,6 +154,9 @@ void AccountsViewModel::addMicrosoftAccountWithDevice()
                 this, [this](const QString& url, const QString& code, int) {
                     emit loginUrlReady(url, code);
                 });
+        
+        // Start the login task
+        m_currentLoginTask->start();
     }
 }
 

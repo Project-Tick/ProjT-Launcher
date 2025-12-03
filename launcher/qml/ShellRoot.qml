@@ -94,13 +94,72 @@ Rectangle {
                                 fillMode: Image.PreserveAspectFit
                             }
                             
-                            onClicked: {
-                                // TODO: Icon picker dialog
-                                console.log("Icon picker requested")
-                            }
+                            onClicked: iconPickerPopup.open()
                             
                             ToolTip.text: qsTr("Click to change icon")
                             ToolTip.visible: hovered
+                            
+                            Popup {
+                                id: iconPickerPopup
+                                x: iconButton.width + Theme.spacingS
+                                y: 0
+                                width: 320
+                                height: 280
+                                modal: true
+                                
+                                background: Rectangle {
+                                    color: Theme.surface
+                                    border.color: "#323742"
+                                    radius: Theme.radius
+                                }
+                                
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: Theme.spacingS
+                                    spacing: Theme.spacingS
+                                    
+                                    Label {
+                                        text: qsTr("Select Icon")
+                                        color: Theme.textPrimary
+                                        font.bold: true
+                                    }
+                                    
+                                    GridView {
+                                        Layout.fillWidth: true
+                                        Layout.fillHeight: true
+                                        cellWidth: 52
+                                        cellHeight: 52
+                                        clip: true
+                                        
+                                        model: ["default", "bee", "brick", "chicken", "creeper", "diamond", "dirt", "enderman", "enderpearl", "flame", "fox", "gear", "herobrine", "magitech", "meat", "modrinth", "netherstar", "planks", "skeleton", "squarecreeper", "steve", "stone"]
+                                        
+                                        delegate: Button {
+                                            width: 48
+                                            height: 48
+                                            
+                                            background: Rectangle {
+                                                color: newInstanceWindow.selectedIconKey === modelData ? Theme.accent : (parent.hovered ? "#3d4d60" : "transparent")
+                                                radius: Theme.radius
+                                                border.color: newInstanceWindow.selectedIconKey === modelData ? Theme.accent : "transparent"
+                                                border.width: 2
+                                            }
+                                            
+                                            Image {
+                                                anchors.centerIn: parent
+                                                width: 40
+                                                height: 40
+                                                source: Theme.instanceIconFromKey(modelData)
+                                                fillMode: Image.PreserveAspectFit
+                                            }
+                                            
+                                            onClicked: {
+                                                newInstanceWindow.selectedIconKey = modelData
+                                                iconPickerPopup.close()
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                         
                         // Name and Group fields
@@ -314,6 +373,12 @@ Rectangle {
                                     var version = customPage.selectedVersion || ""
                                     var group = groupCombo.currentText || ""
                                     ProjT.instancesVM.createNewInstance(instNameField.text, version, group)
+                                    // Refresh instance list after creation
+                                    Qt.callLater(function() {
+                                        if (ProjT.instancesVM) {
+                                            ProjT.instancesVM.refreshInstances()
+                                        }
+                                    })
                                 }
                                 newInstanceWindow.close()
                             }
@@ -558,6 +623,10 @@ Rectangle {
                 id: instancePage
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                
+                onCreateNewInstance: {
+                    showNewInstanceWindow()
+                }
             }
             
             // === Separator Line ===

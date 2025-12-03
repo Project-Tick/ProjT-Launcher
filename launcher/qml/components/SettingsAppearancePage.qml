@@ -103,8 +103,9 @@ ScrollView {
                         id: buttonStyleCombo
                         Layout.fillWidth: true
                         model: buttonStyleOptions
-                        currentIndex: 3
-                        // TODO: bind to vm.buttonStyle when added
+                        currentIndex: vm && vm.buttonStyle !== undefined ? vm.buttonStyle : 3
+                        onActivated: if (vm && vm.buttonStyle !== undefined) vm.buttonStyle = currentIndex
+                        // Note: buttonStyle property needs to be added to LauncherSettingsViewModel
                     }
                 }
             }

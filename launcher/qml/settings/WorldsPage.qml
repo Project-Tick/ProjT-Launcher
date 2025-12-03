@@ -80,6 +80,9 @@ Rectangle {
             
             Button {
                 text: qsTr("Add")
+                onClicked: {
+                    if (root.vm) root.vm.importWorld()
+                }
                 
                 background: Rectangle {
                     color: parent.hovered ? Theme.surface1 : Theme.surface0
@@ -99,6 +102,11 @@ Rectangle {
             Button {
                 text: qsTr("Copy")
                 enabled: worldsList.currentIndex >= 0
+                onClicked: {
+                    if (root.vm && worldsList.currentIndex >= 0) {
+                        root.vm.copyWorld(worldsList.currentIndex)
+                    }
+                }
                 
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
@@ -118,6 +126,11 @@ Rectangle {
             Button {
                 text: qsTr("Backup")
                 enabled: worldsList.currentIndex >= 0
+                onClicked: {
+                    if (root.vm && worldsList.currentIndex >= 0) {
+                        root.vm.backupWorld(worldsList.currentIndex)
+                    }
+                }
                 
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
@@ -137,6 +150,7 @@ Rectangle {
             Button {
                 text: qsTr("Delete")
                 enabled: worldsList.currentIndex >= 0
+                onClicked: deleteWorldDialog.open()
                 
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? Theme.red : Theme.surface0) : Theme.mantle
@@ -157,6 +171,9 @@ Rectangle {
             
             Button {
                 text: qsTr("Refresh")
+                onClicked: {
+                    if (root.vm) root.vm.refreshWorlds()
+                }
                 
                 background: Rectangle {
                     color: parent.hovered ? Theme.surface1 : Theme.surface0
@@ -182,9 +199,11 @@ Rectangle {
             clip: true
             spacing: Theme.spacingXS
             
-            // Placeholder model - will be replaced with actual worlds model
-            model: ListModel {
-                id: worldsModel
+            // Use ViewModel's world paths
+            model: root.vm ? root.vm.worldPaths : []
+            
+            Component.onCompleted: {
+                if (root.vm) root.vm.refreshWorlds()
             }
             
             // Empty state
@@ -205,11 +224,15 @@ Rectangle {
                 border.width: 1
                 radius: Theme.radiusS
                 
+                property string worldPath: modelData
+                property string worldName: root.vm && root.vm.worldNames[index] ? root.vm.worldNames[index] : ""
+                
                 MouseArea {
                     anchors.fill: parent
                     onClicked: worldsList.currentIndex = index
                     onDoubleClicked: {
                         // Open world folder
+                        if (root.vm) root.vm.openWorldFolder(index)
                     }
                 }
                 
@@ -237,7 +260,6 @@ Rectangle {
                             anchors.centerIn: parent
                             text: "🌍"
                             font.pixelSize: 32
-                            visible: !model.icon
                         }
                     }
                     
@@ -247,43 +269,41 @@ Rectangle {
                         spacing: 2
                         
                         Text {
-                            text: model.name || qsTr("World %1").arg(index + 1)
+                            text: worldName || qsTr("World %1").arg(index + 1)
                             color: Theme.foreground
                             font.weight: Font.DemiBold
                             font.pixelSize: 14
                         }
                         
                         Text {
-                            text: model.gameMode || qsTr("Survival")
+                            text: qsTr("Survival")
                             color: Theme.accent
                             font.pixelSize: 12
                         }
-                        
-                        Text {
-                            text: model.lastPlayed || qsTr("Never played")
-                            color: Theme.mutedForeground
-                            font.pixelSize: 11
-                        }
-                    }
-                    
-                    ColumnLayout {
-                        spacing: 2
-                        
-                        Text {
-                            text: model.size || ""
-                            color: Theme.mutedForeground
-                            font.pixelSize: 11
-                            horizontalAlignment: Text.AlignRight
-                        }
-                        
-                        Text {
-                            text: model.seed || ""
-                            color: Theme.mutedForeground
-                            font.pixelSize: 10
-                            horizontalAlignment: Text.AlignRight
-                        }
                     }
                 }
+            }
+        }
+    }
+    
+    // Delete World Dialog
+    Dialog {
+        id: deleteWorldDialog
+        title: qsTr("Delete World")
+        modal: true
+        standardButtons: Dialog.Yes | Dialog.No
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+        
+        Label {
+            text: qsTr("Are you sure you want to delete this world?\n\nThis action cannot be undone!")
+            color: Theme.red
+            wrapMode: Text.WordWrap
+        }
+        
+        onAccepted: {
+            if (root.vm && worldsList.currentIndex >= 0) {
+                root.vm.deleteWorld(worldsList.currentIndex)
             }
         }
     }

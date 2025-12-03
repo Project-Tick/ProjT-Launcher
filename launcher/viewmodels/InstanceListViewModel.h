@@ -40,6 +40,7 @@ class InstanceListViewModel : public QObject {
     Q_PROPERTY(QStringList instanceIcons READ instanceIcons NOTIFY instanceListChanged)
     Q_PROPERTY(QStringList instanceIconPaths READ instanceIconPaths NOTIFY instanceListChanged)
     Q_PROPERTY(QStringList instanceGroups READ instanceGroups NOTIFY instanceListChanged)
+    Q_PROPERTY(QStringList instanceLastPlayed READ instanceLastPlayed NOTIFY instanceListChanged)
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY instanceStateChanged)
     Q_PROPERTY(bool canLaunchSelected READ canLaunchSelected NOTIFY instanceStateChanged)
     Q_PROPERTY(bool isSelectedRunning READ isSelectedRunning NOTIFY instanceStateChanged)
@@ -60,6 +61,7 @@ class InstanceListViewModel : public QObject {
     QStringList instanceIcons() const;
     QStringList instanceIconPaths() const;
     QStringList instanceGroups() const;
+    QStringList instanceLastPlayed() const;
     bool hasSelection() const;
     bool canLaunchSelected() const;
     bool isSelectedRunning() const;
@@ -161,6 +163,7 @@ class InstanceListViewModel : public QObject {
     QStringList m_instanceIcons;
     QStringList m_instanceIconPaths;
     QStringList m_instanceGroups;
+    QStringList m_instanceLastPlayed;
     QStringList m_availableVersions;
     std::unique_ptr<BackupManager> m_backupManager;
 };

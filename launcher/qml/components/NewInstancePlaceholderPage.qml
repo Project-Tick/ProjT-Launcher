@@ -52,13 +52,6 @@ Rectangle {
             wrapMode: Text.WordWrap
         }
         
-        Button {
-            Layout.alignment: Qt.AlignHCenter
-            text: qsTr("Open in Widget UI")
-            visible: false // TODO: Implement fallback to widget UI
-            onClicked: {
-                // Would open widget version
-            }
-        }
+        // Widget UI fallback removed - QML is the primary UI
     }
 }

@@ -116,6 +116,11 @@ QStringList InstanceListViewModel::instanceGroups() const
     return m_instanceGroups;
 }
 
+QStringList InstanceListViewModel::instanceLastPlayed() const
+{
+    return m_instanceLastPlayed;
+}
+
 QStringList InstanceListViewModel::availableVersions() const
 {
     return m_availableVersions;
@@ -384,6 +389,7 @@ void InstanceListViewModel::refreshInstances()
     QStringList icons;
     QStringList iconPaths;
     QStringList groups;
+    QStringList lastPlayed;
     
     qDebug() << "[InstanceListViewModel::refreshInstances] Loading instances...";
     
@@ -396,6 +402,30 @@ void InstanceListViewModel::refreshInstances()
         icons.append(instance->iconKey());
         iconPaths.append(instance->iconKey());  // Will be resolved by icon system
         groups.append(instances->getInstanceGroup(instance->id()));
+        
+        // Format last played time
+        qint64 lastLaunchMs = instance->lastLaunch();
+        if (lastLaunchMs > 0) {
+            QDateTime lastLaunch = QDateTime::fromMSecsSinceEpoch(lastLaunchMs);
+            QDateTime now = QDateTime::currentDateTime();
+            qint64 daysDiff = lastLaunch.daysTo(now);
+            
+            if (daysDiff == 0) {
+                lastPlayed.append(tr("Today"));
+            } else if (daysDiff == 1) {
+                lastPlayed.append(tr("Yesterday"));
+            } else if (daysDiff < 7) {
+                lastPlayed.append(tr("%1 days ago").arg(daysDiff));
+            } else if (daysDiff < 30) {
+                lastPlayed.append(tr("%1 weeks ago").arg(daysDiff / 7));
+            } else if (daysDiff < 365) {
+                lastPlayed.append(tr("%1 months ago").arg(daysDiff / 30));
+            } else {
+                lastPlayed.append(lastLaunch.toString("MMM d, yyyy"));
+            }
+        } else {
+            lastPlayed.append(tr("Never"));
+        }
         
         qDebug() << "  Added instance:" << instance->id() << instance->name();
     }
@@ -410,6 +440,7 @@ void InstanceListViewModel::refreshInstances()
         emit availableVersionsChanged();
     }
     
+    m_instanceLastPlayed = lastPlayed;
     setInstanceLists(ids, names, icons, groups);
     setTotalCount(ids.count());
     

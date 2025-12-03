@@ -81,6 +81,11 @@ Rectangle {
             Button {
                 text: qsTr("Copy")
                 enabled: gridView.currentIndex >= 0
+                onClicked: {
+                    if (root.vm && gridView.currentIndex >= 0) {
+                        root.vm.copyScreenshotToClipboard(gridView.currentIndex)
+                    }
+                }
                 
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
@@ -100,6 +105,11 @@ Rectangle {
             Button {
                 text: qsTr("Delete")
                 enabled: gridView.currentIndex >= 0
+                onClicked: {
+                    if (root.vm && gridView.currentIndex >= 0) {
+                        deleteScreenshotDialog.open()
+                    }
+                }
                 
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? Theme.red : Theme.surface0) : Theme.mantle
@@ -120,6 +130,9 @@ Rectangle {
             
             Button {
                 text: qsTr("Refresh")
+                onClicked: {
+                    if (root.vm) root.vm.refreshScreenshots()
+                }
                 
                 background: Rectangle {
                     color: parent.hovered ? Theme.surface1 : Theme.surface0
@@ -137,6 +150,27 @@ Rectangle {
             }
         }
         
+        // Delete Confirmation Dialog
+        Dialog {
+            id: deleteScreenshotDialog
+            title: qsTr("Delete Screenshot")
+            modal: true
+            standardButtons: Dialog.Yes | Dialog.No
+            x: (root.width - width) / 2
+            y: (root.height - height) / 2
+            
+            Label {
+                text: qsTr("Are you sure you want to delete this screenshot?")
+                wrapMode: Text.WordWrap
+            }
+            
+            onAccepted: {
+                if (root.vm && gridView.currentIndex >= 0) {
+                    root.vm.deleteScreenshot(gridView.currentIndex)
+                }
+            }
+        }
+        
         // Screenshots Grid
         GridView {
             id: gridView
@@ -146,10 +180,8 @@ Rectangle {
             cellWidth: 210
             cellHeight: 170
             
-            // Placeholder model - will be replaced with actual screenshots model
-            model: ListModel {
-                id: screenshotsModel
-            }
+            // Use ViewModel's screenshot paths
+            model: root.vm ? root.vm.screenshotPaths : []
             
             // Empty state
             Text {
@@ -161,6 +193,10 @@ Rectangle {
                 visible: gridView.count === 0
             }
             
+            Component.onCompleted: {
+                if (root.vm) root.vm.refreshScreenshots()
+            }
+            
             delegate: Rectangle {
                 width: 200
                 height: 160
@@ -169,11 +205,15 @@ Rectangle {
                 border.width: 1
                 radius: Theme.radiusS
                 
+                property string screenshotPath: modelData
+                property string screenshotName: root.vm && root.vm.screenshotNames[index] ? root.vm.screenshotNames[index] : ""
+                
                 MouseArea {
                     anchors.fill: parent
                     onClicked: gridView.currentIndex = index
                     onDoubleClicked: {
-                        // Open screenshot
+                        // Open screenshot in system viewer
+                        if (root.vm) root.vm.openScreenshot(index)
                     }
                 }
                 
@@ -182,7 +222,7 @@ Rectangle {
                     anchors.margins: Theme.spacingS
                     spacing: Theme.spacingXS
                     
-                    // Thumbnail placeholder
+                    // Thumbnail
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -192,31 +232,19 @@ Rectangle {
                         Image {
                             anchors.fill: parent
                             anchors.margins: 2
-                            source: model.path || ""
+                            source: screenshotPath ? "file://" + screenshotPath : ""
                             fillMode: Image.PreserveAspectCrop
-                            visible: source !== ""
-                        }
-                        
-                        Text {
-                            anchors.centerIn: parent
-                            text: "🖼️"
-                            font.pixelSize: 32
-                            visible: !model.path
+                            asynchronous: true
+                            cache: false
                         }
                     }
                     
                     Text {
-                        text: model.name || qsTr("Screenshot %1").arg(index + 1)
+                        text: screenshotName || qsTr("Screenshot %1").arg(index + 1)
                         color: Theme.foreground
                         font.pixelSize: 11
                         elide: Text.ElideMiddle
                         Layout.fillWidth: true
-                    }
-                    
-                    Text {
-                        text: model.date || ""
-                        color: Theme.mutedForeground
-                        font.pixelSize: 10
                     }
                 }
             }

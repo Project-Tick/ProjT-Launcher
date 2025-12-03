@@ -59,9 +59,11 @@ class LauncherSettingsViewModel : public QObject {
     Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
     Q_PROPERTY(QString iconTheme READ iconTheme WRITE setIconTheme NOTIFY iconThemeChanged)
     Q_PROPERTY(bool showToolbarText READ showToolbarText WRITE setShowToolbarText NOTIFY showToolbarTextChanged)
+    Q_PROPERTY(int buttonStyle READ buttonStyle WRITE setButtonStyle NOTIFY buttonStyleChanged)
     Q_PROPERTY(bool instanceListIcons READ instanceListIcons WRITE setInstanceListIcons NOTIFY instanceListIconsChanged)
     Q_PROPERTY(bool showInstanceStatusLight READ showInstanceStatusLight WRITE setShowInstanceStatusLight NOTIFY showInstanceStatusLightChanged)
     Q_PROPERTY(bool enableCat READ enableCat WRITE setEnableCat NOTIFY enableCatChanged)
+    Q_PROPERTY(bool checkForUpdates READ checkForUpdates WRITE setCheckForUpdates NOTIFY checkForUpdatesChanged)
     
     // === Proxy Page ===
     Q_PROPERTY(QString proxyType READ proxyType WRITE setProxyType NOTIFY proxyTypeChanged)
@@ -161,16 +163,20 @@ public:
     QString theme() const;
     QString iconTheme() const;
     bool showToolbarText() const;
+    int buttonStyle() const;
     bool instanceListIcons() const;
     bool showInstanceStatusLight() const;
     bool enableCat() const;
+    bool checkForUpdates() const;
     
     void setTheme(const QString& theme);
     void setIconTheme(const QString& theme);
     void setShowToolbarText(bool value);
+    void setButtonStyle(int value);
     void setInstanceListIcons(bool value);
     void setShowInstanceStatusLight(bool value);
     void setEnableCat(bool value);
+    void setCheckForUpdates(bool value);
     
     // Proxy Page
     QString proxyType() const;
@@ -222,6 +228,7 @@ public:
     Q_INVOKABLE void applySettings();
     Q_INVOKABLE void resetToDefaults();
     Q_INVOKABLE void testJavaPath(const QString& path);
+    Q_INVOKABLE void autoDetectJava();
 
 signals:
     void sortByNameChanged();
@@ -258,9 +265,11 @@ signals:
     void themeChanged();
     void iconThemeChanged();
     void showToolbarTextChanged();
+    void buttonStyleChanged();
     void instanceListIconsChanged();
     void showInstanceStatusLightChanged();
     void enableCatChanged();
+    void checkForUpdatesChanged();
     
     void proxyTypeChanged();
     void proxyHostChanged();
@@ -286,6 +295,7 @@ signals:
     
     void settingsApplied();
     void javaTestResult(bool success, const QString& message);
+    void javaAutoDetected(const QStringList& javaPaths);
 
 private:
     void loadFromApplication();
@@ -326,9 +336,11 @@ private:
     QString m_theme = "Dark";
     QString m_iconTheme = "Default";
     bool m_showToolbarText = true;
+    int m_buttonStyle = 3;  // 0=IconOnly, 1=TextOnly, 2=TextBesideIcon, 3=TextUnderIcon
     bool m_instanceListIcons = true;
     bool m_showInstanceStatusLight = true;
     bool m_enableCat = false;
+    bool m_checkForUpdates = true;
     
     QString m_proxyType = "none";
     QString m_proxyHost;

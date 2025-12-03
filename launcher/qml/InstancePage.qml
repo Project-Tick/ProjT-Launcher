@@ -25,6 +25,9 @@ Rectangle {
     
     readonly property var vm: ProjT.instancesVM
     
+    // Signals for parent components
+    signal createNewInstance()
+    
     property string selectedInstanceName: {
         if (!vm || !vm.instanceIds) return ""
         const idx = vm.instanceIds.indexOf(vm.selectedInstanceId)
@@ -153,7 +156,7 @@ Rectangle {
                     iconPath: vm ? vm.instanceIconPaths[index] : ""
                     isSelected: ListView.isCurrentItem
                     isRunning: vm && vm.isSelectedRunning && vm.instanceIds[index] === vm.selectedInstanceId ? vm.isSelectedRunning : false
-                    lastPlayedText: ""  // TODO: Get from instance metadata (requires InstanceListViewModel enhancement)
+                    lastPlayedText: vm && vm.instanceLastPlayed ? (vm.instanceLastPlayed[index] || "") : ""
                     
                     onClicked: function(id) {
                         if (vm) vm.selectInstance(id)
@@ -168,7 +171,15 @@ Rectangle {
                     
                     onRightClicked: function(id, mouseX, mouseY) {
                         if (vm) vm.selectInstance(id)
-                        contextMenu.popup(mouseX, mouseY)
+                        // Get the delegate item and map its local coordinates to instancePage
+                        var delegateItem = instanceList.itemAtIndex(index)
+                        if (delegateItem) {
+                            var mappedPos = delegateItem.mapToItem(instancePage, mouseX, mouseY)
+                            contextMenu.popup(instancePage, mappedPos.x, mappedPos.y)
+                        } else {
+                            // Fallback: popup at cursor position relative to page
+                            contextMenu.popup()
+                        }
                     }
                 }
                 
@@ -254,8 +265,7 @@ Rectangle {
         }
         onDeleteInstance: deleteDialog.open()
         onCreateNew: {
-            // Open new instance dialog - handled by ShellRoot
-            console.log("[InstancePage] Create new instance - use Add Instance button in toolbar")
+            instancePage.createNewInstance()
         }
         onImportInstance: importDialog.open()
     }

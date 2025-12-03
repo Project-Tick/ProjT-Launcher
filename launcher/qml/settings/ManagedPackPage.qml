@@ -204,6 +204,9 @@ Rectangle {
                         
                         Button {
                             text: qsTr("Check for Updates")
+                            onClicked: {
+                                if (root.vm) root.vm.checkForPackUpdates()
+                            }
                             
                             background: Rectangle {
                                 color: parent.hovered ? Theme.surface1 : Theme.surface0
@@ -224,6 +227,9 @@ Rectangle {
                     Button {
                         text: qsTr("Update Pack")
                         visible: root.vm && root.vm.hasUpdateAvailable
+                        onClicked: {
+                            if (root.vm) root.vm.updatePack()
+                        }
                         
                         background: Rectangle {
                             color: parent.hovered ? Qt.lighter(Theme.accent, 1.1) : Theme.accent
@@ -267,6 +273,11 @@ Rectangle {
                     
                     Button {
                         text: qsTr("View Online")
+                        onClicked: {
+                            if (root.vm && root.vm.managedPackUrl) {
+                                Qt.openUrlExternally(root.vm.managedPackUrl)
+                            }
+                        }
                         
                         background: Rectangle {
                             color: parent.hovered ? Theme.surface1 : Theme.surface0
@@ -285,6 +296,9 @@ Rectangle {
                     
                     Button {
                         text: qsTr("Export Pack")
+                        onClicked: {
+                            if (root.vm) root.vm.exportPack()
+                        }
                         
                         background: Rectangle {
                             color: parent.hovered ? Theme.surface1 : Theme.surface0
