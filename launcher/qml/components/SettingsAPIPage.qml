@@ -135,7 +135,7 @@ ScrollView {
                     TextField {
                         id: metaUrlField
                         Layout.fillWidth: true
-                        placeholderText: qsTr("https://meta.prismlauncher.org/v1")
+                        placeholderText: qsTr("http://meta.yongdohyun.org.tr/")
                         text: vm ? vm.metaUrl : ""
                         onTextChanged: if (vm) vm.metaUrl = text
                     }

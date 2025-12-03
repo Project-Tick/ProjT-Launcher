@@ -300,7 +300,7 @@ Rectangle {
                             icon.name: "help-contents"
                             onClicked: {
                                 // Open help URL
-                                Qt.openUrlExternally("https://prismlauncher.org/wiki/getting-started/create-instance/")
+                                Qt.openUrlExternally("https://projtlauncher.yongdohyun.org.tr/wiki/getting-started/create-instance/")
                             }
                         }
                         
@@ -822,7 +822,7 @@ Rectangle {
                             text: qsTr("Help")
                             icon.name: "help-contents"
                             onClicked: {
-                                Qt.openUrlExternally("https://prismlauncher.org/wiki/")
+                                Qt.openUrlExternally("https://projtlauncher.yongdohyun.org.tr/wiki/")
                             }
                         }
                         
