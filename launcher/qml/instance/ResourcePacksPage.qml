@@ -120,7 +120,7 @@ Rectangle {
                         ToolButton {
                             icon.name: "edit-delete"
                             onClicked: {
-                                if (vm) vm.deleteResourcePack(index)
+                                if (vm) vm.removeResourcePack(index)
                             }
                         }
                     }

@@ -10,143 +10,134 @@ Rectangle {
     id: modrinthPage
     color: Theme.background
     
-    property var vm: ProjT.instanceVM
-    property string resourceType: "mod"
+    property var vm: typeof ProjT !== "undefined" ? ProjT.modrinthVM : null
+    
+    Component.onCompleted: {
+        if (vm) vm.refresh()
+    }
     
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
         spacing: Theme.spacingS
         
-        // Header
+        // Search row
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
             
-            Image {
-                Layout.preferredWidth: 24
-                Layout.preferredHeight: 24
-                source: "qrc:/icons/multimc/scalable/modrinth.svg"
-                fillMode: Image.PreserveAspectFit
+            Button {
+                text: qsTr("Filter options")
+                checkable: true
+                checked: filterPanel.visible
+                onClicked: filterPanel.visible = !filterPanel.visible
             }
-            
-            Label {
-                text: qsTr("Modrinth")
-                font.pointSize: 14
-                font.bold: true
-                color: Theme.textPrimary
-            }
-            
-            Item { Layout.fillWidth: true }
-            
-            ComboBox {
-                id: resourceTypeCombo
-                model: [qsTr("Mods"), qsTr("Resource Packs"), qsTr("Shaders"), qsTr("Data Packs"), qsTr("Modpacks")]
-                onCurrentIndexChanged: {
-                    var types = ["mod", "resourcepack", "shader", "datapack", "modpack"]
-                    resourceType = types[currentIndex]
-                    if (vm) vm.setModrinthResourceType(resourceType)
-                }
-            }
-        }
-        
-        // Search
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingS
             
             TextField {
                 id: searchField
                 Layout.fillWidth: true
-                placeholderText: qsTr("Search Modrinth...")
+                placeholderText: qsTr("Search and filter...")
+                text: vm ? vm.searchTerm : ""
+                onTextChanged: {
+                    if (vm) vm.search(text)
+                }
                 onAccepted: {
-                    if (vm) vm.searchModrinth(text)
-                }
-            }
-            
-            Button {
-                text: qsTr("Search")
-                icon.name: "search"
-                onClicked: {
-                    if (vm) vm.searchModrinth(searchField.text)
+                    if (vm) vm.refresh()
                 }
             }
         }
         
-        // Filters
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingS
-            
-            ComboBox {
-                id: categoryCombo
-                Layout.preferredWidth: 150
-                model: vm ? vm.modrinthCategories : [qsTr("All Categories")]
-                onCurrentIndexChanged: {
-                    if (vm) vm.setModrinthCategory(currentIndex)
-                }
-            }
-            
-            ComboBox {
-                id: loaderCombo
-                Layout.preferredWidth: 120
-                model: [qsTr("Any Loader"), "Forge", "Fabric", "Quilt", "NeoForge"]
-                onCurrentIndexChanged: {
-                    if (vm && currentIndex > 0) {
-                        vm.setModrinthLoaderFilter(currentText)
-                    } else if (vm) {
-                        vm.setModrinthLoaderFilter("")
-                    }
-                }
-            }
-            
-            ComboBox {
-                id: sortCombo
-                Layout.preferredWidth: 150
-                model: [qsTr("Relevance"), qsTr("Downloads"), qsTr("Follows"), qsTr("Newest"), qsTr("Updated")]
-                onCurrentIndexChanged: {
-                    if (vm) vm.setModrinthSortOrder(currentIndex)
-                }
-            }
-            
-            ComboBox {
-                id: versionFilterCombo
-                Layout.preferredWidth: 130
-                model: vm ? vm.availableMinecraftVersions : []
-                displayText: currentIndex >= 0 ? currentText : qsTr("Any Version")
-                onCurrentIndexChanged: {
-                    if (vm && currentIndex >= 0) {
-                        vm.setModrinthVersionFilter(currentText)
-                    }
-                }
-            }
-            
-            Item { Layout.fillWidth: true }
-        }
-        
-        // Results
-        Frame {
+        // Main content splitter
+        SplitView {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            orientation: Qt.Horizontal
             
+            // Filter panel (hidden by default)
+            Rectangle {
+                id: filterPanel
+                visible: false
+                SplitView.preferredWidth: 200
+                SplitView.minimumWidth: 150
+                SplitView.maximumWidth: 300
+                color: Theme.surface
+                
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: Theme.spacingS
+                    spacing: Theme.spacingS
+                    
+                    Label {
+                        text: qsTr("Categories")
+                        font.bold: true
+                        color: Theme.textPrimary
+                    }
+                    
+                    ComboBox {
+                        Layout.fillWidth: true
+                        model: vm ? vm.categories : [qsTr("All Categories")]
+                        currentIndex: vm ? vm.selectedCategoryIndex : 0
+                        onCurrentIndexChanged: {
+                            if (vm && currentIndex !== vm.selectedCategoryIndex) {
+                                vm.selectedCategoryIndex = currentIndex
+                            }
+                        }
+                    }
+                    
+                    Label {
+                        text: qsTr("Loader")
+                        font.bold: true
+                        color: Theme.textPrimary
+                    }
+                    
+                    ComboBox {
+                        Layout.fillWidth: true
+                        model: vm ? vm.loaders : []
+                        currentIndex: vm ? vm.selectedLoaderIndex : 0
+                        onCurrentIndexChanged: {
+                            if (vm && currentIndex !== vm.selectedLoaderIndex) {
+                                vm.selectedLoaderIndex = currentIndex
+                            }
+                        }
+                    }
+                    
+                    Item { Layout.fillHeight: true }
+                }
+            }
+            
+            // Pack list
             ListView {
-                id: resultsList
-                anchors.fill: parent
+                id: packsList
+                SplitView.fillWidth: true
+                SplitView.minimumWidth: 250
                 clip: true
-                model: vm ? vm.modrinthResultsModel : []
+                model: vm ? vm.packsModel : null
+                currentIndex: vm ? vm.selectedPackIndex : -1
+                
+                ScrollBar.vertical: ScrollBar {}
                 
                 delegate: ItemDelegate {
-                    width: resultsList.width
-                    height: 88
+                    width: packsList.width
+                    height: 58
+                    highlighted: ListView.isCurrentItem
+                    
+                    background: Rectangle {
+                        color: highlighted ? Theme.primary : (index % 2 === 0 ? "transparent" : Theme.surfaceVariant)
+                        opacity: highlighted ? 0.2 : 0.3
+                    }
+                    
+                    onClicked: {
+                        if (vm) vm.selectPack(index)
+                    }
                     
                     RowLayout {
                         anchors.fill: parent
-                        anchors.margins: Theme.spacingS
-                        spacing: Theme.spacingS
+                        anchors.margins: 4
+                        spacing: 8
                         
                         Image {
-                            Layout.preferredWidth: 64
-                            Layout.preferredHeight: 64
+                            Layout.preferredWidth: 48
+                            Layout.preferredHeight: 48
                             source: model.iconUrl || ""
                             fillMode: Image.PreserveAspectFit
                             
@@ -154,14 +145,14 @@ Rectangle {
                                 anchors.fill: parent
                                 visible: parent.status !== Image.Ready
                                 color: "#1bd96a"
-                                radius: 8
+                                radius: 4
                                 
                                 Label {
                                     anchors.centerIn: parent
                                     text: "M"
                                     color: "white"
-                                    font.pointSize: 24
                                     font.bold: true
+                                    font.pointSize: 16
                                 }
                             }
                         }
@@ -170,152 +161,154 @@ Rectangle {
                             Layout.fillWidth: true
                             spacing: 2
                             
-                            RowLayout {
-                                spacing: Theme.spacingS
-                                
-                                Label {
-                                    text: model.name || ""
-                                    color: Theme.textPrimary
-                                    font.bold: true
-                                    font.pointSize: 11
-                                }
-                                
-                                // Loaders
-                                Repeater {
-                                    model: (parent.parent.parent.parent.loaders || "").split(",")
-                                    
-                                    Rectangle {
-                                        visible: modelData.length > 0
-                                        width: loaderLabel.width + 8
-                                        height: loaderLabel.height + 4
-                                        radius: 2
-                                        color: Theme.accent
-                                        
-                                        Label {
-                                            id: loaderLabel
-                                            anchors.centerIn: parent
-                                            text: modelData
-                                            color: "white"
-                                            font.pointSize: 8
-                                        }
-                                    }
-                                }
+                            Label {
+                                text: model.name || ""
+                                color: Theme.textPrimary
+                                font.bold: true
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
                             }
                             
                             Label {
-                                text: qsTr("by %1").arg(model.author || qsTr("Unknown"))
-                                color: Theme.textSecondary
-                                font.pointSize: 9
-                            }
-                            
-                            Label {
-                                text: model.description || ""
+                                text: model.description ? model.description.substring(0, 100) : ""
                                 color: Theme.textSecondary
                                 font.pointSize: 9
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
-                                maximumLineCount: 2
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-                        
-                        ColumnLayout {
-                            spacing: 4
-                            
-                            RowLayout {
-                                spacing: 4
-                                
-                                Label {
-                                    text: "⬇️"
-                                    font.pointSize: 9
-                                }
-                                Label {
-                                    text: formatNumber(model.downloads || 0)
-                                    color: Theme.textSecondary
-                                    font.pointSize: 9
-                                }
-                            }
-                            
-                            RowLayout {
-                                spacing: 4
-                                
-                                Label {
-                                    text: "❤️"
-                                    font.pointSize: 9
-                                }
-                                Label {
-                                    text: formatNumber(model.follows || 0)
-                                    color: Theme.textSecondary
-                                    font.pointSize: 9
-                                }
-                            }
-                            
-                            Button {
-                                text: model.installed ? qsTr("Installed") : qsTr("Install")
-                                enabled: !model.installed
-                                onClicked: {
-                                    if (vm) vm.installFromModrinth(model.projectId)
-                                }
                             }
                         }
                     }
                 }
                 
-                ScrollBar.vertical: ScrollBar {}
+                BusyIndicator {
+                    anchors.centerIn: parent
+                    running: vm ? vm.isLoading : false
+                    visible: running && packsList.count === 0
+                }
+                
+                Label {
+                    anchors.centerIn: parent
+                    visible: packsList.count === 0 && !(vm && vm.isLoading)
+                    text: qsTr("No modpacks found. Search for modpacks on Modrinth.")
+                    color: Theme.textSecondary
+                    horizontalAlignment: Text.AlignHCenter
+                }
             }
             
-            BusyIndicator {
-                anchors.centerIn: parent
-                running: vm ? vm.modrinthLoading : false
-                visible: running
-            }
-            
-            Label {
-                anchors.centerIn: parent
-                visible: resultsList.count === 0 && !(vm && vm.modrinthLoading)
-                text: searchField.text.length > 0 
-                      ? qsTr("No results found.")
-                      : qsTr("Search for mods, resource packs, shaders, and more on Modrinth.")
-                color: Theme.textSecondary
-                horizontalAlignment: Text.AlignHCenter
+            // Pack description
+            ScrollView {
+                id: descriptionView
+                SplitView.preferredWidth: parent.width * 0.4
+                SplitView.minimumWidth: 250
+                clip: true
+                
+                TextArea {
+                    id: packDescription
+                    readOnly: true
+                    textFormat: TextArea.RichText
+                    wrapMode: TextArea.Wrap
+                    color: Theme.textPrimary
+                    
+                    text: {
+                        if (!vm || !vm.selectedPack || !vm.selectedPack.name) {
+                            return "<i>" + qsTr("Select a modpack to view details") + "</i>"
+                        }
+                        
+                        var html = ""
+                        var pack = vm.selectedPack
+                        
+                        // Name with link
+                        if (pack.websiteUrl) {
+                            html += '<a href="' + pack.websiteUrl + '">' + pack.name + '</a>'
+                        } else {
+                            html += "<b>" + pack.name + "</b>"
+                        }
+                        
+                        // Author
+                        if (pack.authors) {
+                            html += "<br>" + qsTr(" by ") + pack.authors
+                        }
+                        
+                        // Archived status
+                        if (pack.status === "archived") {
+                            html += "<br><br><b style='color: orange;'>" + qsTr("This project has been archived. It will not receive any further updates unless the author decides to unarchive the project.") + "</b>"
+                        }
+                        
+                        // External links
+                        var hasLinks = pack.issuesUrl || pack.sourceUrl || pack.wikiUrl || pack.discordUrl
+                        if (hasLinks) {
+                            html += "<br><br>" + qsTr("External links:") + "<br>"
+                            if (pack.issuesUrl) html += "- " + qsTr("Issues:") + ' <a href="' + pack.issuesUrl + '">' + pack.issuesUrl + '</a><br>'
+                            if (pack.wikiUrl) html += "- " + qsTr("Wiki:") + ' <a href="' + pack.wikiUrl + '">' + pack.wikiUrl + '</a><br>'
+                            if (pack.sourceUrl) html += "- " + qsTr("Source:") + ' <a href="' + pack.sourceUrl + '">' + pack.sourceUrl + '</a><br>'
+                            if (pack.discordUrl) html += "- " + qsTr("Discord:") + ' <a href="' + pack.discordUrl + '">' + pack.discordUrl + '</a><br>'
+                        }
+                        
+                        html += "<hr>"
+                        
+                        // Body or description
+                        if (pack.body) {
+                            html += pack.body
+                        } else if (pack.description) {
+                            html += pack.description
+                        }
+                        
+                        return html
+                    }
+                    
+                    onLinkActivated: function(link) {
+                        Qt.openUrlExternally(link)
+                    }
+                }
             }
         }
         
-        // Pagination
+        // Bottom bar
         RowLayout {
             Layout.fillWidth: true
-            visible: vm && vm.modrinthTotalPages > 1
+            spacing: Theme.spacingS
             
-            Item { Layout.fillWidth: true }
-            
-            Button {
-                text: qsTr("Previous")
-                enabled: vm && vm.modrinthCurrentPage > 1
-                onClicked: {
-                    if (vm) vm.modrinthPreviousPage()
+            ComboBox {
+                id: sortCombo
+                Layout.preferredWidth: 180
+                model: vm ? vm.sortOptions : []
+                currentIndex: vm ? vm.sortIndex : 0
+                onCurrentIndexChanged: {
+                    if (vm && currentIndex !== vm.sortIndex) {
+                        vm.sortIndex = currentIndex
+                    }
                 }
             }
+            
+            Item { Layout.fillWidth: true }
             
             Label {
-                text: vm ? qsTr("Page %1 of %2").arg(vm.modrinthCurrentPage).arg(vm.modrinthTotalPages) : ""
-                color: Theme.textSecondary
+                text: qsTr("Version selected:")
+                color: Theme.textPrimary
             }
             
-            Button {
-                text: qsTr("Next")
-                enabled: vm && vm.modrinthCurrentPage < vm.modrinthTotalPages
-                onClicked: {
-                    if (vm) vm.modrinthNextPage()
+            ComboBox {
+                id: versionCombo
+                Layout.preferredWidth: 200
+                model: vm ? vm.selectedPackVersions : []
+                currentIndex: vm ? vm.selectedVersionIndex : -1
+                enabled: count > 0
+                onCurrentIndexChanged: {
+                    if (vm && currentIndex >= 0 && currentIndex !== vm.selectedVersionIndex) {
+                        vm.selectVersion(currentIndex)
+                    }
                 }
             }
             
-            Item { Layout.fillWidth: true }
+            Button {
+                text: qsTr("Install")
+                enabled: vm && vm.selectedPackVersions && vm.selectedPackVersions.length > 0
+                onClicked: {
+                    if (vm) {
+                        vm.installSelected("", "")
+                    }
+                }
+            }
         }
-    }
-    
-    function formatNumber(num) {
-        if (num >= 1000000) return (num / 1000000).toFixed(1) + "M"
-        if (num >= 1000) return (num / 1000).toFixed(1) + "K"
-        return num.toString()
     }
 }

@@ -16,12 +16,14 @@
 
 // Dark palette
 var background = "#0a0c10"
+var backgroundAlt = "#161a22"
 var surface = "#12151a"
 var surfaceBackground = "#12151a"
 var surfaceVariant = "#171c24"
 var textPrimary = "#dfe3e9"
 var textSecondary = "#9aa6b7"
 var accent = "#3c7be0"
+var primary = "#3c7be0"
 var danger = "#d55f5f"
 var success = "#4caf50"
 var warning = "#ff9800"
@@ -42,6 +44,9 @@ var fontHeader = 18
 var fontSubtitle = 14
 var fontBody = 12
 var fontCaption = 11
+var fontSizeSmall = 10
+var fontSizeMedium = 12
+var fontSizeLarge = 14
 
 // Additional colors for UI states
 var selection = "#2a3a4f"

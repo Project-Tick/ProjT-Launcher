@@ -58,7 +58,7 @@ Rectangle {
                 Image {
                     Layout.preferredWidth: 48
                     Layout.preferredHeight: 48
-                    source: "qrc:/icons/multimc/scalable/instances/minecraft.svg"
+                    source: "qrc:/icons/multimc/scalable/instances/grass.svg"
                     fillMode: Image.PreserveAspectFit
                 }
                 

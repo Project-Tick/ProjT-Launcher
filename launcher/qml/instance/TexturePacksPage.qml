@@ -99,7 +99,7 @@ Rectangle {
                         ToolButton {
                             icon.name: "edit-delete"
                             onClicked: {
-                                if (vm) vm.deleteTexturePack(index)
+                                if (vm) vm.removeTexturePack(index)
                             }
                         }
                     }

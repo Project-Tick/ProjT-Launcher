@@ -111,7 +111,7 @@ Rectangle {
                         ToolButton {
                             icon.name: "edit-delete"
                             onClicked: {
-                                if (vm) vm.deleteShaderPack(index)
+                                if (vm) vm.removeShaderPack(index)
                             }
                         }
                     }

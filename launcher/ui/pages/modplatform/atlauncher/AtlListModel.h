@@ -56,6 +56,10 @@ class ListModel : public QAbstractListModel {
 
     void getLogo(const QString& logo, const QString& logoUrl, LogoCallback callback);
 
+signals:
+    void requestCompleted();
+    void requestError(const QString& reason);
+
    private slots:
     void requestFinished();
     void requestFailed(QString reason);

@@ -126,10 +126,11 @@ void ListModel::requestFinished()
     jobPtr.reset();
 
     QJsonParseError parse_error;
-    QJsonDocument doc = QJsonDocument::fromJson(*response, &parse_error);
+QJsonDocument doc = QJsonDocument::fromJson(*response, &parse_error);
     if (parse_error.error != QJsonParseError::NoError) {
         qWarning() << "Error while parsing JSON response from ATL at " << parse_error.offset << " reason: " << parse_error.errorString();
         qWarning() << *response;
+        emit requestError(tr("Failed to parse ATLauncher pack list: %1").arg(parse_error.errorString()));
         return;
     }
 
@@ -165,11 +166,14 @@ void ListModel::requestFinished()
     beginInsertRows(QModelIndex(), modpacks.size(), modpacks.size() + newList.size() - 1);
     modpacks.append(newList);
     endInsertRows();
+
+    emit requestCompleted();
 }
 
 void ListModel::requestFailed(QString reason)
 {
     jobPtr.reset();
+    emit requestError(reason);
 }
 
 void ListModel::getLogo(const QString& logo, const QString& logoUrl, LogoCallback callback)
