@@ -10,10 +10,7 @@ Page {
     id: atlPage
     title: qsTr("ATLauncher")
     
-    property var vm: ProjT ? ProjT.atlVM : null
-    property string searchQuery: ""
-    property var searchResults: []
-    property bool isSearching: false
+    property var vm: typeof ProjT !== "undefined" && ProjT ? ProjT.atlVM : null
     
     ColumnLayout {
         anchors.fill: parent
@@ -52,14 +49,14 @@ Page {
                 }
                 
                 Label {
-                    text: qsTr("Browse and install modpacks from ATLauncher")
+                    text: vm ? vm.statusMessage : ""
                     color: Theme.textSecondary
                     font.pointSize: Theme.fontSizeSmall
                 }
             }
         }
         
-        // Search and filters
+        // Search
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
@@ -68,258 +65,172 @@ Page {
                 id: searchField
                 Layout.fillWidth: true
                 placeholderText: qsTr("Search modpacks...")
-                onAccepted: performSearch()
+                onAccepted: if (vm) vm.search(text)
             }
             
             Button {
                 text: qsTr("Search")
-                highlighted: true
-                onClicked: performSearch()
+                onClicked: if (vm) vm.search(searchField.text)
             }
-        }
-        
-        // Filter row
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingM
-            
-            ComboBox {
-                id: sortCombo
-                Layout.preferredWidth: 150
-                model: [
-                    qsTr("Popular"),
-                    qsTr("Updated"),
-                    qsTr("Name")
-                ]
-            }
-            
-            ComboBox {
-                id: versionCombo
-                Layout.preferredWidth: 150
-                model: ["All Versions"].concat(vm ? vm.minecraftVersions : [])
-            }
-            
-            Item { Layout.fillWidth: true }
             
             Button {
                 text: qsTr("Refresh")
-                icon.name: "view-refresh"
-                onClicked: {
-                    if (vm) vm.refresh()
-                }
+                onClicked: if (vm) vm.refresh()
             }
         }
         
-        // Results
-        Frame {
+        // Content
+        SplitView {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            orientation: Qt.Horizontal
             
-            GridView {
-                id: packGrid
-                anchors.fill: parent
-                clip: true
-                cellWidth: 200
-                cellHeight: 240
-                model: searchResults.length > 0 ? searchResults : (vm ? vm.packs : [])
+            Frame {
+                SplitView.preferredWidth: parent.width * 0.5
+                SplitView.minimumWidth: 250
                 
-                delegate: Rectangle {
-                    width: packGrid.cellWidth - 8
-                    height: packGrid.cellHeight - 8
-                    radius: 8
-                    color: mouseArea.containsMouse ? Theme.backgroundAlt : "transparent"
-                    border.color: mouseArea.containsMouse ? Theme.accent : Theme.divider
-                    border.width: 1
+                ListView {
+                    id: packList
+                    anchors.fill: parent
+                    clip: true
+                    model: vm ? vm.packsModel : null
+                    currentIndex: vm ? vm.selectedPackIndex : -1
                     
-                    MouseArea {
-                        id: mouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: {
-                            detailDialog.pack = modelData
-                            detailDialog.open()
+                    delegate: ItemDelegate {
+                        width: packList.width
+                        height: 70
+                        highlighted: ListView.isCurrentItem
+                        onClicked: if (vm) vm.selectPack(index)
+                        
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 8
+                            
+                            Rectangle {
+                                width: 50; height: 50
+                                radius: 4
+                                color: Theme.backgroundAlt
+                                
+                                Label {
+                                    anchors.centerIn: parent
+                                    text: "ATL"
+                                    color: Theme.accent
+                                    font.bold: true
+                                    font.pointSize: 12
+                                }
+                            }
+                            
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+                                
+                                Label {
+                                    text: model.display || ""
+                                    color: Theme.textPrimary
+                                    font.bold: true
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
+                                
+                                Label {
+                                    text: model.toolTip || ""
+                                    color: Theme.textSecondary
+                                    font.pointSize: 10
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                    maximumLineCount: 2
+                                }
+                            }
                         }
                     }
                     
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingS
-                        spacing: Theme.spacingS
+                    ScrollBar.vertical: ScrollBar {}
+                }
+                
+                BusyIndicator {
+                    anchors.centerIn: parent
+                    running: vm ? vm.isLoading : false
+                    visible: running
+                }
+            }
+            
+            Frame {
+                SplitView.fillWidth: true
+                
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: Theme.spacingM
+                    visible: vm && vm.selectedPack && vm.selectedPack.name
+                    
+                    Label {
+                        text: vm && vm.selectedPack ? vm.selectedPack.name : ""
+                        color: Theme.textPrimary
+                        font.bold: true
+                        font.pointSize: 16
+                    }
+                    
+                    ScrollView {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
                         
-                        // Pack icon
-                        Rectangle {
-                            Layout.alignment: Qt.AlignHCenter
-                            Layout.preferredWidth: 96
-                            Layout.preferredHeight: 96
-                            radius: 8
-                            color: Theme.backgroundAlt
-                            
-                            Image {
-                                anchors.fill: parent
-                                anchors.margins: 4
-                                source: modelData.iconUrl || ""
-                                fillMode: Image.PreserveAspectFit
-                            }
-                        }
-                        
-                        // Pack name
                         Label {
-                            Layout.fillWidth: true
-                            text: modelData.name || qsTr("Unknown")
-                            color: Theme.textPrimary
-                            font.bold: true
-                            horizontalAlignment: Text.AlignHCenter
-                            elide: Text.ElideRight
-                            maximumLineCount: 2
+                            text: vm && vm.selectedPack ? vm.selectedPack.description : ""
                             wrapMode: Text.WordWrap
+                            width: parent.width
+                            color: Theme.textPrimary
                         }
+                    }
+                    
+                    RowLayout {
+                        Layout.fillWidth: true
+                        visible: vm && vm.selectedPackVersions && vm.selectedPackVersions.length > 0
                         
-                        // Author
-                        Label {
+                        Label { text: qsTr("Version:") }
+                        
+                        ComboBox {
                             Layout.fillWidth: true
-                            text: modelData.author || ""
-                            color: Theme.textSecondary
-                            font.pointSize: Theme.fontSizeSmall
-                            horizontalAlignment: Text.AlignHCenter
-                            elide: Text.ElideRight
+                            model: vm ? vm.selectedPackVersions : []
+                            currentIndex: vm ? vm.selectedVersionIndex : 0
+                            onActivated: if (vm) vm.selectVersion(index)
                         }
-                        
-                        // Minecraft version
-                        Label {
-                            Layout.fillWidth: true
-                            text: modelData.minecraftVersion || ""
-                            color: Theme.accent
-                            font.pointSize: Theme.fontSizeSmall
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                        
-                        Item { Layout.fillHeight: true }
-                        
-                        // Install button
-                        Button {
-                            Layout.fillWidth: true
-                            text: qsTr("Install")
-                            highlighted: true
-                            onClicked: {
-                                if (vm) vm.installPack(modelData.id)
-                            }
-                        }
+                    }
+                    
+                    Button {
+                        Layout.fillWidth: true
+                        text: qsTr("Install")
+                        highlighted: true
+                        enabled: vm && vm.selectedPackIndex >= 0
+                        onClicked: if (vm) vm.installSelected("", "")
                     }
                 }
                 
-                ScrollBar.vertical: ScrollBar {}
+                Label {
+                    anchors.centerIn: parent
+                    text: qsTr("Select a pack to view details")
+                    color: Theme.textSecondary
+                    visible: !(vm && vm.selectedPack && vm.selectedPack.name)
+                }
             }
-            
-            BusyIndicator {
-                anchors.centerIn: parent
-                running: isSearching || (vm ? vm.loading : false)
-                visible: running
-            }
-            
-            Label {
-                anchors.centerIn: parent
-                text: qsTr("No modpacks found")
-                color: Theme.textSecondary
-                visible: !isSearching && packGrid.count === 0
-            }
-        }
-    }
-    
-    function performSearch() {
-        searchQuery = searchField.text
-        if (vm) {
-            isSearching = true
-            vm.search(searchQuery, sortCombo.currentIndex, versionCombo.currentText === "All Versions" ? "" : versionCombo.currentText)
         }
     }
     
     Connections {
         target: vm
-        function onSearchComplete(results) {
-            isSearching = false
-            searchResults = results
+        function onInstallFinished(success, message) {
+            resultDialog.success = success
+            resultDialog.message = message
+            resultDialog.open()
         }
     }
     
-    // Pack detail dialog
     Dialog {
-        id: detailDialog
-        title: pack ? pack.name : ""
+        id: resultDialog
+        title: success ? qsTr("Success") : qsTr("Error")
         modal: true
-        width: 500
-        height: 450
-        standardButtons: Dialog.Close
-        
-        property var pack: null
-        
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: Theme.spacingM
-            
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Theme.spacingM
-                
-                Rectangle {
-                    Layout.preferredWidth: 96
-                    Layout.preferredHeight: 96
-                    radius: 8
-                    color: Theme.backgroundAlt
-                    
-                    Image {
-                        anchors.fill: parent
-                        anchors.margins: 4
-                        source: detailDialog.pack ? detailDialog.pack.iconUrl : ""
-                        fillMode: Image.PreserveAspectFit
-                    }
-                }
-                
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 4
-                    
-                    Label {
-                        text: detailDialog.pack ? detailDialog.pack.name : ""
-                        color: Theme.textPrimary
-                        font.bold: true
-                        font.pointSize: Theme.fontSizeMedium
-                    }
-                    
-                    Label {
-                        text: qsTr("by %1").arg(detailDialog.pack ? detailDialog.pack.author : "")
-                        color: Theme.textSecondary
-                    }
-                    
-                    Label {
-                        text: qsTr("Minecraft %1").arg(detailDialog.pack ? detailDialog.pack.minecraftVersion : "")
-                        color: Theme.accent
-                    }
-                }
-            }
-            
-            ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                
-                TextArea {
-                    readOnly: true
-                    text: detailDialog.pack ? detailDialog.pack.description : ""
-                    wrapMode: Text.WordWrap
-                    color: Theme.textPrimary
-                }
-            }
-            
-            Button {
-                Layout.fillWidth: true
-                text: qsTr("Install Pack")
-                highlighted: true
-                onClicked: {
-                    if (vm && detailDialog.pack) {
-                        vm.installPack(detailDialog.pack.id)
-                        detailDialog.close()
-                    }
-                }
-            }
-        }
+        standardButtons: Dialog.Ok
+        property bool success: false
+        property string message: ""
+        Label { text: resultDialog.message; wrapMode: Text.WordWrap }
     }
 }

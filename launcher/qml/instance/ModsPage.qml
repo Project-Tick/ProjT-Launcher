@@ -100,7 +100,7 @@ Rectangle {
                         CheckBox {
                             checked: model.enabled !== false
                             onCheckedChanged: {
-                                if (vm) vm.setModEnabled(index, checked)
+                                if (vm) vm.enableMod(index, checked)
                             }
                         }
                         
@@ -283,7 +283,7 @@ Rectangle {
         
         onAccepted: {
             if (vm && modIndex >= 0) {
-                vm.deleteMod(modIndex)
+                vm.removeMod(modIndex)
             }
         }
     }

@@ -92,6 +92,28 @@ class InstanceViewModel : public QObject {
     // Worlds list  
     Q_PROPERTY(QStringList worldPaths READ worldPaths NOTIFY worldPathsChanged)
     Q_PROPERTY(QStringList worldNames READ worldNames NOTIFY worldPathsChanged)
+    
+    // Version info
+    Q_PROPERTY(QString minecraftVersion READ minecraftVersion NOTIFY versionChanged)
+    Q_PROPERTY(QString modLoaderName READ modLoaderName NOTIFY versionChanged)
+    Q_PROPERTY(QString modLoaderVersion READ modLoaderVersion NOTIFY versionChanged)
+    Q_PROPERTY(QVariantList componentsModel READ componentsModel NOTIFY componentsModelChanged)
+    
+    // Mods
+    Q_PROPERTY(QVariantList modsModel READ modsModel NOTIFY modsModelChanged)
+    Q_PROPERTY(int modsCount READ modsCount NOTIFY modsModelChanged)
+    
+    // Resource packs
+    Q_PROPERTY(QVariantList resourcePacksModel READ resourcePacksModel NOTIFY resourcePacksModelChanged)
+    Q_PROPERTY(int resourcePacksCount READ resourcePacksCount NOTIFY resourcePacksModelChanged)
+    
+    // Shader packs
+    Q_PROPERTY(QVariantList shaderPacksModel READ shaderPacksModel NOTIFY shaderPacksModelChanged)
+    Q_PROPERTY(int shaderPacksCount READ shaderPacksCount NOTIFY shaderPacksModelChanged)
+    
+    // Texture packs
+    Q_PROPERTY(QVariantList texturePacksModel READ texturePacksModel NOTIFY texturePacksModelChanged)
+    Q_PROPERTY(int texturePacksCount READ texturePacksCount NOTIFY texturePacksModelChanged)
 
 public:
     explicit InstanceViewModel(QObject* parent = nullptr);
@@ -168,6 +190,54 @@ public:
     QStringList worldPaths() const;
     QStringList worldNames() const;
     
+    // Version info
+    QString minecraftVersion() const;
+    QString modLoaderName() const;
+    QString modLoaderVersion() const;
+    QVariantList componentsModel() const;
+    
+    // Version actions
+    Q_INVOKABLE void refreshVersionComponents();
+    Q_INVOKABLE void setComponentEnabled(int index, bool enabled);
+    Q_INVOKABLE void moveComponentUp(int index);
+    Q_INVOKABLE void moveComponentDown(int index);
+    Q_INVOKABLE void removeComponent(int index);
+    Q_INVOKABLE void changeMinecraftVersion(const QString& version);
+    Q_INVOKABLE void installModLoader(const QString& loaderType, const QString& version);
+    
+    // Mods
+    QVariantList modsModel() const;
+    int modsCount() const;
+    Q_INVOKABLE void refreshMods();
+    Q_INVOKABLE void addMod(const QString& filePath);
+    Q_INVOKABLE void removeMod(int index);
+    Q_INVOKABLE void enableMod(int index, bool enabled);
+    Q_INVOKABLE void openModsFolder();
+    
+    // Resource packs
+    QVariantList resourcePacksModel() const;
+    int resourcePacksCount() const;
+    Q_INVOKABLE void refreshResourcePacks();
+    Q_INVOKABLE void addResourcePack(const QString& filePath);
+    Q_INVOKABLE void removeResourcePack(int index);
+    Q_INVOKABLE void enableResourcePack(int index, bool enabled);
+    
+    // Shader packs
+    QVariantList shaderPacksModel() const;
+    int shaderPacksCount() const;
+    Q_INVOKABLE void refreshShaderPacks();
+    Q_INVOKABLE void addShaderPack(const QString& filePath);
+    Q_INVOKABLE void removeShaderPack(int index);
+    Q_INVOKABLE void enableShaderPack(int index, bool enabled);
+    
+    // Texture packs
+    QVariantList texturePacksModel() const;
+    int texturePacksCount() const;
+    Q_INVOKABLE void refreshTexturePacks();
+    Q_INVOKABLE void addTexturePack(const QString& filePath);
+    Q_INVOKABLE void removeTexturePack(int index);
+    Q_INVOKABLE void enableTexturePack(int index, bool enabled);
+    
     // Java settings
     bool overrideJava() const;
     void setOverrideJava(bool override);
@@ -219,7 +289,6 @@ public:
     Q_INVOKABLE void kill();
     Q_INVOKABLE void openFolder();
     Q_INVOKABLE void openGameFolder();
-    Q_INVOKABLE void openModsFolder();
     Q_INVOKABLE void openResourcePacksFolder();
     Q_INVOKABLE void openShaderPacksFolder();
     Q_INVOKABLE void openScreenshotsFolder();
@@ -275,6 +344,16 @@ signals:
     void worldPathsChanged();
     void javaAutoDetected(const QStringList& javaPaths);
     
+    // Version signals
+    void versionChanged();
+    void componentsModelChanged();
+    
+    // Content model signals
+    void modsModelChanged();
+    void resourcePacksModelChanged();
+    void shaderPacksModelChanged();
+    void texturePacksModelChanged();
+    
     void launchRequested(const QString& instanceId);
     void launchOfflineRequested(const QString& instanceId);
     void killRequested(const QString& instanceId);
@@ -288,6 +367,10 @@ private:
     QString formatTime(qint64 seconds) const;
     void scanScreenshots();
     void scanWorlds();
+    void scanMods();
+    void scanResourcePacks();
+    void scanShaderPacks();
+    void scanTexturePacks();
     
     QString m_instanceId;
     InstancePtr m_instance;
@@ -295,4 +378,8 @@ private:
     QStringList m_screenshotNames;
     QStringList m_worldPaths;
     QStringList m_worldNames;
+    QVariantList m_modsModel;
+    QVariantList m_resourcePacksModel;
+    QVariantList m_shaderPacksModel;
+    QVariantList m_texturePacksModel;
 };

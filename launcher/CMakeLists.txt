@@ -815,6 +815,16 @@ SET(LAUNCHER_SOURCES
     viewmodels/NewInstanceViewModel.cpp
     viewmodels/InstanceViewModel.h
     viewmodels/InstanceViewModel.cpp
+    viewmodels/ATLauncherViewModel.h
+    viewmodels/ATLauncherViewModel.cpp
+    viewmodels/FTBViewModel.h
+    viewmodels/FTBViewModel.cpp
+    viewmodels/TechnicViewModel.h
+    viewmodels/TechnicViewModel.cpp
+    viewmodels/CurseForgeViewModel.h
+    viewmodels/CurseForgeViewModel.cpp
+    viewmodels/ModrinthViewModel.h
+    viewmodels/ModrinthViewModel.cpp
 
     # Super secret!
     KonamiCode.h

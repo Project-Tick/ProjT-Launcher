@@ -27,6 +27,14 @@
 #include "Application.h"
 #include "FileSystem.h"
 #include "InstanceList.h"
+#include "minecraft/MinecraftInstance.h"
+#include "minecraft/PackProfile.h"
+#include "minecraft/Component.h"
+#include "minecraft/mod/ModFolderModel.h"
+#include "minecraft/mod/ResourcePackFolderModel.h"
+#include "minecraft/mod/ShaderPackFolderModel.h"
+#include "minecraft/mod/TexturePackFolderModel.h"
+#include "minecraft/mod/Resource.h"
 
 InstanceViewModel::InstanceViewModel(QObject* parent)
     : QObject(parent)
@@ -1045,4 +1053,655 @@ void InstanceViewModel::scanWorlds()
     
     emit worldPathsChanged();
     qDebug() << "[InstanceViewModel] Found" << m_worldPaths.size() << "worlds";
+}
+
+// ============ Version Info ============
+
+QString InstanceViewModel::minecraftVersion() const
+{
+    if (!m_instance)
+        return QString();
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return QString();
+    
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return QString();
+    
+    return profile->getComponentVersion("net.minecraft");
+}
+
+QString InstanceViewModel::modLoaderName() const
+{
+    if (!m_instance)
+        return QString();
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return QString();
+    
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return QString();
+    
+    // Check for various mod loaders
+    if (!profile->getComponentVersion("net.minecraftforge").isEmpty())
+        return "Forge";
+    if (!profile->getComponentVersion("net.neoforged").isEmpty())
+        return "NeoForge";
+    if (!profile->getComponentVersion("net.fabricmc.fabric-loader").isEmpty())
+        return "Fabric";
+    if (!profile->getComponentVersion("org.quiltmc.quilt-loader").isEmpty())
+        return "Quilt";
+    
+    return QString();
+}
+
+QString InstanceViewModel::modLoaderVersion() const
+{
+    if (!m_instance)
+        return QString();
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return QString();
+    
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return QString();
+    
+    // Check for various mod loaders
+    QString version = profile->getComponentVersion("net.minecraftforge");
+    if (!version.isEmpty())
+        return version;
+    
+    version = profile->getComponentVersion("net.neoforged");
+    if (!version.isEmpty())
+        return version;
+    
+    version = profile->getComponentVersion("net.fabricmc.fabric-loader");
+    if (!version.isEmpty())
+        return version;
+    
+    version = profile->getComponentVersion("org.quiltmc.quilt-loader");
+    if (!version.isEmpty())
+        return version;
+    
+    return QString();
+}
+
+QVariantList InstanceViewModel::componentsModel() const
+{
+    QVariantList result;
+    
+    if (!m_instance)
+        return result;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return result;
+    
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return result;
+    
+    for (int i = 0; i < profile->rowCount(); i++) {
+        auto component = profile->getComponent(i);
+        if (!component)
+            continue;
+        
+        QVariantMap item;
+        item["name"] = component->getName();
+        item["version"] = component->getVersion();
+        item["uid"] = component->getID();
+        item["required"] = !component->isCustomizable();
+        item["enabled"] = component->isEnabled();
+        item["canToggle"] = component->canBeDisabled();
+        item["canRemove"] = component->isRemovable();
+        item["canMoveUp"] = i > 0 && component->isMoveable();
+        item["canMoveDown"] = i < profile->rowCount() - 1 && component->isMoveable();
+        
+        result.append(item);
+    }
+    
+    return result;
+}
+
+void InstanceViewModel::refreshVersionComponents()
+{
+    emit componentsModelChanged();
+    emit versionChanged();
+}
+
+void InstanceViewModel::setComponentEnabled(int index, bool enabled)
+{
+    if (!m_instance)
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto profile = mcInstance->getPackProfile();
+    if (!profile || index < 0 || index >= profile->rowCount())
+        return;
+    
+    auto component = profile->getComponent(index);
+    if (component && component->canBeDisabled()) {
+        component->setEnabled(enabled);
+        emit componentsModelChanged();
+    }
+}
+
+void InstanceViewModel::moveComponentUp(int index)
+{
+    if (!m_instance)
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto profile = mcInstance->getPackProfile();
+    if (!profile || index <= 0 || index >= profile->rowCount())
+        return;
+    
+    profile->move(index, PackProfile::MoveUp);
+    emit componentsModelChanged();
+}
+
+void InstanceViewModel::moveComponentDown(int index)
+{
+    if (!m_instance)
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto profile = mcInstance->getPackProfile();
+    if (!profile || index < 0 || index >= profile->rowCount() - 1)
+        return;
+    
+    profile->move(index, PackProfile::MoveDown);
+    emit componentsModelChanged();
+}
+
+void InstanceViewModel::removeComponent(int index)
+{
+    if (!m_instance)
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto profile = mcInstance->getPackProfile();
+    if (!profile || index < 0 || index >= profile->rowCount())
+        return;
+    
+    auto component = profile->getComponent(index);
+    if (component && component->isRemovable()) {
+        profile->remove(index);
+        emit componentsModelChanged();
+        emit versionChanged();
+    }
+}
+
+void InstanceViewModel::changeMinecraftVersion(const QString& version)
+{
+    if (!m_instance || version.isEmpty())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return;
+    
+    profile->setComponentVersion("net.minecraft", version, true);
+    emit versionChanged();
+    emit componentsModelChanged();
+}
+
+void InstanceViewModel::installModLoader(const QString& loaderType, const QString& version)
+{
+    if (!m_instance || loaderType.isEmpty())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return;
+    
+    QString uid;
+    if (loaderType.toLower() == "forge")
+        uid = "net.minecraftforge";
+    else if (loaderType.toLower() == "neoforge")
+        uid = "net.neoforged";
+    else if (loaderType.toLower() == "fabric")
+        uid = "net.fabricmc.fabric-loader";
+    else if (loaderType.toLower() == "quilt")
+        uid = "org.quiltmc.quilt-loader";
+    
+    if (!uid.isEmpty()) {
+        if (version.isEmpty()) {
+            profile->installEmpty(uid, loaderType);
+        } else {
+            profile->setComponentVersion(uid, version, true);
+        }
+        emit versionChanged();
+        emit componentsModelChanged();
+    }
+}
+
+// ============ Mods ============
+
+QVariantList InstanceViewModel::modsModel() const
+{
+    return m_modsModel;
+}
+
+int InstanceViewModel::modsCount() const
+{
+    return m_modsModel.size();
+}
+
+void InstanceViewModel::refreshMods()
+{
+    scanMods();
+}
+
+void InstanceViewModel::addMod(const QString& filePath)
+{
+    if (!m_instance || filePath.isEmpty())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto modsModel = mcInstance->loaderModList();
+    if (modsModel) {
+        modsModel->installResource(filePath);
+        scanMods();
+    }
+}
+
+void InstanceViewModel::removeMod(int index)
+{
+    if (!m_instance || index < 0 || index >= m_modsModel.size())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto modsModel = mcInstance->loaderModList();
+    if (modsModel) {
+        modsModel->deleteResources(QModelIndexList() << modsModel->index(index, 0));
+        scanMods();
+    }
+}
+
+void InstanceViewModel::enableMod(int index, bool enabled)
+{
+    if (!m_instance || index < 0 || index >= m_modsModel.size())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto modsModel = mcInstance->loaderModList();
+    if (modsModel) {
+        modsModel->setResourceEnabled(QModelIndexList() << modsModel->index(index, 0), 
+                               enabled ? EnableAction::ENABLE : EnableAction::DISABLE);
+        scanMods();
+    }
+}
+
+void InstanceViewModel::scanMods()
+{
+    m_modsModel.clear();
+    
+    if (!m_instance) {
+        emit modsModelChanged();
+        return;
+    }
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance) {
+        emit modsModelChanged();
+        return;
+    }
+    
+    auto modsModel = mcInstance->loaderModList();
+    if (!modsModel) {
+        emit modsModelChanged();
+        return;
+    }
+    
+    for (int i = 0; i < modsModel->rowCount(); i++) {
+        auto& mod = modsModel->at(i);
+        QVariantMap item;
+        item["name"] = mod.name();
+        item["version"] = mod.version();
+        item["description"] = mod.description();
+        item["enabled"] = mod.enabled();
+        item["filename"] = mod.fileinfo().fileName();
+        item["authors"] = mod.authors().join(", ");
+        
+        m_modsModel.append(item);
+    }
+    
+    emit modsModelChanged();
+}
+
+// ============ Resource Packs ============
+
+QVariantList InstanceViewModel::resourcePacksModel() const
+{
+    return m_resourcePacksModel;
+}
+
+int InstanceViewModel::resourcePacksCount() const
+{
+    return m_resourcePacksModel.size();
+}
+
+void InstanceViewModel::refreshResourcePacks()
+{
+    scanResourcePacks();
+}
+
+void InstanceViewModel::addResourcePack(const QString& filePath)
+{
+    if (!m_instance || filePath.isEmpty())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto model = mcInstance->resourcePackList();
+    if (model) {
+        model->installResource(filePath);
+        scanResourcePacks();
+    }
+}
+
+void InstanceViewModel::removeResourcePack(int index)
+{
+    if (!m_instance || index < 0 || index >= m_resourcePacksModel.size())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto model = mcInstance->resourcePackList();
+    if (model) {
+        model->deleteResources(QModelIndexList() << model->index(index, 0));
+        scanResourcePacks();
+    }
+}
+
+void InstanceViewModel::enableResourcePack(int index, bool enabled)
+{
+    if (!m_instance || index < 0 || index >= m_resourcePacksModel.size())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto model = mcInstance->resourcePackList();
+    if (model) {
+        model->setResourceEnabled(QModelIndexList() << model->index(index, 0), 
+                                 enabled ? EnableAction::ENABLE : EnableAction::DISABLE);
+        scanResourcePacks();
+    }
+}
+
+void InstanceViewModel::scanResourcePacks()
+{
+    m_resourcePacksModel.clear();
+    
+    if (!m_instance) {
+        emit resourcePacksModelChanged();
+        return;
+    }
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance) {
+        emit resourcePacksModelChanged();
+        return;
+    }
+    
+    auto model = mcInstance->resourcePackList();
+    if (!model) {
+        emit resourcePacksModelChanged();
+        return;
+    }
+    
+    for (int i = 0; i < model->rowCount(); i++) {
+        auto& resource = model->at(i);
+        QVariantMap item;
+        item["name"] = resource.name();
+        item["description"] = resource.description();
+        item["enabled"] = resource.enabled();
+        item["filename"] = resource.fileinfo().fileName();
+        
+        m_resourcePacksModel.append(item);
+    }
+    
+    emit resourcePacksModelChanged();
+}
+
+// ============ Shader Packs ============
+
+QVariantList InstanceViewModel::shaderPacksModel() const
+{
+    return m_shaderPacksModel;
+}
+
+int InstanceViewModel::shaderPacksCount() const
+{
+    return m_shaderPacksModel.size();
+}
+
+void InstanceViewModel::refreshShaderPacks()
+{
+    scanShaderPacks();
+}
+
+void InstanceViewModel::addShaderPack(const QString& filePath)
+{
+    if (!m_instance || filePath.isEmpty())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto model = mcInstance->shaderPackList();
+    if (model) {
+        model->installResource(filePath);
+        scanShaderPacks();
+    }
+}
+
+void InstanceViewModel::removeShaderPack(int index)
+{
+    if (!m_instance || index < 0 || index >= m_shaderPacksModel.size())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto model = mcInstance->shaderPackList();
+    if (model) {
+        model->deleteResources(QModelIndexList() << model->index(index, 0));
+        scanShaderPacks();
+    }
+}
+
+void InstanceViewModel::enableShaderPack(int index, bool enabled)
+{
+    if (!m_instance || index < 0 || index >= m_shaderPacksModel.size())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto model = mcInstance->shaderPackList();
+    if (model) {
+        model->setResourceEnabled(QModelIndexList() << model->index(index, 0), 
+                                 enabled ? EnableAction::ENABLE : EnableAction::DISABLE);
+        scanShaderPacks();
+    }
+}
+
+void InstanceViewModel::scanShaderPacks()
+{
+    m_shaderPacksModel.clear();
+    
+    if (!m_instance) {
+        emit shaderPacksModelChanged();
+        return;
+    }
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance) {
+        emit shaderPacksModelChanged();
+        return;
+    }
+    
+    auto model = mcInstance->shaderPackList();
+    if (!model) {
+        emit shaderPacksModelChanged();
+        return;
+    }
+    
+    for (int i = 0; i < model->rowCount(); i++) {
+        auto& resource = model->at(i);
+        QVariantMap item;
+        item["name"] = resource.name();
+        item["enabled"] = resource.enabled();
+        item["filename"] = resource.fileinfo().fileName();
+        
+        m_shaderPacksModel.append(item);
+    }
+    
+    emit shaderPacksModelChanged();
+}
+
+// ============ Texture Packs ============
+
+QVariantList InstanceViewModel::texturePacksModel() const
+{
+    return m_texturePacksModel;
+}
+
+int InstanceViewModel::texturePacksCount() const
+{
+    return m_texturePacksModel.size();
+}
+
+void InstanceViewModel::refreshTexturePacks()
+{
+    scanTexturePacks();
+}
+
+void InstanceViewModel::addTexturePack(const QString& filePath)
+{
+    if (!m_instance || filePath.isEmpty())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto model = mcInstance->texturePackList();
+    if (model) {
+        model->installResource(filePath);
+        scanTexturePacks();
+    }
+}
+
+void InstanceViewModel::removeTexturePack(int index)
+{
+    if (!m_instance || index < 0 || index >= m_texturePacksModel.size())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto model = mcInstance->texturePackList();
+    if (model) {
+        model->deleteResources(QModelIndexList() << model->index(index, 0));
+        scanTexturePacks();
+    }
+}
+
+void InstanceViewModel::enableTexturePack(int index, bool enabled)
+{
+    if (!m_instance || index < 0 || index >= m_texturePacksModel.size())
+        return;
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+    
+    auto model = mcInstance->texturePackList();
+    if (model) {
+        model->setResourceEnabled(QModelIndexList() << model->index(index, 0), 
+                                 enabled ? EnableAction::ENABLE : EnableAction::DISABLE);
+        scanTexturePacks();
+    }
+}
+
+void InstanceViewModel::scanTexturePacks()
+{
+    m_texturePacksModel.clear();
+    
+    if (!m_instance) {
+        emit texturePacksModelChanged();
+        return;
+    }
+    
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance) {
+        emit texturePacksModelChanged();
+        return;
+    }
+    
+    auto model = mcInstance->texturePackList();
+    if (!model) {
+        emit texturePacksModelChanged();
+        return;
+    }
+    
+    for (int i = 0; i < model->rowCount(); i++) {
+        auto& resource = model->at(i);
+        QVariantMap item;
+        item["name"] = resource.name();
+        item["enabled"] = resource.enabled();
+        item["filename"] = resource.fileinfo().fileName();
+        
+        m_texturePacksModel.append(item);
+    }
+    
+    emit texturePacksModelChanged();
 }

@@ -309,32 +309,32 @@ Rectangle {
                         
                         // ATLauncher page
                         Loader {
-                            source: "qrc:/qml/modplatform/ATLauncherPage.qml"
+                            source: "modplatform/ATLauncherPage.qml"
                         }
                         
                         // CurseForge page
                         Loader {
-                            source: "qrc:/qml/modplatform/CurseForgePage.qml"
+                            source: "modplatform/CurseForgePage.qml"
                         }
                         
                         // FTB Legacy placeholder (use FTBPage)
                         Loader {
-                            source: "qrc:/qml/modplatform/FTBPage.qml"
+                            source: "modplatform/FTBPage.qml"
                         }
                         
                         // FTB App (use same FTBPage)
                         Loader {
-                            source: "qrc:/qml/modplatform/FTBPage.qml"
+                            source: "modplatform/FTBPage.qml"
                         }
                         
                         // Modrinth page
                         Loader {
-                            source: "qrc:/qml/modplatform/ModrinthPage.qml"
+                            source: "modplatform/ModrinthPage.qml"
                         }
                         
                         // Technic page
                         Loader {
-                            source: "qrc:/qml/modplatform/TechnicPage.qml"
+                            source: "modplatform/TechnicPage.qml"
                         }
                     }
                 }
@@ -1525,11 +1525,11 @@ Rectangle {
                 anchors.fill: parent
                 source: {
                     switch (modplatformWindowLoader.platform) {
-                        case "curseforge": return "qrc:/qml/modplatform/CurseForgePage.qml"
-                        case "modrinth": return "qrc:/qml/modplatform/ModrinthPage.qml"
-                        case "atlauncher": return "qrc:/qml/modplatform/ATLauncherPage.qml"
-                        case "ftb": return "qrc:/qml/modplatform/FTBPage.qml"
-                        case "technic": return "qrc:/qml/modplatform/TechnicPage.qml"
+                        case "curseforge": return "modplatform/CurseForgePage.qml"
+                        case "modrinth": return "modplatform/ModrinthPage.qml"
+                        case "atlauncher": return "modplatform/ATLauncherPage.qml"
+                        case "ftb": return "modplatform/FTBPage.qml"
+                        case "technic": return "modplatform/TechnicPage.qml"
                         default: return ""
                     }
                 }

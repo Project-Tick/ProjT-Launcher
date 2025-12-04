@@ -30,6 +30,8 @@
 #include "settings/SettingsObject.h"
 #include "translations/TranslationsModel.h"
 #include "viewmodels/AccountsViewModel.h"
+#include "viewmodels/ATLauncherViewModel.h"
+#include "viewmodels/FTBViewModel.h"
 #include "viewmodels/InstanceListViewModel.h"
 #include "viewmodels/InstanceViewModel.h"
 #include "viewmodels/LauncherViewModel.h"
@@ -37,6 +39,9 @@
 #include "viewmodels/NewInstanceViewModel.h"
 #include "viewmodels/NewsViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
+#include "viewmodels/TechnicViewModel.h"
+#include "viewmodels/CurseForgeViewModel.h"
+#include "viewmodels/ModrinthViewModel.h"
 
 constexpr auto kShellLastPageSetting = "qmlShell/lastPage";
 constexpr auto kShellDockVisibleSetting = "qmlShell/dockVisible";
@@ -232,6 +237,27 @@ void ShellManager::exposeContextProperties(LauncherViewModel* launcherViewModel,
     ctx->setContextProperty(QStringLiteral("instanceVM"), instanceViewModel);
     ctx->setContextProperty(QStringLiteral("instanceViewModel"), instanceViewModel);
     projt->insert(QStringLiteral("instanceVM"), QVariant::fromValue(instanceViewModel));
+
+    // Create and expose modplatform ViewModels
+    auto atlViewModel = new ATLauncherViewModel(this);
+    ctx->setContextProperty(QStringLiteral("atlVM"), atlViewModel);
+    projt->insert(QStringLiteral("atlVM"), QVariant::fromValue(atlViewModel));
+
+    auto ftbViewModel = new FTBViewModel(this);
+    ctx->setContextProperty(QStringLiteral("ftbVM"), ftbViewModel);
+    projt->insert(QStringLiteral("ftbVM"), QVariant::fromValue(ftbViewModel));
+
+    auto technicViewModel = new TechnicViewModel(this);
+    ctx->setContextProperty(QStringLiteral("technicVM"), technicViewModel);
+    projt->insert(QStringLiteral("technicVM"), QVariant::fromValue(technicViewModel));
+
+    auto curseForgeViewModel = new CurseForgeViewModel(this);
+    ctx->setContextProperty(QStringLiteral("curseForgeVM"), curseForgeViewModel);
+    projt->insert(QStringLiteral("curseForgeVM"), QVariant::fromValue(curseForgeViewModel));
+
+    auto modrinthViewModel = new ModrinthViewModel(this);
+    ctx->setContextProperty(QStringLiteral("modrinthVM"), modrinthViewModel);
+    projt->insert(QStringLiteral("modrinthVM"), QVariant::fromValue(modrinthViewModel));
 
     // Expose TranslationsModel for language selection
     ctx->setContextProperty(QStringLiteral("translationsModel"), APPLICATION->translations().get());
