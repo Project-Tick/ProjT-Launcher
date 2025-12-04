@@ -28,17 +28,30 @@
 namespace {
 QUrl resolveQmlUrl(const QString& fileName)
 {
+    // First try the embedded resource
     const QString resourcePath = QStringLiteral(":/qml/%1").arg(fileName);
     if (QFile::exists(resourcePath)) {
+        qDebug() << "[TestQmlPanel] Loading QML from resource:" << resourcePath;
         return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
     }
+    
+    // Try to find source directory for development builds
     QDir dir(QCoreApplication::applicationDirPath());
-    if (dir.cdUp() && dir.cd(QStringLiteral("launcher/qml"))) {
-        const QFileInfo info(dir.filePath(fileName));
-        if (info.exists()) {
-            return QUrl::fromLocalFile(info.absoluteFilePath());
+    
+    // Try going up multiple levels to find source tree
+    for (int i = 0; i < 4; ++i) {
+        QDir sourceDir(dir);
+        if (sourceDir.cd(QStringLiteral("launcher/qml"))) {
+            QFileInfo info(sourceDir.filePath(fileName));
+            if (info.exists()) {
+                qDebug() << "[TestQmlPanel] Loading QML from source:" << info.absoluteFilePath();
+                return QUrl::fromLocalFile(info.absoluteFilePath());
+            }
         }
+        if (!dir.cdUp()) break;
     }
+    
+    qWarning() << "[TestQmlPanel] QML file not found:" << fileName << "- trying qrc anyway";
     return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
 }
 }  // namespace

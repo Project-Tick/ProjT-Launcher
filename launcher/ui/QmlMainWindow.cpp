@@ -18,6 +18,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QCoreApplication>
+#include <QLibraryInfo>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQmlPropertyMap>
@@ -126,18 +127,184 @@ class ShellStateBridge : public QObject {
 
 static QUrl resolveQmlUrl(const QString& fileName)
 {
+    // First try the embedded resource
     const QString resourcePath = QStringLiteral(":/qml/%1").arg(fileName);
     if (QFile::exists(resourcePath)) {
+        qDebug() << "[QmlMainWindow] Loading QML from resource:" << resourcePath;
         return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
     }
+    
+    // Try to find source directory for development builds
+    // Build path is typically: <project>/build/Debug/projtlauncher.exe
+    // Source path is: <project>/launcher/qml/
     QDir dir(QCoreApplication::applicationDirPath());
-    if (dir.cdUp() && dir.cd(QStringLiteral("launcher/qml"))) {
-        QFileInfo info(dir.filePath(fileName));
-        if (info.exists()) {
-            return QUrl::fromLocalFile(info.absoluteFilePath());
+    
+    // Try going up multiple levels to find source tree
+    for (int i = 0; i < 4; ++i) {
+        QDir sourceDir(dir);
+        if (sourceDir.cd(QStringLiteral("launcher/qml"))) {
+            QFileInfo info(sourceDir.filePath(fileName));
+            if (info.exists()) {
+                qDebug() << "[QmlMainWindow] Loading QML from source:" << info.absoluteFilePath();
+                return QUrl::fromLocalFile(info.absoluteFilePath());
+            }
+        }
+        if (!dir.cdUp()) break;
+    }
+    
+    qWarning() << "[QmlMainWindow] QML file not found:" << fileName << "- trying qrc anyway";
+    return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
+}
+
+/**
+ * Setup QML import paths for all platforms (Windows, Linux, macOS)
+ * This ensures QtQuick modules can be found when loading QML from source files
+ */
+static void setupQmlImportPaths(QQmlEngine* engine)
+{
+    if (!engine) return;
+    
+    // Find Qt library and plugin directories
+    QString qtLibPath = QLibraryInfo::path(QLibraryInfo::LibrariesPath);
+    QString qtPluginPath = QLibraryInfo::path(QLibraryInfo::PluginsPath);
+    QString qtBinPath = QLibraryInfo::path(QLibraryInfo::BinariesPath);
+    
+    // 1. Update PATH environment variable to find Qt DLLs/libraries
+#ifdef Q_OS_WIN
+    QString pathEnv = qEnvironmentVariable("PATH");
+    if (!qtBinPath.isEmpty() && QDir(qtBinPath).exists() && !pathEnv.contains(qtBinPath)) {
+        pathEnv = qtBinPath + QChar(';') + pathEnv;
+        qputenv("PATH", pathEnv.toUtf8());
+        qDebug() << "[QmlMainWindow] Updated PATH with Qt bin:" << qtBinPath;
+    }
+    if (!qtLibPath.isEmpty() && QDir(qtLibPath).exists() && !pathEnv.contains(qtLibPath)) {
+        pathEnv = qtLibPath + QChar(';') + pathEnv;
+        qputenv("PATH", pathEnv.toUtf8());
+        qDebug() << "[QmlMainWindow] Updated PATH with Qt lib:" << qtLibPath;
+    }
+#else
+    QString ldPath = qEnvironmentVariable("LD_LIBRARY_PATH");
+    if (!qtLibPath.isEmpty() && QDir(qtLibPath).exists() && !ldPath.contains(qtLibPath)) {
+        ldPath = qtLibPath + QChar(':') + ldPath;
+        qputenv("LD_LIBRARY_PATH", ldPath.toUtf8());
+        qDebug() << "[QmlMainWindow] Updated LD_LIBRARY_PATH with:" << qtLibPath;
+    }
+#endif
+    
+    // 2. Set QT_QPA_PLATFORM_PLUGIN_PATH for platform plugin
+    if (!qtPluginPath.isEmpty() && QDir(qtPluginPath).exists()) {
+        qputenv("QT_QPA_PLATFORM_PLUGIN_PATH", qtPluginPath.toUtf8());
+        qDebug() << "[QmlMainWindow] Set QT_QPA_PLATFORM_PLUGIN_PATH:" << qtPluginPath;
+    }
+    
+    // 3. Qt's official QML import path from QLibraryInfo
+    QString qtQmlPath = QLibraryInfo::path(QLibraryInfo::QmlImportsPath);
+    if (!qtQmlPath.isEmpty() && QDir(qtQmlPath).exists()) {
+        engine->addImportPath(qtQmlPath);
+        qDebug() << "[QmlMainWindow] Added Qt QML import path:" << qtQmlPath;
+    }
+    
+    // 4. Try to find Qt installation from Qt plugin path
+    QString pluginPath = QLibraryInfo::path(QLibraryInfo::PluginsPath);
+    if (!pluginPath.isEmpty()) {
+        QDir pluginDir(pluginPath);
+        if (pluginDir.cdUp()) {
+            QString qmlFromPlugin = pluginDir.absoluteFilePath(QStringLiteral("qml"));
+            if (QDir(qmlFromPlugin).exists() && qmlFromPlugin != qtQmlPath) {
+                engine->addImportPath(qmlFromPlugin);
+                qDebug() << "[QmlMainWindow] Added Qt QML path from plugins:" << qmlFromPlugin;
+            }
         }
     }
-    return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
+    
+    // 3. Try common Qt installation paths based on platform
+    QStringList commonPaths;
+    
+#ifdef Q_OS_WIN
+    // Windows: Check common Qt installation locations
+    QStringList qtVersions = {QStringLiteral("6.10.1"), QStringLiteral("6.9.0"), QStringLiteral("6.8.0"), 
+                              QStringLiteral("6.7.0"), QStringLiteral("6.6.0"), QStringLiteral("6.5.0")};
+    QStringList compilers = {QStringLiteral("msvc2022_64"), QStringLiteral("msvc2019_64"), QStringLiteral("mingw_64")};
+    
+    for (const QString& ver : qtVersions) {
+        for (const QString& compiler : compilers) {
+            commonPaths << QStringLiteral("C:/Qt/%1/%2/qml").arg(ver, compiler);
+        }
+    }
+#elif defined(Q_OS_MACOS)
+    // macOS: Homebrew and official Qt installations
+    commonPaths << QStringLiteral("/opt/homebrew/opt/qt/qml");
+    commonPaths << QStringLiteral("/usr/local/opt/qt/qml");
+    commonPaths << QStringLiteral("/opt/homebrew/lib/qt6/qml");
+    commonPaths << QDir::homePath() + QStringLiteral("/Qt/*/macos/qml");
+#else
+    // Linux: System and user installations
+    commonPaths << QStringLiteral("/usr/lib/qt6/qml");
+    commonPaths << QStringLiteral("/usr/lib64/qt6/qml");
+    commonPaths << QStringLiteral("/usr/lib/x86_64-linux-gnu/qt6/qml");
+    commonPaths << QStringLiteral("/usr/share/qt6/qml");
+    commonPaths << QDir::homePath() + QStringLiteral("/Qt/*/gcc_64/qml");
+#endif
+    
+    for (const QString& path : commonPaths) {
+        if (QDir(path).exists()) {
+            engine->addImportPath(path);
+            qDebug() << "[QmlMainWindow] Added common Qt QML path:" << path;
+            
+            // Also add the corresponding bin directory to PATH to ensure DLLs can be loaded
+            QDir qmlDir(path);
+            if (qmlDir.cdUp()) {
+                QString binPath = qmlDir.absoluteFilePath(QStringLiteral("bin"));
+                if (QDir(binPath).exists()) {
+#ifdef Q_OS_WIN
+                    QString pathEnv = qEnvironmentVariable("PATH");
+                    if (!pathEnv.contains(binPath)) {
+                        pathEnv = binPath + QChar(';') + pathEnv;
+                        qputenv("PATH", pathEnv.toUtf8());
+                        qDebug() << "[QmlMainWindow] Added Qt bin to PATH from common:" << binPath;
+                    }
+#else
+                    QString ldPath = qEnvironmentVariable("LD_LIBRARY_PATH");
+                    // For Linux, we usually want 'lib' not 'bin' for LD_LIBRARY_PATH
+                    QString libPath = qmlDir.absoluteFilePath(QStringLiteral("lib"));
+                    if (QDir(libPath).exists() && !ldPath.contains(libPath)) {
+                        ldPath = libPath + QChar(':') + ldPath;
+                        qputenv("LD_LIBRARY_PATH", ldPath.toUtf8());
+                        qDebug() << "[QmlMainWindow] Added Qt lib to LD_LIBRARY_PATH from common:" << libPath;
+                    }
+#endif
+                }
+            }
+            
+            break;  // Found one, that's enough
+        }
+    }
+    
+    // 4. Application directory for bundled QML modules (all platforms)
+    QString appQmlPath = QCoreApplication::applicationDirPath() + QStringLiteral("/qml");
+    if (QDir(appQmlPath).exists()) {
+        engine->addImportPath(appQmlPath);
+        qDebug() << "[QmlMainWindow] Added app QML import path:" << appQmlPath;
+    }
+    
+    // 5. Environment variable QML2_IMPORT_PATH (all platforms)
+    QString envPath = qEnvironmentVariable("QML2_IMPORT_PATH");
+    if (!envPath.isEmpty()) {
+#ifdef Q_OS_WIN
+        QStringList envPaths = envPath.split(QLatin1Char(';'), Qt::SkipEmptyParts);
+#else
+        QStringList envPaths = envPath.split(QLatin1Char(':'), Qt::SkipEmptyParts);
+#endif
+        for (const QString& p : envPaths) {
+            if (QDir(p).exists()) {
+                engine->addImportPath(p);
+                qDebug() << "[QmlMainWindow] Added env QML import path:" << p;
+            }
+        }
+    }
+    
+    // Log all current import paths for debugging
+    qDebug() << "[QmlMainWindow] Final QML import paths:" << engine->importPathList();
 }
 
 namespace {
@@ -170,6 +337,10 @@ QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel, InstanceListV
     m_quickWidget = new QQuickWidget(container);
     m_quickWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
     m_quickWidget->setClearColor(Qt::transparent);
+    
+    // Add Qt's QML import paths for development builds loading from source
+    QQmlEngine* engine = m_quickWidget->engine();
+    setupQmlImportPaths(engine);
 
     exposeContextProperties(launcherViewModel, instanceListViewModel, newsViewModel, settingsViewModel, APPLICATION->settings());
 

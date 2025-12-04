@@ -41,8 +41,6 @@ InstanceCopyTask::InstanceCopyTask(InstancePtr origInstance, const InstanceCopyP
     qDebug() << "CopyFilters:" << filters;
 
     if (!filters.isEmpty()) {
-        // Set regex filter:
-        // TODO: Kopyalanan instance'ın tipini orijinal instance'dan almak gerekiyor. Şu anda sabit tip atanıyor.
         QRegularExpression regexp(filters, QRegularExpression::CaseInsensitiveOption);
         m_matcher = Filters::regexp(regexp);
     }
@@ -64,6 +62,14 @@ void InstanceCopyTask::executeTask()
             return folderClone();
         }
         if (m_useLinks || m_useHardLinks) {
+            // Manually copy instance.cfg since it is excluded from linking to preserve the instance type
+            QString srcConfig = FS::PathCombine(m_origInstance->instanceRoot(), "instance.cfg");
+            QString dstConfig = FS::PathCombine(m_stagingPath, "instance.cfg");
+            if (QFile::exists(srcConfig)) {
+                QFile::copy(srcConfig, dstConfig);
+                QFile::setPermissions(dstConfig, QFile::ReadOwner | QFile::WriteOwner | QFile::ReadUser | QFile::WriteUser);
+            }
+
             std::unique_ptr<FS::copy> savesCopy;
             if (m_copySaves) {
                 QFileInfo mcDir(FS::PathCombine(m_stagingPath, "minecraft"));

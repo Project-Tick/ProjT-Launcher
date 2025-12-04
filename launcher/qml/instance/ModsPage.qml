@@ -11,279 +11,326 @@ Rectangle {
     color: Theme.background
     
     property var vm: ProjT.instanceVM
+    property var selectedIndices: []
     
-    ColumnLayout {
+    RowLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        spacing: Theme.spacingS
+        spacing: 0
         
-        // Header with actions
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingS
-            
-            Label {
-                text: qsTr("Mods")
-                font.pointSize: 14
-                font.bold: true
-                color: Theme.textPrimary
-            }
-            
-            Item { Layout.fillWidth: true }
-            
-            Button {
-                text: qsTr("Add")
-                icon.name: "list-add"
-                onClicked: addModDialog.open()
-            }
-            
-            Button {
-                text: qsTr("Download")
-                icon.name: "download"
-                onClicked: {
-                    if (vm) vm.openModDownload()
-                }
-            }
-            
-            Button {
-                text: qsTr("Refresh")
-                icon.name: "view-refresh"
-                onClicked: {
-                    if (vm) vm.refreshMods()
-                }
-            }
-        }
-        
-        // Search and filter
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingS
-            
-            TextField {
-                id: searchField
-                Layout.fillWidth: true
-                placeholderText: qsTr("Search mods...")
-                onTextChanged: {
-                    if (vm) vm.filterMods(text)
-                }
-            }
-            
-            CheckBox {
-                text: qsTr("Show disabled")
-                checked: true
-                onCheckedChanged: {
-                    if (vm) vm.setShowDisabledMods(checked)
-                }
-            }
-        }
-        
-        // Mods list
-        Frame {
+        // Main content
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            spacing: 0
             
-            ListView {
-                id: modsList
-                anchors.fill: parent
-                clip: true
-                model: vm ? vm.modsModel : []
+            // Mods TreeView
+            Frame {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
                 
-                delegate: ItemDelegate {
-                    width: modsList.width
-                    height: 56
+                ListView {
+                    id: modsList
+                    anchors.fill: parent
+                    clip: true
+                    model: vm ? vm.modsModel : []
                     
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingS
-                        spacing: Theme.spacingS
+                    delegate: ItemDelegate {
+                        width: modsList.width
+                        height: 48
+                        highlighted: selectedIndices.indexOf(index) >= 0
                         
-                        CheckBox {
-                            checked: model.enabled !== false
-                            onCheckedChanged: {
-                                if (vm) vm.enableMod(index, checked)
-                            }
-                        }
-                        
-                        Image {
-                            Layout.preferredWidth: 40
-                            Layout.preferredHeight: 40
-                            source: model.iconPath || ""
-                            fillMode: Image.PreserveAspectFit
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.spacingS
+                            spacing: Theme.spacingS
                             
-                            Rectangle {
-                                anchors.fill: parent
-                                visible: parent.status !== Image.Ready
-                                color: Theme.surfaceVariant
-                                radius: 4
-                                
-                                Label {
-                                    anchors.centerIn: parent
-                                    text: "📦"
-                                    font.pointSize: 16
+                            CheckBox {
+                                checked: model.enabled !== false
+                                onCheckedChanged: {
+                                    if (vm) vm.enableMod(index, checked)
                                 }
                             }
-                        }
-                        
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
+                            
+                            Image {
+                                Layout.preferredWidth: 32
+                                Layout.preferredHeight: 32
+                                source: model.iconPath || ""
+                                fillMode: Image.PreserveAspectFit
+                                
+                                Rectangle {
+                                    anchors.fill: parent
+                                    visible: parent.status !== Image.Ready
+                                    color: Theme.surfaceVariant
+                                    radius: 4
+                                    
+                                    Label {
+                                        anchors.centerIn: parent
+                                        text: "📦"
+                                        font.pointSize: 12
+                                    }
+                                }
+                            }
                             
                             Label {
                                 text: model.name || model.fileName || ""
-                                color: Theme.textPrimary
-                                font.bold: true
-                                elide: Text.ElideRight
+                                color: model.enabled !== false ? Theme.textPrimary : Theme.textSecondary
                                 Layout.fillWidth: true
+                                elide: Text.ElideRight
                             }
                             
                             Label {
                                 text: model.version || ""
                                 color: Theme.textSecondary
-                                font.pointSize: 9
-                                visible: text.length > 0
                             }
                         }
                         
-                        Label {
-                            text: model.provider || ""
-                            color: Theme.accent
-                            font.pointSize: 9
+                        onClicked: {
+                            if (mouse.modifiers & Qt.ControlModifier) {
+                                var idx = selectedIndices.indexOf(index)
+                                if (idx >= 0) {
+                                    selectedIndices.splice(idx, 1)
+                                } else {
+                                    selectedIndices.push(index)
+                                }
+                                selectedIndices = selectedIndices.slice()
+                            } else {
+                                selectedIndices = [index]
+                            }
                         }
-                        
-                        ToolButton {
-                            icon.name: "configure"
-                            onClicked: modContextMenu.popup()
-                            
-                            Menu {
-                                id: modContextMenu
-                                
-                                MenuItem {
-                                    text: qsTr("View Details")
-                                    onTriggered: {
-                                        if (vm) vm.showModDetails(index)
-                                    }
-                                }
-                                MenuItem {
-                                    text: qsTr("Check for Updates")
-                                    onTriggered: {
-                                        if (vm) vm.checkModUpdate(index)
-                                    }
-                                }
-                                MenuSeparator {}
-                                MenuItem {
-                                    text: qsTr("Open Folder")
-                                    onTriggered: {
-                                        if (vm) vm.openModFolder(index)
-                                    }
-                                }
-                                MenuSeparator {}
-                                MenuItem {
-                                    text: qsTr("Delete")
-                                    onTriggered: {
-                                        deleteModDialog.modIndex = index
-                                        deleteModDialog.modName = model.name || model.fileName
-                                        deleteModDialog.open()
-                                    }
-                                }
+                    }
+                    
+                    ScrollBar.vertical: ScrollBar {}
+                    
+                    Label {
+                        anchors.centerIn: parent
+                        visible: modsList.count === 0
+                        text: qsTr("No mods installed.\nClick 'Add File' or 'Download' to add mods.")
+                        color: Theme.textSecondary
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                }
+            }
+            
+            // Info frame
+            Frame {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 60
+                visible: selectedIndices.length === 1
+                
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 4
+                    
+                    Label {
+                        text: {
+                            if (selectedIndices.length === 1 && vm && vm.modsModel) {
+                                return vm.modsModel[selectedIndices[0]]?.name || ""
+                            }
+                            return ""
+                        }
+                        font.bold: true
+                        color: Theme.textPrimary
+                    }
+                    
+                    Label {
+                        Layout.fillWidth: true
+                        text: {
+                            if (selectedIndices.length === 1 && vm && vm.modsModel) {
+                                return vm.modsModel[selectedIndices[0]]?.description || ""
+                            }
+                            return ""
+                        }
+                        color: Theme.textSecondary
+                        wrapMode: Text.WordWrap
+                        elide: Text.ElideRight
+                        maximumLineCount: 2
+                    }
+                }
+            }
+            
+            // Search filter
+            TextField {
+                id: filterEdit
+                Layout.fillWidth: true
+                placeholderText: qsTr("Search")
+                onTextChanged: {
+                    if (vm) vm.filterMods(text)
+                }
+            }
+        }
+        
+        // Right toolbar
+        Rectangle {
+            Layout.preferredWidth: 140
+            Layout.fillHeight: true
+            color: Theme.backgroundAlt
+            
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: Theme.spacingS
+                spacing: 2
+                
+                Label {
+                    text: qsTr("Actions")
+                    font.bold: true
+                    color: Theme.textSecondary
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                
+                ToolButton {
+                    text: qsTr("&Add File")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Add a locally downloaded file.")
+                    onClicked: {
+                        if (vm) vm.browseForMods()
+                    }
+                }
+                
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                
+                ToolButton {
+                    text: qsTr("&Remove")
+                    Layout.fillWidth: true
+                    enabled: selectedIndices.length > 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Remove all selected items.")
+                    onClicked: {
+                        deleteModDialog.open()
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("&Enable")
+                    Layout.fillWidth: true
+                    enabled: selectedIndices.length > 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Enable all selected items.")
+                    onClicked: {
+                        if (vm) {
+                            for (var i = 0; i < selectedIndices.length; i++) {
+                                vm.enableMod(selectedIndices[i], true)
                             }
                         }
                     }
                 }
                 
-                ScrollBar.vertical: ScrollBar {}
-            }
-            
-            Label {
-                anchors.centerIn: parent
-                visible: modsList.count === 0
-                text: qsTr("No mods installed.\nClick 'Add' or 'Download' to add mods.")
-                color: Theme.textSecondary
-                horizontalAlignment: Text.AlignHCenter
-            }
-        }
-        
-        // Status bar
-        RowLayout {
-            Layout.fillWidth: true
-            
-            Label {
-                text: vm ? qsTr("%1 mods").arg(vm.modsCount || 0) : ""
-                color: Theme.textSecondary
-            }
-            
-            Item { Layout.fillWidth: true }
-            
-            Button {
-                text: qsTr("Check All Updates")
-                flat: true
-                onClicked: {
-                    if (vm) vm.checkAllModUpdates()
+                ToolButton {
+                    text: qsTr("&Disable")
+                    Layout.fillWidth: true
+                    enabled: selectedIndices.length > 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Disable all selected items.")
+                    onClicked: {
+                        if (vm) {
+                            for (var i = 0; i < selectedIndices.length; i++) {
+                                vm.enableMod(selectedIndices[i], false)
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    }
-    
-    // Add mod dialog
-    Dialog {
-        id: addModDialog
-        title: qsTr("Add Mod")
-        modal: true
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
-        width: 400
-        
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: Theme.spacingM
-            
-            Label {
-                text: qsTr("Select mod files to add:")
-                color: Theme.textPrimary
-            }
-            
-            Button {
-                text: qsTr("Browse...")
-                Layout.fillWidth: true
-                onClicked: {
-                    if (vm) vm.browseForMods()
+                
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                
+                ToolButton {
+                    text: qsTr("&Download")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Download resources from online mod platforms.")
+                    onClicked: {
+                        if (vm) vm.openModDownload()
+                    }
                 }
+                
+                ToolButton {
+                    text: qsTr("Check for &Updates")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Try to check or update all selected resources.")
+                    onClicked: {
+                        if (vm) vm.checkAllModUpdates()
+                    }
+                }
+                
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                
+                ToolButton {
+                    text: qsTr("View &Configs")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Open the 'config' folder in the system file manager.")
+                    onClicked: {
+                        if (vm) vm.openConfigsFolder()
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("View &Folder")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Open the folder in the system file manager.")
+                    onClicked: {
+                        if (vm) vm.openModsFolder()
+                    }
+                }
+                
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                
+                ToolButton {
+                    text: qsTr("Reset Metadata")
+                    Layout.fillWidth: true
+                    enabled: selectedIndices.length > 0
+                    onClicked: {
+                        if (vm) vm.resetModMetadata(selectedIndices)
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("Verify Dependencies")
+                    Layout.fillWidth: true
+                    onClicked: {
+                        if (vm) vm.verifyDependencies()
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("Export List")
+                    Layout.fillWidth: true
+                    enabled: modsList.count > 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Export resource's metadata to text.")
+                    onClicked: {
+                        if (vm) vm.exportModList()
+                    }
+                }
+                
+                Item { Layout.fillHeight: true }
             }
-            
-            Label {
-                text: qsTr("Or drag and drop mod files here")
-                color: Theme.textSecondary
-                horizontalAlignment: Text.AlignHCenter
-                Layout.fillWidth: true
-            }
-        }
-        
-        onAccepted: {
-            // Handle file selection
         }
     }
     
     // Delete confirmation
     Dialog {
         id: deleteModDialog
-        title: qsTr("Delete Mod")
+        title: qsTr("Delete Mods")
         modal: true
         standardButtons: Dialog.Yes | Dialog.No
         x: (parent.width - width) / 2
         y: (parent.height - height) / 2
         
-        property int modIndex: -1
-        property string modName: ""
-        
         Label {
-            text: qsTr("Delete '%1'?\n\nThis cannot be undone.").arg(deleteModDialog.modName)
+            text: qsTr("Delete %1 selected mod(s)?\n\nThis cannot be undone.").arg(selectedIndices.length)
             color: Theme.error
             wrapMode: Text.WordWrap
         }
         
         onAccepted: {
-            if (vm && modIndex >= 0) {
-                vm.removeMod(modIndex)
+            if (vm) {
+                for (var i = selectedIndices.length - 1; i >= 0; i--) {
+                    vm.removeMod(selectedIndices[i])
+                }
+                selectedIndices = []
             }
         }
     }

@@ -107,17 +107,25 @@ Page {
                             anchors.margins: 8
                             spacing: 8
                             
-                            Rectangle {
-                                width: 50; height: 50
-                                radius: 4
-                                color: Theme.backgroundAlt
+                            Image {
+                                Layout.preferredWidth: 50
+                                Layout.preferredHeight: 50
+                                source: model.iconUrl || ""
+                                fillMode: Image.PreserveAspectFit
                                 
-                                Label {
-                                    anchors.centerIn: parent
-                                    text: "ATL"
-                                    color: Theme.accent
-                                    font.bold: true
-                                    font.pointSize: 12
+                                Rectangle {
+                                    anchors.fill: parent
+                                    visible: parent.status !== Image.Ready
+                                    color: Theme.backgroundAlt
+                                    radius: 4
+                                    
+                                    Label {
+                                        anchors.centerIn: parent
+                                        text: "ATL"
+                                        color: Theme.accent
+                                        font.bold: true
+                                        font.pointSize: 12
+                                    }
                                 }
                             }
                             
@@ -126,7 +134,7 @@ Page {
                                 spacing: 2
                                 
                                 Label {
-                                    text: model.display || ""
+                                    text: model.name || model.display || ""
                                     color: Theme.textPrimary
                                     font.bold: true
                                     elide: Text.ElideRight

@@ -487,6 +487,42 @@ static QMap<InstanceId, InstanceLocator> getIdMapping(const QList<InstancePtr>& 
     return out;
 }
 
+void InstanceList::removeInstances(QList<InstanceLocator> instances)
+{
+    // sort it by their original index, from last to first
+    auto orderSortPredicate = [](const InstanceLocator& a, const InstanceLocator& b) -> bool { return a.second > b.second; };
+    std::sort(instances.begin(), instances.end(), orderSortPredicate);
+    // remove the contiguous ranges of rows
+    int front_bookmark = -1;
+    int back_bookmark = -1;
+    int currentItem = -1;
+    auto removeNow = [this, &front_bookmark, &back_bookmark, &currentItem]() {
+        beginRemoveRows(QModelIndex(), front_bookmark, back_bookmark);
+        m_instances.erase(m_instances.begin() + front_bookmark, m_instances.begin() + back_bookmark + 1);
+        endRemoveRows();
+        front_bookmark = -1;
+        back_bookmark = currentItem;
+    };
+    for (auto& removedItem : instances) {
+        auto instPtr = removedItem.first;
+        instPtr->invalidate();
+        currentItem = removedItem.second;
+        if (back_bookmark == -1) {
+            // no bookmark yet
+            back_bookmark = currentItem;
+        } else if (currentItem == front_bookmark - 1) {
+            // part of contiguous sequence, continue
+        } else {
+            // seam between previous and current item
+            removeNow();
+        }
+        front_bookmark = currentItem;
+    }
+    if (back_bookmark != -1) {
+        removeNow();
+    }
+}
+
 QList<InstanceId> InstanceList::discoverInstances()
 {
     qInfo() << "Discovering instances in" << m_instDir;
@@ -534,41 +570,8 @@ InstanceList::InstListError InstanceList::loadList()
         }
     }
 
-    // TODO: looks like a general algorithm with a few specifics inserted. Do something about it.
     if (!existingIds.isEmpty()) {
-        // get the list of removed instances and sort it by their original index, from last to first
-        auto deadList = existingIds.values();
-        auto orderSortPredicate = [](const InstanceLocator& a, const InstanceLocator& b) -> bool { return a.second > b.second; };
-        std::sort(deadList.begin(), deadList.end(), orderSortPredicate);
-        // remove the contiguous ranges of rows
-        int front_bookmark = -1;
-        int back_bookmark = -1;
-        int currentItem = -1;
-        auto removeNow = [this, &front_bookmark, &back_bookmark, &currentItem]() {
-            beginRemoveRows(QModelIndex(), front_bookmark, back_bookmark);
-            m_instances.erase(m_instances.begin() + front_bookmark, m_instances.begin() + back_bookmark + 1);
-            endRemoveRows();
-            front_bookmark = -1;
-            back_bookmark = currentItem;
-        };
-        for (auto& removedItem : deadList) {
-            auto instPtr = removedItem.first;
-            instPtr->invalidate();
-            currentItem = removedItem.second;
-            if (back_bookmark == -1) {
-                // no bookmark yet
-                back_bookmark = currentItem;
-            } else if (currentItem == front_bookmark - 1) {
-                // part of contiguous sequence, continue
-            } else {
-                // seam between previous and current item
-                removeNow();
-            }
-            front_bookmark = currentItem;
-        }
-        if (back_bookmark != -1) {
-            removeNow();
-        }
+        removeInstances(existingIds.values());
     }
     if (newList.size()) {
         add(newList);
@@ -949,9 +952,14 @@ class InstanceStaging : public Task {
 
     virtual ~InstanceStaging() {}
 
-    // FIXME/TODO: add ability to abort during instance commit retries
     bool abort() override
     {
+        if (m_backoffTimer.isActive()) {
+            m_backoffTimer.stop();
+            emitAborted();
+            return true;
+        }
+
         if (!canAbort())
             return false;
 
@@ -959,7 +967,7 @@ class InstanceStaging : public Task {
 
         return Task::abort();
     }
-    bool canAbort() const override { return (m_child && m_child->canAbort()); }
+    bool canAbort() const override { return m_backoffTimer.isActive() || (m_child && m_child->canAbort()); }
 
    protected:
     virtual void executeTask() override

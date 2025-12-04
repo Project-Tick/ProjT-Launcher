@@ -14,9 +14,9 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "../Theme.js" as Theme
 
-ScrollView {
+ColumnLayout {
     id: javaPage
-    clip: true
+    spacing: 0
     
     property var vm: ProjT.launcherSettingsVM
     property var detectedJavas: []
@@ -35,176 +35,293 @@ ScrollView {
         }
     }
     
-    ColumnLayout {
-        width: javaPage.width - Theme.spacingL
-        spacing: Theme.spacingM
+    TabBar {
+        id: tabBar
+        Layout.fillWidth: true
         
-        // Java Runtime
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Java Runtime")
+        TabButton {
+            text: qsTr("General")
+        }
+        TabButton {
+            text: qsTr("Installations")
+        }
+    }
+    
+    StackLayout {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        currentIndex: tabBar.currentIndex
+        
+        // General Tab
+        ScrollView {
+            clip: true
             
             ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
+                width: parent.width - Theme.spacingL
+                spacing: Theme.spacingM
                 
-                CheckBox {
-                    id: autoDetectCheck
-                    text: qsTr("Auto-detect Java")
-                    checked: vm ? !vm.defaultJavaPath : true
-                }
-                
-                RowLayout {
+                // Java Runtime
+                GroupBox {
                     Layout.fillWidth: true
-                    spacing: Theme.spacingS
-                    enabled: !autoDetectCheck.checked
+                    title: qsTr("Java Runtime")
                     
-                    Label {
-                        text: qsTr("Java path:")
-                        color: Theme.textPrimary
-                    }
-                    
-                    TextField {
-                        id: javaPathField
-                        Layout.fillWidth: true
-                        placeholderText: qsTr("/usr/bin/java")
-                        text: vm ? vm.defaultJavaPath : ""
-                        onTextChanged: if (vm && !autoDetectCheck.checked) vm.defaultJavaPath = text
-                    }
-                    
-                    Button {
-                        text: qsTr("Browse...")
-                        onClicked: browseForJava()
-                    }
-                    
-                    Button {
-                        text: qsTr("Test")
-                        onClicked: {
-                            // Test Java installation
-                            if (vm && vm.testJavaPath) {
-                                vm.testJavaPath(javaPathField.text)
+                    ColumnLayout {
+                        anchors.fill: parent
+                        spacing: Theme.spacingS
+                        
+                        CheckBox {
+                            id: autoDetectCheck
+                            text: qsTr("Auto-detect Java")
+                            checked: vm ? !vm.defaultJavaPath : true
+                        }
+                        
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.spacingS
+                            enabled: !autoDetectCheck.checked
+                            
+                            Label {
+                                text: qsTr("Java path:")
+                                color: Theme.textPrimary
+                            }
+                            
+                            TextField {
+                                id: javaPathField
+                                Layout.fillWidth: true
+                                placeholderText: qsTr("/usr/bin/java")
+                                text: vm ? vm.defaultJavaPath : ""
+                                onTextChanged: if (vm && !autoDetectCheck.checked) vm.defaultJavaPath = text
+                            }
+                            
+                            Button {
+                                text: qsTr("Browse...")
+                                onClicked: browseForJava()
+                            }
+                            
+                            Button {
+                                text: qsTr("Test")
+                                onClicked: {
+                                    if (vm && vm.testJavaPath) {
+                                        vm.testJavaPath(javaPathField.text)
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Label {
+                            id: javaTestResultLabel
+                            text: ""
+                            color: Theme.textSecondary
+                            font.pointSize: 9
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                        }
+                        
+                        Button {
+                            text: qsTr("Auto-detect Java installations...")
+                            onClicked: {
+                                if (vm && vm.autoDetectJava) {
+                                    vm.autoDetectJava()
+                                }
                             }
                         }
                     }
                 }
                 
-                Label {
-                    id: javaTestResultLabel
-                    text: ""
-                    color: Theme.textSecondary
-                    font.pointSize: 9
-                    wrapMode: Text.WordWrap
+                // Memory
+                GroupBox {
                     Layout.fillWidth: true
+                    title: qsTr("Memory")
+                    
+                    ColumnLayout {
+                        anchors.fill: parent
+                        spacing: Theme.spacingS
+                        
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.spacingM
+                            
+                            Label {
+                                text: qsTr("Minimum memory allocation:")
+                                color: Theme.textPrimary
+                            }
+                            
+                            SpinBox {
+                                id: minMemSpin
+                                from: 256
+                                to: 65536
+                                value: vm ? vm.defaultMinMemory : 512
+                                stepSize: 128
+                                editable: true
+                                onValueModified: if (vm) vm.defaultMinMemory = value
+                            }
+                            
+                            Label {
+                                text: qsTr("MiB")
+                                color: Theme.textSecondary
+                            }
+                        }
+                        
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.spacingM
+                            
+                            Label {
+                                text: qsTr("Maximum memory allocation:")
+                                color: Theme.textPrimary
+                            }
+                            
+                            SpinBox {
+                                id: maxMemSpin
+                                from: 256
+                                to: 65536
+                                value: vm ? vm.defaultMaxMemory : 4096
+                                stepSize: 128
+                                editable: true
+                                onValueModified: if (vm) vm.defaultMaxMemory = value
+                            }
+                            
+                            Label {
+                                text: qsTr("MiB")
+                                color: Theme.textSecondary
+                            }
+                        }
+                        
+                        Label {
+                            text: qsTr("Note: You generally don't need more than 4-8 GB for Minecraft")
+                            color: Theme.textSecondary
+                            font.pointSize: 9
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                        }
+                    }
+                }
+                
+                // JVM Arguments
+                GroupBox {
+                    Layout.fillWidth: true
+                    title: qsTr("JVM Arguments")
+                    
+                    ColumnLayout {
+                        anchors.fill: parent
+                        spacing: Theme.spacingS
+                        
+                        TextArea {
+                            id: jvmArgsArea
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 80
+                            placeholderText: qsTr("-XX:+UseG1GC -XX:+ParallelRefProcEnabled...")
+                            text: vm ? vm.defaultJvmArgs : ""
+                            wrapMode: Text.Wrap
+                            onTextChanged: if (vm) vm.defaultJvmArgs = text
+                        }
+                        
+                        Label {
+                            text: qsTr("Custom JVM arguments. Leave empty for defaults.")
+                            color: Theme.textSecondary
+                            font.pointSize: 9
+                        }
+                    }
+                }
+                
+                Item { height: Theme.spacingL }
+            }
+        }
+        
+        // Installations Tab
+        ColumnLayout {
+            spacing: Theme.spacingS
+            
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.margins: Theme.spacingS
+                spacing: Theme.spacingS
+                
+                Button {
+                    text: qsTr("Download")
+                    onClicked: {
+                        if (vm && vm.downloadJava) {
+                            vm.downloadJava()
+                        }
+                    }
                 }
                 
                 Button {
-                    text: qsTr("Auto-detect Java installations...")
+                    text: qsTr("Remove")
+                    enabled: javaInstallationsList.currentIndex >= 0
                     onClicked: {
-                        if (vm && vm.autoDetectJava) {
-                            vm.autoDetectJava()
+                        if (vm && vm.removeJavaInstallation) {
+                            vm.removeJavaInstallation(javaInstallationsList.currentIndex)
+                        }
+                    }
+                }
+                
+                Item { Layout.fillWidth: true }
+                
+                Button {
+                    text: qsTr("Refresh")
+                    onClicked: {
+                        if (vm && vm.refreshJavaInstallations) {
+                            vm.refreshJavaInstallations()
                         }
                     }
                 }
             }
-        }
-        
-        // Memory
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Memory")
             
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
+            // Java installations list
+            Frame {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.margins: Theme.spacingS
                 
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Theme.spacingM
+                ListView {
+                    id: javaInstallationsList
+                    anchors.fill: parent
+                    clip: true
+                    model: vm ? vm.javaInstallationsModel : []
                     
-                    Label {
-                        text: qsTr("Minimum memory allocation:")
-                        color: Theme.textPrimary
+                    delegate: ItemDelegate {
+                        width: javaInstallationsList.width
+                        height: 48
+                        highlighted: ListView.isCurrentItem
+                        
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.spacingS
+                            spacing: Theme.spacingS
+                            
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+                                
+                                Label {
+                                    text: model.name || model.version || ""
+                                    color: Theme.textPrimary
+                                    font.bold: true
+                                }
+                                
+                                Label {
+                                    text: model.path || ""
+                                    color: Theme.textSecondary
+                                    font.pointSize: 9
+                                    elide: Text.ElideMiddle
+                                    Layout.fillWidth: true
+                                }
+                            }
+                            
+                            Label {
+                                text: model.vendor || ""
+                                color: Theme.textSecondary
+                            }
+                        }
+                        
+                        onClicked: javaInstallationsList.currentIndex = index
                     }
                     
-                    SpinBox {
-                        id: minMemSpin
-                        from: 256
-                        to: 65536
-                        value: vm ? vm.defaultMinMemory : 512
-                        stepSize: 128
-                        editable: true
-                        onValueModified: if (vm) vm.defaultMinMemory = value
-                    }
-                    
-                    Label {
-                        text: qsTr("MiB")
-                        color: Theme.textSecondary
-                    }
-                }
-                
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Theme.spacingM
-                    
-                    Label {
-                        text: qsTr("Maximum memory allocation:")
-                        color: Theme.textPrimary
-                    }
-                    
-                    SpinBox {
-                        id: maxMemSpin
-                        from: 256
-                        to: 65536
-                        value: vm ? vm.defaultMaxMemory : 4096
-                        stepSize: 128
-                        editable: true
-                        onValueModified: if (vm) vm.defaultMaxMemory = value
-                    }
-                    
-                    Label {
-                        text: qsTr("MiB")
-                        color: Theme.textSecondary
-                    }
-                }
-                
-                Label {
-                    text: qsTr("Note: You generally don't need more than 4-8 GB for Minecraft")
-                    color: Theme.textSecondary
-                    font.pointSize: 9
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
+                    ScrollBar.vertical: ScrollBar {}
                 }
             }
         }
-        
-        // JVM Arguments
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("JVM Arguments")
-            
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-                
-                TextArea {
-                    id: jvmArgsArea
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 80
-                    placeholderText: qsTr("-XX:+UseG1GC -XX:+ParallelRefProcEnabled...")
-                    text: vm ? vm.defaultJvmArgs : ""
-                    wrapMode: Text.Wrap
-                    onTextChanged: if (vm) vm.defaultJvmArgs = text
-                }
-                
-                Label {
-                    text: qsTr("Custom JVM arguments. Leave empty for defaults.")
-                    color: Theme.textSecondary
-                    font.pointSize: 9
-                }
-            }
-        }
-        
-        Item { height: Theme.spacingL }
     }
     
     function browseForJava() {
@@ -236,16 +353,17 @@ ScrollView {
             }
             
             ListView {
+                id: detectedJavasList
                 Layout.fillWidth: true
                 Layout.preferredHeight: Math.min(200, detectedJavas.length * 40)
                 clip: true
                 model: detectedJavas
                 
                 delegate: ItemDelegate {
-                    width: parent.width
+                    width: detectedJavasList.width
                     text: modelData
                     highlighted: ListView.isCurrentItem
-                    onClicked: ListView.view.currentIndex = index
+                    onClicked: detectedJavasList.currentIndex = index
                 }
                 
                 ScrollBar.vertical: ScrollBar {}
@@ -253,9 +371,8 @@ ScrollView {
         }
         
         onAccepted: {
-            var listView = contentItem.children[0].children[1]  // Get ListView
-            if (listView && listView.currentIndex >= 0 && listView.currentIndex < detectedJavas.length) {
-                javaPathField.text = detectedJavas[listView.currentIndex]
+            if (detectedJavasList.currentIndex >= 0 && detectedJavasList.currentIndex < detectedJavas.length) {
+                javaPathField.text = detectedJavas[detectedJavasList.currentIndex]
                 if (vm) vm.defaultJavaPath = javaPathField.text
             }
         }

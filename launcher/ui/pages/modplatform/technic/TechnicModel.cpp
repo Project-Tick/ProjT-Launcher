@@ -100,11 +100,20 @@ QVariant Technic::ListModel::data(const QModelIndex& index, int role) const
             return pack.name;
         case Qt::SizeHintRole:
             return QSize(0, 58);
-        // Custom data
+        // Custom data for QML
+        case NameRole:
         case UserDataTypes::TITLE:
             return pack.name;
+        case DescriptionRole:
         case UserDataTypes::DESCRIPTION:
             return pack.description;
+        case IconUrlRole:
+            return pack.logoUrl;
+        case PackDataRole: {
+            QVariant v;
+            v.setValue(pack);
+            return v;
+        }
         case UserDataTypes::INSTALLED:
             return false;
         default:
@@ -112,6 +121,18 @@ QVariant Technic::ListModel::data(const QModelIndex& index, int role) const
     }
 
     return {};
+}
+
+QHash<int, QByteArray> Technic::ListModel::roleNames() const
+{
+    return {
+        { NameRole, "name" },
+        { DescriptionRole, "description" },
+        { IconUrlRole, "iconUrl" },
+        { PackDataRole, "packData" },
+        { Qt::DisplayRole, "display" },
+        { Qt::ToolTipRole, "toolTip" }
+    };
 }
 
 int Technic::ListModel::columnCount(const QModelIndex& parent) const

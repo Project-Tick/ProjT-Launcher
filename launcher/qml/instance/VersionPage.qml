@@ -11,267 +11,300 @@ Rectangle {
     color: Theme.background
     
     property var vm: ProjT.instanceVM
+    property int selectedIndex: -1
     
-    ColumnLayout {
+    RowLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        spacing: Theme.spacingS
+        spacing: 0
         
-        // Header
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingS
-            
-            Label {
-                text: qsTr("Version")
-                font.pointSize: 14
-                font.bold: true
-                color: Theme.textPrimary
-            }
-            
-            Item { Layout.fillWidth: true }
-            
-            Button {
-                text: qsTr("Add Component")
-                icon.name: "list-add"
-                onClicked: addComponentDialog.open()
-            }
-            
-            Button {
-                text: qsTr("Refresh")
-                icon.name: "view-refresh"
-                onClicked: {
-                    if (vm) vm.refreshVersionComponents()
-                }
-            }
-        }
-        
-        // Current version info
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Instance Version")
-            
-            RowLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingM
-                
-                Image {
-                    Layout.preferredWidth: 48
-                    Layout.preferredHeight: 48
-                    source: "qrc:/icons/multimc/scalable/instances/grass.svg"
-                    fillMode: Image.PreserveAspectFit
-                }
-                
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 4
-                    
-                    Label {
-                        text: vm ? vm.minecraftVersion : ""
-                        font.pointSize: 16
-                        font.bold: true
-                        color: Theme.textPrimary
-                    }
-                    
-                    Label {
-                        text: vm ? (vm.modLoaderName ? vm.modLoaderName + " " + vm.modLoaderVersion : qsTr("Vanilla")) : ""
-                        color: Theme.textSecondary
-                    }
-                }
-            }
-        }
-        
-        // Components list
-        Frame {
+        // Main content
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            spacing: 0
             
-            ListView {
-                id: componentsList
-                anchors.fill: parent
-                clip: true
-                model: vm ? vm.componentsModel : []
+            // Components ListView
+            Frame {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
                 
-                delegate: ItemDelegate {
-                    width: componentsList.width
-                    height: 48
+                ListView {
+                    id: packageView
+                    anchors.fill: parent
+                    clip: true
+                    model: vm ? vm.componentsModel : null
                     
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingS
-                        spacing: Theme.spacingS
+                    delegate: ItemDelegate {
+                        width: packageView.width
+                        height: 40
+                        highlighted: index === selectedIndex
                         
-                        CheckBox {
-                            visible: model.canToggle || false
-                            checked: model.enabled !== false
-                            onCheckedChanged: {
-                                if (vm) vm.setComponentEnabled(index, checked)
-                            }
-                        }
-                        
-                        Rectangle {
-                            Layout.preferredWidth: 32
-                            Layout.preferredHeight: 32
-                            color: Theme.surfaceVariant
-                            radius: 4
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.spacingS
+                            spacing: Theme.spacingS
                             
-                            Label {
-                                anchors.centerIn: parent
-                                text: {
-                                    var name = model.name || ""
-                                    if (name.toLowerCase().includes("minecraft")) return "🎮"
-                                    if (name.toLowerCase().includes("forge")) return "🔨"
-                                    if (name.toLowerCase().includes("fabric")) return "🧵"
-                                    if (name.toLowerCase().includes("quilt")) return "🪡"
-                                    if (name.toLowerCase().includes("neoforge")) return "⚡"
-                                    return "📦"
+                            CheckBox {
+                                visible: model.canToggle || false
+                                checked: model.enabled !== false
+                                onCheckedChanged: {
+                                    if (vm) vm.setComponentEnabled(index, checked)
                                 }
-                                font.pointSize: 14
                             }
-                        }
-                        
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
                             
                             Label {
                                 text: model.name || ""
                                 color: Theme.textPrimary
-                                font.bold: true
+                                Layout.fillWidth: true
                             }
                             
                             Label {
                                 text: model.version || ""
                                 color: Theme.textSecondary
-                                font.pointSize: 9
                             }
                         }
                         
-                        Label {
-                            text: model.required ? qsTr("Required") : ""
-                            color: Theme.accent
-                            font.pointSize: 9
-                        }
-                        
-                        ToolButton {
-                            icon.name: "go-up"
-                            visible: model.canMoveUp || false
-                            onClicked: {
-                                if (vm) vm.moveComponentUp(index)
-                            }
-                        }
-                        
-                        ToolButton {
-                            icon.name: "go-down"
-                            visible: model.canMoveDown || false
-                            onClicked: {
-                                if (vm) vm.moveComponentDown(index)
-                            }
-                        }
-                        
-                        ToolButton {
-                            icon.name: "edit-delete"
-                            visible: model.canRemove || false
-                            onClicked: {
-                                if (vm) vm.removeComponent(index)
-                            }
-                        }
+                        onClicked: selectedIndex = index
+                    }
+                    
+                    ScrollBar.vertical: ScrollBar {}
+                }
+            }
+            
+            // Search filter
+            TextField {
+                id: filterEdit
+                Layout.fillWidth: true
+                placeholderText: qsTr("Search")
+                onTextChanged: {
+                    if (vm) vm.filterComponents(text)
+                }
+            }
+            
+            // Info frame
+            Frame {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 80
+                visible: selectedIndex >= 0
+                
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 4
+                    
+                    Label {
+                        text: selectedIndex >= 0 && vm && vm.componentsModel ? 
+                              (vm.componentsModel[selectedIndex]?.name || "") : ""
+                        font.bold: true
+                        color: Theme.textPrimary
+                    }
+                    
+                    Label {
+                        Layout.fillWidth: true
+                        text: selectedIndex >= 0 && vm && vm.componentsModel ?
+                              (vm.componentsModel[selectedIndex]?.description || "") : ""
+                        color: Theme.textSecondary
+                        wrapMode: Text.WordWrap
+                    }
+                }
+            }
+        }
+        
+        // Right toolbar
+        Rectangle {
+            Layout.preferredWidth: 160
+            Layout.fillHeight: true
+            color: Theme.backgroundAlt
+            
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: Theme.spacingS
+                spacing: 2
+                
+                Label {
+                    text: qsTr("Actions")
+                    font.bold: true
+                    color: Theme.textSecondary
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                
+                ToolButton {
+                    text: qsTr("Change Version")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Change version of the selected component.")
+                    onClicked: changeVersionDialog.open()
+                }
+                
+                ToolButton {
+                    text: qsTr("Move Up")
+                    Layout.fillWidth: true
+                    enabled: selectedIndex > 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Make the selected component apply sooner.")
+                    onClicked: {
+                        if (vm) vm.moveComponentUp(selectedIndex)
                     }
                 }
                 
-                ScrollBar.vertical: ScrollBar {}
-            }
-        }
-        
-        // Actions
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingS
-            
-            Button {
-                text: qsTr("Change Minecraft Version")
-                onClicked: changeVersionDialog.open()
-            }
-            
-            Button {
-                text: qsTr("Install Mod Loader")
-                onClicked: installLoaderDialog.open()
-            }
-            
-            Item { Layout.fillWidth: true }
-            
-            Button {
-                text: qsTr("Revert to Vanilla")
-                enabled: vm && vm.hasModLoader
-                onClicked: {
-                    if (vm) vm.revertToVanilla()
+                ToolButton {
+                    text: qsTr("Move Down")
+                    Layout.fillWidth: true
+                    enabled: selectedIndex >= 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Make the selected component apply later.")
+                    onClicked: {
+                        if (vm) vm.moveComponentDown(selectedIndex)
+                    }
                 }
-            }
-        }
-    }
-    
-    // Add component dialog
-    Dialog {
-        id: addComponentDialog
-        title: qsTr("Add Component")
-        modal: true
-        standardButtons: Dialog.Cancel
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
-        width: 400
-        
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: Theme.spacingM
-            
-            Label {
-                text: qsTr("Select a component type to add:")
-                color: Theme.textPrimary
-            }
-            
-            Button {
-                text: qsTr("Forge")
-                Layout.fillWidth: true
-                onClicked: {
-                    addComponentDialog.close()
-                    if (vm) vm.installForge()
+                
+                ToolButton {
+                    text: qsTr("Remove")
+                    Layout.fillWidth: true
+                    enabled: selectedIndex >= 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Remove selected component from the instance.")
+                    onClicked: {
+                        if (vm) vm.removeComponent(selectedIndex)
+                    }
                 }
-            }
-            
-            Button {
-                text: qsTr("Fabric")
-                Layout.fillWidth: true
-                onClicked: {
-                    addComponentDialog.close()
-                    if (vm) vm.installFabric()
+                
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                
+                ToolButton {
+                    text: qsTr("Customize")
+                    Layout.fillWidth: true
+                    enabled: selectedIndex >= 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Customize selected component.")
+                    onClicked: {
+                        if (vm) vm.customizeComponent(selectedIndex)
+                    }
                 }
-            }
-            
-            Button {
-                text: qsTr("Quilt")
-                Layout.fillWidth: true
-                onClicked: {
-                    addComponentDialog.close()
-                    if (vm) vm.installQuilt()
+                
+                ToolButton {
+                    text: qsTr("Edit")
+                    Layout.fillWidth: true
+                    enabled: selectedIndex >= 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Edit selected component.")
+                    onClicked: {
+                        if (vm) vm.editComponent(selectedIndex)
+                    }
                 }
-            }
-            
-            Button {
-                text: qsTr("NeoForge")
-                Layout.fillWidth: true
-                onClicked: {
-                    addComponentDialog.close()
-                    if (vm) vm.installNeoForge()
+                
+                ToolButton {
+                    text: qsTr("Revert")
+                    Layout.fillWidth: true
+                    enabled: selectedIndex >= 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Revert the selected component to default.")
+                    onClicked: {
+                        if (vm) vm.revertComponent(selectedIndex)
+                    }
                 }
-            }
-            
-            Button {
-                text: qsTr("LiteLoader")
-                Layout.fillWidth: true
-                onClicked: {
-                    addComponentDialog.close()
-                    if (vm) vm.installLiteLoader()
+                
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                
+                ToolButton {
+                    text: qsTr("Install Loader")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Install a mod loader.")
+                    onClicked: installLoaderDialog.open()
                 }
+                
+                ToolButton {
+                    text: qsTr("Add to Minecraft.jar")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Add a mod into the Minecraft jar file.")
+                    onClicked: {
+                        if (vm) vm.addToMinecraftJar()
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("Replace Minecraft.jar")
+                    Layout.fillWidth: true
+                    onClicked: {
+                        if (vm) vm.replaceMinecraftJar()
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("Add Agents")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Add Java agents.")
+                    onClicked: {
+                        if (vm) vm.addAgents()
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("Add Empty")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Add an empty custom component.")
+                    onClicked: {
+                        if (vm) vm.addEmptyComponent()
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("Import Components")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Import existing component JSON files.")
+                    onClicked: {
+                        if (vm) vm.importComponents()
+                    }
+                }
+                
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                
+                ToolButton {
+                    text: qsTr("Open .minecraft")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Open the instance's .minecraft folder.")
+                    onClicked: {
+                        if (vm) vm.openMinecraftFolder()
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("Open libraries")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Open the instance's local libraries folder.")
+                    onClicked: {
+                        if (vm) vm.openLibrariesFolder()
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("Reload")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Reload all components.")
+                    onClicked: {
+                        if (vm) vm.reloadComponents()
+                    }
+                }
+                
+                ToolButton {
+                    text: qsTr("Download all")
+                    Layout.fillWidth: true
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Download the files needed to launch the instance now.")
+                    onClicked: {
+                        if (vm) vm.downloadAll()
+                    }
+                }
+                
+                Item { Layout.fillHeight: true }
             }
         }
     }
@@ -295,13 +328,16 @@ Rectangle {
                 Layout.fillWidth: true
                 
                 CheckBox {
+                    id: releasesCheck
                     text: qsTr("Releases")
                     checked: true
                 }
                 CheckBox {
+                    id: snapshotsCheck
                     text: qsTr("Snapshots")
                 }
                 CheckBox {
+                    id: oldVersionsCheck
                     text: qsTr("Old versions")
                 }
             }

@@ -52,6 +52,8 @@ static void loadManifestV1(Flame::Manifest& pack, QJsonObject& manifest)
     pack.name = Json::ensureString(manifest, QString("name"), "Unnamed");
     pack.version = Json::ensureString(manifest, QString("version"), QString());
     pack.author = Json::ensureString(manifest, QString("author"), "Anonymous");
+    pack.projectID = Json::ensureInteger(manifest, QString("projectID"), 0);
+    pack.fileID = Json::ensureInteger(manifest, QString("fileID"), 0);
 
     auto arr = Json::ensureArray(manifest, "files", QJsonArray());
     for (auto item : arr) {
