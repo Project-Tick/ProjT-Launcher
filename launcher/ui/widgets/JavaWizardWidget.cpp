@@ -217,7 +217,7 @@ void JavaWizardWidget::initialize()
     m_permGenSpinBox->setValue(observedPermGenMemory);
     updateThresholds();
     if (BuildConfig.JAVA_DOWNLOADER_ENABLED) {
-        m_autodownloadCheckBox->setChecked(true);
+        m_autodownloadCheckBox->setChecked(s->get("AutomaticJavaDownload").toBool());
     }
 }
 

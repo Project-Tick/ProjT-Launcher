@@ -241,7 +241,7 @@ Rectangle {
                             currentIndex: newInstanceWindow.currentPageIndex
                             
                             model: ListModel {
-                                ListElement { name: "Custom"; icon: "minecraft"; platform: "" }
+                                ListElement { name: "Custom"; icon: "grass"; platform: "" }
                                 ListElement { name: "Import"; icon: "viewfolder"; platform: "" }
                                 ListElement { name: "ATLauncher"; icon: "gear"; platform: "atlauncher" }
                                 ListElement { name: "CurseForge"; icon: "flame"; platform: "curseforge" }

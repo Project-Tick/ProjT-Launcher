@@ -55,9 +55,13 @@
    ======================================================================== */
 
 #include "Application.h"
+#include <QQuickStyle>
 
 int main(int argc, char* argv[])
 {
+    // Force Basic style for QML to allow customization
+    QQuickStyle::setStyle("Basic");
+
     // initialize Qt
     Application app(argc, argv);
 

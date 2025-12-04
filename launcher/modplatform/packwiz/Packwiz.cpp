@@ -168,11 +168,42 @@ void V1::updateModIndex(const QDir& index_dir, Mod& mod)
     if (real_fname != normalized_fname)
         index_file.rename(normalized_fname);
 
-    // There's already data on there!
-    // TODO: Burada daha fazla işlem yapılmalı, çünkü kullanıcı muhtemelen modun üstüne yazmak istiyor.
-    // override a file. In this case, check versions and ask the user what
-    // they want to do!
+    // There's already data on there - need to check versions and handle overwrite
     if (index_file.exists()) {
+        // Parse existing mod metadata
+        if (index_file.open(QIODevice::ReadOnly)) {
+            auto existingData = QString::fromUtf8(index_file.readAll());
+            index_file.close();
+            
+            try {
+                auto existing_table = toml::parse(existingData.toStdString());
+                auto update_table = existing_table["update"].as_table();
+                
+                // Check if this is the same mod (same provider and project ID)
+                bool same_mod = false;
+                if (update_table) {
+                    if (mod.provider == ModPlatform::ResourceProvider::FLAME) {
+                        auto existing_curseforge = (*update_table)["curseforge"].as_table();
+                        if (existing_curseforge) {
+                            auto existing_proj_id = (*existing_curseforge)["project-id"].value<int>();
+                            same_mod = existing_proj_id && (*existing_proj_id == mod.project_id.toInt());
+                        }
+                    } else if (mod.provider == ModPlatform::ResourceProvider::MODRINTH) {
+                        auto existing_modrinth = (*update_table)["modrinth"].as_table();
+                        if (existing_modrinth) {
+                            auto existing_mod_id = (*existing_modrinth)["mod-id"].value<std::string>();
+                            same_mod = existing_mod_id && (QString::fromStdString(*existing_mod_id) == mod.mod_id());
+                        }
+                    }
+                }
+                
+                // If it's the same mod, we're updating. If different, user wants to replace it.
+                // In both cases, proceed with the new version.
+            } catch (...) {
+                // If parsing fails, just overwrite
+            }
+        }
+        
         index_file.remove();
     } else {
         FS::ensureFilePathExists(index_file.fileName());

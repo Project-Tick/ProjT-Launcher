@@ -93,6 +93,10 @@ class InstanceViewModel : public QObject {
     Q_PROPERTY(QStringList worldPaths READ worldPaths NOTIFY worldPathsChanged)
     Q_PROPERTY(QStringList worldNames READ worldNames NOTIFY worldPathsChanged)
     
+    // Servers list
+    Q_PROPERTY(QStringList serverNames READ serverNames NOTIFY serversChanged)
+    Q_PROPERTY(QStringList serverAddresses READ serverAddresses NOTIFY serversChanged)
+    
     // Version info
     Q_PROPERTY(QString minecraftVersion READ minecraftVersion NOTIFY versionChanged)
     Q_PROPERTY(QString modLoaderName READ modLoaderName NOTIFY versionChanged)
@@ -179,6 +183,7 @@ public:
     // Worlds actions
     Q_INVOKABLE void refreshWorlds();
     Q_INVOKABLE void importWorld();
+    Q_INVOKABLE void importWorldFromPath(const QString& path);
     Q_INVOKABLE void copyWorld(int index);
     Q_INVOKABLE void backupWorld(int index);
     Q_INVOKABLE void deleteWorld(int index);
@@ -189,6 +194,10 @@ public:
     QStringList screenshotNames() const;
     QStringList worldPaths() const;
     QStringList worldNames() const;
+    
+    // Servers list
+    QStringList serverNames() const;
+    QStringList serverAddresses() const;
     
     // Version info
     QString minecraftVersion() const;
@@ -342,6 +351,7 @@ signals:
     void wrapperCommandChanged();
     void screenshotPathsChanged();
     void worldPathsChanged();
+    void serversChanged();
     void javaAutoDetected(const QStringList& javaPaths);
     
     // Version signals
@@ -357,6 +367,12 @@ signals:
     void launchRequested(const QString& instanceId);
     void launchOfflineRequested(const QString& instanceId);
     void killRequested(const QString& instanceId);
+    
+    // Import/Export signals for QML file dialogs
+    void worldImportRequested();
+    void packExportRequested();
+    void packUpdateCheckResult(bool hasUpdate, const QString& newVersion);
+    void worldBackupCompleted(bool success, const QString& backupPath);
 
 private slots:
     void onInstancePropertiesChanged(BaseInstance* inst);
@@ -367,6 +383,8 @@ private:
     QString formatTime(qint64 seconds) const;
     void scanScreenshots();
     void scanWorlds();
+    void scanServers();
+    void saveServers();
     void scanMods();
     void scanResourcePacks();
     void scanShaderPacks();
@@ -378,6 +396,8 @@ private:
     QStringList m_screenshotNames;
     QStringList m_worldPaths;
     QStringList m_worldNames;
+    QStringList m_serverNames;
+    QStringList m_serverAddresses;
     QVariantList m_modsModel;
     QVariantList m_resourcePacksModel;
     QVariantList m_shaderPacksModel;

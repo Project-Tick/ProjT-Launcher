@@ -73,9 +73,17 @@ class ListModel : public QAbstractListModel {
     ListModel(QObject* parent);
     virtual ~ListModel();
 
+    enum Roles {
+        NameRole = Qt::UserRole + 100,
+        DescriptionRole,
+        IconUrlRole,
+        PackDataRole
+    };
+
     virtual QVariant data(const QModelIndex& index, int role) const;
     virtual int columnCount(const QModelIndex& parent) const;
     virtual int rowCount(const QModelIndex& parent) const;
+    QHash<int, QByteArray> roleNames() const override;
 
     void getLogo(const QString& logo, const QString& logoUrl, LogoCallback callback);
     void searchWithTerm(const QString& term);

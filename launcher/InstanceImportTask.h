@@ -101,7 +101,7 @@ class InstanceImportTask : public InstanceTask {
     // the source URL / the resource it points to alone.
     QMap<QString, QString> m_extra_info;
 
-    // FIXME: nuke
+    // TODO: Refactor to avoid passing QWidget* to Task. Currently used for modal dialogs.
     QWidget* m_parent;
     void downloadFromUrl();
 };

@@ -27,6 +27,30 @@ Rectangle {
     
     property var vm: ProjT.instanceVM
     
+    // Handle worldImportRequested signal from ViewModel
+    Connections {
+        target: root.vm
+        function onWorldImportRequested() {
+            // Open file dialog for world import
+            if (ProjT && ProjT.launcherVM && ProjT.launcherVM.browseForFile) {
+                var filter = qsTr("World files (*.zip);;World folders (*)")
+                var path = ProjT.launcherVM.browseForFile(qsTr("Import World"), filter)
+                if (path && path.length > 0 && root.vm) {
+                    root.vm.importWorldFromPath(path)
+                }
+            }
+        }
+        
+        function onWorldBackupCompleted(success, backupPath) {
+            if (success) {
+                backupSuccessDialog.backupPath = backupPath
+                backupSuccessDialog.open()
+            } else {
+                backupFailedDialog.open()
+            }
+        }
+    }
+    
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
@@ -305,6 +329,40 @@ Rectangle {
             if (root.vm && worldsList.currentIndex >= 0) {
                 root.vm.deleteWorld(worldsList.currentIndex)
             }
+        }
+    }
+    
+    // Backup Success Dialog
+    Dialog {
+        id: backupSuccessDialog
+        title: qsTr("Backup Created")
+        modal: true
+        standardButtons: Dialog.Ok
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+        
+        property string backupPath: ""
+        
+        Label {
+            text: qsTr("World backup created successfully!\n\nSaved to: %1").arg(backupSuccessDialog.backupPath)
+            color: Theme.foreground
+            wrapMode: Text.WordWrap
+        }
+    }
+    
+    // Backup Failed Dialog
+    Dialog {
+        id: backupFailedDialog
+        title: qsTr("Backup Failed")
+        modal: true
+        standardButtons: Dialog.Ok
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+        
+        Label {
+            text: qsTr("Failed to create world backup. Please try again.")
+            color: Theme.red
+            wrapMode: Text.WordWrap
         }
     }
 }

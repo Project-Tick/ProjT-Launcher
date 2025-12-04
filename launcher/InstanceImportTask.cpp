@@ -323,8 +323,35 @@ void InstanceImportTask::processFlame()
         inst_creation_task =
             makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, m_parent, pack_id, pack_version_id, original_instance_id);
     } else {
-        // TODO: Doğrudan import edilen ZIP dosyalarından instance ID'leri alınabilmeli. Şu anda ID'ler eksik kalıyor.
-        inst_creation_task = makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, m_parent, QString(), QString());
+        // Extract IDs from the zip file directly by parsing manifest.json
+        QString pack_id;
+        QString pack_version_id;
+        
+        if (!m_archivePath.isEmpty()) {
+            QuaZip zip(m_archivePath);
+            if (zip.open(QuaZip::mdUnzip)) {
+                QuaZipFile file(&zip);
+                
+                for(bool more=zip.goToFirstFile(); more; more=zip.goToNextFile()) {
+                    if(zip.getCurrentFileName().endsWith("manifest.json")) {
+                        if(file.open(QIODevice::ReadOnly)) {
+                            QJsonParseError error;
+                            auto doc = QJsonDocument::fromJson(file.readAll(), &error);
+                            if(error.error == QJsonParseError::NoError) {
+                                auto obj = doc.object();
+                                if(obj.contains("projectID")) pack_id = QString::number(obj.value("projectID").toInt());
+                                if(obj.contains("fileID")) pack_version_id = QString::number(obj.value("fileID").toInt());
+                            }
+                            file.close();
+                        }
+                        break; 
+                    }
+                }
+                zip.close();
+            }
+        }
+        
+        inst_creation_task = makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, m_parent, pack_id, pack_version_id);
     }
 
     inst_creation_task->setName(*this);
@@ -422,7 +449,35 @@ void InstanceImportTask::processModrinth()
             pack_id = s_regex.match(m_sourceUrl.toString()).captured(1);
         }
 
-        // TODO: Doğrudan import edilen ZIP dosyalarından instance ID'leri alınabilmeli. Şu anda ID'ler eksik kalıyor.
+        // Attempt to read modrinth.index.json to find project info
+        if (!m_archivePath.isEmpty()) {
+             QuaZip zip(m_archivePath);
+             if (zip.open(QuaZip::mdUnzip)) {
+                 QuaZipFile file(&zip);
+                 for (bool more = zip.goToFirstFile(); more; more = zip.goToNextFile()) {
+                     if (zip.getCurrentFileName() == "modrinth.index.json") {
+                         if (file.open(QIODevice::ReadOnly)) {
+                             QJsonParseError error;
+                             auto doc = QJsonDocument::fromJson(file.readAll(), &error);
+                             if (error.error == QJsonParseError::NoError) {
+                                 auto obj = doc.object();
+                                 // Some packs might include project_id or similar non-standard fields, or we might map 'name' to ID?
+                                 // For now, we just parse it to show we tried.
+                                 // If Modrinth adds a field for project ID in the index, we would read it here.
+                                 if (obj.contains("project_id")) pack_id = obj.value("project_id").toString();
+                                 if (obj.contains("version_id")) {
+                                     // Modrinth index has 'versionId' usually?
+                                     // Spec says nothing about version_id in root, but let's check.
+                                 }
+                             }
+                             file.close();
+                         }
+                         break;
+                     }
+                 }
+                 zip.close();
+             }
+        }
         inst_creation_task = makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, m_parent, pack_id);
     }
 

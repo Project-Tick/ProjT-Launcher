@@ -486,10 +486,10 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
      * If there is one, tell it what the user actually wanted to do and exit.
      * We want to initialize this before logging to avoid messing with the log of a potential already running copy.
      */
-    auto appID = ApplicationId::fromPathAndVersion(QDir::currentPath(), BuildConfig.printableVersionString());
+    // Include data path in ApplicationId to allow multiple instances with different data dirs
+    // running from the same binary path without update conflicts
+    auto appID = ApplicationId::fromPathAndVersion(QDir::currentPath() + ":" + dataPath, BuildConfig.printableVersionString());
     {
-        // TODO: Multiple instances with different data dirs can run from same binary path
-        // This can cause update conflicts - consider using data path in ApplicationId
         m_peerInstance = new LocalPeer(this, appID);
         connect(m_peerInstance, &LocalPeer::messageReceived, this, &Application::messageReceived);
         if (m_peerInstance->isClient()) {
@@ -1761,6 +1761,8 @@ QmlMainWindow* Application::showQmlMainWindow(bool minimized)
         }
 
         connect(m_qmlMainWindow, &QMainWindow::destroyed, this, &Application::on_windowClose);
+        // Also connect to the close event if possible, or ensure destroyed is emitted on close
+        m_qmlMainWindow->setAttribute(Qt::WA_DeleteOnClose);
         m_openWindows++;
     }
     return m_qmlMainWindow;

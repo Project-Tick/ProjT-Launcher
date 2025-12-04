@@ -11,181 +11,210 @@ Dialog {
     title: qsTr("Add Microsoft Account")
     modal: true
     closePolicy: Popup.NoAutoClose
-    width: 500
-    height: 400
+    width: 440
+    height: 480
     standardButtons: Dialog.Cancel
     
-    property var vm: ProjT.accountsVM
+    property var vm: typeof ProjT !== "undefined" && ProjT ? ProjT.accountsVM : null
     property string loginUrl: ""
     property string userCode: ""
-    property int stage: 0 // 0: waiting, 1: code ready, 2: authenticating, 3: done
+    property string qrCodeData: ""
+    property string statusText: ""
+    property int topPanelState: 0  // 0: loading, 1: button ready
+    property int bottomPanelState: 0  // 0: loading, 1: code ready
     
     ColumnLayout {
         anchors.fill: parent
-        spacing: Theme.spacingM
+        spacing: 0
         
-        Image {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: 64
-            Layout.preferredHeight: 64
-            source: "qrc:/icons/multimc/scalable/accounts.svg"
-            fillMode: Image.PreserveAspectFit
-        }
-        
-        Label {
-            text: qsTr("Sign in with Microsoft")
-            font.bold: true
-            font.pointSize: 14
-            color: Theme.textPrimary
-            Layout.alignment: Qt.AlignHCenter
-        }
-        
-        // Stage 0: Waiting for code
-        ColumnLayout {
-            visible: stage === 0
+        // Top StackedWidget - Login Button or Loading
+        Item {
             Layout.fillWidth: true
-            spacing: Theme.spacingS
+            Layout.preferredHeight: 80
             
-            BusyIndicator {
-                Layout.alignment: Qt.AlignHCenter
-                running: stage === 0
-            }
-            
-            Label {
-                text: qsTr("Initializing login...")
-                color: Theme.textSecondary
-                Layout.alignment: Qt.AlignHCenter
-            }
-        }
-        
-        // Stage 1: Code ready
-        ColumnLayout {
-            visible: stage === 1
-            Layout.fillWidth: true
-            spacing: Theme.spacingM
-            
-            Label {
-                text: qsTr("1. Go to the following URL:")
-                color: Theme.textPrimary
-                Layout.fillWidth: true
-            }
-            
-            RowLayout {
-                Layout.fillWidth: true
+            // Loading state
+            ColumnLayout {
+                anchors.centerIn: parent
+                visible: topPanelState === 0
+                spacing: Theme.spacingS
                 
-                TextField {
-                    id: urlField
-                    Layout.fillWidth: true
-                    text: loginUrl
-                    readOnly: true
-                    selectByMouse: true
+                Label {
+                    text: qsTr("Please wait...")
+                    font.pointSize: 16
+                    font.bold: true
+                    color: Theme.textPrimary
+                    Layout.alignment: Qt.AlignHCenter
                 }
                 
-                Button {
-                    text: qsTr("Open")
-                    onClicked: Qt.openUrlExternally(loginUrl)
+                Label {
+                    text: statusText || qsTr("Initializing...")
+                    color: Theme.textSecondary
+                    Layout.alignment: Qt.AlignHCenter
+                    wrapMode: Text.WordWrap
                 }
-                
-                Button {
-                    text: qsTr("Copy")
-                    onClicked: {
-                        urlField.selectAll()
-                        urlField.copy()
+            }
+            
+            // Button state
+            Button {
+                anchors.centerIn: parent
+                visible: topPanelState === 1
+                text: qsTr("Sign in with Microsoft")
+                implicitWidth: 250
+                implicitHeight: 40
+                highlighted: true
+                onClicked: {
+                    if (vm) {
+                        topPanelState = 0
+                        bottomPanelState = 0
+                        vm.addMicrosoftAccount()
                     }
                 }
             }
+        }
+        
+        // "Or" separator with lines
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Theme.spacingM
+            Layout.bottomMargin: Theme.spacingM
+            spacing: Theme.spacingM
+            
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: Theme.border
+            }
             
             Label {
-                text: qsTr("2. Enter this code:")
-                color: Theme.textPrimary
-                Layout.fillWidth: true
+                text: qsTr("Or")
+                font.pointSize: 16
+                color: Theme.textSecondary
             }
             
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 60
-                color: Theme.surfaceVariant
-                radius: Theme.radius
+                height: 1
+                color: Theme.border
+            }
+        }
+        
+        // Bottom StackedWidget - QR Code/Device Code or Loading
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            
+            // Loading state
+            ColumnLayout {
+                anchors.centerIn: parent
+                visible: bottomPanelState === 0
+                spacing: Theme.spacingS
                 
-                RowLayout {
-                    anchors.centerIn: parent
-                    spacing: Theme.spacingM
-                    
-                    Label {
-                        text: userCode
-                        font.family: "Noto Sans Mono"
-                        font.pointSize: 24
-                        font.bold: true
-                        color: Theme.accent
-                    }
-                    
-                    Button {
-                        text: qsTr("Copy Code")
-                        onClicked: {
-                            if (vm) vm.copyCodeToClipboard(userCode)
-                        }
-                    }
+                Label {
+                    text: qsTr("Please wait...")
+                    font.pointSize: 16
+                    font.bold: true
+                    color: Theme.textPrimary
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                
+                Label {
+                    text: statusText || qsTr("Waiting for device code...")
+                    color: Theme.textSecondary
+                    Layout.alignment: Qt.AlignHCenter
+                    wrapMode: Text.WordWrap
+                }
+                
+                BusyIndicator {
+                    Layout.alignment: Qt.AlignHCenter
+                    running: bottomPanelState === 0
                 }
             }
             
-            Label {
-                text: qsTr("3. Sign in with your Microsoft account on the webpage")
-                color: Theme.textPrimary
-                Layout.fillWidth: true
-            }
-            
-            Label {
-                text: qsTr("Waiting for authentication...")
-                color: Theme.textSecondary
-                Layout.alignment: Qt.AlignHCenter
-            }
-            
-            BusyIndicator {
-                Layout.alignment: Qt.AlignHCenter
-                running: stage === 1
+            // Code ready state
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: Theme.spacingM
+                visible: bottomPanelState === 1
+                spacing: Theme.spacingM
+                
+                // QR Code
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 150
+                    Layout.preferredHeight: 150
+                    color: "white"
+                    radius: 4
+                    
+                    Image {
+                        id: qrImage
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        source: qrCodeData || ""
+                        fillMode: Image.PreserveAspectFit
+                        visible: qrCodeData !== ""
+                    }
+                    
+                    Label {
+                        anchors.centerIn: parent
+                        text: qsTr("QR Code")
+                        color: Theme.textSecondary
+                        visible: qrCodeData === ""
+                    }
+                }
+                
+                // Device Code with Copy button
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: Theme.spacingS
+                    
+                    Label {
+                        id: codeLabel
+                        text: userCode || "--------"
+                        font.pointSize: 30
+                        font.bold: true
+                        color: Theme.accent
+                        
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.IBeamCursor
+                        }
+                    }
+                    
+                    Button {
+                        id: copyCodeBtn
+                        flat: true
+                        icon.name: "edit-copy"
+                        icon.width: 22
+                        icon.height: 22
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Copy code to clipboard")
+                        onClicked: {
+                            if (vm && userCode) {
+                                vm.copyCodeToClipboard(userCode)
+                            }
+                        }
+                    }
+                }
+                
+                // Info message
+                Label {
+                    Layout.fillWidth: true
+                    text: qsTr("Open <a href=\"%1\">%1</a> and enter the code above to sign in.").arg(loginUrl || "https://microsoft.com/link")
+                    color: Theme.textSecondary
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                    onLinkActivated: (link) => Qt.openUrlExternally(link)
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.NoButton
+                        cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    }
+                }
+                
+                Item { Layout.fillHeight: true }
             }
         }
-        
-        // Stage 2: Authenticating
-        ColumnLayout {
-            visible: stage === 2
-            Layout.fillWidth: true
-            spacing: Theme.spacingS
-            
-            BusyIndicator {
-                Layout.alignment: Qt.AlignHCenter
-                running: stage === 2
-            }
-            
-            Label {
-                text: qsTr("Authenticating with Minecraft services...")
-                color: Theme.textSecondary
-                Layout.alignment: Qt.AlignHCenter
-            }
-        }
-        
-        // Stage 3: Done
-        ColumnLayout {
-            visible: stage === 3
-            Layout.fillWidth: true
-            spacing: Theme.spacingS
-            
-            Label {
-                text: "✓"
-                font.pointSize: 48
-                color: Theme.success
-                Layout.alignment: Qt.AlignHCenter
-            }
-            
-            Label {
-                text: qsTr("Account added successfully!")
-                font.bold: true
-                color: Theme.success
-                Layout.alignment: Qt.AlignHCenter
-            }
-        }
-        
-        Item { Layout.fillHeight: true }
     }
     
     Connections {
@@ -194,19 +223,29 @@ Dialog {
         function onLoginUrlReady(url, code) {
             loginUrl = url
             userCode = code
-            stage = 1
+            bottomPanelState = 1
+            topPanelState = 1
+        }
+        
+        function onQrCodeReady(qrData) {
+            qrCodeData = qrData
+        }
+        
+        function onLoginStatusChanged(status) {
+            statusText = status
         }
         
         function onLoginStarted() {
-            stage = 2
+            statusText = qsTr("Authenticating...")
         }
         
         function onLoginFinished(success, message) {
             if (success) {
-                stage = 3
+                statusText = qsTr("Account added successfully!")
                 closeTimer.start()
             } else {
-                stage = 0
+                topPanelState = 1
+                bottomPanelState = 1
                 errorDialog.message = message
                 errorDialog.open()
             }
@@ -231,13 +270,18 @@ Dialog {
         
         Label {
             text: errorDialog.message
-            color: Theme.error
+            color: Theme.danger
             wrapMode: Text.WordWrap
         }
     }
     
     onOpened: {
-        stage = 0
+        topPanelState = 0
+        bottomPanelState = 0
+        statusText = ""
+        loginUrl = ""
+        userCode = ""
+        qrCodeData = ""
         if (vm) vm.addMicrosoftAccount()
     }
     

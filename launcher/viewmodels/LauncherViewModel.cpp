@@ -239,8 +239,9 @@ void LauncherViewModel::openHelp()
 
 void LauncherViewModel::checkUpdates()
 {
-    qDebug() << "Update check requested (Not implemented yet)";
-    // TODO: Implement update check trigger
+    qDebug() << "[LauncherViewModel] Update check requested";
+    // Trigger update check through Application
+    APPLICATION->triggerUpdateCheck();
 }
 
 void LauncherViewModel::openAccountsManager()

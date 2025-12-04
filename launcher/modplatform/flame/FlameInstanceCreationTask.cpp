@@ -479,6 +479,8 @@ bool FlameCreationTask::createInstance()
     // Don't add managed info to packs without an ID (most likely imported from ZIP)
     if (!m_managedId.isEmpty())
         instance.setManagedPack("flame", m_managedId, m_pack.name, m_managedVersionId, m_pack.version);
+    else if (m_pack.projectID != 0 && m_pack.fileID != 0)
+        instance.setManagedPack("flame", QString::number(m_pack.projectID), m_pack.name, QString::number(m_pack.fileID), m_pack.version);
     else
         instance.setManagedPack("flame", "", name(), "", "");
 

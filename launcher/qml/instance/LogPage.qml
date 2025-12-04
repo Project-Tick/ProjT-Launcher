@@ -14,164 +14,133 @@ Rectangle {
     
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        spacing: Theme.spacingS
+        anchors.margins: 0
+        spacing: 0
         
-        // Header
+        // Top toolbar
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.spacingS
+            Layout.margins: Theme.spacingS
+            spacing: Theme.spacingM
             
-            Label {
-                text: qsTr("Instance Log")
-                font.pointSize: 14
-                font.bold: true
-                color: Theme.textPrimary
+            CheckBox {
+                id: trackLogCheckbox
+                text: qsTr("Keep updating")
+                checked: true
+            }
+            
+            CheckBox {
+                id: wrapCheckbox
+                text: qsTr("Wrap lines")
+                checked: true
+            }
+            
+            CheckBox {
+                id: colorCheckbox
+                text: qsTr("Color lines")
+                checked: true
             }
             
             Item { Layout.fillWidth: true }
             
             Button {
-                text: qsTr("Copy")
-                icon.name: "edit-copy"
+                text: qsTr("&Copy")
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Copy the whole log into the clipboard")
                 onClicked: {
                     if (vm) vm.copyLogToClipboard()
                 }
             }
             
             Button {
-                text: qsTr("Clear")
-                icon.name: "edit-clear"
-                onClicked: {
-                    if (vm) vm.clearLog()
-                }
-            }
-            
-            Button {
                 text: qsTr("Upload")
-                icon.name: "upload-media"
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Upload the log to the paste service configured in preferences")
                 onClicked: {
                     if (vm) vm.uploadLog()
                 }
             }
-        }
-        
-        // Options
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingM
-            
-            CheckBox {
-                id: wordWrapCheck
-                text: qsTr("Word Wrap")
-                checked: true
-            }
-            
-            CheckBox {
-                id: autoScrollCheck
-                text: qsTr("Auto Scroll")
-                checked: true
-            }
-            
-            CheckBox {
-                id: showTimestampsCheck
-                text: qsTr("Timestamps")
-                checked: false
-            }
-            
-            Item { Layout.fillWidth: true }
-            
-            ComboBox {
-                id: logLevelFilter
-                model: [qsTr("All"), qsTr("Info"), qsTr("Warning"), qsTr("Error")]
-                onCurrentIndexChanged: {
-                    if (vm) vm.setLogLevelFilter(currentIndex)
-                }
-            }
-        }
-        
-        // Search
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingS
-            
-            TextField {
-                id: searchField
-                Layout.fillWidth: true
-                placeholderText: qsTr("Search log...")
-                onTextChanged: {
-                    if (vm) vm.searchLog(text)
-                }
-            }
             
             Button {
-                text: qsTr("Find Previous")
-                enabled: searchField.text.length > 0
+                text: qsTr("Clear")
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Clear the log")
                 onClicked: {
-                    if (vm) vm.findPreviousMatch()
-                }
-            }
-            
-            Button {
-                text: qsTr("Find Next")
-                enabled: searchField.text.length > 0
-                onClicked: {
-                    if (vm) vm.findNextMatch()
+                    if (vm) vm.clearLog()
                 }
             }
         }
         
         // Log viewer
-        Frame {
+        ScrollView {
+            id: logScrollView
             Layout.fillWidth: true
             Layout.fillHeight: true
+            clip: true
             
-            ScrollView {
-                id: logScrollView
-                anchors.fill: parent
-                clip: true
+            TextArea {
+                id: logText
+                readOnly: true
+                wrapMode: wrapCheckbox.checked ? TextEdit.WrapAnywhere : TextEdit.NoWrap
+                text: vm ? vm.instanceLog : ""
+                font.family: "Noto Sans Mono"
+                font.pointSize: 10
+                color: Theme.textPrimary
+                selectByMouse: true
+                textFormat: colorCheckbox.checked ? TextEdit.RichText : TextEdit.PlainText
                 
-                TextArea {
-                    id: logText
-                    readOnly: true
-                    wrapMode: wordWrapCheck.checked ? TextEdit.WrapAnywhere : TextEdit.NoWrap
-                    text: vm ? vm.instanceLog : ""
-                    font.family: "Noto Sans Mono"
-                    font.pointSize: 10
-                    color: Theme.textPrimary
-                    selectByMouse: true
-                    
-                    background: Rectangle {
-                        color: Theme.surfaceVariant
-                    }
-                }
-            }
-            
-            // Auto-scroll on new content
-            Connections {
-                target: vm
-                function onInstanceLogChanged() {
-                    if (autoScrollCheck.checked) {
-                        logScrollView.ScrollBar.vertical.position = 1.0 - logScrollView.ScrollBar.vertical.size
-                    }
+                background: Rectangle {
+                    color: Theme.surfaceVariant
                 }
             }
         }
         
-        // Status
+        // Bottom search bar
         RowLayout {
             Layout.fillWidth: true
+            Layout.margins: Theme.spacingS
+            spacing: Theme.spacingS
             
-            Label {
-                text: vm && vm.instanceRunning ? qsTr("Instance is running...") : qsTr("Instance not running")
-                color: vm && vm.instanceRunning ? Theme.success : Theme.textSecondary
+            TextField {
+                id: searchBar
+                Layout.fillWidth: true
+                placeholderText: qsTr("Search")
+                onAccepted: {
+                    if (vm) vm.findInLog(text)
+                }
             }
             
-            Item { Layout.fillWidth: true }
+            Button {
+                text: qsTr("Find")
+                onClicked: {
+                    if (vm) vm.findInLog(searchBar.text)
+                }
+            }
             
-            Label {
-                text: vm ? qsTr("%1 lines").arg(vm.logLineCount || 0) : ""
-                color: Theme.textSecondary
+            Rectangle {
+                width: 1
+                height: parent.height - 8
+                color: Theme.border
+            }
+            
+            Button {
+                text: qsTr("Bottom")
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Scroll all the way to bottom")
+                onClicked: {
+                    logScrollView.ScrollBar.vertical.position = 1.0 - logScrollView.ScrollBar.vertical.size
+                }
+            }
+        }
+        
+        // Auto-scroll on new content
+        Connections {
+            target: vm
+            ignoreUnknownSignals: true
+            function onInstanceLogChanged() {
+                if (trackLogCheckbox.checked) {
+                    logScrollView.ScrollBar.vertical.position = 1.0 - logScrollView.ScrollBar.vertical.size
+                }
             }
         }
     }

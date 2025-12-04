@@ -119,7 +119,20 @@ Dialog {
             Button {
                 text: qsTr("Add Custom Icon...")
                 onClicked: {
-                    // TODO: Open file dialog
+                    if (ProjT && ProjT.launcherVM && ProjT.launcherVM.browseForFile) {
+                        var filter = qsTr("Image files (*.png *.jpg *.jpeg *.svg *.ico);;All files (*)")
+                        var path = ProjT.launcherVM.browseForFile(qsTr("Select Custom Icon"), filter)
+                        if (path && path.length > 0) {
+                            // Add to custom icons list
+                            var newCustomIcons = customIcons.slice()
+                            if (newCustomIcons.indexOf(path) === -1) {
+                                newCustomIcons.push(path)
+                            }
+                            customIcons = newCustomIcons
+                            // Select the newly added icon
+                            selectedIcon = path
+                        }
+                    }
                 }
             }
             

@@ -10,119 +10,193 @@ Dialog {
     id: aboutDialog
     title: qsTr("About ProjT Launcher")
     modal: true
-    width: 500
-    height: 450
-    standardButtons: Dialog.Close
+    width: 573
+    height: 600
+    standardButtons: Dialog.NoButton
     
     property var appInfo: ProjT ? ProjT.appInfo : null
     
     ColumnLayout {
         anchors.fill: parent
-        spacing: Theme.spacingM
+        spacing: Theme.spacingS
         
-        // Logo and title
-        ColumnLayout {
+        // Logo centered
+        Item {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignHCenter
-            spacing: Theme.spacingS
+            Layout.preferredHeight: 80
             
-            Rectangle {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: 96
-                Layout.preferredHeight: 96
-                radius: 16
-                color: Theme.accent
-                
-                Image {
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    source: "qrc:/launcher/icon.png"
-                    fillMode: Image.PreserveAspectFit
-                }
-            }
-            
-            Label {
-                text: "ProjT Launcher"
-                color: Theme.textPrimary
-                font.bold: true
-                font.pointSize: Theme.fontSizeMedium + 4
-                Layout.alignment: Qt.AlignHCenter
-            }
-            
-            Label {
-                text: qsTr("Version %1").arg(appInfo ? appInfo.version : "")
-                color: Theme.textSecondary
-                Layout.alignment: Qt.AlignHCenter
-            }
-            
-            Label {
-                text: appInfo ? appInfo.buildDate : ""
-                color: Theme.textSecondary
-                font.pointSize: Theme.fontSizeSmall
-                Layout.alignment: Qt.AlignHCenter
+            Image {
+                anchors.centerIn: parent
+                width: 64
+                height: 64
+                source: "qrc:/launcher/icon.png"
+                fillMode: Image.PreserveAspectFit
             }
         }
         
-        // Description
+        // Title
         Label {
             Layout.fillWidth: true
-            text: qsTr("A free, open-source Minecraft launcher with support for mods, modpacks, and multiple instances.")
-            color: Theme.textSecondary
-            wrapMode: Text.WordWrap
+            text: "ProjT Launcher"
+            color: Theme.textPrimary
+            font.pointSize: 15
             horizontalAlignment: Text.AlignHCenter
         }
         
-        // Links
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Links")
+        // Version (selectable)
+        Label {
+            Layout.alignment: Qt.AlignHCenter
+            text: qsTr("Version %1").arg(appInfo ? appInfo.version : "")
+            color: Theme.textSecondary
             
-            RowLayout {
+            MouseArea {
                 anchors.fill: parent
-                spacing: Theme.spacingM
-                
-                Button {
-                    text: qsTr("Website")
-                    flat: true
-                    onClicked: Qt.openUrlExternally("https://github.com/Project-Tick/ProjT-Launcher")
-                }
-                
-                Button {
-                    text: qsTr("GitHub")
-                    flat: true
-                    onClicked: Qt.openUrlExternally("https://github.com/Project-Tick/ProjT-Launcher")
-                }
-                
-                Button {
-                    text: qsTr("Discord")
-                    flat: true
-                    onClicked: Qt.openUrlExternally("https://discord.gg/projt")
-                }
-                
-                Button {
-                    text: qsTr("Report Bug")
-                    flat: true
-                    onClicked: Qt.openUrlExternally("https://github.com/Project-Tick/ProjT-Launcher/issues")
-                }
+                cursorShape: Qt.IBeamCursor
             }
         }
         
-        // License
-        GroupBox {
+        // TabWidget
+        TabBar {
+            id: tabBar
+            Layout.fillWidth: true
+            
+            TabButton {
+                text: qsTr("About")
+            }
+            TabButton {
+                text: qsTr("Credits")
+            }
+            TabButton {
+                text: qsTr("License")
+            }
+        }
+        
+        StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: qsTr("License")
+            currentIndex: tabBar.currentIndex
             
+            // About Tab
+            ColumnLayout {
+                spacing: Theme.spacingS
+                
+                Label {
+                    Layout.fillWidth: true
+                    text: qsTr("A custom launcher that makes managing Minecraft easier by allowing you to have multiple instances of Minecraft at once.")
+                    color: Theme.textSecondary
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                
+                Label {
+                    Layout.fillWidth: true
+                    text: "<a href='https://github.com/Project-Tick/ProjT-Launcher'>https://github.com/Project-Tick/ProjT-Launcher</a>"
+                    color: Theme.accent
+                    font.pointSize: 10
+                    horizontalAlignment: Text.AlignHCenter
+                    onLinkActivated: (link) => Qt.openUrlExternally(link)
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.NoButton
+                        cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    }
+                }
+                
+                Label {
+                    Layout.fillWidth: true
+                    text: appInfo ? appInfo.copyright : "© 2025 Project Tick Contributors"
+                    color: Theme.textSecondary
+                    font.pointSize: 8
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: Theme.border
+                }
+                
+                // Platform info
+                Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Platform: %1").arg(appInfo ? appInfo.platform : Qt.platform.os)
+                    color: Theme.textSecondary
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.IBeamCursor
+                    }
+                }
+                
+                // Build date
+                Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Build Date: %1").arg(appInfo ? appInfo.buildDate : "")
+                    color: Theme.textSecondary
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.IBeamCursor
+                    }
+                }
+                
+                // Commit
+                Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Commit: %1").arg(appInfo ? appInfo.gitCommit : "")
+                    color: Theme.textSecondary
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.IBeamCursor
+                    }
+                }
+                
+                // Channel
+                Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Channel: %1").arg(appInfo ? appInfo.channel : "stable")
+                    color: Theme.textSecondary
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.IBeamCursor
+                    }
+                }
+                
+                Item { Layout.fillHeight: true }
+            }
+            
+            // Credits Tab
             ScrollView {
-                anchors.fill: parent
                 clip: true
                 
                 TextArea {
+                    id: creditsText
                     readOnly: true
-                    text: qsTr("ProjT Launcher is licensed under the GNU General Public License v3.0.\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.")
+                    textFormat: TextArea.RichText
+                    text: appInfo ? appInfo.credits : qsTr("<h3>Contributors</h3><p>Thanks to all the amazing contributors who have helped make this project possible!</p><p>Based on PolyMC and Prism Launcher.</p>")
                     wrapMode: Text.WordWrap
-                    color: Theme.textSecondary
-                    font.pointSize: Theme.fontSizeSmall
+                    color: Theme.textPrimary
+                    onLinkActivated: (link) => Qt.openUrlExternally(link)
+                    background: Rectangle {
+                        color: "transparent"
+                    }
+                }
+            }
+            
+            // License Tab
+            ScrollView {
+                clip: true
+                
+                TextArea {
+                    id: licenseText
+                    readOnly: true
+                    font.family: "DejaVu Sans Mono"
+                    text: qsTr("ProjT Launcher is licensed under the GNU General Public License v3.0.\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.")
+                    wrapMode: Text.WordWrap
+                    color: Theme.textPrimary
                     background: Rectangle {
                         color: "transparent"
                     }
@@ -130,13 +204,25 @@ Dialog {
             }
         }
         
-        // Credits
-        Label {
+        // Bottom buttons
+        RowLayout {
             Layout.fillWidth: true
-            text: qsTr("Based on PolyMC/Prism Launcher. Thanks to all contributors!")
-            color: Theme.textSecondary
-            font.pointSize: Theme.fontSizeSmall
-            horizontalAlignment: Text.AlignHCenter
+            
+            Button {
+                text: qsTr("About Qt")
+                onClicked: {
+                    if (ProjT && ProjT.showAboutQt) {
+                        ProjT.showAboutQt()
+                    }
+                }
+            }
+            
+            Item { Layout.fillWidth: true }
+            
+            Button {
+                text: qsTr("Close")
+                onClicked: aboutDialog.close()
+            }
         }
     }
 }

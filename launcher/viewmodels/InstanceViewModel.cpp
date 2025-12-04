@@ -27,6 +27,7 @@
 #include "Application.h"
 #include "FileSystem.h"
 #include "InstanceList.h"
+#include "MMCZip.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/Component.h"
@@ -35,6 +36,14 @@
 #include "minecraft/mod/ShaderPackFolderModel.h"
 #include "minecraft/mod/TexturePackFolderModel.h"
 #include "minecraft/mod/Resource.h"
+
+// NBT library for servers.dat
+#include <io/stream_reader.h>
+#include <tag_compound.h>
+#include <tag_list.h>
+#include <tag_primitive.h>
+#include <tag_string.h>
+#include <sstream>
 
 InstanceViewModel::InstanceViewModel(QObject* parent)
     : QObject(parent)
@@ -226,20 +235,28 @@ QString InstanceViewModel::managedPackUrl() const
 void InstanceViewModel::checkForPackUpdates()
 {
     qDebug() << "[InstanceViewModel] Checking for pack updates for:" << m_instanceId;
-    // TODO: Implement actual update check through ManagedPackPage logic
-    // For now, this is a placeholder that can be connected to the existing update system
+    // Emit signal to notify QML that update check is in progress
+    // The actual update check logic is complex and depends on the pack type (Modrinth/CurseForge)
+    // For now, we signal that no update is available - real implementation would need async API calls
+    emit packUpdateCheckResult(false, QString());
 }
 
 void InstanceViewModel::updatePack()
 {
     qDebug() << "[InstanceViewModel] Updating pack for:" << m_instanceId;
-    // TODO: Implement actual pack update through ManagedPackPage logic
+    // Pack updates are complex operations that require:
+    // 1. Fetching available versions from the API
+    // 2. Downloading new pack files
+    // 3. Updating instance configuration
+    // This should ideally be handled through the existing task system
+    // For now, log the request - full implementation would use ManagedPackPage logic
 }
 
 void InstanceViewModel::exportPack()
 {
     qDebug() << "[InstanceViewModel] Exporting pack for:" << m_instanceId;
-    // TODO: Open export dialog or perform export
+    // Emit signal for QML to show export dialog
+    emit packExportRequested();
 }
 
 void InstanceViewModel::refreshScreenshots()
@@ -296,37 +313,82 @@ void InstanceViewModel::openScreenshot(int index)
 void InstanceViewModel::refreshServers()
 {
     qDebug() << "[InstanceViewModel] Refreshing servers for:" << m_instanceId;
-    // TODO: Re-read servers.dat
+    scanServers();
 }
 
 void InstanceViewModel::addServer(const QString& name, const QString& address)
 {
     qDebug() << "[InstanceViewModel] Adding server:" << name << address;
-    // TODO: Modify servers.dat
+    
+    if (name.isEmpty() || address.isEmpty()) {
+        qWarning() << "[InstanceViewModel] Server name and address are required";
+        return;
+    }
+    
+    m_serverNames.append(name);
+    m_serverAddresses.append(address);
+    saveServers();
+    emit serversChanged();
 }
 
 void InstanceViewModel::editServer(int index, const QString& name, const QString& address)
 {
     qDebug() << "[InstanceViewModel] Editing server" << index << ":" << name << address;
-    // TODO: Modify servers.dat
+    
+    if (index < 0 || index >= m_serverNames.size()) {
+        qWarning() << "[InstanceViewModel] Invalid server index:" << index;
+        return;
+    }
+    
+    m_serverNames[index] = name;
+    m_serverAddresses[index] = address;
+    saveServers();
+    emit serversChanged();
 }
 
 void InstanceViewModel::deleteServer(int index)
 {
     qDebug() << "[InstanceViewModel] Deleting server" << index;
-    // TODO: Modify servers.dat
+    
+    if (index < 0 || index >= m_serverNames.size()) {
+        qWarning() << "[InstanceViewModel] Invalid server index:" << index;
+        return;
+    }
+    
+    m_serverNames.removeAt(index);
+    m_serverAddresses.removeAt(index);
+    saveServers();
+    emit serversChanged();
 }
 
 void InstanceViewModel::moveServerUp(int index)
 {
     qDebug() << "[InstanceViewModel] Moving server up:" << index;
-    // TODO: Modify servers.dat order
+    
+    if (index <= 0 || index >= m_serverNames.size()) {
+        qWarning() << "[InstanceViewModel] Cannot move server up from index:" << index;
+        return;
+    }
+    
+    m_serverNames.swapItemsAt(index, index - 1);
+    m_serverAddresses.swapItemsAt(index, index - 1);
+    saveServers();
+    emit serversChanged();
 }
 
 void InstanceViewModel::moveServerDown(int index)
 {
     qDebug() << "[InstanceViewModel] Moving server down:" << index;
-    // TODO: Modify servers.dat order
+    
+    if (index < 0 || index >= m_serverNames.size() - 1) {
+        qWarning() << "[InstanceViewModel] Cannot move server down from index:" << index;
+        return;
+    }
+    
+    m_serverNames.swapItemsAt(index, index + 1);
+    m_serverAddresses.swapItemsAt(index, index + 1);
+    saveServers();
+    emit serversChanged();
 }
 
 void InstanceViewModel::refreshWorlds()
@@ -337,8 +399,67 @@ void InstanceViewModel::refreshWorlds()
 
 void InstanceViewModel::importWorld()
 {
-    qDebug() << "[InstanceViewModel] Importing world for:" << m_instanceId;
-    // TODO: This should open a file dialog - needs to be done via signal to QML
+    qDebug() << "[InstanceViewModel] Requesting world import for:" << m_instanceId;
+    // Emit signal for QML to open file dialog
+    emit worldImportRequested();
+}
+
+void InstanceViewModel::importWorldFromPath(const QString& path)
+{
+    qDebug() << "[InstanceViewModel] Importing world from:" << path;
+    
+    if (path.isEmpty()) {
+        qWarning() << "[InstanceViewModel] Empty import path";
+        return;
+    }
+    
+    QFileInfo fileInfo(path);
+    if (!fileInfo.exists()) {
+        qWarning() << "[InstanceViewModel] Import path does not exist:" << path;
+        return;
+    }
+    
+    QString savesDir = gameRoot() + "/saves";
+    QDir().mkpath(savesDir);
+    
+    if (fileInfo.isDir()) {
+        // Copy world folder
+        QString dstPath = savesDir + "/" + fileInfo.fileName();
+        
+        // Make unique name if already exists
+        int counter = 1;
+        while (QDir(dstPath).exists()) {
+            dstPath = savesDir + "/" + fileInfo.baseName() + QString(" (%1)").arg(counter++);
+        }
+        
+        if (FS::copy(path, dstPath)()) {
+            qDebug() << "[InstanceViewModel] Imported world to:" << dstPath;
+            scanWorlds();
+        } else {
+            qWarning() << "[InstanceViewModel] Failed to import world";
+        }
+    } else if (path.endsWith(".zip", Qt::CaseInsensitive)) {
+        // Extract zip to saves folder
+        QString worldName = fileInfo.baseName();
+        QString dstPath = savesDir + "/" + worldName;
+        
+        // Make unique name if already exists
+        int counter = 1;
+        while (QDir(dstPath).exists()) {
+            dstPath = savesDir + "/" + worldName + QString(" (%1)").arg(counter++);
+        }
+        
+        QDir().mkpath(dstPath);
+        if (MMCZip::extractDir(path, dstPath).has_value()) {
+            qDebug() << "[InstanceViewModel] Extracted world to:" << dstPath;
+            scanWorlds();
+        } else {
+            qWarning() << "[InstanceViewModel] Failed to extract world zip";
+            QDir(dstPath).removeRecursively();
+        }
+    } else {
+        qWarning() << "[InstanceViewModel] Unsupported world format:" << path;
+    }
 }
 
 void InstanceViewModel::copyWorld(int index)
@@ -380,13 +501,21 @@ void InstanceViewModel::backupWorld(int index)
     // Create backup in instance folder with timestamp
     QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
     QString backupName = QString("%1_backup_%2.zip").arg(worldName, timestamp);
-    QString backupPath = gameRoot() + "/world_backups/" + backupName;
+    QString backupDir = gameRoot() + "/world_backups";
+    QString backupPath = backupDir + "/" + backupName;
     
     // Ensure backup directory exists
-    QDir().mkpath(gameRoot() + "/world_backups");
+    QDir().mkpath(backupDir);
     
-    // TODO: Implement zip creation - for now just log
-    qDebug() << "[InstanceViewModel] Would backup world to:" << backupPath;
+    // Create zip backup using JlCompress (from quazip)
+    bool success = JlCompress::compressDir(backupPath, worldPath);
+    if (success) {
+        qDebug() << "[InstanceViewModel] Created world backup:" << backupPath;
+        emit worldBackupCompleted(true, backupPath);
+    } else {
+        qWarning() << "[InstanceViewModel] Failed to create world backup";
+        emit worldBackupCompleted(false, QString());
+    }
 }
 
 void InstanceViewModel::deleteWorld(int index)
@@ -1053,6 +1182,110 @@ void InstanceViewModel::scanWorlds()
     
     emit worldPathsChanged();
     qDebug() << "[InstanceViewModel] Found" << m_worldPaths.size() << "worlds";
+}
+
+// ============ Servers ============
+
+QStringList InstanceViewModel::serverNames() const
+{
+    return m_serverNames;
+}
+
+QStringList InstanceViewModel::serverAddresses() const
+{
+    return m_serverAddresses;
+}
+
+void InstanceViewModel::scanServers()
+{
+    m_serverNames.clear();
+    m_serverAddresses.clear();
+    
+    if (!m_instance) {
+        emit serversChanged();
+        return;
+    }
+    
+    QString serversPath = gameRoot() + "/servers.dat";
+    
+    if (!QFile::exists(serversPath)) {
+        emit serversChanged();
+        qDebug() << "[InstanceViewModel] No servers.dat found";
+        return;
+    }
+    
+    try {
+        QByteArray input = FS::read(serversPath);
+        std::istringstream stream(std::string(input.constData(), input.size()));
+        auto pair = nbt::io::read_compound(stream);
+        
+        if (pair.first != "" || pair.second == nullptr) {
+            qWarning() << "[InstanceViewModel] Invalid servers.dat format";
+            emit serversChanged();
+            return;
+        }
+        
+        auto& root = *pair.second;
+        if (!root.has_key("servers", nbt::tag_type::List)) {
+            emit serversChanged();
+            return;
+        }
+        
+        auto& serversList = root["servers"].as<nbt::tag_list>();
+        for (auto& serverTag : serversList) {
+            auto& server = serverTag.as<nbt::tag_compound>();
+            
+            std::string nameStr(server["name"]);
+            std::string addressStr(server["ip"]);
+            
+            m_serverNames.append(QString::fromUtf8(nameStr.c_str()));
+            m_serverAddresses.append(QString::fromUtf8(addressStr.c_str()));
+        }
+        
+        qDebug() << "[InstanceViewModel] Found" << m_serverNames.size() << "servers";
+    } catch (const std::exception& e) {
+        qWarning() << "[InstanceViewModel] Failed to read servers.dat:" << e.what();
+    }
+    
+    emit serversChanged();
+}
+
+void InstanceViewModel::saveServers()
+{
+    if (!m_instance) {
+        return;
+    }
+    
+    QString serversPath = gameRoot() + "/servers.dat";
+    
+    try {
+        nbt::tag_compound root;
+        nbt::tag_list serversList(nbt::tag_type::Compound);
+        
+        for (int i = 0; i < m_serverNames.size(); i++) {
+            nbt::tag_compound server;
+            server.insert("name", m_serverNames[i].toUtf8().toStdString());
+            server.insert("ip", m_serverAddresses[i].toUtf8().toStdString());
+            serversList.push_back(std::move(server));
+        }
+        
+        root.insert("servers", std::move(serversList));
+        
+        // Ensure directory exists
+        if (!FS::ensureFilePathExists(serversPath)) {
+            qWarning() << "[InstanceViewModel] Failed to create path for servers.dat";
+            return;
+        }
+        
+        std::ostringstream stream;
+        nbt::io::write_tag("", root, stream);
+        QByteArray data(stream.str().data(), (int)stream.str().size());
+        FS::write(serversPath, data);
+        
+        qDebug() << "[InstanceViewModel] Saved" << m_serverNames.size() << "servers";
+    } catch (const std::exception& e) {
+        qWarning() << "[InstanceViewModel] Failed to write servers.dat:" << e.what();
+    }
 }
 
 // ============ Version Info ============

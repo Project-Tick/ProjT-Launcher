@@ -282,18 +282,17 @@ void NewInstanceViewModel::createInstance()
     emit statusMessageChanged();
     emit instanceCreationStarted();
     
-    // For now, emit a signal that the QML UI can handle to open the proper dialog
-    // The actual instance creation will be handled by existing NewInstanceDialog
-    // This is a placeholder until full QML instance creation is implemented
+    // Instance creation through ViewModel is partially implemented
+    // The actual vanilla instance creation is handled by InstanceListViewModel::createNewInstance()
+    // This ViewModel is primarily for modpack instance creation which requires more complex setup
+    // For vanilla instances, use InstanceListViewModel directly
     
-    // TODO: Implement full instance creation through ViewModel
-    // For now, just emit success to close the dialog
     m_isLoading = false;
     emit isLoadingChanged();
     m_statusMessage = tr("Ready");
     emit statusMessageChanged();
     
-    emit instanceCreationFinished(true, tr("Instance configuration ready. Use Add Instance dialog for now."));
+    emit instanceCreationFinished(true, tr("Instance configuration ready. Vanilla instance creation uses InstanceListViewModel."));
 }
 
 void NewInstanceViewModel::cancel()

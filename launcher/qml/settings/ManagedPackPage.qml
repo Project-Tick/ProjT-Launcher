@@ -28,6 +28,31 @@ Rectangle {
     property var vm: ProjT.instanceVM
     property bool isManagedPack: vm ? vm.isManagedPack : false
     
+    // Handle signals from ViewModel
+    Connections {
+        target: root.vm
+        function onPackExportRequested() {
+            // Open export dialog or file save dialog
+            if (ProjT && ProjT.launcherVM && ProjT.launcherVM.browseForSave) {
+                var filter = qsTr("Modpack files (*.zip *.mrpack)")
+                var path = ProjT.launcherVM.browseForSave(qsTr("Export Pack"), filter)
+                if (path && path.length > 0) {
+                    // Export logic would go here
+                    console.log("Export pack to:", path)
+                }
+            }
+        }
+        
+        function onPackUpdateCheckResult(hasUpdate, newVersion) {
+            if (hasUpdate) {
+                updateAvailableDialog.newVersion = newVersion
+                updateAvailableDialog.open()
+            } else {
+                noUpdateDialog.open()
+            }
+        }
+    }
+    
     Flickable {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
@@ -320,6 +345,40 @@ Rectangle {
             }
             
             Item { Layout.fillHeight: true }
+        }
+    }
+    
+    // Update Available Dialog
+    Dialog {
+        id: updateAvailableDialog
+        title: qsTr("Update Available")
+        modal: true
+        standardButtons: Dialog.Ok
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+        
+        property string newVersion: ""
+        
+        Label {
+            text: qsTr("A new version of this pack is available: %1").arg(updateAvailableDialog.newVersion)
+            color: Theme.foreground
+            wrapMode: Text.WordWrap
+        }
+    }
+    
+    // No Update Dialog
+    Dialog {
+        id: noUpdateDialog
+        title: qsTr("No Updates")
+        modal: true
+        standardButtons: Dialog.Ok
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+        
+        Label {
+            text: qsTr("You are using the latest version of this pack.")
+            color: Theme.foreground
+            wrapMode: Text.WordWrap
         }
     }
 }

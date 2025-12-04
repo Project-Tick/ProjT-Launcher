@@ -10,7 +10,21 @@ Rectangle {
     id: instanceSettingsPage
     color: Theme.background
     
-    property var vm: ProjT.instanceVM
+    property var vm: typeof ProjT !== "undefined" && ProjT ? ProjT.instanceVM : null
+    
+    // Helper functions for safe property access
+    function getBool(prop, defaultVal) {
+        return vm && typeof vm[prop] !== "undefined" ? vm[prop] : defaultVal
+    }
+    function getInt(prop, defaultVal) {
+        return vm && typeof vm[prop] !== "undefined" ? vm[prop] : defaultVal
+    }
+    function getString(prop, defaultVal) {
+        return vm && typeof vm[prop] !== "undefined" ? vm[prop] : defaultVal
+    }
+    function setProp(prop, value) {
+        if (vm && typeof vm[prop] !== "undefined") vm[prop] = value
+    }
     
     ScrollView {
         anchors.fill: parent
@@ -40,10 +54,8 @@ Rectangle {
                     CheckBox {
                         id: overrideJavaCheck
                         text: qsTr("Override global Java settings")
-                        checked: vm ? vm.overrideJava : false
-                        onCheckedChanged: {
-                            if (vm) vm.overrideJava = checked
-                        }
+                        checked: getBool("overrideJava", false)
+                        onCheckedChanged: setProp("overrideJava", checked)
                     }
                     
                     RowLayout {
@@ -57,25 +69,19 @@ Rectangle {
                         
                         TextField {
                             Layout.fillWidth: true
-                            text: vm ? vm.javaPath : ""
+                            text: getString("javaPath", "")
                             placeholderText: qsTr("Auto-detect")
-                            onTextChanged: {
-                                if (vm) vm.javaPath = text
-                            }
+                            onTextChanged: setProp("javaPath", text)
                         }
                         
                         Button {
                             text: qsTr("Browse")
-                            onClicked: {
-                                if (vm) vm.browseJavaPath()
-                            }
+                            onClicked: if (vm && vm.browseJavaPath) vm.browseJavaPath()
                         }
                         
                         Button {
                             text: qsTr("Auto")
-                            onClicked: {
-                                if (vm) vm.autoDetectJava()
-                            }
+                            onClicked: if (vm && vm.autoDetectJava) vm.autoDetectJava()
                         }
                     }
                 }
@@ -93,10 +99,8 @@ Rectangle {
                     CheckBox {
                         id: overrideMemoryCheck
                         text: qsTr("Override global memory settings")
-                        checked: vm ? vm.overrideMemory : false
-                        onCheckedChanged: {
-                            if (vm) vm.overrideMemory = checked
-                        }
+                        checked: getBool("overrideMemory", false)
+                        onCheckedChanged: setProp("overrideMemory", checked)
                     }
                     
                     GridLayout {
@@ -115,10 +119,8 @@ Rectangle {
                                 from: 256
                                 to: 65536
                                 stepSize: 128
-                                value: vm ? vm.minMemory : 512
-                                onValueChanged: {
-                                    if (vm) vm.minMemory = value
-                                }
+                                value: getInt("minMemory", 512)
+                                onValueChanged: setProp("minMemory", value)
                             }
                             Label {
                                 text: qsTr("MB")
@@ -137,10 +139,8 @@ Rectangle {
                                 from: 256
                                 to: 65536
                                 stepSize: 128
-                                value: vm ? vm.maxMemory : 4096
-                                onValueChanged: {
-                                    if (vm) vm.maxMemory = value
-                                }
+                                value: getInt("maxMemory", 4096)
+                                onValueChanged: setProp("maxMemory", value)
                             }
                             Label {
                                 text: qsTr("MB")
@@ -173,10 +173,8 @@ Rectangle {
                     CheckBox {
                         id: overrideWindowCheck
                         text: qsTr("Override global window settings")
-                        checked: vm ? vm.overrideWindow : false
-                        onCheckedChanged: {
-                            if (vm) vm.overrideWindow = checked
-                        }
+                        checked: getBool("overrideWindow", false)
+                        onCheckedChanged: setProp("overrideWindow", checked)
                     }
                     
                     GridLayout {
@@ -188,30 +186,24 @@ Rectangle {
                         SpinBox {
                             from: 640
                             to: 7680
-                            value: vm ? vm.windowWidth : 854
-                            onValueChanged: {
-                                if (vm) vm.windowWidth = value
-                            }
+                            value: getInt("windowWidth", 854)
+                            onValueChanged: setProp("windowWidth", value)
                         }
                         
                         Label { text: qsTr("Height:"); color: Theme.textPrimary }
                         SpinBox {
                             from: 480
                             to: 4320
-                            value: vm ? vm.windowHeight : 480
-                            onValueChanged: {
-                                if (vm) vm.windowHeight = value
-                            }
+                            value: getInt("windowHeight", 480)
+                            onValueChanged: setProp("windowHeight", value)
                         }
                     }
                     
                     CheckBox {
                         text: qsTr("Start maximized")
                         enabled: overrideWindowCheck.checked
-                        checked: vm ? vm.startMaximized : false
-                        onCheckedChanged: {
-                            if (vm) vm.startMaximized = checked
-                        }
+                        checked: getBool("startMaximized", false)
+                        onCheckedChanged: setProp("startMaximized", checked)
                     }
                 }
             }
@@ -228,22 +220,18 @@ Rectangle {
                     CheckBox {
                         id: overrideArgsCheck
                         text: qsTr("Override global JVM arguments")
-                        checked: vm ? vm.overrideJvmArgs : false
-                        onCheckedChanged: {
-                            if (vm) vm.overrideJvmArgs = checked
-                        }
+                        checked: getBool("overrideJvmArgs", false)
+                        onCheckedChanged: setProp("overrideJvmArgs", checked)
                     }
                     
                     TextArea {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 80
                         enabled: overrideArgsCheck.checked
-                        text: vm ? vm.jvmArgs : ""
+                        text: getString("jvmArgs", "")
                         placeholderText: qsTr("-XX:+UseG1GC -XX:+ParallelRefProcEnabled...")
                         wrapMode: TextEdit.Wrap
-                        onTextChanged: {
-                            if (vm) vm.jvmArgs = text
-                        }
+                        onTextChanged: setProp("jvmArgs", text)
                     }
                 }
             }
@@ -260,22 +248,18 @@ Rectangle {
                     CheckBox {
                         id: overrideEnvCheck
                         text: qsTr("Override global environment variables")
-                        checked: vm ? vm.overrideEnv : false
-                        onCheckedChanged: {
-                            if (vm) vm.overrideEnv = checked
-                        }
+                        checked: getBool("overrideEnv", false)
+                        onCheckedChanged: setProp("overrideEnv", checked)
                     }
                     
                     TextArea {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 60
                         enabled: overrideEnvCheck.checked
-                        text: vm ? vm.envVars : ""
+                        text: getString("envVars", "")
                         placeholderText: qsTr("VAR=value (one per line)")
                         wrapMode: TextEdit.Wrap
-                        onTextChanged: {
-                            if (vm) vm.envVars = text
-                        }
+                        onTextChanged: setProp("envVars", text)
                     }
                 }
             }
@@ -292,10 +276,8 @@ Rectangle {
                     CheckBox {
                         id: overrideCmdsCheck
                         text: qsTr("Override global custom commands")
-                        checked: vm ? vm.overrideCommands : false
-                        onCheckedChanged: {
-                            if (vm) vm.overrideCommands = checked
-                        }
+                        checked: getBool("overrideCommands", false)
+                        onCheckedChanged: setProp("overrideCommands", checked)
                     }
                     
                     GridLayout {
@@ -306,28 +288,22 @@ Rectangle {
                         Label { text: qsTr("Pre-launch:"); color: Theme.textPrimary }
                         TextField {
                             Layout.fillWidth: true
-                            text: vm ? vm.preLaunchCommand : ""
-                            onTextChanged: {
-                                if (vm) vm.preLaunchCommand = text
-                            }
+                            text: getString("preLaunchCommand", "")
+                            onTextChanged: setProp("preLaunchCommand", text)
                         }
                         
                         Label { text: qsTr("Wrapper:"); color: Theme.textPrimary }
                         TextField {
                             Layout.fillWidth: true
-                            text: vm ? vm.wrapperCommand : ""
-                            onTextChanged: {
-                                if (vm) vm.wrapperCommand = text
-                            }
+                            text: getString("wrapperCommand", "")
+                            onTextChanged: setProp("wrapperCommand", text)
                         }
                         
                         Label { text: qsTr("Post-exit:"); color: Theme.textPrimary }
                         TextField {
                             Layout.fillWidth: true
-                            text: vm ? vm.postExitCommand : ""
-                            onTextChanged: {
-                                if (vm) vm.postExitCommand = text
-                            }
+                            text: getString("postExitCommand", "")
+                            onTextChanged: setProp("postExitCommand", text)
                         }
                     }
                 }
@@ -344,26 +320,20 @@ Rectangle {
                     
                     CheckBox {
                         text: qsTr("Close launcher when game starts")
-                        checked: vm ? vm.closeOnLaunch : false
-                        onCheckedChanged: {
-                            if (vm) vm.closeOnLaunch = checked
-                        }
+                        checked: getBool("closeOnLaunch", false)
+                        onCheckedChanged: setProp("closeOnLaunch", checked)
                     }
                     
                     CheckBox {
                         text: qsTr("Show console while game is running")
-                        checked: vm ? vm.showConsole : false
-                        onCheckedChanged: {
-                            if (vm) vm.showConsole = checked
-                        }
+                        checked: getBool("showConsole", false)
+                        onCheckedChanged: setProp("showConsole", checked)
                     }
                     
                     CheckBox {
                         text: qsTr("Automatically close console when game exits")
-                        checked: vm ? vm.autoCloseConsole : true
-                        onCheckedChanged: {
-                            if (vm) vm.autoCloseConsole = checked
-                        }
+                        checked: getBool("autoCloseConsole", true)
+                        onCheckedChanged: setProp("autoCloseConsole", checked)
                     }
                 }
             }

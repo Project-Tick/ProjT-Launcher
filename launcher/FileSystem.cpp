@@ -702,13 +702,49 @@ bool deletePath(QString path)
     return err.value() == 0;
 }
 
+#if defined(Q_OS_LINUX) && defined(WITH_QTDBUS)
+#include <QDBusMessage>
+#include <QDBusConnection>
+#include <QDBusUnixFileDescriptor>
+#include <fcntl.h>
+#include <unistd.h>
+#endif
+
 bool trash(QString path, QString* pathInTrash)
 {
-    // TODO: Flatpak trash desteği eklenmeli. org.freedesktop.portal.Trash D-Bus arayüzü ile dosyalar çöp kutusuna taşınabilir.
-    // See: https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Trash.html
-    // This requires D-Bus integration with the Trash portal for proper sandboxed file deletion
-    if (DesktopServices::isFlatpak())
+#if defined(Q_OS_LINUX)
+    if (DesktopServices::isFlatpak()) {
+#ifdef WITH_QTDBUS
+        // Implementation using org.freedesktop.portal.Trash
+        QDBusMessage message = QDBusMessage::createCallMessage(
+            "org.freedesktop.portal.Desktop",
+            "/org/freedesktop/portal/desktop",
+            "org.freedesktop.portal.Trash",
+            "TrashFile"
+        );
+
+        // We need to open the file and pass the file descriptor
+        int fd = open(QFile::encodeName(path).constData(), O_RDWR);
+        if (fd != -1) {
+            message << QDBusUnixFileDescriptor(fd);
+            QDBusMessage reply = QDBusConnection::sessionBus().call(message);
+            close(fd);
+
+            if (reply.type() != QDBusMessage::ErrorMessage) {
+                // The portal returns 0 on success, 1 on user cancelled, 2 on error
+                if (!reply.arguments().isEmpty() && reply.arguments().first().toInt() == 0) {
+                     return true;
+                }
+            } else {
+                qWarning() << "Flatpak trash failed:" << reply.errorMessage();
+            }
+        } else {
+            qWarning() << "Failed to open file for trashing:" << path;
+        }
+#endif
         return false;
+    }
+#endif
 #if defined Q_OS_WIN32
     if (IsWindowsServer())
         return false;
