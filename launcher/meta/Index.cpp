@@ -60,18 +60,18 @@ QVariant Index::data(const QModelIndex& index, int role) const
 
     VersionList::Ptr list = m_lists.at(index.row());
     switch (role) {
-        case Qt::DisplayRole:
-            if (index.column() == 0) {
-                return list->humanReadable();
-            } else {
-                break;
-            }
-        case UidRole:
-            return list->uid();
-        case NameRole:
-            return list->name();
-        case ListPtrRole:
-            return QVariant::fromValue(list);
+    case Qt::DisplayRole:
+        if (index.column() == 0) {
+            return list->humanReadable();
+        } else {
+            break;
+        }
+    case UidRole:
+        return list->uid();
+    case NameRole:
+        return list->name();
+    case ListPtrRole:
+        return QVariant::fromValue(list);
     }
     return QVariant();
 }

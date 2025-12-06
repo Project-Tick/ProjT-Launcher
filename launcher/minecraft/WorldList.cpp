@@ -206,114 +206,114 @@ QVariant WorldList::data(const QModelIndex& index, int role) const
 
     auto& world = m_worlds[row];
     switch (role) {
-        case Qt::DisplayRole:
-            switch (column) {
-                case NameColumn:
-                    return world.name();
-
-                case GameModeColumn:
-                    return world.gameType().toTranslatedString();
-
-                case LastPlayedColumn:
-                    return world.lastPlayed();
-
-                case SizeColumn:
-                    return locale.formattedDataSize(world.bytes());
-
-                case InfoColumn:
-                    if (world.isSymLinkUnder(instDirPath())) {
-                        return tr("This world is symbolically linked from elsewhere.");
-                    }
-                    if (world.isMoreThanOneHardLink()) {
-                        return tr("\nThis world is hard linked elsewhere.");
-                    }
-                    return "";
-                default:
-                    return QVariant();
-            }
-
-        case Qt::UserRole:
-            if (column == SizeColumn)
-                return QVariant::fromValue<qlonglong>(world.bytes());
-            return data(index, Qt::DisplayRole);
-
-        case Qt::ToolTipRole: {
-            if (column == InfoColumn) {
-                if (world.isSymLinkUnder(instDirPath())) {
-                    return tr("Warning: This world is symbolically linked from elsewhere. Editing it will also change the original."
-                              "\nCanonical Path: %1")
-                        .arg(world.canonicalFilePath());
-                }
-                if (world.isMoreThanOneHardLink()) {
-                    return tr("Warning: This world is hard linked elsewhere. Editing it will also change the original.");
-                }
-            }
-            return world.folderName();
-        }
-        case ObjectRole: {
-            return QVariant::fromValue<void*>((void*)&world);
-        }
-        case FolderRole: {
-            return QDir::toNativeSeparators(dir().absoluteFilePath(world.folderName()));
-        }
-        case SeedRole: {
-            return QVariant::fromValue<qlonglong>(world.seed());
-        }
-        case NameRole: {
+    case Qt::DisplayRole:
+        switch (column) {
+        case NameColumn:
             return world.name();
-        }
-        case LastPlayedRole: {
+
+        case GameModeColumn:
+            return world.gameType().toTranslatedString();
+
+        case LastPlayedColumn:
             return world.lastPlayed();
-        }
-        case SizeRole: {
-            return QVariant::fromValue<qlonglong>(world.bytes());
-        }
-        case IconFileRole: {
-            return world.iconFile();
-        }
+
+        case SizeColumn:
+            return locale.formattedDataSize(world.bytes());
+
+        case InfoColumn:
+            if (world.isSymLinkUnder(instDirPath())) {
+                return tr("This world is symbolically linked from elsewhere.");
+            }
+            if (world.isMoreThanOneHardLink()) {
+                return tr("\nThis world is hard linked elsewhere.");
+            }
+            return "";
         default:
             return QVariant();
+        }
+
+    case Qt::UserRole:
+        if (column == SizeColumn)
+            return QVariant::fromValue<qlonglong>(world.bytes());
+        return data(index, Qt::DisplayRole);
+
+    case Qt::ToolTipRole: {
+        if (column == InfoColumn) {
+            if (world.isSymLinkUnder(instDirPath())) {
+                return tr("Warning: This world is symbolically linked from elsewhere. Editing it will also change the original."
+                          "\nCanonical Path: %1")
+                    .arg(world.canonicalFilePath());
+            }
+            if (world.isMoreThanOneHardLink()) {
+                return tr("Warning: This world is hard linked elsewhere. Editing it will also change the original.");
+            }
+        }
+        return world.folderName();
+    }
+    case ObjectRole: {
+        return QVariant::fromValue<void*>((void*)&world);
+    }
+    case FolderRole: {
+        return QDir::toNativeSeparators(dir().absoluteFilePath(world.folderName()));
+    }
+    case SeedRole: {
+        return QVariant::fromValue<qlonglong>(world.seed());
+    }
+    case NameRole: {
+        return world.name();
+    }
+    case LastPlayedRole: {
+        return world.lastPlayed();
+    }
+    case SizeRole: {
+        return QVariant::fromValue<qlonglong>(world.bytes());
+    }
+    case IconFileRole: {
+        return world.iconFile();
+    }
+    default:
+        return QVariant();
     }
 }
 
 QVariant WorldList::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, int role) const
 {
     switch (role) {
-        case Qt::DisplayRole:
-            switch (section) {
-                case NameColumn:
-                    return tr("Name");
-                case GameModeColumn:
-                    return tr("Game Mode");
-                case LastPlayedColumn:
-                    return tr("Last Played");
-                case SizeColumn:
-                    //: World size on disk
-                    return tr("Size");
-                case InfoColumn:
-                    //: special warnings?
-                    return tr("Info");
-                default:
-                    return QVariant();
-            }
-
-        case Qt::ToolTipRole:
-            switch (section) {
-                case NameColumn:
-                    return tr("The name of the world.");
-                case GameModeColumn:
-                    return tr("Game mode of the world.");
-                case LastPlayedColumn:
-                    return tr("Date and time the world was last played.");
-                case SizeColumn:
-                    return tr("Size of the world on disk.");
-                case InfoColumn:
-                    return tr("Information and warnings about the world.");
-                default:
-                    return QVariant();
-            }
+    case Qt::DisplayRole:
+        switch (section) {
+        case NameColumn:
+            return tr("Name");
+        case GameModeColumn:
+            return tr("Game Mode");
+        case LastPlayedColumn:
+            return tr("Last Played");
+        case SizeColumn:
+            //: World size on disk
+            return tr("Size");
+        case InfoColumn:
+            //: special warnings?
+            return tr("Info");
         default:
             return QVariant();
+        }
+
+    case Qt::ToolTipRole:
+        switch (section) {
+        case NameColumn:
+            return tr("The name of the world.");
+        case GameModeColumn:
+            return tr("Game mode of the world.");
+        case LastPlayedColumn:
+            return tr("Date and time the world was last played.");
+        case SizeColumn:
+            return tr("Size of the world on disk.");
+        case InfoColumn:
+            return tr("Information and warnings about the world.");
+        default:
+            return QVariant();
+        }
+    default:
+        return QVariant();
     }
 }
 

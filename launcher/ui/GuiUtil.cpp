@@ -192,12 +192,8 @@ void GuiUtil::setClipboardText(QString text)
     QApplication::clipboard()->setText(text);
 }
 
-static QStringList BrowseForFileInternal(QString context,
-                                         QString caption,
-                                         QString filter,
-                                         QString defaultPath,
-                                         QWidget* parentWidget,
-                                         bool single)
+static QStringList BrowseForFileInternal(
+    QString context, QString caption, QString filter, QString defaultPath, QWidget* parentWidget, bool single)
 {
     static QMap<QString, QString> savedPaths;
 

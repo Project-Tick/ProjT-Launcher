@@ -711,33 +711,33 @@ void FlameCreationTask::validateOtherResources(QEventLoop& loop)
         QString worldPath;
 
         switch (type) {
-            case ModPlatform::ResourceType::Mod:
-                validatePath(fileName, targetFolder, "mods");
-                zipMods.push_back(fileName);
-                break;
-            case ModPlatform::ResourceType::ResourcePack:
-                validatePath(fileName, targetFolder, "resourcepacks");
-                break;
-            case ModPlatform::ResourceType::TexturePack:
-                validatePath(fileName, targetFolder, "texturepacks");
-                break;
-            case ModPlatform::ResourceType::DataPack:
-                validatePath(fileName, targetFolder, "datapacks");
-                break;
-            case ModPlatform::ResourceType::ShaderPack:
-                // in theory flame API can't do this but who knows, that *may* change ?
-                // better to handle it if it *does* occur in the future
-                validatePath(fileName, targetFolder, "shaderpacks");
-                break;
-            case ModPlatform::ResourceType::World:
-                worldPath = validatePath(fileName, targetFolder, "saves");
-                installWorld(worldPath);
-                break;
-            case ModPlatform::ResourceType::Unknown:
-            /* fallthrough */
-            default:
-                qDebug() << "Can't Identify" << fileName << "at" << localPath << ", leaving it where it is.";
-                break;
+        case ModPlatform::ResourceType::Mod:
+            validatePath(fileName, targetFolder, "mods");
+            zipMods.push_back(fileName);
+            break;
+        case ModPlatform::ResourceType::ResourcePack:
+            validatePath(fileName, targetFolder, "resourcepacks");
+            break;
+        case ModPlatform::ResourceType::TexturePack:
+            validatePath(fileName, targetFolder, "texturepacks");
+            break;
+        case ModPlatform::ResourceType::DataPack:
+            validatePath(fileName, targetFolder, "datapacks");
+            break;
+        case ModPlatform::ResourceType::ShaderPack:
+            // in theory flame API can't do this but who knows, that *may* change ?
+            // better to handle it if it *does* occur in the future
+            validatePath(fileName, targetFolder, "shaderpacks");
+            break;
+        case ModPlatform::ResourceType::World:
+            worldPath = validatePath(fileName, targetFolder, "saves");
+            installWorld(worldPath);
+            break;
+        case ModPlatform::ResourceType::Unknown:
+        /* fallthrough */
+        default:
+            qDebug() << "Can't Identify" << fileName << "at" << localPath << ", leaving it where it is.";
+            break;
         }
     }
     // TODO: Diğer kaynak tipleriyle de çalışacak şekilde genişletilmeli.

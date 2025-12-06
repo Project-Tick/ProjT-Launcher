@@ -113,18 +113,18 @@ void LauncherSettingsViewModel::loadFromApplication()
     // Proxy Page
     int proxyTypeInt = s->get("ProxyType").toInt();
     switch (proxyTypeInt) {
-        case 1:
-            m_proxyType = "system";
-            break;
-        case 2:
-            m_proxyType = "http";
-            break;
-        case 3:
-            m_proxyType = "socks5";
-            break;
-        default:
-            m_proxyType = "none";
-            break;
+    case 1:
+        m_proxyType = "system";
+        break;
+    case 2:
+        m_proxyType = "http";
+        break;
+    case 3:
+        m_proxyType = "socks5";
+        break;
+    default:
+        m_proxyType = "none";
+        break;
     }
     m_proxyHost = s->get("ProxyAddr").toString();
     m_proxyPort = s->get("ProxyPort").toInt();

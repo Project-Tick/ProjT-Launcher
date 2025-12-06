@@ -226,30 +226,30 @@ QVariantMap AccountsViewModel::getAccountInfo(int index) const
         info["ownsMinecraft"] = account->ownsMinecraft();
 
         switch (account->accountState()) {
-            case AccountState::Unchecked:
-                info["status"] = "unchecked";
-                break;
-            case AccountState::Offline:
-                info["status"] = "offline";
-                break;
-            case AccountState::Working:
-                info["status"] = "working";
-                break;
-            case AccountState::Online:
-                info["status"] = "online";
-                break;
-            case AccountState::Disabled:
-                info["status"] = "disabled";
-                break;
-            case AccountState::Errored:
-                info["status"] = "error";
-                break;
-            case AccountState::Expired:
-                info["status"] = "expired";
-                break;
-            case AccountState::Gone:
-                info["status"] = "gone";
-                break;
+        case AccountState::Unchecked:
+            info["status"] = "unchecked";
+            break;
+        case AccountState::Offline:
+            info["status"] = "offline";
+            break;
+        case AccountState::Working:
+            info["status"] = "working";
+            break;
+        case AccountState::Online:
+            info["status"] = "online";
+            break;
+        case AccountState::Disabled:
+            info["status"] = "disabled";
+            break;
+        case AccountState::Errored:
+            info["status"] = "error";
+            break;
+        case AccountState::Expired:
+            info["status"] = "expired";
+            break;
+        case AccountState::Gone:
+            info["status"] = "gone";
+            break;
         }
     }
 
@@ -287,24 +287,24 @@ QString AccountsViewModel::getAccountStatus(int index) const
         return QString();
 
     switch (account->accountState()) {
-        case AccountState::Unchecked:
-            return tr("Unchecked");
-        case AccountState::Offline:
-            return tr("Offline");
-        case AccountState::Working:
-            return tr("Working...");
-        case AccountState::Online:
-            return tr("Online");
-        case AccountState::Disabled:
-            return tr("Disabled");
-        case AccountState::Errored:
-            return tr("Error");
-        case AccountState::Expired:
-            return tr("Expired");
-        case AccountState::Gone:
-            return tr("Gone");
-        default:
-            return tr("Unknown");
+    case AccountState::Unchecked:
+        return tr("Unchecked");
+    case AccountState::Offline:
+        return tr("Offline");
+    case AccountState::Working:
+        return tr("Working...");
+    case AccountState::Online:
+        return tr("Online");
+    case AccountState::Disabled:
+        return tr("Disabled");
+    case AccountState::Errored:
+        return tr("Error");
+    case AccountState::Expired:
+        return tr("Expired");
+    case AccountState::Gone:
+        return tr("Gone");
+    default:
+        return tr("Unknown");
     }
 }
 

@@ -141,11 +141,11 @@ void VersionListView::paintEvent(QPaintEvent* event)
 QString VersionListView::currentEmptyString() const
 {
     switch (m_emptyMode) {
-        default:
-        case VersionListView::String:
-            return m_emptyString;
-        case VersionListView::ErrorString:
-            return m_emptyErrorString;
+    default:
+    case VersionListView::String:
+        return m_emptyString;
+    case VersionListView::ErrorString:
+        return m_emptyErrorString;
     }
 }
 

@@ -169,12 +169,12 @@ using PFSCTL_SET_INTEGRITY_INFORMATION_BUFFER = _FSCTL_SET_INTEGRITY_INFORMATION
 #endif
 
 #ifndef FSCTL_GET_INTEGRITY_INFORMATION
-#define FSCTL_GET_INTEGRITY_INFORMATION \
+#define FSCTL_GET_INTEGRITY_INFORMATION                                                                                                    \
     CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 159, METHOD_BUFFERED, FILE_ANY_ACCESS)  // FSCTL_GET_INTEGRITY_INFORMATION_BUFFER
 #endif
 
 #ifndef FSCTL_SET_INTEGRITY_INFORMATION
-#define FSCTL_SET_INTEGRITY_INFORMATION \
+#define FSCTL_SET_INTEGRITY_INFORMATION                                                                                                    \
     CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 160, METHOD_BUFFERED, FILE_READ_DATA | FILE_WRITE_DATA)  // FSCTL_SET_INTEGRITY_INFORMATION_BUFFER
 #endif
 
@@ -877,34 +877,34 @@ QString RemoveInvalidPathChars(QString path, QChar replaceWith)
 
     // the null character is ignored in this check as it was not a problem until now
     switch (statFS(path).fsType) {
-        case FilesystemType::FAT:  // similar to NTFS
-        /* fallthrough */
-        case FilesystemType::NTFS:
-        /* fallthrough */
-        case FilesystemType::REFS:  // similar to NTFS(should be available only on windows)
-            invalidChars += BAD_NTFS_CHARS;
-            break;
-        // case FilesystemType::EXT:
-        // case FilesystemType::EXT_2_OLD:
-        // case FilesystemType::EXT_2_3_4:
-        // case FilesystemType::XFS:
-        // case FilesystemType::BTRFS:
-        // case FilesystemType::NFS:
-        // case FilesystemType::ZFS:
-        case FilesystemType::APFS:
-        /* fallthrough */
-        case FilesystemType::HFS:
-        /* fallthrough */
-        case FilesystemType::HFSPLUS:
-        /* fallthrough */
-        case FilesystemType::HFSX:
-            invalidChars += BAD_HFS_CHARS;
-            break;
-        // case FilesystemType::FUSEBLK:
-        // case FilesystemType::F2FS:
-        // case FilesystemType::UNKNOWN:
-        default:
-            break;
+    case FilesystemType::FAT:  // similar to NTFS
+    /* fallthrough */
+    case FilesystemType::NTFS:
+    /* fallthrough */
+    case FilesystemType::REFS:  // similar to NTFS(should be available only on windows)
+        invalidChars += BAD_NTFS_CHARS;
+        break;
+    // case FilesystemType::EXT:
+    // case FilesystemType::EXT_2_OLD:
+    // case FilesystemType::EXT_2_3_4:
+    // case FilesystemType::XFS:
+    // case FilesystemType::BTRFS:
+    // case FilesystemType::NFS:
+    // case FilesystemType::ZFS:
+    case FilesystemType::APFS:
+    /* fallthrough */
+    case FilesystemType::HFS:
+    /* fallthrough */
+    case FilesystemType::HFSPLUS:
+    /* fallthrough */
+    case FilesystemType::HFSX:
+        invalidChars += BAD_HFS_CHARS;
+        break;
+    // case FilesystemType::FUSEBLK:
+    // case FilesystemType::F2FS:
+    // case FilesystemType::UNKNOWN:
+    default:
+        break;
     }
 
     if (invalidChars.size() != 0) {

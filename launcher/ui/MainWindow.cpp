@@ -853,23 +853,23 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
             secretEventFilter->input(ev);
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(ev);
             switch (keyEvent->key()) {
-                    /*
+                /*
                 case Qt::Key_Enter:
                 case Qt::Key_Return:
                     activateInstance(m_selectedInstance);
                     return true;
                     */
-                case Qt::Key_Delete:
-                    on_actionDeleteInstance_triggered();
-                    return true;
-                case Qt::Key_F5:
-                    refreshInstances();
-                    return true;
-                case Qt::Key_F2:
-                    on_actionRenameInstance_triggered();
-                    return true;
-                default:
-                    break;
+            case Qt::Key_Delete:
+                on_actionDeleteInstance_triggered();
+                return true;
+            case Qt::Key_F5:
+                refreshInstances();
+                return true;
+            case Qt::Key_F2:
+                on_actionRenameInstance_triggered();
+                return true;
+            default:
+                break;
             }
         }
     }
@@ -1146,28 +1146,28 @@ void MainWindow::processURLs(QList<QUrl> urls)
         auto minecraftInst = std::dynamic_pointer_cast<MinecraftInstance>(inst);
 
         switch (type) {
-            case ModPlatform::ResourceType::ResourcePack:
-                minecraftInst->resourcePackList()->installResourceWithFlameMetadata(localFileName, version);
-                break;
-            case ModPlatform::ResourceType::TexturePack:
-                minecraftInst->texturePackList()->installResourceWithFlameMetadata(localFileName, version);
-                break;
-            case ModPlatform::ResourceType::DataPack:
-                qWarning() << "Importing of Data Packs not supported at this time. Ignoring" << localFileName;
-                break;
-            case ModPlatform::ResourceType::Mod:
-                minecraftInst->loaderModList()->installResourceWithFlameMetadata(localFileName, version);
-                break;
-            case ModPlatform::ResourceType::ShaderPack:
-                minecraftInst->shaderPackList()->installResourceWithFlameMetadata(localFileName, version);
-                break;
-            case ModPlatform::ResourceType::World:
-                minecraftInst->worldList()->installWorld(localFileInfo);
-                break;
-            case ModPlatform::ResourceType::Unknown:
-            default:
-                qDebug() << "Can't Identify" << localFileName << "Ignoring it.";
-                break;
+        case ModPlatform::ResourceType::ResourcePack:
+            minecraftInst->resourcePackList()->installResourceWithFlameMetadata(localFileName, version);
+            break;
+        case ModPlatform::ResourceType::TexturePack:
+            minecraftInst->texturePackList()->installResourceWithFlameMetadata(localFileName, version);
+            break;
+        case ModPlatform::ResourceType::DataPack:
+            qWarning() << "Importing of Data Packs not supported at this time. Ignoring" << localFileName;
+            break;
+        case ModPlatform::ResourceType::Mod:
+            minecraftInst->loaderModList()->installResourceWithFlameMetadata(localFileName, version);
+            break;
+        case ModPlatform::ResourceType::ShaderPack:
+            minecraftInst->shaderPackList()->installResourceWithFlameMetadata(localFileName, version);
+            break;
+        case ModPlatform::ResourceType::World:
+            minecraftInst->worldList()->installWorld(localFileInfo);
+            break;
+        case ModPlatform::ResourceType::Unknown:
+        default:
+            qDebug() << "Can't Identify" << localFileName << "Ignoring it.";
+            break;
         }
     }
 }

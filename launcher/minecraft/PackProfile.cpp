@@ -552,40 +552,40 @@ QVariant PackProfile::data(const QModelIndex& index, int role) const
     auto patch = d->components.at(row);
 
     switch (role) {
-        case Qt::CheckStateRole: {
-            if (column == NameColumn)
-                return patch->isEnabled() ? Qt::Checked : Qt::Unchecked;
-            return QVariant();
-        }
-        case Qt::DisplayRole: {
-            switch (column) {
-                case NameColumn:
-                    return patch->getName();
-                case VersionColumn: {
-                    if (patch->isCustom()) {
-                        return QString("%1 (Custom)").arg(patch->getVersion());
-                    } else {
-                        return patch->getVersion();
-                    }
-                }
-                default:
-                    return QVariant();
+    case Qt::CheckStateRole: {
+        if (column == NameColumn)
+            return patch->isEnabled() ? Qt::Checked : Qt::Unchecked;
+        return QVariant();
+    }
+    case Qt::DisplayRole: {
+        switch (column) {
+        case NameColumn:
+            return patch->getName();
+        case VersionColumn: {
+            if (patch->isCustom()) {
+                return QString("%1 (Custom)").arg(patch->getVersion());
+            } else {
+                return patch->getVersion();
             }
         }
-        case Qt::DecorationRole: {
-            if (column == NameColumn) {
-                auto severity = patch->getProblemSeverity();
-                switch (severity) {
-                    case ProblemSeverity::Warning:
-                        return "warning";
-                    case ProblemSeverity::Error:
-                        return "error";
-                    default:
-                        return QVariant();
-                }
-            }
+        default:
             return QVariant();
         }
+    }
+    case Qt::DecorationRole: {
+        if (column == NameColumn) {
+            auto severity = patch->getProblemSeverity();
+            switch (severity) {
+            case ProblemSeverity::Warning:
+                return "warning";
+            case ProblemSeverity::Error:
+                return "error";
+            default:
+                return QVariant();
+            }
+        }
+        return QVariant();
+    }
     }
     return QVariant();
 }
@@ -610,12 +610,12 @@ QVariant PackProfile::headerData(int section, Qt::Orientation orientation, int r
     if (orientation == Qt::Horizontal) {
         if (role == Qt::DisplayRole) {
             switch (section) {
-                case NameColumn:
-                    return tr("Name");
-                case VersionColumn:
-                    return tr("Version");
-                default:
-                    return QVariant();
+            case NameColumn:
+                return tr("Name");
+            case VersionColumn:
+                return tr("Version");
+            default:
+                return QVariant();
             }
         }
     }

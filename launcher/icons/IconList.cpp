@@ -331,14 +331,14 @@ QVariant IconList::data(const QModelIndex& index, int role) const
         return {};
 
     switch (role) {
-        case Qt::DecorationRole:
-            return m_icons[row].icon();
-        case Qt::DisplayRole:
-            return m_icons[row].name();
-        case Qt::UserRole:
-            return m_icons[row].m_key;
-        default:
-            return {};
+    case Qt::DecorationRole:
+        return m_icons[row].icon();
+    case Qt::DisplayRole:
+        return m_icons[row].name();
+    case Qt::UserRole:
+        return m_icons[row].m_key;
+    default:
+        return {};
     }
 }
 

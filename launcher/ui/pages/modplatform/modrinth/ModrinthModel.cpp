@@ -102,39 +102,39 @@ auto ModpackListModel::data(const QModelIndex& index, int role) const -> QVarian
 
     auto pack = m_modpacks.at(pos);
     switch (role) {
-        case Qt::ToolTipRole: {
-            if (pack->description.length() > 100) {
-                // some magic to prevent to long tooltips and replace html linebreaks
-                QString edit = pack->description.left(97);
-                edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
-                return edit;
-            }
-            return pack->description;
+    case Qt::ToolTipRole: {
+        if (pack->description.length() > 100) {
+            // some magic to prevent to long tooltips and replace html linebreaks
+            QString edit = pack->description.left(97);
+            edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
+            return edit;
         }
-        case Qt::DecorationRole: {
-            if (m_logoMap.contains(pack->logoName))
-                return m_logoMap.value(pack->logoName);
+        return pack->description;
+    }
+    case Qt::DecorationRole: {
+        if (m_logoMap.contains(pack->logoName))
+            return m_logoMap.value(pack->logoName);
 
-            QIcon icon = QIcon::fromTheme("screenshot-placeholder");
-            ((ModpackListModel*)this)->requestLogo(pack->logoName, pack->logoUrl);
-            return icon;
-        }
-        case Qt::UserRole: {
-            QVariant v;
-            v.setValue(pack);
-            return v;
-        }
-        case Qt::SizeHintRole:
-            return QSize(0, 58);
-        // Custom data
-        case UserDataTypes::TITLE:
-            return pack->name;
-        case UserDataTypes::DESCRIPTION:
-            return pack->description;
-        case UserDataTypes::INSTALLED:
-            return false;
-        default:
-            break;
+        QIcon icon = QIcon::fromTheme("screenshot-placeholder");
+        ((ModpackListModel*)this)->requestLogo(pack->logoName, pack->logoUrl);
+        return icon;
+    }
+    case Qt::UserRole: {
+        QVariant v;
+        v.setValue(pack);
+        return v;
+    }
+    case Qt::SizeHintRole:
+        return QSize(0, 58);
+    // Custom data
+    case UserDataTypes::TITLE:
+        return pack->name;
+    case UserDataTypes::DESCRIPTION:
+        return pack->description;
+    case UserDataTypes::INSTALLED:
+        return false;
+    default:
+        break;
     }
 
     return {};
@@ -217,17 +217,17 @@ void ModpackListModel::refresh()
 static auto sortFromIndex(int index) -> QString
 {
     switch (index) {
-        default:
-        case 0:
-            return "relevance";
-        case 1:
-            return "downloads";
-        case 2:
-            return "follows";
-        case 3:
-            return "newest";
-        case 4:
-            return "updated";
+    default:
+    case 0:
+        return "relevance";
+    case 1:
+        return "downloads";
+    case 2:
+        return "follows";
+    case 3:
+        return "newest";
+    case 4:
+        return "updated";
     }
 }
 

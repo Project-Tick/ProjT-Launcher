@@ -111,7 +111,9 @@ bool shouldStopOnConsoleOverflow(SettingsObjectPtr settings);
  * To create a new instance type, create a new class inheriting from this class
  * and implement the pure virtual functions.
  */
-class BaseInstance : public QObject, public std::enable_shared_from_this<BaseInstance> {
+class BaseInstance
+    : public QObject
+    , public std::enable_shared_from_this<BaseInstance> {
     Q_OBJECT
    protected:
     /// no-touchy!

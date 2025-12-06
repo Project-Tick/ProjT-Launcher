@@ -74,7 +74,9 @@ struct Server;
 class ServersModel;
 class MinecraftInstance;
 
-class ServersPage : public QMainWindow, public BasePage {
+class ServersPage
+    : public QMainWindow
+    , public BasePage {
     Q_OBJECT
 
    public:

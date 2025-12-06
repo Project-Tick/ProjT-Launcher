@@ -839,16 +839,16 @@ void InstanceListViewModel::createShortcut(const ShortcutUtils::Shortcut& shortc
 {
     setBusy(true, tr("Creating shortcut"));
     switch (shortcut.target) {
-        case ShortcutTarget::Desktop:
-            ShortcutUtils::createInstanceShortcutOnDesktop(shortcut);
-            break;
-        case ShortcutTarget::Applications:
-            ShortcutUtils::createInstanceShortcutInApplications(shortcut);
-            break;
-        case ShortcutTarget::Other:
-        default:
-            ShortcutUtils::createInstanceShortcutInOther(shortcut);
-            break;
+    case ShortcutTarget::Desktop:
+        ShortcutUtils::createInstanceShortcutOnDesktop(shortcut);
+        break;
+    case ShortcutTarget::Applications:
+        ShortcutUtils::createInstanceShortcutInApplications(shortcut);
+        break;
+    case ShortcutTarget::Other:
+    default:
+        ShortcutUtils::createInstanceShortcutInOther(shortcut);
+        break;
     }
     setBusy(false);
 }

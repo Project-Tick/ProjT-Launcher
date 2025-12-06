@@ -39,29 +39,29 @@
 class QSortFilterProxyModel;
 
 /* A macro to define useful functions to handle Resource* -> T* more easily on derived classes */
-#define RESOURCE_HELPERS(T)                                                                      \
-    T& at(int index) { return *static_cast<T*>(m_resources[index].get()); }                      \
-    const T& at(int index) const { return *static_cast<const T*>(m_resources.at(index).get()); } \
-    QList<T*> selected##T##s(const QModelIndexList& indexes)                                     \
-    {                                                                                            \
-        QList<T*> result;                                                                        \
-        for (const QModelIndex& index : indexes) {                                               \
-            if (index.column() != 0)                                                             \
-                continue;                                                                        \
-                                                                                                 \
-            result.append(&at(index.row()));                                                     \
-        }                                                                                        \
-        return result;                                                                           \
-    }                                                                                            \
-    QList<T*> all##T##s()                                                                        \
-    {                                                                                            \
-        QList<T*> result;                                                                        \
-        result.reserve(m_resources.size());                                                      \
-                                                                                                 \
-        for (const Resource::Ptr& resource : m_resources)                                        \
-            result.append(static_cast<T*>(resource.get()));                                      \
-                                                                                                 \
-        return result;                                                                           \
+#define RESOURCE_HELPERS(T)                                                                                                                \
+    T& at(int index) { return *static_cast<T*>(m_resources[index].get()); }                                                                \
+    const T& at(int index) const { return *static_cast<const T*>(m_resources.at(index).get()); }                                           \
+    QList<T*> selected##T##s(const QModelIndexList& indexes)                                                                               \
+    {                                                                                                                                      \
+        QList<T*> result;                                                                                                                  \
+        for (const QModelIndex& index : indexes) {                                                                                         \
+            if (index.column() != 0)                                                                                                       \
+                continue;                                                                                                                  \
+                                                                                                                                           \
+            result.append(&at(index.row()));                                                                                               \
+        }                                                                                                                                  \
+        return result;                                                                                                                     \
+    }                                                                                                                                      \
+    QList<T*> all##T##s()                                                                                                                  \
+    {                                                                                                                                      \
+        QList<T*> result;                                                                                                                  \
+        result.reserve(m_resources.size());                                                                                                \
+                                                                                                                                           \
+        for (const Resource::Ptr& resource : m_resources)                                                                                  \
+            result.append(static_cast<T*>(resource.get()));                                                                                \
+                                                                                                                                           \
+        return result;                                                                                                                     \
     }
 
 /** A basic model for external resources.

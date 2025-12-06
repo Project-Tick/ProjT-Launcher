@@ -127,11 +127,11 @@ MetadataVersion parseFormatVersion(const QJsonObject& obj, bool required)
         return MetadataVersion::Invalid;
     }
     switch (obj.value("formatVersion").toInt()) {
-        case 0:
-        case 1:
-            return MetadataVersion::InitialRelease;
-        default:
-            return MetadataVersion::Invalid;
+    case 0:
+    case 1:
+        return MetadataVersion::InitialRelease;
+    default:
+        return MetadataVersion::Invalid;
     }
 }
 
@@ -147,11 +147,11 @@ void parseIndex(const QJsonObject& obj, Index* ptr)
 {
     const MetadataVersion version = parseFormatVersion(obj);
     switch (version) {
-        case MetadataVersion::InitialRelease:
-            ptr->merge(parseIndexInternal(obj));
-            break;
-        case MetadataVersion::Invalid:
-            throw ParseException(QObject::tr("Unknown format version!"));
+    case MetadataVersion::InitialRelease:
+        ptr->merge(parseIndexInternal(obj));
+        break;
+    case MetadataVersion::Invalid:
+        throw ParseException(QObject::tr("Unknown format version!"));
     }
 }
 
@@ -159,11 +159,11 @@ void parseVersionList(const QJsonObject& obj, VersionList* ptr)
 {
     const MetadataVersion version = parseFormatVersion(obj);
     switch (version) {
-        case MetadataVersion::InitialRelease:
-            ptr->merge(parseVersionListInternal(obj));
-            break;
-        case MetadataVersion::Invalid:
-            throw ParseException(QObject::tr("Unknown format version!"));
+    case MetadataVersion::InitialRelease:
+        ptr->merge(parseVersionListInternal(obj));
+        break;
+    case MetadataVersion::Invalid:
+        throw ParseException(QObject::tr("Unknown format version!"));
     }
 }
 
@@ -171,11 +171,11 @@ void parseVersion(const QJsonObject& obj, Version* ptr)
 {
     const MetadataVersion version = parseFormatVersion(obj);
     switch (version) {
-        case MetadataVersion::InitialRelease:
-            ptr->merge(parseVersionInternal(obj));
-            break;
-        case MetadataVersion::Invalid:
-            throw ParseException(QObject::tr("Unknown format version!"));
+    case MetadataVersion::InitialRelease:
+        ptr->merge(parseVersionInternal(obj));
+        break;
+    case MetadataVersion::Invalid:
+        throw ParseException(QObject::tr("Unknown format version!"));
     }
 }
 

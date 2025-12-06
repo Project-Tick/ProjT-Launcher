@@ -113,10 +113,10 @@ VersionFilePtr OneSixVersionFormat::versionFileFromJson(const QJsonDocument& doc
 
     Meta::MetadataVersion formatVersion = Meta::parseFormatVersion(root, false);
     switch (formatVersion) {
-        case Meta::MetadataVersion::InitialRelease:
-            break;
-        case Meta::MetadataVersion::Invalid:
-            throw JSONValidationError(filename + " does not contain a recognizable version of the metadata format.");
+    case Meta::MetadataVersion::InitialRelease:
+        break;
+    case Meta::MetadataVersion::Invalid:
+        throw JSONValidationError(filename + " does not contain a recognizable version of the metadata format.");
     }
 
     if (requireOrder) {

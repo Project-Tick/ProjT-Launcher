@@ -75,13 +75,13 @@ namespace DataPackUtils {
 bool process(DataPack* pack, ProcessingLevel level)
 {
     switch (pack->type()) {
-        case ResourceType::FOLDER:
-            return DataPackUtils::processFolder(pack, level);
-        case ResourceType::ZIPFILE:
-            return DataPackUtils::processZIP(pack, level);
-        default:
-            qWarning() << "Invalid type for data pack parse task!";
-            return false;
+    case ResourceType::FOLDER:
+        return DataPackUtils::processFolder(pack, level);
+    case ResourceType::ZIPFILE:
+        return DataPackUtils::processZIP(pack, level);
+    default:
+        qWarning() << "Invalid type for data pack parse task!";
+        return false;
     }
 }
 
@@ -329,55 +329,55 @@ bool processPackPNG(const DataPack* pack)
     };
 
     switch (pack->type()) {
-        case ResourceType::FOLDER: {
-            QFileInfo image_file_info(FS::PathCombine(pack->fileinfo().filePath(), "pack.png"));
-            if (image_file_info.exists() && image_file_info.isFile()) {
-                QFile pack_png_file(image_file_info.filePath());
-                if (!pack_png_file.open(QIODevice::ReadOnly))
-                    return png_invalid();  // can't open pack.png file
+    case ResourceType::FOLDER: {
+        QFileInfo image_file_info(FS::PathCombine(pack->fileinfo().filePath(), "pack.png"));
+        if (image_file_info.exists() && image_file_info.isFile()) {
+            QFile pack_png_file(image_file_info.filePath());
+            if (!pack_png_file.open(QIODevice::ReadOnly))
+                return png_invalid();  // can't open pack.png file
 
-                auto data = pack_png_file.readAll();
+            auto data = pack_png_file.readAll();
 
-                bool pack_png_result = DataPackUtils::processPackPNG(pack, std::move(data));
+            bool pack_png_result = DataPackUtils::processPackPNG(pack, std::move(data));
 
-                pack_png_file.close();
-                if (!pack_png_result) {
-                    return png_invalid();  // pack.png invalid
-                }
-            } else {
-                return png_invalid();  // pack.png does not exists or is not a valid file.
+            pack_png_file.close();
+            if (!pack_png_result) {
+                return png_invalid();  // pack.png invalid
             }
-            return false;
+        } else {
+            return png_invalid();  // pack.png does not exists or is not a valid file.
         }
-        case ResourceType::ZIPFILE: {
-            QuaZip zip(pack->fileinfo().filePath());
-            if (!zip.open(QuaZip::mdUnzip))
-                return false;  // can't open zip file
+        return false;
+    }
+    case ResourceType::ZIPFILE: {
+        QuaZip zip(pack->fileinfo().filePath());
+        if (!zip.open(QuaZip::mdUnzip))
+            return false;  // can't open zip file
 
-            QuaZipFile file(&zip);
-            if (zip.setCurrentFile("pack.png")) {
-                if (!file.open(QIODevice::ReadOnly)) {
-                    qCritical() << "Failed to open file in zip.";
-                    zip.close();
-                    return png_invalid();
-                }
-
-                auto data = file.readAll();
-
-                bool pack_png_result = DataPackUtils::processPackPNG(pack, std::move(data));
-
-                file.close();
-                if (!pack_png_result) {
-                    return png_invalid();  // pack.png invalid
-                }
-            } else {
-                return png_invalid();  // could not set pack.mcmeta as current file.
+        QuaZipFile file(&zip);
+        if (zip.setCurrentFile("pack.png")) {
+            if (!file.open(QIODevice::ReadOnly)) {
+                qCritical() << "Failed to open file in zip.";
+                zip.close();
+                return png_invalid();
             }
-            return false;
+
+            auto data = file.readAll();
+
+            bool pack_png_result = DataPackUtils::processPackPNG(pack, std::move(data));
+
+            file.close();
+            if (!pack_png_result) {
+                return png_invalid();  // pack.png invalid
+            }
+        } else {
+            return png_invalid();  // could not set pack.mcmeta as current file.
         }
-        default:
-            qWarning() << "Invalid type for data pack parse task!";
-            return false;
+        return false;
+    }
+    default:
+        qWarning() << "Invalid type for data pack parse task!";
+        return false;
     }
 }
 

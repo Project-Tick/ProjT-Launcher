@@ -266,21 +266,21 @@ void InstanceImportTask::extractFinished()
     }
 
     switch (m_modpackType) {
-        case ModpackType::MultiMC:
-            processMultiMC();
-            return;
-        case ModpackType::Technic:
-            processTechnic();
-            return;
-        case ModpackType::Flame:
-            processFlame();
-            return;
-        case ModpackType::Modrinth:
-            processModrinth();
-            return;
-        case ModpackType::Unknown:
-            emitFailed(tr("Archive does not contain a recognized modpack type."));
-            return;
+    case ModpackType::MultiMC:
+        processMultiMC();
+        return;
+    case ModpackType::Technic:
+        processTechnic();
+        return;
+    case ModpackType::Flame:
+        processFlame();
+        return;
+    case ModpackType::Modrinth:
+        processModrinth();
+        return;
+    case ModpackType::Unknown:
+        emitFailed(tr("Archive does not contain a recognized modpack type."));
+        return;
     }
 }
 

@@ -54,13 +54,13 @@ namespace ShaderPackUtils {
 bool process(ShaderPack& pack, ProcessingLevel level)
 {
     switch (pack.type()) {
-        case ResourceType::FOLDER:
-            return ShaderPackUtils::processFolder(pack, level);
-        case ResourceType::ZIPFILE:
-            return ShaderPackUtils::processZIP(pack, level);
-        default:
-            qWarning() << "Invalid type for shader pack parse task!";
-            return false;
+    case ResourceType::FOLDER:
+        return ShaderPackUtils::processFolder(pack, level);
+    case ResourceType::ZIPFILE:
+        return ShaderPackUtils::processZIP(pack, level);
+    default:
+        qWarning() << "Invalid type for shader pack parse task!";
+        return false;
     }
 }
 

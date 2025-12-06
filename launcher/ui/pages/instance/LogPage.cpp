@@ -79,26 +79,26 @@ QVariant LogFormatProxyModel::data(const QModelIndex& index, int role) const
     const LogColors& colors = APPLICATION->themeManager()->getLogColors();
 
     switch (role) {
-        case Qt::FontRole:
-            return m_font;
-        case Qt::ForegroundRole: {
-            auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LogModel::LevelRole).toInt());
-            QColor result = colors.foreground.value(level);
+    case Qt::FontRole:
+        return m_font;
+    case Qt::ForegroundRole: {
+        auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LogModel::LevelRole).toInt());
+        QColor result = colors.foreground.value(level);
 
-            if (result.isValid())
-                return result;
+        if (result.isValid())
+            return result;
 
-            break;
-        }
-        case Qt::BackgroundRole: {
-            auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LogModel::LevelRole).toInt());
-            QColor result = colors.background.value(level);
+        break;
+    }
+    case Qt::BackgroundRole: {
+        auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LogModel::LevelRole).toInt());
+        QColor result = colors.background.value(level);
 
-            if (result.isValid())
-                return result;
+        if (result.isValid())
+            return result;
 
-            break;
-        }
+        break;
+    }
     }
 
     return QIdentityProxyModel::data(index, role);

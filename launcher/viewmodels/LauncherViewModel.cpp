@@ -150,17 +150,17 @@ void LauncherViewModel::setCurrentPage(Page page)
 QString LauncherViewModel::pageToString(Page page)
 {
     switch (page) {
-        case Page::News:
-            return QStringLiteral("news");
-        case Page::Settings:
-            return QStringLiteral("settings");
-        case Page::About:
-            return QStringLiteral("about");
-        case Page::Logs:
-            return QStringLiteral("logs");
-        case Page::Instances:
-        default:
-            return QStringLiteral("instances");
+    case Page::News:
+        return QStringLiteral("news");
+    case Page::Settings:
+        return QStringLiteral("settings");
+    case Page::About:
+        return QStringLiteral("about");
+    case Page::Logs:
+        return QStringLiteral("logs");
+    case Page::Instances:
+    default:
+        return QStringLiteral("instances");
     }
 }
 

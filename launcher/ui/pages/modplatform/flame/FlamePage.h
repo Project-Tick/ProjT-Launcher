@@ -75,7 +75,9 @@ namespace Flame {
 class ListModel;
 }
 
-class FlamePage : public QWidget, public ModpackProviderBasePage {
+class FlamePage
+    : public QWidget
+    , public ModpackProviderBasePage {
     Q_OBJECT
 
    public:

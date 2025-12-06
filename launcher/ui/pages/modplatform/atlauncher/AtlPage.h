@@ -71,7 +71,9 @@ class AtlPage;
 
 class NewInstanceDialog;
 
-class AtlPage : public QWidget, public ModpackProviderBasePage {
+class AtlPage
+    : public QWidget
+    , public ModpackProviderBasePage {
     Q_OBJECT
 
    public:

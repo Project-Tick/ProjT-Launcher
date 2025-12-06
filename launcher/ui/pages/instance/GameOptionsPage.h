@@ -69,7 +69,9 @@ class GameOptionsPage;
 class GameOptions;
 class MinecraftInstance;
 
-class GameOptionsPage : public QWidget, public BasePage {
+class GameOptionsPage
+    : public QWidget
+    , public BasePage {
     Q_OBJECT
 
    public:

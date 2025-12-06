@@ -69,7 +69,9 @@ class CustomPage;
 
 class NewInstanceDialog;
 
-class CustomPage : public QWidget, public BasePage {
+class CustomPage
+    : public QWidget
+    , public BasePage {
     Q_OBJECT
 
    public:

@@ -109,24 +109,24 @@ void Flame::FileResolvingTask::executeTask()
 ModPlatform::ResourceType getResourceType(int classId)
 {
     switch (classId) {
-        case 17:  // Worlds
-            return ModPlatform::ResourceType::World;
-        case 6:  // Mods
-            return ModPlatform::ResourceType::Mod;
-        case 12:  // Resource Packs
-                  // return ModPlatform::ResourceType::ResourcePack; // not really a resourcepack
-            /* fallthrough */
-        case 4546:  // Customization
-                    // return ModPlatform::ResourceType::ShaderPack; // not really a shaderPack
-            /* fallthrough */
-        case 4471:  // Modpacks
-            /* fallthrough */
-        case 5:  // Bukkit Plugins
-            /* fallthrough */
-        case 4559:  // Addons
-            /* fallthrough */
-        default:
-            return ModPlatform::ResourceType::Unknown;
+    case 17:  // Worlds
+        return ModPlatform::ResourceType::World;
+    case 6:  // Mods
+        return ModPlatform::ResourceType::Mod;
+    case 12:  // Resource Packs
+              // return ModPlatform::ResourceType::ResourcePack; // not really a resourcepack
+        /* fallthrough */
+    case 4546:  // Customization
+                // return ModPlatform::ResourceType::ShaderPack; // not really a shaderPack
+        /* fallthrough */
+    case 4471:  // Modpacks
+        /* fallthrough */
+    case 5:  // Bukkit Plugins
+        /* fallthrough */
+    case 4559:  // Addons
+        /* fallthrough */
+    default:
+        return ModPlatform::ResourceType::Unknown;
     }
 }
 

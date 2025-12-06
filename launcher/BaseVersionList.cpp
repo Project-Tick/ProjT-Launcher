@@ -87,28 +87,28 @@ QVariant BaseVersionList::data(const QModelIndex& index, int role) const
     BaseVersion::Ptr version = at(index.row());
 
     switch (role) {
-        case VersionPointerRole:
-            return QVariant::fromValue(version);
+    case VersionPointerRole:
+        return QVariant::fromValue(version);
 
-        case VersionRole:
-            return version->name();
+    case VersionRole:
+        return version->name();
 
-        case VersionIdRole:
-            return version->descriptor();
+    case VersionIdRole:
+        return version->descriptor();
 
-        case TypeRole:
-            return version->typeString();
+    case TypeRole:
+        return version->typeString();
 
-        case JavaMajorRole: {
-            auto major = version->name();
-            if (major.startsWith("java")) {
-                major = "Java " + major.mid(4);
-            }
-            return major;
+    case JavaMajorRole: {
+        auto major = version->name();
+        if (major.startsWith("java")) {
+            major = "Java " + major.mid(4);
         }
+        return major;
+    }
 
-        default:
-            return QVariant();
+    default:
+        return QVariant();
     }
 }
 

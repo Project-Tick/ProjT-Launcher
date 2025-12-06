@@ -174,93 +174,93 @@ bool Tar::extract(QIODevice* in, QString dst)
             return false;
         }
         switch (TypeFlag(buffer[156])) {
-            case TypeFlag::Regular:
-                /* fallthrough */
-            case TypeFlag::ARegular: {
-                auto fileName = FS::PathCombine(dst, name);
-                if (!FS::ensureFilePathExists(fileName)) {
-                    qCritical() << "Can't ensure the file path to exist: " << fileName;
+        case TypeFlag::Regular:
+            /* fallthrough */
+        case TypeFlag::ARegular: {
+            auto fileName = FS::PathCombine(dst, name);
+            if (!FS::ensureFilePathExists(fileName)) {
+                qCritical() << "Can't ensure the file path to exist: " << fileName;
+                return false;
+            }
+            QFile out(fileName);
+            if (!out.open(QFile::WriteOnly)) {
+                qCritical() << "Can't open file:" << fileName;
+                return false;
+            }
+            out.setPermissions(QFile::Permissions(mode));
+            while (size > 0) {
+                QByteArray tmp(BLOCKSIZE, 0);
+                n = in->read(tmp.data(), BLOCKSIZE);
+                if (n != BLOCKSIZE) {
+                    qCritical() << "The expected blocksize was not respected when reading file";
                     return false;
                 }
-                QFile out(fileName);
-                if (!out.open(QFile::WriteOnly)) {
-                    qCritical() << "Can't open file:" << fileName;
-                    return false;
-                }
-                out.setPermissions(QFile::Permissions(mode));
-                while (size > 0) {
-                    QByteArray tmp(BLOCKSIZE, 0);
-                    n = in->read(tmp.data(), BLOCKSIZE);
-                    if (n != BLOCKSIZE) {
-                        qCritical() << "The expected blocksize was not respected when reading file";
-                        return false;
-                    }
-                    tmp.truncate(qMin(qint64(BLOCKSIZE), size));
-                    out.write(tmp);
-                    size -= BLOCKSIZE;
-                }
+                tmp.truncate(qMin(qint64(BLOCKSIZE), size));
+                out.write(tmp);
+                size -= BLOCKSIZE;
+            }
+            break;
+        }
+        case TypeFlag::Directory: {
+            if (firstFolderName.isEmpty()) {
+                firstFolderName = name;
                 break;
             }
-            case TypeFlag::Directory: {
-                if (firstFolderName.isEmpty()) {
-                    firstFolderName = name;
-                    break;
-                }
-                auto folderPath = FS::PathCombine(dst, name);
-                if (!FS::ensureFolderPathExists(folderPath)) {
-                    qCritical() << "Can't ensure that folder exists: " << folderPath;
-                    return false;
-                }
-                break;
+            auto folderPath = FS::PathCombine(dst, name);
+            if (!FS::ensureFolderPathExists(folderPath)) {
+                qCritical() << "Can't ensure that folder exists: " << folderPath;
+                return false;
             }
-            case TypeFlag::GNULongLink: {
-                doNotReset = true;
-                QByteArray longlink;
-                if (readLonglink(in, size, longlink)) {
-                    symlink = QFile::decodeName(longlink.constData());
-                } else {
-                    qCritical() << "Failed to read long link";
-                    return false;
-                }
-                break;
+            break;
+        }
+        case TypeFlag::GNULongLink: {
+            doNotReset = true;
+            QByteArray longlink;
+            if (readLonglink(in, size, longlink)) {
+                symlink = QFile::decodeName(longlink.constData());
+            } else {
+                qCritical() << "Failed to read long link";
+                return false;
             }
-            case TypeFlag::GNULongName: {
-                doNotReset = true;
-                QByteArray longlink;
-                if (readLonglink(in, size, longlink)) {
-                    name = QFile::decodeName(longlink.constData());
-                } else {
-                    qCritical() << "Failed to read long name";
-                    return false;
-                }
-                break;
+            break;
+        }
+        case TypeFlag::GNULongName: {
+            doNotReset = true;
+            QByteArray longlink;
+            if (readLonglink(in, size, longlink)) {
+                name = QFile::decodeName(longlink.constData());
+            } else {
+                qCritical() << "Failed to read long name";
+                return false;
             }
-            case TypeFlag::Link:
-                /* fallthrough */
-            case TypeFlag::Symlink: {
-                auto fileName = FS::PathCombine(dst, name);
-                if (!FS::create_link(FS::PathCombine(QFileInfo(fileName).path(), symlink), fileName)()) {  // do not use symlinks
-                    qCritical() << "Can't create link for:" << fileName << " to:" << FS::PathCombine(QFileInfo(fileName).path(), symlink);
-                    return false;
-                }
-                FS::ensureFilePathExists(fileName);
-                QFile::setPermissions(fileName, QFile::Permissions(mode));
-                break;
+            break;
+        }
+        case TypeFlag::Link:
+            /* fallthrough */
+        case TypeFlag::Symlink: {
+            auto fileName = FS::PathCombine(dst, name);
+            if (!FS::create_link(FS::PathCombine(QFileInfo(fileName).path(), symlink), fileName)()) {  // do not use symlinks
+                qCritical() << "Can't create link for:" << fileName << " to:" << FS::PathCombine(QFileInfo(fileName).path(), symlink);
+                return false;
             }
-            case TypeFlag::Character:
-                /* fallthrough */
-            case TypeFlag::Block:
-                /* fallthrough */
-            case TypeFlag::FIFO:
-                /* fallthrough */
-            case TypeFlag::Contiguous:
-                /* fallthrough */
-            case TypeFlag::GlobalPosixHeader:
-                /* fallthrough */
-            case TypeFlag::ExtendedPosixHeader:
-                /* fallthrough */
-            default:
-                break;
+            FS::ensureFilePathExists(fileName);
+            QFile::setPermissions(fileName, QFile::Permissions(mode));
+            break;
+        }
+        case TypeFlag::Character:
+            /* fallthrough */
+        case TypeFlag::Block:
+            /* fallthrough */
+        case TypeFlag::FIFO:
+            /* fallthrough */
+        case TypeFlag::Contiguous:
+            /* fallthrough */
+        case TypeFlag::GlobalPosixHeader:
+            /* fallthrough */
+        case TypeFlag::ExtendedPosixHeader:
+            /* fallthrough */
+        default:
+            break;
         }
         if (!doNotReset) {
             name.truncate(0);

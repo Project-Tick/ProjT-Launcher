@@ -65,7 +65,9 @@ namespace Ui {
 class ExternalToolsPage;
 }
 
-class ExternalToolsPage : public QWidget, public BasePage {
+class ExternalToolsPage
+    : public QWidget
+    , public BasePage {
     Q_OBJECT
 
    public:

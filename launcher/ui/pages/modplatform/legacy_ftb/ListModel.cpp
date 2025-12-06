@@ -152,12 +152,12 @@ ListModel::~ListModel() {}
 QString ListModel::translatePackType(PackType type) const
 {
     switch (type) {
-        case PackType::Public:
-            return tr("Public Modpack");
-        case PackType::ThirdParty:
-            return tr("Third Party Modpack");
-        case PackType::Private:
-            return tr("Private Modpack");
+    case PackType::Public:
+        return tr("Public Modpack");
+    case PackType::ThirdParty:
+        return tr("Third Party Modpack");
+    case PackType::Private:
+        return tr("Private Modpack");
     }
     qWarning() << "Unknown FTB modpack type:" << int(type);
     return QString();
@@ -182,59 +182,59 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
 
     Modpack pack = modpacks.at(pos);
     switch (role) {
-        case Qt::ToolTipRole: {
-            if (pack.description.length() > 100) {
-                // some magic to prevent to long tooltips and replace html linebreaks
-                QString edit = pack.description.left(97);
-                edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
-                return edit;
-            }
-            return pack.description;
+    case Qt::ToolTipRole: {
+        if (pack.description.length() > 100) {
+            // some magic to prevent to long tooltips and replace html linebreaks
+            QString edit = pack.description.left(97);
+            edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
+            return edit;
         }
-        case Qt::DecorationRole: {
-            if (m_logoMap.contains(pack.logo)) {
-                return (m_logoMap.value(pack.logo));
-            }
-            QIcon icon = QIcon::fromTheme("screenshot-placeholder");
-            ((ListModel*)this)->requestLogo(pack.logo);
-            return icon;
+        return pack.description;
+    }
+    case Qt::DecorationRole: {
+        if (m_logoMap.contains(pack.logo)) {
+            return (m_logoMap.value(pack.logo));
         }
-        case Qt::UserRole:
-        case PackDataRole: {
-            QVariant v;
-            v.setValue(pack);
-            return v;
+        QIcon icon = QIcon::fromTheme("screenshot-placeholder");
+        ((ListModel*)this)->requestLogo(pack.logo);
+        return icon;
+    }
+    case Qt::UserRole:
+    case PackDataRole: {
+        QVariant v;
+        v.setValue(pack);
+        return v;
+    }
+    case Qt::ForegroundRole: {
+        if (pack.broken) {
+            // FIXME: Hardcoded color
+            return QColor(255, 0, 50);
+        } else if (pack.bugged) {
+            // FIXME: Hardcoded color
+            // bugged pack, currently only indicates bugged xml
+            return QColor(244, 229, 66);
         }
-        case Qt::ForegroundRole: {
-            if (pack.broken) {
-                // FIXME: Hardcoded color
-                return QColor(255, 0, 50);
-            } else if (pack.bugged) {
-                // FIXME: Hardcoded color
-                // bugged pack, currently only indicates bugged xml
-                return QColor(244, 229, 66);
-            }
-        }
-        case Qt::DisplayRole:
-            return pack.name;
-        case Qt::SizeHintRole:
-            return QSize(0, 58);
-        // Custom data for QML
-        case NameRole:
-            return pack.name;
-        case DescriptionRole:
-            return pack.description;
-        case IconUrlRole:
-            return QString(BuildConfig.LEGACY_FTB_CDN_BASE_URL + "static/%1").arg(pack.logo);
-        // Legacy Widget roles
-        case UserDataTypes::TITLE:
-            return pack.name;
-        case UserDataTypes::DESCRIPTION:
-            return pack.description;
-        case UserDataTypes::INSTALLED:
-            return false;
-        default:
-            break;
+    }
+    case Qt::DisplayRole:
+        return pack.name;
+    case Qt::SizeHintRole:
+        return QSize(0, 58);
+    // Custom data for QML
+    case NameRole:
+        return pack.name;
+    case DescriptionRole:
+        return pack.description;
+    case IconUrlRole:
+        return QString(BuildConfig.LEGACY_FTB_CDN_BASE_URL + "static/%1").arg(pack.logo);
+    // Legacy Widget roles
+    case UserDataTypes::TITLE:
+        return pack.name;
+    case UserDataTypes::DESCRIPTION:
+        return pack.description;
+    case UserDataTypes::INSTALLED:
+        return false;
+    default:
+        break;
     }
 
     return {};

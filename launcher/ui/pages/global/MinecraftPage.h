@@ -66,7 +66,9 @@
 
 class SettingsObject;
 
-class MinecraftPage : public MinecraftSettingsWidget, public BasePage {
+class MinecraftPage
+    : public MinecraftSettingsWidget
+    , public BasePage {
     Q_OBJECT
 
    public:

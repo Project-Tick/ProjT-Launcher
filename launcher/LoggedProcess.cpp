@@ -134,18 +134,18 @@ void LoggedProcess::on_exit(int exit_code, QProcess::ExitStatus status)
 void LoggedProcess::on_error(QProcess::ProcessError error)
 {
     switch (error) {
-        case QProcess::FailedToStart: {
-            emit log({ tr("The process failed to start.") }, MessageLevel::Fatal);
-            changeState(LoggedProcess::FailedToStart);
-            break;
-        }
-        // we'll just ignore those... never needed them
-        case QProcess::Crashed:
-        case QProcess::ReadError:
-        case QProcess::Timedout:
-        case QProcess::UnknownError:
-        case QProcess::WriteError:
-            break;
+    case QProcess::FailedToStart: {
+        emit log({ tr("The process failed to start.") }, MessageLevel::Fatal);
+        changeState(LoggedProcess::FailedToStart);
+        break;
+    }
+    // we'll just ignore those... never needed them
+    case QProcess::Crashed:
+    case QProcess::ReadError:
+    case QProcess::Timedout:
+    case QProcess::UnknownError:
+    case QProcess::WriteError:
+        break;
     }
 }
 
@@ -176,22 +176,22 @@ LoggedProcess::State LoggedProcess::state() const
 void LoggedProcess::on_stateChange(QProcess::ProcessState state)
 {
     switch (state) {
-        case QProcess::NotRunning:
-            break;  // let's not - there are too many that handle this already.
-        case QProcess::Starting: {
-            if (m_state != LoggedProcess::NotRunning) {
-                qWarning() << "Wrong state change for process from state" << m_state << "to" << (int)LoggedProcess::Starting;
-            }
-            changeState(LoggedProcess::Starting);
-            return;
+    case QProcess::NotRunning:
+        break;  // let's not - there are too many that handle this already.
+    case QProcess::Starting: {
+        if (m_state != LoggedProcess::NotRunning) {
+            qWarning() << "Wrong state change for process from state" << m_state << "to" << (int)LoggedProcess::Starting;
         }
-        case QProcess::Running: {
-            if (m_state != LoggedProcess::Starting) {
-                qWarning() << "Wrong state change for process from state" << m_state << "to" << (int)LoggedProcess::Running;
-            }
-            changeState(LoggedProcess::Running);
-            return;
+        changeState(LoggedProcess::Starting);
+        return;
+    }
+    case QProcess::Running: {
+        if (m_state != LoggedProcess::Starting) {
+            qWarning() << "Wrong state change for process from state" << m_state << "to" << (int)LoggedProcess::Running;
         }
+        changeState(LoggedProcess::Running);
+        return;
+    }
     }
 }
 

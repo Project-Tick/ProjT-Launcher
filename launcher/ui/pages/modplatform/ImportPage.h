@@ -67,7 +67,9 @@ class ImportPage;
 
 class NewInstanceDialog;
 
-class ImportPage : public QWidget, public BasePage {
+class ImportPage
+    : public QWidget
+    , public BasePage {
     Q_OBJECT
 
    public:

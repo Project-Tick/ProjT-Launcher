@@ -1081,18 +1081,18 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
             msgBox.adjustSize();
             auto res = msgBox.exec();
             switch (res) {
-                case QMessageBox::Ignore: {
-                    FS::deletePath(update_lock.absoluteFilePath());
-                    break;
-                }
-                case QMessageBox::Abort:
-                    [[fallthrough]];
-                default: {
-                    qDebug() << "Exiting because update lockfile is present";
-                    QMetaObject::invokeMethod(
-                        this, []() { exit(1); }, Qt::QueuedConnection);
-                    return;
-                }
+            case QMessageBox::Ignore: {
+                FS::deletePath(update_lock.absoluteFilePath());
+                break;
+            }
+            case QMessageBox::Abort:
+                [[fallthrough]];
+            default: {
+                qDebug() << "Exiting because update lockfile is present";
+                QMetaObject::invokeMethod(
+                    this, []() { exit(1); }, Qt::QueuedConnection);
+                return;
+            }
             }
         }
 
@@ -1114,18 +1114,18 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
             msgBox.adjustSize();
             auto res = msgBox.exec();
             switch (res) {
-                case QMessageBox::Ignore: {
-                    FS::deletePath(update_fail_marker.absoluteFilePath());
-                    break;
-                }
-                case QMessageBox::Abort:
-                    [[fallthrough]];
-                default: {
-                    qDebug() << "Exiting because update lockfile is present";
-                    QMetaObject::invokeMethod(
-                        this, []() { exit(1); }, Qt::QueuedConnection);
-                    return;
-                }
+            case QMessageBox::Ignore: {
+                FS::deletePath(update_fail_marker.absoluteFilePath());
+                break;
+            }
+            case QMessageBox::Abort:
+                [[fallthrough]];
+            default: {
+                qDebug() << "Exiting because update lockfile is present";
+                QMetaObject::invokeMethod(
+                    this, []() { exit(1); }, Qt::QueuedConnection);
+                return;
+            }
             }
         }
 
@@ -1875,24 +1875,24 @@ void Application::updateProxySettings(QString proxyTypeStr, QString addr, int po
         return;
     }
     switch (proxy.type()) {
-        case QNetworkProxy::DefaultProxy:
-            proxyDesc = "Default proxy: ";
-            break;
-        case QNetworkProxy::Socks5Proxy:
-            proxyDesc = "Socks5 proxy: ";
-            break;
-        case QNetworkProxy::HttpProxy:
-            proxyDesc = "HTTP proxy: ";
-            break;
-        case QNetworkProxy::HttpCachingProxy:
-            proxyDesc = "HTTP caching: ";
-            break;
-        case QNetworkProxy::FtpCachingProxy:
-            proxyDesc = "FTP caching: ";
-            break;
-        default:
-            proxyDesc = "DERP proxy: ";
-            break;
+    case QNetworkProxy::DefaultProxy:
+        proxyDesc = "Default proxy: ";
+        break;
+    case QNetworkProxy::Socks5Proxy:
+        proxyDesc = "Socks5 proxy: ";
+        break;
+    case QNetworkProxy::HttpProxy:
+        proxyDesc = "HTTP proxy: ";
+        break;
+    case QNetworkProxy::HttpCachingProxy:
+        proxyDesc = "HTTP caching: ";
+        break;
+    case QNetworkProxy::FtpCachingProxy:
+        proxyDesc = "FTP caching: ";
+        break;
+    default:
+        proxyDesc = "DERP proxy: ";
+        break;
     }
     proxyDesc += QString("%1:%2").arg(proxy.hostName()).arg(proxy.port());
     qDebug() << proxyDesc;

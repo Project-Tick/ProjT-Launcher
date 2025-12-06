@@ -73,7 +73,9 @@ namespace Ui {
 class VersionPage;
 }
 
-class VersionPage : public QMainWindow, public BasePage {
+class VersionPage
+    : public QMainWindow
+    , public BasePage {
     Q_OBJECT
 
    public:

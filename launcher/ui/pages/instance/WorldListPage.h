@@ -70,7 +70,9 @@ namespace Ui {
 class WorldListPage;
 }
 
-class WorldListPage : public QMainWindow, public BasePage {
+class WorldListPage
+    : public QMainWindow
+    , public BasePage {
     Q_OBJECT
 
    public:

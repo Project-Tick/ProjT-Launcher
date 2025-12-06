@@ -21,7 +21,9 @@ namespace Ui {
 class BackupDialog;
 }
 
-class BackupPage : public QWidget, public BasePage {
+class BackupPage
+    : public QWidget
+    , public BasePage {
     Q_OBJECT
 
    public:
