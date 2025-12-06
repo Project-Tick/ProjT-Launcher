@@ -61,7 +61,9 @@ namespace Ui {
 class NotesPage;
 }
 
-class NotesPage : public QWidget, public BasePage {
+class NotesPage
+    : public QWidget
+    , public BasePage {
     Q_OBJECT
 
    public:

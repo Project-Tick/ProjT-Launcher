@@ -42,7 +42,9 @@ class PageContainer;
 class PackProfile;
 class QDialogButtonBox;
 
-class InstallLoaderDialog final : public QDialog, protected BasePageProvider {
+class InstallLoaderDialog final
+    : public QDialog
+    , protected BasePageProvider {
     Q_OBJECT
 
    public:

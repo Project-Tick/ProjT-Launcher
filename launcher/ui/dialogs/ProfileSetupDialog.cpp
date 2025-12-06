@@ -112,20 +112,20 @@ void ProfileSetupDialog::setNameStatus(ProfileSetupDialog::NameStatus status, QS
     nameStatus = status;
     auto okButton = ui->buttonBox->button(QDialogButtonBox::Ok);
     switch (nameStatus) {
-        case NameStatus::Available: {
-            validityAction->setIcon(goodIcon);
-            okButton->setEnabled(true);
-        } break;
-        case NameStatus::NotSet:
-        case NameStatus::Pending:
-            validityAction->setIcon(yellowIcon);
-            okButton->setEnabled(false);
-            break;
-        case NameStatus::Exists:
-        case NameStatus::Error:
-            validityAction->setIcon(badIcon);
-            okButton->setEnabled(false);
-            break;
+    case NameStatus::Available: {
+        validityAction->setIcon(goodIcon);
+        okButton->setEnabled(true);
+    } break;
+    case NameStatus::NotSet:
+    case NameStatus::Pending:
+        validityAction->setIcon(yellowIcon);
+        okButton->setEnabled(false);
+        break;
+    case NameStatus::Exists:
+    case NameStatus::Error:
+        validityAction->setIcon(badIcon);
+        okButton->setEnabled(false);
+        break;
     }
     if (!errorString.isEmpty()) {
         ui->errorLabel->setText(errorString);

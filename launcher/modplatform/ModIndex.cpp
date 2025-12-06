@@ -92,10 +92,10 @@ IndexedVersionType::VersionType IndexedVersionType::enumFromString(const QString
 const char* ProviderCapabilities::name(ResourceProvider p)
 {
     switch (p) {
-        case ResourceProvider::MODRINTH:
-            return "modrinth";
-        case ResourceProvider::FLAME:
-            return "curseforge";
+    case ResourceProvider::MODRINTH:
+        return "modrinth";
+    case ResourceProvider::FLAME:
+        return "curseforge";
     }
     return {};
 }
@@ -103,10 +103,10 @@ const char* ProviderCapabilities::name(ResourceProvider p)
 QString ProviderCapabilities::readableName(ResourceProvider p)
 {
     switch (p) {
-        case ResourceProvider::MODRINTH:
-            return "Modrinth";
-        case ResourceProvider::FLAME:
-            return "CurseForge";
+    case ResourceProvider::MODRINTH:
+        return "Modrinth";
+    case ResourceProvider::FLAME:
+        return "CurseForge";
     }
     return {};
 }
@@ -114,11 +114,11 @@ QString ProviderCapabilities::readableName(ResourceProvider p)
 QStringList ProviderCapabilities::hashType(ResourceProvider p)
 {
     switch (p) {
-        case ResourceProvider::MODRINTH:
-            return { "sha512", "sha1" };
-        case ResourceProvider::FLAME:
-            // Try newer formats first, fall back to old format
-            return { "sha1", "md5", "murmur2" };
+    case ResourceProvider::MODRINTH:
+        return { "sha512", "sha1" };
+    case ResourceProvider::FLAME:
+        // Try newer formats first, fall back to old format
+        return { "sha1", "md5", "murmur2" };
     }
     return {};
 }
@@ -132,32 +132,32 @@ QString getMetaURL(ResourceProvider provider, QVariant projectID)
 auto getModLoaderAsString(ModLoaderType type) -> const QString
 {
     switch (type) {
-        case NeoForge:
-            return "neoforge";
-        case Forge:
-            return "forge";
-        case Cauldron:
-            return "cauldron";
-        case LiteLoader:
-            return "liteloader";
-        case Fabric:
-            return "fabric";
-        case Quilt:
-            return "quilt";
-        case DataPack:
-            return "datapack";
-        case Babric:
-            return "babric";
-        case BTA:
-            return "bta-babric";
-        case LegacyFabric:
-            return "legacy-fabric";
-        case Ornithe:
-            return "ornithe";
-        case Rift:
-            return "rift";
-        default:
-            break;
+    case NeoForge:
+        return "neoforge";
+    case Forge:
+        return "forge";
+    case Cauldron:
+        return "cauldron";
+    case LiteLoader:
+        return "liteloader";
+    case Fabric:
+        return "fabric";
+    case Quilt:
+        return "quilt";
+    case DataPack:
+        return "datapack";
+    case Babric:
+        return "babric";
+    case BTA:
+        return "bta-babric";
+    case LegacyFabric:
+        return "legacy-fabric";
+    case Ornithe:
+        return "ornithe";
+    case Rift:
+        return "rift";
+    default:
+        break;
     }
     return "";
 }
@@ -192,14 +192,14 @@ auto getModLoaderFromString(QString type) -> ModLoaderType
 QString SideUtils::toString(Side side)
 {
     switch (side) {
-        case Side::ClientSide:
-            return "client";
-        case Side::ServerSide:
-            return "server";
-        case Side::UniversalSide:
-            return "both";
-        case Side::NoSide:
-            break;
+    case Side::ClientSide:
+        return "client";
+    case Side::ServerSide:
+        return "server";
+    case Side::UniversalSide:
+        return "both";
+    case Side::NoSide:
+        break;
     }
     return {};
 }

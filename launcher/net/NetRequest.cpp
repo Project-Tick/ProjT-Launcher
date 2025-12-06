@@ -90,24 +90,24 @@ void NetRequest::executeTask()
     QNetworkRequest request(m_url);
     m_state = m_sink->init(request);
     switch (m_state) {
-        case State::Succeeded:
-            qCDebug(logCat) << getUid().toString() << "Request cache hit " << m_url.toString();
-            emit succeeded();
-            emit finished();
-            return;
-        case State::Running:
-            qCDebug(logCat) << getUid().toString() << "Running " << m_url.toString();
-            break;
-        case State::Inactive:
-        case State::Failed:
-            m_failReason = m_sink->failReason();
-            emit failed(m_sink->failReason());
-            emit finished();
-            return;
-        case State::AbortedByUser:
-            emit aborted();
-            emit finished();
-            return;
+    case State::Succeeded:
+        qCDebug(logCat) << getUid().toString() << "Request cache hit " << m_url.toString();
+        emit succeeded();
+        emit finished();
+        return;
+    case State::Running:
+        qCDebug(logCat) << getUid().toString() << "Running " << m_url.toString();
+        break;
+    case State::Inactive:
+    case State::Failed:
+        m_failReason = m_sink->failReason();
+        emit failed(m_sink->failReason());
+        emit finished();
+        return;
+    case State::AbortedByUser:
+        emit aborted();
+        emit finished();
+        return;
     }
 
 #if defined(LAUNCHER_APPLICATION)

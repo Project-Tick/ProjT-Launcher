@@ -39,7 +39,9 @@
 
 namespace Meta {
 
-class VersionList : public BaseVersionList, public BaseEntity {
+class VersionList
+    : public BaseVersionList
+    , public BaseEntity {
     Q_OBJECT
     Q_PROPERTY(QString uid READ uid CONSTANT)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)

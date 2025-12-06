@@ -56,7 +56,9 @@
 #include "ui/pages/BasePage.h"
 #include "ui/widgets/MinecraftSettingsWidget.h"
 
-class InstanceSettingsPage : public MinecraftSettingsWidget, public BasePage {
+class InstanceSettingsPage
+    : public MinecraftSettingsWidget
+    , public BasePage {
     Q_OBJECT
 
    public:

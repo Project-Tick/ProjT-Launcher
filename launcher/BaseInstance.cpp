@@ -185,11 +185,8 @@ QString BaseInstance::getManagedPackVersionName() const
     return m_settings->get("ManagedPackVersionName").toString();
 }
 
-void BaseInstance::setManagedPack(const QString& type,
-                                  const QString& id,
-                                  const QString& name,
-                                  const QString& versionId,
-                                  const QString& version)
+void BaseInstance::setManagedPack(
+    const QString& type, const QString& id, const QString& name, const QString& versionId, const QString& version)
 {
     m_settings->set("ManagedPack", true);
     m_settings->set("ManagedPackType", type);

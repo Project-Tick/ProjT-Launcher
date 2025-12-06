@@ -40,7 +40,9 @@ class Task;
 
 namespace Meta {
 
-class Index : public QAbstractListModel, public BaseEntity {
+class Index
+    : public QAbstractListModel
+    , public BaseEntity {
     Q_OBJECT
    public:
     explicit Index(QObject* parent = nullptr);

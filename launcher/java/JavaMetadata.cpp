@@ -55,12 +55,12 @@ DownloadType parseDownloadType(QString javaDownload)
 QString downloadTypeToString(DownloadType javaDownload)
 {
     switch (javaDownload) {
-        case DownloadType::Manifest:
-            return "manifest";
-        case DownloadType::Archive:
-            return "archive";
-        case DownloadType::Unknown:
-            break;
+    case DownloadType::Manifest:
+        return "manifest";
+    case DownloadType::Archive:
+        return "archive";
+    case DownloadType::Unknown:
+        break;
     }
     return "unknown";
 }

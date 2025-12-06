@@ -213,20 +213,20 @@ void ComponentUpdateTask::loadComponents()
     }
     d->remoteTasksInProgress = taskIndex;
     switch (result) {
-        case LoadResult::LoadedLocal: {
-            // Everything got loaded. Advance to dependency resolution.
-            performUpdateActions();
-            resolveDependencies(d->mode == Mode::Launch || d->netmode == Net::Mode::Offline);
-            break;
-        }
-        case LoadResult::RequiresRemote: {
-            // we wait for signals.
-            break;
-        }
-        case LoadResult::Failed: {
-            emitFailed(tr("Some component metadata load tasks failed."));
-            break;
-        }
+    case LoadResult::LoadedLocal: {
+        // Everything got loaded. Advance to dependency resolution.
+        performUpdateActions();
+        resolveDependencies(d->mode == Mode::Launch || d->netmode == Net::Mode::Offline);
+        break;
+    }
+    case LoadResult::RequiresRemote: {
+        // we wait for signals.
+        break;
+    }
+    case LoadResult::Failed: {
+        emitFailed(tr("Some component metadata load tasks failed."));
+        break;
+    }
     }
 }
 
@@ -376,25 +376,25 @@ static bool getTrivialComponentChanges(const ComponentIndex& index, const Requir
             }
         } while (false);
         switch (decision) {
-            case Decision::Undetermined:
-                qCCritical(instanceProfileResolveC) << "No decision for" << reqStr;
-                succeeded = false;
-                break;
-            case Decision::Met:
-                qCDebug(instanceProfileResolveC) << reqStr << "Is met.";
-                break;
-            case Decision::Missing:
-                qCDebug(instanceProfileResolveC) << reqStr << "Is missing and should be added at" << req.indexOfFirstDependee;
-                toAdd.insert(req);
-                break;
-            case Decision::VersionNotSame:
-                qCDebug(instanceProfileResolveC) << reqStr << "already has different version that can be changed.";
-                toChange.insert(req);
-                break;
-            case Decision::LockedVersionNotSame:
-                qCDebug(instanceProfileResolveC) << reqStr << "already has different version that cannot be changed.";
-                succeeded = false;
-                break;
+        case Decision::Undetermined:
+            qCCritical(instanceProfileResolveC) << "No decision for" << reqStr;
+            succeeded = false;
+            break;
+        case Decision::Met:
+            qCDebug(instanceProfileResolveC) << reqStr << "Is met.";
+            break;
+        case Decision::Missing:
+            qCDebug(instanceProfileResolveC) << reqStr << "Is missing and should be added at" << req.indexOfFirstDependee;
+            toAdd.insert(req);
+            break;
+        case Decision::VersionNotSame:
+            qCDebug(instanceProfileResolveC) << reqStr << "already has different version that can be changed.";
+            toChange.insert(req);
+            break;
+        case Decision::LockedVersionNotSame:
+            qCDebug(instanceProfileResolveC) << reqStr << "already has different version that cannot be changed.";
+            succeeded = false;
+            break;
         }
     }
     return succeeded;

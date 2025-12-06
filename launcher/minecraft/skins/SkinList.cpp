@@ -255,21 +255,21 @@ QVariant SkinList::data(const QModelIndex& index, int role) const
         return QVariant();
     auto skin = m_skinList[row];
     switch (role) {
-        case Qt::DecorationRole: {
-            auto preview = skin.getPreview();
-            if (preview.isNull()) {
-                preview = skin.getTexture();
-            }
-            return preview;
+    case Qt::DecorationRole: {
+        auto preview = skin.getPreview();
+        if (preview.isNull()) {
+            preview = skin.getTexture();
         }
-        case Qt::DisplayRole:
-            return skin.name();
-        case Qt::UserRole:
-            return skin.name();
-        case Qt::EditRole:
-            return skin.name();
-        default:
-            return QVariant();
+        return preview;
+    }
+    case Qt::DisplayRole:
+        return skin.name();
+    case Qt::UserRole:
+        return skin.name();
+    case Qt::EditRole:
+        return skin.name();
+    default:
+        return QVariant();
     }
 }
 

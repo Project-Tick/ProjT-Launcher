@@ -61,70 +61,70 @@ class ParserArray : public QByteArray {
             char c = operator[](i);
             if (escape) {
                 switch (c) {
-                    case 'r':
-                        msg += '\r';
-                        break;
-                    case 'n':
-                        msg += '\n';
-                        break;
-                    case 't':
-                        msg += '\t';
-                        break;
-                    case 'v':
-                        msg += '\v';
-                        break;
-                    case 'a':
-                        msg += '\a';
-                        break;
-                    case 'b':
-                        msg += '\b';
-                        break;
-                    case 'f':
-                        msg += '\f';
-                        break;
-                    case '"':
-                        msg += '"';
-                        break;
-                    case '\\':
-                        msg.append('\\');
-                        break;
-                    case '0':
-                    case '1':
-                    case '2':
-                    case '3':
-                    case '4':
-                    case '5':
-                    case '6':
-                    case '7': {
-                        int octal_start = i;
-                        while ((c = operator[](i)) >= '0' && c <= '7') {
-                            i++;
-                            if (i == length() - 1) {
-                                qDebug() << "Something went bad while parsing an octal escape string...";
-                                return false;
-                            }
-                        }
-                        msg += mid(octal_start, i - octal_start).toUInt(0, 8);
-                        break;
-                    }
-                    case 'x': {
-                        // chomp the 'x'
+                case 'r':
+                    msg += '\r';
+                    break;
+                case 'n':
+                    msg += '\n';
+                    break;
+                case 't':
+                    msg += '\t';
+                    break;
+                case 'v':
+                    msg += '\v';
+                    break;
+                case 'a':
+                    msg += '\a';
+                    break;
+                case 'b':
+                    msg += '\b';
+                    break;
+                case 'f':
+                    msg += '\f';
+                    break;
+                case '"':
+                    msg += '"';
+                    break;
+                case '\\':
+                    msg.append('\\');
+                    break;
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7': {
+                    int octal_start = i;
+                    while ((c = operator[](i)) >= '0' && c <= '7') {
                         i++;
-                        int hex_start = i;
-                        while (isxdigit(operator[](i))) {
-                            i++;
-                            if (i == length() - 1) {
-                                qDebug() << "Something went bad while parsing a hex escape string...";
-                                return false;
-                            }
+                        if (i == length() - 1) {
+                            qDebug() << "Something went bad while parsing an octal escape string...";
+                            return false;
                         }
-                        msg += mid(hex_start, i - hex_start).toUInt(0, 16);
-                        break;
                     }
-                    default: {
-                        qDebug() << "Invalid escape sequence character:" << c;
-                        return false;
+                    msg += mid(octal_start, i - octal_start).toUInt(0, 8);
+                    break;
+                }
+                case 'x': {
+                    // chomp the 'x'
+                    i++;
+                    int hex_start = i;
+                    while (isxdigit(operator[](i))) {
+                        i++;
+                        if (i == length() - 1) {
+                            qDebug() << "Something went bad while parsing a hex escape string...";
+                            return false;
+                        }
                     }
+                    msg += mid(hex_start, i - hex_start).toUInt(0, 16);
+                    break;
+                }
+                default: {
+                    qDebug() << "Invalid escape sequence character:" << c;
+                    return false;
+                }
                 }
                 escape = false;
             } else if (c == '\\') {
@@ -200,18 +200,18 @@ void POTranslatorPrivate::reload()
             QByteArray* out = &temp;
 
             switch (mode) {
-                case Mode::First:
-                    qDebug() << "Unexpected escaped string during initial state... line:" << lineNumber;
-                    return;
-                case Mode::MessageString:
-                    out = &str;
-                    break;
-                case Mode::MessageContext:
-                    out = &context;
-                    break;
-                case Mode::MessageId:
-                    out = &id;
-                    break;
+            case Mode::First:
+                qDebug() << "Unexpected escaped string during initial state... line:" << lineNumber;
+                return;
+            case Mode::MessageString:
+                out = &str;
+                break;
+            case Mode::MessageContext:
+                out = &context;
+                break;
+            case Mode::MessageId:
+                out = &id;
+                break;
             }
             if (!line.chompString(*out)) {
                 qDebug() << "Badly formatted string on line:" << lineNumber;
@@ -219,15 +219,15 @@ void POTranslatorPrivate::reload()
             }
         } else if (line.chomp("msgctxt ", 8)) {
             switch (mode) {
-                case Mode::First:
-                    break;
-                case Mode::MessageString:
-                    endEntry();
-                    break;
-                case Mode::MessageContext:
-                case Mode::MessageId:
-                    qDebug() << "Unexpected msgctxt line:" << lineNumber;
-                    return;
+            case Mode::First:
+                break;
+            case Mode::MessageString:
+                endEntry();
+                break;
+            case Mode::MessageContext:
+            case Mode::MessageId:
+                qDebug() << "Unexpected msgctxt line:" << lineNumber;
+                return;
             }
             if (line.chompString(context)) {
                 auto parts = context.split('|');
@@ -239,28 +239,28 @@ void POTranslatorPrivate::reload()
             }
         } else if (line.chomp("msgid ", 6)) {
             switch (mode) {
-                case Mode::MessageContext:
-                case Mode::First:
-                    break;
-                case Mode::MessageString:
-                    endEntry();
-                    break;
-                case Mode::MessageId:
-                    qDebug() << "Unexpected msgid line:" << lineNumber;
-                    return;
+            case Mode::MessageContext:
+            case Mode::First:
+                break;
+            case Mode::MessageString:
+                endEntry();
+                break;
+            case Mode::MessageId:
+                qDebug() << "Unexpected msgid line:" << lineNumber;
+                return;
             }
             if (line.chompString(id)) {
                 mode = Mode::MessageId;
             }
         } else if (line.chomp("msgstr ", 7)) {
             switch (mode) {
-                case Mode::First:
-                case Mode::MessageString:
-                case Mode::MessageContext:
-                    qDebug() << "Unexpected msgstr line:" << lineNumber;
-                    return;
-                case Mode::MessageId:
-                    break;
+            case Mode::First:
+            case Mode::MessageString:
+            case Mode::MessageContext:
+                qDebug() << "Unexpected msgstr line:" << lineNumber;
+                return;
+            case Mode::MessageId:
+                break;
             }
             if (line.chompString(str)) {
                 mode = Mode::MessageString;

@@ -164,10 +164,10 @@ QJsonObject SkinModel::toJSON() const
 QString SkinModel::getModelString() const
 {
     switch (m_model) {
-        case CLASSIC:
-            return "CLASSIC";
-        case SLIM:
-            return "SLIM";
+    case CLASSIC:
+        return "CLASSIC";
+    case SLIM:
+        return "SLIM";
     }
     return {};
 }

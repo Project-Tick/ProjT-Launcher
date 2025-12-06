@@ -67,7 +67,9 @@ class QPushButton;
 class PageContainer;
 class SettingsViewModel;
 class InstanceListViewModel;
-class InstanceWindow : public QMainWindow, public BasePageContainer {
+class InstanceWindow
+    : public QMainWindow
+    , public BasePageContainer {
     Q_OBJECT
 
    public:

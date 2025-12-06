@@ -201,26 +201,26 @@ void V1::updateModIndex(const QDir& index_dir, Mod& mod)
 
     toml::table update;
     switch (mod.provider) {
-        case (ModPlatform::ResourceProvider::FLAME):
-            if (mod.file_id.toInt() == 0 || mod.project_id.toInt() == 0) {
-                qCritical() << QString("Did not write file %1 because missing information!").arg(normalized_fname);
-                return;
-            }
-            update = toml::table{
-                { "file-id", mod.file_id.toInt() },
-                { "project-id", mod.project_id.toInt() },
-            };
-            break;
-        case (ModPlatform::ResourceProvider::MODRINTH):
-            if (mod.mod_id().toString().isEmpty() || mod.version().toString().isEmpty()) {
-                qCritical() << QString("Did not write file %1 because missing information!").arg(normalized_fname);
-                return;
-            }
-            update = toml::table{
-                { "mod-id", mod.mod_id().toString().toStdString() },
-                { "version", mod.version().toString().toStdString() },
-            };
-            break;
+    case (ModPlatform::ResourceProvider::FLAME):
+        if (mod.file_id.toInt() == 0 || mod.project_id.toInt() == 0) {
+            qCritical() << QString("Did not write file %1 because missing information!").arg(normalized_fname);
+            return;
+        }
+        update = toml::table{
+            { "file-id", mod.file_id.toInt() },
+            { "project-id", mod.project_id.toInt() },
+        };
+        break;
+    case (ModPlatform::ResourceProvider::MODRINTH):
+        if (mod.mod_id().toString().isEmpty() || mod.version().toString().isEmpty()) {
+            qCritical() << QString("Did not write file %1 because missing information!").arg(normalized_fname);
+            return;
+        }
+        update = toml::table{
+            { "mod-id", mod.mod_id().toString().toStdString() },
+            { "version", mod.version().toString().toStdString() },
+        };
+        break;
     }
 
     toml::array loaders;

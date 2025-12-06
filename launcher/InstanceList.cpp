@@ -186,32 +186,32 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
     }
     BaseInstance* pdata = static_cast<BaseInstance*>(index.internalPointer());
     switch (role) {
-        case InstancePointerRole: {
-            QVariant v = QVariant::fromValue((void*)pdata);
-            return v;
-        }
-        case InstanceIDRole: {
-            return pdata->id();
-        }
-        case Qt::EditRole:
-        case Qt::DisplayRole: {
-            return pdata->name();
-        }
-        case Qt::AccessibleTextRole: {
-            return tr("%1 Instance").arg(pdata->name());
-        }
-        case Qt::ToolTipRole: {
-            return pdata->instanceRoot();
-        }
-        case Qt::DecorationRole: {
-            return pdata->iconKey();
-        }
-        // HACK: see InstanceView.h in gui!
-        case GroupRole: {
-            return getInstanceGroup(pdata->id());
-        }
-        default:
-            break;
+    case InstancePointerRole: {
+        QVariant v = QVariant::fromValue((void*)pdata);
+        return v;
+    }
+    case InstanceIDRole: {
+        return pdata->id();
+    }
+    case Qt::EditRole:
+    case Qt::DisplayRole: {
+        return pdata->name();
+    }
+    case Qt::AccessibleTextRole: {
+        return tr("%1 Instance").arg(pdata->name());
+    }
+    case Qt::ToolTipRole: {
+        return pdata->instanceRoot();
+    }
+    case Qt::DecorationRole: {
+        return pdata->iconKey();
+    }
+    // HACK: see InstanceView.h in gui!
+    case GroupRole: {
+        return getInstanceGroup(pdata->id());
+    }
+    default:
+        break;
     }
     return QVariant();
 }

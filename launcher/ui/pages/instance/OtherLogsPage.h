@@ -62,7 +62,9 @@ class OtherLogsPage;
 
 class LogsViewModel;
 
-class OtherLogsPage : public QWidget, public BasePage {
+class OtherLogsPage
+    : public QWidget
+    , public BasePage {
     Q_OBJECT
 
    public:

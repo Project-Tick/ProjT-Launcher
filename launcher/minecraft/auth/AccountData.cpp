@@ -383,18 +383,18 @@ QString AccountData::profileName() const
 QString AccountData::accountDisplayString() const
 {
     switch (type) {
-        case AccountType::Offline: {
-            return QObject::tr("<Offline>");
+    case AccountType::Offline: {
+        return QObject::tr("<Offline>");
+    }
+    case AccountType::MSA: {
+        if (xboxApiToken.extra.contains("gtg")) {
+            return xboxApiToken.extra["gtg"].toString();
         }
-        case AccountType::MSA: {
-            if (xboxApiToken.extra.contains("gtg")) {
-                return xboxApiToken.extra["gtg"].toString();
-            }
-            return "Xbox profile missing";
-        }
-        default: {
-            return "Invalid Account";
-        }
+        return "Xbox profile missing";
+    }
+    default: {
+        return "Invalid Account";
+    }
     }
 }
 

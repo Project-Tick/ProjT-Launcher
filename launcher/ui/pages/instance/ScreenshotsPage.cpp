@@ -300,14 +300,14 @@ bool ScreenshotsPage::eventFilter(QObject* obj, QEvent* evt)
     }
 
     switch (keyEvent->key()) {
-        case Qt::Key_Delete:
-            on_actionDelete_triggered();
-            return true;
-        case Qt::Key_F2:
-            on_actionRename_triggered();
-            return true;
-        default:
-            break;
+    case Qt::Key_Delete:
+        on_actionDelete_triggered();
+        return true;
+    case Qt::Key_F2:
+        on_actionRename_triggered();
+        return true;
+    default:
+        break;
     }
     return QWidget::eventFilter(obj, evt);
 }

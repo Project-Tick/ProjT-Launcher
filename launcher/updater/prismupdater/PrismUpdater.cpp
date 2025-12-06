@@ -207,8 +207,8 @@ ProjTUpdaterApp::ProjTUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
     QString origCwdPath = QDir::currentPath();
     QString binPath = applicationDirPath();
 
-    {  // find data director
-       // Root path is used for updates and portable data
+    {   // find data director
+        // Root path is used for updates and portable data
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)
         QDir foo(FS::PathCombine(binPath, ".."));  // typically portable-root or /usr
         m_rootPath = foo.absolutePath();
@@ -927,12 +927,12 @@ void ProjTUpdaterApp::performInstall(QFileInfo file)
         msgBox.setMinimumWidth(460);
         msgBox.adjustSize();
         switch (msgBox.exec()) {
-            case QMessageBox::AcceptRole:
-                break;
-            case QMessageBox::RejectRole:
-                [[fallthrough]];
-            default:
-                return showFatalErrorMessage(tr("Update Aborted"), tr("The update attempt was aborted"));
+        case QMessageBox::AcceptRole:
+            break;
+        case QMessageBox::RejectRole:
+            [[fallthrough]];
+        default:
+            return showFatalErrorMessage(tr("Update Aborted"), tr("The update attempt was aborted"));
         }
     }
     clearUpdateLog();

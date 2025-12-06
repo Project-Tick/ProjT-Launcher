@@ -399,12 +399,12 @@ QList<BasePage*> ShaderPackDownloadDialog::getPages()
 void ResourceDownloadDialog::setResourceMetadata(const std::shared_ptr<Metadata::ModStruct>& meta)
 {
     switch (meta->provider) {
-        case ModPlatform::ResourceProvider::MODRINTH:
-            selectPage(Modrinth::id());
-            break;
-        case ModPlatform::ResourceProvider::FLAME:
-            selectPage(Flame::id());
-            break;
+    case ModPlatform::ResourceProvider::MODRINTH:
+        selectPage(Modrinth::id());
+        break;
+    case ModPlatform::ResourceProvider::FLAME:
+        selectPage(Flame::id());
+        break;
     }
     setWindowTitle(tr("Change %1 version").arg(meta->name));
     m_container->hidePageList();

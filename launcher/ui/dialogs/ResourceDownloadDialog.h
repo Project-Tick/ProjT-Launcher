@@ -61,7 +61,9 @@ namespace ResourceDownload {
 
 class ResourcePage;
 
-class ResourceDownloadDialog : public QDialog, public BasePageProvider {
+class ResourceDownloadDialog
+    : public QDialog
+    , public BasePageProvider {
     Q_OBJECT
 
    public:

@@ -199,14 +199,14 @@ bool ExternalResourcesPage::shouldDisplay() const
 bool ExternalResourcesPage::listFilter(QKeyEvent* keyEvent)
 {
     switch (keyEvent->key()) {
-        case Qt::Key_Delete:
-            removeItem();
-            return true;
-        case Qt::Key_Plus:
-            addItem();
-            return true;
-        default:
-            break;
+    case Qt::Key_Delete:
+        removeItem();
+        return true;
+    case Qt::Key_Plus:
+        addItem();
+        return true;
+    default:
+        break;
     }
     return QWidget::eventFilter(ui->treeView, keyEvent);
 }

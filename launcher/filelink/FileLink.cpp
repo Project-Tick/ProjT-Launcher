@@ -113,24 +113,24 @@ void FileLinkApp::joinServer(QString server)
     connect(&socket, &QLocalSocket::errorOccurred, this, [this](QLocalSocket::LocalSocketError socketError) {
         m_status = Failed;
         switch (socketError) {
-            case QLocalSocket::ServerNotFoundError:
-                qDebug()
-                    << ("The host was not found. Please make sure "
-                        "that the server is running and that the "
-                        "server name is correct.");
-                break;
-            case QLocalSocket::ConnectionRefusedError:
-                qDebug()
-                    << ("The connection was refused by the peer. "
-                        "Make sure the server is running, "
-                        "and check that the server name "
-                        "is correct.");
-                break;
-            case QLocalSocket::PeerClosedError:
-                qDebug() << ("The connection was closed by the peer. ");
-                break;
-            default:
-                qDebug() << "The following error occurred: " << socket.errorString();
+        case QLocalSocket::ServerNotFoundError:
+            qDebug()
+                << ("The host was not found. Please make sure "
+                    "that the server is running and that the "
+                    "server name is correct.");
+            break;
+        case QLocalSocket::ConnectionRefusedError:
+            qDebug()
+                << ("The connection was refused by the peer. "
+                    "Make sure the server is running, "
+                    "and check that the server name "
+                    "is correct.");
+            break;
+        case QLocalSocket::PeerClosedError:
+            qDebug() << ("The connection was closed by the peer. ");
+            break;
+        default:
+            qDebug() << "The following error occurred: " << socket.errorString();
         }
     });
 

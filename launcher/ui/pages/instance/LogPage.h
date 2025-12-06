@@ -75,7 +75,9 @@ class LogFormatProxyModel : public QIdentityProxyModel {
     QFont m_font;
 };
 
-class LogPage : public QWidget, public BasePage {
+class LogPage
+    : public QWidget
+    , public BasePage {
     Q_OBJECT
 
    public:

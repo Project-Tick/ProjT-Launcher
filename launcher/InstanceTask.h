@@ -42,7 +42,9 @@ struct InstanceName {
     QString m_modified_name;
 };
 
-class InstanceTask : public Task, public InstanceName {
+class InstanceTask
+    : public Task
+    , public InstanceName {
     Q_OBJECT
    public:
     InstanceTask();

@@ -66,7 +66,9 @@ class DataPackPage : public ExternalResourcesPage {
 /**
  * Syncs DataPackPage with GlobalDataPacksPath and shows/hides based on GlobalDataPacksEnabled.
  */
-class GlobalDataPackPage : public QWidget, public BasePage {
+class GlobalDataPackPage
+    : public QWidget
+    , public BasePage {
    public:
     explicit GlobalDataPackPage(MinecraftInstance* instance, QWidget* parent = nullptr);
 
