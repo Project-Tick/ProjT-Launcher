@@ -1,14 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: dataPacksPage
-    color: Theme.background
+    color: ThemeColors.background
     
     property var vm: ProjT.instanceVM
     
@@ -26,7 +38,7 @@ Rectangle {
                 text: qsTr("Data Packs")
                 font.pointSize: 14
                 font.bold: true
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             Item { Layout.fillWidth: true }
@@ -69,7 +81,7 @@ Rectangle {
         
         Label {
             text: qsTr("Data packs are per-world. Select a world to manage its data packs.")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
             visible: worldSelector.count === 0
@@ -111,7 +123,7 @@ Rectangle {
                             Rectangle {
                                 anchors.fill: parent
                                 visible: parent.status !== Image.Ready
-                                color: Theme.surfaceVariant
+                                color: ThemeColors.backgroundAlt
                                 radius: 4
                                 
                                 Label {
@@ -128,7 +140,7 @@ Rectangle {
                             
                             Label {
                                 text: model.name || model.fileName || ""
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                                 font.bold: true
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
@@ -136,7 +148,7 @@ Rectangle {
                             
                             Label {
                                 text: model.description || ""
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                                 font.pointSize: 9
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
@@ -161,14 +173,14 @@ Rectangle {
                 text: worldSelector.currentIndex >= 0 
                       ? qsTr("No data packs in this world.")
                       : qsTr("Select a world to view data packs.")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 horizontalAlignment: Text.AlignHCenter
             }
         }
         
         Label {
             text: vm ? qsTr("%1 data packs").arg(vm.dataPacksCount || 0) : ""
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
         }
     }
 }

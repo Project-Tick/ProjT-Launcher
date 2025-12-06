@@ -15,33 +15,8 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
-
-/**
- * InstanceDelegate – Individual Instance Card/List Item
- * 
- * Renders a single instance in the instance list.
- * Features:
- * - Instance icon display
- * - Name and group info
- * - Status indicators (running, last played)
- * - Context menu (right-click)
- * - Double-click to launch
- * - Drag-drop support
- * 
- * Properties:
- * - instanceId: string
- * - instanceName: string
- * - instanceGroup: string
- * - iconPath: string
- * - isSelected: bool
- * - isRunning: bool
- * 
- * Signals:
- * - clicked(instanceId)
- * - doubleClicked(instanceId)
- * - rightClicked(instanceId, mouseX, mouseY)
- */
 
 Rectangle {
     id: delegate
@@ -65,8 +40,8 @@ Rectangle {
     }
     
     height: 56
-    color: isSelected ? "#2a3340" : (mouseArea.containsMouse ? "#1f2228" : Theme.surface)
-    border.color: isSelected ? Theme.accent : "#323742"
+    color: isSelected ? ThemeColors.highlight : (mouseArea.containsMouse ? ThemeColors.backgroundAlt : ThemeColors.surface)
+    border.color: isSelected ? ThemeColors.accent : ThemeColors.border
     border.width: isSelected ? 1 : 0
     radius: Theme.radius
     
@@ -84,7 +59,7 @@ Rectangle {
             width: 40
             height: 40
             radius: Theme.radius
-            color: "#3d4d60"
+            color: ThemeColors.backgroundAlt
             Layout.alignment: Qt.AlignVCenter
             
             Image {
@@ -99,14 +74,14 @@ Rectangle {
                 Rectangle {
                     anchors.fill: parent
                     visible: !parent.status || parent.status === Image.Error
-                    color: "#3d4d60"
+                    color: ThemeColors.backgroundAlt
                     
                     Text {
                         anchors.centerIn: parent
                         text: instanceName.charAt(0).toUpperCase()
                         font.pointSize: 16
                         font.bold: true
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                     }
                 }
             }
@@ -123,7 +98,7 @@ Rectangle {
                 
                 Text {
                     text: instanceName
-                    color: Theme.textPrimary
+                    color: ThemeColors.text
                     font.pointSize: 12
                     font.bold: true
                     elide: Text.ElideRight
@@ -136,12 +111,12 @@ Rectangle {
                     height: 24
                     radius: 12
                     visible: isRunning
-                    color: "#2d7a2d"
+                    color: ThemeColors.success
                     
                     Text {
                         anchors.centerIn: parent
                         text: qsTr("R")
-                        color: "#7cff7c"
+                        color: ThemeColors.highlightedText
                         font.pointSize: 10
                         font.bold: true
                     }
@@ -154,7 +129,7 @@ Rectangle {
                 
                 Text {
                     text: instanceGroup ? (instanceGroup) : qsTr("No Group")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: 10
                     elide: Text.ElideRight
                     Layout.fillWidth: true
@@ -163,7 +138,7 @@ Rectangle {
                 // Last played info
                 Text {
                     text: lastPlayedText
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: 9
                     font.italic: true
                     Layout.alignment: Qt.AlignRight
@@ -183,15 +158,15 @@ Rectangle {
             background: Rectangle {
                 radius: Theme.radius
                 color: playButton.enabled ? 
-                       (playButton.hovered ? "#1e7e1e" : "#1a6b1a") :
-                       "#555555"
-                border.color: "#2d7a2d"
+                       (playButton.hovered ? Qt.lighter(ThemeColors.success, 1.1) : ThemeColors.success) :
+                       ThemeColors.disabled
+                border.color: Qt.darker(ThemeColors.success, 1.2)
                 border.width: 1
             }
             
             contentItem: Text {
                 text: playButton.text
-                color: playButton.enabled ? "#7cff7c" : "#999999"
+                color: playButton.enabled ? ThemeColors.highlightedText : ThemeColors.textSecondary
                 font.pointSize: 11
                 font.bold: true
                 horizontalAlignment: Text.AlignHCenter

@@ -15,12 +15,13 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "." as Components
 import "../Theme.js" as Theme
 
 Rectangle {
     id: bottomBar
-    color: Theme.surface
+    color: ThemeColors.surface
     height: 40
     width: parent.width
     
@@ -32,8 +33,8 @@ Rectangle {
     
     Rectangle {
         anchors.fill: parent
-        color: Theme.surface
-        border.color: "#323742"
+        color: ThemeColors.surface
+        border.color: ThemeColors.border
         border.width: 1
         
         RowLayout {
@@ -46,7 +47,7 @@ Rectangle {
             // === Status Message ===
             Label {
                 text: bottomBar.statusMessage
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 font.pointSize: 9
                 Layout.fillWidth: true
                 

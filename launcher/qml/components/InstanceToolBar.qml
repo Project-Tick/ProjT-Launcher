@@ -15,12 +15,40 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: instanceToolbar
-    color: Theme.surface
     width: 120
+    
+    // Theme binding - directly from themeVM for reliable updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+    
+    // Computed colors for theme reactivity
+    color: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    
+    property color toolBarColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    property color borderColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border
+    }
+    
+    // Listen for theme changes
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            console.log("[InstanceToolBar] Theme colors changed")
+            instanceToolbar._themeUpdateCount++
+        }
+    }
     
     // ViewModel reference
     readonly property var vm: ProjT.instancesVM
@@ -41,25 +69,33 @@ Rectangle {
     
     Rectangle {
         anchors.fill: parent
-        color: Theme.surface
-        border.color: "#323742"
-        border.width: 1
+        color: instanceToolbar.toolBarColor
+        
+        // Left border only
+        Rectangle {
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: 1
+            color: instanceToolbar.borderColor
+        }
         
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: Theme.spacingS
-            spacing: 2
+            spacing: 4
             
             // === Launch / Kill Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: isRunning ? qsTr("Kill") : qsTr("Launch")
                 icon.name: isRunning ? "process-stop" : "media-playback-start"
                 display: AbstractButton.TextBesideIcon
                 Layout.fillWidth: true
-                Layout.preferredHeight: 32
+                Layout.preferredHeight: 34
                 enabled: hasSelection
                 
-                palette.buttonText: isRunning ? "#ef4444" : (hasSelection ? "#22c55e" : Theme.textSecondary)
+                danger: isRunning
+                success: !isRunning && hasSelection
                 
                 onClicked: {
                     if (isRunning && vm) {
@@ -74,12 +110,17 @@ Rectangle {
                 ToolTip.delay: 500
             }
             
-            ToolSeparator {
+            // Separator
+            Rectangle {
                 Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                Layout.topMargin: 4
+                Layout.bottomMargin: 4
+                color: instanceToolbar.borderColor
             }
             
             // === Edit Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Edit...")
                 icon.name: "configure"
                 display: AbstractButton.TextBesideIcon
@@ -95,7 +136,7 @@ Rectangle {
             }
             
             // === Change Group Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Change Group...")
                 icon.name: "tag"
                 display: AbstractButton.TextBesideIcon
@@ -111,7 +152,7 @@ Rectangle {
             }
             
             // === Folder Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Folder")
                 icon.name: "folder"
                 display: AbstractButton.TextBesideIcon
@@ -129,7 +170,7 @@ Rectangle {
             }
             
             // === Export Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Export...")
                 icon.name: "document-export"
                 display: AbstractButton.TextBesideIcon
@@ -145,7 +186,7 @@ Rectangle {
             }
             
             // === Manage Backups Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Backups...")
                 icon.name: "document-save"
                 display: AbstractButton.TextBesideIcon
@@ -161,7 +202,7 @@ Rectangle {
             }
             
             // === Copy Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Copy...")
                 icon.name: "edit-copy"
                 display: AbstractButton.TextBesideIcon
@@ -177,15 +218,14 @@ Rectangle {
             }
             
             // === Delete Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Delete")
                 icon.name: "edit-delete"
                 display: AbstractButton.TextBesideIcon
                 Layout.fillWidth: true
                 Layout.preferredHeight: 28
                 enabled: hasSelection && !isRunning
-                
-                palette.buttonText: "#ef4444"
+                danger: true
                 
                 onClicked: instanceToolbar.deleteInstance()
                 
@@ -195,7 +235,7 @@ Rectangle {
             }
             
             // === Create Shortcut Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Shortcut")
                 icon.name: "link"
                 display: AbstractButton.TextBesideIcon

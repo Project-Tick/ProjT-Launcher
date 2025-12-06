@@ -15,13 +15,14 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "components"
 import "Theme.js" as Theme
 
 Rectangle {
     id: instancePage
     objectName: "instances"
-    color: Theme.background
+    color: ThemeColors.background
     
     readonly property var vm: ProjT.instancesVM
     
@@ -52,7 +53,7 @@ Rectangle {
             // Instance count label
             Label {
                 text: vm ? qsTr("%1 Instances").arg(vm.totalCount) : qsTr("No instances")
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 font.pointSize: 12
                 font.bold: true
             }
@@ -97,8 +98,8 @@ Rectangle {
                 
                 background: Rectangle {
                     radius: Theme.radius
-                    color: "#1e2227"
-                    border.color: searchField.focus ? Theme.accent : "#323742"
+                    color: ThemeColors.surface
+                    border.color: searchField.focus ? ThemeColors.accent : ThemeColors.border
                     border.width: 1
                 }
                 
@@ -121,8 +122,8 @@ Rectangle {
             Layout.fillHeight: true
             
             background: Rectangle {
-                color: "#1a1d23"
-                border.color: "#323742"
+                color: ThemeColors.backgroundAlt
+                border.color: ThemeColors.border
                 border.width: 1
                 radius: Theme.radius
             }
@@ -190,7 +191,7 @@ Rectangle {
                     visible: instanceList.count === 0
                     anchors.centerIn: parent
                     text: qsTr("No instances.\nClick 'New' to create one.")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: 14
                     horizontalAlignment: Text.AlignHCenter
                 }
@@ -198,7 +199,7 @@ Rectangle {
                 // === Busy Overlay ===
                 Rectangle {
                     anchors.fill: parent
-                    color: "#000000"
+                    color: ThemeColors.background
                     opacity: vm && vm.busy ? 0.3 : 0
                     visible: opacity > 0
                     z: 10
@@ -219,7 +220,7 @@ Rectangle {
                         
                         Text {
                             text: vm && vm.busyReason ? vm.busyReason : qsTr("Loading...")
-                            color: Theme.textPrimary
+                            color: ThemeColors.text
                             font.pointSize: 12
                             anchors.horizontalCenter: parent.horizontalCenter
                         }
@@ -311,7 +312,7 @@ Rectangle {
             
             Label {
                 text: qsTr("New name:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             TextField {
@@ -352,7 +353,7 @@ Rectangle {
             
             Label {
                 text: qsTr("New instance name:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             TextField {
@@ -389,7 +390,7 @@ Rectangle {
         
         Label {
             text: qsTr("Delete \"%1\"?\n\nThis action cannot be undone.").arg(selectedInstanceName)
-            color: "#ff6b6b"
+            color: ThemeColors.error
             wrapMode: Text.WordWrap
             width: parent.width
         }
@@ -415,7 +416,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Import from:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             RowLayout {
@@ -442,7 +443,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Instance name (optional):")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             TextField {
@@ -478,7 +479,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Export location:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             RowLayout {
@@ -502,7 +503,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Format:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             ComboBox {

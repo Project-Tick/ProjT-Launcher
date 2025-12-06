@@ -15,11 +15,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: placeholderPage
-    color: Theme.background
+    color: ThemeColors.background
     
     property string pageName: "Unknown"
     
@@ -41,13 +42,13 @@ Rectangle {
             text: pageName
             font.pointSize: 16
             font.bold: true
-            color: Theme.textPrimary
+            color: ThemeColors.text
         }
         
         Label {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("This page is not yet implemented in QML.\nPlease use the widget-based launcher for this feature.")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
         }

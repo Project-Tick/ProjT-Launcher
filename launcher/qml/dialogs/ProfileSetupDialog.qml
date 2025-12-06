@@ -1,10 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "../components"
 
 Dialog {
     id: profileSetupDialog
@@ -34,7 +47,7 @@ Dialog {
                 Layout.preferredWidth: 80
                 Layout.preferredHeight: 80
                 radius: 40
-                color: Theme.accent
+                color: ThemeColors.accent
                 
                 Image {
                     anchors.fill: parent
@@ -55,7 +68,7 @@ Dialog {
             
             Label {
                 text: qsTr("Welcome, %1!").arg(account ? account.username : "")
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 font.bold: true
                 font.pointSize: Theme.fontSizeMedium
                 Layout.alignment: Qt.AlignHCenter
@@ -74,7 +87,7 @@ Dialog {
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Your Microsoft account doesn't have a Minecraft profile yet. Please create one:")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                 }
                 
@@ -93,7 +106,7 @@ Dialog {
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Must be 3-16 characters. Only letters, numbers, and underscores allowed.")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: Theme.fontSizeSmall - 1
                 }
             }
@@ -122,7 +135,7 @@ Dialog {
                     id: statusLabel
                     Layout.fillWidth: true
                     text: vm ? (vm.profileSetupError || vm.profileSetupStatus) : ""
-                    color: vm && vm.profileSetupError ? "#ef4444" : Theme.textSecondary
+                    color: vm && vm.profileSetupError ? ThemeColors.error : ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                 }
             }
@@ -135,16 +148,17 @@ Dialog {
             Layout.fillWidth: true
             spacing: Theme.spacingM
             
-            Button {
+            ThemedButton {
                 text: qsTr("Cancel")
+                outline: true
                 onClicked: profileSetupDialog.reject()
             }
             
             Item { Layout.fillWidth: true }
             
-            Button {
+            ThemedButton {
                 text: qsTr("Create Profile")
-                highlighted: true
+                primary: true
                 enabled: gameNameField.text.length >= 3 && (!vm || !vm.profileSetupBusy)
                 onClicked: {
                     if (vm && account) {

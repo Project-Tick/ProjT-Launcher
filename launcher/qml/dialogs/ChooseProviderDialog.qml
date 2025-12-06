@@ -1,10 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "../components"
 
 Dialog {
     id: chooseProviderDialog
@@ -28,7 +41,7 @@ Dialog {
         Label {
             Layout.fillWidth: true
             text: qsTr("Multiple sources are available for \"%1\". Please choose a download source:").arg(resourceName)
-            color: Theme.textPrimary
+            color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
         
@@ -52,8 +65,8 @@ Dialog {
                     Rectangle {
                         anchors.fill: parent
                         radius: 6
-                        color: highlighted ? Theme.accent + "20" : "transparent"
-                        border.color: highlighted ? Theme.accent : "transparent"
+                        color: highlighted ? ThemeColors.accent + "20" : "transparent"
+                        border.color: highlighted ? ThemeColors.accent : "transparent"
                         border.width: 1
                     }
                     
@@ -68,9 +81,9 @@ Dialog {
                             Layout.preferredHeight: 44
                             radius: 8
                             color: {
-                                if (modelData.id === "curseforge") return "#f16436"
+                                if (modelData.id === "curseforge") return ThemeColors.error
                                 if (modelData.id === "modrinth") return "#1bd96a"
-                                return Theme.backgroundAlt
+                                return ThemeColors.backgroundAlt
                             }
                             
                             Image {
@@ -98,13 +111,13 @@ Dialog {
                             
                             Label {
                                 text: modelData.name || qsTr("Unknown")
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                                 font.bold: true
                             }
                             
                             Label {
                                 text: modelData.description || ""
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                                 font.pointSize: Theme.fontSizeSmall
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
@@ -116,7 +129,7 @@ Dialog {
                             Layout.preferredWidth: preferredLabel.implicitWidth + 12
                             Layout.preferredHeight: 20
                             radius: 10
-                            color: Theme.accent
+                            color: ThemeColors.accent
                             visible: modelData.preferred === true
                             
                             Label {
@@ -156,9 +169,9 @@ Dialog {
             
             Item { Layout.fillWidth: true }
             
-            Button {
+            ThemedButton {
                 text: qsTr("Select")
-                highlighted: true
+                primary: true
                 enabled: selectedProvider !== null
                 onClicked: {
                     if (rememberCheck.checked && ProjT) {

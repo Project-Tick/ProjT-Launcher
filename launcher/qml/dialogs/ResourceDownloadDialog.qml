@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -74,13 +86,13 @@ Dialog {
             
             Label {
                 text: qsTr("MC %1").arg(minecraftVersion)
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 visible: minecraftVersion.length > 0
             }
             
             Label {
                 text: loaderType
-                color: Theme.accent
+                color: ThemeColors.accent
                 font.bold: true
                 visible: loaderType.length > 0
             }
@@ -102,7 +114,7 @@ Dialog {
                     width: resultsList.width
                     height: 80
                     radius: 6
-                    color: mouseArea.containsMouse ? Theme.backgroundAlt : "transparent"
+                    color: mouseArea.containsMouse ? ThemeColors.backgroundAlt : "transparent"
                     
                     MouseArea {
                         id: mouseArea
@@ -120,7 +132,7 @@ Dialog {
                             Layout.preferredWidth: 56
                             Layout.preferredHeight: 56
                             radius: 8
-                            color: Theme.backgroundAlt
+                            color: ThemeColors.backgroundAlt
                             
                             Image {
                                 anchors.fill: parent
@@ -140,7 +152,7 @@ Dialog {
                                 
                                 Label {
                                     text: modelData.name || qsTr("Unknown")
-                                    color: Theme.textPrimary
+                                    color: ThemeColors.text
                                     font.bold: true
                                 }
                                 
@@ -149,7 +161,7 @@ Dialog {
                                     Layout.preferredWidth: sourceLabel.implicitWidth + 8
                                     Layout.preferredHeight: 16
                                     radius: 8
-                                    color: modelData.source === "curseforge" ? "#f16436" : "#1bd96a"
+                                    color: modelData.source === "curseforge" ? ThemeColors.error : "#1bd96a"
                                     
                                     Label {
                                         id: sourceLabel
@@ -166,14 +178,14 @@ Dialog {
                             Label {
                                 Layout.fillWidth: true
                                 text: modelData.author || ""
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                                 font.pointSize: Theme.fontSizeSmall
                             }
                             
                             Label {
                                 Layout.fillWidth: true
                                 text: modelData.description || ""
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                                 font.pointSize: Theme.fontSizeSmall
                                 elide: Text.ElideRight
                                 maximumLineCount: 2
@@ -186,7 +198,7 @@ Dialog {
                                 
                                 Label {
                                     text: qsTr("%1 downloads").arg(formatNumber(modelData.downloads || 0))
-                                    color: Theme.textSecondary
+                                    color: ThemeColors.textSecondary
                                     font.pointSize: Theme.fontSizeSmall - 1
                                 }
                                 
@@ -219,7 +231,7 @@ Dialog {
             Label {
                 anchors.centerIn: parent
                 text: searchQuery.length > 0 ? qsTr("No results found") : qsTr("Enter a search term to find %1").arg(resourceTypeName())
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 visible: !searching && searchResults.length === 0
             }
         }
@@ -231,7 +243,7 @@ Dialog {
             
             Label {
                 text: qsTr("%1 results").arg(searchResults.length)
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
             }
             
             Item { Layout.fillWidth: true }

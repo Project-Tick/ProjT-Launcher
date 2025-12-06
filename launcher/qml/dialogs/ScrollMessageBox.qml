@@ -1,10 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "../components"
 
 Dialog {
     id: scrollMessageBox
@@ -33,10 +46,10 @@ Dialog {
                 radius: 24
                 color: {
                     if (icon === "info") return "#3b82f6"
-                    if (icon === "warning") return "#f59e0b"
-                    if (icon === "error") return "#ef4444"
+                    if (icon === "warning") return ThemeColors.warning
+                    if (icon === "error") return ThemeColors.error
                     if (icon === "question") return "#8b5cf6"
-                    return Theme.accent
+                    return ThemeColors.accent
                 }
                 
                 Label {
@@ -57,7 +70,7 @@ Dialog {
             Label {
                 Layout.fillWidth: true
                 text: scrollMessageBox.title
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 font.bold: true
                 font.pointSize: Theme.fontSizeMedium
                 wrapMode: Text.WordWrap
@@ -78,7 +91,7 @@ Dialog {
                     readOnly: true
                     text: message
                     wrapMode: Text.WordWrap
-                    color: Theme.textPrimary
+                    color: ThemeColors.text
                     selectByMouse: true
                     background: Rectangle {
                         color: "transparent"
@@ -93,9 +106,10 @@ Dialog {
             
             Item { Layout.fillWidth: true }
             
-            Button {
+            ThemedButton {
                 text: qsTr("Copy to Clipboard")
-                icon.name: "edit-copy"
+                flatStyle: true
+                size: "small"
                 onClicked: {
                     if (ProjT) {
                         ProjT.copyToClipboard(message)

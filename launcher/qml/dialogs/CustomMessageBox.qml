@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -34,11 +46,11 @@ Dialog {
             visible: icon.length > 0
             color: {
                 if (icon === "info") return "#3b82f6"
-                if (icon === "warning") return "#f59e0b"
-                if (icon === "error") return "#ef4444"
+                if (icon === "warning") return ThemeColors.warning
+                if (icon === "error") return ThemeColors.error
                 if (icon === "question") return "#8b5cf6"
-                if (icon === "success") return "#22c55e"
-                return Theme.accent
+                if (icon === "success") return ThemeColors.success
+                return ThemeColors.accent
             }
             
             Label {
@@ -61,7 +73,7 @@ Dialog {
         Label {
             Layout.fillWidth: true
             text: customMessageBox.title
-            color: Theme.textPrimary
+            color: ThemeColors.text
             font.bold: true
             font.pointSize: Theme.fontSizeMedium
             horizontalAlignment: Text.AlignHCenter
@@ -75,7 +87,7 @@ Dialog {
             Layout.fillWidth: true
             Layout.fillHeight: true
             text: message
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
         }

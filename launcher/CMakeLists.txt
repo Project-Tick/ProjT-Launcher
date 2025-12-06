@@ -825,6 +825,8 @@ SET(LAUNCHER_SOURCES
     viewmodels/CurseForgeViewModel.cpp
     viewmodels/ModrinthViewModel.h
     viewmodels/ModrinthViewModel.cpp
+    viewmodels/ThemeViewModel.h
+    viewmodels/ThemeViewModel.cpp
 
     # Super secret!
     KonamiCode.h

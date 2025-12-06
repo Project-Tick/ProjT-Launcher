@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -74,7 +86,7 @@ Dialog {
                         width: filesList.width
                         height: 40
                         radius: 4
-                        color: index % 2 === 0 ? "transparent" : Theme.backgroundAlt
+                        color: index % 2 === 0 ? "transparent" : ThemeColors.backgroundAlt
                         
                         RowLayout {
                             anchors.fill: parent
@@ -86,7 +98,7 @@ Dialog {
                                     var path = modelData
                                     return path.substring(path.lastIndexOf("/") + 1)
                                 }
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                                 Layout.fillWidth: true
                                 elide: Text.ElideMiddle
                             }
@@ -108,7 +120,7 @@ Dialog {
                 Label {
                     Layout.alignment: Qt.AlignCenter
                     text: qsTr("No files selected")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     visible: filePaths.length === 0
                 }
                 
@@ -152,14 +164,14 @@ Dialog {
             Layout.preferredHeight: 50
             radius: 8
             color: "transparent"
-            border.color: Theme.accent
+            border.color: ThemeColors.accent
             border.width: 2
             visible: filePaths.length === 0
             
             Label {
                 anchors.centerIn: parent
                 text: qsTr("Drag and drop files here or use 'Add Files' button")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
             }
             
             DropArea {
@@ -187,7 +199,7 @@ Dialog {
         Label {
             Layout.fillWidth: true
             text: qsTr("%1 file(s) selected for import").arg(filePaths.length)
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             font.pointSize: Theme.fontSizeSmall
         }
     }

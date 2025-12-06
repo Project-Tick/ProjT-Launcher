@@ -15,11 +15,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: importPage
-    color: Theme.background
+    color: ThemeColors.background
     
     property string importUrl: ""
     property var vm: ProjT.instancesVM
@@ -34,12 +35,12 @@ Rectangle {
             text: qsTr("Import from zip")
             font.pointSize: 14
             font.bold: true
-            color: Theme.textPrimary
+            color: ThemeColors.text
         }
         
         Label {
             text: qsTr("Import an instance from a zip file or URL.\nSupported formats: MultiMC, Prism Launcher, CurseForge, Modrinth, FTB")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
         }
@@ -120,8 +121,8 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: dropArea.containsDrag ? Theme.accent + "30" : Theme.surfaceBackground
-            border.color: dropArea.containsDrag ? Theme.accent : Theme.border
+            color: dropArea.containsDrag ? ThemeColors.accent + "30" : ThemeColors.surface
+            border.color: dropArea.containsDrag ? ThemeColors.accent : ThemeColors.border
             border.width: dropArea.containsDrag ? 2 : 1
             radius: Theme.radiusM
             
@@ -161,14 +162,14 @@ Rectangle {
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Drag and drop a modpack file here")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: 12
                 }
                 
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("or use the options above to select a file")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: 10
                 }
             }
@@ -181,12 +182,12 @@ Rectangle {
             
             Label {
                 text: qsTr("Selected:")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
             }
             
             Label {
                 text: importPage.importUrl
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 elide: Text.ElideMiddle
                 Layout.fillWidth: true
             }

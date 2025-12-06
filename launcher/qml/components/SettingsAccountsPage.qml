@@ -15,11 +15,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: accountsPage
-    color: Theme.background
+    color: ThemeColors.background
     
     // Login dialog state
     property bool showLoginDialog: false
@@ -61,7 +62,7 @@ Rectangle {
                 text: qsTr("Accounts")
                 font.pointSize: 12
                 font.bold: true
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             Item { Layout.fillWidth: true }
@@ -96,8 +97,8 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Theme.surfaceBackground
-            border.color: Theme.border
+            color: ThemeColors.surface
+            border.color: ThemeColors.border
             border.width: 1
             radius: Theme.radiusS
             
@@ -118,7 +119,7 @@ Rectangle {
                     property bool isDefault: accountsVM.isAccountDefault(index)
                     
                     background: Rectangle {
-                        color: accountDelegate.hovered ? Theme.surfaceHover : "transparent"
+                        color: accountDelegate.hovered ? ThemeColors.surfaceHover : "transparent"
                     }
                     
                     contentItem: RowLayout {
@@ -129,7 +130,7 @@ Rectangle {
                             Layout.preferredWidth: 40
                             Layout.preferredHeight: 40
                             radius: 4
-                            color: Theme.border
+                            color: ThemeColors.border
                             
                             Label {
                                 anchors.centerIn: parent
@@ -148,7 +149,7 @@ Rectangle {
                                 
                                 Label {
                                     text: accountsVM.getAccountName(index) || qsTr("Unknown")
-                                    color: Theme.textPrimary
+                                    color: ThemeColors.text
                                     font.bold: true
                                 }
                                 
@@ -157,7 +158,7 @@ Rectangle {
                                     width: defaultLabel.width + 8
                                     height: defaultLabel.height + 4
                                     radius: 2
-                                    color: Theme.success
+                                    color: ThemeColors.success
                                     
                                     Label {
                                         id: defaultLabel
@@ -176,7 +177,7 @@ Rectangle {
                                     if (type === "offline") return qsTr("Offline Account")
                                     return type
                                 }
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                                 font.pointSize: 9
                             }
                         }
@@ -186,9 +187,9 @@ Rectangle {
                             text: accountsVM.getAccountStatus(index)
                             color: {
                                 var info = accountDelegate.accountInfo
-                                if (info && info.status === "online") return Theme.success
-                                if (info && (info.status === "expired" || info.status === "error")) return Theme.error
-                                return Theme.textSecondary
+                                if (info && info.status === "online") return ThemeColors.success
+                                if (info && (info.status === "expired" || info.status === "error")) return ThemeColors.error
+                                return ThemeColors.textSecondary
                             }
                             font.pointSize: 9
                         }
@@ -241,14 +242,14 @@ Rectangle {
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("No accounts added")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: 12
                 }
                 
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Add a Microsoft account to play Minecraft")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                 }
                 
                 Button {
@@ -276,7 +277,7 @@ Rectangle {
         // Info
         Label {
             text: qsTr("Note: Account data is stored securely using system keychain.")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             font.pointSize: 9
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
@@ -296,7 +297,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Username:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             TextField {
@@ -307,7 +308,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Offline accounts cannot access online servers.")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 font.pointSize: 9
                 wrapMode: Text.WordWrap
             }
@@ -338,7 +339,7 @@ Rectangle {
         
         Label {
             text: qsTr("Are you sure you want to remove '%1'?").arg(removeConfirmDialog.accountName)
-            color: Theme.textPrimary
+            color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
         
@@ -363,7 +364,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Please visit the following URL to complete login:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 wrapMode: Text.WordWrap
                 Layout.maximumWidth: 400
             }
@@ -379,7 +380,7 @@ Rectangle {
             Label {
                 visible: loginCode.length > 0
                 text: qsTr("Enter this code: %1").arg(loginCode)
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 font.bold: true
                 font.pointSize: 14
                 Layout.alignment: Qt.AlignHCenter
@@ -400,7 +401,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Waiting for login...")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 Layout.alignment: Qt.AlignHCenter
             }
         }

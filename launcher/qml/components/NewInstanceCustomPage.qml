@@ -15,11 +15,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: customPage
-    color: Theme.background
+    color: ThemeColors.background
     
     property string selectedVersion: ""
     property var vm: ProjT.newInstanceVM
@@ -38,12 +39,12 @@ Rectangle {
             text: qsTr("Custom")
             font.pointSize: 14
             font.bold: true
-            color: Theme.textPrimary
+            color: ThemeColors.text
         }
         
         Label {
             text: qsTr("Select a Minecraft version to create a new instance")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
         }
@@ -105,8 +106,8 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Theme.surfaceBackground
-            border.color: Theme.border
+            color: ThemeColors.surface
+            border.color: ThemeColors.border
             border.width: 1
             radius: Theme.radiusS
             
@@ -135,13 +136,13 @@ Rectangle {
                         
                         Label {
                             text: model.version || model.versionId || ""
-                            color: Theme.textPrimary
+                            color: ThemeColors.text
                             Layout.fillWidth: true
                         }
                         
                         Label {
                             text: model.type || ""
-                            color: Theme.textSecondary
+                            color: ThemeColors.textSecondary
                             font.pointSize: 9
                         }
                     }
@@ -171,7 +172,7 @@ Rectangle {
                 anchors.centerIn: parent
                 visible: versionListView.count === 0
                 text: qsTr("Loading versions...")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
             }
         }
         
@@ -206,7 +207,7 @@ Rectangle {
                         anchors.centerIn: parent
                         visible: parent.count === 0 && parent.enabled
                         text: qsTr("Select version first")
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                     }
                 }
             }
@@ -231,14 +232,14 @@ Rectangle {
                 
                 Label {
                     text: customPage.selectedVersion
-                    color: Theme.textPrimary
+                    color: ThemeColors.text
                     font.bold: true
                     Layout.fillWidth: true
                 }
                 
                 Label {
                     text: loaderCombo.currentIndex > 0 ? ("+ " + loaderCombo.currentText) : ""
-                    color: Theme.accent
+                    color: ThemeColors.accent
                     visible: loaderCombo.currentIndex > 0
                 }
             }

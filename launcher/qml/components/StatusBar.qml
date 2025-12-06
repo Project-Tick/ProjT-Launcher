@@ -15,12 +15,45 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: statusBar
-    color: Theme.surfaceVariant
     height: 24
+    
+    // Theme binding - directly from themeVM for reliable updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+    
+    // Computed colors for theme reactivity
+    color: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    
+    property color toolBarColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    property color borderColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border
+    }
+    property color textSecondaryColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.textColor, 1.3) : ThemeColors.textSecondary
+    }
+    property color successColor: ThemeColors.success
+    
+    // Listen for theme changes
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            console.log("[StatusBar] Theme colors changed")
+            statusBar._themeUpdateCount++
+        }
+    }
     
     // Status properties
     property string statusLeft: ""
@@ -43,9 +76,16 @@ Rectangle {
     
     Rectangle {
         anchors.fill: parent
-        color: Theme.surfaceVariant
-        border.color: "#323742"
-        border.width: 1
+        color: statusBar.toolBarColor
+        
+        // Top border only
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: 1
+            color: statusBar.borderColor
+        }
         
         RowLayout {
             anchors.fill: parent
@@ -56,7 +96,7 @@ Rectangle {
             // === Status Left (main status message) ===
             Label {
                 text: computedStatusLeft
-                color: isRunning ? "#4ade80" : Theme.textSecondary
+                color: isRunning ? statusBar.successColor : statusBar.textSecondaryColor
                 font.pointSize: 9
                 elide: Text.ElideRight
                 Layout.fillWidth: true
@@ -75,7 +115,7 @@ Rectangle {
             // === Status Center (version info) ===
             Label {
                 text: statusCenter
-                color: Theme.textSecondary
+                color: statusBar.textSecondaryColor
                 font.pointSize: 9
                 Layout.alignment: Qt.AlignVCenter
             }

@@ -7,23 +7,21 @@
  *
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
-
-
-/**
- * Servers Page – Phase 11.C.2
- * Lists and manages multiplayer servers for instance
- */
 
 Rectangle {
     id: root
     objectName: "serversPage"
-    color: Theme.background
+    color: ThemeColors.background
     
     property var vm: ProjT.instanceVM
     
@@ -41,7 +39,7 @@ Rectangle {
                 text: qsTr("Servers")
                 font.pixelSize: 24
                 font.weight: Font.Bold
-                color: Theme.foreground
+                color: ThemeColors.text
             }
             
             Item { Layout.fillWidth: true }
@@ -51,15 +49,15 @@ Rectangle {
                 onClicked: if (root.vm) root.vm.openGameFolder()
                 
                 background: Rectangle {
-                    color: parent.hovered ? Theme.surface1 : Theme.surface0
-                    border.color: Theme.surface2
+                    color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                    border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -69,7 +67,7 @@ Rectangle {
         Text {
             text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
             font.pixelSize: 14
-            color: Theme.mutedForeground
+            color: ThemeColors.textSecondary
             visible: root.vm !== null
         }
         
@@ -83,15 +81,15 @@ Rectangle {
                 onClicked: addServerDialog.open()
                 
                 background: Rectangle {
-                    color: parent.hovered ? Theme.surface1 : Theme.surface0
-                    border.color: Theme.surface2
+                    color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                    border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -108,15 +106,15 @@ Rectangle {
                 }
                 
                 background: Rectangle {
-                    color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
-                    border.color: Theme.surface2
+                    color: parent.enabled ? (parent.hovered ? ThemeColors.hover : ThemeColors.surface) : ThemeColors.disabled
+                    border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: parent.enabled ? Theme.foreground : Theme.mutedForeground
+                    color: parent.enabled ? ThemeColors.text : ThemeColors.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -128,15 +126,15 @@ Rectangle {
                 onClicked: deleteServerDialog.open()
                 
                 background: Rectangle {
-                    color: parent.enabled ? (parent.hovered ? Theme.red : Theme.surface0) : Theme.mantle
-                    border.color: parent.enabled ? Theme.red : Theme.surface2
+                    color: parent.enabled ? (parent.hovered ? ThemeColors.error : ThemeColors.surface) : ThemeColors.disabled
+                    border.color: parent.enabled ? ThemeColors.error : ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: parent.enabled ? (parent.hovered ? Theme.base : Theme.red) : Theme.mutedForeground
+                    color: parent.enabled ? (parent.hovered ? ThemeColors.surface : ThemeColors.error) : ThemeColors.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -145,7 +143,7 @@ Rectangle {
             Rectangle {
                 width: 1
                 height: 24
-                color: Theme.surface1
+                color: ThemeColors.hover
             }
             
             Button {
@@ -158,15 +156,15 @@ Rectangle {
                 }
                 
                 background: Rectangle {
-                    color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
-                    border.color: Theme.surface2
+                    color: parent.enabled ? (parent.hovered ? ThemeColors.hover : ThemeColors.surface) : ThemeColors.disabled
+                    border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: parent.enabled ? Theme.foreground : Theme.mutedForeground
+                    color: parent.enabled ? ThemeColors.text : ThemeColors.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -182,15 +180,15 @@ Rectangle {
                 }
                 
                 background: Rectangle {
-                    color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
-                    border.color: Theme.surface2
+                    color: parent.enabled ? (parent.hovered ? ThemeColors.hover : ThemeColors.surface) : ThemeColors.disabled
+                    border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: parent.enabled ? Theme.foreground : Theme.mutedForeground
+                    color: parent.enabled ? ThemeColors.text : ThemeColors.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -205,15 +203,15 @@ Rectangle {
                 }
                 
                 background: Rectangle {
-                    color: parent.hovered ? Theme.surface1 : Theme.surface0
-                    border.color: Theme.surface2
+                    color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                    border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -238,7 +236,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: qsTr("No servers configured.\nAdd servers in-game or use the Add button.")
                 horizontalAlignment: Text.AlignHCenter
-                color: Theme.mutedForeground
+                color: ThemeColors.textSecondary
                 font.pixelSize: 14
                 visible: serversList.count === 0
             }
@@ -246,8 +244,8 @@ Rectangle {
             delegate: Rectangle {
                 width: serversList.width
                 height: 70
-                color: serversList.currentIndex === index ? Theme.selection : Theme.surface0
-                border.color: serversList.currentIndex === index ? Theme.accent : Theme.surface1
+                color: serversList.currentIndex === index ? ThemeColors.highlight : ThemeColors.surface
+                border.color: serversList.currentIndex === index ? ThemeColors.accent : ThemeColors.hover
                 border.width: 1
                 radius: Theme.radiusS
                 
@@ -270,7 +268,7 @@ Rectangle {
                     Rectangle {
                         width: 48
                         height: 48
-                        color: Theme.mantle
+                        color: ThemeColors.disabled
                         radius: Theme.radiusS
                         
                         Image {
@@ -296,21 +294,21 @@ Rectangle {
                         
                         Text {
                             text: model.name || qsTr("Server %1").arg(index + 1)
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             font.weight: Font.DemiBold
                             font.pixelSize: 14
                         }
                         
                         Text {
                             text: model.address || "localhost:25565"
-                            color: Theme.mutedForeground
+                            color: ThemeColors.textSecondary
                             font.pixelSize: 12
                             font.family: "monospace"
                         }
                         
                         Text {
                             text: model.motd || ""
-                            color: Theme.mutedForeground
+                            color: ThemeColors.textSecondary
                             font.pixelSize: 11
                             elide: Text.ElideRight
                             Layout.fillWidth: true
@@ -324,9 +322,9 @@ Rectangle {
                         height: 12
                         radius: 6
                         color: {
-                            if (model.status === "online") return Theme.green;
-                            if (model.status === "offline") return Theme.red;
-                            return Theme.yellow;
+                            if (model.status === "online") return ThemeColors.success;
+                            if (model.status === "offline") return ThemeColors.error;
+                            return ThemeColors.warning;
                         }
                         
                         ToolTip.visible: statusMouseArea.containsMouse
@@ -363,7 +361,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Server Name:")
-                color: Theme.foreground
+                color: ThemeColors.text
             }
             
             TextField {
@@ -374,7 +372,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Server Address:")
-                color: Theme.foreground
+                color: ThemeColors.text
             }
             
             TextField {
@@ -411,7 +409,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Server Name:")
-                color: Theme.foreground
+                color: ThemeColors.text
             }
             
             TextField {
@@ -421,7 +419,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Server Address:")
-                color: Theme.foreground
+                color: ThemeColors.text
             }
             
             TextField {
@@ -456,7 +454,7 @@ Rectangle {
         
         Label {
             text: qsTr("Are you sure you want to delete this server?")
-            color: Theme.red
+            color: ThemeColors.error
             wrapMode: Text.WordWrap
         }
         

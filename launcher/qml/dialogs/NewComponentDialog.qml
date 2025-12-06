@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -24,7 +36,7 @@ Dialog {
         
         Label {
             text: qsTr("Select a component type to add:")
-            color: Theme.textPrimary
+            color: ThemeColors.text
         }
         
         // Component type grid
@@ -51,8 +63,8 @@ Dialog {
                     
                     background: Rectangle {
                         radius: 8
-                        color: highlighted ? modelData.color : Theme.backgroundAlt
-                        border.color: highlighted ? modelData.color : Theme.divider
+                        color: highlighted ? modelData.color : ThemeColors.backgroundAlt
+                        border.color: highlighted ? modelData.color : ThemeColors.border
                         border.width: 1
                     }
                     
@@ -76,7 +88,7 @@ Dialog {
                         
                         Label {
                             text: modelData.name
-                            color: highlighted ? (modelData.id === "fabric" ? "#333" : "white") : Theme.textPrimary
+                            color: highlighted ? (modelData.id === "fabric" ? "#333" : "white") : ThemeColors.text
                             font.bold: highlighted
                         }
                     }
@@ -115,7 +127,7 @@ Dialog {
                             anchors.fill: parent
                             anchors.margins: Theme.spacingS
                             text: modelData
-                            color: Theme.textPrimary
+                            color: ThemeColors.text
                             verticalAlignment: Text.AlignVCenter
                         }
                         
@@ -138,7 +150,7 @@ Dialog {
                 Label {
                     anchors.centerIn: parent
                     text: selectedType.length > 0 ? qsTr("No versions available") : qsTr("Select a component type")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     visible: !vm || (!vm.loadingComponentVersions && vm.componentVersions.length === 0)
                 }
             }
@@ -150,7 +162,7 @@ Dialog {
             text: selectedType.length > 0 && selectedVersion.length > 0 
                 ? qsTr("Will add: %1 %2").arg(selectedType.charAt(0).toUpperCase() + selectedType.slice(1)).arg(selectedVersion)
                 : qsTr("Select a component and version")
-            color: selectedType.length > 0 && selectedVersion.length > 0 ? Theme.accent : Theme.textSecondary
+            color: selectedType.length > 0 && selectedVersion.length > 0 ? ThemeColors.accent : ThemeColors.textSecondary
             font.italic: selectedType.length === 0 || selectedVersion.length === 0
         }
     }

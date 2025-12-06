@@ -272,3 +272,9 @@ QString LauncherViewModel::browseForSave(const QString& title, const QString& fi
     }
     return QFileDialog::getSaveFileName(parent, title, QString(), filter);
 }
+
+void LauncherViewModel::quit()
+{
+    // Properly quit the application on all platforms
+    QApplication::quit();
+}

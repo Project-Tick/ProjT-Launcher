@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -27,7 +39,7 @@ Dialog {
         Label {
             Layout.fillWidth: true
             text: message
-            color: Theme.textPrimary
+            color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
         
@@ -54,7 +66,7 @@ Dialog {
                         color: {
                             if (modelData.type === "add") return "#22c55e15"
                             if (modelData.type === "remove") return "#ef444415"
-                            if (modelData.type === "update") return "#f59e0b15"
+                            if (modelData.type === "update") return Qt.rgba(ThemeColors.warning.r, ThemeColors.warning.g, ThemeColors.warning.b, 0.08)
                             return "transparent"
                         }
                         
@@ -70,10 +82,10 @@ Dialog {
                                 Layout.preferredHeight: 24
                                 radius: 12
                                 color: {
-                                    if (modelData.type === "add") return "#22c55e"
-                                    if (modelData.type === "remove") return "#ef4444"
-                                    if (modelData.type === "update") return "#f59e0b"
-                                    return Theme.textSecondary
+                                    if (modelData.type === "add") return ThemeColors.success
+                                    if (modelData.type === "remove") return ThemeColors.error
+                                    if (modelData.type === "update") return ThemeColors.warning
+                                    return ThemeColors.textSecondary
                                 }
                                 
                                 Label {
@@ -95,13 +107,13 @@ Dialog {
                                 
                                 Label {
                                     text: modelData.name || qsTr("Unknown")
-                                    color: Theme.textPrimary
+                                    color: ThemeColors.text
                                     font.bold: true
                                 }
                                 
                                 Label {
                                     text: modelData.description || ""
-                                    color: Theme.textSecondary
+                                    color: ThemeColors.textSecondary
                                     font.pointSize: Theme.fontSizeSmall
                                     visible: text.length > 0
                                     wrapMode: Text.WordWrap
@@ -117,7 +129,7 @@ Dialog {
                 Label {
                     anchors.centerIn: parent
                     text: qsTr("No changes to review")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     visible: changes.length === 0
                 }
             }
@@ -130,7 +142,7 @@ Dialog {
             
             Label {
                 text: qsTr("%1 change(s)").arg(changes.length)
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
             }
             
             Item { Layout.fillWidth: true }
@@ -142,19 +154,19 @@ Dialog {
                 
                 Label {
                     text: "+" + changes.filter(function(c) { return c.type === "add" }).length
-                    color: "#22c55e"
+                    color: ThemeColors.success
                     font.bold: true
                 }
                 
                 Label {
                     text: "-" + changes.filter(function(c) { return c.type === "remove" }).length
-                    color: "#ef4444"
+                    color: ThemeColors.error
                     font.bold: true
                 }
                 
                 Label {
                     text: "↑" + changes.filter(function(c) { return c.type === "update" }).length
-                    color: "#f59e0b"
+                    color: ThemeColors.warning
                     font.bold: true
                 }
             }

@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -42,13 +54,13 @@ Dialog {
                     text: qsTr("Please wait...")
                     font.pointSize: 16
                     font.bold: true
-                    color: Theme.textPrimary
+                    color: ThemeColors.text
                     Layout.alignment: Qt.AlignHCenter
                 }
                 
                 Label {
                     text: statusText || qsTr("Initializing...")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     Layout.alignment: Qt.AlignHCenter
                     wrapMode: Text.WordWrap
                 }
@@ -82,19 +94,19 @@ Dialog {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: Theme.border
+                color: ThemeColors.border
             }
             
             Label {
                 text: qsTr("Or")
                 font.pointSize: 16
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
             }
             
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: Theme.border
+                color: ThemeColors.border
             }
         }
         
@@ -113,13 +125,13 @@ Dialog {
                     text: qsTr("Please wait...")
                     font.pointSize: 16
                     font.bold: true
-                    color: Theme.textPrimary
+                    color: ThemeColors.text
                     Layout.alignment: Qt.AlignHCenter
                 }
                 
                 Label {
                     text: statusText || qsTr("Waiting for device code...")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     Layout.alignment: Qt.AlignHCenter
                     wrapMode: Text.WordWrap
                 }
@@ -157,7 +169,7 @@ Dialog {
                     Label {
                         anchors.centerIn: parent
                         text: qsTr("QR Code")
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                         visible: qrCodeData === ""
                     }
                 }
@@ -172,7 +184,7 @@ Dialog {
                         text: userCode || "--------"
                         font.pointSize: 30
                         font.bold: true
-                        color: Theme.accent
+                        color: ThemeColors.accent
                         
                         MouseArea {
                             anchors.fill: parent
@@ -200,7 +212,7 @@ Dialog {
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Open <a href=\"%1\">%1</a> and enter the code above to sign in.").arg(loginUrl || "https://microsoft.com/link")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
                     onLinkActivated: (link) => Qt.openUrlExternally(link)
@@ -270,7 +282,7 @@ Dialog {
         
         Label {
             text: errorDialog.message
-            color: Theme.danger
+            color: ThemeColors.error
             wrapMode: Text.WordWrap
         }
     }

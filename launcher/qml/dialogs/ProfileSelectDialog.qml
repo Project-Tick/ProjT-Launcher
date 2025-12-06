@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -23,7 +35,7 @@ Dialog {
         
         Label {
             text: qsTr("Select an account to use:")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
         }
         
         Frame {
@@ -51,7 +63,7 @@ Dialog {
                             Layout.preferredWidth: 40
                             Layout.preferredHeight: 40
                             radius: 4
-                            color: Theme.backgroundAlt
+                            color: ThemeColors.backgroundAlt
                             
                             Image {
                                 anchors.fill: parent
@@ -65,7 +77,7 @@ Dialog {
                                 anchors.centerIn: parent
                                 text: modelData.username ? modelData.username.charAt(0).toUpperCase() : "?"
                                 font.pointSize: 16
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                                 visible: parent.children[0].status !== Image.Ready
                             }
                         }
@@ -76,7 +88,7 @@ Dialog {
                             
                             Label {
                                 text: modelData.username || qsTr("Unknown")
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                                 font.bold: modelData.isActive
                             }
                             
@@ -86,7 +98,7 @@ Dialog {
                                     if (modelData.type === "offline") return qsTr("Offline")
                                     return modelData.type || ""
                                 }
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                                 font.pointSize: Theme.fontSizeSmall
                             }
                         }
@@ -96,7 +108,7 @@ Dialog {
                             Layout.preferredWidth: 8
                             Layout.preferredHeight: 8
                             radius: 4
-                            color: Theme.accent
+                            color: ThemeColors.accent
                             visible: modelData.isActive
                         }
                     }
@@ -117,7 +129,7 @@ Dialog {
             Label {
                 anchors.centerIn: parent
                 text: qsTr("No accounts added")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 visible: !vm || vm.accounts.length === 0
             }
         }

@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -26,7 +38,7 @@ Dialog {
             Layout.fillWidth: true
             Layout.preferredHeight: 60
             radius: 8
-            color: "#ff5722"
+            color: ThemeColors.warning
             opacity: 0.15
             
             RowLayout {
@@ -38,7 +50,7 @@ Dialog {
                     Layout.preferredWidth: 40
                     Layout.preferredHeight: 40
                     radius: 20
-                    color: "#ff5722"
+                    color: ThemeColors.warning
                     
                     Label {
                         anchors.centerIn: parent
@@ -55,13 +67,13 @@ Dialog {
                     
                     Label {
                         text: qsTr("Some mods require manual download")
-                        color: "#ff5722"
+                        color: ThemeColors.warning
                         font.bold: true
                     }
                     
                     Label {
                         text: qsTr("These mods cannot be downloaded automatically due to licensing restrictions.")
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                         font.pointSize: Theme.fontSizeSmall
                         wrapMode: Text.WordWrap
                     }
@@ -73,7 +85,7 @@ Dialog {
         Label {
             Layout.fillWidth: true
             text: qsTr("Please download the following mods manually and place them in the mods folder:")
-            color: Theme.textPrimary
+            color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
         
@@ -93,7 +105,7 @@ Dialog {
                     width: modsList.width
                     height: 56
                     radius: 4
-                    color: index % 2 === 0 ? "transparent" : Theme.backgroundAlt
+                    color: index % 2 === 0 ? "transparent" : ThemeColors.backgroundAlt
                     
                     RowLayout {
                         anchors.fill: parent
@@ -106,13 +118,13 @@ Dialog {
                             
                             Label {
                                 text: modelData.name || qsTr("Unknown Mod")
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                                 font.bold: true
                             }
                             
                             Label {
                                 text: modelData.version || ""
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                                 font.pointSize: Theme.fontSizeSmall
                                 visible: text.length > 0
                             }
@@ -146,7 +158,7 @@ Dialog {
             Label {
                 anchors.centerIn: parent
                 text: qsTr("No blocked mods")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 visible: blockedMods.length === 0
             }
         }
@@ -170,7 +182,7 @@ Dialog {
             
             Label {
                 text: qsTr("%1 mod(s) require manual download").arg(blockedMods.length)
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 font.pointSize: Theme.fontSizeSmall
             }
         }

@@ -1,14 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: instanceSettingsPage
-    color: Theme.background
+    color: ThemeColors.background
     
     property var vm: typeof ProjT !== "undefined" && ProjT ? ProjT.instanceVM : null
     
@@ -39,7 +51,7 @@ Rectangle {
                 text: qsTr("Instance Settings")
                 font.pointSize: 14
                 font.bold: true
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             // Java Settings
@@ -64,7 +76,7 @@ Rectangle {
                         
                         Label {
                             text: qsTr("Java Path:")
-                            color: Theme.textPrimary
+                            color: ThemeColors.text
                         }
                         
                         TextField {
@@ -110,7 +122,7 @@ Rectangle {
                         
                         Label {
                             text: qsTr("Minimum:")
-                            color: Theme.textPrimary
+                            color: ThemeColors.text
                         }
                         
                         RowLayout {
@@ -124,13 +136,13 @@ Rectangle {
                             }
                             Label {
                                 text: qsTr("MB")
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                             }
                         }
                         
                         Label {
                             text: qsTr("Maximum:")
-                            color: Theme.textPrimary
+                            color: ThemeColors.text
                         }
                         
                         RowLayout {
@@ -144,7 +156,7 @@ Rectangle {
                             }
                             Label {
                                 text: qsTr("MB")
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                             }
                         }
                     }
@@ -182,7 +194,7 @@ Rectangle {
                         Layout.fillWidth: true
                         enabled: overrideWindowCheck.checked
                         
-                        Label { text: qsTr("Width:"); color: Theme.textPrimary }
+                        Label { text: qsTr("Width:"); color: ThemeColors.text }
                         SpinBox {
                             from: 640
                             to: 7680
@@ -190,7 +202,7 @@ Rectangle {
                             onValueChanged: setProp("windowWidth", value)
                         }
                         
-                        Label { text: qsTr("Height:"); color: Theme.textPrimary }
+                        Label { text: qsTr("Height:"); color: ThemeColors.text }
                         SpinBox {
                             from: 480
                             to: 4320
@@ -285,21 +297,21 @@ Rectangle {
                         Layout.fillWidth: true
                         enabled: overrideCmdsCheck.checked
                         
-                        Label { text: qsTr("Pre-launch:"); color: Theme.textPrimary }
+                        Label { text: qsTr("Pre-launch:"); color: ThemeColors.text }
                         TextField {
                             Layout.fillWidth: true
                             text: getString("preLaunchCommand", "")
                             onTextChanged: setProp("preLaunchCommand", text)
                         }
                         
-                        Label { text: qsTr("Wrapper:"); color: Theme.textPrimary }
+                        Label { text: qsTr("Wrapper:"); color: ThemeColors.text }
                         TextField {
                             Layout.fillWidth: true
                             text: getString("wrapperCommand", "")
                             onTextChanged: setProp("wrapperCommand", text)
                         }
                         
-                        Label { text: qsTr("Post-exit:"); color: Theme.textPrimary }
+                        Label { text: qsTr("Post-exit:"); color: ThemeColors.text }
                         TextField {
                             Layout.fillWidth: true
                             text: getString("postExitCommand", "")

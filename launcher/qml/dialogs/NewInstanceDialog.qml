@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -25,7 +37,7 @@ Dialog {
         Rectangle {
             Layout.preferredWidth: 180
             Layout.fillHeight: true
-            color: Theme.backgroundAlt
+            color: ThemeColors.backgroundAlt
             
             ColumnLayout {
                 anchors.fill: parent
@@ -34,7 +46,7 @@ Dialog {
                 
                 Label {
                     text: qsTr("Create Instance")
-                    color: Theme.textPrimary
+                    color: ThemeColors.text
                     font.bold: true
                     Layout.fillWidth: true
                     padding: Theme.spacingS
@@ -68,7 +80,7 @@ Dialog {
                             
                             Label {
                                 text: modelData.name
-                                color: highlighted ? Theme.accent : Theme.textPrimary
+                                color: highlighted ? ThemeColors.accent : ThemeColors.text
                                 font.bold: highlighted
                             }
                         }
@@ -85,7 +97,7 @@ Dialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Theme.background
+            color: ThemeColors.background
             
             StackLayout {
                 anchors.fill: parent
@@ -110,7 +122,7 @@ Dialog {
                 ModpackBrowserPage {
                     source: "curseforge"
                     sourceName: "CurseForge"
-                    sourceColor: "#f16436"
+                    sourceColor: ThemeColors.error
                 }
                 
                 // Modrinth placeholder
@@ -131,14 +143,14 @@ Dialog {
                 ModpackBrowserPage {
                     source: "ftb"
                     sourceName: "FTB"
-                    sourceColor: "#e94560"
+                    sourceColor: ThemeColors.error
                 }
                 
                 // Technic placeholder
                 ModpackBrowserPage {
                     source: "technic"
                     sourceName: "Technic"
-                    sourceColor: "#e74c3c"
+                    sourceColor: ThemeColors.error
                 }
                 
                 // Import page
@@ -153,7 +165,7 @@ Dialog {
         
         Label {
             text: qsTr("Create Vanilla Instance")
-            color: Theme.textPrimary
+            color: ThemeColors.text
             font.bold: true
             font.pointSize: Theme.fontSizeMedium
         }
@@ -273,9 +285,9 @@ Dialog {
                                     Layout.preferredHeight: 20
                                     radius: 4
                                     color: {
-                                        if (modelData.includes("snapshot") || modelData.includes("pre") || modelData.includes("rc")) return "#f59e0b"
+                                        if (modelData.includes("snapshot") || modelData.includes("pre") || modelData.includes("rc")) return ThemeColors.warning
                                         if (modelData.startsWith("b") || modelData.startsWith("a")) return "#8b5cf6"
-                                        return "#22c55e"
+                                        return ThemeColors.success
                                     }
                                     
                                     Label {
@@ -293,7 +305,7 @@ Dialog {
                                 
                                 Label {
                                     text: modelData
-                                    color: Theme.textPrimary
+                                    color: ThemeColors.text
                                     Layout.fillWidth: true
                                 }
                             }
@@ -340,7 +352,7 @@ Dialog {
     component ModpackBrowserPage: ColumnLayout {
         property string source: ""
         property string sourceName: ""
-        property string sourceColor: Theme.accent
+        property string sourceColor: ThemeColors.accent
         
         spacing: Theme.spacingM
         
@@ -365,7 +377,7 @@ Dialog {
             
             Label {
                 text: qsTr("Browse %1 Modpacks").arg(sourceName)
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 font.bold: true
                 font.pointSize: Theme.fontSizeMedium
             }
@@ -396,7 +408,7 @@ Dialog {
             Label {
                 anchors.centerIn: parent
                 text: qsTr("Search for %1 modpacks to install").arg(sourceName)
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
             }
         }
         
@@ -419,7 +431,7 @@ Dialog {
         
         Label {
             text: qsTr("Import Instance")
-            color: Theme.textPrimary
+            color: ThemeColors.text
             font.bold: true
             font.pointSize: Theme.fontSizeMedium
         }
@@ -435,7 +447,7 @@ Dialog {
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Import a modpack from a local file (.zip, .mrpack, or folder)")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                 }
                 
@@ -468,7 +480,7 @@ Dialog {
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Import a modpack from a URL (CurseForge, Modrinth, etc.)")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                 }
                 

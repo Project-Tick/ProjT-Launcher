@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -26,7 +38,7 @@ Dialog {
         // Loader selection
         Label {
             text: qsTr("Select a mod loader to install:")
-            color: Theme.textPrimary
+            color: ThemeColors.text
         }
         
         RowLayout {
@@ -50,14 +62,14 @@ Dialog {
                     background: Rectangle {
                         implicitHeight: 50
                         radius: 8
-                        color: highlighted ? modelData.color : Theme.backgroundAlt
-                        border.color: highlighted ? modelData.color : Theme.divider
+                        color: highlighted ? modelData.color : ThemeColors.backgroundAlt
+                        border.color: highlighted ? modelData.color : ThemeColors.border
                         border.width: 1
                     }
                     
                     contentItem: Label {
                         text: modelData.name
-                        color: highlighted ? (modelData.id === "fabric" ? "#333" : "white") : Theme.textPrimary
+                        color: highlighted ? (modelData.id === "fabric" ? "#333" : "white") : ThemeColors.text
                         font.bold: highlighted
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -112,7 +124,7 @@ Dialog {
                                 
                                 Label {
                                     text: modelData.version || modelData
-                                    color: Theme.textPrimary
+                                    color: ThemeColors.text
                                     Layout.fillWidth: true
                                 }
                                 
@@ -121,7 +133,7 @@ Dialog {
                                     Layout.preferredWidth: recLabel.implicitWidth + 12
                                     Layout.preferredHeight: 20
                                     radius: 10
-                                    color: "#22c55e"
+                                    color: ThemeColors.success
                                     visible: modelData.recommended === true
                                     
                                     Label {
@@ -138,7 +150,7 @@ Dialog {
                                     Layout.preferredWidth: latestLabel.implicitWidth + 12
                                     Layout.preferredHeight: 20
                                     radius: 10
-                                    color: Theme.accent
+                                    color: ThemeColors.accent
                                     visible: modelData.latest === true && modelData.recommended !== true
                                     
                                     Label {
@@ -153,7 +165,7 @@ Dialog {
                                 // Unstable indicator
                                 Label {
                                     text: qsTr("(unstable)")
-                                    color: "#f59e0b"
+                                    color: ThemeColors.warning
                                     font.pointSize: Theme.fontSizeSmall
                                     visible: modelData.stable === false
                                 }
@@ -181,7 +193,7 @@ Dialog {
                     Label {
                         anchors.centerIn: parent
                         text: selectedLoader.length > 0 ? qsTr("No versions available") : qsTr("Select a loader first")
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                         visible: !vm || (!vm.loadingLoaderVersions && vm.loaderVersions.length === 0)
                     }
                 }
@@ -192,7 +204,7 @@ Dialog {
         Label {
             Layout.fillWidth: true
             text: qsTr("For Minecraft %1").arg(minecraftVersion)
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             font.pointSize: Theme.fontSizeSmall
             visible: minecraftVersion.length > 0
         }

@@ -15,11 +15,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: languagePage
-    color: Theme.background
+    color: ThemeColors.background
     
     ColumnLayout {
         anchors.fill: parent
@@ -30,7 +31,7 @@ Rectangle {
             text: qsTr("Select Language")
             font.pointSize: 12
             font.bold: true
-            color: Theme.textPrimary
+            color: ThemeColors.text
         }
         
         TextField {
@@ -43,8 +44,8 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Theme.surfaceBackground
-            border.color: Theme.border
+            color: ThemeColors.surface
+            border.color: ThemeColors.border
             border.width: 1
             radius: Theme.radiusS
             
@@ -79,7 +80,7 @@ Rectangle {
                         // Column 0: Language name
                         Label {
                             text: model.display || ""
-                            color: langDelegate.highlighted ? Theme.accent : Theme.textPrimary
+                            color: langDelegate.highlighted ? ThemeColors.accent : ThemeColors.text
                             font.bold: langDelegate.highlighted
                             Layout.fillWidth: true
                             elide: Text.ElideRight
@@ -95,13 +96,13 @@ Rectangle {
                                 }
                                 return ""
                             }
-                            color: Theme.textSecondary
+                            color: ThemeColors.textSecondary
                             font.pointSize: 9
                         }
                     }
                     
                     background: Rectangle {
-                        color: langDelegate.highlighted ? Theme.selection : 
+                        color: langDelegate.highlighted ? ThemeColors.highlight : 
                                (langDelegate.hovered ? Theme.hover : "transparent")
                     }
                     
@@ -124,7 +125,7 @@ Rectangle {
         
         Label {
             text: qsTr("Translation completeness is shown on the right. Help us translate!")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             font.pointSize: 9
             wrapMode: Text.WordWrap
             Layout.fillWidth: true

@@ -15,6 +15,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QCloseEvent>
 
 #include "settings/SettingsObject.h"
 
@@ -22,6 +23,7 @@ class LauncherViewModel;
 class InstanceListViewModel;
 class NewsViewModel;
 class SettingsViewModel;
+class ThemeViewModel;
 class ShellStateBridge;
 class QQuickWidget;
 
@@ -33,13 +35,21 @@ class QmlMainWindow : public QMainWindow {
                   InstanceListViewModel* instanceListViewModel,
                   NewsViewModel* newsViewModel,
                   SettingsViewModel* settingsViewModel,
+                  ThemeViewModel* themeViewModel,
                   QWidget* parent = nullptr);
+
+    // Process URLs for importing modpacks, instances, etc.
+    void processURLs(const QList<QUrl>& urls);
+
+   protected:
+    void closeEvent(QCloseEvent* event) override;
 
    private:
     void exposeContextProperties(LauncherViewModel* launcherViewModel,
                                  InstanceListViewModel* instanceListViewModel,
                                  NewsViewModel* newsViewModel,
                                  SettingsViewModel* settingsViewModel,
+                                 ThemeViewModel* themeViewModel,
                                  SettingsObjectPtr settings);
 
     QQuickWidget* m_quickWidget = nullptr;

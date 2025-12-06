@@ -64,7 +64,6 @@
 class LaunchController;
 class LocalPeer;
 class InstanceWindow;
-class MainWindow;
 class ViewLogWindow;
 class SetupWizard;
 class GenericPageProvider;
@@ -84,6 +83,8 @@ class ITheme;
 class MCEditTool;
 class ThemeManager;
 class IconTheme;
+class MainWindow;
+class QmlMainWindow;
 
 namespace Meta {
 class Index;
@@ -193,8 +194,9 @@ class Application : public QApplication {
     bool openJsonEditor(const QString& filename);
 
     InstanceWindow* showInstanceWindow(InstancePtr instance, QString page = QString());
-    MainWindow* showMainWindow(bool minimized = false);  // Legacy - redirects to QML
-    class QmlMainWindow* showQmlMainWindow(bool minimized = false);
+    [[deprecated("Use showQmlMainWindow() instead")]] MainWindow* showMainWindow(
+        bool minimized = false);  // Legacy - redirects to QML, will be removed
+    QmlMainWindow* showQmlMainWindow(bool minimized = false);
     ViewLogWindow* showLogWindow();
 
     void updateIsRunning(bool running);
@@ -305,8 +307,7 @@ class Application : public QApplication {
     bool m_updateRunning = false;
 
     // main window, if any
-    MainWindow* m_mainWindow = nullptr;              // Legacy Widgets window (deprecated)
-    class QmlMainWindow* m_qmlMainWindow = nullptr;  // New QML window
+    QmlMainWindow* m_qmlMainWindow = nullptr;  // QML-based main window
 
     // log window, if any
     ViewLogWindow* m_viewLogWindow = nullptr;

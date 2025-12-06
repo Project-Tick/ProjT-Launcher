@@ -15,12 +15,31 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: toolbar
-    color: Theme.surface
     height: 40
+    
+    // Theme binding - directly from themeVM for reliable updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+    
+    // Compute toolbar color based on theme
+    color: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    
+    // Listen for theme changes
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            console.log("[MainToolBar] Theme colors changed")
+            toolbar._themeUpdateCount++
+        }
+    }
     
     // Signals (matching ShellRoot.qml usage)
     signal addInstance()
@@ -36,11 +55,28 @@ Rectangle {
     signal openModsFolder()
     signal openSkinsFolder()
     
+    // Computed colors for child elements
+    property color toolBarColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    property color borderColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border
+    }
+    
     Rectangle {
         anchors.fill: parent
-        color: Theme.surface
-        border.color: "#323742"
-        border.width: 1
+        color: toolbar.toolBarColor
+        
+        // Bottom border only
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: 1
+            color: toolbar.borderColor
+        }
         
         RowLayout {
             anchors.fill: parent
@@ -49,7 +85,7 @@ Rectangle {
             spacing: 2
             
             // === Add Instance Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Add Instance")
                 icon.name: "list-add"
                 display: AbstractButton.TextBesideIcon
@@ -62,12 +98,16 @@ Rectangle {
                 ToolTip.delay: 500
             }
             
-            ToolSeparator {
-                Layout.fillHeight: true
+            // Separator
+            Rectangle {
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: 20
+                Layout.alignment: Qt.AlignVCenter
+                color: toolbar.borderColor
             }
             
             // === Folders Menu ===
-            ToolButton {
+            ThemedToolButton {
                 id: foldersBtn
                 text: qsTr("Folders")
                 icon.name: "folder"
@@ -80,11 +120,23 @@ Rectangle {
                     id: foldersMenu
                     y: foldersBtn.height
                     
+                    background: Rectangle {
+                        implicitWidth: 220
+                        color: ThemeColors.surface
+                        border.color: ThemeColors.border
+                        radius: ThemeColors.radiusS
+                    }
+                    
                     Action {
                         text: qsTr("View Launcher Root")
                         onTriggered: toolbar.openLauncherFolder()
                     }
-                    MenuSeparator {}
+                    MenuSeparator {
+                        contentItem: Rectangle {
+                            implicitHeight: 1
+                            color: ThemeColors.border
+                        }
+                    }
                     Action {
                         text: qsTr("View Instance Folder")
                         onTriggered: toolbar.openInstancesFolder()
@@ -97,11 +149,30 @@ Rectangle {
                         text: qsTr("View Skins Folder")
                         onTriggered: toolbar.openSkinsFolder()
                     }
+                    
+                    delegate: MenuItem {
+                        id: menuItem
+                        implicitHeight: 32
+                        
+                        contentItem: Text {
+                            text: menuItem.text
+                            font.pixelSize: 12
+                            color: menuItem.highlighted ? ThemeColors.highlightedText : ThemeColors.text
+                            horizontalAlignment: Text.AlignLeft
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+                        
+                        background: Rectangle {
+                            color: menuItem.highlighted ? ThemeColors.highlight : "transparent"
+                            radius: ThemeColors.radiusS - 2
+                        }
+                    }
                 }
             }
             
             // === Settings Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Settings")
                 icon.name: "configure"
                 display: AbstractButton.TextBesideIcon
@@ -115,7 +186,7 @@ Rectangle {
             }
             
             // === Help Menu ===
-            ToolButton {
+            ThemedToolButton {
                 id: helpBtn
                 text: qsTr("Help")
                 icon.name: "help-about"
@@ -128,20 +199,51 @@ Rectangle {
                     id: helpMenu
                     y: helpBtn.height
                     
+                    background: Rectangle {
+                        implicitWidth: 180
+                        color: ThemeColors.surface
+                        border.color: ThemeColors.border
+                        radius: ThemeColors.radiusS
+                    }
+                    
                     Action {
                         text: qsTr("About")
                         onTriggered: toolbar.showAbout()
                     }
-                    MenuSeparator {}
+                    MenuSeparator {
+                        contentItem: Rectangle {
+                            implicitHeight: 1
+                            color: ThemeColors.border
+                        }
+                    }
                     Action {
                         text: qsTr("View Logs")
                         onTriggered: toolbar.showLogs()
+                    }
+                    
+                    delegate: MenuItem {
+                        id: helpMenuItem
+                        implicitHeight: 32
+                        
+                        contentItem: Text {
+                            text: helpMenuItem.text
+                            font.pixelSize: 12
+                            color: helpMenuItem.highlighted ? ThemeColors.highlightedText : ThemeColors.text
+                            horizontalAlignment: Text.AlignLeft
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+                        
+                        background: Rectangle {
+                            color: helpMenuItem.highlighted ? ThemeColors.highlight : "transparent"
+                            radius: ThemeColors.radiusS - 2
+                        }
                     }
                 }
             }
             
             // === Check Update Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("Update")
                 icon.name: "update-none"
                 display: AbstractButton.TextBesideIcon
@@ -158,12 +260,16 @@ Rectangle {
             // === Spacer ===
             Item { Layout.fillWidth: true }
             
-            ToolSeparator {
-                Layout.fillHeight: true
+            // Separator
+            Rectangle {
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: 20
+                Layout.alignment: Qt.AlignVCenter
+                color: ThemeColors.border
             }
             
             // === Accounts Menu ===
-            ToolButton {
+            ThemedToolButton {
                 id: accountsBtn
                 text: ProjT.accountsVM && ProjT.accountsVM.defaultAccountName 
                       ? ProjT.accountsVM.defaultAccountName 

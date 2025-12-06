@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -25,7 +37,7 @@ Dialog {
             Layout.fillWidth: true
             Layout.preferredHeight: 60
             radius: 8
-            color: "#f59e0b15"
+            color: Qt.rgba(ThemeColors.warning.r, ThemeColors.warning.g, ThemeColors.warning.b, 0.08)
             
             RowLayout {
                 anchors.fill: parent
@@ -36,7 +48,7 @@ Dialog {
                     Layout.preferredWidth: 40
                     Layout.preferredHeight: 40
                     radius: 20
-                    color: "#f59e0b"
+                    color: ThemeColors.warning
                     
                     Label {
                         anchors.centerIn: parent
@@ -50,7 +62,7 @@ Dialog {
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Offline accounts can only play single-player or on LAN servers that allow cracked accounts.")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                     font.pointSize: Theme.fontSizeSmall
                 }
@@ -90,7 +102,7 @@ Dialog {
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Username must be 3-16 characters and contain only letters, numbers, and underscores.")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: Theme.fontSizeSmall - 1
                     wrapMode: Text.WordWrap
                 }

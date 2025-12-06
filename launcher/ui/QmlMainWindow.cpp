@@ -44,6 +44,7 @@
 #include "viewmodels/NewsViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
 #include "viewmodels/TechnicViewModel.h"
+#include "viewmodels/ThemeViewModel.h"
 
 constexpr auto kShellLastPageSetting = "qmlShell/lastPage";
 constexpr auto kShellDockVisibleSetting = "qmlShell/dockVisible";
@@ -286,8 +287,12 @@ static void setupQmlImportPaths(QQmlEngine* engine)
         engine->addImportPath(appQmlPath);
         qDebug() << "[QmlMainWindow] Added app QML import path:" << appQmlPath;
     }
+    
+    // 5. Qt Resource System - for qmldir modules in qrc
+    engine->addImportPath(QStringLiteral("qrc:/qml"));
+    qDebug() << "[QmlMainWindow] Added QRC import path: qrc:/qml";
 
-    // 5. Environment variable QML2_IMPORT_PATH (all platforms)
+    // 6. Environment variable QML2_IMPORT_PATH (all platforms)
     QString envPath = qEnvironmentVariable("QML2_IMPORT_PATH");
     if (!envPath.isEmpty()) {
 #ifdef Q_OS_WIN
@@ -322,6 +327,7 @@ QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel,
                              InstanceListViewModel* instanceListViewModel,
                              NewsViewModel* newsViewModel,
                              SettingsViewModel* settingsViewModel,
+                             ThemeViewModel* themeViewModel,
                              QWidget* parent)
     : QMainWindow(parent)
 {
@@ -340,12 +346,25 @@ QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel,
     m_quickWidget = new QQuickWidget(container);
     m_quickWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
     m_quickWidget->setClearColor(Qt::transparent);
+    
+    // Set initial palette for QQuickWidget
+    m_quickWidget->setPalette(qApp->palette());
 
     // Add Qt's QML import paths for development builds loading from source
     QQmlEngine* engine = m_quickWidget->engine();
     setupQmlImportPaths(engine);
 
-    exposeContextProperties(launcherViewModel, instanceListViewModel, newsViewModel, settingsViewModel, APPLICATION->settings());
+    exposeContextProperties(launcherViewModel, instanceListViewModel, newsViewModel, settingsViewModel, themeViewModel,
+                            APPLICATION->settings());
+
+    // Update QuickWidget palette when theme changes
+    connect(themeViewModel, &ThemeViewModel::themeColorsChanged, this, [this]() {
+        if (m_quickWidget) {
+            qDebug() << "[QmlMainWindow] Theme changed, updating QuickWidget palette";
+            m_quickWidget->setPalette(qApp->palette());
+            m_quickWidget->update();
+        }
+    });
 
     m_quickWidget->setSource(resolveQmlUrl(QStringLiteral("ShellRoot.qml")));
 
@@ -359,6 +378,7 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
                                             InstanceListViewModel* instanceListViewModel,
                                             NewsViewModel* newsViewModel,
                                             SettingsViewModel* settingsViewModel,
+                                            ThemeViewModel* themeViewModel,
                                             SettingsObjectPtr settings)
 {
     auto ctx = m_quickWidget->rootContext();
@@ -371,6 +391,7 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
     projt->insert(QStringLiteral("instancesVM"), QVariant::fromValue(instanceListViewModel));
     projt->insert(QStringLiteral("newsVM"), QVariant::fromValue(newsViewModel));
     projt->insert(QStringLiteral("settingsVM"), QVariant::fromValue(settingsViewModel));
+    projt->insert(QStringLiteral("themeVM"), QVariant::fromValue(themeViewModel));
     ctx->setContextProperty(QStringLiteral("ProjT"), projt);
 
     if (launcherViewModel) {
@@ -388,6 +409,10 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
     if (settingsViewModel) {
         ctx->setContextProperty(QStringLiteral("settingsVM"), settingsViewModel);
         ctx->setContextProperty(QStringLiteral("settingsViewModel"), settingsViewModel);
+    }
+    if (themeViewModel) {
+        ctx->setContextProperty(QStringLiteral("themeVM"), themeViewModel);
+        ctx->setContextProperty(QStringLiteral("themeViewModel"), themeViewModel);
     }
 
     // Create and expose LauncherSettingsViewModel for global launcher settings
@@ -458,6 +483,25 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
     if (m_stateBridge && m_stateBridge->dockVisible()) {
         show();
     }
+}
+
+void QmlMainWindow::processURLs(const QList<QUrl>& urls)
+{
+    // TODO: Implement URL processing for importing modpacks
+    // This will involve:
+    // 1. Parsing URLs to determine type (CurseForge, Modrinth, ATLauncher, etc.)
+    // 2. Creating appropriate InstanceImportTask
+    // 3. Showing progress dialog
+    // 4. Refreshing instance list on completion
+    qWarning() << "QmlMainWindow::processURLs() not yet implemented. URLs:" << urls;
+}
+
+void QmlMainWindow::closeEvent(QCloseEvent* event)
+{
+    // When main window is closed, quit the application on all platforms
+    // This ensures proper cleanup on Windows, macOS, and Linux
+    event->accept();
+    QApplication::quit();
 }
 
 #include "QmlMainWindow.moc"

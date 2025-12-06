@@ -15,12 +15,13 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "components"
 import "Theme.js" as Theme
 
 Rectangle {
     objectName: "news"
-    color: Theme.background
+    color: ThemeColors.background
     width: parent ? parent.width : 640
     height: parent ? parent.height : 480
     readonly property var vm: ProjT.newsVM
@@ -90,14 +91,14 @@ Rectangle {
                 delegate: Rectangle {
                     width: newsList.width
                     height: 48
-                    color: vm && index === vm.currentIndex ? "#2c3440" : Theme.surface
-                    border.color: vm && index === vm.currentIndex ? Theme.accent : "#323742"
+                    color: vm && index === vm.currentIndex ? "#2c3440" : ThemeColors.surface
+                    border.color: vm && index === vm.currentIndex ? ThemeColors.accent : ThemeColors.border
                     radius: Theme.radius
                     Text {
                         anchors.fill: parent
                         anchors.margins: 8
                         text: modelData
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                         wrapMode: Text.WordWrap
                     }
                     MouseArea {
@@ -124,7 +125,7 @@ Rectangle {
                         Text {
                             Layout.fillWidth: true
                             text: vm ? vm.currentTitle : ""
-                            color: Theme.textPrimary
+                            color: ThemeColors.text
                             font.pixelSize: 16
                             wrapMode: Text.WordWrap
                         }
@@ -132,7 +133,7 @@ Rectangle {
                             text: vm && vm.lastUpdated && vm.lastUpdated.toString().length > 0
                                   ? qsTr("Updated: %1").arg(vm.lastUpdated.toString())
                                   : ""
-                            color: Theme.textSecondary
+                            color: ThemeColors.textSecondary
                             font.pixelSize: 12
                             horizontalAlignment: Text.AlignRight
                         }
@@ -144,7 +145,7 @@ Rectangle {
                             width: parent ? parent.width : implicitWidth
                             wrapMode: Text.WordWrap
                             textFormat: Text.RichText
-                            color: Theme.textSecondary
+                            color: ThemeColors.textSecondary
                             text: vm ? vm.currentArticleHtml : ""
                         }
                     }
@@ -154,7 +155,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Theme.surfaceVariant
+            color: ThemeColors.backgroundAlt
             opacity: vm ? (vm.busy ? 0.25 : 0) : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 150 } }

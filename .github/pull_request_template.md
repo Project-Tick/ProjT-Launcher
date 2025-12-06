@@ -73,7 +73,6 @@ Confirm that the project builds successfully on all platforms.
 If you touched UI:
 
 - [ ] Added before/after screenshots
-- [ ] Follows `Theme.qml` guidelines
 - [ ] Component structure remains sane
 - [ ] Tested responsive behavior (min/max width)
 

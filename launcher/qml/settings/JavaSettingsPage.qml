@@ -15,6 +15,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 ScrollView {
@@ -30,14 +31,14 @@ ScrollView {
         // Header
         Label {
             text: qsTr("Java Settings")
-            color: Theme.textPrimary
+            color: ThemeColors.text
             font.pointSize: 16
             font.bold: true
         }
         
         Label {
             text: qsTr("Configure Java runtime settings for this instance")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
         }
@@ -70,7 +71,7 @@ ScrollView {
                     
                     Label {
                         text: qsTr("Java path:")
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                     }
                     
                     TextField {
@@ -100,7 +101,7 @@ ScrollView {
                     
                     Label {
                         text: qsTr("JVM arguments:")
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                     }
                     
                     TextField {
@@ -145,7 +146,7 @@ ScrollView {
                     
                     Label {
                         text: qsTr("Minimum memory:")
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                     }
                     
                     SpinBox {
@@ -162,12 +163,12 @@ ScrollView {
                     
                     Label {
                         text: qsTr("MiB")
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                     }
                     
                     Label {
                         text: qsTr("Maximum memory:")
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                     }
                     
                     SpinBox {
@@ -184,13 +185,13 @@ ScrollView {
                     
                     Label {
                         text: qsTr("MiB")
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                     }
                 }
                 
                 Label {
                     text: qsTr("Note: Most modpacks work well with 4-8 GB of RAM")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: 9
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true

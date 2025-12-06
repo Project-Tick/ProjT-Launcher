@@ -15,11 +15,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: sidebar
-    color: Theme.surface
+    color: ThemeColors.surface
     
     // ViewModel reference
     readonly property var vm: ProjT.instancesVM
@@ -63,7 +64,7 @@ Rectangle {
         // === Header ===
         Label {
             text: qsTr("Instance Details")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             font.pointSize: 10
             font.bold: true
             Layout.fillWidth: true
@@ -75,8 +76,8 @@ Rectangle {
             Layout.preferredWidth: 96
             Layout.preferredHeight: 96
             radius: Theme.radius
-            color: hasSelection ? "#3d4d60" : "#2a2d33"
-            border.color: "#323742"
+            color: hasSelection ? ThemeColors.backgroundAlt : ThemeColors.surface
+            border.color: ThemeColors.border
             border.width: 1
             
             Image {
@@ -95,7 +96,7 @@ Rectangle {
                 text: hasSelection ? instanceName.charAt(0).toUpperCase() : "?"
                 font.pointSize: 32
                 font.bold: true
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 visible: !hasSelection || iconPath.length === 0
             }
         }
@@ -103,7 +104,7 @@ Rectangle {
         // === Instance Name ===
         Label {
             text: hasSelection ? instanceName : qsTr("No Instance Selected")
-            color: Theme.textPrimary
+            color: ThemeColors.text
             font.pointSize: 14
             font.bold: true
             horizontalAlignment: Text.AlignHCenter
@@ -114,7 +115,7 @@ Rectangle {
         // === Instance Group (if any) ===
         Label {
             text: instanceGroup
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             font.pointSize: 10
             horizontalAlignment: Text.AlignHCenter
             visible: instanceGroup.length > 0
@@ -128,15 +129,15 @@ Rectangle {
             Layout.preferredWidth: runningLabel.implicitWidth + 16
             Layout.preferredHeight: 24
             radius: 12
-            color: "#2d4a3e"
-            border.color: "#4ade80"
+            color: Qt.darker(ThemeColors.success, 1.5)
+            border.color: ThemeColors.success
             border.width: 1
             
             Label {
                 id: runningLabel
                 anchors.centerIn: parent
                 text: qsTr("Running")
-                color: "#4ade80"
+                color: ThemeColors.success
                 font.pointSize: 9
             }
         }
@@ -161,17 +162,17 @@ Rectangle {
                 background: Rectangle {
                     radius: Theme.radius
                     color: {
-                        if (!parent.enabled) return "#2a2d33"
-                        if (isRunning) return parent.hovered ? "#7f1d1d" : "#991b1b"
-                        return parent.hovered ? "#166534" : "#15803d"
+                        if (!parent.enabled) return ThemeColors.backgroundAlt
+                        if (isRunning) return parent.hovered ? Qt.darker(ThemeColors.error, 1.3) : Qt.darker(ThemeColors.error, 1.1)
+                        return parent.hovered ? Qt.darker(ThemeColors.success, 1.2) : ThemeColors.success
                     }
-                    border.color: isRunning ? "#ef4444" : "#22c55e"
+                    border.color: isRunning ? ThemeColors.error : ThemeColors.success
                     border.width: parent.enabled ? 1 : 0
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: parent.enabled ? "#ffffff" : Theme.textSecondary
+                    color: parent.enabled ? ThemeColors.highlightedText : ThemeColors.textSecondary
                     font.pointSize: 12
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
@@ -278,14 +279,14 @@ Rectangle {
                 
                 background: Rectangle {
                     radius: Theme.radius
-                    color: parent.enabled ? (parent.hovered ? "#7f1d1d" : "#1e2227") : "#2a2d33"
-                    border.color: parent.enabled ? "#ef4444" : "#323742"
+                    color: parent.enabled ? (parent.hovered ? Qt.darker(ThemeColors.error, 1.3) : ThemeColors.surface) : ThemeColors.backgroundAlt
+                    border.color: parent.enabled ? ThemeColors.error : ThemeColors.border
                     border.width: 1
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: parent.enabled ? "#ef4444" : Theme.textSecondary
+                    color: parent.enabled ? ThemeColors.error : ThemeColors.textSecondary
                     font.pointSize: 11
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter

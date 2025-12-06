@@ -7,23 +7,21 @@
  *
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
-
-
-/**
- * Screenshots Page – Phase 11.C.2
- * Screenshots gallery for instance
- */
 
 Rectangle {
     id: root
     objectName: "screenshotsPage"
-    color: Theme.background
+    color: ThemeColors.background
     
     property var vm: ProjT.instanceVM
     
@@ -41,7 +39,7 @@ Rectangle {
                 text: qsTr("Screenshots")
                 font.pixelSize: 24
                 font.weight: Font.Bold
-                color: Theme.foreground
+                color: ThemeColors.text
             }
             
             Item { Layout.fillWidth: true }
@@ -51,15 +49,15 @@ Rectangle {
                 onClicked: if (root.vm) root.vm.openScreenshotsFolder()
                 
                 background: Rectangle {
-                    color: parent.hovered ? Theme.surface1 : Theme.surface0
-                    border.color: Theme.surface2
+                    color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                    border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -69,7 +67,7 @@ Rectangle {
         Text {
             text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
             font.pixelSize: 14
-            color: Theme.mutedForeground
+            color: ThemeColors.textSecondary
             visible: root.vm !== null
         }
         
@@ -88,15 +86,15 @@ Rectangle {
                 }
                 
                 background: Rectangle {
-                    color: parent.enabled ? (parent.hovered ? Theme.surface1 : Theme.surface0) : Theme.mantle
-                    border.color: Theme.surface2
+                    color: parent.enabled ? (parent.hovered ? ThemeColors.hover : ThemeColors.surface) : ThemeColors.disabled
+                    border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: parent.enabled ? Theme.foreground : Theme.mutedForeground
+                    color: parent.enabled ? ThemeColors.text : ThemeColors.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -112,15 +110,15 @@ Rectangle {
                 }
                 
                 background: Rectangle {
-                    color: parent.enabled ? (parent.hovered ? Theme.red : Theme.surface0) : Theme.mantle
-                    border.color: parent.enabled ? Theme.red : Theme.surface2
+                    color: parent.enabled ? (parent.hovered ? ThemeColors.error : ThemeColors.surface) : ThemeColors.disabled
+                    border.color: parent.enabled ? ThemeColors.error : ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: parent.enabled ? (parent.hovered ? Theme.base : Theme.red) : Theme.mutedForeground
+                    color: parent.enabled ? (parent.hovered ? ThemeColors.surface : ThemeColors.error) : ThemeColors.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -135,15 +133,15 @@ Rectangle {
                 }
                 
                 background: Rectangle {
-                    color: parent.hovered ? Theme.surface1 : Theme.surface0
-                    border.color: Theme.surface2
+                    color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                    border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -188,7 +186,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: qsTr("No screenshots found.\nTake screenshots in-game (F2) and they will appear here.")
                 horizontalAlignment: Text.AlignHCenter
-                color: Theme.mutedForeground
+                color: ThemeColors.textSecondary
                 font.pixelSize: 14
                 visible: gridView.count === 0
             }
@@ -200,8 +198,8 @@ Rectangle {
             delegate: Rectangle {
                 width: 200
                 height: 160
-                color: gridView.currentIndex === index ? Theme.selection : Theme.surface0
-                border.color: gridView.currentIndex === index ? Theme.accent : Theme.surface1
+                color: gridView.currentIndex === index ? ThemeColors.highlight : ThemeColors.surface
+                border.color: gridView.currentIndex === index ? ThemeColors.accent : ThemeColors.hover
                 border.width: 1
                 radius: Theme.radiusS
                 
@@ -226,7 +224,7 @@ Rectangle {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        color: Theme.mantle
+                        color: ThemeColors.disabled
                         radius: Theme.radiusXS
                         
                         Image {
@@ -241,7 +239,7 @@ Rectangle {
                     
                     Text {
                         text: screenshotName || qsTr("Screenshot %1").arg(index + 1)
-                        color: Theme.foreground
+                        color: ThemeColors.text
                         font.pixelSize: 11
                         elide: Text.ElideMiddle
                         Layout.fillWidth: true

@@ -15,12 +15,13 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "components"
 import "Theme.js" as Theme
 
 Rectangle {
     objectName: "logs"
-    color: Theme.background
+    color: ThemeColors.background
     width: parent ? parent.width : 640
     height: parent ? parent.height : 480
     readonly property var vm: ProjT.logsVM
@@ -141,14 +142,14 @@ Rectangle {
                     text: vm ? vm.logText : ""
                     selectByMouse: true
                     font.family: "Noto Sans Mono"
-                    color: Theme.textPrimary
-                    background: Rectangle { color: Theme.surfaceVariant }
+                    color: ThemeColors.text
+                    background: Rectangle { color: ThemeColors.backgroundAlt }
                 }
             }
 
             Rectangle {
                 anchors.fill: parent
-                color: Theme.surfaceVariant
+                color: ThemeColors.backgroundAlt
                 opacity: vm ? (vm.busy ? 0.55 : 0) : 0
                 visible: vm ? vm.busy : false
             }
@@ -160,7 +161,7 @@ Rectangle {
             Label {
                 anchors.centerIn: parent
                 text: vm && vm.busy ? vm.busyReason : ""
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 visible: vm ? (vm.busy && vm.busyReason.length > 0) : false
             }
         }

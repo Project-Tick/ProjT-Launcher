@@ -64,7 +64,6 @@
 #include "tasks/Task.h"
 #include "tools/GenericProfiler.h"
 #include "ui/InstanceWindow.h"
-#include "ui/MainWindow.h"
 #include "ui/QmlMainWindow.h"
 #include "ui/ViewLogWindow.h"
 #include "ui/dialogs/NewInstanceDialog.h"
@@ -74,6 +73,7 @@
 #include "viewmodels/LauncherViewModel.h"
 #include "viewmodels/NewsViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
+#include "viewmodels/ThemeViewModel.h"
 
 #include "ui/pages/BasePageProvider.h"
 #include "ui/pages/global/APIPage.h"
@@ -1297,11 +1297,11 @@ bool Application::event(QEvent* event)
 #endif
 
     if (event->type() == QEvent::FileOpen) {
-        if (!m_mainWindow) {
-            showMainWindow(false);
+        if (!m_qmlMainWindow) {
+            showQmlMainWindow(false);
         }
         auto ev = static_cast<QFileOpenEvent*>(event);
-        m_mainWindow->processURLs({ ev->url() });
+        m_qmlMainWindow->processURLs({ ev->url() });
     }
 
     return QApplication::event(event);
@@ -1370,7 +1370,7 @@ void Application::performMainStartupAction()
         m_updater.reset(new MacSparkleUpdater());
 #endif
 #else
-        m_updater.reset(new PrismExternalUpdater(m_mainWindow, m_rootPath, m_dataPath));
+        m_updater.reset(new PrismExternalUpdater(m_qmlMainWindow, m_rootPath, m_dataPath));
 #endif
         qDebug() << "<> Updater started.";
     }
@@ -1383,7 +1383,7 @@ void Application::performMainStartupAction()
 
     if (!m_urlsToImport.isEmpty()) {
         qDebug() << "<> Importing from url:" << m_urlsToImport;
-        m_mainWindow->processURLs(m_urlsToImport);
+        m_qmlMainWindow->processURLs(m_urlsToImport);
     }
 }
 
@@ -1437,10 +1437,10 @@ void Application::messageReceived(const QByteArray& message)
             qWarning() << "Received" << command << "message without a zip path/URL.";
             return;
         }
-        if (!m_mainWindow) {
-            showMainWindow(false);
+        if (!m_qmlMainWindow) {
+            showQmlMainWindow(false);
         }
-        m_mainWindow->processURLs({ normalizeImportUrl(url) });
+        m_qmlMainWindow->processURLs({ normalizeImportUrl(url) });
     } else if (command == "launch") {
         QString id = received.args["id"];
         QString server = received.args["server"];
@@ -1526,7 +1526,7 @@ bool Application::launch(InstancePtr instance,
         if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
             qDebug() << "Creating auto-backup before launch...";
 
-            QProgressDialog* progress = new QProgressDialog("Creating backup before launch...", QString(), 0, 0, m_mainWindow);
+            QProgressDialog* progress = new QProgressDialog("Creating backup before launch...", QString(), 0, 0, m_qmlMainWindow);
             progress->setWindowModality(Qt::WindowModal);
             progress->setMinimumDuration(0);
             progress->setValue(0);
@@ -1595,8 +1595,8 @@ void Application::continueLaunchAfterBackup(QString instanceId, bool online, boo
     controller->setOfflineName(offlineName);
     if (window) {
         controller->setParentWidget(window);
-    } else if (m_mainWindow) {
-        controller->setParentWidget(m_mainWindow);
+    } else if (m_qmlMainWindow) {
+        controller->setParentWidget(m_qmlMainWindow);
     }
     connect(controller.get(), &LaunchController::succeeded, this, &Application::controllerSucceeded);
     connect(controller.get(), &LaunchController::failed, this, &Application::controllerFailed);
@@ -1727,7 +1727,7 @@ MainWindow* Application::showMainWindow(bool minimized)
 {
     // Legacy Widgets window - redirect to QML
     showQmlMainWindow(minimized);
-    return m_mainWindow;  // Return nullptr or create minimal legacy window if needed
+    return nullptr;  // Legacy method - QML window is now primary
 }
 
 QmlMainWindow* Application::showQmlMainWindow(bool minimized)
@@ -1742,8 +1742,9 @@ QmlMainWindow* Application::showQmlMainWindow(bool minimized)
         auto instancesVM = new InstanceListViewModel(this);
         auto newsVM = new NewsViewModel(this);
         auto settingsVM = new SettingsViewModel(this);
+        auto themeVM = new ThemeViewModel(this);
 
-        m_qmlMainWindow = new QmlMainWindow(launcherVM, instancesVM, newsVM, settingsVM);
+        m_qmlMainWindow = new QmlMainWindow(launcherVM, instancesVM, newsVM, settingsVM, themeVM);
         m_qmlMainWindow->restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("QmlMainWindowGeometry").toString().toUtf8()));
 
         if (minimized) {
@@ -1821,12 +1822,8 @@ void Application::on_windowClose()
         auto& extras = m_instanceExtras[instWindow->instanceId()];
         extras.window = nullptr;
         if (extras.controller) {
-            extras.controller->setParentWidget(m_mainWindow);
+            extras.controller->setParentWidget(m_qmlMainWindow);
         }
-    }
-    auto mainWindow = qobject_cast<MainWindow*>(sender());
-    if (mainWindow) {
-        m_mainWindow = nullptr;
     }
     // Handle QML main window: persist geometry and clear pointer
     auto qmlMain = qobject_cast<QmlMainWindow*>(sender());

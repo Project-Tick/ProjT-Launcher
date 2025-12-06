@@ -1,14 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: curseForgePage
-    color: Theme.background
+    color: ThemeColors.background
     
     property var vm: typeof ProjT !== "undefined" ? ProjT.curseForgeVM : null
     
@@ -26,7 +38,7 @@ Rectangle {
             Layout.fillWidth: true
             text: qsTr("Note: CurseForge allows creators to block access to third-party tools like ProjT Launcher. As such, you may need to manually download some mods to be able to install a modpack.")
             font.italic: true
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter
         }
@@ -70,7 +82,7 @@ Rectangle {
                 SplitView.preferredWidth: 200
                 SplitView.minimumWidth: 150
                 SplitView.maximumWidth: 300
-                color: Theme.surface
+                color: ThemeColors.surface
                 
                 ColumnLayout {
                     anchors.fill: parent
@@ -80,7 +92,7 @@ Rectangle {
                     Label {
                         text: qsTr("Categories")
                         font.bold: true
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                     }
                     
                     ComboBox {
@@ -115,7 +127,7 @@ Rectangle {
                     highlighted: ListView.isCurrentItem
                     
                     background: Rectangle {
-                        color: highlighted ? Theme.primary : (index % 2 === 0 ? "transparent" : Theme.surfaceVariant)
+                        color: highlighted ? ThemeColors.primary : (index % 2 === 0 ? "transparent" : ThemeColors.backgroundAlt)
                         opacity: highlighted ? 0.2 : 0.3
                     }
                     
@@ -137,7 +149,7 @@ Rectangle {
                             Rectangle {
                                 anchors.fill: parent
                                 visible: parent.status !== Image.Ready
-                                color: Theme.surfaceVariant
+                                color: ThemeColors.backgroundAlt
                                 
                                 Label {
                                     anchors.centerIn: parent
@@ -153,7 +165,7 @@ Rectangle {
                             
                             Label {
                                 text: model.name || ""
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                                 font.bold: true
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
@@ -161,7 +173,7 @@ Rectangle {
                             
                             Label {
                                 text: model.description ? model.description.substring(0, 100) : ""
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                                 font.pointSize: 9
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
@@ -180,7 +192,7 @@ Rectangle {
                     anchors.centerIn: parent
                     visible: packsList.count === 0 && !(vm && vm.isLoading)
                     text: qsTr("No modpacks found. Search for modpacks on CurseForge.")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                 }
             }
@@ -197,7 +209,7 @@ Rectangle {
                     readOnly: true
                     textFormat: TextArea.RichText
                     wrapMode: TextArea.Wrap
-                    color: Theme.textPrimary
+                    color: ThemeColors.text
                     
                     text: {
                         if (!vm || !vm.selectedPack || !vm.selectedPack.name) {
@@ -254,7 +266,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Version selected:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             ComboBox {
