@@ -79,14 +79,14 @@ bool LockedFile::waitMutex(Qt::HANDLE mutex, bool doBlock)
     Q_ASSERT(mutex);
     DWORD res = WaitForSingleObject(mutex, doBlock ? INFINITE : 0);
     switch (res) {
-        case WAIT_OBJECT_0:
-        case WAIT_ABANDONED:
-            return true;
-            break;
-        case WAIT_TIMEOUT:
-            break;
-        default:
-            qErrnoWarning("QtLockedFile::lock(): WaitForSingleObject failed");
+    case WAIT_OBJECT_0:
+    case WAIT_ABANDONED:
+        return true;
+        break;
+    case WAIT_TIMEOUT:
+        break;
+    default:
+        qErrnoWarning("QtLockedFile::lock(): WaitForSingleObject failed");
     }
     return false;
 }
