@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include <QObject>
 #include <QAbstractListModel>
+#include <QObject>
 #include <QString>
 #include <QVariantMap>
 #include <memory>
@@ -34,7 +34,7 @@ class TechnicViewModel : public QObject {
     Q_PROPERTY(bool hasActiveSearch READ hasActiveSearch NOTIFY hasActiveSearchChanged)
     Q_PROPERTY(bool isLoadingMetadata READ isLoadingMetadata NOTIFY isLoadingMetadataChanged)
 
-public:
+   public:
     explicit TechnicViewModel(QObject* parent = nullptr);
     ~TechnicViewModel();
 
@@ -62,7 +62,7 @@ public:
     Q_INVOKABLE void clearSelection();
     Q_INVOKABLE QVariantMap getPackInfo(int index) const;
 
-signals:
+   signals:
     void isLoadingChanged();
     void statusMessageChanged();
     void searchTermChanged();
@@ -75,12 +75,12 @@ signals:
     void installStarted();
     void installFinished(bool success, const QString& message);
 
-private slots:
+   private slots:
     void onSearchFinished();
     void onMetadataLoaded();
     void onSolderLoaded();
 
-private:
+   private:
     void updateSelectedPackInfo();
     void loadPackMetadata();
     void loadSolderVersions();

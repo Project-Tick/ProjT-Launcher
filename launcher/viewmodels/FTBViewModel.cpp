@@ -295,7 +295,7 @@ void FTBViewModel::updateSelectedPackInfo()
     auto modelIndex = model->index(m_selectedPackIndex, 0);
     auto filterModel = m_showingPrivatePacks ? m_privateFilterModel : m_publicFilterModel;
     auto sourceIndex = filterModel->mapToSource(modelIndex);
-    
+
     auto listModel = m_showingPrivatePacks ? m_privatePacksModel : m_publicPacksModel;
     auto pack = listModel->at(sourceIndex.row());
 

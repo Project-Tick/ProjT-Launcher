@@ -20,7 +20,7 @@
 
 class LauncherSettingsViewModel : public QObject {
     Q_OBJECT
-    
+
     // === Launcher Page ===
     Q_PROPERTY(bool sortByName READ sortByName WRITE setSortByName NOTIFY sortByNameChanged)
     Q_PROPERTY(QString renamingBehavior READ renamingBehavior WRITE setRenamingBehavior NOTIFY renamingBehaviorChanged)
@@ -33,7 +33,7 @@ class LauncherSettingsViewModel : public QObject {
     Q_PROPERTY(QString iconsFolder READ iconsFolder WRITE setIconsFolder NOTIFY iconsFolderChanged)
     Q_PROPERTY(int concurrentDownloads READ concurrentDownloads WRITE setConcurrentDownloads NOTIFY concurrentDownloadsChanged)
     Q_PROPERTY(bool validateDownloads READ validateDownloads WRITE setValidateDownloads NOTIFY validateDownloadsChanged)
-    
+
     // === Minecraft Page ===
     Q_PROPERTY(bool showGameTime READ showGameTime WRITE setShowGameTime NOTIFY showGameTimeChanged)
     Q_PROPERTY(bool showGlobalGameTime READ showGlobalGameTime WRITE setShowGlobalGameTime NOTIFY showGlobalGameTimeChanged)
@@ -48,34 +48,35 @@ class LauncherSettingsViewModel : public QObject {
     Q_PROPERTY(bool useNativeOpenAL READ useNativeOpenAL WRITE setUseNativeOpenAL NOTIFY useNativeOpenALChanged)
     Q_PROPERTY(bool useNativeGLFW READ useNativeGLFW WRITE setUseNativeGLFW NOTIFY useNativeGLFWChanged)
     Q_PROPERTY(bool skipMigrationCheck READ skipMigrationCheck WRITE setSkipMigrationCheck NOTIFY skipMigrationCheckChanged)
-    
+
     // === Java Page ===
     Q_PROPERTY(QString defaultJavaPath READ defaultJavaPath WRITE setDefaultJavaPath NOTIFY defaultJavaPathChanged)
     Q_PROPERTY(int defaultMinMemory READ defaultMinMemory WRITE setDefaultMinMemory NOTIFY defaultMinMemoryChanged)
     Q_PROPERTY(int defaultMaxMemory READ defaultMaxMemory WRITE setDefaultMaxMemory NOTIFY defaultMaxMemoryChanged)
     Q_PROPERTY(QString defaultJvmArgs READ defaultJvmArgs WRITE setDefaultJvmArgs NOTIFY defaultJvmArgsChanged)
-    
+
     // === Appearance Page ===
     Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
     Q_PROPERTY(QString iconTheme READ iconTheme WRITE setIconTheme NOTIFY iconThemeChanged)
     Q_PROPERTY(bool showToolbarText READ showToolbarText WRITE setShowToolbarText NOTIFY showToolbarTextChanged)
     Q_PROPERTY(int buttonStyle READ buttonStyle WRITE setButtonStyle NOTIFY buttonStyleChanged)
     Q_PROPERTY(bool instanceListIcons READ instanceListIcons WRITE setInstanceListIcons NOTIFY instanceListIconsChanged)
-    Q_PROPERTY(bool showInstanceStatusLight READ showInstanceStatusLight WRITE setShowInstanceStatusLight NOTIFY showInstanceStatusLightChanged)
+    Q_PROPERTY(
+        bool showInstanceStatusLight READ showInstanceStatusLight WRITE setShowInstanceStatusLight NOTIFY showInstanceStatusLightChanged)
     Q_PROPERTY(bool enableCat READ enableCat WRITE setEnableCat NOTIFY enableCatChanged)
     Q_PROPERTY(bool checkForUpdates READ checkForUpdates WRITE setCheckForUpdates NOTIFY checkForUpdatesChanged)
-    
+
     // === Proxy Page ===
     Q_PROPERTY(QString proxyType READ proxyType WRITE setProxyType NOTIFY proxyTypeChanged)
     Q_PROPERTY(QString proxyHost READ proxyHost WRITE setProxyHost NOTIFY proxyHostChanged)
     Q_PROPERTY(int proxyPort READ proxyPort WRITE setProxyPort NOTIFY proxyPortChanged)
     Q_PROPERTY(QString proxyUsername READ proxyUsername WRITE setProxyUsername NOTIFY proxyUsernameChanged)
     Q_PROPERTY(QString proxyPassword READ proxyPassword WRITE setProxyPassword NOTIFY proxyPasswordChanged)
-    
+
     // === Language ===
     Q_PROPERTY(QString currentLanguage READ currentLanguage WRITE setCurrentLanguage NOTIFY currentLanguageChanged)
     Q_PROPERTY(QStringList availableLanguages READ availableLanguages NOTIFY availableLanguagesChanged)
-    
+
     // === API Page ===
     Q_PROPERTY(int pastebinType READ pastebinType WRITE setPastebinType NOTIFY pastebinTypeChanged)
     Q_PROPERTY(QString pastebinCustomUrl READ pastebinCustomUrl WRITE setPastebinCustomUrl NOTIFY pastebinCustomUrlChanged)
@@ -84,16 +85,16 @@ class LauncherSettingsViewModel : public QObject {
     Q_PROPERTY(QString modrinthToken READ modrinthToken WRITE setModrinthToken NOTIFY modrinthTokenChanged)
     Q_PROPERTY(QString metaUrl READ metaUrl WRITE setMetaUrl NOTIFY metaUrlChanged)
     Q_PROPERTY(QString userAgentOverride READ userAgentOverride WRITE setUserAgentOverride NOTIFY userAgentOverrideChanged)
-    
+
     // === External Tools Page ===
     Q_PROPERTY(QString jprofilerPath READ jprofilerPath WRITE setJprofilerPath NOTIFY jprofilerPathChanged)
     Q_PROPERTY(QString jvisualvmPath READ jvisualvmPath WRITE setJvisualvmPath NOTIFY jvisualvmPathChanged)
     Q_PROPERTY(QString mceditPath READ mceditPath WRITE setMceditPath NOTIFY mceditPathChanged)
     Q_PROPERTY(QString jsonEditorPath READ jsonEditorPath WRITE setJsonEditorPath NOTIFY jsonEditorPathChanged)
 
-public:
+   public:
     explicit LauncherSettingsViewModel(QObject* parent = nullptr);
-    
+
     // Launcher Page
     bool sortByName() const;
     QString renamingBehavior() const;
@@ -106,7 +107,7 @@ public:
     QString iconsFolder() const;
     int concurrentDownloads() const;
     bool validateDownloads() const;
-    
+
     void setSortByName(bool value);
     void setRenamingBehavior(const QString& value);
     void setLaunchAction(const QString& value);
@@ -118,7 +119,7 @@ public:
     void setIconsFolder(const QString& path);
     void setConcurrentDownloads(int value);
     void setValidateDownloads(bool value);
-    
+
     // Minecraft Page
     bool showGameTime() const;
     bool showGlobalGameTime() const;
@@ -133,7 +134,7 @@ public:
     bool useNativeOpenAL() const;
     bool useNativeGLFW() const;
     bool skipMigrationCheck() const;
-    
+
     void setShowGameTime(bool value);
     void setShowGlobalGameTime(bool value);
     void setEnableManageModsButton(bool value);
@@ -147,18 +148,18 @@ public:
     void setUseNativeOpenAL(bool value);
     void setUseNativeGLFW(bool value);
     void setSkipMigrationCheck(bool value);
-    
+
     // Java Page
     QString defaultJavaPath() const;
     int defaultMinMemory() const;
     int defaultMaxMemory() const;
     QString defaultJvmArgs() const;
-    
+
     void setDefaultJavaPath(const QString& path);
     void setDefaultMinMemory(int value);
     void setDefaultMaxMemory(int value);
     void setDefaultJvmArgs(const QString& args);
-    
+
     // Appearance Page
     QString theme() const;
     QString iconTheme() const;
@@ -168,7 +169,7 @@ public:
     bool showInstanceStatusLight() const;
     bool enableCat() const;
     bool checkForUpdates() const;
-    
+
     void setTheme(const QString& theme);
     void setIconTheme(const QString& theme);
     void setShowToolbarText(bool value);
@@ -177,25 +178,25 @@ public:
     void setShowInstanceStatusLight(bool value);
     void setEnableCat(bool value);
     void setCheckForUpdates(bool value);
-    
+
     // Proxy Page
     QString proxyType() const;
     QString proxyHost() const;
     int proxyPort() const;
     QString proxyUsername() const;
     QString proxyPassword() const;
-    
+
     void setProxyType(const QString& type);
     void setProxyHost(const QString& host);
     void setProxyPort(int port);
     void setProxyUsername(const QString& user);
     void setProxyPassword(const QString& password);
-    
+
     // Language
     QString currentLanguage() const;
     QStringList availableLanguages() const;
     void setCurrentLanguage(const QString& lang);
-    
+
     // API Page
     int pastebinType() const;
     QString pastebinCustomUrl() const;
@@ -204,7 +205,7 @@ public:
     QString modrinthToken() const;
     QString metaUrl() const;
     QString userAgentOverride() const;
-    
+
     void setPastebinType(int type);
     void setPastebinCustomUrl(const QString& url);
     void setMsaClientId(const QString& id);
@@ -212,25 +213,25 @@ public:
     void setModrinthToken(const QString& token);
     void setMetaUrl(const QString& url);
     void setUserAgentOverride(const QString& ua);
-    
+
     // External Tools Page
     QString jprofilerPath() const;
     QString jvisualvmPath() const;
     QString mceditPath() const;
     QString jsonEditorPath() const;
-    
+
     void setJprofilerPath(const QString& path);
     void setJvisualvmPath(const QString& path);
     void setMceditPath(const QString& path);
     void setJsonEditorPath(const QString& path);
-    
+
     Q_INVOKABLE void loadSettings();
     Q_INVOKABLE void applySettings();
     Q_INVOKABLE void resetToDefaults();
     Q_INVOKABLE void testJavaPath(const QString& path);
     Q_INVOKABLE void autoDetectJava();
 
-signals:
+   signals:
     void sortByNameChanged();
     void renamingBehaviorChanged();
     void launchActionChanged();
@@ -242,7 +243,7 @@ signals:
     void iconsFolderChanged();
     void concurrentDownloadsChanged();
     void validateDownloadsChanged();
-    
+
     void showGameTimeChanged();
     void showGlobalGameTimeChanged();
     void enableManageModsButtonChanged();
@@ -256,12 +257,12 @@ signals:
     void useNativeOpenALChanged();
     void useNativeGLFWChanged();
     void skipMigrationCheckChanged();
-    
+
     void defaultJavaPathChanged();
     void defaultMinMemoryChanged();
     void defaultMaxMemoryChanged();
     void defaultJvmArgsChanged();
-    
+
     void themeChanged();
     void iconThemeChanged();
     void showToolbarTextChanged();
@@ -270,16 +271,16 @@ signals:
     void showInstanceStatusLightChanged();
     void enableCatChanged();
     void checkForUpdatesChanged();
-    
+
     void proxyTypeChanged();
     void proxyHostChanged();
     void proxyPortChanged();
     void proxyUsernameChanged();
     void proxyPasswordChanged();
-    
+
     void currentLanguageChanged();
     void availableLanguagesChanged();
-    
+
     void pastebinTypeChanged();
     void pastebinCustomUrlChanged();
     void msaClientIdChanged();
@@ -287,20 +288,20 @@ signals:
     void modrinthTokenChanged();
     void metaUrlChanged();
     void userAgentOverrideChanged();
-    
+
     void jprofilerPathChanged();
     void jvisualvmPathChanged();
     void mceditPathChanged();
     void jsonEditorPathChanged();
-    
+
     void settingsApplied();
     void javaTestResult(bool success, const QString& message);
     void javaAutoDetected(const QStringList& javaPaths);
 
-private:
+   private:
     void loadFromApplication();
     void saveToApplication();
-    
+
     // Cached values
     bool m_sortByName = true;
     QString m_renamingBehavior = "ask";
@@ -313,7 +314,7 @@ private:
     QString m_iconsFolder;
     int m_concurrentDownloads = 6;
     bool m_validateDownloads = true;
-    
+
     bool m_showGameTime = true;
     bool m_showGlobalGameTime = true;
     bool m_enableManageModsButton = true;
@@ -327,12 +328,12 @@ private:
     bool m_useNativeOpenAL = false;
     bool m_useNativeGLFW = false;
     bool m_skipMigrationCheck = false;
-    
+
     QString m_defaultJavaPath;
     int m_defaultMinMemory = 512;
     int m_defaultMaxMemory = 4096;
     QString m_defaultJvmArgs;
-    
+
     QString m_theme = "Dark";
     QString m_iconTheme = "Default";
     bool m_showToolbarText = true;
@@ -341,15 +342,15 @@ private:
     bool m_showInstanceStatusLight = true;
     bool m_enableCat = false;
     bool m_checkForUpdates = true;
-    
+
     QString m_proxyType = "none";
     QString m_proxyHost;
     int m_proxyPort = 8080;
     QString m_proxyUsername;
     QString m_proxyPassword;
-    
+
     QString m_currentLanguage = "en_US";
-    
+
     // API Page
     int m_pastebinType = 0;
     QString m_pastebinCustomUrl;
@@ -358,7 +359,7 @@ private:
     QString m_modrinthToken;
     QString m_metaUrl;
     QString m_userAgentOverride;
-    
+
     // External Tools Page
     QString m_jprofilerPath;
     QString m_jvisualvmPath;

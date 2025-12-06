@@ -128,35 +128,34 @@ QVariant VersionProxyModel::headerData(int section, Qt::Orientation orientation,
     auto column = m_columns[section];
     if (role == Qt::DisplayRole) {
         switch (column) {
-        case Name:
-            return tr("Version");
-        case ParentVersion: {
-            if (auto list = qobject_cast<BaseVersionList*>(sourceModel())) {
-                return list->parentVersionHeader();
+            case Name:
+                return tr("Version");
+            case ParentVersion: {
+                if (auto list = qobject_cast<BaseVersionList*>(sourceModel())) {
+                    return list->parentVersionHeader();
+                }
+                return tr("Minecraft");
             }
-            return tr("Minecraft");
-        }
-        case Branch:
-            return tr("Branch");
-        case Type:
-            return tr("Type");
-        case CPUArchitecture:
-            return tr("Architecture");
-        case Path:
-            return tr("Path");
-        case JavaName:
-            return tr("Java Name");
-        case JavaMajor:
-            return tr("Major Version");
-        case Time:
-            return tr("Released");
+            case Branch:
+                return tr("Branch");
+            case Type:
+                return tr("Type");
+            case CPUArchitecture:
+                return tr("Architecture");
+            case Path:
+                return tr("Path");
+            case JavaName:
+                return tr("Java Name");
+            case JavaMajor:
+                return tr("Major Version");
+            case Time:
+                return tr("Released");
         }
     } else if (role == Qt::ToolTipRole) {
         switch (column) {
             case Name:
                 return tr("The name of the version.");
-            case ParentVersion:
-            {
+            case ParentVersion: {
                 if (auto list = qobject_cast<BaseVersionList*>(sourceModel())) {
                     return tr("The version of %1 that this version belongs to.").arg(list->parentVersionHeader());
                 }

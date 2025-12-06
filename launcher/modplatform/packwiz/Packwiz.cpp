@@ -174,11 +174,11 @@ void V1::updateModIndex(const QDir& index_dir, Mod& mod)
         if (index_file.open(QIODevice::ReadOnly)) {
             auto existingData = QString::fromUtf8(index_file.readAll());
             index_file.close();
-            
+
             try {
                 auto existing_table = toml::parse(existingData.toStdString());
                 auto update_table = existing_table["update"].as_table();
-                
+
                 // Check if this is the same mod (same provider and project ID)
                 bool same_mod = false;
                 if (update_table) {
@@ -196,14 +196,14 @@ void V1::updateModIndex(const QDir& index_dir, Mod& mod)
                         }
                     }
                 }
-                
+
                 // If it's the same mod, we're updating. If different, user wants to replace it.
                 // In both cases, proceed with the new version.
             } catch (...) {
                 // If parsing fails, just overwrite
             }
         }
-        
+
         index_file.remove();
     } else {
         FS::ensureFilePathExists(index_file.fileName());

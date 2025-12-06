@@ -37,7 +37,8 @@ Hasher::Ptr createHasher(QString file_path, ModPlatform::ResourceProvider provid
         case ModPlatform::ResourceProvider::FLAME:
             return makeShared<Hasher>(file_path, Algorithm::Murmur2);
         default:
-            qCritical() << "[Hashing]" << "Unrecognized mod platform!";
+            qCritical() << "[Hashing]"
+                        << "Unrecognized mod platform!";
             return nullptr;
     }
 }

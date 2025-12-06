@@ -17,8 +17,8 @@
 #include <QDateTime>
 #include <QObject>
 
-#include "news/NewsEntry.h"
 #include "QObjectPtr.h"
+#include "news/NewsEntry.h"
 
 class NewsChecker;
 class NewsViewModel : public QObject {

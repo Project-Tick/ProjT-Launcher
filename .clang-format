@@ -5,8 +5,8 @@ AllowShortIfStatementsOnASingleLine: false
 ColumnLimit: 140
 ---
 Language: Cpp
-AlignConsecutiveMacros: None
-AlignConsecutiveAssignments: None
+AlignConsecutiveMacros: false
+AlignConsecutiveAssignments: false
 BraceWrapping:
   AfterFunction: true
   SplitEmptyFunction: false

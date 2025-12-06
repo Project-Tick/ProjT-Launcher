@@ -14,10 +14,10 @@
 
 #include "ShellManager.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QCoreApplication>
 #include <QLibraryInfo>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -30,19 +30,19 @@
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
 #include "translations/TranslationsModel.h"
-#include "viewmodels/AccountsViewModel.h"
 #include "viewmodels/ATLauncherViewModel.h"
+#include "viewmodels/AccountsViewModel.h"
+#include "viewmodels/CurseForgeViewModel.h"
 #include "viewmodels/FTBViewModel.h"
 #include "viewmodels/InstanceListViewModel.h"
 #include "viewmodels/InstanceViewModel.h"
-#include "viewmodels/LauncherViewModel.h"
 #include "viewmodels/LauncherSettingsViewModel.h"
+#include "viewmodels/LauncherViewModel.h"
+#include "viewmodels/ModrinthViewModel.h"
 #include "viewmodels/NewInstanceViewModel.h"
 #include "viewmodels/NewsViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
 #include "viewmodels/TechnicViewModel.h"
-#include "viewmodels/CurseForgeViewModel.h"
-#include "viewmodels/ModrinthViewModel.h"
 
 constexpr auto kShellLastPageSetting = "qmlShell/lastPage";
 constexpr auto kShellDockVisibleSetting = "qmlShell/dockVisible";
@@ -55,15 +55,13 @@ class ShellStateBridge : public QObject {
     Q_PROPERTY(bool dockVisible READ dockVisible WRITE setDockVisible NOTIFY dockVisibleChanged)
 
    public:
-    explicit ShellStateBridge(SettingsObjectPtr settings, QObject* parent = nullptr)
-        : QObject(parent), m_settings(std::move(settings))
+    explicit ShellStateBridge(SettingsObjectPtr settings, QObject* parent = nullptr) : QObject(parent), m_settings(std::move(settings))
     {
         if (m_settings) {
-            m_lastPage = m_settings->getOrRegisterSetting(QString::fromLatin1(kShellLastPageSetting),
-                                                          QStringLiteral("instances"))->get().toString();
+            m_lastPage =
+                m_settings->getOrRegisterSetting(QString::fromLatin1(kShellLastPageSetting), QStringLiteral("instances"))->get().toString();
             m_sidebarWidth = m_settings->getOrRegisterSetting(QString::fromLatin1(kShellSidebarWidthSetting), 200)->get().toInt();
-            m_dockVisible =
-                m_settings->getOrRegisterSetting(QString::fromLatin1(kShellDockVisibleSetting), false)->get().toBool();
+            m_dockVisible = m_settings->getOrRegisterSetting(QString::fromLatin1(kShellDockVisibleSetting), false)->get().toBool();
         }
     }
 
@@ -132,12 +130,12 @@ static QUrl resolveQmlUrl(const QString& fileName)
         qDebug() << "[ShellManager] Loading QML from resource:" << resourcePath;
         return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
     }
-    
+
     // Try to find source directory for development builds
     // Build path is typically: <project>/build/Debug/projtlauncher.exe
     // Source path is: <project>/launcher/qml/
     QDir dir(QCoreApplication::applicationDirPath());
-    
+
     // Try going up multiple levels to find source tree
     for (int i = 0; i < 4; ++i) {
         QDir sourceDir(dir);
@@ -148,9 +146,10 @@ static QUrl resolveQmlUrl(const QString& fileName)
                 return QUrl::fromLocalFile(info.absoluteFilePath());
             }
         }
-        if (!dir.cdUp()) break;
+        if (!dir.cdUp())
+            break;
     }
-    
+
     qWarning() << "[ShellManager] QML file not found:" << fileName << "- trying qrc anyway";
     return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
 }
@@ -161,13 +160,14 @@ static QUrl resolveQmlUrl(const QString& fileName)
  */
 static void setupQmlImportPaths(QQmlEngine* engine)
 {
-    if (!engine) return;
-    
+    if (!engine)
+        return;
+
     // Find Qt library and plugin directories
     QString qtLibPath = QLibraryInfo::path(QLibraryInfo::LibrariesPath);
     QString qtPluginPath = QLibraryInfo::path(QLibraryInfo::PluginsPath);
     QString qtBinPath = QLibraryInfo::path(QLibraryInfo::BinariesPath);
-    
+
     // 1. Update PATH environment variable to find Qt DLLs/libraries
 #ifdef Q_OS_WIN
     QString pathEnv = qEnvironmentVariable("PATH");
@@ -189,20 +189,20 @@ static void setupQmlImportPaths(QQmlEngine* engine)
         qDebug() << "[ShellManager] Updated LD_LIBRARY_PATH with:" << qtLibPath;
     }
 #endif
-    
+
     // 2. Set QT_QPA_PLATFORM_PLUGIN_PATH for platform plugin
     if (!qtPluginPath.isEmpty() && QDir(qtPluginPath).exists()) {
         qputenv("QT_QPA_PLATFORM_PLUGIN_PATH", qtPluginPath.toUtf8());
         qDebug() << "[ShellManager] Set QT_QPA_PLATFORM_PLUGIN_PATH:" << qtPluginPath;
     }
-    
+
     // 3. Qt's official QML import path from QLibraryInfo
     QString qtQmlPath = QLibraryInfo::path(QLibraryInfo::QmlImportsPath);
     if (!qtQmlPath.isEmpty() && QDir(qtQmlPath).exists()) {
         engine->addImportPath(qtQmlPath);
         qDebug() << "[ShellManager] Added Qt QML import path:" << qtQmlPath;
     }
-    
+
     // 4. Try to find Qt installation from Qt plugin path
     QString pluginPath = QLibraryInfo::path(QLibraryInfo::PluginsPath);
     if (!pluginPath.isEmpty()) {
@@ -215,15 +215,15 @@ static void setupQmlImportPaths(QQmlEngine* engine)
             }
         }
     }
-    
+
     // 3. Try common Qt installation paths based on platform
     QStringList commonPaths;
-    
+
 #ifdef Q_OS_WIN
-    QStringList qtVersions = {QStringLiteral("6.10.1"), QStringLiteral("6.9.0"), QStringLiteral("6.8.0"), 
-                              QStringLiteral("6.7.0"), QStringLiteral("6.6.0"), QStringLiteral("6.5.0")};
-    QStringList compilers = {QStringLiteral("msvc2022_64"), QStringLiteral("msvc2019_64"), QStringLiteral("mingw_64")};
-    
+    QStringList qtVersions = { QStringLiteral("6.10.1"), QStringLiteral("6.9.0"), QStringLiteral("6.8.0"),
+                               QStringLiteral("6.7.0"),  QStringLiteral("6.6.0"), QStringLiteral("6.5.0") };
+    QStringList compilers = { QStringLiteral("msvc2022_64"), QStringLiteral("msvc2019_64"), QStringLiteral("mingw_64") };
+
     for (const QString& ver : qtVersions) {
         for (const QString& compiler : compilers) {
             commonPaths << QStringLiteral("C:/Qt/%1/%2/qml").arg(ver, compiler);
@@ -241,12 +241,12 @@ static void setupQmlImportPaths(QQmlEngine* engine)
     commonPaths << QStringLiteral("/usr/share/qt6/qml");
     commonPaths << QDir::homePath() + QStringLiteral("/Qt/*/gcc_64/qml");
 #endif
-    
+
     for (const QString& path : commonPaths) {
         if (QDir(path).exists()) {
             engine->addImportPath(path);
             qDebug() << "[ShellManager] Added common Qt QML path:" << path;
-            
+
             // Also add the corresponding bin directory to PATH to ensure DLLs can be loaded
             QDir qmlDir(path);
             if (qmlDir.cdUp()) {
@@ -271,18 +271,18 @@ static void setupQmlImportPaths(QQmlEngine* engine)
 #endif
                 }
             }
-            
+
             break;
         }
     }
-    
+
     // 4. Application directory for bundled QML modules
     QString appQmlPath = QCoreApplication::applicationDirPath() + QStringLiteral("/qml");
     if (QDir(appQmlPath).exists()) {
         engine->addImportPath(appQmlPath);
         qDebug() << "[ShellManager] Added app QML import path:" << appQmlPath;
     }
-    
+
     // 5. Environment variable QML2_IMPORT_PATH
     QString envPath = qEnvironmentVariable("QML2_IMPORT_PATH");
     if (!envPath.isEmpty()) {
@@ -298,7 +298,7 @@ static void setupQmlImportPaths(QQmlEngine* engine)
             }
         }
     }
-    
+
     qDebug() << "[ShellManager] Final QML import paths:" << engine->importPathList();
 }
 
@@ -313,8 +313,11 @@ bool registerLauncherViewModelEnums()
 const bool s_launcherVmEnumsRegistered = registerLauncherViewModelEnums();
 }  // namespace
 
-ShellManager::ShellManager(LauncherViewModel* launcherViewModel, InstanceListViewModel* instanceListViewModel,
-                                             NewsViewModel* newsViewModel, SettingsViewModel* settingsViewModel, QWidget* parent)
+ShellManager::ShellManager(LauncherViewModel* launcherViewModel,
+                           InstanceListViewModel* instanceListViewModel,
+                           NewsViewModel* newsViewModel,
+                           SettingsViewModel* settingsViewModel,
+                           QWidget* parent)
     : QDockWidget(parent)
 {
     setObjectName(QStringLiteral("ShellManagerDock"));
@@ -328,7 +331,7 @@ ShellManager::ShellManager(LauncherViewModel* launcherViewModel, InstanceListVie
     m_quickWidget = new QQuickWidget(container);
     m_quickWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
     m_quickWidget->setClearColor(Qt::transparent);
-    
+
     // Add Qt's QML import paths for all platforms
     QQmlEngine* engine = m_quickWidget->engine();
     setupQmlImportPaths(engine);
@@ -348,10 +351,10 @@ ShellManager::ShellManager(LauncherViewModel* launcherViewModel, InstanceListVie
 }
 
 void ShellManager::exposeContextProperties(LauncherViewModel* launcherViewModel,
-                                                    InstanceListViewModel* instanceListViewModel,
-                                                    NewsViewModel* newsViewModel,
-                                                    SettingsViewModel* settingsViewModel,
-                                                    SettingsObjectPtr settings)
+                                           InstanceListViewModel* instanceListViewModel,
+                                           NewsViewModel* newsViewModel,
+                                           SettingsViewModel* settingsViewModel,
+                                           SettingsObjectPtr settings)
 {
     auto ctx = m_quickWidget->rootContext();
 

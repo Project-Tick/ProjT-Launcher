@@ -43,7 +43,7 @@
 class CheckJava : public LaunchStep {
     Q_OBJECT
    public:
-    explicit CheckJava(LaunchTask* parent) : LaunchStep(parent) {};
+    explicit CheckJava(LaunchTask* parent) : LaunchStep(parent){};
     virtual ~CheckJava() = default;
 
     virtual void executeTask();

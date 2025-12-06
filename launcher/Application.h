@@ -311,7 +311,7 @@ class Application : public QApplication {
     bool m_updateRunning = false;
 
     // main window, if any
-    MainWindow* m_mainWindow = nullptr;  // Legacy Widgets window (deprecated)
+    MainWindow* m_mainWindow = nullptr;              // Legacy Widgets window (deprecated)
     class QmlMainWindow* m_qmlMainWindow = nullptr;  // New QML window
 
     // log window, if any

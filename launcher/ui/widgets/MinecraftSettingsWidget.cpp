@@ -283,8 +283,8 @@ void MinecraftSettingsWidget::loadSettings()
         m_ui->quilt->blockSignals(true);
         m_ui->liteLoader->blockSignals(true);
 
-        const bool overrideLoaders =
-            m_settingsViewModel && m_instance ? m_settingsViewModel->overrideLoader() : settings->get("OverrideModDownloadLoaders").toBool();
+        const bool overrideLoaders = m_settingsViewModel && m_instance ? m_settingsViewModel->overrideLoader()
+                                                                       : settings->get("OverrideModDownloadLoaders").toBool();
         const QStringList loaders = Json::toStringList(settings->get("ModDownloadLoaders").toString());
 
         m_ui->loaderGroup->setChecked(overrideLoaders);
@@ -382,7 +382,8 @@ void MinecraftSettingsWidget::saveSettings()
 
         if (custcmd) {
             if (m_settingsViewModel) {
-                m_settingsViewModel->setPreLaunchCommand(m_instance ? m_instance->id() : QString(), m_ui->customCommands->prelaunchCommand());
+                m_settingsViewModel->setPreLaunchCommand(m_instance ? m_instance->id() : QString(),
+                                                         m_ui->customCommands->prelaunchCommand());
                 m_settingsViewModel->setPostExitCommand(m_instance ? m_instance->id() : QString(), m_ui->customCommands->postexitCommand());
             } else {
                 settings->set("PreLaunchCommand", m_ui->customCommands->prelaunchCommand());

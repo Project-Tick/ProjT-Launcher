@@ -121,14 +121,8 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
 
 QHash<int, QByteArray> ListModel::roleNames() const
 {
-    return {
-        { NameRole, "name" },
-        { DescriptionRole, "description" },
-        { IconUrlRole, "iconUrl" },
-        { PackDataRole, "packData" },
-        { Qt::DisplayRole, "display" },
-        { Qt::ToolTipRole, "toolTip" }
-    };
+    return { { NameRole, "name" },         { DescriptionRole, "description" }, { IconUrlRole, "iconUrl" },
+             { PackDataRole, "packData" }, { Qt::DisplayRole, "display" },     { Qt::ToolTipRole, "toolTip" } };
 }
 
 void ListModel::request()
@@ -152,7 +146,7 @@ void ListModel::requestFinished()
     jobPtr.reset();
 
     QJsonParseError parse_error;
-QJsonDocument doc = QJsonDocument::fromJson(*response, &parse_error);
+    QJsonDocument doc = QJsonDocument::fromJson(*response, &parse_error);
     if (parse_error.error != QJsonParseError::NoError) {
         qWarning() << "Error while parsing JSON response from ATL at " << parse_error.offset << " reason: " << parse_error.errorString();
         qWarning() << *response;

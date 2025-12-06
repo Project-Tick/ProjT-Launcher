@@ -109,11 +109,9 @@
 #include <updater/ExternalUpdater.h>
 #include "InstanceWindow.h"
 
-#include "viewmodels/InstanceListViewModel.h"
-#include "viewmodels/LauncherViewModel.h"
-#include "viewmodels/NewsViewModel.h"
-#include "viewmodels/SettingsViewModel.h"
 #include "ui/GuiUtil.h"
+#include "ui/QmlMainWindow.h"
+#include "ui/TestQmlPanel.h"
 #include "ui/ViewLogWindow.h"
 #include "ui/dialogs/AboutDialog.h"
 #include "ui/dialogs/CopyInstanceDialog.h"
@@ -125,8 +123,6 @@
 #include "ui/dialogs/ImportResourceDialog.h"
 #include "ui/dialogs/NewInstanceDialog.h"
 #include "ui/dialogs/NewsDialog.h"
-#include "ui/QmlMainWindow.h"
-#include "ui/TestQmlPanel.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/instanceview/InstanceDelegate.h"
 #include "ui/instanceview/InstanceProxyModel.h"
@@ -134,6 +130,10 @@
 #include "ui/themes/ITheme.h"
 #include "ui/themes/ThemeManager.h"
 #include "ui/widgets/LabeledToolButton.h"
+#include "viewmodels/InstanceListViewModel.h"
+#include "viewmodels/LauncherViewModel.h"
+#include "viewmodels/NewsViewModel.h"
+#include "viewmodels/SettingsViewModel.h"
 
 #include "minecraft/PackProfile.h"
 #include "minecraft/VersionFile.h"
@@ -169,12 +169,12 @@ QString profileInUseFilter(const QString& profile, bool used)
 }  // namespace
 
 MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent),
-      ui(new Ui::MainWindow),
-      m_launcherViewModel(new LauncherViewModel(this)),
-      m_instanceListViewModel(new InstanceListViewModel(this)),
-      m_newsViewModel(new NewsViewModel(this)),
-      m_settingsViewModel(new SettingsViewModel(this))
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+    , m_launcherViewModel(new LauncherViewModel(this))
+    , m_instanceListViewModel(new InstanceListViewModel(this))
+    , m_newsViewModel(new NewsViewModel(this))
+    , m_settingsViewModel(new SettingsViewModel(this))
 {
     ui->setupUi(this);
 
@@ -344,10 +344,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     // Instance ViewModel hooks for QML shell actions
     {
-        connect(m_instanceListViewModel, &InstanceListViewModel::renameRequested, this,
-                &MainWindow::handleInstanceRenameRequest);
-        connect(m_instanceListViewModel, &InstanceListViewModel::duplicateRequested, this,
-                &MainWindow::handleInstanceDuplicateRequest);
+        connect(m_instanceListViewModel, &InstanceListViewModel::renameRequested, this, &MainWindow::handleInstanceRenameRequest);
+        connect(m_instanceListViewModel, &InstanceListViewModel::duplicateRequested, this, &MainWindow::handleInstanceDuplicateRequest);
     }
 
     // Experimental QML preview dock (hidden by default)
@@ -436,8 +434,7 @@ MainWindow::MainWindow(QWidget* parent)
     // track the selection -- update the instance toolbar
     connect(view->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::instanceChanged);
     if (m_instanceListViewModel) {
-        connect(m_instanceListViewModel, &InstanceListViewModel::selectedInstanceIdChanged, this,
-                &MainWindow::syncSelectionFromViewModel);
+        connect(m_instanceListViewModel, &InstanceListViewModel::selectedInstanceIdChanged, this, &MainWindow::syncSelectionFromViewModel);
         connect(m_instanceListViewModel, &InstanceListViewModel::instanceStateChanged, this, &MainWindow::updateInstanceActions);
         connect(m_instanceListViewModel, &InstanceListViewModel::busyChanged, this, &MainWindow::updateInstanceActions);
     }
@@ -450,8 +447,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     // handle newly added instances
     connect(APPLICATION->instances().get(), &InstanceList::instanceSelectRequest, this, &MainWindow::instanceSelectRequest);
-    connect(APPLICATION->instances().get(), &InstanceList::instancesChanged, this,
-            [this] { updateInstanceListMetrics(); });
+    connect(APPLICATION->instances().get(), &InstanceList::instancesChanged, this, [this] { updateInstanceListMetrics(); });
 
     // When the global settings page closes, we want to know about it and update our state
     connect(APPLICATION, &Application::globalSettingsApplied, this, &MainWindow::globalSettingsClosed);
@@ -636,8 +632,7 @@ void MainWindow::showInstanceContextMenu(const QPoint& pos)
     } else {
         auto group = view->groupNameAt(pos);
 
-        QAction* actionVoid =
-            new QAction(group.isNull() ? m_launcherViewModel->displayName() : group, this);
+        QAction* actionVoid = new QAction(group.isNull() ? m_launcherViewModel->displayName() : group, this);
         actionVoid->setEnabled(false);
 
         QAction* actionCreateInstance = new QAction(tr("&Create instance"), this);

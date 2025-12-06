@@ -104,12 +104,12 @@ class MainWindow : public QMainWindow {
 
     void processURLs(QList<QUrl> urls);
    signals:
-   void isClosing();
+    void isClosing();
 
-  protected:
+   protected:
     QMenu* createPopupMenu() override;
 
-  private slots:
+   private slots:
     void onCatToggled(bool);
 
     void onCatChanged(int);

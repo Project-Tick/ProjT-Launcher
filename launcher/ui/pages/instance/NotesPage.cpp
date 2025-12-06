@@ -57,8 +57,8 @@
 
 #include "NotesPage.h"
 #include <QTabBar>
-#include "viewmodels/InstanceListViewModel.h"
 #include "ui_NotesPage.h"
+#include "viewmodels/InstanceListViewModel.h"
 
 NotesPage::NotesPage(BaseInstance* inst, InstanceListViewModel* viewModel, QWidget* parent)
     : QWidget(parent), ui(new Ui::NotesPage), m_inst(inst), m_instanceViewModel(viewModel)

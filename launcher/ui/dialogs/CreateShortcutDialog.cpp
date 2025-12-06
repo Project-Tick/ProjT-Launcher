@@ -234,8 +234,8 @@ ShortcutUtils::Shortcut CreateShortcutDialog::buildShortcutArgs() const
     if (ui->overrideAccountCheckbox->isChecked())
         extraArgs.append({ "--profile", ui->accountSelectionBox->currentData().toString() });
 
-    return ShortcutUtils::Shortcut{ m_instance.get(), name, targetString, const_cast<CreateShortcutDialog*>(this), extraArgs,
-                                    InstIconKey, target };
+    return ShortcutUtils::Shortcut{ m_instance.get(), name,        targetString, const_cast<CreateShortcutDialog*>(this),
+                                    extraArgs,        InstIconKey, target };
 }
 
 void CreateShortcutDialog::createShortcut()
