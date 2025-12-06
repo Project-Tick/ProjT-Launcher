@@ -11,15 +11,15 @@
 
 #pragma once
 
-#include <QObject>
 #include <QAbstractListModel>
+#include <QObject>
 #include <QSortFilterProxyModel>
 #include <QString>
 #include <QVariantMap>
 
 #include "modplatform/atlauncher/ATLPackIndex.h"
-#include "ui/pages/modplatform/atlauncher/AtlListModel.h"
 #include "ui/pages/modplatform/atlauncher/AtlFilterModel.h"
+#include "ui/pages/modplatform/atlauncher/AtlListModel.h"
 
 class ATLauncherViewModel : public QObject {
     Q_OBJECT
@@ -28,14 +28,15 @@ class ATLauncherViewModel : public QObject {
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString searchTerm READ searchTerm WRITE setSearchTerm NOTIFY searchTermChanged)
-    Q_PROPERTY(QString selectedMinecraftVersion READ selectedMinecraftVersion WRITE setSelectedMinecraftVersion NOTIFY selectedMinecraftVersionChanged)
+    Q_PROPERTY(QString selectedMinecraftVersion READ selectedMinecraftVersion WRITE setSelectedMinecraftVersion NOTIFY
+                   selectedMinecraftVersionChanged)
     Q_PROPERTY(QStringList minecraftVersions READ minecraftVersions NOTIFY minecraftVersionsChanged)
     Q_PROPERTY(int selectedPackIndex READ selectedPackIndex WRITE setSelectedPackIndex NOTIFY selectedPackIndexChanged)
     Q_PROPERTY(QVariantMap selectedPack READ selectedPack NOTIFY selectedPackChanged)
     Q_PROPERTY(QStringList selectedPackVersions READ selectedPackVersions NOTIFY selectedPackVersionsChanged)
     Q_PROPERTY(int selectedVersionIndex READ selectedVersionIndex WRITE setSelectedVersionIndex NOTIFY selectedVersionIndexChanged)
 
-public:
+   public:
     explicit ATLauncherViewModel(QObject* parent = nullptr);
     ~ATLauncherViewModel();
 
@@ -64,7 +65,7 @@ public:
     Q_INVOKABLE void clearSelection();
     Q_INVOKABLE QVariantMap getPackInfo(int index) const;
 
-signals:
+   signals:
     void isLoadingChanged();
     void statusMessageChanged();
     void searchTermChanged();
@@ -77,12 +78,12 @@ signals:
     void installStarted();
     void installFinished(bool success, const QString& message);
 
-private slots:
+   private slots:
     void onPacksLoaded();
     void onLoadError(const QString& error);
     void onSelectionChanged();
 
-private:
+   private:
     void loadPacks();
     void updateMinecraftVersions();
     void updateSelectedPackInfo();

@@ -14,8 +14,8 @@
 
 #pragma once
 
-#include <QObject>
 #include <QMap>
+#include <QObject>
 #include <QString>
 #include <QStringList>
 #include <QVariant>

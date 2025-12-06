@@ -7,8 +7,8 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
-#include <QVariantMap>
 #include <QTimer>
+#include <QVariantMap>
 
 #include "modplatform/ModIndex.h"
 #include "modplatform/flame/FlameAPI.h"
@@ -18,7 +18,7 @@ class CurseForgePackListModel;
 
 class CurseForgeViewModel : public QObject {
     Q_OBJECT
-    
+
     Q_PROPERTY(QAbstractItemModel* packsModel READ packsModel CONSTANT)
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
@@ -27,17 +27,17 @@ class CurseForgeViewModel : public QObject {
     Q_PROPERTY(QStringList sortOptions READ sortOptions CONSTANT)
     Q_PROPERTY(QStringList categories READ categories NOTIFY categoriesChanged)
     Q_PROPERTY(int selectedCategoryIndex READ selectedCategoryIndex WRITE setSelectedCategoryIndex NOTIFY selectedCategoryIndexChanged)
-    
+
     // Selected pack
     Q_PROPERTY(int selectedPackIndex READ selectedPackIndex NOTIFY selectedPackIndexChanged)
     Q_PROPERTY(QVariantMap selectedPack READ selectedPack NOTIFY selectedPackChanged)
     Q_PROPERTY(QStringList selectedPackVersions READ selectedPackVersions NOTIFY selectedPackVersionsChanged)
     Q_PROPERTY(int selectedVersionIndex READ selectedVersionIndex WRITE setSelectedVersionIndex NOTIFY selectedVersionIndexChanged)
 
-public:
+   public:
     explicit CurseForgeViewModel(QObject* parent = nullptr);
     ~CurseForgeViewModel() override;
-    
+
     QAbstractItemModel* packsModel() const;
     bool isLoading() const { return m_isLoading; }
     QString statusMessage() const { return m_statusMessage; }
@@ -49,14 +49,14 @@ public:
     QStringList categories() const { return m_categories; }
     int selectedCategoryIndex() const { return m_selectedCategoryIndex; }
     void setSelectedCategoryIndex(int index);
-    
+
     int selectedPackIndex() const { return m_selectedPackIndex; }
     QVariantMap selectedPack() const { return m_selectedPack; }
     QStringList selectedPackVersions() const { return m_selectedPackVersions; }
     int selectedVersionIndex() const { return m_selectedVersionIndex; }
     void setSelectedVersionIndex(int index);
-    
-public slots:
+
+   public slots:
     void refresh();
     void search(const QString& term);
     void selectPack(int index);
@@ -64,7 +64,7 @@ public slots:
     void installSelected(const QString& instanceName, const QString& groupName);
     void clearSelection();
 
-signals:
+   signals:
     void isLoadingChanged();
     void statusMessageChanged();
     void searchTermChanged();
@@ -79,32 +79,32 @@ signals:
     void installCompleted(const QString& packName);
     void installFailed(const QString& packName, const QString& error);
 
-private slots:
+   private slots:
     void onSearchFinished();
     void onVersionsLoaded();
     void triggerSearch();
     void loadCategories();
 
-private:
+   private:
     void setLoading(bool loading);
     void setStatusMessage(const QString& message);
     void updateSelectedPackInfo();
     void loadVersionsForPack();
 
     CurseForgePackListModel* m_model = nullptr;
-    
+
     bool m_isLoading = false;
     QString m_statusMessage;
     QString m_searchTerm;
     int m_sortIndex = 0;
     QStringList m_categories;
     int m_selectedCategoryIndex = 0;
-    
+
     int m_selectedPackIndex = -1;
     QVariantMap m_selectedPack;
     QStringList m_selectedPackVersions;
     int m_selectedVersionIndex = -1;
-    
+
     ModPlatform::IndexedPack::Ptr m_currentPack;
     QTimer m_searchTimer;
     Task::Ptr m_versionsJob;
@@ -113,44 +113,37 @@ private:
 // Internal model for QML
 class CurseForgePackListModel : public QAbstractListModel {
     Q_OBJECT
-    
-public:
-    enum Roles {
-        NameRole = Qt::UserRole + 1,
-        DescriptionRole,
-        AuthorRole,
-        IconUrlRole,
-        DownloadsRole,
-        PackDataRole
-    };
-    
+
+   public:
+    enum Roles { NameRole = Qt::UserRole + 1, DescriptionRole, AuthorRole, IconUrlRole, DownloadsRole, PackDataRole };
+
     explicit CurseForgePackListModel(QObject* parent = nullptr);
-    
+
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
-    
+
     bool canFetchMore(const QModelIndex& parent) const override;
     void fetchMore(const QModelIndex& parent) override;
-    
+
     void searchWithTerm(const QString& term, int sort);
     ModPlatform::IndexedPack::Ptr packAt(int index) const;
     void clear();
-    
+
     bool hasActiveSearch() const { return m_jobPtr && m_jobPtr->isRunning(); }
     Task::Ptr activeSearchJob() { return hasActiveSearch() ? m_jobPtr : nullptr; }
 
-signals:
+   signals:
     void searchFinished();
     void searchFailed(const QString& reason);
 
-private slots:
+   private slots:
     void searchRequestFinished(QList<ModPlatform::IndexedPack::Ptr>& packs);
     void searchRequestFailed(const QString& reason);
 
-private:
+   private:
     void performPaginatedSearch();
-    
+
     QList<ModPlatform::IndexedPack::Ptr> m_packs;
     QString m_currentSearchTerm;
     int m_currentSort = 0;

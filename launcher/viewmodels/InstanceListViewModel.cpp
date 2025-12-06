@@ -14,20 +14,20 @@
 
 #include "InstanceListViewModel.h"
 
-#include "Application.h"
-#include "BaseInstance.h"
-#include "DesktopServices.h"
-#include "InstanceList.h"
-#include "QObjectPtr.h"
-#include "FileSystem.h"
-#include "MMCZip.h"
-#include "icons/IconList.h"
-#include "InstanceImportTask.h"
-#include "minecraft/VanillaInstanceCreationTask.h"
-#include "meta/Index.h"
 #include <QFileInfo>
 #include <QPixmap>
 #include <QUrl>
+#include "Application.h"
+#include "BaseInstance.h"
+#include "DesktopServices.h"
+#include "FileSystem.h"
+#include "InstanceImportTask.h"
+#include "InstanceList.h"
+#include "MMCZip.h"
+#include "QObjectPtr.h"
+#include "icons/IconList.h"
+#include "meta/Index.h"
+#include "minecraft/VanillaInstanceCreationTask.h"
 
 namespace {
 void saveInstanceIcon(const std::shared_ptr<BaseInstance>& instance)
@@ -253,7 +253,9 @@ void InstanceListViewModel::setInstanceGroups(const QStringList& groups)
     emit instanceListChanged();
 }
 
-void InstanceListViewModel::setInstanceLists(const QStringList& ids, const QStringList& names, const QStringList& icons,
+void InstanceListViewModel::setInstanceLists(const QStringList& ids,
+                                             const QStringList& names,
+                                             const QStringList& icons,
                                              const QStringList& groups)
 {
     m_instanceIds = ids;
@@ -391,7 +393,7 @@ void InstanceListViewModel::refreshInstances()
     }
     setBusy(true, tr("Refreshing instances"));
     instances->loadList();
-    
+
     // Populate the QStringLists from the instance list
     QStringList ids;
     QStringList names;
@@ -399,26 +401,27 @@ void InstanceListViewModel::refreshInstances()
     QStringList iconPaths;
     QStringList groups;
     QStringList lastPlayed;
-    
+
     qDebug() << "[InstanceListViewModel::refreshInstances] Loading instances...";
-    
+
     for (int i = 0; i < instances->count(); ++i) {
         auto instance = instances->at(i);
-        if (!instance) continue;
-        
+        if (!instance)
+            continue;
+
         ids.append(instance->id());
         names.append(instance->name());
         icons.append(instance->iconKey());
         iconPaths.append(instance->iconKey());  // Will be resolved by icon system
         groups.append(instances->getInstanceGroup(instance->id()));
-        
+
         // Format last played time
         qint64 lastLaunchMs = instance->lastLaunch();
         if (lastLaunchMs > 0) {
             QDateTime lastLaunch = QDateTime::fromMSecsSinceEpoch(lastLaunchMs);
             QDateTime now = QDateTime::currentDateTime();
             qint64 daysDiff = lastLaunch.daysTo(now);
-            
+
             if (daysDiff == 0) {
                 lastPlayed.append(tr("Today"));
             } else if (daysDiff == 1) {
@@ -435,24 +438,32 @@ void InstanceListViewModel::refreshInstances()
         } else {
             lastPlayed.append(tr("Never"));
         }
-        
+
         qDebug() << "  Added instance:" << instance->id() << instance->name();
     }
-    
+
     qDebug() << "[InstanceListViewModel::refreshInstances] Total instances:" << ids.count();
-    
+
     // Load available Minecraft versions
     QStringList versions;
-    versions << "Latest" << "1.20.1" << "1.20" << "1.19.2" << "1.19" << "1.18.2" << "1.18" << "1.17.1" << "1.16.5";
+    versions << "Latest"
+             << "1.20.1"
+             << "1.20"
+             << "1.19.2"
+             << "1.19"
+             << "1.18.2"
+             << "1.18"
+             << "1.17.1"
+             << "1.16.5";
     if (m_availableVersions != versions) {
         m_availableVersions = versions;
         emit availableVersionsChanged();
     }
-    
+
     m_instanceLastPlayed = lastPlayed;
     setInstanceLists(ids, names, icons, groups);
     setTotalCount(ids.count());
-    
+
     setBusy(false);
     refreshInstanceState();
 }
@@ -500,35 +511,36 @@ void InstanceListViewModel::createNewInstance(const QString& name, const QString
         emit errorOccurred(tr("Instance name is required."));
         return;
     }
-    
-    qDebug() << "[InstanceListViewModel::createNewInstance] Creating vanilla instance:" << name << "requested version:" << version << "group:" << group;
-    
+
+    qDebug() << "[InstanceListViewModel::createNewInstance] Creating vanilla instance:" << name << "requested version:" << version
+             << "group:" << group;
+
     // Use provided group or fall back to last used group
     QString groupName = group.isEmpty() ? APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString() : group;
-    
+
     // Get version from Meta index - use latest available Minecraft version
     auto versionIndex = APPLICATION->metadataIndex();
     if (!versionIndex) {
         emit errorOccurred(tr("Version list not available."));
         return;
     }
-    
+
     auto mcVersions = versionIndex->get("net.minecraft");
     if (!mcVersions || mcVersions->versions().isEmpty()) {
         emit errorOccurred(tr("No Minecraft versions available."));
         return;
     }
-    
+
     // Use the latest available version
     BaseVersion::Ptr selectedVersion = mcVersions->versions().first();
-    
+
     if (!selectedVersion) {
         emit errorOccurred(tr("Failed to select a Minecraft version."));
         return;
     }
-    
+
     qDebug() << "[InstanceListViewModel::createNewInstance] Using Minecraft version:" << selectedVersion->name();
-    
+
     // Create vanilla instance task with the selected version
     auto task = new VanillaCreationTask(selectedVersion);
     if (task) {
@@ -545,22 +557,22 @@ void InstanceListViewModel::importInstance(const QString& sourcePath, const QStr
         emit errorOccurred(tr("Source path is required."));
         return;
     }
-    
+
     qDebug() << "[InstanceListViewModel::importInstance] Importing from:" << sourcePath << "name:" << name;
-    
+
     // Get the default group
     QString groupName = APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString();
-    
+
     // Convert path to URL
     QUrl importUrl = QUrl::fromLocalFile(sourcePath);
-    
+
     // Create import task
     auto task = new InstanceImportTask(importUrl, nullptr);  // nullptr = no parent widget
     if (!name.isEmpty()) {
         task->setName(name);
     }
     task->setGroup(groupName);
-    
+
     addInstance(task, tr("Importing instance"));
     APPLICATION->settings()->set("LastUsedGroupForNewInstance", groupName);
 }
@@ -961,13 +973,13 @@ void InstanceListViewModel::exportSelectedInstance()
         emit errorOccurred(tr("No instance selected."));
         return;
     }
-    
+
     auto instance = resolveInstance(m_selectedInstanceId);
     if (!instance) {
         emit errorOccurred(tr("The selected instance could not be found."));
         return;
     }
-    
+
     // Open export dialog via InstanceWindow export page
     APPLICATION->showInstanceWindow(instance, "export");
 }
@@ -978,13 +990,13 @@ void InstanceListViewModel::manageSelectedBackups()
         emit errorOccurred(tr("No instance selected."));
         return;
     }
-    
+
     auto instance = resolveInstance(m_selectedInstanceId);
     if (!instance) {
         emit errorOccurred(tr("The selected instance could not be found."));
         return;
     }
-    
+
     // Open backup manager via InstanceWindow backups page
     APPLICATION->showInstanceWindow(instance, "backups");
 }
@@ -995,19 +1007,19 @@ void InstanceListViewModel::createSelectedShortcut()
         emit errorOccurred(tr("No instance selected."));
         return;
     }
-    
+
     auto instance = resolveInstance(m_selectedInstanceId);
     if (!instance) {
         emit errorOccurred(tr("The selected instance could not be found."));
         return;
     }
-    
+
     // Create desktop shortcut
     ShortcutUtils::Shortcut shortcut;
     shortcut.instance = instance.get();
     shortcut.name = instance->name();
     shortcut.iconKey = instance->iconKey();
-    
+
     if (ShortcutUtils::createInstanceShortcutOnDesktop(shortcut)) {
         qDebug() << "Shortcut created successfully for" << instance->name();
     } else {
@@ -1020,7 +1032,7 @@ QString InstanceListViewModel::selectedInstanceName() const
     if (m_selectedInstanceId.isEmpty()) {
         return QString();
     }
-    
+
     int idx = m_instanceIds.indexOf(m_selectedInstanceId);
     if (idx >= 0 && idx < m_instanceNames.size()) {
         return m_instanceNames[idx];

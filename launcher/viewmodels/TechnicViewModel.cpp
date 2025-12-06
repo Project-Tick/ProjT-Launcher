@@ -22,9 +22,7 @@
 #include "tasks/Task.h"
 #include "ui/pages/modplatform/technic/TechnicData.h"
 
-TechnicViewModel::TechnicViewModel(QObject* parent)
-    : QObject(parent)
-    , m_listModel(new Technic::ListModel(this))
+TechnicViewModel::TechnicViewModel(QObject* parent) : QObject(parent), m_listModel(new Technic::ListModel(this))
 {
     // No initial search - wait for user input
     m_statusMessage = tr("Enter a search term to find Technic packs");
@@ -178,8 +176,8 @@ void TechnicViewModel::installSelected(const QString& instanceName, const QStrin
     if (!m_currentPack.isSolder) {
         installTask = new Technic::SingleZipPackInstallTask(m_currentPack.url, m_currentPack.minecraftVersion);
     } else {
-        installTask = new Technic::SolderPackInstallTask(
-            APPLICATION->network(), m_currentPack.url, m_currentPack.slug, version, m_currentPack.minecraftVersion);
+        installTask = new Technic::SolderPackInstallTask(APPLICATION->network(), m_currentPack.url, m_currentPack.slug, version,
+                                                         m_currentPack.minecraftVersion);
     }
 
     installTask->setName(instanceName.isEmpty() ? m_currentPack.name : instanceName);
@@ -373,7 +371,7 @@ void TechnicViewModel::onMetadataLoaded()
     if (m_currentPack.isSolder) {
         while (m_currentPack.url.endsWith('/'))
             m_currentPack.url.chop(1);
-        
+
         loadSolderVersions();
     } else {
         m_selectedPackVersions.clear();

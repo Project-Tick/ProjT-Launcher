@@ -23,8 +23,8 @@
 #include <QVariant>
 
 #include "InstanceTask.h"
-#include "minecraft/ShortcutUtils.h"
 #include "minecraft/BackupManager.h"
+#include "minecraft/ShortcutUtils.h"
 
 class BaseInstance;
 class InstanceList;
@@ -111,7 +111,7 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE bool handleDragDrop(const QString& instanceId, const QString& targetGroup);
     Q_INVOKABLE void reorderInstances(const QString& groupName, const QStringList& orderedInstanceIds);
     Q_INVOKABLE void setSelectedGroup(const QString& groupName);
-    
+
     // Simple QML-callable actions for selected instance
     Q_INVOKABLE void exportSelectedInstance();
     Q_INVOKABLE void manageSelectedBackups();
@@ -137,7 +137,7 @@ class InstanceListViewModel : public QObject {
     void duplicateRequested(const QString& id, const QString& targetIdOrName);
     void availableVersionsChanged();
     void groupListChanged();
-    
+
     // Instance management request signals
     void editInstanceRequested(const QString& id);
     void copyInstanceRequested(const QString& id);

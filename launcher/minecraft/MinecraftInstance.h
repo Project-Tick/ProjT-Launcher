@@ -172,7 +172,7 @@ class MinecraftInstance : public BaseInstance {
 
     virtual JavaVersion getJavaVersion();
 
-signals:
+   signals:
     void profilerChanged();
 
    protected:

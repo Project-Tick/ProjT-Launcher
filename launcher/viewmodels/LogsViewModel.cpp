@@ -25,8 +25,7 @@
 #include "QObjectPtr.h"
 #include "logs/LogParser.h"
 
-LogsViewModel::LogsViewModel(QObject* parent)
-    : QObject(parent)
+LogsViewModel::LogsViewModel(QObject* parent) : QObject(parent)
 {
     m_watcher.reset(new QFileSystemWatcher());
     m_proxy = std::make_unique<LogFormatProxyModel>();
@@ -199,7 +198,9 @@ void LogsViewModel::setFont(const QFont& font)
     }
 }
 
-void LogsViewModel::configure(const InstancePtr& instance, const QString& basePath, const QStringList& searchPaths,
+void LogsViewModel::configure(const InstancePtr& instance,
+                              const QString& basePath,
+                              const QStringList& searchPaths,
                               const shared_qobject_ptr<LogModel>& launcherModel)
 {
     m_instance = instance;
@@ -219,8 +220,7 @@ void LogsViewModel::configure(const InstancePtr& instance, const QString& basePa
         m_model.reset(new LogModel(this));
         m_model->setMaxLines(getConsoleMaxLines(currentSettings()));
         m_model->setStopOnOverflow(shouldStopOnConsoleOverflow(currentSettings()));
-        m_model->setOverflowMessage(tr("Cannot display this log since the log length surpassed %1 lines.")
-                                        .arg(m_model->getMaxLines()));
+        m_model->setOverflowMessage(tr("Cannot display this log since the log length surpassed %1 lines.").arg(m_model->getMaxLines()));
     } else if (m_launcherModel) {
         m_model = m_launcherModel;
     } else {

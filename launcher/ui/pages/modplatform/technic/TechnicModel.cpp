@@ -125,14 +125,8 @@ QVariant Technic::ListModel::data(const QModelIndex& index, int role) const
 
 QHash<int, QByteArray> Technic::ListModel::roleNames() const
 {
-    return {
-        { NameRole, "name" },
-        { DescriptionRole, "description" },
-        { IconUrlRole, "iconUrl" },
-        { PackDataRole, "packData" },
-        { Qt::DisplayRole, "display" },
-        { Qt::ToolTipRole, "toolTip" }
-    };
+    return { { NameRole, "name" },         { DescriptionRole, "description" }, { IconUrlRole, "iconUrl" },
+             { PackDataRole, "packData" }, { Qt::DisplayRole, "display" },     { Qt::ToolTipRole, "toolTip" } };
 }
 
 int Technic::ListModel::columnCount(const QModelIndex& parent) const

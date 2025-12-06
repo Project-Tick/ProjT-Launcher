@@ -700,11 +700,11 @@ bool deletePath(QString path)
 // Currently disabled until QtDBus dependency is properly configured
 // TODO: Re-enable when QtDBus is added to target_link_libraries in CMakeLists.txt
 #if 0 && defined(Q_OS_LINUX) && defined(WITH_QTDBUS)
-#    include <QDBusConnection>
-#    include <QDBusMessage>
-#    include <QDBusUnixFileDescriptor>
-#    include <fcntl.h>
-#    include <unistd.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusUnixFileDescriptor>
 #endif
 
 bool trash(QString path, QString* pathInTrash)
@@ -1018,7 +1018,8 @@ QString createShortcut(QString destination, QString target, QStringList args, QS
 
     auto argstring = quoteArgs(args, "\"", "\\\"");
 
-    stream << "#!/bin/bash" << "\n";
+    stream << "#!/bin/bash"
+           << "\n";
     stream << "\"" << target << "\" " << argstring << "\n";
 
     stream.flush();
@@ -1063,9 +1064,12 @@ QString createShortcut(QString destination, QString target, QStringList args, QS
 
     auto argstring = quoteArgs(args, "'", "'\\''");
 
-    stream << "[Desktop Entry]" << "\n";
-    stream << "Type=Application" << "\n";
-    stream << "Categories=Game;ActionGame;AdventureGame;Simulation" << "\n";
+    stream << "[Desktop Entry]"
+           << "\n";
+    stream << "Type=Application"
+           << "\n";
+    stream << "Categories=Game;ActionGame;AdventureGame;Simulation"
+           << "\n";
     stream << "Exec=\"" << target.toLocal8Bit() << "\" " << argstring.toLocal8Bit() << "\n";
     stream << "Name=" << name.toLocal8Bit() << "\n";
     if (!icon.isEmpty()) {

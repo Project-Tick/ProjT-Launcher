@@ -20,12 +20,12 @@
 #include "Application.h"
 #include "BaseInstance.h"
 #include "InstanceList.h"
-#include "Json.h"
 #include "JavaCommon.h"
+#include "Json.h"
+#include "icons/IconList.h"
 #include "java/JavaInstall.h"
 #include "java/JavaInstallList.h"
 #include "java/JavaUtils.h"
-#include "icons/IconList.h"
 #include "settings/SettingsObject.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/VersionSelectDialog.h"
@@ -398,8 +398,8 @@ void SettingsViewModel::autoDetectJava(const QString& instanceId, QWidget* paren
         return;
     }
 
-    VersionSelectDialog versionDialog(APPLICATION->javalist().get(), QCoreApplication::translate("SettingsViewModel", "Select a Java version"), parent,
-                                      true);
+    VersionSelectDialog versionDialog(APPLICATION->javalist().get(),
+                                      QCoreApplication::translate("SettingsViewModel", "Select a Java version"), parent, true);
     versionDialog.setResizeOn(2);
     versionDialog.exec();
 

@@ -62,9 +62,7 @@ class DefaultAtlInteractionSupport : public ATLauncher::UserInteractionSupport {
 }  // namespace
 
 ATLauncherViewModel::ATLauncherViewModel(QObject* parent)
-    : QObject(parent)
-    , m_listModel(new Atl::ListModel(this))
-    , m_filterModel(new Atl::FilterModel(this))
+    : QObject(parent), m_listModel(new Atl::ListModel(this)), m_filterModel(new Atl::FilterModel(this))
 {
     m_filterModel->setSourceModel(m_listModel);
     m_filterModel->setSorting(Atl::FilterModel::ByPopularity);

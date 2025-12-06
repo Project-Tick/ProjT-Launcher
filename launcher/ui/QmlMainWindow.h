@@ -30,10 +30,10 @@ class QmlMainWindow : public QMainWindow {
 
    public:
     QmlMainWindow(LauncherViewModel* launcherViewModel,
-                          InstanceListViewModel* instanceListViewModel,
-                          NewsViewModel* newsViewModel,
-                          SettingsViewModel* settingsViewModel,
-                          QWidget* parent = nullptr);
+                  InstanceListViewModel* instanceListViewModel,
+                  NewsViewModel* newsViewModel,
+                  SettingsViewModel* settingsViewModel,
+                  QWidget* parent = nullptr);
 
    private:
     void exposeContextProperties(LauncherViewModel* launcherViewModel,

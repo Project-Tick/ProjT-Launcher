@@ -58,5 +58,5 @@ class ThemeWizardPage : public BaseWizardPage {
     void retranslate() override { widget.retranslateUi(); }
 
    private:
-    AppearanceWidget widget{true};
+    AppearanceWidget widget{ true };
 };

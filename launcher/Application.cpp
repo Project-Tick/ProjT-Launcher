@@ -53,8 +53,10 @@
  ======================================================================== */
 
 #include "Application.h"
+#include <QFileDialog>
+#include <QMimeDatabase>
+#include <QStatusBar>
 #include "BuildConfig.h"
-
 #include "DataMigrationTask.h"
 #include "java/JavaInstallList.h"
 #include "minecraft/BackupManager.h"
@@ -65,18 +67,13 @@
 #include "ui/MainWindow.h"
 #include "ui/QmlMainWindow.h"
 #include "ui/ViewLogWindow.h"
-#include "viewmodels/LauncherViewModel.h"
+#include "ui/dialogs/NewInstanceDialog.h"
+#include "ui/dialogs/ProgressDialog.h"
+#include "ui/instanceview/AccessibleInstanceView.h"
 #include "viewmodels/InstanceListViewModel.h"
+#include "viewmodels/LauncherViewModel.h"
 #include "viewmodels/NewsViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
-
-#include "ui/dialogs/ProgressDialog.h"
-#include "ui/dialogs/NewInstanceDialog.h"
-#include "ui/instanceview/AccessibleInstanceView.h"
-
-#include <QStatusBar>
-#include <QFileDialog>
-#include <QMimeDatabase>
 
 #include "ui/pages/BasePageProvider.h"
 #include "ui/pages/global/APIPage.h"
@@ -124,9 +121,8 @@
 #include <QStyleFactory>
 #include <QTranslator>
 #include <QWindow>
-
-#include "InstanceList.h"
 #include "InstanceImportTask.h"
+#include "InstanceList.h"
 #include "MTPixmapCache.h"
 
 #include <minecraft/auth/AccountList.h>
@@ -1087,7 +1083,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
                     [[fallthrough]];
                 default: {
                     qDebug() << "Exiting because update lockfile is present";
-                    QMetaObject::invokeMethod(this, []() { exit(1); }, Qt::QueuedConnection);
+                    QMetaObject::invokeMethod(
+                        this, []() { exit(1); }, Qt::QueuedConnection);
                     return;
                 }
             }
@@ -1119,7 +1116,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
                     [[fallthrough]];
                 default: {
                     qDebug() << "Exiting because update lockfile is present";
-                    QMetaObject::invokeMethod(this, []() { exit(1); }, Qt::QueuedConnection);
+                    QMetaObject::invokeMethod(
+                        this, []() { exit(1); }, Qt::QueuedConnection);
                     return;
                 }
             }
@@ -1744,7 +1742,7 @@ QmlMainWindow* Application::showQmlMainWindow(bool minimized)
         auto instancesVM = new InstanceListViewModel(this);
         auto newsVM = new NewsViewModel(this);
         auto settingsVM = new SettingsViewModel(this);
-        
+
         m_qmlMainWindow = new QmlMainWindow(launcherVM, instancesVM, newsVM, settingsVM);
         m_qmlMainWindow->restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("QmlMainWindowGeometry").toString().toUtf8()));
 
@@ -1944,7 +1942,8 @@ QString Application::getJarPath(QString jarFile)
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)
         FS::PathCombine(m_rootPath, "share", BuildConfig.LAUNCHER_NAME),
 #endif
-        FS::PathCombine(m_rootPath, "jars"), FS::PathCombine(applicationDirPath(), "jars"),
+        FS::PathCombine(m_rootPath, "jars"),
+        FS::PathCombine(applicationDirPath(), "jars"),
         FS::PathCombine(applicationDirPath(), "..", "jars")  // from inside build dir, for debuging
     };
     for (QString p : potentialPaths) {
@@ -2172,4 +2171,3 @@ void Application::migratePastebinSettings()
     // Mark migration as complete
     m_settings->set("PastebinMigrationDone", true);
 }
-

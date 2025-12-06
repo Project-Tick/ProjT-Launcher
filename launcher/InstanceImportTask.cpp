@@ -320,12 +320,12 @@ void InstanceImportTask::processFlame()
         // Extract IDs from the zip file directly by parsing manifest.json
         QString pack_id;
         QString pack_version_id;
-        
+
         if (!m_archivePath.isEmpty()) {
             QuaZip zip(m_archivePath);
             if (zip.open(QuaZip::mdUnzip)) {
                 QuaZipFile file(&zip);
-                
+
                 for (bool more = zip.goToFirstFile(); more; more = zip.goToNextFile()) {
                     if (zip.getCurrentFileName().endsWith("manifest.json")) {
                         if (file.open(QIODevice::ReadOnly)) {
@@ -340,13 +340,13 @@ void InstanceImportTask::processFlame()
                             }
                             file.close();
                         }
-                        break; 
+                        break;
                     }
                 }
                 zip.close();
             }
         }
-        
+
         inst_creation_task = makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, m_parent, pack_id, pack_version_id);
     }
 

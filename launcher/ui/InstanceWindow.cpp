@@ -60,8 +60,8 @@
 #include <QPushButton>
 #include <QScrollBar>
 
-#include "ui/widgets/PageContainer.h"
 #include "ui/pages/BasePage.h"
+#include "ui/widgets/PageContainer.h"
 
 #include "InstancePageProvider.h"
 
@@ -70,10 +70,10 @@
 #include "viewmodels/SettingsViewModel.h"
 
 InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
-    : QMainWindow(parent),
-      m_instance(instance),
-      m_instanceListViewModel(new InstanceListViewModel(this)),
-      m_settingsViewModel(new SettingsViewModel(this))
+    : QMainWindow(parent)
+    , m_instance(instance)
+    , m_instanceListViewModel(new InstanceListViewModel(this))
+    , m_settingsViewModel(new SettingsViewModel(this))
 {
     setAttribute(Qt::WA_DeleteOnClose);
 
@@ -100,9 +100,7 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
         hookPageSelectionSignals();
     }
     // Let the ViewModel drive apply/reset by delegating to the container hooks.
-    m_settingsViewModel->setApplyHook([this]() {
-        return m_container ? m_container->saveAll() : true;
-    });
+    m_settingsViewModel->setApplyHook([this]() { return m_container ? m_container->saveAll() : true; });
     m_settingsViewModel->setResetHook([this]() {
         if (m_container) {
             m_container->refreshContainer();

@@ -48,12 +48,7 @@ class ListModel : public QAbstractListModel {
     ListModel(QObject* parent);
     virtual ~ListModel();
 
-    enum Roles {
-        NameRole = Qt::UserRole + 100,
-        DescriptionRole,
-        IconUrlRole,
-        PackDataRole
-    };
+    enum Roles { NameRole = Qt::UserRole + 100, DescriptionRole, IconUrlRole, PackDataRole };
 
     int rowCount(const QModelIndex& parent) const override;
     int columnCount(const QModelIndex& parent) const override;
@@ -64,7 +59,7 @@ class ListModel : public QAbstractListModel {
 
     void getLogo(const QString& logo, const QString& logoUrl, LogoCallback callback);
 
-signals:
+   signals:
     void requestCompleted();
     void requestError(const QString& reason);
 

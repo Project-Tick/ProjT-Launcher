@@ -70,12 +70,7 @@ class ListModel : public QAbstractListModel {
     ListModel(QObject* parent);
     ~ListModel();
 
-    enum Roles {
-        NameRole = Qt::UserRole + 100,
-        DescriptionRole,
-        IconUrlRole,
-        PackDataRole
-    };
+    enum Roles { NameRole = Qt::UserRole + 100, DescriptionRole, IconUrlRole, PackDataRole };
 
     int rowCount(const QModelIndex& parent) const override;
     int columnCount(const QModelIndex& parent) const override;

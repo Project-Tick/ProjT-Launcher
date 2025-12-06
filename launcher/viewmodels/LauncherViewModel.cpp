@@ -14,14 +14,14 @@
 
 #include "LauncherViewModel.h"
 
-#include "BuildConfig.h"
-#include "Application.h"
-#include "DesktopServices.h"
-#include <QUrl>
 #include <QDebug>
 #include <QDir>
 #include <QFileDialog>
+#include <QUrl>
 #include <QWidget>
+#include "Application.h"
+#include "BuildConfig.h"
+#include "DesktopServices.h"
 
 LauncherViewModel::LauncherViewModel(QObject* parent) : QObject(parent)
 {
@@ -29,19 +29,14 @@ LauncherViewModel::LauncherViewModel(QObject* parent) : QObject(parent)
     m_versionString = BuildConfig.printableVersionString();
     m_gitRef = BuildConfig.GIT_REFSPEC;
     m_gitCommit = BuildConfig.GIT_COMMIT;
-    
+
     // Build About HTML
     m_aboutHtml = QObject::tr(
-        "<b>%1</b><br/>"
-        "Version: %2<br/>"
-        "Git: %3<br/><br/>"
-        "%4"
-    ).arg(
-        m_displayName,
-        m_versionString,
-        BuildConfig.LAUNCHER_GIT,
-        BuildConfig.LAUNCHER_COPYRIGHT
-    );
+                      "<b>%1</b><br/>"
+                      "Version: %2<br/>"
+                      "Git: %3<br/><br/>"
+                      "%4")
+                      .arg(m_displayName, m_versionString, BuildConfig.LAUNCHER_GIT, BuildConfig.LAUNCHER_COPYRIGHT);
 }
 
 QString LauncherViewModel::displayName() const
@@ -155,17 +150,17 @@ void LauncherViewModel::setCurrentPage(Page page)
 QString LauncherViewModel::pageToString(Page page)
 {
     switch (page) {
-    case Page::News:
-        return QStringLiteral("news");
-    case Page::Settings:
-        return QStringLiteral("settings");
-    case Page::About:
-        return QStringLiteral("about");
-    case Page::Logs:
-        return QStringLiteral("logs");
-    case Page::Instances:
-    default:
-        return QStringLiteral("instances");
+        case Page::News:
+            return QStringLiteral("news");
+        case Page::Settings:
+            return QStringLiteral("settings");
+        case Page::About:
+            return QStringLiteral("about");
+        case Page::Logs:
+            return QStringLiteral("logs");
+        case Page::Instances:
+        default:
+            return QStringLiteral("instances");
     }
 }
 

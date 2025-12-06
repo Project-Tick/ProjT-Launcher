@@ -11,12 +11,12 @@
 
 #pragma once
 
-#include <QObject>
 #include <QAbstractListModel>
+#include <QObject>
 #include <QSortFilterProxyModel>
 #include <QString>
-#include <QVariantMap>
 #include <QVariantList>
+#include <QVariantMap>
 #include <memory>
 
 #include "ui/pages/modplatform/legacy_ftb/ListModel.h"
@@ -25,7 +25,7 @@
 namespace LegacyFTB {
 class PackFetchTask;
 class PrivatePackManager;
-}
+}  // namespace LegacyFTB
 
 class FTBViewModel : public QObject {
     Q_OBJECT
@@ -41,7 +41,7 @@ class FTBViewModel : public QObject {
     Q_PROPERTY(int selectedVersionIndex READ selectedVersionIndex WRITE setSelectedVersionIndex NOTIFY selectedVersionIndexChanged)
     Q_PROPERTY(bool showingPrivatePacks READ showingPrivatePacks WRITE setShowingPrivatePacks NOTIFY showingPrivatePacksChanged)
 
-public:
+   public:
     explicit FTBViewModel(QObject* parent = nullptr);
     ~FTBViewModel();
 
@@ -72,7 +72,7 @@ public:
     Q_INVOKABLE void removePrivatePack(const QString& packCode);
     Q_INVOKABLE QVariantMap getPackInfo(int index) const;
 
-signals:
+   signals:
     void isLoadingChanged();
     void statusMessageChanged();
     void searchTermChanged();
@@ -85,7 +85,7 @@ signals:
     void installFinished(bool success, const QString& message);
     void privatePackAdded(bool success, const QString& message);
 
-private slots:
+   private slots:
     void onPublicPacksLoaded(const LegacyFTB::ModpackList& packs);
     void onPrivatePacksLoaded(const LegacyFTB::ModpackList& packs);
     void onPackFetchFailed(const QString& error);
@@ -94,7 +94,7 @@ private slots:
     void onPrivatePackFetchFailed(const QString& error, const QString& packCode);
     void onPackFetchAborted();
 
-private:
+   private:
     void loadPacks();
     void updateSelectedPackInfo();
     QAbstractItemModel* currentModel() const;

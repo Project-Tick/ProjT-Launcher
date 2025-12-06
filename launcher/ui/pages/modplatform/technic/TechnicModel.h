@@ -67,12 +67,7 @@ class ListModel : public QAbstractListModel {
     ListModel(QObject* parent);
     virtual ~ListModel();
 
-    enum Roles {
-        NameRole = Qt::UserRole + 100,
-        DescriptionRole,
-        IconUrlRole,
-        PackDataRole
-    };
+    enum Roles { NameRole = Qt::UserRole + 100, DescriptionRole, IconUrlRole, PackDataRole };
 
     virtual QVariant data(const QModelIndex& index, int role) const;
     virtual int columnCount(const QModelIndex& parent) const;
