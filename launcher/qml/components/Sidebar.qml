@@ -20,7 +20,43 @@ import "../Theme.js" as Theme
 
 Rectangle {
     id: sidebar
-    color: ThemeColors.toolBar
+    
+    // Theme binding for reactive updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+    
+    color: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    
+    property color toolBarColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    property color borderColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border
+    }
+    property color textColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? themeVM.textColor : ThemeColors.text
+    }
+    property color textSecondaryColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.textColor, 1.3) : ThemeColors.textSecondary
+    }
+    property color highlightColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? themeVM.highlightColor : ThemeColors.highlight
+    }
+    
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            sidebar._themeUpdateCount++
+        }
+    }
     
     signal pageRequested(int page)
     signal accountRequested(int accountIndex)

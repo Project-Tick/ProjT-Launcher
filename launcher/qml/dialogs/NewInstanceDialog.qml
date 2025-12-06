@@ -29,6 +29,47 @@ Dialog {
     property var vm: ProjT ? ProjT.instancesVM : null
     property string currentPage: "vanilla"
     
+    // Theme binding for reactive updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+    
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            newInstanceDialog._themeUpdateCount++
+        }
+    }
+    
+    // Dialog background styling
+    background: Rectangle {
+        color: ThemeColors.background
+        border.color: ThemeColors.border
+        border.width: 1
+        radius: 8
+    }
+    
+    // Dialog header styling
+    header: Rectangle {
+        height: 40
+        color: ThemeColors.toolBar
+        
+        Label {
+            anchors.centerIn: parent
+            text: newInstanceDialog.title
+            color: ThemeColors.text
+            font.bold: true
+            font.pointSize: 12
+        }
+        
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: ThemeColors.border
+        }
+    }
+    
     RowLayout {
         anchors.fill: parent
         spacing: 0
@@ -68,6 +109,12 @@ Dialog {
                         Layout.fillWidth: true
                         highlighted: currentPage === modelData.id
                         
+                        background: Rectangle {
+                            color: highlighted ? Qt.rgba(ThemeColors.highlight.r, ThemeColors.highlight.g, ThemeColors.highlight.b, 0.2) : 
+                                   (hovered ? ThemeColors.hover : "transparent")
+                            radius: 4
+                        }
+                        
                         RowLayout {
                             anchors.fill: parent
                             anchors.margins: Theme.spacingS
@@ -80,7 +127,7 @@ Dialog {
                             
                             Label {
                                 text: modelData.name
-                                color: highlighted ? ThemeColors.accent : ThemeColors.text
+                                color: highlighted ? ThemeColors.highlight : ThemeColors.text
                                 font.bold: highlighted
                             }
                         }
@@ -234,9 +281,10 @@ Dialog {
                     
                     Item { Layout.fillWidth: true }
                     
-                    Button {
+                    ThemedButton {
                         text: qsTr("Refresh")
                         icon.name: "view-refresh"
+                        size: "small"
                         onClicked: {
                             if (vm) vm.refreshVersions()
                         }
@@ -325,14 +373,14 @@ Dialog {
             
             Item { Layout.fillWidth: true }
             
-            Button {
+            ThemedButton {
                 text: qsTr("Cancel")
                 onClicked: newInstanceDialog.reject()
             }
             
-            Button {
+            ThemedButton {
                 text: qsTr("Create")
-                highlighted: true
+                primary: true
                 enabled: vanillaNameField.text.length > 0 && versionList.selectedVersion.length > 0
                 onClicked: {
                     if (vm) {
@@ -394,9 +442,9 @@ Dialog {
                 placeholderText: qsTr("Search modpacks...")
             }
             
-            Button {
+            ThemedButton {
                 text: qsTr("Search")
-                highlighted: true
+                primary: true
             }
         }
         
@@ -418,7 +466,7 @@ Dialog {
             
             Item { Layout.fillWidth: true }
             
-            Button {
+            ThemedButton {
                 text: qsTr("Cancel")
                 onClicked: newInstanceDialog.reject()
             }
@@ -461,7 +509,7 @@ Dialog {
                         readOnly: true
                     }
                     
-                    Button {
+                    ThemedButton {
                         text: qsTr("Browse...")
                         onClicked: openImportFileDialog()
                     }
@@ -542,14 +590,14 @@ Dialog {
             
             Item { Layout.fillWidth: true }
             
-            Button {
+            ThemedButton {
                 text: qsTr("Cancel")
                 onClicked: newInstanceDialog.reject()
             }
             
-            Button {
+            ThemedButton {
                 text: qsTr("Import")
-                highlighted: true
+                primary: true
                 enabled: importPathField.text.length > 0 || importUrlField.text.length > 0
                 onClicked: {
                     if (vm) {

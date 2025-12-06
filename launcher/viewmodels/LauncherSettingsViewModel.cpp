@@ -478,6 +478,74 @@ bool LauncherSettingsViewModel::validateDownloads() const
 {
     return m_validateDownloads;
 }
+bool LauncherSettingsViewModel::preferMenuBar() const
+{
+    return m_preferMenuBar;
+}
+bool LauncherSettingsViewModel::autoUpdateCheck() const
+{
+    return m_autoUpdateCheck;
+}
+int LauncherSettingsViewModel::updateInterval() const
+{
+    return m_updateInterval;
+}
+QString LauncherSettingsViewModel::javaFolder() const
+{
+    return m_javaFolder;
+}
+QString LauncherSettingsViewModel::skinsFolder() const
+{
+    return m_skinsFolder;
+}
+QString LauncherSettingsViewModel::downloadsFolder() const
+{
+    return m_downloadsFolder;
+}
+bool LauncherSettingsViewModel::downloadsDirWatchRecursive() const
+{
+    return m_downloadsDirWatchRecursive;
+}
+bool LauncherSettingsViewModel::downloadsDirMove() const
+{
+    return m_downloadsDirMove;
+}
+bool LauncherSettingsViewModel::metadataEnabled() const
+{
+    return m_metadataEnabled;
+}
+bool LauncherSettingsViewModel::dependenciesEnabled() const
+{
+    return m_dependenciesEnabled;
+}
+bool LauncherSettingsViewModel::modpackUpdatePrompt() const
+{
+    return m_modpackUpdatePrompt;
+}
+int LauncherSettingsViewModel::logHistoryLimit() const
+{
+    return m_logHistoryLimit;
+}
+bool LauncherSettingsViewModel::stopLoggingOnOverflow() const
+{
+    return m_stopLoggingOnOverflow;
+}
+int LauncherSettingsViewModel::concurrentTasks() const
+{
+    return m_concurrentTasks;
+}
+int LauncherSettingsViewModel::retryLimit() const
+{
+    return m_retryLimit;
+}
+int LauncherSettingsViewModel::httpTimeout() const
+{
+    return m_httpTimeout;
+}
+bool LauncherSettingsViewModel::autoBackupBeforeLaunch() const
+{
+    return m_autoBackupBeforeLaunch;
+}
 
 // === Launcher Page Setters ===
 
@@ -582,6 +650,159 @@ void LauncherSettingsViewModel::setValidateDownloads(bool value)
         m_validateDownloads = value;
         APPLICATION->settings()->set("ValidateDownloads", value);
         emit validateDownloadsChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setPreferMenuBar(bool value)
+{
+    if (m_preferMenuBar != value) {
+        m_preferMenuBar = value;
+        APPLICATION->settings()->set("PreferMenuBar", value);
+        emit preferMenuBarChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setAutoUpdateCheck(bool value)
+{
+    if (m_autoUpdateCheck != value) {
+        m_autoUpdateCheck = value;
+        APPLICATION->settings()->set("AutoUpdateCheck", value);
+        emit autoUpdateCheckChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setUpdateInterval(int value)
+{
+    if (m_updateInterval != value) {
+        m_updateInterval = value;
+        APPLICATION->settings()->set("UpdateInterval", value);
+        emit updateIntervalChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setJavaFolder(const QString& path)
+{
+    if (m_javaFolder != path) {
+        m_javaFolder = path;
+        APPLICATION->settings()->set("JavaDir", path);
+        emit javaFolderChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setSkinsFolder(const QString& path)
+{
+    if (m_skinsFolder != path) {
+        m_skinsFolder = path;
+        APPLICATION->settings()->set("SkinsDir", path);
+        emit skinsFolderChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setDownloadsFolder(const QString& path)
+{
+    if (m_downloadsFolder != path) {
+        m_downloadsFolder = path;
+        APPLICATION->settings()->set("DownloadsDir", path);
+        emit downloadsFolderChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setDownloadsDirWatchRecursive(bool value)
+{
+    if (m_downloadsDirWatchRecursive != value) {
+        m_downloadsDirWatchRecursive = value;
+        APPLICATION->settings()->set("DownloadsDirWatchRecursive", value);
+        emit downloadsDirWatchRecursiveChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setDownloadsDirMove(bool value)
+{
+    if (m_downloadsDirMove != value) {
+        m_downloadsDirMove = value;
+        APPLICATION->settings()->set("DownloadsDirMove", value);
+        emit downloadsDirMoveChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setMetadataEnabled(bool value)
+{
+    if (m_metadataEnabled != value) {
+        m_metadataEnabled = value;
+        APPLICATION->settings()->set("MetadataEnabled", value);
+        emit metadataEnabledChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setDependenciesEnabled(bool value)
+{
+    if (m_dependenciesEnabled != value) {
+        m_dependenciesEnabled = value;
+        APPLICATION->settings()->set("DependenciesEnabled", value);
+        emit dependenciesEnabledChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setModpackUpdatePrompt(bool value)
+{
+    if (m_modpackUpdatePrompt != value) {
+        m_modpackUpdatePrompt = value;
+        APPLICATION->settings()->set("ModpackUpdatePrompt", value);
+        emit modpackUpdatePromptChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setLogHistoryLimit(int value)
+{
+    if (m_logHistoryLimit != value) {
+        m_logHistoryLimit = value;
+        APPLICATION->settings()->set("LogHistoryLimit", value);
+        emit logHistoryLimitChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setStopLoggingOnOverflow(bool value)
+{
+    if (m_stopLoggingOnOverflow != value) {
+        m_stopLoggingOnOverflow = value;
+        APPLICATION->settings()->set("StopLoggingOnOverflow", value);
+        emit stopLoggingOnOverflowChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setConcurrentTasks(int value)
+{
+    if (m_concurrentTasks != value) {
+        m_concurrentTasks = value;
+        APPLICATION->settings()->set("ConcurrentTasks", value);
+        emit concurrentTasksChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setRetryLimit(int value)
+{
+    if (m_retryLimit != value) {
+        m_retryLimit = value;
+        APPLICATION->settings()->set("RetryLimit", value);
+        emit retryLimitChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setHttpTimeout(int value)
+{
+    if (m_httpTimeout != value) {
+        m_httpTimeout = value;
+        APPLICATION->settings()->set("HttpTimeout", value);
+        emit httpTimeoutChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setAutoBackupBeforeLaunch(bool value)
+{
+    if (m_autoBackupBeforeLaunch != value) {
+        m_autoBackupBeforeLaunch = value;
+        APPLICATION->settings()->set("AutoBackupBeforeLaunch", value);
+        emit autoBackupBeforeLaunchChanged();
     }
 }
 
@@ -1072,6 +1293,30 @@ QString LauncherSettingsViewModel::userAgentOverride() const
 {
     return m_userAgentOverride;
 }
+QStringList LauncherSettingsViewModel::pasteServiceTypes() const
+{
+    return QStringList() << tr("0xd9 (mclo.gs)") << tr("paste.ee") << tr("hastebin") << tr("Custom");
+}
+int LauncherSettingsViewModel::pasteServiceType() const
+{
+    return m_pasteServiceType;
+}
+QString LauncherSettingsViewModel::pasteBaseUrl() const
+{
+    return m_pasteBaseUrl;
+}
+QString LauncherSettingsViewModel::resourceUrl() const
+{
+    return m_resourceUrl;
+}
+QString LauncherSettingsViewModel::userAgent() const
+{
+    return m_userAgent;
+}
+QString LauncherSettingsViewModel::technicClientId() const
+{
+    return m_technicClientId;
+}
 
 // === API Page Setters ===
 
@@ -1135,6 +1380,51 @@ void LauncherSettingsViewModel::setUserAgentOverride(const QString& ua)
         m_userAgentOverride = ua;
         APPLICATION->settings()->set("UserAgentOverride", ua);
         emit userAgentOverrideChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setPasteServiceType(int type)
+{
+    if (m_pasteServiceType != type) {
+        m_pasteServiceType = type;
+        APPLICATION->settings()->set("PasteServiceType", type);
+        emit pasteServiceTypeChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setPasteBaseUrl(const QString& url)
+{
+    if (m_pasteBaseUrl != url) {
+        m_pasteBaseUrl = url;
+        APPLICATION->settings()->set("PasteBaseUrl", url);
+        emit pasteBaseUrlChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setResourceUrl(const QString& url)
+{
+    if (m_resourceUrl != url) {
+        m_resourceUrl = url;
+        APPLICATION->settings()->set("ResourceUrl", url);
+        emit resourceUrlChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setUserAgent(const QString& ua)
+{
+    if (m_userAgent != ua) {
+        m_userAgent = ua;
+        APPLICATION->settings()->set("UserAgent", ua);
+        emit userAgentChanged();
+    }
+}
+
+void LauncherSettingsViewModel::setTechnicClientId(const QString& id)
+{
+    if (m_technicClientId != id) {
+        m_technicClientId = id;
+        APPLICATION->settings()->set("TechnicClientId", id);
+        emit technicClientIdChanged();
     }
 }
 

@@ -283,7 +283,27 @@ static void setupQmlImportPaths(QQmlEngine* engine)
         qDebug() << "[ShellManager] Added app QML import path:" << appQmlPath;
     }
 
-    // 5. Environment variable QML2_IMPORT_PATH
+    // 5. Qt Resource System - for qmldir modules in qrc
+    engine->addImportPath(QStringLiteral("qrc:/qml"));
+    qDebug() << "[ShellManager] Added QRC import path: qrc:/qml";
+
+    // 6. Source directory for development builds (to find ProjTLauncher module)
+    // Start from application dir and go up from build directory first
+    QDir sourceDir(QCoreApplication::applicationDirPath());
+    if (sourceDir.cdUp()) {
+        for (int i = 0; i < 4; ++i) {
+            QDir qmlSourceDir(sourceDir);
+            if (qmlSourceDir.cd(QStringLiteral("launcher/qml"))) {
+                engine->addImportPath(qmlSourceDir.absolutePath());
+                qDebug() << "[ShellManager] Added source QML import path:" << qmlSourceDir.absolutePath();
+                break;
+            }
+            if (!sourceDir.cdUp())
+                break;
+        }
+    }
+
+    // 7. Environment variable QML2_IMPORT_PATH
     QString envPath = qEnvironmentVariable("QML2_IMPORT_PATH");
     if (!envPath.isEmpty()) {
 #ifdef Q_OS_WIN

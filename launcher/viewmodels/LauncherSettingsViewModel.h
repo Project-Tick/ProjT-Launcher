@@ -33,6 +33,23 @@ class LauncherSettingsViewModel : public QObject {
     Q_PROPERTY(QString iconsFolder READ iconsFolder WRITE setIconsFolder NOTIFY iconsFolderChanged)
     Q_PROPERTY(int concurrentDownloads READ concurrentDownloads WRITE setConcurrentDownloads NOTIFY concurrentDownloadsChanged)
     Q_PROPERTY(bool validateDownloads READ validateDownloads WRITE setValidateDownloads NOTIFY validateDownloadsChanged)
+    Q_PROPERTY(bool preferMenuBar READ preferMenuBar WRITE setPreferMenuBar NOTIFY preferMenuBarChanged)
+    Q_PROPERTY(bool autoUpdateCheck READ autoUpdateCheck WRITE setAutoUpdateCheck NOTIFY autoUpdateCheckChanged)
+    Q_PROPERTY(int updateInterval READ updateInterval WRITE setUpdateInterval NOTIFY updateIntervalChanged)
+    Q_PROPERTY(QString javaFolder READ javaFolder WRITE setJavaFolder NOTIFY javaFolderChanged)
+    Q_PROPERTY(QString skinsFolder READ skinsFolder WRITE setSkinsFolder NOTIFY skinsFolderChanged)
+    Q_PROPERTY(QString downloadsFolder READ downloadsFolder WRITE setDownloadsFolder NOTIFY downloadsFolderChanged)
+    Q_PROPERTY(bool downloadsDirWatchRecursive READ downloadsDirWatchRecursive WRITE setDownloadsDirWatchRecursive NOTIFY downloadsDirWatchRecursiveChanged)
+    Q_PROPERTY(bool downloadsDirMove READ downloadsDirMove WRITE setDownloadsDirMove NOTIFY downloadsDirMoveChanged)
+    Q_PROPERTY(bool metadataEnabled READ metadataEnabled WRITE setMetadataEnabled NOTIFY metadataEnabledChanged)
+    Q_PROPERTY(bool dependenciesEnabled READ dependenciesEnabled WRITE setDependenciesEnabled NOTIFY dependenciesEnabledChanged)
+    Q_PROPERTY(bool modpackUpdatePrompt READ modpackUpdatePrompt WRITE setModpackUpdatePrompt NOTIFY modpackUpdatePromptChanged)
+    Q_PROPERTY(int logHistoryLimit READ logHistoryLimit WRITE setLogHistoryLimit NOTIFY logHistoryLimitChanged)
+    Q_PROPERTY(bool stopLoggingOnOverflow READ stopLoggingOnOverflow WRITE setStopLoggingOnOverflow NOTIFY stopLoggingOnOverflowChanged)
+    Q_PROPERTY(int concurrentTasks READ concurrentTasks WRITE setConcurrentTasks NOTIFY concurrentTasksChanged)
+    Q_PROPERTY(int retryLimit READ retryLimit WRITE setRetryLimit NOTIFY retryLimitChanged)
+    Q_PROPERTY(int httpTimeout READ httpTimeout WRITE setHttpTimeout NOTIFY httpTimeoutChanged)
+    Q_PROPERTY(bool autoBackupBeforeLaunch READ autoBackupBeforeLaunch WRITE setAutoBackupBeforeLaunch NOTIFY autoBackupBeforeLaunchChanged)
 
     // === Minecraft Page ===
     Q_PROPERTY(bool showGameTime READ showGameTime WRITE setShowGameTime NOTIFY showGameTimeChanged)
@@ -85,6 +102,12 @@ class LauncherSettingsViewModel : public QObject {
     Q_PROPERTY(QString modrinthToken READ modrinthToken WRITE setModrinthToken NOTIFY modrinthTokenChanged)
     Q_PROPERTY(QString metaUrl READ metaUrl WRITE setMetaUrl NOTIFY metaUrlChanged)
     Q_PROPERTY(QString userAgentOverride READ userAgentOverride WRITE setUserAgentOverride NOTIFY userAgentOverrideChanged)
+    Q_PROPERTY(QStringList pasteServiceTypes READ pasteServiceTypes CONSTANT)
+    Q_PROPERTY(int pasteServiceType READ pasteServiceType WRITE setPasteServiceType NOTIFY pasteServiceTypeChanged)
+    Q_PROPERTY(QString pasteBaseUrl READ pasteBaseUrl WRITE setPasteBaseUrl NOTIFY pasteBaseUrlChanged)
+    Q_PROPERTY(QString resourceUrl READ resourceUrl WRITE setResourceUrl NOTIFY resourceUrlChanged)
+    Q_PROPERTY(QString userAgent READ userAgent WRITE setUserAgent NOTIFY userAgentChanged)
+    Q_PROPERTY(QString technicClientId READ technicClientId WRITE setTechnicClientId NOTIFY technicClientIdChanged)
 
     // === External Tools Page ===
     Q_PROPERTY(QString jprofilerPath READ jprofilerPath WRITE setJprofilerPath NOTIFY jprofilerPathChanged)
@@ -107,6 +130,23 @@ class LauncherSettingsViewModel : public QObject {
     QString iconsFolder() const;
     int concurrentDownloads() const;
     bool validateDownloads() const;
+    bool preferMenuBar() const;
+    bool autoUpdateCheck() const;
+    int updateInterval() const;
+    QString javaFolder() const;
+    QString skinsFolder() const;
+    QString downloadsFolder() const;
+    bool downloadsDirWatchRecursive() const;
+    bool downloadsDirMove() const;
+    bool metadataEnabled() const;
+    bool dependenciesEnabled() const;
+    bool modpackUpdatePrompt() const;
+    int logHistoryLimit() const;
+    bool stopLoggingOnOverflow() const;
+    int concurrentTasks() const;
+    int retryLimit() const;
+    int httpTimeout() const;
+    bool autoBackupBeforeLaunch() const;
 
     void setSortByName(bool value);
     void setRenamingBehavior(const QString& value);
@@ -119,6 +159,23 @@ class LauncherSettingsViewModel : public QObject {
     void setIconsFolder(const QString& path);
     void setConcurrentDownloads(int value);
     void setValidateDownloads(bool value);
+    void setPreferMenuBar(bool value);
+    void setAutoUpdateCheck(bool value);
+    void setUpdateInterval(int value);
+    void setJavaFolder(const QString& path);
+    void setSkinsFolder(const QString& path);
+    void setDownloadsFolder(const QString& path);
+    void setDownloadsDirWatchRecursive(bool value);
+    void setDownloadsDirMove(bool value);
+    void setMetadataEnabled(bool value);
+    void setDependenciesEnabled(bool value);
+    void setModpackUpdatePrompt(bool value);
+    void setLogHistoryLimit(int value);
+    void setStopLoggingOnOverflow(bool value);
+    void setConcurrentTasks(int value);
+    void setRetryLimit(int value);
+    void setHttpTimeout(int value);
+    void setAutoBackupBeforeLaunch(bool value);
 
     // Minecraft Page
     bool showGameTime() const;
@@ -205,6 +262,12 @@ class LauncherSettingsViewModel : public QObject {
     QString modrinthToken() const;
     QString metaUrl() const;
     QString userAgentOverride() const;
+    QStringList pasteServiceTypes() const;
+    int pasteServiceType() const;
+    QString pasteBaseUrl() const;
+    QString resourceUrl() const;
+    QString userAgent() const;
+    QString technicClientId() const;
 
     void setPastebinType(int type);
     void setPastebinCustomUrl(const QString& url);
@@ -213,6 +276,11 @@ class LauncherSettingsViewModel : public QObject {
     void setModrinthToken(const QString& token);
     void setMetaUrl(const QString& url);
     void setUserAgentOverride(const QString& ua);
+    void setPasteServiceType(int type);
+    void setPasteBaseUrl(const QString& url);
+    void setResourceUrl(const QString& url);
+    void setUserAgent(const QString& ua);
+    void setTechnicClientId(const QString& id);
 
     // External Tools Page
     QString jprofilerPath() const;
@@ -243,6 +311,23 @@ class LauncherSettingsViewModel : public QObject {
     void iconsFolderChanged();
     void concurrentDownloadsChanged();
     void validateDownloadsChanged();
+    void preferMenuBarChanged();
+    void autoUpdateCheckChanged();
+    void updateIntervalChanged();
+    void javaFolderChanged();
+    void skinsFolderChanged();
+    void downloadsFolderChanged();
+    void downloadsDirWatchRecursiveChanged();
+    void downloadsDirMoveChanged();
+    void metadataEnabledChanged();
+    void dependenciesEnabledChanged();
+    void modpackUpdatePromptChanged();
+    void logHistoryLimitChanged();
+    void stopLoggingOnOverflowChanged();
+    void concurrentTasksChanged();
+    void retryLimitChanged();
+    void httpTimeoutChanged();
+    void autoBackupBeforeLaunchChanged();
 
     void showGameTimeChanged();
     void showGlobalGameTimeChanged();
@@ -288,6 +373,11 @@ class LauncherSettingsViewModel : public QObject {
     void modrinthTokenChanged();
     void metaUrlChanged();
     void userAgentOverrideChanged();
+    void pasteServiceTypeChanged();
+    void pasteBaseUrlChanged();
+    void resourceUrlChanged();
+    void userAgentChanged();
+    void technicClientIdChanged();
 
     void jprofilerPathChanged();
     void jvisualvmPathChanged();
@@ -314,6 +404,23 @@ class LauncherSettingsViewModel : public QObject {
     QString m_iconsFolder;
     int m_concurrentDownloads = 6;
     bool m_validateDownloads = true;
+    bool m_preferMenuBar = false;
+    bool m_autoUpdateCheck = true;
+    int m_updateInterval = 0;
+    QString m_javaFolder;
+    QString m_skinsFolder;
+    QString m_downloadsFolder;
+    bool m_downloadsDirWatchRecursive = false;
+    bool m_downloadsDirMove = false;
+    bool m_metadataEnabled = true;
+    bool m_dependenciesEnabled = true;
+    bool m_modpackUpdatePrompt = true;
+    int m_logHistoryLimit = 100000;
+    bool m_stopLoggingOnOverflow = false;
+    int m_concurrentTasks = 4;
+    int m_retryLimit = 3;
+    int m_httpTimeout = 30;
+    bool m_autoBackupBeforeLaunch = false;
 
     bool m_showGameTime = true;
     bool m_showGlobalGameTime = true;
@@ -359,6 +466,11 @@ class LauncherSettingsViewModel : public QObject {
     QString m_modrinthToken;
     QString m_metaUrl;
     QString m_userAgentOverride;
+    int m_pasteServiceType = 0;
+    QString m_pasteBaseUrl;
+    QString m_resourceUrl;
+    QString m_userAgent;
+    QString m_technicClientId;
 
     // External Tools Page
     QString m_jprofilerPath;

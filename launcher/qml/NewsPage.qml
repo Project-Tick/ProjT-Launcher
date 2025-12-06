@@ -20,11 +20,27 @@ import "components"
 import "Theme.js" as Theme
 
 Rectangle {
+    id: newsPage
     objectName: "news"
-    color: ThemeColors.background
     width: parent ? parent.width : 640
     height: parent ? parent.height : 480
     readonly property var vm: ProjT.newsVM
+    
+    // Theme binding for reactive updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+    
+    color: {
+        var _ = _themeUpdateCount
+        return themeVM ? themeVM.windowColor : ThemeColors.background
+    }
+    
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            newsPage._themeUpdateCount++
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -49,10 +65,9 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
-            Button {
+            ThemedButton {
                 text: qsTr("Refresh")
-                implicitHeight: 34
-                implicitWidth: 90
+                size: "small"
                 Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                 enabled: vm ? !vm.busy : false
                 onClicked: {
@@ -61,10 +76,10 @@ Rectangle {
                     }
                 }
             }
-            Button {
+            ThemedButton {
                 text: qsTr("Open in browser")
-                implicitHeight: 34
-                implicitWidth: 110
+                size: "small"
+                primary: true
                 Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                 enabled: vm ? (vm.currentLink.length > 0) : false
                 onClicked: {
@@ -73,7 +88,7 @@ Rectangle {
                     }
                 }
             }
-            Rectangle { Layout.fillWidth: true; color: "transparent" }
+            Item { Layout.fillWidth: true }
         }
 
         RowLayout {
@@ -91,9 +106,14 @@ Rectangle {
                 delegate: Rectangle {
                     width: newsList.width
                     height: 48
-                    color: vm && index === vm.currentIndex ? "#2c3440" : ThemeColors.surface
-                    border.color: vm && index === vm.currentIndex ? ThemeColors.accent : ThemeColors.border
+                    color: vm && index === vm.currentIndex ? Qt.rgba(ThemeColors.highlight.r, ThemeColors.highlight.g, ThemeColors.highlight.b, 0.2) : ThemeColors.surface
+                    border.color: vm && index === vm.currentIndex ? ThemeColors.highlight : ThemeColors.border
+                    border.width: vm && index === vm.currentIndex ? 2 : 1
                     radius: Theme.radius
+                    
+                    Behavior on color { ColorAnimation { duration: 100 } }
+                    Behavior on border.color { ColorAnimation { duration: 100 } }
+                    
                     Text {
                         anchors.fill: parent
                         anchors.margins: 8
