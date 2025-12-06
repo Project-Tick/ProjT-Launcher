@@ -20,8 +20,44 @@ import "../Theme.js" as Theme
 
 Rectangle {
     id: newsToolbar
-    color: ThemeColors.toolBar
     height: 32
+    
+    // Theme binding for reactive updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+    
+    color: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    
+    property color toolBarColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    property color borderColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border
+    }
+    property color textColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? themeVM.textColor : ThemeColors.text
+    }
+    property color textSecondaryColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.textColor, 1.3) : ThemeColors.textSecondary
+    }
+    property color accentColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? themeVM.highlightColor : ThemeColors.accent
+    }
+    
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            newsToolbar._themeUpdateCount++
+        }
+    }
     
     // News data from ViewModel
     readonly property var newsVM: ProjT.newsVM
@@ -34,7 +70,7 @@ Rectangle {
     
     Rectangle {
         anchors.fill: parent
-        color: ThemeColors.toolBar
+        color: newsToolbar.toolBarColor
         
         // Top border only
         Rectangle {
@@ -42,7 +78,7 @@ Rectangle {
             anchors.right: parent.right
             anchors.top: parent.top
             height: 1
-            color: ThemeColors.border
+            color: newsToolbar.borderColor
         }
         
         RowLayout {
@@ -61,7 +97,7 @@ Rectangle {
             // News label
             Label {
                 text: qsTr("News:")
-                color: ThemeColors.textSecondary
+                color: newsToolbar.textSecondaryColor
                 font.pointSize: 10
                 Layout.alignment: Qt.AlignVCenter
             }
@@ -70,11 +106,15 @@ Rectangle {
             Label {
                 id: headlineLabel
                 text: isBusy ? qsTr("Loading news...") : (latestHeadline.length > 0 ? latestHeadline : qsTr("No news available"))
-                color: ThemeColors.text
+                color: newsToolbar.textColor
                 font.pointSize: 10
                 elide: Text.ElideRight
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
+                
+                property bool isHovered: false
+                
+                Behavior on color { ColorAnimation { duration: 100 } }
                 
                 MouseArea {
                     anchors.fill: parent
@@ -82,8 +122,8 @@ Rectangle {
                     hoverEnabled: true
                     
                     onClicked: newsToolbar.newsClicked()
-                    onEntered: headlineLabel.color = ThemeColors.accent
-                    onExited: headlineLabel.color = ThemeColors.text
+                    onEntered: headlineLabel.color = newsToolbar.accentColor
+                    onExited: headlineLabel.color = newsToolbar.textColor
                 }
             }
             

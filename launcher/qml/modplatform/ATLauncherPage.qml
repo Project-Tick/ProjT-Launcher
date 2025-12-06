@@ -182,10 +182,10 @@ Page {
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingM
-                    visible: vm && vm.selectedPack && vm.selectedPack.name
+                    visible: vm && vm.selectedPack && (vm.selectedPack.name !== undefined) && vm.selectedPack.name !== ""
                     
                     Label {
-                        text: vm && vm.selectedPack ? vm.selectedPack.name : ""
+                        text: (vm && vm.selectedPack && vm.selectedPack.name !== undefined) ? vm.selectedPack.name : ""
                         color: ThemeColors.text
                         font.bold: true
                         font.pointSize: 16
@@ -196,7 +196,7 @@ Page {
                         Layout.fillHeight: true
                         
                         Label {
-                            text: vm && vm.selectedPack ? vm.selectedPack.description : ""
+                            text: (vm && vm.selectedPack && vm.selectedPack.description !== undefined) ? vm.selectedPack.description : ""
                             wrapMode: Text.WordWrap
                             width: parent.width
                             color: ThemeColors.text

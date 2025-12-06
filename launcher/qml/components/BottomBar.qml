@@ -21,20 +21,49 @@ import "../Theme.js" as Theme
 
 Rectangle {
     id: bottomBar
-    color: ThemeColors.surface
     height: 40
     width: parent.width
     
+    // Theme binding for reactive updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+    
+    color: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            bottomBar._themeUpdateCount++
+        }
+    }
+    
     // Properties
     property string statusMessage: qsTr("Ready")
+    
+    // Computed colors
+    property color toolBarColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    property color borderColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border
+    }
+    property color textSecondaryColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.textColor, 1.3) : ThemeColors.textSecondary
+    }
     
     // Signals
     signal moreNewsRequested()
     
     Rectangle {
         anchors.fill: parent
-        color: ThemeColors.surface
-        border.color: ThemeColors.border
+        color: bottomBar.toolBarColor
+        border.color: bottomBar.borderColor
         border.width: 1
         
         RowLayout {
@@ -47,20 +76,23 @@ Rectangle {
             // === Status Message ===
             Label {
                 text: bottomBar.statusMessage
-                color: ThemeColors.textSecondary
+                color: bottomBar.textSecondaryColor
                 font.pointSize: 9
                 Layout.fillWidth: true
                 
                 elide: Text.ElideRight
             }
             
-            ToolSeparator {
-                orientation: Qt.Vertical
-                Layout.fillHeight: true
+            // Separator
+            Rectangle {
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: 20
+                Layout.alignment: Qt.AlignVCenter
+                color: bottomBar.borderColor
             }
             
             // === More News ===
-            Button {
+            ThemedToolButton {
                 text: qsTr("More News")
                 icon.name: "document-properties"
                 Layout.preferredHeight: 32
