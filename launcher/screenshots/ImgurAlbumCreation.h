@@ -65,7 +65,7 @@ class ImgurAlbumCreation : public Net::NetRequest {
 
     class Sink : public Net::Sink {
        public:
-        Sink(std::shared_ptr<Result> res) : m_result(res){};
+        Sink(std::shared_ptr<Result> res) : m_result(res) {};
         virtual ~Sink() = default;
 
        public:

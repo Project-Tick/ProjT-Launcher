@@ -21,60 +21,61 @@ import "../Theme.js" as Theme
 Rectangle {
     id: modsPage
     color: ThemeColors.background
-    
+
     property var vm: ProjT.instanceVM
     property var selectedIndices: []
-    
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
-        
+
         // Main content
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 0
-            
+
             // Mods TreeView
             Frame {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                
+
                 ListView {
                     id: modsList
                     anchors.fill: parent
                     clip: true
                     model: vm ? vm.modsModel : []
-                    
+
                     delegate: ItemDelegate {
                         width: modsList.width
                         height: 48
                         highlighted: selectedIndices.indexOf(index) >= 0
-                        
+
                         RowLayout {
                             anchors.fill: parent
                             anchors.margins: Theme.spacingS
                             spacing: Theme.spacingS
-                            
+
                             CheckBox {
                                 checked: model.enabled !== false
                                 onCheckedChanged: {
-                                    if (vm) vm.enableMod(index, checked)
+                                    if (vm)
+                                        vm.enableMod(index, checked);
                                 }
                             }
-                            
+
                             Image {
                                 Layout.preferredWidth: 32
                                 Layout.preferredHeight: 32
                                 source: model.iconPath || ""
                                 fillMode: Image.PreserveAspectFit
-                                
+
                                 Rectangle {
                                     anchors.fill: parent
                                     visible: parent.status !== Image.Ready
                                     color: ThemeColors.backgroundAlt
                                     radius: 4
-                                    
+
                                     Label {
                                         anchors.centerIn: parent
                                         text: "📦"
@@ -82,37 +83,37 @@ Rectangle {
                                     }
                                 }
                             }
-                            
+
                             Label {
                                 text: model.name || model.fileName || ""
                                 color: model.enabled !== false ? ThemeColors.text : ThemeColors.textSecondary
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
-                            
+
                             Label {
                                 text: model.version || ""
                                 color: ThemeColors.textSecondary
                             }
                         }
-                        
+
                         onClicked: {
                             if (mouse.modifiers & Qt.ControlModifier) {
-                                var idx = selectedIndices.indexOf(index)
+                                var idx = selectedIndices.indexOf(index);
                                 if (idx >= 0) {
-                                    selectedIndices.splice(idx, 1)
+                                    selectedIndices.splice(idx, 1);
                                 } else {
-                                    selectedIndices.push(index)
+                                    selectedIndices.push(index);
                                 }
-                                selectedIndices = selectedIndices.slice()
+                                selectedIndices = selectedIndices.slice();
                             } else {
-                                selectedIndices = [index]
+                                selectedIndices = [index];
                             }
                         }
                     }
-                    
+
                     ScrollBar.vertical: ScrollBar {}
-                    
+
                     Label {
                         anchors.centerIn: parent
                         visible: modsList.count === 0
@@ -122,35 +123,35 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Info frame
             Frame {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 60
                 visible: selectedIndices.length === 1
-                
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 4
-                    
+
                     Label {
                         text: {
                             if (selectedIndices.length === 1 && vm && vm.modsModel) {
-                                return vm.modsModel[selectedIndices[0]]?.name || ""
+                                return vm.modsModel[selectedIndices[0]]?.name || "";
                             }
-                            return ""
+                            return "";
                         }
                         font.bold: true
                         color: ThemeColors.text
                     }
-                    
+
                     Label {
                         Layout.fillWidth: true
                         text: {
                             if (selectedIndices.length === 1 && vm && vm.modsModel) {
-                                return vm.modsModel[selectedIndices[0]]?.description || ""
+                                return vm.modsModel[selectedIndices[0]]?.description || "";
                             }
-                            return ""
+                            return "";
                         }
                         color: ThemeColors.textSecondary
                         wrapMode: Text.WordWrap
@@ -159,29 +160,30 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Search filter
             TextField {
                 id: filterEdit
                 Layout.fillWidth: true
                 placeholderText: qsTr("Search")
                 onTextChanged: {
-                    if (vm) vm.filterMods(text)
+                    if (vm)
+                        vm.filterMods(text);
                 }
             }
         }
-        
+
         // Right toolbar
         Rectangle {
             Layout.preferredWidth: 140
             Layout.fillHeight: true
             color: ThemeColors.backgroundAlt
-            
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.spacingS
                 spacing: 2
-                
+
                 Label {
                     text: qsTr("Actions")
                     font.bold: true
@@ -189,19 +191,24 @@ Rectangle {
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                 }
-                
+
                 ToolButton {
                     text: qsTr("&Add File")
                     Layout.fillWidth: true
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Add a locally downloaded file.")
                     onClicked: {
-                        if (vm) vm.browseForMods()
+                        if (vm)
+                            vm.browseForMods();
                     }
                 }
-                
-                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
-                
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: ThemeColors.border
+                }
+
                 ToolButton {
                     text: qsTr("&Remove")
                     Layout.fillWidth: true
@@ -209,10 +216,10 @@ Rectangle {
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Remove all selected items.")
                     onClicked: {
-                        deleteModDialog.open()
+                        deleteModDialog.open();
                     }
                 }
-                
+
                 ToolButton {
                     text: qsTr("&Enable")
                     Layout.fillWidth: true
@@ -222,12 +229,12 @@ Rectangle {
                     onClicked: {
                         if (vm) {
                             for (var i = 0; i < selectedIndices.length; i++) {
-                                vm.enableMod(selectedIndices[i], true)
+                                vm.enableMod(selectedIndices[i], true);
                             }
                         }
                     }
                 }
-                
+
                 ToolButton {
                     text: qsTr("&Disable")
                     Layout.fillWidth: true
@@ -237,75 +244,93 @@ Rectangle {
                     onClicked: {
                         if (vm) {
                             for (var i = 0; i < selectedIndices.length; i++) {
-                                vm.enableMod(selectedIndices[i], false)
+                                vm.enableMod(selectedIndices[i], false);
                             }
                         }
                     }
                 }
-                
-                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
-                
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: ThemeColors.border
+                }
+
                 ToolButton {
                     text: qsTr("&Download")
                     Layout.fillWidth: true
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Download resources from online mod platforms.")
                     onClicked: {
-                        if (vm) vm.openModDownload()
+                        if (vm)
+                            vm.openModDownload();
                     }
                 }
-                
+
                 ToolButton {
                     text: qsTr("Check for &Updates")
                     Layout.fillWidth: true
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Try to check or update all selected resources.")
                     onClicked: {
-                        if (vm) vm.checkAllModUpdates()
+                        if (vm)
+                            vm.checkAllModUpdates();
                     }
                 }
-                
-                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
-                
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: ThemeColors.border
+                }
+
                 ToolButton {
                     text: qsTr("View &Configs")
                     Layout.fillWidth: true
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Open the 'config' folder in the system file manager.")
                     onClicked: {
-                        if (vm) vm.openConfigsFolder()
+                        if (vm)
+                            vm.openConfigsFolder();
                     }
                 }
-                
+
                 ToolButton {
                     text: qsTr("View &Folder")
                     Layout.fillWidth: true
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Open the folder in the system file manager.")
                     onClicked: {
-                        if (vm) vm.openModsFolder()
+                        if (vm)
+                            vm.openModsFolder();
                     }
                 }
-                
-                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
-                
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: ThemeColors.border
+                }
+
                 ToolButton {
                     text: qsTr("Reset Metadata")
                     Layout.fillWidth: true
                     enabled: selectedIndices.length > 0
                     onClicked: {
-                        if (vm) vm.resetModMetadata(selectedIndices)
+                        if (vm)
+                            vm.resetModMetadata(selectedIndices);
                     }
                 }
-                
+
                 ToolButton {
                     text: qsTr("Verify Dependencies")
                     Layout.fillWidth: true
                     onClicked: {
-                        if (vm) vm.verifyDependencies()
+                        if (vm)
+                            vm.verifyDependencies();
                     }
                 }
-                
+
                 ToolButton {
                     text: qsTr("Export List")
                     Layout.fillWidth: true
@@ -313,15 +338,18 @@ Rectangle {
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Export resource's metadata to text.")
                     onClicked: {
-                        if (vm) vm.exportModList()
+                        if (vm)
+                            vm.exportModList();
                     }
                 }
-                
-                Item { Layout.fillHeight: true }
+
+                Item {
+                    Layout.fillHeight: true
+                }
             }
         }
     }
-    
+
     // Delete confirmation
     Dialog {
         id: deleteModDialog
@@ -330,19 +358,19 @@ Rectangle {
         standardButtons: Dialog.Yes | Dialog.No
         x: (parent.width - width) / 2
         y: (parent.height - height) / 2
-        
+
         Label {
             text: qsTr("Delete %1 selected mod(s)?\n\nThis cannot be undone.").arg(selectedIndices.length)
             color: ThemeColors.error
             wrapMode: Text.WordWrap
         }
-        
+
         onAccepted: {
             if (vm) {
                 for (var i = selectedIndices.length - 1; i >= 0; i--) {
-                    vm.removeMod(selectedIndices[i])
+                    vm.removeMod(selectedIndices[i]);
                 }
-                selectedIndices = []
+                selectedIndices = [];
             }
         }
     }

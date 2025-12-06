@@ -22,20 +22,20 @@ Rectangle {
     id: root
     objectName: "minecraftSettings"
     color: ThemeColors.background
-    
+
     property var vm: ProjT.instanceVM
-    
+
     Flickable {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
         contentHeight: column.height
         clip: true
-        
+
         ColumnLayout {
             id: column
             width: parent.width
             spacing: Theme.spacingM
-            
+
             // Header
             Text {
                 text: qsTr("Minecraft Settings")
@@ -43,47 +43,51 @@ Rectangle {
                 font.weight: Font.Bold
                 color: ThemeColors.text
             }
-            
+
             Text {
                 text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
                 font.pixelSize: 14
                 color: ThemeColors.textSecondary
                 visible: root.vm !== null
             }
-            
+
             // Window Settings
             GroupBox {
                 title: qsTr("Window")
                 Layout.fillWidth: true
-                
+
                 background: Rectangle {
                     color: ThemeColors.disabled
                     border.color: ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 label: Text {
                     text: parent.title
                     color: ThemeColors.text
                     font.weight: Font.DemiBold
                     leftPadding: Theme.spacingS
                 }
-                
+
                 GridLayout {
                     width: parent.width
                     columns: 2
                     columnSpacing: Theme.spacingM
                     rowSpacing: Theme.spacingS
-                    
+
                     // Override checkbox
-                    Text { text: ""; color: ThemeColors.text }
+                    Text {
+                        text: ""
+                        color: ThemeColors.text
+                    }
                     CheckBox {
                         id: overrideWindowCheck
                         text: qsTr("Override window settings")
                         checked: root.vm ? root.vm.overrideWindow : false
-                        onCheckedChanged: if (root.vm) root.vm.overrideWindow = checked
-                        
+                        onCheckedChanged: if (root.vm)
+                            root.vm.overrideWindow = checked
+
                         contentItem: Text {
                             text: overrideWindowCheck.text
                             color: ThemeColors.text
@@ -91,8 +95,8 @@ Rectangle {
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
-                    
-                    Text { 
+
+                    Text {
                         text: qsTr("Width:")
                         color: overrideWindowCheck.checked ? ThemeColors.text : ThemeColors.textSecondary
                     }
@@ -103,8 +107,9 @@ Rectangle {
                         value: root.vm ? root.vm.windowWidth : 1280
                         enabled: overrideWindowCheck.checked
                         Layout.fillWidth: true
-                        onValueModified: if (root.vm) root.vm.windowWidth = value
-                        
+                        onValueModified: if (root.vm)
+                            root.vm.windowWidth = value
+
                         background: Rectangle {
                             color: ThemeColors.surface
                             border.color: widthSpinBox.enabled ? ThemeColors.accent : ThemeColors.hover
@@ -113,8 +118,8 @@ Rectangle {
                             opacity: widthSpinBox.enabled ? 1.0 : 0.5
                         }
                     }
-                    
-                    Text { 
+
+                    Text {
                         text: qsTr("Height:")
                         color: overrideWindowCheck.checked ? ThemeColors.text : ThemeColors.textSecondary
                     }
@@ -125,8 +130,9 @@ Rectangle {
                         value: root.vm ? root.vm.windowHeight : 720
                         enabled: overrideWindowCheck.checked
                         Layout.fillWidth: true
-                        onValueModified: if (root.vm) root.vm.windowHeight = value
-                        
+                        onValueModified: if (root.vm)
+                            root.vm.windowHeight = value
+
                         background: Rectangle {
                             color: ThemeColors.surface
                             border.color: heightSpinBox.enabled ? ThemeColors.accent : ThemeColors.hover
@@ -135,15 +141,19 @@ Rectangle {
                             opacity: heightSpinBox.enabled ? 1.0 : 0.5
                         }
                     }
-                    
-                    Text { text: ""; color: ThemeColors.text }
+
+                    Text {
+                        text: ""
+                        color: ThemeColors.text
+                    }
                     CheckBox {
                         id: fullscreenCheck
                         text: qsTr("Fullscreen")
                         enabled: overrideWindowCheck.checked
                         checked: root.vm ? root.vm.fullscreen : false
-                        onCheckedChanged: if (root.vm) root.vm.fullscreen = checked
-                        
+                        onCheckedChanged: if (root.vm)
+                            root.vm.fullscreen = checked
+
                         contentItem: Text {
                             text: fullscreenCheck.text
                             color: fullscreenCheck.enabled ? ThemeColors.text : ThemeColors.textSecondary
@@ -153,36 +163,37 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Game Options
             GroupBox {
                 title: qsTr("Game Options")
                 Layout.fillWidth: true
-                
+
                 background: Rectangle {
                     color: ThemeColors.disabled
                     border.color: ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 label: Text {
                     text: parent.title
                     color: ThemeColors.text
                     font.weight: Font.DemiBold
                     leftPadding: Theme.spacingS
                 }
-                
+
                 ColumnLayout {
                     width: parent.width
                     spacing: Theme.spacingS
-                    
+
                     CheckBox {
                         id: showConsoleCheck
                         text: qsTr("Show console while game is running")
                         checked: root.vm ? root.vm.showConsole : true
-                        onCheckedChanged: if (root.vm) root.vm.showConsole = checked
-                        
+                        onCheckedChanged: if (root.vm)
+                            root.vm.showConsole = checked
+
                         contentItem: Text {
                             text: showConsoleCheck.text
                             color: ThemeColors.text
@@ -190,13 +201,14 @@ Rectangle {
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
-                    
+
                     CheckBox {
                         id: closeOnLaunchCheck
                         text: qsTr("Close launcher when game starts")
                         checked: root.vm ? root.vm.closeOnLaunch : false
-                        onCheckedChanged: if (root.vm) root.vm.closeOnLaunch = checked
-                        
+                        onCheckedChanged: if (root.vm)
+                            root.vm.closeOnLaunch = checked
+
                         contentItem: Text {
                             text: closeOnLaunchCheck.text
                             color: ThemeColors.text
@@ -204,13 +216,14 @@ Rectangle {
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
-                    
+
                     CheckBox {
                         id: quitAfterGameCheck
                         text: qsTr("Quit launcher after game exits")
                         checked: root.vm ? root.vm.quitAfterGame : false
-                        onCheckedChanged: if (root.vm) root.vm.quitAfterGame = checked
-                        
+                        onCheckedChanged: if (root.vm)
+                            root.vm.quitAfterGame = checked
+
                         contentItem: Text {
                             text: quitAfterGameCheck.text
                             color: ThemeColors.text
@@ -220,26 +233,29 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Actions
             RowLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: Theme.spacingM
                 spacing: Theme.spacingM
-                
-                Item { Layout.fillWidth: true }
-                
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
                 Button {
                     text: qsTr("Reset")
-                    onClicked: if (root.vm) root.vm.reloadSettings()
-                    
+                    onClicked: if (root.vm)
+                        root.vm.reloadSettings()
+
                     background: Rectangle {
                         color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
                         border.color: ThemeColors.border
                         border.width: 1
                         radius: Theme.radiusS
                     }
-                    
+
                     contentItem: Text {
                         text: parent.text
                         color: ThemeColors.text
@@ -247,16 +263,17 @@ Rectangle {
                         verticalAlignment: Text.AlignVCenter
                     }
                 }
-                
+
                 Button {
                     text: qsTr("Save")
-                    onClicked: if (root.vm) root.vm.saveSettings()
-                    
+                    onClicked: if (root.vm)
+                        root.vm.saveSettings()
+
                     background: Rectangle {
                         color: parent.hovered ? Qt.lighter(ThemeColors.accent, 1.1) : ThemeColors.accent
                         radius: Theme.radiusS
                     }
-                    
+
                     contentItem: Text {
                         text: parent.text
                         color: ThemeColors.surface
@@ -266,8 +283,10 @@ Rectangle {
                     }
                 }
             }
-            
-            Item { Layout.fillHeight: true }
+
+            Item {
+                Layout.fillHeight: true
+            }
         }
     }
 }

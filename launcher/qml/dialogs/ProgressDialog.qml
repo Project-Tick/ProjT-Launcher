@@ -26,7 +26,7 @@ Dialog {
     width: 480
     height: 280
     standardButtons: Dialog.Cancel
-    
+
     property string globalStatus: ""
     property string globalStatusDetails: ""
     property real globalProgress: 0
@@ -34,30 +34,30 @@ Dialog {
     property var subtasks: []  // Array of {name, status, progress}
     property bool showSkipButton: false
     property var vm: null
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingS
-        
+
         // Global status
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
-            
+
             Label {
                 text: globalStatus || qsTr("Global Task Status...")
                 color: ThemeColors.text
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
             }
-            
+
             Label {
                 text: globalStatusDetails || ""
                 color: ThemeColors.textSecondary
                 horizontalAlignment: Text.AlignRight
             }
         }
-        
+
         // Global progress bar
         ProgressBar {
             id: globalProgressBar
@@ -66,43 +66,43 @@ Dialog {
             value: globalProgress
             indeterminate: globalIndeterminate
         }
-        
+
         // Subtask scroll area
         ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: 100
             clip: true
-            
+
             contentWidth: availableWidth
-            
+
             ColumnLayout {
                 width: parent.width
                 spacing: 2
-                
+
                 Repeater {
                     model: subtasks
-                    
+
                     delegate: ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
-                        
+
                         RowLayout {
                             Layout.fillWidth: true
-                            
+
                             Label {
                                 text: modelData.name || ""
                                 color: ThemeColors.text
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
-                            
+
                             Label {
                                 text: modelData.status || ""
                                 color: ThemeColors.textSecondary
                             }
                         }
-                        
+
                         ProgressBar {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 16
@@ -113,50 +113,52 @@ Dialog {
                 }
             }
         }
-        
+
         // Skip button
         Button {
             Layout.fillWidth: true
             text: qsTr("Skip")
             visible: showSkipButton
             onClicked: {
-                if (vm) vm.skipTask()
+                if (vm)
+                    vm.skipTask();
             }
         }
     }
-    
+
     onRejected: {
-        if (vm) vm.cancelTask()
+        if (vm)
+            vm.cancelTask();
     }
-    
+
     // Helper functions
     function updateGlobalProgress(status, details, progress, indeterminate) {
-        globalStatus = status
-        globalStatusDetails = details
-        globalProgress = progress
-        globalIndeterminate = indeterminate
+        globalStatus = status;
+        globalStatusDetails = details;
+        globalProgress = progress;
+        globalIndeterminate = indeterminate;
     }
-    
+
     function addSubtask(name, status, progress, indeterminate) {
         var newTask = {
             name: name,
             status: status,
             progress: progress,
             indeterminate: indeterminate || false
-        }
-        subtasks = subtasks.concat([newTask])
+        };
+        subtasks = subtasks.concat([newTask]);
     }
-    
+
     function updateSubtask(index, status, progress) {
         if (index >= 0 && index < subtasks.length) {
-            var updated = subtasks.slice()
-            updated[index].status = status
-            updated[index].progress = progress
-            subtasks = updated
+            var updated = subtasks.slice();
+            updated[index].status = status;
+            updated[index].progress = progress;
+            subtasks = updated;
         }
     }
-    
+
     function clearSubtasks() {
-        subtasks = []
+        subtasks = [];
     }
 }

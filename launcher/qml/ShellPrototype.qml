@@ -74,7 +74,7 @@ Rectangle {
                 enabled: instanceListViewModel
                 onClicked: {
                     if (instanceListViewModel) {
-                        console.log("Selected instance:", instanceListViewModel.selectedInstanceId)
+                        console.log("Selected instance:", instanceListViewModel.selectedInstanceId);
                     }
                 }
             }

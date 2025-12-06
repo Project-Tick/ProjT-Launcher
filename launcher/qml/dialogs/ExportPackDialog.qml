@@ -25,10 +25,10 @@ Dialog {
     standardButtons: Dialog.Ok | Dialog.Cancel
     width: 650
     height: 550
-    
+
     property var vm: ProjT.instancesVM
     property string instanceId: ""
-    
+
     // Pack description
     property string packName: ""
     property string packVersion: "1.0.0"
@@ -37,16 +37,16 @@ Dialog {
     property int recommendedMemory: 4096
     property bool includeRecommendedMemory: false
     property bool markOptionalFiles: true
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Description GroupBox
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("Description")
-            
+
             background: Rectangle {
                 y: parent.topPadding - parent.padding
                 width: parent.width
@@ -55,22 +55,22 @@ Dialog {
                 border.color: ThemeColors.border
                 radius: Theme.radiusS
             }
-            
+
             label: Label {
                 x: Theme.spacingM
                 text: parent.title
                 color: ThemeColors.text
             }
-            
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingS
-                
+
                 GridLayout {
                     columns: 2
                     rowSpacing: Theme.spacingS
                     columnSpacing: Theme.spacingM
-                    
+
                     Label {
                         text: qsTr("Name:")
                         color: ThemeColors.text
@@ -81,7 +81,7 @@ Dialog {
                         text: packName
                         onTextChanged: packName = text
                     }
-                    
+
                     Label {
                         text: qsTr("Version:")
                         color: ThemeColors.text
@@ -92,7 +92,7 @@ Dialog {
                         text: packVersion
                         onTextChanged: packVersion = text
                     }
-                    
+
                     Label {
                         text: qsTr("Author:")
                         color: ThemeColors.text
@@ -104,16 +104,16 @@ Dialog {
                         onTextChanged: packAuthor = text
                     }
                 }
-                
+
                 Label {
                     text: qsTr("Summary:")
                     color: ThemeColors.text
                 }
-                
+
                 ScrollView {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 80
-                    
+
                     TextArea {
                         id: summaryField
                         text: packSummary
@@ -129,13 +129,13 @@ Dialog {
                 }
             }
         }
-        
+
         // Options GroupBox
         GroupBox {
             Layout.fillWidth: true
             Layout.fillHeight: true
             title: qsTr("Options")
-            
+
             background: Rectangle {
                 y: parent.topPadding - parent.padding
                 width: parent.width
@@ -144,28 +144,28 @@ Dialog {
                 border.color: ThemeColors.border
                 radius: Theme.radiusS
             }
-            
+
             label: Label {
                 x: Theme.spacingM
                 text: parent.title
                 color: ThemeColors.text
             }
-            
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingS
-                
+
                 // Recommended memory
                 RowLayout {
                     spacing: Theme.spacingM
-                    
+
                     CheckBox {
                         id: memoryCheckBox
                         text: qsTr("Recommended Memory:")
                         checked: includeRecommendedMemory
                         onCheckedChanged: includeRecommendedMemory = checked
                     }
-                    
+
                     SpinBox {
                         enabled: memoryCheckBox.checked
                         from: 512
@@ -173,23 +173,25 @@ Dialog {
                         stepSize: 128
                         value: recommendedMemory
                         onValueChanged: recommendedMemory = value
-                        
-                        textFromValue: function(value) {
-                            return value + " MiB"
+
+                        textFromValue: function (value) {
+                            return value + " MiB";
                         }
-                        valueFromText: function(text) {
-                            return parseInt(text)
+                        valueFromText: function (text) {
+                            return parseInt(text);
                         }
                     }
-                    
-                    Item { Layout.fillWidth: true }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
                 }
-                
+
                 Label {
                     text: qsTr("Files:")
                     color: ThemeColors.text
                 }
-                
+
                 // File tree
                 Rectangle {
                     Layout.fillWidth: true
@@ -197,7 +199,7 @@ Dialog {
                     color: ThemeColors.backgroundAlt
                     border.color: ThemeColors.border
                     radius: Theme.radiusS
-                    
+
                     TreeView {
                         id: filesTree
                         anchors.fill: parent
@@ -205,11 +207,11 @@ Dialog {
                         clip: true
                         model: vm ? vm.exportFilesModel : null
                         alternatingRows: true
-                        
+
                         delegate: Item {
                             implicitWidth: filesTree.width
                             implicitHeight: 30
-                            
+
                             CheckBox {
                                 anchors.left: parent.left
                                 anchors.leftMargin: depth * 20 + Theme.spacingS
@@ -219,11 +221,11 @@ Dialog {
                                 onCheckedChanged: model.checked = checked
                             }
                         }
-                        
-                        ScrollBar.vertical: ScrollBar { }
+
+                        ScrollBar.vertical: ScrollBar {}
                     }
                 }
-                
+
                 CheckBox {
                     text: qsTr("Mark disabled files as optional")
                     checked: markOptionalFiles
@@ -232,7 +234,7 @@ Dialog {
             }
         }
     }
-    
+
     onAccepted: {
         if (vm) {
             vm.exportPack(instanceId, {
@@ -242,7 +244,7 @@ Dialog {
                 summary: packSummary,
                 recommendedMemory: includeRecommendedMemory ? recommendedMemory : -1,
                 markOptionalFiles: markOptionalFiles
-            })
+            });
         }
     }
 }

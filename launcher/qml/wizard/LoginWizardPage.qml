@@ -22,18 +22,18 @@ import "../components"
 Rectangle {
     id: loginPage
     color: ThemeColors.background
-    
+
     property var vm: ProjT.accountsVM
     property bool accountAdded: false
-    
-    signal loginRequested()
-    signal accountAddedChanged()
-    
+
+    signal loginRequested
+    signal accountAddedChanged
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingL
         spacing: Theme.spacingM
-        
+
         // Title
         Label {
             text: qsTr("Add Microsoft account")
@@ -41,7 +41,7 @@ Rectangle {
             font.bold: true
             color: ThemeColors.text
         }
-        
+
         // Description
         Label {
             Layout.fillWidth: true
@@ -49,14 +49,14 @@ Rectangle {
             color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
-        
+
         // Separator
         Rectangle {
             Layout.fillWidth: true
             height: 1
             color: ThemeColors.border
         }
-        
+
         // Login button
         ThemedButton {
             Layout.fillWidth: true
@@ -64,39 +64,42 @@ Rectangle {
             primary: true
             size: "large"
             onClicked: {
-                loginRequested()
-                if (vm) vm.addMicrosoftAccount()
+                loginRequested();
+                if (vm)
+                    vm.addMicrosoftAccount();
             }
         }
-        
+
         // Status
         RowLayout {
             Layout.fillWidth: true
             visible: accountAdded
             spacing: Theme.spacingS
-            
+
             Label {
                 text: "✓"
                 color: ThemeColors.success
                 font.bold: true
                 font.pixelSize: 16
             }
-            
+
             Label {
                 text: qsTr("Account added successfully!")
                 color: ThemeColors.success
             }
         }
-        
-        Item { Layout.fillHeight: true }
+
+        Item {
+            Layout.fillHeight: true
+        }
     }
-    
+
     Connections {
         target: vm
         ignoreUnknownSignals: true
         function onAccountAdded() {
-            accountAdded = true
-            accountAddedChanged()
+            accountAdded = true;
+            accountAddedChanged();
         }
     }
 }

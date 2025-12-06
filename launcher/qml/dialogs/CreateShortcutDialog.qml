@@ -25,27 +25,27 @@ Dialog {
     standardButtons: Dialog.Ok | Dialog.Cancel
     width: 400
     height: 300
-    
+
     property var instance: null
     property string shortcutName: ""
     property string shortcutLocation: "desktop"
     property bool launchDirectly: true
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Instance info
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
+
             Rectangle {
                 Layout.preferredWidth: 48
                 Layout.preferredHeight: 48
                 radius: 8
                 color: ThemeColors.backgroundAlt
-                
+
                 Image {
                     anchors.fill: parent
                     anchors.margins: 4
@@ -53,17 +53,17 @@ Dialog {
                     fillMode: Image.PreserveAspectFit
                 }
             }
-            
+
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 2
-                
+
                 Label {
                     text: instance ? instance.name : qsTr("No instance selected")
                     color: ThemeColors.text
                     font.bold: true
                 }
-                
+
                 Label {
                     text: instance ? instance.version : ""
                     color: ThemeColors.textSecondary
@@ -71,24 +71,24 @@ Dialog {
                 }
             }
         }
-        
+
         // Shortcut name
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("Shortcut Settings")
-            
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingS
-                
+
                 RowLayout {
                     Layout.fillWidth: true
-                    
+
                     Label {
                         text: qsTr("Name:")
                         Layout.preferredWidth: 80
                     }
-                    
+
                     TextField {
                         id: nameField
                         Layout.fillWidth: true
@@ -97,22 +97,31 @@ Dialog {
                         onTextChanged: shortcutName = text
                     }
                 }
-                
+
                 RowLayout {
                     Layout.fillWidth: true
-                    
+
                     Label {
                         text: qsTr("Location:")
                         Layout.preferredWidth: 80
                     }
-                    
+
                     ComboBox {
                         id: locationCombo
                         Layout.fillWidth: true
                         model: [
-                            { text: qsTr("Desktop"), value: "desktop" },
-                            { text: qsTr("Start Menu"), value: "startmenu" },
-                            { text: qsTr("Applications"), value: "applications" }
+                            {
+                                text: qsTr("Desktop"),
+                                value: "desktop"
+                            },
+                            {
+                                text: qsTr("Start Menu"),
+                                value: "startmenu"
+                            },
+                            {
+                                text: qsTr("Applications"),
+                                value: "applications"
+                            }
                         ]
                         textRole: "text"
                         valueRole: "value"
@@ -122,22 +131,22 @@ Dialog {
                 }
             }
         }
-        
+
         // Options
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("Options")
-            
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingS
-                
+
                 CheckBox {
                     text: qsTr("Launch game directly (skip launcher window)")
                     checked: launchDirectly
                     onCheckedChanged: launchDirectly = checked
                 }
-                
+
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("When enabled, double-clicking the shortcut will launch the game immediately.")
@@ -147,18 +156,15 @@ Dialog {
                 }
             }
         }
-        
-        Item { Layout.fillHeight: true }
+
+        Item {
+            Layout.fillHeight: true
+        }
     }
-    
+
     onAccepted: {
         if (instance && ProjT && ProjT.instancesVM) {
-            ProjT.instancesVM.createShortcut(
-                instance.id,
-                nameField.text,
-                locationCombo.currentValue,
-                launchDirectly
-            )
+            ProjT.instancesVM.createShortcut(instance.id, nameField.text, locationCombo.currentValue, launchDirectly);
         }
     }
 }

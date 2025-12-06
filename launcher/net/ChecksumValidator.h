@@ -63,7 +63,7 @@ class ChecksumValidator : public Validator {
         : Net::ChecksumValidator(algorithm, QByteArray::fromHex(expectedHex.toLatin1()))
     {}
     ChecksumValidator(QCryptographicHash::Algorithm algorithm, QByteArray expected = QByteArray())
-        : m_checksum(algorithm), m_expected(expected){};
+        : m_checksum(algorithm), m_expected(expected) {};
     virtual ~ChecksumValidator() = default;
 
    public:

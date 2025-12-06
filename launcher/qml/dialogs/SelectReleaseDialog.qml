@@ -82,16 +82,15 @@ Dialog {
                 }
 
                 background: Rectangle {
-                    color: row === versionsTree.currentIndex ? ThemeColors.highlight 
-                           : (row % 2 === 0 ? ThemeColors.base : ThemeColors.alternateBase)
+                    color: row === versionsTree.currentIndex ? ThemeColors.highlight : (row % 2 === 0 ? ThemeColors.base : ThemeColors.alternateBase)
                 }
             }
 
             onCurrentIndexChanged: {
                 if (currentIndex >= 0 && releasesModel.count > 0) {
-                    let item = releasesModel.get(currentIndex)
+                    let item = releasesModel.get(currentIndex);
                     if (item) {
-                        root.selectedChangelog = item.changelog || ""
+                        root.selectedChangelog = item.changelog || "";
                     }
                 }
             }
@@ -131,19 +130,19 @@ Dialog {
 
     // Helper functions
     function setReleases(releases) {
-        releasesModel.clear()
+        releasesModel.clear();
         for (let i = 0; i < releases.length; i++) {
-            releasesModel.append(releases[i])
+            releasesModel.append(releases[i]);
         }
         if (releases.length > 0) {
-            versionsTree.currentIndex = 0
+            versionsTree.currentIndex = 0;
         }
     }
 
     function getSelectedRelease() {
         if (versionsTree.currentIndex >= 0 && releasesModel.count > 0) {
-            return releasesModel.get(versionsTree.currentIndex)
+            return releasesModel.get(versionsTree.currentIndex);
         }
-        return null
+        return null;
     }
 }

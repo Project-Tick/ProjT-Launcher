@@ -23,66 +23,66 @@ Rectangle {
     id: bottomBar
     height: 40
     width: parent.width
-    
+
     // Theme binding for reactive updates
     property var themeVM: ProjT.themeVM
     property int _themeUpdateCount: 0
-    
+
     color: {
-        var _ = _themeUpdateCount
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+        var _ = _themeUpdateCount;
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar;
     }
-    
+
     Connections {
         target: themeVM
         function onThemeColorsChanged() {
-            bottomBar._themeUpdateCount++
+            bottomBar._themeUpdateCount++;
         }
     }
-    
+
     // Properties
     property string statusMessage: qsTr("Ready")
-    
+
     // Computed colors
     property color toolBarColor: {
-        var _ = _themeUpdateCount
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+        var _ = _themeUpdateCount;
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar;
     }
     property color borderColor: {
-        var _ = _themeUpdateCount
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border
+        var _ = _themeUpdateCount;
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border;
     }
     property color textSecondaryColor: {
-        var _ = _themeUpdateCount
-        return themeVM ? Qt.darker(themeVM.textColor, 1.3) : ThemeColors.textSecondary
+        var _ = _themeUpdateCount;
+        return themeVM ? Qt.darker(themeVM.textColor, 1.3) : ThemeColors.textSecondary;
     }
-    
+
     // Signals
-    signal moreNewsRequested()
-    
+    signal moreNewsRequested
+
     Rectangle {
         anchors.fill: parent
         color: bottomBar.toolBarColor
         border.color: bottomBar.borderColor
         border.width: 1
-        
+
         RowLayout {
             anchors.fill: parent
             anchors.margins: 0
             spacing: Theme.spacingM
             anchors.leftMargin: Theme.spacingM
             anchors.rightMargin: Theme.spacingM
-            
+
             // === Status Message ===
             Label {
                 text: bottomBar.statusMessage
                 color: bottomBar.textSecondaryColor
                 font.pointSize: 9
                 Layout.fillWidth: true
-                
+
                 elide: Text.ElideRight
             }
-            
+
             // Separator
             Rectangle {
                 Layout.preferredWidth: 1
@@ -90,15 +90,15 @@ Rectangle {
                 Layout.alignment: Qt.AlignVCenter
                 color: bottomBar.borderColor
             }
-            
+
             // === More News ===
             ThemedToolButton {
                 text: qsTr("More News")
                 icon.name: "document-properties"
                 Layout.preferredHeight: 32
-                
+
                 onClicked: bottomBar.moreNewsRequested()
-                
+
                 ToolTip.text: qsTr("View more news")
                 ToolTip.visible: hovered
                 ToolTip.delay: 500

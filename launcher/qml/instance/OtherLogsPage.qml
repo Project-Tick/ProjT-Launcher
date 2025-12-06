@@ -21,20 +21,20 @@ import "../Theme.js" as Theme
 Rectangle {
     id: otherLogsPage
     color: ThemeColors.background
-    
+
     property var vm: ProjT.instanceVM
-    
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 0
         spacing: 0
-        
+
         // Top bar: log selection
         RowLayout {
             Layout.fillWidth: true
             Layout.margins: Theme.spacingS
             spacing: Theme.spacingM
-            
+
             ComboBox {
                 id: selectLogBox
                 Layout.fillWidth: true
@@ -42,93 +42,99 @@ Rectangle {
                 currentIndex: 0
                 onCurrentIndexChanged: {
                     if (vm && currentIndex >= 0) {
-                        vm.loadOtherLog(currentIndex)
+                        vm.loadOtherLog(currentIndex);
                     }
                 }
             }
-            
+
             Button {
                 text: qsTr("Delete Selected")
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Delete the selected log")
                 onClicked: {
                     if (vm && selectLogBox.currentIndex >= 0) {
-                        vm.deleteSelectedLog(selectLogBox.currentIndex)
+                        vm.deleteSelectedLog(selectLogBox.currentIndex);
                     }
                 }
             }
-            
+
             Button {
                 text: qsTr("Delete All")
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Delete all the logs")
                 onClicked: {
-                    if (vm) vm.deleteAllLogs()
+                    if (vm)
+                        vm.deleteAllLogs();
                 }
             }
         }
-        
+
         // Options row
         RowLayout {
             Layout.fillWidth: true
             Layout.margins: Theme.spacingS
             spacing: Theme.spacingM
-            
+
             CheckBox {
                 id: trackLogCheckbox
                 text: qsTr("Keep updating")
                 checked: true
             }
-            
+
             CheckBox {
                 id: wrapCheckbox
                 text: qsTr("Wrap lines")
                 checked: true
             }
-            
+
             CheckBox {
                 id: colorCheckbox
                 text: qsTr("Color lines")
                 checked: true
             }
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             Button {
                 text: qsTr("Copy")
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Copy the whole log into the clipboard")
                 onClicked: {
-                    if (vm) vm.copyOtherLogToClipboard()
+                    if (vm)
+                        vm.copyOtherLogToClipboard();
                 }
             }
-            
+
             Button {
                 text: qsTr("Upload")
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Upload the log to the paste service configured in preferences")
                 onClicked: {
-                    if (vm) vm.uploadOtherLog()
+                    if (vm)
+                        vm.uploadOtherLog();
                 }
             }
-            
+
             Button {
                 text: qsTr("Reload")
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Reload the contents of the log from the disk")
                 onClicked: {
-                    if (vm) vm.reloadOtherLog()
+                    if (vm)
+                        vm.reloadOtherLog();
                 }
             }
         }
-        
+
         // Log viewer
         ScrollView {
             id: logScrollView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            
+
             TextArea {
                 id: logText
                 readOnly: true
@@ -139,58 +145,60 @@ Rectangle {
                 color: ThemeColors.text
                 selectByMouse: true
                 textFormat: colorCheckbox.checked ? TextEdit.RichText : TextEdit.PlainText
-                
+
                 background: Rectangle {
                     color: ThemeColors.backgroundAlt
                 }
             }
         }
-        
+
         // Bottom search bar
         RowLayout {
             Layout.fillWidth: true
             Layout.margins: Theme.spacingS
             spacing: Theme.spacingS
-            
+
             TextField {
                 id: searchBar
                 Layout.fillWidth: true
                 placeholderText: qsTr("Search")
                 onAccepted: {
-                    if (vm) vm.findInOtherLog(text)
+                    if (vm)
+                        vm.findInOtherLog(text);
                 }
             }
-            
+
             Button {
                 text: qsTr("Find")
                 onClicked: {
-                    if (vm) vm.findInOtherLog(searchBar.text)
+                    if (vm)
+                        vm.findInOtherLog(searchBar.text);
                 }
             }
-            
+
             Rectangle {
                 width: 1
                 height: parent.height - 8
                 color: ThemeColors.border
             }
-            
+
             Button {
                 text: qsTr("Bottom")
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Scroll all the way to bottom")
                 onClicked: {
-                    logScrollView.ScrollBar.vertical.position = 1.0 - logScrollView.ScrollBar.vertical.size
+                    logScrollView.ScrollBar.vertical.position = 1.0 - logScrollView.ScrollBar.vertical.size;
                 }
             }
         }
-        
+
         // Auto-scroll on new content
         Connections {
             target: vm
             ignoreUnknownSignals: true
             function onOtherLogContentChanged() {
                 if (trackLogCheckbox.checked) {
-                    logScrollView.ScrollBar.vertical.position = 1.0 - logScrollView.ScrollBar.vertical.size
+                    logScrollView.ScrollBar.vertical.position = 1.0 - logScrollView.ScrollBar.vertical.size;
                 }
             }
         }

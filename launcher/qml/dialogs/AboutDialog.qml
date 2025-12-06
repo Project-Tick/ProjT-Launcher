@@ -25,18 +25,18 @@ Dialog {
     width: 573
     height: 600
     standardButtons: Dialog.NoButton
-    
+
     property var appInfo: ProjT ? ProjT.appInfo : null
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingS
-        
+
         // Logo centered
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 80
-            
+
             Image {
                 anchors.centerIn: parent
                 width: 64
@@ -45,7 +45,7 @@ Dialog {
                 fillMode: Image.PreserveAspectFit
             }
         }
-        
+
         // Title
         Label {
             Layout.fillWidth: true
@@ -54,24 +54,24 @@ Dialog {
             font.pointSize: 15
             horizontalAlignment: Text.AlignHCenter
         }
-        
+
         // Version (selectable)
         Label {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("Version %1").arg(appInfo ? appInfo.version : "")
             color: ThemeColors.textSecondary
-            
+
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.IBeamCursor
             }
         }
-        
+
         // TabWidget
         TabBar {
             id: tabBar
             Layout.fillWidth: true
-            
+
             TabButton {
                 text: qsTr("About")
             }
@@ -82,16 +82,16 @@ Dialog {
                 text: qsTr("License")
             }
         }
-        
+
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             currentIndex: tabBar.currentIndex
-            
+
             // About Tab
             ColumnLayout {
                 spacing: Theme.spacingS
-                
+
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("A custom launcher that makes managing Minecraft easier by allowing you to have multiple instances of Minecraft at once.")
@@ -99,22 +99,22 @@ Dialog {
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
                 }
-                
+
                 Label {
                     Layout.fillWidth: true
                     text: "<a href='https://github.com/Project-Tick/ProjT-Launcher'>https://github.com/Project-Tick/ProjT-Launcher</a>"
                     color: ThemeColors.accent
                     font.pointSize: 10
                     horizontalAlignment: Text.AlignHCenter
-                    onLinkActivated: (link) => Qt.openUrlExternally(link)
-                    
+                    onLinkActivated: link => Qt.openUrlExternally(link)
+
                     MouseArea {
                         anchors.fill: parent
                         acceptedButtons: Qt.NoButton
                         cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
                     }
                 }
-                
+
                 Label {
                     Layout.fillWidth: true
                     text: appInfo ? appInfo.copyright : "© 2025 Project Tick Contributors"
@@ -122,68 +122,70 @@ Dialog {
                     font.pointSize: 8
                     horizontalAlignment: Text.AlignHCenter
                 }
-                
+
                 Rectangle {
                     Layout.fillWidth: true
                     height: 1
                     color: ThemeColors.border
                 }
-                
+
                 // Platform info
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Platform: %1").arg(appInfo ? appInfo.platform : Qt.platform.os)
                     color: ThemeColors.textSecondary
-                    
+
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.IBeamCursor
                     }
                 }
-                
+
                 // Build date
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Build Date: %1").arg(appInfo ? appInfo.buildDate : "")
                     color: ThemeColors.textSecondary
-                    
+
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.IBeamCursor
                     }
                 }
-                
+
                 // Commit
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Commit: %1").arg(appInfo ? appInfo.gitCommit : "")
                     color: ThemeColors.textSecondary
-                    
+
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.IBeamCursor
                     }
                 }
-                
+
                 // Channel
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Channel: %1").arg(appInfo ? appInfo.channel : "stable")
                     color: ThemeColors.textSecondary
-                    
+
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.IBeamCursor
                     }
                 }
-                
-                Item { Layout.fillHeight: true }
+
+                Item {
+                    Layout.fillHeight: true
+                }
             }
-            
+
             // Credits Tab
             ScrollView {
                 clip: true
-                
+
                 TextArea {
                     id: creditsText
                     readOnly: true
@@ -191,17 +193,17 @@ Dialog {
                     text: appInfo ? appInfo.credits : qsTr("<h3>Contributors</h3><p>Thanks to all the amazing contributors who have helped make this project possible!</p><p>Based on PolyMC and Prism Launcher.</p>")
                     wrapMode: Text.WordWrap
                     color: ThemeColors.text
-                    onLinkActivated: (link) => Qt.openUrlExternally(link)
+                    onLinkActivated: link => Qt.openUrlExternally(link)
                     background: Rectangle {
                         color: "transparent"
                     }
                 }
             }
-            
+
             // License Tab
             ScrollView {
                 clip: true
-                
+
                 TextArea {
                     id: licenseText
                     readOnly: true
@@ -215,22 +217,24 @@ Dialog {
                 }
             }
         }
-        
+
         // Bottom buttons
         RowLayout {
             Layout.fillWidth: true
-            
+
             Button {
                 text: qsTr("About Qt")
                 onClicked: {
                     if (ProjT && ProjT.showAboutQt) {
-                        ProjT.showAboutQt()
+                        ProjT.showAboutQt();
                     }
                 }
             }
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             Button {
                 text: qsTr("Close")
                 onClicked: aboutDialog.close()

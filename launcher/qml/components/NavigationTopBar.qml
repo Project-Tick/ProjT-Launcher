@@ -22,24 +22,36 @@ Rectangle {
     id: topBar
     color: ThemeColors.toolBar
     height: 48
-    
+
     // Signals
     signal pageRequested(int page)
-    signal createNewInstance()
-    signal accountsMenuRequested()
-    
+    signal createNewInstance
+    signal accountsMenuRequested
+
     // Navigation entries
     readonly property var navEntries: [
-        { title: qsTr("Instances"), page: LauncherViewModelEnums.Page.Instances },
-        { title: qsTr("News"), page: LauncherViewModelEnums.Page.News },
-        { title: qsTr("About"), page: LauncherViewModelEnums.Page.About },
-        { title: qsTr("Settings"), page: LauncherViewModelEnums.Page.Settings }
+        {
+            title: qsTr("Instances"),
+            page: LauncherViewModelEnums.Page.Instances
+        },
+        {
+            title: qsTr("News"),
+            page: LauncherViewModelEnums.Page.News
+        },
+        {
+            title: qsTr("About"),
+            page: LauncherViewModelEnums.Page.About
+        },
+        {
+            title: qsTr("Settings"),
+            page: LauncherViewModelEnums.Page.Settings
+        }
     ]
-    
+
     Rectangle {
         anchors.fill: parent
         color: ThemeColors.toolBar
-        
+
         // Bottom border only
         Rectangle {
             anchors.left: parent.left
@@ -48,18 +60,18 @@ Rectangle {
             height: 1
             color: ThemeColors.border
         }
-        
+
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: Theme.spacingM
             anchors.rightMargin: Theme.spacingM
             spacing: 0
-            
+
             // === Logo / App Name ===
             RowLayout {
                 spacing: Theme.spacingS
                 Layout.rightMargin: Theme.spacingM
-                
+
                 Label {
                     text: qsTr("ProjT")
                     color: ThemeColors.text
@@ -67,7 +79,7 @@ Rectangle {
                     font.bold: true
                 }
             }
-            
+
             // Separator
             Rectangle {
                 Layout.preferredWidth: 1
@@ -75,11 +87,11 @@ Rectangle {
                 Layout.alignment: Qt.AlignVCenter
                 color: ThemeColors.border
             }
-            
+
             // === Page Navigation Buttons ===
             Repeater {
                 model: navEntries
-                
+
                 delegate: ThemedToolButton {
                     id: navBtn
                     text: modelData.title
@@ -88,19 +100,21 @@ Rectangle {
                     active: checked
                     Layout.preferredHeight: 36
                     Layout.leftMargin: index === 0 ? Theme.spacingS : 0
-                    
+
                     onClicked: {
                         if (ProjT.launcherVM) {
-                            ProjT.launcherVM.currentPage = modelData.page
+                            ProjT.launcherVM.currentPage = modelData.page;
                         }
-                        topBar.pageRequested(modelData.page)
+                        topBar.pageRequested(modelData.page);
                     }
                 }
             }
-            
+
             // === Spacer ===
-            Item { Layout.fillWidth: true }
-            
+            Item {
+                Layout.fillWidth: true
+            }
+
             // Separator
             Rectangle {
                 Layout.preferredWidth: 1
@@ -108,31 +122,29 @@ Rectangle {
                 Layout.alignment: Qt.AlignVCenter
                 color: ThemeColors.border
             }
-            
+
             // === Add Instance Button ===
             ThemedButton {
                 text: qsTr("+ New")
                 success: true
                 size: "small"
                 Layout.preferredHeight: 32
-                
+
                 onClicked: topBar.createNewInstance()
-                
+
                 ToolTip.text: qsTr("Create or import a new instance")
                 ToolTip.visible: hovered
                 ToolTip.delay: 500
             }
-            
+
             // === Accounts Button ===
             ThemedToolButton {
                 id: accountsBtn
-                text: ProjT.accountsVM && ProjT.accountsVM.defaultAccountName 
-                      ? "👤 " + ProjT.accountsVM.defaultAccountName.substring(0, 10) 
-                      : "👤"
+                text: ProjT.accountsVM && ProjT.accountsVM.defaultAccountName ? "👤 " + ProjT.accountsVM.defaultAccountName.substring(0, 10) : "👤"
                 Layout.preferredHeight: 32
-                
+
                 onClicked: topBar.accountsMenuRequested()
-                
+
                 ToolTip.text: qsTr("Open account settings")
                 ToolTip.visible: hovered
                 ToolTip.delay: 500

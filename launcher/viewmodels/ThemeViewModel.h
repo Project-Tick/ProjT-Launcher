@@ -36,7 +36,7 @@ class ThemeViewModel : public QObject {
     Q_PROPERTY(QColor highlightedTextColor READ highlightedTextColor NOTIFY themeColorsChanged)
     Q_PROPERTY(QColor linkColor READ linkColor NOTIFY themeColorsChanged)
     Q_PROPERTY(QColor fadeColor READ fadeColor NOTIFY themeColorsChanged)
-    
+
     // Theme metadata properties
     Q_PROPERTY(QString currentThemeName READ currentThemeName NOTIFY currentThemeChanged)
     Q_PROPERTY(QString currentThemeTooltip READ currentThemeTooltip NOTIFY currentThemeChanged)
@@ -48,7 +48,7 @@ class ThemeViewModel : public QObject {
     explicit ThemeViewModel(QObject* parent = nullptr);
 
     QString currentTheme() const;
-    
+
     QString currentIconTheme() const;
 
     QAbstractListModel* availableThemes() const;
@@ -66,7 +66,7 @@ class ThemeViewModel : public QObject {
     QColor highlightedTextColor() const;
     QColor linkColor() const;
     QColor fadeColor() const;
-    
+
     // Theme metadata getters
     QString currentThemeName() const;
     QString currentThemeTooltip() const;

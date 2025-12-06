@@ -25,13 +25,13 @@ Dialog {
     width: 600
     height: 500
     standardButtons: Dialog.Close
-    
+
     property var newsItem: null
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Header image
         Rectangle {
             Layout.fillWidth: true
@@ -40,19 +40,19 @@ Dialog {
             color: ThemeColors.backgroundAlt
             clip: true
             visible: newsItem && newsItem.imageUrl
-            
+
             Image {
                 anchors.fill: parent
                 source: newsItem ? newsItem.imageUrl : ""
                 fillMode: Image.PreserveAspectCrop
             }
         }
-        
+
         // Title and meta
         ColumnLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
-            
+
             Label {
                 text: newsItem ? newsItem.title : ""
                 color: ThemeColors.text
@@ -61,24 +61,24 @@ Dialog {
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }
-            
+
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.spacingM
-                
+
                 Label {
                     text: newsItem ? newsItem.date : ""
                     color: ThemeColors.textSecondary
                     font.pointSize: Theme.fontSizeSmall
                 }
-                
+
                 Rectangle {
                     Layout.preferredWidth: categoryLabel.implicitWidth + 12
                     Layout.preferredHeight: 20
                     radius: 10
                     color: ThemeColors.accent
                     visible: newsItem && newsItem.category
-                    
+
                     Label {
                         id: categoryLabel
                         anchors.centerIn: parent
@@ -89,13 +89,13 @@ Dialog {
                 }
             }
         }
-        
+
         // Content
         ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            
+
             TextArea {
                 readOnly: true
                 text: newsItem ? newsItem.content : ""
@@ -107,24 +107,26 @@ Dialog {
                 }
             }
         }
-        
+
         // Actions
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
+
             Button {
                 text: qsTr("Open in Browser")
                 icon.name: "internet-web-browser"
                 visible: newsItem && newsItem.url
                 onClicked: {
                     if (newsItem && newsItem.url) {
-                        Qt.openUrlExternally(newsItem.url)
+                        Qt.openUrlExternally(newsItem.url);
                     }
                 }
             }
-            
-            Item { Layout.fillWidth: true }
+
+            Item {
+                Layout.fillWidth: true
+            }
         }
     }
 }

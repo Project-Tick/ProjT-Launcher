@@ -287,7 +287,7 @@ static void setupQmlImportPaths(QQmlEngine* engine)
         engine->addImportPath(appQmlPath);
         qDebug() << "[QmlMainWindow] Added app QML import path:" << appQmlPath;
     }
-    
+
     // 5. Qt Resource System - for qmldir modules in qrc
     engine->addImportPath(QStringLiteral("qrc:/qml"));
     qDebug() << "[QmlMainWindow] Added QRC import path: qrc:/qml";
@@ -363,7 +363,7 @@ QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel,
     m_quickWidget = new QQuickWidget(container);
     m_quickWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
     m_quickWidget->setClearColor(Qt::transparent);
-    
+
     // Set initial palette for QQuickWidget
     m_quickWidget->setPalette(qApp->palette());
 

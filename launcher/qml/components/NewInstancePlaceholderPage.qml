@@ -21,13 +21,13 @@ import "../Theme.js" as Theme
 Rectangle {
     id: placeholderPage
     color: ThemeColors.background
-    
+
     property string pageName: "Unknown"
-    
+
     ColumnLayout {
         anchors.centerIn: parent
         spacing: Theme.spacingL
-        
+
         Image {
             Layout.alignment: Qt.AlignHCenter
             source: Theme.icon("bug")
@@ -36,7 +36,7 @@ Rectangle {
             fillMode: Image.PreserveAspectFit
             opacity: 0.5
         }
-        
+
         Label {
             Layout.alignment: Qt.AlignHCenter
             text: pageName
@@ -44,7 +44,7 @@ Rectangle {
             font.bold: true
             color: ThemeColors.text
         }
-        
+
         Label {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("This page is not yet implemented in QML.\nPlease use the widget-based launcher for this feature.")
@@ -52,7 +52,7 @@ Rectangle {
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
         }
-        
+
         // Widget UI fallback removed - QML is the primary UI
     }
 }

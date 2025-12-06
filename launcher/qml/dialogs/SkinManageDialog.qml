@@ -25,26 +25,28 @@ Dialog {
     modal: true
     width: 900
     height: 700
-    
+
     property var vm: ProjT.accountsVM
     property string selectedSkin: ""
     property bool isSlimModel: false
     property string selectedCape: ""
     property bool previewElytra: false
-    
+
     footer: DialogButtonBox {
         Button {
             text: qsTr("Open Folder")
             flat: true
             onClicked: {
-                if (vm) vm.openSkinsFolder()
+                if (vm)
+                    vm.openSkinsFolder();
             }
         }
         Button {
             text: qsTr("Reset Skin")
             flat: true
             onClicked: {
-                if (vm) vm.resetSkin()
+                if (vm)
+                    vm.resetSkin();
             }
         }
         Button {
@@ -56,16 +58,16 @@ Dialog {
             DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
         }
     }
-    
+
     RowLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Left panel: Skin preview and options
         ColumnLayout {
             Layout.preferredWidth: 280
             spacing: Theme.spacingM
-            
+
             // Skin preview
             Rectangle {
                 Layout.fillWidth: true
@@ -73,7 +75,7 @@ Dialog {
                 color: ThemeColors.backgroundAlt
                 border.color: ThemeColors.border
                 radius: Theme.radiusS
-                
+
                 // 3D skin preview would go here
                 // For now, just a placeholder
                 Image {
@@ -84,7 +86,7 @@ Dialog {
                     fillMode: Image.PreserveAspectFit
                     visible: selectedSkin.length > 0
                 }
-                
+
                 Label {
                     anchors.centerIn: parent
                     text: qsTr("No skin selected")
@@ -92,12 +94,12 @@ Dialog {
                     visible: selectedSkin.length === 0
                 }
             }
-            
+
             // Model selection
             GroupBox {
                 Layout.fillWidth: true
                 title: qsTr("Model")
-                
+
                 background: Rectangle {
                     y: parent.topPadding - parent.padding
                     width: parent.width
@@ -106,41 +108,43 @@ Dialog {
                     border.color: ThemeColors.border
                     radius: Theme.radiusS
                 }
-                
+
                 label: Label {
                     x: Theme.spacingS
                     text: parent.title
                     color: ThemeColors.text
                 }
-                
+
                 RowLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingM
-                    
+
                     RadioButton {
                         text: qsTr("Classic")
                         checked: !isSlimModel
                         onCheckedChanged: {
-                            if (checked) isSlimModel = false
+                            if (checked)
+                                isSlimModel = false;
                         }
                     }
-                    
+
                     RadioButton {
                         text: qsTr("Slim")
                         checked: isSlimModel
                         onCheckedChanged: {
-                            if (checked) isSlimModel = true
+                            if (checked)
+                                isSlimModel = true;
                         }
                     }
                 }
             }
-            
+
             // Cape selection
             GroupBox {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 title: qsTr("Cape")
-                
+
                 background: Rectangle {
                     y: parent.topPadding - parent.padding
                     width: parent.width
@@ -149,47 +153,46 @@ Dialog {
                     border.color: ThemeColors.border
                     radius: Theme.radiusS
                 }
-                
+
                 label: Label {
                     x: Theme.spacingS
                     text: parent.title
                     color: ThemeColors.text
                 }
-                
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingS
-                    
+
                     CheckBox {
                         text: qsTr("Preview Elytra")
                         checked: previewElytra
                         onCheckedChanged: previewElytra = checked
                     }
-                    
+
                     ComboBox {
                         id: capeCombo
                         Layout.fillWidth: true
                         model: vm ? vm.capesList : ["None"]
                         onCurrentTextChanged: selectedCape = currentText
                     }
-                    
+
                     // Cape preview
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         color: ThemeColors.surface
                         radius: Theme.radiusS
-                        
+
                         Image {
                             anchors.centerIn: parent
                             width: 64
                             height: 128
-                            source: selectedCape.length > 0 && selectedCape !== "None" ? 
-                                    "file:///" + selectedCape : ""
+                            source: selectedCape.length > 0 && selectedCape !== "None" ? "file:///" + selectedCape : ""
                             fillMode: Image.PreserveAspectFit
                             visible: selectedCape.length > 0 && selectedCape !== "None"
                         }
-                        
+
                         Label {
                             anchors.centerIn: parent
                             text: qsTr("No cape")
@@ -200,13 +203,13 @@ Dialog {
                 }
             }
         }
-        
+
         // Right panel: Skin list
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: Theme.spacingS
-            
+
             // Skin grid
             Rectangle {
                 Layout.fillWidth: true
@@ -214,7 +217,7 @@ Dialog {
                 color: ThemeColors.backgroundAlt
                 border.color: ThemeColors.border
                 radius: Theme.radiusS
-                
+
                 GridView {
                     id: skinGrid
                     anchors.fill: parent
@@ -223,28 +226,28 @@ Dialog {
                     cellWidth: 100
                     cellHeight: 120
                     model: vm ? vm.skinsList : []
-                    
+
                     delegate: Rectangle {
                         width: 96
                         height: 116
                         color: modelData.path === selectedSkin ? ThemeColors.accent : ThemeColors.surface
                         border.color: ThemeColors.border
                         radius: Theme.radiusS
-                        
+
                         MouseArea {
                             anchors.fill: parent
                             onClicked: selectedSkin = modelData.path || modelData
                             onDoubleClicked: {
-                                selectedSkin = modelData.path || modelData
-                                skinDialog.accept()
+                                selectedSkin = modelData.path || modelData;
+                                skinDialog.accept();
                             }
                         }
-                        
+
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 4
                             spacing: 2
-                            
+
                             Image {
                                 Layout.alignment: Qt.AlignHCenter
                                 width: 64
@@ -252,7 +255,7 @@ Dialog {
                                 source: modelData.thumbnail || ""
                                 fillMode: Image.PreserveAspectFit
                             }
-                            
+
                             Label {
                                 Layout.fillWidth: true
                                 text: modelData.name || "Skin"
@@ -263,65 +266,66 @@ Dialog {
                             }
                         }
                     }
-                    
+
                     ScrollBar.vertical: ScrollBar {}
                 }
             }
-            
+
             // Import buttons
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.spacingS
-                
+
                 TextField {
                     id: urlField
                     Layout.fillWidth: true
                     placeholderText: qsTr("URL or username")
                 }
-                
+
                 ThemedButton {
                     text: qsTr("Import URL")
                     size: "small"
                     onClicked: {
                         if (vm && urlField.text.length > 0) {
-                            vm.importSkinFromUrl(urlField.text)
+                            vm.importSkinFromUrl(urlField.text);
                         }
                     }
                 }
-                
+
                 ThemedButton {
                     text: qsTr("Import User")
                     size: "small"
                     onClicked: {
                         if (vm && urlField.text.length > 0) {
-                            vm.importSkinFromUser(urlField.text)
+                            vm.importSkinFromUser(urlField.text);
                         }
                     }
                 }
-                
+
                 ThemedButton {
                     text: qsTr("Import File")
                     primary: true
                     size: "small"
                     onClicked: {
-                        if (vm) vm.browseSkinFile()
+                        if (vm)
+                            vm.browseSkinFile();
                     }
                 }
             }
         }
     }
-    
+
     onAccepted: {
         if (vm) {
-            vm.uploadSkin(selectedSkin, isSlimModel, selectedCape)
+            vm.uploadSkin(selectedSkin, isSlimModel, selectedCape);
         }
     }
-    
+
     Connections {
         target: vm
         ignoreUnknownSignals: true
         function onSkinFileSelected(path) {
-            selectedSkin = path
+            selectedSkin = path;
         }
     }
 }

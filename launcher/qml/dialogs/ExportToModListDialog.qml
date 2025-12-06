@@ -24,10 +24,10 @@ Dialog {
     modal: true
     width: 650
     height: 550
-    
+
     property var vm: ProjT.instancesVM
     property string instanceId: ""
-    
+
     // Export settings
     property int selectedFormat: 0  // 0=HTML, 1=Markdown, 2=Plaintext, 3=JSON, 4=CSV, 5=Custom
     property string customTemplate: "{name} - {version}"
@@ -35,14 +35,15 @@ Dialog {
     property bool includeAuthors: false
     property bool includeUrl: false
     property bool includeFilename: false
-    
+
     readonly property var formatNames: ["HTML", "Markdown", "Plaintext", "JSON", "CSV", "Custom"]
-    
+
     footer: DialogButtonBox {
         Button {
             text: qsTr("Copy")
             onClicked: {
-                if (vm) vm.copyToClipboard(resultText.text)
+                if (vm)
+                    vm.copyToClipboard(resultText.text);
             }
         }
         Button {
@@ -54,16 +55,16 @@ Dialog {
             DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
         }
     }
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Settings GroupBox
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("Settings")
-            
+
             background: Rectangle {
                 y: parent.topPadding - parent.padding
                 width: parent.width
@@ -72,51 +73,51 @@ Dialog {
                 border.color: ThemeColors.border
                 radius: Theme.radiusS
             }
-            
+
             label: Label {
                 x: Theme.spacingM
                 text: parent.title
                 color: ThemeColors.text
             }
-            
+
             GridLayout {
                 anchors.fill: parent
                 columns: 2
                 rowSpacing: Theme.spacingS
                 columnSpacing: Theme.spacingL
-                
+
                 // Left column: Format selection and template
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingS
-                    
+
                     RowLayout {
                         spacing: Theme.spacingM
-                        
+
                         Label {
                             text: qsTr("Format:")
                             color: ThemeColors.text
                         }
-                        
+
                         ComboBox {
                             id: formatCombo
                             Layout.fillWidth: true
                             model: formatNames
                             currentIndex: selectedFormat
                             onCurrentIndexChanged: {
-                                selectedFormat = currentIndex
-                                updateResult()
+                                selectedFormat = currentIndex;
+                                updateResult();
                             }
                         }
                     }
-                    
+
                     // Template (only for Custom format)
                     GroupBox {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 120
                         title: qsTr("Template")
                         visible: selectedFormat === 5
-                        
+
                         background: Rectangle {
                             y: parent.topPadding - parent.padding
                             width: parent.width
@@ -125,29 +126,29 @@ Dialog {
                             border.color: ThemeColors.border
                             radius: Theme.radiusS
                         }
-                        
+
                         label: Label {
                             x: Theme.spacingS
                             text: parent.title
                             color: ThemeColors.text
                         }
-                        
+
                         ScrollView {
                             anchors.fill: parent
-                            
+
                             TextArea {
                                 id: templateText
                                 text: customTemplate
                                 wrapMode: TextEdit.Wrap
                                 onTextChanged: {
-                                    customTemplate = text
-                                    updateResult()
+                                    customTemplate = text;
+                                    updateResult();
                                 }
                                 placeholderText: qsTr("{name} - {version}\nPlaceholders: {name}, {mod_id}, {url}, {version}, {authors}")
-                                
+
                                 ToolTip.visible: hovered
                                 ToolTip.text: qsTr("Placeholders:\n{name} - Mod name\n{mod_id} - Mod ID\n{url} - Mod URL\n{version} - Mod version\n{authors} - Mod authors")
-                                
+
                                 background: Rectangle {
                                     color: ThemeColors.backgroundAlt
                                     border.color: ThemeColors.border
@@ -157,14 +158,14 @@ Dialog {
                         }
                     }
                 }
-                
+
                 // Right column: Optional info
                 GroupBox {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignTop
                     title: qsTr("Optional Info")
                     visible: selectedFormat !== 5
-                    
+
                     background: Rectangle {
                         y: parent.topPadding - parent.padding
                         width: parent.width
@@ -173,63 +174,63 @@ Dialog {
                         border.color: ThemeColors.border
                         radius: Theme.radiusS
                     }
-                    
+
                     label: Label {
                         x: Theme.spacingS
                         text: parent.title
                         color: ThemeColors.text
                     }
-                    
+
                     ColumnLayout {
                         anchors.fill: parent
                         spacing: Theme.spacingXS
-                        
+
                         CheckBox {
                             text: qsTr("Version")
                             checked: includeVersion
                             onCheckedChanged: {
-                                includeVersion = checked
-                                updateResult()
+                                includeVersion = checked;
+                                updateResult();
                             }
                         }
-                        
+
                         CheckBox {
                             text: qsTr("Authors")
                             checked: includeAuthors
                             onCheckedChanged: {
-                                includeAuthors = checked
-                                updateResult()
+                                includeAuthors = checked;
+                                updateResult();
                             }
                         }
-                        
+
                         CheckBox {
                             text: qsTr("URL")
                             checked: includeUrl
                             onCheckedChanged: {
-                                includeUrl = checked
-                                updateResult()
+                                includeUrl = checked;
+                                updateResult();
                             }
                         }
-                        
+
                         CheckBox {
                             text: qsTr("Filename")
                             checked: includeFilename
                             onCheckedChanged: {
-                                includeFilename = checked
-                                updateResult()
+                                includeFilename = checked;
+                                updateResult();
                             }
                         }
                     }
                 }
             }
         }
-        
+
         // Result GroupBox
         GroupBox {
             Layout.fillWidth: true
             Layout.fillHeight: true
             title: qsTr("Result")
-            
+
             background: Rectangle {
                 y: parent.topPadding - parent.padding
                 width: parent.width
@@ -238,22 +239,22 @@ Dialog {
                 border.color: ThemeColors.border
                 radius: Theme.radiusS
             }
-            
+
             label: Label {
                 x: Theme.spacingM
                 text: parent.title
                 color: ThemeColors.text
             }
-            
+
             RowLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingM
-                
+
                 // Plain text result
                 ScrollView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    
+
                     TextArea {
                         id: resultText
                         readOnly: true
@@ -262,7 +263,7 @@ Dialog {
                         font.family: "Noto Sans Mono"
                         font.pointSize: 9
                         color: ThemeColors.text
-                        
+
                         background: Rectangle {
                             color: ThemeColors.backgroundAlt
                             border.color: ThemeColors.border
@@ -270,34 +271,34 @@ Dialog {
                         }
                     }
                 }
-                
+
                 // Preview (for HTML/Markdown)
                 ScrollView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     visible: selectedFormat === 0 || selectedFormat === 1
-                    
+
                     TextArea {
                         id: previewText
                         readOnly: true
                         textFormat: TextEdit.RichText
                         wrapMode: TextEdit.Wrap
                         color: ThemeColors.text
-                        
+
                         background: Rectangle {
                             color: ThemeColors.backgroundAlt
                             border.color: ThemeColors.border
                             radius: Theme.radiusS
                         }
-                        
-                        onLinkActivated: function(link) {
-                            Qt.openUrlExternally(link)
+
+                        onLinkActivated: function (link) {
+                            Qt.openUrlExternally(link);
                         }
                     }
                 }
             }
         }
-        
+
         // Warning label
         Label {
             Layout.fillWidth: true
@@ -307,10 +308,10 @@ Dialog {
             font.italic: true
         }
     }
-    
+
     function updateResult() {
-        if (!vm) return
-        
+        if (!vm)
+            return;
         var result = vm.generateModList(instanceId, {
             format: selectedFormat,
             template: customTemplate,
@@ -318,19 +319,19 @@ Dialog {
             includeAuthors: includeAuthors,
             includeUrl: includeUrl,
             includeFilename: includeFilename
-        })
-        
-        resultText.text = result.plain || ""
-        previewText.text = result.html || result.plain || ""
+        });
+
+        resultText.text = result.plain || "";
+        previewText.text = result.html || result.plain || "";
     }
-    
+
     onOpened: {
-        updateResult()
+        updateResult();
     }
-    
+
     onAccepted: {
         if (vm) {
-            vm.saveModList(instanceId, resultText.text, formatNames[selectedFormat])
+            vm.saveModList(instanceId, resultText.text, formatNames[selectedFormat]);
         }
     }
 }

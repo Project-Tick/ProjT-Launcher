@@ -25,40 +25,60 @@ Dialog {
     standardButtons: Dialog.Cancel
     width: 500
     height: 450
-    
+
     property var vm: null
     property string minecraftVersion: ""
     property string selectedLoader: ""
     property string selectedLoaderVersion: ""
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Loader selection
         Label {
             text: qsTr("Select a mod loader to install:")
             color: ThemeColors.text
         }
-        
+
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
-            
+
             Repeater {
                 model: [
-                    { id: "forge", name: "Forge", color: "#dfa86a" },
-                    { id: "neoforge", name: "NeoForge", color: "#d64541" },
-                    { id: "fabric", name: "Fabric", color: "#dbd0b4" },
-                    { id: "quilt", name: "Quilt", color: "#9b59b6" },
-                    { id: "liteloader", name: "LiteLoader", color: "#3498db" }
+                    {
+                        id: "forge",
+                        name: "Forge",
+                        color: "#dfa86a"
+                    },
+                    {
+                        id: "neoforge",
+                        name: "NeoForge",
+                        color: "#d64541"
+                    },
+                    {
+                        id: "fabric",
+                        name: "Fabric",
+                        color: "#dbd0b4"
+                    },
+                    {
+                        id: "quilt",
+                        name: "Quilt",
+                        color: "#9b59b6"
+                    },
+                    {
+                        id: "liteloader",
+                        name: "LiteLoader",
+                        color: "#3498db"
+                    }
                 ]
-                
+
                 delegate: Button {
                     Layout.fillWidth: true
                     text: modelData.name
                     highlighted: selectedLoader === modelData.id
-                    
+
                     background: Rectangle {
                         implicitHeight: 50
                         radius: 8
@@ -66,7 +86,7 @@ Dialog {
                         border.color: highlighted ? modelData.color : ThemeColors.border
                         border.width: 1
                     }
-                    
+
                     contentItem: Label {
                         text: modelData.name
                         color: highlighted ? (modelData.id === "fabric" ? "#333" : "white") : ThemeColors.text
@@ -74,60 +94,61 @@ Dialog {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    
+
                     onClicked: {
-                        selectedLoader = modelData.id
-                        selectedLoaderVersion = ""
-                        if (vm) vm.fetchLoaderVersions(modelData.id, minecraftVersion)
+                        selectedLoader = modelData.id;
+                        selectedLoaderVersion = "";
+                        if (vm)
+                            vm.fetchLoaderVersions(modelData.id, minecraftVersion);
                     }
                 }
             }
         }
-        
+
         // Version selection
         GroupBox {
             Layout.fillWidth: true
             Layout.fillHeight: true
             title: qsTr("Version")
             enabled: selectedLoader.length > 0
-            
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingS
-                
+
                 CheckBox {
                     id: showAllVersions
                     text: qsTr("Show all versions (including unstable)")
                     checked: false
                 }
-                
+
                 Frame {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    
+
                     ListView {
                         id: versionsList
                         anchors.fill: parent
                         clip: true
                         model: vm ? vm.loaderVersions : []
-                        
+
                         delegate: ItemDelegate {
                             width: versionsList.width
                             height: visible ? 44 : 0
                             visible: showAllVersions.checked || modelData.stable === true
                             highlighted: modelData.version === selectedLoaderVersion
-                            
+
                             RowLayout {
                                 anchors.fill: parent
                                 anchors.margins: Theme.spacingS
                                 spacing: Theme.spacingM
-                                
+
                                 Label {
                                     text: modelData.version || modelData
                                     color: ThemeColors.text
                                     Layout.fillWidth: true
                                 }
-                                
+
                                 // Recommended badge
                                 Rectangle {
                                     Layout.preferredWidth: recLabel.implicitWidth + 12
@@ -135,7 +156,7 @@ Dialog {
                                     radius: 10
                                     color: ThemeColors.success
                                     visible: modelData.recommended === true
-                                    
+
                                     Label {
                                         id: recLabel
                                         anchors.centerIn: parent
@@ -144,7 +165,7 @@ Dialog {
                                         font.pointSize: Theme.fontSizeSmall - 1
                                     }
                                 }
-                                
+
                                 // Latest badge
                                 Rectangle {
                                     Layout.preferredWidth: latestLabel.implicitWidth + 12
@@ -152,7 +173,7 @@ Dialog {
                                     radius: 10
                                     color: ThemeColors.accent
                                     visible: modelData.latest === true && modelData.recommended !== true
-                                    
+
                                     Label {
                                         id: latestLabel
                                         anchors.centerIn: parent
@@ -161,7 +182,7 @@ Dialog {
                                         font.pointSize: Theme.fontSizeSmall - 1
                                     }
                                 }
-                                
+
                                 // Unstable indicator
                                 Label {
                                     text: qsTr("(unstable)")
@@ -170,26 +191,26 @@ Dialog {
                                     visible: modelData.stable === false
                                 }
                             }
-                            
+
                             onClicked: {
-                                selectedLoaderVersion = modelData.version || modelData
+                                selectedLoaderVersion = modelData.version || modelData;
                             }
-                            
+
                             onDoubleClicked: {
-                                selectedLoaderVersion = modelData.version || modelData
-                                installLoader()
+                                selectedLoaderVersion = modelData.version || modelData;
+                                installLoader();
                             }
                         }
-                        
+
                         ScrollBar.vertical: ScrollBar {}
                     }
-                    
+
                     BusyIndicator {
                         anchors.centerIn: parent
                         running: vm ? vm.loadingLoaderVersions : false
                         visible: running
                     }
-                    
+
                     Label {
                         anchors.centerIn: parent
                         text: selectedLoader.length > 0 ? qsTr("No versions available") : qsTr("Select a loader first")
@@ -199,7 +220,7 @@ Dialog {
                 }
             }
         }
-        
+
         // Info
         Label {
             Layout.fillWidth: true
@@ -208,7 +229,7 @@ Dialog {
             font.pointSize: Theme.fontSizeSmall
             visible: minecraftVersion.length > 0
         }
-        
+
         // Install button
         Button {
             Layout.fillWidth: true
@@ -218,11 +239,11 @@ Dialog {
             onClicked: installLoader()
         }
     }
-    
+
     function installLoader() {
         if (vm && selectedLoader.length > 0 && selectedLoaderVersion.length > 0) {
-            vm.installLoader(selectedLoader, selectedLoaderVersion)
-            installLoaderDialog.accept()
+            vm.installLoader(selectedLoader, selectedLoaderVersion);
+            installLoaderDialog.accept();
         }
     }
 }

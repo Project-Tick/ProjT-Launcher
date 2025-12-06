@@ -22,20 +22,20 @@ Rectangle {
     id: upperBar
     color: ThemeColors.toolBar
     height: 36
-    
+
     // Properties - bound to ViewModels with safe defaults
     property string newsHeadline: ProjT.newsVM.latestHeadline || qsTr("Welcome to ProjT Launcher")
     property bool hasUpdate: ProjT.launcherVM.hasUpdate || false
     property string updateVersion: ProjT.launcherVM.updateVersion || ""
-    
+
     // Signals
-    signal moreNewsClicked()
-    signal updateClicked()
-    
+    signal moreNewsClicked
+    signal updateClicked
+
     Rectangle {
         anchors.fill: parent
         color: ThemeColors.toolBar
-        
+
         // Top border only
         Rectangle {
             anchors.left: parent.left
@@ -44,13 +44,13 @@ Rectangle {
             height: 1
             color: ThemeColors.border
         }
-        
+
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: Theme.spacingM
             anchors.rightMargin: Theme.spacingM
             spacing: Theme.spacingM
-            
+
             // === News Label ===
             Label {
                 text: qsTr("News:")
@@ -58,7 +58,7 @@ Rectangle {
                 font.pointSize: 10
                 Layout.alignment: Qt.AlignVCenter
             }
-            
+
             // === News Headline ===
             Label {
                 id: headlineLabel
@@ -68,28 +68,28 @@ Rectangle {
                 elide: Text.ElideRight
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                
+
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: upperBar.moreNewsClicked()
-                    
+
                     hoverEnabled: true
                     onEntered: headlineLabel.color = ThemeColors.accent
                     onExited: headlineLabel.color = ThemeColors.text
                 }
             }
-            
+
             // === More News Button ===
             ThemedToolButton {
                 text: qsTr("More News")
                 Layout.preferredHeight: 28
                 Layout.alignment: Qt.AlignVCenter
                 customTextColor: ThemeColors.accent
-                
+
                 onClicked: upperBar.moreNewsClicked()
             }
-            
+
             // === Separator (visible only when update is available) ===
             Rectangle {
                 visible: hasUpdate
@@ -98,7 +98,7 @@ Rectangle {
                 Layout.alignment: Qt.AlignVCenter
                 color: ThemeColors.border
             }
-            
+
             // === Update Available Badge ===
             Rectangle {
                 visible: hasUpdate
@@ -109,25 +109,25 @@ Rectangle {
                 color: Qt.darker(ThemeColors.info, 1.5)
                 border.color: ThemeColors.info
                 border.width: 1
-                
+
                 RowLayout {
                     id: updateRow
                     anchors.centerIn: parent
                     spacing: 4
-                    
+
                     Text {
                         text: "⬆"
                         font.pointSize: 10
                         color: ThemeColors.info
                     }
-                    
+
                     Label {
                         text: qsTr("Update: %1").arg(updateVersion)
                         color: Qt.lighter(ThemeColors.info, 1.3)
                         font.pointSize: 9
                     }
                 }
-                
+
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor

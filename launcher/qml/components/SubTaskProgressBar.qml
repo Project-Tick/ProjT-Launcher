@@ -24,24 +24,24 @@ import "../Theme.js" as Theme
 Rectangle {
     id: subTaskProgress
     color: "transparent"
-    
+
     property string statusText: ""
     property string statusDetails: ""
     property real progress: 0  // 0.0 to 1.0
     property bool indeterminate: false
-    
+
     implicitHeight: 50
     implicitWidth: 300
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 2
-        
+
         // Status row
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
+
             Label {
                 Layout.fillWidth: true
                 text: statusText
@@ -51,7 +51,7 @@ Rectangle {
                 elide: Text.ElideRight
                 maximumLineCount: 2
             }
-            
+
             Label {
                 text: statusDetails
                 color: ThemeColors.textSecondary
@@ -59,7 +59,7 @@ Rectangle {
                 horizontalAlignment: Text.AlignRight
             }
         }
-        
+
         // Progress bar
         ProgressBar {
             id: progressBar
@@ -67,20 +67,20 @@ Rectangle {
             Layout.preferredHeight: 20
             value: progress
             indeterminate: subTaskProgress.indeterminate
-            
+
             background: Rectangle {
                 implicitHeight: 20
                 color: ThemeColors.backgroundAlt
                 radius: Theme.radiusS
             }
-            
+
             contentItem: Item {
                 Rectangle {
                     width: progressBar.indeterminate ? parent.width * 0.3 : progressBar.visualPosition * parent.width
                     height: parent.height
                     radius: Theme.radiusS
                     color: ThemeColors.accent
-                    
+
                     // Indeterminate animation
                     SequentialAnimation on x {
                         running: progressBar.indeterminate
@@ -99,7 +99,7 @@ Rectangle {
                         }
                     }
                 }
-                
+
                 // Percentage text
                 Label {
                     anchors.centerIn: parent

@@ -25,15 +25,15 @@ Dialog {
     standardButtons: Dialog.Ok | Dialog.Cancel
     width: 550
     height: 350
-    
+
     property var optionalMods: []  // Array of {name: "", description: "", checked: true}
-    
+
     signal modsSelected(var selectedMods)
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Mod list
         Rectangle {
             Layout.fillWidth: true
@@ -41,44 +41,44 @@ Dialog {
             color: ThemeColors.backgroundAlt
             border.color: ThemeColors.border
             radius: Theme.radiusS
-            
+
             ListView {
                 id: modList
                 anchors.fill: parent
                 anchors.margins: 1
                 clip: true
                 model: optionalMods
-                
+
                 delegate: Rectangle {
                     width: modList.width
                     height: 50
                     color: index % 2 === 0 ? "transparent" : ThemeColors.surface
-                    
+
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: Theme.spacingS
                         spacing: Theme.spacingM
-                        
+
                         CheckBox {
                             id: modCheckbox
                             checked: modelData.checked !== false
                             onCheckedChanged: {
-                                var mods = optionalMods.slice()
-                                mods[index].checked = checked
-                                optionalMods = mods
+                                var mods = optionalMods.slice();
+                                mods[index].checked = checked;
+                                optionalMods = mods;
                             }
                         }
-                        
+
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
-                            
+
                             Label {
                                 text: modelData.name || ""
                                 color: ThemeColors.text
                                 font.bold: true
                             }
-                            
+
                             Label {
                                 Layout.fillWidth: true
                                 text: modelData.description || ""
@@ -89,40 +89,42 @@ Dialog {
                         }
                     }
                 }
-                
+
                 ScrollBar.vertical: ScrollBar {}
             }
         }
-        
+
         // Selection buttons
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
+
             Button {
                 text: qsTr("Select All")
                 onClicked: {
-                    var mods = optionalMods.slice()
+                    var mods = optionalMods.slice();
                     for (var i = 0; i < mods.length; i++) {
-                        mods[i].checked = true
+                        mods[i].checked = true;
                     }
-                    optionalMods = mods
+                    optionalMods = mods;
                 }
             }
-            
+
             Button {
                 text: qsTr("Deselect All")
                 onClicked: {
-                    var mods = optionalMods.slice()
+                    var mods = optionalMods.slice();
                     for (var i = 0; i < mods.length; i++) {
-                        mods[i].checked = false
+                        mods[i].checked = false;
                     }
-                    optionalMods = mods
+                    optionalMods = mods;
                 }
             }
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             Label {
                 text: qsTr("Unchecked mods will be disabled.")
                 color: ThemeColors.textSecondary
@@ -130,14 +132,14 @@ Dialog {
             }
         }
     }
-    
+
     onAccepted: {
-        var selected = []
+        var selected = [];
         for (var i = 0; i < optionalMods.length; i++) {
             if (optionalMods[i].checked) {
-                selected.push(optionalMods[i])
+                selected.push(optionalMods[i]);
             }
         }
-        modsSelected(selected)
+        modsSelected(selected);
     }
 }

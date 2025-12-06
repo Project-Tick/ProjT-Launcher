@@ -21,84 +21,88 @@ import "../Theme.js" as Theme
 ScrollView {
     id: externalToolsPage
     clip: true
-    
+
     property var vm: ProjT.launcherSettingsVM
-    
+
     ColumnLayout {
         width: externalToolsPage.width - Theme.spacingL
         spacing: Theme.spacingM
-        
+
         // Editors
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("&Editors")
-            
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingS
-                
+
                 Label {
                     text: qsTr("&Text Editor")
                     color: ThemeColors.text
                 }
-                
+
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingS
-                    
+
                     TextField {
                         id: jsonEditorTextBox
                         Layout.fillWidth: true
                         text: vm ? vm.jsonEditorPath : ""
-                        onTextChanged: if (vm) vm.jsonEditorPath = text
+                        onTextChanged: if (vm)
+                            vm.jsonEditorPath = text
                     }
-                    
+
                     Button {
                         text: qsTr("Browse")
                         onClicked: browseForJsonEditor()
                     }
                 }
-                
+
                 Label {
                     text: qsTr("Used to edit component JSON files.")
                     color: ThemeColors.textSecondary
                 }
-                
-                Item { height: 6 }
-                
+
+                Item {
+                    height: 6
+                }
+
                 Label {
                     text: qsTr("&MCEdit")
                     color: ThemeColors.text
                 }
-                
+
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingS
-                    
+
                     TextField {
                         id: mceditPathEdit
                         Layout.fillWidth: true
                         text: vm ? vm.mceditPath : ""
-                        onTextChanged: if (vm) vm.mceditPath = text
+                        onTextChanged: if (vm)
+                            vm.mceditPath = text
                     }
-                    
+
                     Button {
                         text: qsTr("Browse")
                         onClicked: browseForMCEdit()
                     }
                 }
-                
+
                 Button {
                     text: qsTr("Check")
                     onClicked: checkMCEdit()
                 }
-                
+
                 Label {
                     text: "<a href='https://www.mcedit.net/'>MCEdit Website</a> - Used as world editor in the instance Worlds menu."
                     textFormat: Text.RichText
                     color: ThemeColors.text
                     onLinkActivated: Qt.openUrlExternally(link)
-                    
+
                     MouseArea {
                         anchors.fill: parent
                         acceptedButtons: Qt.NoButton
@@ -107,98 +111,104 @@ ScrollView {
                 }
             }
         }
-        
+
         // Profilers
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("&Profilers")
-            
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingS
-                
+
                 Label {
                     text: qsTr("Profilers are accessible through the Launch dropdown menu.")
                     color: ThemeColors.text
                 }
-                
-                Item { height: 6 }
-                
+
+                Item {
+                    height: 6
+                }
+
                 Label {
                     text: qsTr("J&Profiler")
                     color: ThemeColors.text
                 }
-                
+
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingS
-                    
+
                     TextField {
                         id: jprofilerPathEdit
                         Layout.fillWidth: true
                         text: vm ? vm.jprofilerPath : ""
-                        onTextChanged: if (vm) vm.jprofilerPath = text
+                        onTextChanged: if (vm)
+                            vm.jprofilerPath = text
                     }
-                    
+
                     Button {
                         text: qsTr("Browse")
                         onClicked: browseForJProfiler()
                     }
                 }
-                
+
                 Button {
                     text: qsTr("Check")
                     onClicked: checkJProfiler()
                 }
-                
+
                 Label {
                     text: "<a href='https://www.ej-technologies.com/products/jprofiler/overview.html'>JProfiler Website</a>"
                     textFormat: Text.RichText
                     color: ThemeColors.text
                     onLinkActivated: Qt.openUrlExternally(link)
-                    
+
                     MouseArea {
                         anchors.fill: parent
                         acceptedButtons: Qt.NoButton
                         cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
                     }
                 }
-                
-                Item { height: 6 }
-                
+
+                Item {
+                    height: 6
+                }
+
                 Label {
                     text: qsTr("&VisualVM")
                     color: ThemeColors.text
                 }
-                
+
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingS
-                    
+
                     TextField {
                         id: jvisualvmPathEdit
                         Layout.fillWidth: true
                         text: vm ? vm.jvisualvmPath : ""
-                        onTextChanged: if (vm) vm.jvisualvmPath = text
+                        onTextChanged: if (vm)
+                            vm.jvisualvmPath = text
                     }
-                    
+
                     Button {
                         text: qsTr("Browse")
                         onClicked: browseForJVisualVM()
                     }
                 }
-                
+
                 Button {
                     text: qsTr("Check")
                     onClicked: checkJVisualVM()
                 }
-                
+
                 Label {
                     text: "<a href='https://visualvm.github.io/'>VisualVM Website</a>"
                     textFormat: Text.RichText
                     color: ThemeColors.text
                     onLinkActivated: Qt.openUrlExternally(link)
-                    
+
                     MouseArea {
                         anchors.fill: parent
                         acceptedButtons: Qt.NoButton
@@ -207,67 +217,73 @@ ScrollView {
                 }
             }
         }
-        
-        Item { Layout.fillHeight: true }
+
+        Item {
+            Layout.fillHeight: true
+        }
     }
-    
+
     // Browse functions
     function browseForJsonEditor() {
         if (ProjT.launcherVM && ProjT.launcherVM.browseForFile) {
-            var result = ProjT.launcherVM.browseForFile(qsTr("Select Text Editor"), "")
+            var result = ProjT.launcherVM.browseForFile(qsTr("Select Text Editor"), "");
             if (result && result.length > 0) {
-                jsonEditorTextBox.text = result
-                if (vm) vm.jsonEditorPath = result
+                jsonEditorTextBox.text = result;
+                if (vm)
+                    vm.jsonEditorPath = result;
             }
         }
     }
-    
+
     function browseForMCEdit() {
         if (ProjT.launcherVM && ProjT.launcherVM.browseForFile) {
-            var result = ProjT.launcherVM.browseForFile(qsTr("Select MCEdit Executable"), "")
+            var result = ProjT.launcherVM.browseForFile(qsTr("Select MCEdit Executable"), "");
             if (result && result.length > 0) {
-                mceditPathEdit.text = result
-                if (vm) vm.mceditPath = result
+                mceditPathEdit.text = result;
+                if (vm)
+                    vm.mceditPath = result;
             }
         }
     }
-    
+
     function browseForJProfiler() {
         if (ProjT.launcherVM && ProjT.launcherVM.browseForFile) {
-            var result = ProjT.launcherVM.browseForFile(qsTr("Select JProfiler Executable"), "")
+            var result = ProjT.launcherVM.browseForFile(qsTr("Select JProfiler Executable"), "");
             if (result && result.length > 0) {
-                jprofilerPathEdit.text = result
-                if (vm) vm.jprofilerPath = result
+                jprofilerPathEdit.text = result;
+                if (vm)
+                    vm.jprofilerPath = result;
             }
         }
     }
-    
+
     function browseForJVisualVM() {
         if (ProjT.launcherVM && ProjT.launcherVM.browseForFile) {
-            var result = ProjT.launcherVM.browseForFile(qsTr("Select VisualVM Executable"), "")
+            var result = ProjT.launcherVM.browseForFile(qsTr("Select VisualVM Executable"), "");
             if (result && result.length > 0) {
-                jvisualvmPathEdit.text = result
-                if (vm) vm.jvisualvmPath = result
+                jvisualvmPathEdit.text = result;
+                if (vm)
+                    vm.jvisualvmPath = result;
             }
         }
     }
-    
+
     // Check functions
     function checkMCEdit() {
         if (vm && vm.checkTool) {
-            vm.checkTool("mcedit", mceditPathEdit.text)
+            vm.checkTool("mcedit", mceditPathEdit.text);
         }
     }
-    
+
     function checkJProfiler() {
         if (vm && vm.checkTool) {
-            vm.checkTool("jprofiler", jprofilerPathEdit.text)
+            vm.checkTool("jprofiler", jprofilerPathEdit.text);
         }
     }
-    
+
     function checkJVisualVM() {
         if (vm && vm.checkTool) {
-            vm.checkTool("jvisualvm", jvisualvmPathEdit.text)
+            vm.checkTool("jvisualvm", jvisualvmPathEdit.text);
         }
     }
 }

@@ -21,110 +21,113 @@ import "../Theme.js" as Theme
 Rectangle {
     id: instanceSettingsPage
     color: ThemeColors.background
-    
+
     property var vm: typeof ProjT !== "undefined" && ProjT ? ProjT.instanceVM : null
-    
+
     // Helper functions for safe property access
     function getBool(prop, defaultVal) {
-        return vm && typeof vm[prop] !== "undefined" ? vm[prop] : defaultVal
+        return vm && typeof vm[prop] !== "undefined" ? vm[prop] : defaultVal;
     }
     function getInt(prop, defaultVal) {
-        return vm && typeof vm[prop] !== "undefined" ? vm[prop] : defaultVal
+        return vm && typeof vm[prop] !== "undefined" ? vm[prop] : defaultVal;
     }
     function getString(prop, defaultVal) {
-        return vm && typeof vm[prop] !== "undefined" ? vm[prop] : defaultVal
+        return vm && typeof vm[prop] !== "undefined" ? vm[prop] : defaultVal;
     }
     function setProp(prop, value) {
-        if (vm && typeof vm[prop] !== "undefined") vm[prop] = value
+        if (vm && typeof vm[prop] !== "undefined")
+            vm[prop] = value;
     }
-    
+
     ScrollView {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
         clip: true
-        
+
         ColumnLayout {
             width: parent.width
             spacing: Theme.spacingM
-            
+
             Label {
                 text: qsTr("Instance Settings")
                 font.pointSize: 14
                 font.bold: true
                 color: ThemeColors.text
             }
-            
+
             // Java Settings
             GroupBox {
                 Layout.fillWidth: true
                 title: qsTr("Java")
-                
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingS
-                    
+
                     CheckBox {
                         id: overrideJavaCheck
                         text: qsTr("Override global Java settings")
                         checked: getBool("overrideJava", false)
                         onCheckedChanged: setProp("overrideJava", checked)
                     }
-                    
+
                     RowLayout {
                         Layout.fillWidth: true
                         enabled: overrideJavaCheck.checked
-                        
+
                         Label {
                             text: qsTr("Java Path:")
                             color: ThemeColors.text
                         }
-                        
+
                         TextField {
                             Layout.fillWidth: true
                             text: getString("javaPath", "")
                             placeholderText: qsTr("Auto-detect")
                             onTextChanged: setProp("javaPath", text)
                         }
-                        
+
                         Button {
                             text: qsTr("Browse")
-                            onClicked: if (vm && vm.browseJavaPath) vm.browseJavaPath()
+                            onClicked: if (vm && vm.browseJavaPath)
+                                vm.browseJavaPath()
                         }
-                        
+
                         Button {
                             text: qsTr("Auto")
-                            onClicked: if (vm && vm.autoDetectJava) vm.autoDetectJava()
+                            onClicked: if (vm && vm.autoDetectJava)
+                                vm.autoDetectJava()
                         }
                     }
                 }
             }
-            
+
             // Memory Settings
             GroupBox {
                 Layout.fillWidth: true
                 title: qsTr("Memory")
-                
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingS
-                    
+
                     CheckBox {
                         id: overrideMemoryCheck
                         text: qsTr("Override global memory settings")
                         checked: getBool("overrideMemory", false)
                         onCheckedChanged: setProp("overrideMemory", checked)
                     }
-                    
+
                     GridLayout {
                         columns: 2
                         Layout.fillWidth: true
                         enabled: overrideMemoryCheck.checked
-                        
+
                         Label {
                             text: qsTr("Minimum:")
                             color: ThemeColors.text
                         }
-                        
+
                         RowLayout {
                             SpinBox {
                                 id: minMemSpin
@@ -139,12 +142,12 @@ Rectangle {
                                 color: ThemeColors.textSecondary
                             }
                         }
-                        
+
                         Label {
                             text: qsTr("Maximum:")
                             color: ThemeColors.text
                         }
-                        
+
                         RowLayout {
                             SpinBox {
                                 id: maxMemSpin
@@ -160,7 +163,7 @@ Rectangle {
                             }
                         }
                     }
-                    
+
                     Slider {
                         Layout.fillWidth: true
                         enabled: overrideMemoryCheck.checked
@@ -172,37 +175,43 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Game Window
             GroupBox {
                 Layout.fillWidth: true
                 title: qsTr("Game Window")
-                
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingS
-                    
+
                     CheckBox {
                         id: overrideWindowCheck
                         text: qsTr("Override global window settings")
                         checked: getBool("overrideWindow", false)
                         onCheckedChanged: setProp("overrideWindow", checked)
                     }
-                    
+
                     GridLayout {
                         columns: 4
                         Layout.fillWidth: true
                         enabled: overrideWindowCheck.checked
-                        
-                        Label { text: qsTr("Width:"); color: ThemeColors.text }
+
+                        Label {
+                            text: qsTr("Width:")
+                            color: ThemeColors.text
+                        }
                         SpinBox {
                             from: 640
                             to: 7680
                             value: getInt("windowWidth", 854)
                             onValueChanged: setProp("windowWidth", value)
                         }
-                        
-                        Label { text: qsTr("Height:"); color: ThemeColors.text }
+
+                        Label {
+                            text: qsTr("Height:")
+                            color: ThemeColors.text
+                        }
                         SpinBox {
                             from: 480
                             to: 4320
@@ -210,7 +219,7 @@ Rectangle {
                             onValueChanged: setProp("windowHeight", value)
                         }
                     }
-                    
+
                     CheckBox {
                         text: qsTr("Start maximized")
                         enabled: overrideWindowCheck.checked
@@ -219,23 +228,23 @@ Rectangle {
                     }
                 }
             }
-            
+
             // JVM Arguments
             GroupBox {
                 Layout.fillWidth: true
                 title: qsTr("JVM Arguments")
-                
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingS
-                    
+
                     CheckBox {
                         id: overrideArgsCheck
                         text: qsTr("Override global JVM arguments")
                         checked: getBool("overrideJvmArgs", false)
                         onCheckedChanged: setProp("overrideJvmArgs", checked)
                     }
-                    
+
                     TextArea {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 80
@@ -247,23 +256,23 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Environment Variables
             GroupBox {
                 Layout.fillWidth: true
                 title: qsTr("Environment Variables")
-                
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingS
-                    
+
                     CheckBox {
                         id: overrideEnvCheck
                         text: qsTr("Override global environment variables")
                         checked: getBool("overrideEnv", false)
                         onCheckedChanged: setProp("overrideEnv", checked)
                     }
-                    
+
                     TextArea {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 60
@@ -275,43 +284,52 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Commands
             GroupBox {
                 Layout.fillWidth: true
                 title: qsTr("Custom Commands")
-                
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingS
-                    
+
                     CheckBox {
                         id: overrideCmdsCheck
                         text: qsTr("Override global custom commands")
                         checked: getBool("overrideCommands", false)
                         onCheckedChanged: setProp("overrideCommands", checked)
                     }
-                    
+
                     GridLayout {
                         columns: 2
                         Layout.fillWidth: true
                         enabled: overrideCmdsCheck.checked
-                        
-                        Label { text: qsTr("Pre-launch:"); color: ThemeColors.text }
+
+                        Label {
+                            text: qsTr("Pre-launch:")
+                            color: ThemeColors.text
+                        }
                         TextField {
                             Layout.fillWidth: true
                             text: getString("preLaunchCommand", "")
                             onTextChanged: setProp("preLaunchCommand", text)
                         }
-                        
-                        Label { text: qsTr("Wrapper:"); color: ThemeColors.text }
+
+                        Label {
+                            text: qsTr("Wrapper:")
+                            color: ThemeColors.text
+                        }
                         TextField {
                             Layout.fillWidth: true
                             text: getString("wrapperCommand", "")
                             onTextChanged: setProp("wrapperCommand", text)
                         }
-                        
-                        Label { text: qsTr("Post-exit:"); color: ThemeColors.text }
+
+                        Label {
+                            text: qsTr("Post-exit:")
+                            color: ThemeColors.text
+                        }
                         TextField {
                             Layout.fillWidth: true
                             text: getString("postExitCommand", "")
@@ -320,28 +338,28 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Miscellaneous
             GroupBox {
                 Layout.fillWidth: true
                 title: qsTr("Miscellaneous")
-                
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingS
-                    
+
                     CheckBox {
                         text: qsTr("Close launcher when game starts")
                         checked: getBool("closeOnLaunch", false)
                         onCheckedChanged: setProp("closeOnLaunch", checked)
                     }
-                    
+
                     CheckBox {
                         text: qsTr("Show console while game is running")
                         checked: getBool("showConsole", false)
                         onCheckedChanged: setProp("showConsole", checked)
                     }
-                    
+
                     CheckBox {
                         text: qsTr("Automatically close console when game exits")
                         checked: getBool("autoCloseConsole", true)
@@ -349,8 +367,10 @@ Rectangle {
                     }
                 }
             }
-            
-            Item { Layout.preferredHeight: Theme.spacingL }
+
+            Item {
+                Layout.preferredHeight: Theme.spacingL
+            }
         }
     }
 }

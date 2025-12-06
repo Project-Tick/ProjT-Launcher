@@ -22,19 +22,19 @@ import "../components"
 Rectangle {
     id: javaPage
     color: ThemeColors.background
-    
+
     property var vm: ProjT.settingsVM
     property string javaPath: ""
     property bool autoDetect: true
-    
+
     signal javaPathChanged(string path)
     signal autoDetectChanged(bool enabled)
-    
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingL
         spacing: Theme.spacingM
-        
+
         // Title
         Label {
             text: qsTr("Java Configuration")
@@ -42,7 +42,7 @@ Rectangle {
             font.bold: true
             color: ThemeColors.text
         }
-        
+
         // Description
         Label {
             Layout.fillWidth: true
@@ -50,32 +50,32 @@ Rectangle {
             color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
-        
+
         // Separator
         Rectangle {
             Layout.fillWidth: true
             height: 1
             color: ThemeColors.border
         }
-        
+
         // Auto-detect option
         CheckBox {
             id: autoDetectCheckbox
             text: qsTr("Automatically detect Java")
             checked: autoDetect
             onCheckedChanged: {
-                autoDetect = checked
-                autoDetectChanged(checked)
+                autoDetect = checked;
+                autoDetectChanged(checked);
             }
         }
-        
+
         // Custom path section
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("Custom Java Path")
             enabled: !autoDetectCheckbox.checked
             opacity: enabled ? 1.0 : 0.5
-            
+
             background: Rectangle {
                 y: parent.topPadding - parent.padding
                 width: parent.width
@@ -84,56 +84,58 @@ Rectangle {
                 border.color: ThemeColors.border
                 radius: Theme.radiusS
             }
-            
+
             label: Label {
                 x: Theme.spacingS
                 text: parent.title
                 color: ThemeColors.text
             }
-            
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingS
-                
+
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingS
-                    
+
                     TextField {
                         id: javaPathField
                         Layout.fillWidth: true
                         text: javaPath
                         placeholderText: qsTr("Path to Java executable...")
                         onTextChanged: {
-                            javaPath = text
-                            javaPathChanged(text)
+                            javaPath = text;
+                            javaPathChanged(text);
                         }
                     }
-                    
+
                     ThemedButton {
                         text: qsTr("Browse...")
                         outline: true
                         onClicked: {
-                            if (vm) vm.browseJavaPath()
+                            if (vm)
+                                vm.browseJavaPath();
                         }
                     }
-                    
+
                     ThemedButton {
                         text: qsTr("Detect")
                         primary: true
                         onClicked: {
-                            if (vm) vm.detectJavaInstallations()
+                            if (vm)
+                                vm.detectJavaInstallations();
                         }
                     }
                 }
-                
+
                 // Detected Java installations
                 Label {
                     text: qsTr("Detected Java installations:")
                     color: ThemeColors.text
                     visible: javaList.count > 0
                 }
-                
+
                 ListView {
                     id: javaList
                     Layout.fillWidth: true
@@ -141,19 +143,19 @@ Rectangle {
                     visible: count > 0
                     clip: true
                     model: vm ? vm.detectedJavaList : []
-                    
+
                     delegate: ItemDelegate {
                         width: javaList.width
                         height: 40
-                        
+
                         contentItem: RowLayout {
                             spacing: Theme.spacingS
-                            
+
                             Label {
                                 text: modelData.version || "Java"
                                 color: ThemeColors.text
                             }
-                            
+
                             Label {
                                 Layout.fillWidth: true
                                 text: modelData.path || modelData
@@ -161,53 +163,56 @@ Rectangle {
                                 elide: Text.ElideMiddle
                             }
                         }
-                        
+
                         onClicked: {
-                            javaPathField.text = modelData.path || modelData
+                            javaPathField.text = modelData.path || modelData;
                         }
                     }
-                    
+
                     ScrollBar.vertical: ScrollBar {}
                 }
             }
         }
-        
+
         // Test button
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
+
             ThemedButton {
                 text: qsTr("Test Java")
                 success: true
                 enabled: javaPath.length > 0 || autoDetect
                 onClicked: {
-                    if (vm) vm.testJavaSettings()
+                    if (vm)
+                        vm.testJavaSettings();
                 }
             }
-            
+
             Label {
                 id: testResultLabel
                 color: ThemeColors.success
                 visible: false
             }
         }
-        
-        Item { Layout.fillHeight: true }
+
+        Item {
+            Layout.fillHeight: true
+        }
     }
-    
+
     Connections {
         target: vm
         ignoreUnknownSignals: true
-        
+
         function onJavaPathSelected(path) {
-            javaPathField.text = path
+            javaPathField.text = path;
         }
-        
+
         function onJavaTestResult(success, message) {
-            testResultLabel.text = message
-            testResultLabel.color = success ? ThemeColors.success : ThemeColors.error
-            testResultLabel.visible = true
+            testResultLabel.text = message;
+            testResultLabel.color = success ? ThemeColors.success : ThemeColors.error;
+            testResultLabel.visible = true;
         }
     }
 }

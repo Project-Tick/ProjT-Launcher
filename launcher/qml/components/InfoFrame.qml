@@ -20,25 +20,25 @@ import "../Theme.js" as Theme
 
 Frame {
     id: infoFrame
-    
+
     property string iconSource: ""
     property string name: ""
     property string description: ""
     property string license: ""
     property string issueTrackerUrl: ""
-    
+
     implicitHeight: contentColumn.implicitHeight + topPadding + bottomPadding
-    
+
     background: Rectangle {
         color: ThemeColors.surface
         border.color: ThemeColors.border
         radius: Theme.radiusS
     }
-    
+
     RowLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Icon
         Image {
             id: iconImage
@@ -48,13 +48,13 @@ Frame {
             source: iconSource
             fillMode: Image.PreserveAspectFit
             visible: iconSource.length > 0
-            
+
             // Fallback placeholder
             Rectangle {
                 anchors.fill: parent
                 color: ThemeColors.backgroundAlt
                 visible: iconImage.status !== Image.Ready && iconSource.length > 0
-                
+
                 Label {
                     anchors.centerIn: parent
                     text: "?"
@@ -63,13 +63,13 @@ Frame {
                 }
             }
         }
-        
+
         // Content
         ColumnLayout {
             id: contentColumn
             Layout.fillWidth: true
             spacing: Theme.spacingXS
-            
+
             // Name
             Label {
                 id: nameLabel
@@ -81,17 +81,17 @@ Frame {
                 wrapMode: Text.WordWrap
                 visible: name.length > 0
                 textFormat: Text.RichText
-                onLinkActivated: function(link) {
-                    Qt.openUrlExternally(link)
+                onLinkActivated: function (link) {
+                    Qt.openUrlExternally(link);
                 }
-                
+
                 MouseArea {
                     anchors.fill: parent
                     acceptedButtons: Qt.NoButton
                     cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
                 }
             }
-            
+
             // Description
             Label {
                 id: descriptionLabel
@@ -101,17 +101,17 @@ Frame {
                 wrapMode: Text.WordWrap
                 visible: description.length > 0
                 textFormat: Text.RichText
-                onLinkActivated: function(link) {
-                    Qt.openUrlExternally(link)
+                onLinkActivated: function (link) {
+                    Qt.openUrlExternally(link);
                 }
-                
+
                 MouseArea {
                     anchors.fill: parent
                     acceptedButtons: Qt.NoButton
                     cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
                 }
             }
-            
+
             // License
             Label {
                 id: licenseLabel
@@ -121,17 +121,17 @@ Frame {
                 wrapMode: Text.WordWrap
                 visible: license.length > 0
                 textFormat: Text.RichText
-                onLinkActivated: function(link) {
-                    Qt.openUrlExternally(link)
+                onLinkActivated: function (link) {
+                    Qt.openUrlExternally(link);
                 }
-                
+
                 MouseArea {
                     anchors.fill: parent
                     acceptedButtons: Qt.NoButton
                     cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
                 }
             }
-            
+
             // Issue tracker
             Label {
                 id: issueTrackerLabel
@@ -141,10 +141,10 @@ Frame {
                 wrapMode: Text.WordWrap
                 visible: issueTrackerUrl.length > 0
                 textFormat: Text.RichText
-                onLinkActivated: function(link) {
-                    Qt.openUrlExternally(link)
+                onLinkActivated: function (link) {
+                    Qt.openUrlExternally(link);
                 }
-                
+
                 MouseArea {
                     anchors.fill: parent
                     acceptedButtons: Qt.NoButton

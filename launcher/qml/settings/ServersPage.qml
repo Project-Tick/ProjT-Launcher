@@ -22,39 +22,42 @@ Rectangle {
     id: root
     objectName: "serversPage"
     color: ThemeColors.background
-    
+
     property var vm: ProjT.instanceVM
-    
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
         spacing: Theme.spacingM
-        
+
         // Header
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
+
             Text {
                 text: qsTr("Servers")
                 font.pixelSize: 24
                 font.weight: Font.Bold
                 color: ThemeColors.text
             }
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             Button {
                 text: qsTr("Open servers.dat")
-                onClicked: if (root.vm) root.vm.openGameFolder()
-                
+                onClicked: if (root.vm)
+                    root.vm.openGameFolder()
+
                 background: Rectangle {
                     color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
                     border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 contentItem: Text {
                     text: parent.text
                     color: ThemeColors.text
@@ -63,30 +66,30 @@ Rectangle {
                 }
             }
         }
-        
+
         Text {
             text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
             font.pixelSize: 14
             color: ThemeColors.textSecondary
             visible: root.vm !== null
         }
-        
+
         // Toolbar
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
-            
+
             Button {
                 text: qsTr("Add")
                 onClicked: addServerDialog.open()
-                
+
                 background: Rectangle {
                     color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
                     border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 contentItem: Text {
                     text: parent.text
                     color: ThemeColors.text
@@ -94,24 +97,24 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                 }
             }
-            
+
             Button {
                 text: qsTr("Edit")
                 enabled: serversList.currentIndex >= 0
                 onClicked: {
                     if (serversList.currentIndex >= 0) {
-                        editServerDialog.serverIndex = serversList.currentIndex
-                        editServerDialog.open()
+                        editServerDialog.serverIndex = serversList.currentIndex;
+                        editServerDialog.open();
                     }
                 }
-                
+
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? ThemeColors.hover : ThemeColors.surface) : ThemeColors.disabled
                     border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 contentItem: Text {
                     text: parent.text
                     color: parent.enabled ? ThemeColors.text : ThemeColors.textSecondary
@@ -119,19 +122,19 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                 }
             }
-            
+
             Button {
                 text: qsTr("Delete")
                 enabled: serversList.currentIndex >= 0
                 onClicked: deleteServerDialog.open()
-                
+
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? ThemeColors.error : ThemeColors.surface) : ThemeColors.disabled
                     border.color: parent.enabled ? ThemeColors.error : ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 contentItem: Text {
                     text: parent.text
                     color: parent.enabled ? (parent.hovered ? ThemeColors.surface : ThemeColors.error) : ThemeColors.textSecondary
@@ -139,29 +142,29 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                 }
             }
-            
+
             Rectangle {
                 width: 1
                 height: 24
                 color: ThemeColors.hover
             }
-            
+
             Button {
                 text: qsTr("Move Up")
                 enabled: serversList.currentIndex > 0
                 onClicked: {
                     if (root.vm && serversList.currentIndex > 0) {
-                        root.vm.moveServerUp(serversList.currentIndex)
+                        root.vm.moveServerUp(serversList.currentIndex);
                     }
                 }
-                
+
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? ThemeColors.hover : ThemeColors.surface) : ThemeColors.disabled
                     border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 contentItem: Text {
                     text: parent.text
                     color: parent.enabled ? ThemeColors.text : ThemeColors.textSecondary
@@ -169,23 +172,23 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                 }
             }
-            
+
             Button {
                 text: qsTr("Move Down")
                 enabled: serversList.currentIndex >= 0 && serversList.currentIndex < serversList.count - 1
                 onClicked: {
                     if (root.vm && serversList.currentIndex >= 0) {
-                        root.vm.moveServerDown(serversList.currentIndex)
+                        root.vm.moveServerDown(serversList.currentIndex);
                     }
                 }
-                
+
                 background: Rectangle {
                     color: parent.enabled ? (parent.hovered ? ThemeColors.hover : ThemeColors.surface) : ThemeColors.disabled
                     border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 contentItem: Text {
                     text: parent.text
                     color: parent.enabled ? ThemeColors.text : ThemeColors.textSecondary
@@ -193,22 +196,25 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                 }
             }
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             Button {
                 text: qsTr("Refresh")
                 onClicked: {
-                    if (root.vm) root.vm.refreshServers()
+                    if (root.vm)
+                        root.vm.refreshServers();
                 }
-                
+
                 background: Rectangle {
                     color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
                     border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 contentItem: Text {
                     text: parent.text
                     color: ThemeColors.text
@@ -217,7 +223,7 @@ Rectangle {
                 }
             }
         }
-        
+
         // Servers List
         ListView {
             id: serversList
@@ -225,12 +231,12 @@ Rectangle {
             Layout.fillHeight: true
             clip: true
             spacing: Theme.spacingXS
-            
+
             // Placeholder model - will be replaced with actual servers model
             model: ListModel {
                 id: serversModel
             }
-            
+
             // Empty state
             Text {
                 anchors.centerIn: parent
@@ -240,7 +246,7 @@ Rectangle {
                 font.pixelSize: 14
                 visible: serversList.count === 0
             }
-            
+
             delegate: Rectangle {
                 width: serversList.width
                 height: 70
@@ -248,29 +254,29 @@ Rectangle {
                 border.color: serversList.currentIndex === index ? ThemeColors.accent : ThemeColors.hover
                 border.width: 1
                 radius: Theme.radiusS
-                
+
                 MouseArea {
                     anchors.fill: parent
                     onClicked: serversList.currentIndex = index
                     onDoubleClicked: {
                         // Edit server
-                        editServerDialog.serverIndex = index
-                        editServerDialog.open()
+                        editServerDialog.serverIndex = index;
+                        editServerDialog.open();
                     }
                 }
-                
+
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: Theme.spacingS
                     spacing: Theme.spacingM
-                    
+
                     // Server icon placeholder
                     Rectangle {
                         width: 48
                         height: 48
                         color: ThemeColors.disabled
                         radius: Theme.radiusS
-                        
+
                         Image {
                             anchors.fill: parent
                             anchors.margins: 4
@@ -278,7 +284,7 @@ Rectangle {
                             fillMode: Image.PreserveAspectFit
                             visible: source !== ""
                         }
-                        
+
                         Text {
                             anchors.centerIn: parent
                             text: "🖥️"
@@ -286,26 +292,26 @@ Rectangle {
                             visible: !model.icon
                         }
                     }
-                    
+
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         spacing: 2
-                        
+
                         Text {
                             text: model.name || qsTr("Server %1").arg(index + 1)
                             color: ThemeColors.text
                             font.weight: Font.DemiBold
                             font.pixelSize: 14
                         }
-                        
+
                         Text {
                             text: model.address || "localhost:25565"
                             color: ThemeColors.textSecondary
                             font.pixelSize: 12
                             font.family: "monospace"
                         }
-                        
+
                         Text {
                             text: model.motd || ""
                             color: ThemeColors.textSecondary
@@ -315,25 +321,29 @@ Rectangle {
                             visible: model.motd !== undefined
                         }
                     }
-                    
+
                     // Status indicator
                     Rectangle {
                         width: 12
                         height: 12
                         radius: 6
                         color: {
-                            if (model.status === "online") return ThemeColors.success;
-                            if (model.status === "offline") return ThemeColors.error;
+                            if (model.status === "online")
+                                return ThemeColors.success;
+                            if (model.status === "offline")
+                                return ThemeColors.error;
                             return ThemeColors.warning;
                         }
-                        
+
                         ToolTip.visible: statusMouseArea.containsMouse
                         ToolTip.text: {
-                            if (model.status === "online") return qsTr("Online - %1 players").arg(model.players || 0);
-                            if (model.status === "offline") return qsTr("Offline");
+                            if (model.status === "online")
+                                return qsTr("Online - %1 players").arg(model.players || 0);
+                            if (model.status === "offline")
+                                return qsTr("Offline");
                             return qsTr("Unknown");
                         }
-                        
+
                         MouseArea {
                             id: statusMouseArea
                             anchors.fill: parent
@@ -344,7 +354,7 @@ Rectangle {
             }
         }
     }
-    
+
     // Add Server Dialog
     Dialog {
         id: addServerDialog
@@ -354,43 +364,43 @@ Rectangle {
         x: (root.width - width) / 2
         y: (root.height - height) / 2
         width: 400
-        
+
         ColumnLayout {
             anchors.fill: parent
             spacing: Theme.spacingS
-            
+
             Label {
                 text: qsTr("Server Name:")
                 color: ThemeColors.text
             }
-            
+
             TextField {
                 id: newServerNameField
                 Layout.fillWidth: true
                 placeholderText: qsTr("My Server")
             }
-            
+
             Label {
                 text: qsTr("Server Address:")
                 color: ThemeColors.text
             }
-            
+
             TextField {
                 id: newServerAddressField
                 Layout.fillWidth: true
                 placeholderText: qsTr("server.example.com:25565")
             }
         }
-        
+
         onAccepted: {
             if (root.vm && newServerNameField.text.length > 0 && newServerAddressField.text.length > 0) {
-                root.vm.addServer(newServerNameField.text, newServerAddressField.text)
-                newServerNameField.text = ""
-                newServerAddressField.text = ""
+                root.vm.addServer(newServerNameField.text, newServerAddressField.text);
+                newServerNameField.text = "";
+                newServerAddressField.text = "";
             }
         }
     }
-    
+
     // Edit Server Dialog
     Dialog {
         id: editServerDialog
@@ -400,49 +410,49 @@ Rectangle {
         x: (root.width - width) / 2
         y: (root.height - height) / 2
         width: 400
-        
+
         property int serverIndex: -1
-        
+
         ColumnLayout {
             anchors.fill: parent
             spacing: Theme.spacingS
-            
+
             Label {
                 text: qsTr("Server Name:")
                 color: ThemeColors.text
             }
-            
+
             TextField {
                 id: editServerNameField
                 Layout.fillWidth: true
             }
-            
+
             Label {
                 text: qsTr("Server Address:")
                 color: ThemeColors.text
             }
-            
+
             TextField {
                 id: editServerAddressField
                 Layout.fillWidth: true
             }
         }
-        
+
         onOpened: {
             if (serverIndex >= 0 && root.vm) {
                 // Load current server data
-                editServerNameField.text = serversModel.get(serverIndex).name || ""
-                editServerAddressField.text = serversModel.get(serverIndex).address || ""
+                editServerNameField.text = serversModel.get(serverIndex).name || "";
+                editServerAddressField.text = serversModel.get(serverIndex).address || "";
             }
         }
-        
+
         onAccepted: {
             if (root.vm && serverIndex >= 0) {
-                root.vm.editServer(serverIndex, editServerNameField.text, editServerAddressField.text)
+                root.vm.editServer(serverIndex, editServerNameField.text, editServerAddressField.text);
             }
         }
     }
-    
+
     // Delete Server Dialog
     Dialog {
         id: deleteServerDialog
@@ -451,16 +461,16 @@ Rectangle {
         standardButtons: Dialog.Yes | Dialog.No
         x: (root.width - width) / 2
         y: (root.height - height) / 2
-        
+
         Label {
             text: qsTr("Are you sure you want to delete this server?")
             color: ThemeColors.error
             wrapMode: Text.WordWrap
         }
-        
+
         onAccepted: {
             if (root.vm && serversList.currentIndex >= 0) {
-                root.vm.deleteServer(serversList.currentIndex)
+                root.vm.deleteServer(serversList.currentIndex);
             }
         }
     }
