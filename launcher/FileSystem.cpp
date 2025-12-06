@@ -696,26 +696,27 @@ bool deletePath(QString path)
     return err.value() == 0;
 }
 
-#if defined(Q_OS_LINUX) && defined(WITH_QTDBUS)
-#include <QDBusMessage>
-#include <QDBusConnection>
-#include <QDBusUnixFileDescriptor>
-#include <fcntl.h>
-#include <unistd.h>
+// Note: Flatpak trash support via DBus requires QtDBus to be properly linked in CMake
+// Currently disabled until QtDBus dependency is properly configured
+// TODO: Re-enable when QtDBus is added to target_link_libraries in CMakeLists.txt
+#if 0 && defined(Q_OS_LINUX) && defined(WITH_QTDBUS)
+#    include <QDBusConnection>
+#    include <QDBusMessage>
+#    include <QDBusUnixFileDescriptor>
+#    include <fcntl.h>
+#    include <unistd.h>
 #endif
 
 bool trash(QString path, QString* pathInTrash)
 {
-#if defined(Q_OS_LINUX)
+#if 0 && defined(Q_OS_LINUX)
     if (DesktopServices::isFlatpak()) {
 #ifdef WITH_QTDBUS
         // Implementation using org.freedesktop.portal.Trash
-        QDBusMessage message = QDBusMessage::createCallMessage(
-            "org.freedesktop.portal.Desktop",
-            "/org/freedesktop/portal/desktop",
-            "org.freedesktop.portal.Trash",
-            "TrashFile"
-        );
+        QDBusMessage message = QDBusMessage::createCallMessage("org.freedesktop.portal.Desktop",
+                                                                "/org/freedesktop/portal/desktop",
+                                                                "org.freedesktop.portal.Trash",
+                                                                "TrashFile");
 
         // We need to open the file and pass the file descriptor
         int fd = open(QFile::encodeName(path).constData(), O_RDWR);
@@ -727,7 +728,7 @@ bool trash(QString path, QString* pathInTrash)
             if (reply.type() != QDBusMessage::ErrorMessage) {
                 // The portal returns 0 on success, 1 on user cancelled, 2 on error
                 if (!reply.arguments().isEmpty() && reply.arguments().first().toInt() == 0) {
-                     return true;
+                    return true;
                 }
             } else {
                 qWarning() << "Flatpak trash failed:" << reply.errorMessage();
