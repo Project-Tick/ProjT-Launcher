@@ -29,7 +29,9 @@ class ExternalResourcesPage;
 
 /* This page is used as a base for pages in which the user can manage external resources
  * related to the game, such as mods, shaders or resource packs. */
-class ExternalResourcesPage : public QMainWindow, public BasePage {
+class ExternalResourcesPage
+    : public QMainWindow
+    , public BasePage {
     Q_OBJECT
 
    public:

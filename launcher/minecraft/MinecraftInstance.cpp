@@ -388,7 +388,8 @@ bool MinecraftInstance::supportsDemo() const
 {
     Version instance_ver{ getPackProfile()->getComponentVersion("net.minecraft") };
     // Demo mode was introduced in 1.3.1: https://minecraft.wiki/w/Demo_mode#History
-    // Note: This check may not work correctly for non-release versions due to version string formatting. Demo support is based on release versions.
+    // Note: This check may not work correctly for non-release versions due to version string formatting. Demo support is based on release
+    // versions.
     return instance_ver >= Version("1.3.1");
 }
 
@@ -601,7 +602,8 @@ QStringList MinecraftInstance::javaArguments()
 
     if (javaVersion.isModular() && shouldApplyOnlineFixes())
         // allow reflective access to java.net - required by the skin fix
-        args << "--add-opens" << "java.base/java.net=ALL-UNNAMED";
+        args << "--add-opens"
+             << "java.base/java.net=ALL-UNNAMED";
 
     return args;
 }
@@ -901,8 +903,10 @@ QString MinecraftInstance::createLaunchScript(AuthSessionPtr session, MinecraftT
 QStringList MinecraftInstance::verboseDescription(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin)
 {
     QStringList out;
-    out << "Main Class:" << "  " + getMainClass() << "";
-    out << "Native path:" << "  " + getNativePath() << "";
+    out << "Main Class:"
+        << "  " + getMainClass() << "";
+    out << "Native path:"
+        << "  " + getNativePath() << "";
 
     auto profile = m_components->getProfile();
 

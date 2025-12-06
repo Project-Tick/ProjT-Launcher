@@ -55,7 +55,9 @@
 
 #include "modplatform/atlauncher/ATLPackInstallTask.h"
 
-class AtlUserInteractionSupportImpl : public QObject, public ATLauncher::UserInteractionSupport {
+class AtlUserInteractionSupportImpl
+    : public QObject
+    , public ATLauncher::UserInteractionSupport {
     Q_OBJECT
 
    public:

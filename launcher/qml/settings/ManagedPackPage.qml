@@ -7,238 +7,263 @@
  *
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
-
-
-/**
- * Managed Pack Page – Phase 11.C.3
- * Displays information about managed pack (CurseForge, Modrinth, etc.)
- */
 
 Rectangle {
     id: root
     objectName: "managedPackPage"
-    color: Theme.background
-    
+    color: ThemeColors.background
+
     property var vm: ProjT.instanceVM
     property bool isManagedPack: vm ? vm.isManagedPack : false
-    
+
+    // Handle signals from ViewModel
+    Connections {
+        target: root.vm
+        function onPackExportRequested() {
+            // Open export dialog or file save dialog
+            if (ProjT && ProjT.launcherVM && ProjT.launcherVM.browseForSave) {
+                var filter = qsTr("Modpack files (*.zip *.mrpack)");
+                var path = ProjT.launcherVM.browseForSave(qsTr("Export Pack"), filter);
+                if (path && path.length > 0) {
+                    // Export logic would go here
+                    console.log("Export pack to:", path);
+                }
+            }
+        }
+
+        function onPackUpdateCheckResult(hasUpdate, newVersion) {
+            if (hasUpdate) {
+                updateAvailableDialog.newVersion = newVersion;
+                updateAvailableDialog.open();
+            } else {
+                noUpdateDialog.open();
+            }
+        }
+    }
+
     Flickable {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
         contentHeight: column.height
         clip: true
-        
+
         ColumnLayout {
             id: column
             width: parent.width
             spacing: Theme.spacingM
-            
+
             Text {
                 text: qsTr("Managed Pack")
                 font.pixelSize: 24
                 font.weight: Font.Bold
-                color: Theme.foreground
+                color: ThemeColors.text
             }
-            
+
             Text {
                 text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
                 font.pixelSize: 14
-                color: Theme.mutedForeground
+                color: ThemeColors.textSecondary
                 visible: root.vm !== null
             }
-            
+
             // Not a managed pack notice
             Rectangle {
                 Layout.fillWidth: true
                 height: 100
-                color: Theme.mantle
-                border.color: Theme.surface1
+                color: ThemeColors.disabled
+                border.color: ThemeColors.hover
                 border.width: 1
                 radius: Theme.radiusS
                 visible: !root.isManagedPack
-                
+
                 ColumnLayout {
                     anchors.centerIn: parent
                     spacing: Theme.spacingS
-                    
+
                     Text {
                         text: "📦"
                         font.pixelSize: 32
                         horizontalAlignment: Text.AlignHCenter
                         Layout.alignment: Qt.AlignHCenter
                     }
-                    
+
                     Text {
                         text: qsTr("This instance is not a managed pack")
-                        color: Theme.mutedForeground
+                        color: ThemeColors.textSecondary
                         font.pixelSize: 14
                         horizontalAlignment: Text.AlignHCenter
                         Layout.alignment: Qt.AlignHCenter
                     }
                 }
             }
-            
+
             // Pack Information
             GroupBox {
                 title: qsTr("Pack Information")
                 Layout.fillWidth: true
                 visible: root.isManagedPack
-                
+
                 background: Rectangle {
-                    color: Theme.mantle
-                    border.color: Theme.surface1
+                    color: ThemeColors.disabled
+                    border.color: ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 label: Text {
                     text: parent.title
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     font.weight: Font.DemiBold
                     leftPadding: Theme.spacingS
                 }
-                
+
                 GridLayout {
                     width: parent.width
                     columns: 2
                     columnSpacing: Theme.spacingL
                     rowSpacing: Theme.spacingS
-                    
-                    Text { 
+
+                    Text {
                         text: qsTr("Platform:")
-                        color: Theme.mutedForeground
+                        color: ThemeColors.textSecondary
                         font.pixelSize: 13
                     }
                     RowLayout {
                         spacing: Theme.spacingS
-                        
+
                         Image {
                             width: 20
                             height: 20
                             source: Theme.platformIcon(root.vm ? root.vm.managedPackType : "")
                             visible: root.vm && root.vm.managedPackType
                         }
-                        
-                        Text { 
+
+                        Text {
                             text: root.vm ? root.vm.managedPackType : ""
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             font.pixelSize: 13
                         }
                     }
-                    
-                    Text { 
+
+                    Text {
                         text: qsTr("Pack Name:")
-                        color: Theme.mutedForeground
+                        color: ThemeColors.textSecondary
                         font.pixelSize: 13
                     }
-                    Text { 
+                    Text {
                         text: root.vm ? root.vm.managedPackName : ""
-                        color: Theme.foreground
+                        color: ThemeColors.text
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                     }
-                    
-                    Text { 
+
+                    Text {
                         text: qsTr("Version:")
-                        color: Theme.mutedForeground
+                        color: ThemeColors.textSecondary
                         font.pixelSize: 13
                     }
-                    Text { 
+                    Text {
                         text: root.vm ? root.vm.managedPackVersionName : ""
-                        color: Theme.accent
+                        color: ThemeColors.accent
                         font.pixelSize: 13
                     }
                 }
             }
-            
+
             // Update Section
             GroupBox {
                 title: qsTr("Updates")
                 Layout.fillWidth: true
                 visible: root.isManagedPack
-                
+
                 background: Rectangle {
-                    color: Theme.mantle
-                    border.color: Theme.surface1
+                    color: ThemeColors.disabled
+                    border.color: ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 label: Text {
                     text: parent.title
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     font.weight: Font.DemiBold
                     leftPadding: Theme.spacingS
                 }
-                
+
                 ColumnLayout {
                     width: parent.width
                     spacing: Theme.spacingM
-                    
+
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: Theme.spacingM
-                        
+
                         Rectangle {
                             width: 12
                             height: 12
                             radius: 6
-                            color: root.vm && root.vm.hasUpdateAvailable ? Theme.green : Theme.mutedForeground
+                            color: root.vm && root.vm.hasUpdateAvailable ? ThemeColors.success : ThemeColors.textSecondary
                         }
-                        
+
                         Text {
-                            text: root.vm && root.vm.hasUpdateAvailable 
-                                ? qsTr("Update available!") 
-                                : qsTr("No updates available")
-                            color: root.vm && root.vm.hasUpdateAvailable ? Theme.green : Theme.foreground
+                            text: root.vm && root.vm.hasUpdateAvailable ? qsTr("Update available!") : qsTr("No updates available")
+                            color: root.vm && root.vm.hasUpdateAvailable ? ThemeColors.success : ThemeColors.text
                             font.pixelSize: 14
                         }
-                        
-                        Item { Layout.fillWidth: true }
-                        
+
+                        Item {
+                            Layout.fillWidth: true
+                        }
+
                         Button {
                             text: qsTr("Check for Updates")
                             onClicked: {
-                                if (root.vm) root.vm.checkForPackUpdates()
+                                if (root.vm)
+                                    root.vm.checkForPackUpdates();
                             }
-                            
+
                             background: Rectangle {
-                                color: parent.hovered ? Theme.surface1 : Theme.surface0
-                                border.color: Theme.surface2
+                                color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                                border.color: ThemeColors.border
                                 border.width: 1
                                 radius: Theme.radiusS
                             }
-                            
+
                             contentItem: Text {
                                 text: parent.text
-                                color: Theme.foreground
+                                color: ThemeColors.text
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
                         }
                     }
-                    
+
                     Button {
                         text: qsTr("Update Pack")
                         visible: root.vm && root.vm.hasUpdateAvailable
                         onClicked: {
-                            if (root.vm) root.vm.updatePack()
+                            if (root.vm)
+                                root.vm.updatePack();
                         }
-                        
+
                         background: Rectangle {
-                            color: parent.hovered ? Qt.lighter(Theme.accent, 1.1) : Theme.accent
+                            color: parent.hovered ? Qt.lighter(ThemeColors.accent, 1.1) : ThemeColors.accent
                             radius: Theme.radiusS
                         }
-                        
+
                         contentItem: Text {
                             text: parent.text
-                            color: Theme.base
+                            color: ThemeColors.surface
                             font.weight: Font.DemiBold
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -246,80 +271,119 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Actions
             GroupBox {
                 title: qsTr("Actions")
                 Layout.fillWidth: true
                 visible: root.isManagedPack
-                
+
                 background: Rectangle {
-                    color: Theme.mantle
-                    border.color: Theme.surface1
+                    color: ThemeColors.disabled
+                    border.color: ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 label: Text {
                     text: parent.title
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     font.weight: Font.DemiBold
                     leftPadding: Theme.spacingS
                 }
-                
+
                 RowLayout {
                     width: parent.width
                     spacing: Theme.spacingM
-                    
+
                     Button {
                         text: qsTr("View Online")
                         onClicked: {
                             if (root.vm && root.vm.managedPackUrl) {
-                                Qt.openUrlExternally(root.vm.managedPackUrl)
+                                Qt.openUrlExternally(root.vm.managedPackUrl);
                             }
                         }
-                        
+
                         background: Rectangle {
-                            color: parent.hovered ? Theme.surface1 : Theme.surface0
-                            border.color: Theme.surface2
+                            color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                            border.color: ThemeColors.border
                             border.width: 1
                             radius: Theme.radiusS
                         }
-                        
+
                         contentItem: Text {
                             text: parent.text
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
-                    
+
                     Button {
                         text: qsTr("Export Pack")
                         onClicked: {
-                            if (root.vm) root.vm.exportPack()
+                            if (root.vm)
+                                root.vm.exportPack();
                         }
-                        
+
                         background: Rectangle {
-                            color: parent.hovered ? Theme.surface1 : Theme.surface0
-                            border.color: Theme.surface2
+                            color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                            border.color: ThemeColors.border
                             border.width: 1
                             radius: Theme.radiusS
                         }
-                        
+
                         contentItem: Text {
                             text: parent.text
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
-                    
-                    Item { Layout.fillWidth: true }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
                 }
             }
-            
-            Item { Layout.fillHeight: true }
+
+            Item {
+                Layout.fillHeight: true
+            }
+        }
+    }
+
+    // Update Available Dialog
+    Dialog {
+        id: updateAvailableDialog
+        title: qsTr("Update Available")
+        modal: true
+        standardButtons: Dialog.Ok
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+
+        property string newVersion: ""
+
+        Label {
+            text: qsTr("A new version of this pack is available: %1").arg(updateAvailableDialog.newVersion)
+            color: ThemeColors.text
+            wrapMode: Text.WordWrap
+        }
+    }
+
+    // No Update Dialog
+    Dialog {
+        id: noUpdateDialog
+        title: qsTr("No Updates")
+        modal: true
+        standardButtons: Dialog.Ok
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+
+        Label {
+            text: qsTr("You are using the latest version of this pack.")
+            color: ThemeColors.text
+            wrapMode: Text.WordWrap
         }
     }
 }

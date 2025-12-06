@@ -15,12 +15,13 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "components"
 import "Theme.js" as Theme
 
 Rectangle {
     objectName: "logs"
-    color: Theme.background
+    color: ThemeColors.background
     width: parent ? parent.width : 640
     height: parent ? parent.height : 480
     readonly property var vm: ProjT.logsVM
@@ -31,7 +32,7 @@ Rectangle {
         spacing: Theme.spacingS
         Component.onCompleted: {
             if (vm) {
-                vm.loadLogs(vm.selectedLog)
+                vm.loadLogs(vm.selectedLog);
             }
         }
 
@@ -52,12 +53,12 @@ Rectangle {
                 textRole: ""
                 onActivated: {
                     if (vm && currentIndex >= 0 && currentIndex < model.length) {
-                        vm.selectedLog = model[currentIndex]
+                        vm.selectedLog = model[currentIndex];
                     }
                 }
                 Component.onCompleted: {
                     if (vm && vm.logList.length > 0 && vm.selectedLog === "") {
-                        vm.selectedLog = vm.logList[0]
+                        vm.selectedLog = vm.logList[0];
                     }
                 }
                 delegate: ItemDelegate {
@@ -65,8 +66,8 @@ Rectangle {
                     text: modelData
                     highlighted: logSelector.currentIndex === index
                     onClicked: {
-                        logSelector.currentIndex = index
-                        logSelector.activated(index)
+                        logSelector.currentIndex = index;
+                        logSelector.activated(index);
                     }
                 }
             }
@@ -78,7 +79,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onClicked: {
                     if (vm) {
-                        vm.loadLogs(vm.selectedLog)
+                        vm.loadLogs(vm.selectedLog);
                     }
                 }
             }
@@ -89,7 +90,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onClicked: {
                     if (vm) {
-                        vm.clearLogs(vm.selectedLog)
+                        vm.clearLogs(vm.selectedLog);
                     }
                 }
             }
@@ -99,7 +100,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onToggled: {
                     if (vm) {
-                        vm.setTailing(checked)
+                        vm.setTailing(checked);
                     }
                 }
             }
@@ -109,7 +110,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onToggled: {
                     if (vm) {
-                        vm.setWrapLines(checked)
+                        vm.setWrapLines(checked);
                     }
                 }
             }
@@ -119,7 +120,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onToggled: {
                     if (vm) {
-                        vm.setColorLines(checked)
+                        vm.setColorLines(checked);
                     }
                 }
             }
@@ -141,14 +142,16 @@ Rectangle {
                     text: vm ? vm.logText : ""
                     selectByMouse: true
                     font.family: "Noto Sans Mono"
-                    color: Theme.textPrimary
-                    background: Rectangle { color: Theme.surfaceVariant }
+                    color: ThemeColors.text
+                    background: Rectangle {
+                        color: ThemeColors.backgroundAlt
+                    }
                 }
             }
 
             Rectangle {
                 anchors.fill: parent
-                color: Theme.surfaceVariant
+                color: ThemeColors.backgroundAlt
                 opacity: vm ? (vm.busy ? 0.55 : 0) : 0
                 visible: vm ? vm.busy : false
             }
@@ -160,7 +163,7 @@ Rectangle {
             Label {
                 anchors.centerIn: parent
                 text: vm && vm.busy ? vm.busyReason : ""
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 visible: vm ? (vm.busy && vm.busyReason.length > 0) : false
             }
         }

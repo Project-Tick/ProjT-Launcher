@@ -74,44 +74,59 @@ QVariant Technic::ListModel::data(const QModelIndex& index, int role) const
 
     Modpack pack = modpacks.at(pos);
     switch (role) {
-        case Qt::ToolTipRole: {
-            if (pack.description.length() > 100) {
-                // some magic to prevent to long tooltips and replace html linebreaks
-                QString edit = pack.description.left(97);
-                edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
-                return edit;
-            }
-            return pack.description;
+    case Qt::ToolTipRole: {
+        if (pack.description.length() > 100) {
+            // some magic to prevent to long tooltips and replace html linebreaks
+            QString edit = pack.description.left(97);
+            edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
+            return edit;
         }
-        case Qt::DecorationRole: {
-            if (m_logoMap.contains(pack.logoName)) {
-                return (m_logoMap.value(pack.logoName));
-            }
-            QIcon icon = QIcon::fromTheme("screenshot-placeholder");
-            ((ListModel*)this)->requestLogo(pack.logoName, pack.logoUrl);
-            return icon;
+        return pack.description;
+    }
+    case Qt::DecorationRole: {
+        if (m_logoMap.contains(pack.logoName)) {
+            return (m_logoMap.value(pack.logoName));
         }
-        case Qt::UserRole: {
-            QVariant v;
-            v.setValue(pack);
-            return v;
-        }
-        case Qt::DisplayRole:
-            return pack.name;
-        case Qt::SizeHintRole:
-            return QSize(0, 58);
-        // Custom data
-        case UserDataTypes::TITLE:
-            return pack.name;
-        case UserDataTypes::DESCRIPTION:
-            return pack.description;
-        case UserDataTypes::INSTALLED:
-            return false;
-        default:
-            break;
+        QIcon icon = QIcon::fromTheme("screenshot-placeholder");
+        ((ListModel*)this)->requestLogo(pack.logoName, pack.logoUrl);
+        return icon;
+    }
+    case Qt::UserRole: {
+        QVariant v;
+        v.setValue(pack);
+        return v;
+    }
+    case Qt::DisplayRole:
+        return pack.name;
+    case Qt::SizeHintRole:
+        return QSize(0, 58);
+    // Custom data for QML
+    case NameRole:
+    case UserDataTypes::TITLE:
+        return pack.name;
+    case DescriptionRole:
+    case UserDataTypes::DESCRIPTION:
+        return pack.description;
+    case IconUrlRole:
+        return pack.logoUrl;
+    case PackDataRole: {
+        QVariant v;
+        v.setValue(pack);
+        return v;
+    }
+    case UserDataTypes::INSTALLED:
+        return false;
+    default:
+        break;
     }
 
     return {};
+}
+
+QHash<int, QByteArray> Technic::ListModel::roleNames() const
+{
+    return { { NameRole, "name" },         { DescriptionRole, "description" }, { IconUrlRole, "iconUrl" },
+             { PackDataRole, "packData" }, { Qt::DisplayRole, "display" },     { Qt::ToolTipRole, "toolTip" } };
 }
 
 int Technic::ListModel::columnCount(const QModelIndex& parent) const
@@ -197,54 +212,54 @@ void Technic::ListModel::searchRequestFinished()
         auto root = Json::requireObject(doc);
 
         switch (searchMode) {
-            case List: {
-                auto objs = Json::requireArray(root, "modpacks");
-                for (auto technicPack : objs) {
-                    Modpack pack;
-                    auto technicPackObject = Json::requireObject(technicPack);
-                    pack.name = Json::requireString(technicPackObject, "name");
-                    pack.slug = Json::requireString(technicPackObject, "slug");
-                    if (pack.slug == "vanilla")
-                        continue;
-
-                    auto rawURL = Json::ensureString(technicPackObject, "iconUrl", "null");
-                    if (rawURL == "null") {
-                        pack.logoUrl = "null";
-                        pack.logoName = "null";
-                    } else {
-                        pack.logoUrl = rawURL;
-                        pack.logoName = pack.slug + "." + QFileInfo(QUrl(rawURL).fileName()).suffix();
-                    }
-                    pack.broken = false;
-                    newList.append(pack);
-                }
-                break;
-            }
-            case Single: {
-                if (root.contains("error")) {
-                    // Invalid API url
-                    break;
-                }
-
+        case List: {
+            auto objs = Json::requireArray(root, "modpacks");
+            for (auto technicPack : objs) {
                 Modpack pack;
-                pack.name = Json::requireString(root, "displayName");
-                pack.slug = Json::requireString(root, "name");
+                auto technicPackObject = Json::requireObject(technicPack);
+                pack.name = Json::requireString(technicPackObject, "name");
+                pack.slug = Json::requireString(technicPackObject, "slug");
+                if (pack.slug == "vanilla")
+                    continue;
 
-                if (root.contains("icon")) {
-                    auto iconObj = Json::requireObject(root, "icon");
-                    auto iconUrl = Json::requireString(iconObj, "url");
-
-                    pack.logoUrl = iconUrl;
-                    pack.logoName = pack.slug + "." + QFileInfo(QUrl(iconUrl).fileName()).suffix();
-                } else {
+                auto rawURL = Json::ensureString(technicPackObject, "iconUrl", "null");
+                if (rawURL == "null") {
                     pack.logoUrl = "null";
                     pack.logoName = "null";
+                } else {
+                    pack.logoUrl = rawURL;
+                    pack.logoName = pack.slug + "." + QFileInfo(QUrl(rawURL).fileName()).suffix();
                 }
-
                 pack.broken = false;
                 newList.append(pack);
+            }
+            break;
+        }
+        case Single: {
+            if (root.contains("error")) {
+                // Invalid API url
                 break;
             }
+
+            Modpack pack;
+            pack.name = Json::requireString(root, "displayName");
+            pack.slug = Json::requireString(root, "name");
+
+            if (root.contains("icon")) {
+                auto iconObj = Json::requireObject(root, "icon");
+                auto iconUrl = Json::requireString(iconObj, "url");
+
+                pack.logoUrl = iconUrl;
+                pack.logoName = pack.slug + "." + QFileInfo(QUrl(iconUrl).fileName()).suffix();
+            } else {
+                pack.logoUrl = "null";
+                pack.logoName = "null";
+            }
+
+            pack.broken = false;
+            newList.append(pack);
+            break;
+        }
         }
     } catch (const JSONValidationError& err) {
         qCritical() << "Couldn't parse technic search results:" << err.cause();

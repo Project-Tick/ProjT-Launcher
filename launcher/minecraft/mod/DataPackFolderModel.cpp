@@ -82,108 +82,108 @@ QVariant DataPackFolderModel::data(const QModelIndex& index, int role) const
     int column = index.column();
 
     switch (role) {
-        case Qt::DisplayRole:
-            switch (column) {
-                case NameColumn:
-                    return m_resources[row]->name();
-                case PackFormatColumn: {
-                    auto& resource = at(row);
-                    auto pack_format = resource.packFormat();
-                    if (pack_format == 0)
-                        return tr("Unrecognized");
+    case Qt::DisplayRole:
+        switch (column) {
+        case NameColumn:
+            return m_resources[row]->name();
+        case PackFormatColumn: {
+            auto& resource = at(row);
+            auto pack_format = resource.packFormat();
+            if (pack_format == 0)
+                return tr("Unrecognized");
 
-                    auto version_bounds = resource.compatibleVersions();
-                    if (version_bounds.first.toString().isEmpty())
-                        return QString::number(pack_format);
+            auto version_bounds = resource.compatibleVersions();
+            if (version_bounds.first.toString().isEmpty())
+                return QString::number(pack_format);
 
-                    return QString("%1 (%2 - %3)")
-                        .arg(QString::number(pack_format), version_bounds.first.toString(), version_bounds.second.toString());
-                }
-                case DateColumn:
-                    return m_resources[row]->dateTimeChanged();
-
-                default:
-                    return {};
-            }
-        case Qt::DecorationRole: {
-            if (column == NameColumn && (at(row).isSymLinkUnder(instDirPath()) || at(row).isMoreThanOneHardLink()))
-                return QIcon::fromTheme("status-yellow");
-            if (column == ImageColumn) {
-                return at(row).image({ 32, 32 }, Qt::AspectRatioMode::KeepAspectRatioByExpanding);
-            }
-            return {};
+            return QString("%1 (%2 - %3)")
+                .arg(QString::number(pack_format), version_bounds.first.toString(), version_bounds.second.toString());
         }
-        case Qt::ToolTipRole: {
-            if (column == PackFormatColumn) {
-                //: The string being explained by this is in the format: ID (Lower version - Upper version)
-                return tr("The data pack format ID, as well as the Minecraft versions it was designed for.");
-            }
-            if (column == NameColumn) {
-                if (at(row).isSymLinkUnder(instDirPath())) {
-                    return m_resources[row]->internal_id() +
-                           tr("\nWarning: This resource is symbolically linked from elsewhere. Editing it will also change the original."
-                              "\nCanonical Path: %1")
-                               .arg(at(row).fileinfo().canonicalFilePath());
-                    ;
-                }
-                if (at(row).isMoreThanOneHardLink()) {
-                    return m_resources[row]->internal_id() +
-                           tr("\nWarning: This resource is hard linked elsewhere. Editing it will also change the original.");
-                }
-            }
-            return m_resources[row]->internal_id();
-        }
-        case Qt::SizeHintRole:
-            if (column == ImageColumn) {
-                return QSize(32, 32);
-            }
-            return {};
-        case Qt::CheckStateRole:
-            if (column == ActiveColumn)
-                return at(row).enabled() ? Qt::Checked : Qt::Unchecked;
-            else
-                return {};
+        case DateColumn:
+            return m_resources[row]->dateTimeChanged();
+
         default:
             return {};
+        }
+    case Qt::DecorationRole: {
+        if (column == NameColumn && (at(row).isSymLinkUnder(instDirPath()) || at(row).isMoreThanOneHardLink()))
+            return QIcon::fromTheme("status-yellow");
+        if (column == ImageColumn) {
+            return at(row).image({ 32, 32 }, Qt::AspectRatioMode::KeepAspectRatioByExpanding);
+        }
+        return {};
+    }
+    case Qt::ToolTipRole: {
+        if (column == PackFormatColumn) {
+            //: The string being explained by this is in the format: ID (Lower version - Upper version)
+            return tr("The data pack format ID, as well as the Minecraft versions it was designed for.");
+        }
+        if (column == NameColumn) {
+            if (at(row).isSymLinkUnder(instDirPath())) {
+                return m_resources[row]->internal_id() +
+                       tr("\nWarning: This resource is symbolically linked from elsewhere. Editing it will also change the original."
+                          "\nCanonical Path: %1")
+                           .arg(at(row).fileinfo().canonicalFilePath());
+                ;
+            }
+            if (at(row).isMoreThanOneHardLink()) {
+                return m_resources[row]->internal_id() +
+                       tr("\nWarning: This resource is hard linked elsewhere. Editing it will also change the original.");
+            }
+        }
+        return m_resources[row]->internal_id();
+    }
+    case Qt::SizeHintRole:
+        if (column == ImageColumn) {
+            return QSize(32, 32);
+        }
+        return {};
+    case Qt::CheckStateRole:
+        if (column == ActiveColumn)
+            return at(row).enabled() ? Qt::Checked : Qt::Unchecked;
+        else
+            return {};
+    default:
+        return {};
     }
 }
 
 QVariant DataPackFolderModel::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, int role) const
 {
     switch (role) {
-        case Qt::DisplayRole:
-            switch (section) {
-                case ActiveColumn:
-                case NameColumn:
-                case PackFormatColumn:
-                case DateColumn:
-                case ImageColumn:
-                    return columnNames().at(section);
-                default:
-                    return {};
-            }
-
-        case Qt::ToolTipRole:
-            switch (section) {
-                case ActiveColumn:
-                    return tr("Is the data pack enabled? (Only valid for ZIPs)");
-                case NameColumn:
-                    return tr("The name of the data pack.");
-                case PackFormatColumn:
-                    //: The string being explained by this is in the format: ID (Lower version - Upper version)
-                    return tr("The data pack format ID, as well as the Minecraft versions it was designed for.");
-                case DateColumn:
-                    return tr("The date and time this data pack was last changed (or added).");
-                default:
-                    return {};
-            }
-        case Qt::SizeHintRole:
-            if (section == ImageColumn) {
-                return QSize(64, 0);
-            }
-            return {};
+    case Qt::DisplayRole:
+        switch (section) {
+        case ActiveColumn:
+        case NameColumn:
+        case PackFormatColumn:
+        case DateColumn:
+        case ImageColumn:
+            return columnNames().at(section);
         default:
             return {};
+        }
+
+    case Qt::ToolTipRole:
+        switch (section) {
+        case ActiveColumn:
+            return tr("Is the data pack enabled? (Only valid for ZIPs)");
+        case NameColumn:
+            return tr("The name of the data pack.");
+        case PackFormatColumn:
+            //: The string being explained by this is in the format: ID (Lower version - Upper version)
+            return tr("The data pack format ID, as well as the Minecraft versions it was designed for.");
+        case DateColumn:
+            return tr("The date and time this data pack was last changed (or added).");
+        default:
+            return {};
+        }
+    case Qt::SizeHintRole:
+        if (section == ImageColumn) {
+            return QSize(64, 0);
+        }
+        return {};
+    default:
+        return {};
     }
 }
 

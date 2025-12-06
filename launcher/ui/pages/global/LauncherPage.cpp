@@ -240,13 +240,13 @@ void LauncherPage::applySettings()
     // Instance
     auto sortMode = (InstSortMode)ui->sortingModeGroup->checkedId();
     switch (sortMode) {
-        case Sort_LastLaunch:
-            s->set("InstSortMode", "LastLaunch");
-            break;
-        case Sort_Name:
-        default:
-            s->set("InstSortMode", "Name");
-            break;
+    case Sort_LastLaunch:
+        s->set("InstSortMode", "LastLaunch");
+        break;
+    case Sort_Name:
+    default:
+        s->set("InstSortMode", "Name");
+        break;
     }
 
     if (ui->askToRenameDirBtn->isChecked()) {

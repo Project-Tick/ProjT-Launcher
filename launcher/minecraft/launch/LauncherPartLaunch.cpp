@@ -178,50 +178,50 @@ void LauncherPartLaunch::executeTask()
 void LauncherPartLaunch::on_state(LoggedProcess::State state)
 {
     switch (state) {
-        case LoggedProcess::FailedToStart: {
-            //: Error message displayed if instace can't start
-            const char* reason = QT_TR_NOOP("Could not launch Minecraft!");
-            emit logLine(reason, MessageLevel::Fatal);
-            emitFailed(tr(reason));
-            return;
-        }
-        case LoggedProcess::Aborted:
-        case LoggedProcess::Crashed: {
-            m_parent->setPid(-1);
-            m_parent->instance()->setMinecraftRunning(false);
+    case LoggedProcess::FailedToStart: {
+        //: Error message displayed if instace can't start
+        const char* reason = QT_TR_NOOP("Could not launch Minecraft!");
+        emit logLine(reason, MessageLevel::Fatal);
+        emitFailed(tr(reason));
+        return;
+    }
+    case LoggedProcess::Aborted:
+    case LoggedProcess::Crashed: {
+        m_parent->setPid(-1);
+        m_parent->instance()->setMinecraftRunning(false);
+        emitFailed(tr("Game crashed."));
+        return;
+    }
+    case LoggedProcess::Finished: {
+        auto instance = m_parent->instance();
+        if (instance->settings()->get("CloseAfterLaunch").toBool())
+            APPLICATION->showMainWindow();
+
+        m_parent->setPid(-1);
+        m_parent->instance()->setMinecraftRunning(false);
+        // if the exit code wasn't 0, report this as a crash
+        auto exitCode = m_process.exitCode();
+        if (exitCode != 0) {
             emitFailed(tr("Game crashed."));
             return;
         }
-        case LoggedProcess::Finished: {
-            auto instance = m_parent->instance();
-            if (instance->settings()->get("CloseAfterLaunch").toBool())
-                APPLICATION->showMainWindow();
+        // FIXME: make this work again
+        //  m_postlaunchprocess.processEnvironment().insert("INST_EXITCODE", QString(exitCode));
+        //  run post-exit
+        emitSucceeded();
+        break;
+    }
+    case LoggedProcess::Running:
+        emit logLine(QString("Minecraft process ID: %1\n\n").arg(m_process.processId()), MessageLevel::Launcher);
+        m_parent->setPid(m_process.processId());
+        // send the launch script to the launcher part
+        m_process.write(m_launchScript.toUtf8());
 
-            m_parent->setPid(-1);
-            m_parent->instance()->setMinecraftRunning(false);
-            // if the exit code wasn't 0, report this as a crash
-            auto exitCode = m_process.exitCode();
-            if (exitCode != 0) {
-                emitFailed(tr("Game crashed."));
-                return;
-            }
-            // FIXME: make this work again
-            //  m_postlaunchprocess.processEnvironment().insert("INST_EXITCODE", QString(exitCode));
-            //  run post-exit
-            emitSucceeded();
-            break;
-        }
-        case LoggedProcess::Running:
-            emit logLine(QString("Minecraft process ID: %1\n\n").arg(m_process.processId()), MessageLevel::Launcher);
-            m_parent->setPid(m_process.processId());
-            // send the launch script to the launcher part
-            m_process.write(m_launchScript.toUtf8());
-
-            mayProceed = true;
-            emit readyForLaunch();
-            break;
-        default:
-            break;
+        mayProceed = true;
+        emit readyForLaunch();
+        break;
+    default:
+        break;
     }
 }
 

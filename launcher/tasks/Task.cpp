@@ -91,31 +91,31 @@ void Task::setProgress(qint64 current, qint64 total)
 void Task::start()
 {
     switch (m_state) {
-        case State::Inactive: {
-            if (m_show_debug)
-                qCDebug(taskLogC) << "Task" << describe() << "starting for the first time";
-            break;
-        }
-        case State::AbortedByUser: {
-            if (m_show_debug)
-                qCDebug(taskLogC) << "Task" << describe() << "restarting for after being aborted by user";
-            break;
-        }
-        case State::Failed: {
-            if (m_show_debug)
-                qCDebug(taskLogC) << "Task" << describe() << "restarting for after failing at first";
-            break;
-        }
-        case State::Succeeded: {
-            if (m_show_debug)
-                qCDebug(taskLogC) << "Task" << describe() << "restarting for after succeeding at first";
-            break;
-        }
-        case State::Running: {
-            if (m_show_debug)
-                qCWarning(taskLogC) << "The launcher tried to start task" << describe() << "while it was already running!";
-            return;
-        }
+    case State::Inactive: {
+        if (m_show_debug)
+            qCDebug(taskLogC) << "Task" << describe() << "starting for the first time";
+        break;
+    }
+    case State::AbortedByUser: {
+        if (m_show_debug)
+            qCDebug(taskLogC) << "Task" << describe() << "restarting for after being aborted by user";
+        break;
+    }
+    case State::Failed: {
+        if (m_show_debug)
+            qCDebug(taskLogC) << "Task" << describe() << "restarting for after failing at first";
+        break;
+    }
+    case State::Succeeded: {
+        if (m_show_debug)
+            qCDebug(taskLogC) << "Task" << describe() << "restarting for after succeeding at first";
+        break;
+    }
+    case State::Running: {
+        if (m_show_debug)
+            qCWarning(taskLogC) << "The launcher tried to start task" << describe() << "while it was already running!";
+        return;
+    }
     }
     // NOTE: only fall through to here in end states
     m_state = State::Running;

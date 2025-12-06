@@ -111,11 +111,8 @@ static api_call_pid_return_int REAL_internal_gamemode_query_status_for = NULL;
  *
  * Returns 0 on success and -1 on failure
  */
-__attribute__((always_inline)) static inline int internal_bind_libgamemode_symbol(void* handle,
-                                                                                  const char* name,
-                                                                                  void** out_func,
-                                                                                  size_t func_size,
-                                                                                  bool required)
+__attribute__((always_inline)) static inline int internal_bind_libgamemode_symbol(
+    void* handle, const char* name, void** out_func, size_t func_size, bool required)
 {
     void* symbol_lookup = NULL;
     char* dl_error = NULL;

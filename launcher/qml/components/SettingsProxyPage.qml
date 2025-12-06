@@ -7,139 +7,167 @@
  *
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 ScrollView {
     id: proxyPage
     clip: true
-    
+
     property var vm: ProjT.launcherSettingsVM
-    
+
     ColumnLayout {
         width: proxyPage.width - Theme.spacingL
         spacing: Theme.spacingM
-        
+
+        // Warning Label
+        Label {
+            text: qsTr("This only applies to the launcher. Minecraft does not accept proxy settings.")
+            color: ThemeColors.text
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+        }
+
         // Proxy Type
         GroupBox {
             Layout.fillWidth: true
-            title: qsTr("Proxy Type")
-            
+            title: qsTr("Type")
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingS
-                
+
                 RadioButton {
-                    id: noProxyRadio
-                    text: qsTr("No proxy")
-                    checked: vm ? vm.proxyType === "none" : true
-                    onCheckedChanged: if (vm && checked) vm.proxyType = "none"
+                    id: proxyDefaultBtn
+                    text: qsTr("Use s&ystem settings")
+                    ToolTip.text: qsTr("Uses your system's default proxy settings.")
+                    ToolTip.visible: hovered
+                    checked: vm ? vm.proxyType === "default" : true
+                    onCheckedChanged: if (vm && checked)
+                        vm.proxyType = "default"
                 }
-                
+
                 RadioButton {
-                    id: systemProxyRadio
-                    text: qsTr("Use system proxy settings")
-                    checked: vm ? vm.proxyType === "system" : false
-                    onCheckedChanged: if (vm && checked) vm.proxyType = "system"
+                    id: proxyNoneBtn
+                    text: qsTr("&None")
+                    checked: vm ? vm.proxyType === "none" : false
+                    onCheckedChanged: if (vm && checked)
+                        vm.proxyType = "none"
                 }
-                
+
                 RadioButton {
-                    id: httpProxyRadio
-                    text: qsTr("HTTP proxy")
-                    checked: vm ? vm.proxyType === "http" : false
-                    onCheckedChanged: if (vm && checked) vm.proxyType = "http"
-                }
-                
-                RadioButton {
-                    id: socks5ProxyRadio
-                    text: qsTr("SOCKS5 proxy")
+                    id: proxySOCKS5Btn
+                    text: qsTr("&SOCKS5")
                     checked: vm ? vm.proxyType === "socks5" : false
-                    onCheckedChanged: if (vm && checked) vm.proxyType = "socks5"
+                    onCheckedChanged: if (vm && checked)
+                        vm.proxyType = "socks5"
+                }
+
+                RadioButton {
+                    id: proxyHTTPBtn
+                    text: qsTr("&HTTP")
+                    checked: vm ? vm.proxyType === "http" : false
+                    onCheckedChanged: if (vm && checked)
+                        vm.proxyType = "http"
                 }
             }
         }
-        
-        // Proxy Settings
+
+        // Address and Port
         GroupBox {
             Layout.fillWidth: true
-            title: qsTr("Proxy Settings")
-            enabled: httpProxyRadio.checked || socks5ProxyRadio.checked
-            
+            title: qsTr("&Address and Port")
+            enabled: proxySOCKS5Btn.checked || proxyHTTPBtn.checked
+
+            RowLayout {
+                anchors.fill: parent
+                spacing: Theme.spacingS
+
+                TextField {
+                    id: proxyAddrEdit
+                    Layout.minimumWidth: 300
+                    Layout.preferredWidth: 300
+                    placeholderText: "127.0.0.1"
+                    text: vm ? vm.proxyHost : ""
+                    onTextChanged: if (vm)
+                        vm.proxyHost = text
+                }
+
+                SpinBox {
+                    id: proxyPortEdit
+                    from: 1
+                    to: 65535
+                    value: vm ? vm.proxyPort : 8080
+                    editable: true
+                    onValueModified: if (vm)
+                        vm.proxyPort = value
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+            }
+        }
+
+        // Authentication
+        GroupBox {
+            Layout.fillWidth: true
+            title: qsTr("Authentication")
+            enabled: proxySOCKS5Btn.checked || proxyHTTPBtn.checked
+
             GridLayout {
                 anchors.fill: parent
                 columns: 2
                 rowSpacing: Theme.spacingS
                 columnSpacing: Theme.spacingM
-                
+
                 Label {
-                    text: qsTr("Address:")
-                    color: Theme.textPrimary
+                    text: qsTr("&Username:")
+                    color: ThemeColors.text
                 }
-                
+
                 TextField {
-                    id: proxyHostField
+                    id: proxyUserEdit
                     Layout.fillWidth: true
-                    placeholderText: qsTr("proxy.example.com")
-                    text: vm ? vm.proxyHost : ""
-                    onTextChanged: if (vm) vm.proxyHost = text
-                }
-                
-                Label {
-                    text: qsTr("Port:")
-                    color: Theme.textPrimary
-                }
-                
-                SpinBox {
-                    id: proxyPortSpin
-                    from: 1
-                    to: 65535
-                    value: vm ? vm.proxyPort : 8080
-                    editable: true
-                    onValueModified: if (vm) vm.proxyPort = value
-                }
-                
-                Label {
-                    text: qsTr("Username:")
-                    color: Theme.textPrimary
-                }
-                
-                TextField {
-                    id: proxyUserField
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Optional")
                     text: vm ? vm.proxyUsername : ""
-                    onTextChanged: if (vm) vm.proxyUsername = text
+                    onTextChanged: if (vm)
+                        vm.proxyUsername = text
                 }
-                
+
                 Label {
-                    text: qsTr("Password:")
-                    color: Theme.textPrimary
+                    text: qsTr("&Password:")
+                    color: ThemeColors.text
                 }
-                
+
                 TextField {
-                    id: proxyPassField
+                    id: proxyPassEdit
                     Layout.fillWidth: true
-                    placeholderText: qsTr("Optional")
                     echoMode: TextInput.Password
                     text: vm ? vm.proxyPassword : ""
-                    onTextChanged: if (vm) vm.proxyPassword = text
+                    onTextChanged: if (vm)
+                        vm.proxyPassword = text
+                }
+
+                Label {
+                    text: qsTr("Note: Proxy username and password are stored in plain text inside the launcher's configuration file!")
+                    color: ThemeColors.text
+                    wrapMode: Text.WordWrap
+                    Layout.columnSpan: 2
+                    Layout.fillWidth: true
                 }
             }
         }
-        
-        // Info
-        Label {
-            text: qsTr("Proxy settings apply to all network connections made by the launcher.")
-            color: Theme.textSecondary
-            font.pointSize: 9
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
+
+        Item {
+            Layout.fillHeight: true
         }
-        
-        Item { height: Theme.spacingL }
     }
 }

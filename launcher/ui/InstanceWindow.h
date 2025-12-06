@@ -67,7 +67,9 @@ class QPushButton;
 class PageContainer;
 class SettingsViewModel;
 class InstanceListViewModel;
-class InstanceWindow : public QMainWindow, public BasePageContainer {
+class InstanceWindow
+    : public QMainWindow
+    , public BasePageContainer {
     Q_OBJECT
 
    public:
@@ -103,7 +105,7 @@ class InstanceWindow : public QMainWindow, public BasePageContainer {
     void saveWindowStateToSettings() const;
     void hookPageSelectionSignals();
 
-  private:
+   private:
     shared_qobject_ptr<LaunchTask> m_proc;
     InstancePtr m_instance;
     bool m_doNotSave = false;

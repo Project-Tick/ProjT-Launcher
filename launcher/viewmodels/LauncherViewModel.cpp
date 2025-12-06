@@ -14,14 +14,14 @@
 
 #include "LauncherViewModel.h"
 
-#include "BuildConfig.h"
-#include "Application.h"
-#include "DesktopServices.h"
-#include <QUrl>
 #include <QDebug>
 #include <QDir>
 #include <QFileDialog>
+#include <QUrl>
 #include <QWidget>
+#include "Application.h"
+#include "BuildConfig.h"
+#include "DesktopServices.h"
 
 LauncherViewModel::LauncherViewModel(QObject* parent) : QObject(parent)
 {
@@ -29,19 +29,14 @@ LauncherViewModel::LauncherViewModel(QObject* parent) : QObject(parent)
     m_versionString = BuildConfig.printableVersionString();
     m_gitRef = BuildConfig.GIT_REFSPEC;
     m_gitCommit = BuildConfig.GIT_COMMIT;
-    
+
     // Build About HTML
     m_aboutHtml = QObject::tr(
-        "<b>%1</b><br/>"
-        "Version: %2<br/>"
-        "Git: %3<br/><br/>"
-        "%4"
-    ).arg(
-        m_displayName,
-        m_versionString,
-        BuildConfig.LAUNCHER_GIT,
-        BuildConfig.LAUNCHER_COPYRIGHT
-    );
+                      "<b>%1</b><br/>"
+                      "Version: %2<br/>"
+                      "Git: %3<br/><br/>"
+                      "%4")
+                      .arg(m_displayName, m_versionString, BuildConfig.LAUNCHER_GIT, BuildConfig.LAUNCHER_COPYRIGHT);
 }
 
 QString LauncherViewModel::displayName() const
@@ -239,8 +234,9 @@ void LauncherViewModel::openHelp()
 
 void LauncherViewModel::checkUpdates()
 {
-    qDebug() << "Update check requested (Not implemented yet)";
-    // TODO: Implement update check trigger
+    qDebug() << "[LauncherViewModel] Update check requested";
+    // Trigger update check through Application
+    APPLICATION->triggerUpdateCheck();
 }
 
 void LauncherViewModel::openAccountsManager()
@@ -275,4 +271,10 @@ QString LauncherViewModel::browseForSave(const QString& title, const QString& fi
         parent = QApplication::activeWindow();
     }
     return QFileDialog::getSaveFileName(parent, title, QString(), filter);
+}
+
+void LauncherViewModel::quit()
+{
+    // Properly quit the application on all platforms
+    QApplication::quit();
 }

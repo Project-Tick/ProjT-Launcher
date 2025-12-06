@@ -197,19 +197,19 @@ QString toCSV(QList<Mod*> mods, OptionalData extraData)
 QString exportToModList(QList<Mod*> mods, Formats format, OptionalData extraData)
 {
     switch (format) {
-        case HTML:
-            return toHTML(mods, extraData);
-        case MARKDOWN:
-            return toMarkdown(mods, extraData);
-        case PLAINTXT:
-            return toPlainTXT(mods, extraData);
-        case JSON:
-            return toJSON(mods, extraData);
-        case CSV:
-            return toCSV(mods, extraData);
-        default: {
-            return QString("unknown format:%1").arg(format);
-        }
+    case HTML:
+        return toHTML(mods, extraData);
+    case MARKDOWN:
+        return toMarkdown(mods, extraData);
+    case PLAINTXT:
+        return toPlainTXT(mods, extraData);
+    case JSON:
+        return toJSON(mods, extraData);
+    case CSV:
+        return toCSV(mods, extraData);
+    default: {
+        return QString("unknown format:%1").arg(format);
+    }
     }
 }
 

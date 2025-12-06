@@ -376,25 +376,25 @@ QVariant TranslationsModel::data(const QModelIndex& index, int role) const
 
     auto& lang = d->m_languages[row];
     switch (role) {
-        case Qt::DisplayRole: {
-            switch (column) {
-                case Column::Language: {
-                    return lang.languageName();
-                }
-                case Column::Completeness: {
-                    return QString("%1%").arg(lang.percentTranslated(), 3, 'f', 1);
-                }
-            }
-            qWarning("TranslationModel::data not implemented when role is DisplayRole");
+    case Qt::DisplayRole: {
+        switch (column) {
+        case Column::Language: {
+            return lang.languageName();
         }
-        case Qt::ToolTipRole: {
-            return tr("%1:\n%2 translated\n%3 fuzzy\n%4 total")
-                .arg(lang.key, QString::number(lang.translated), QString::number(lang.fuzzy), QString::number(lang.total));
+        case Column::Completeness: {
+            return QString("%1%").arg(lang.percentTranslated(), 3, 'f', 1);
         }
-        case Qt::UserRole:
-            return lang.key;
-        default:
-            return QVariant();
+        }
+        qWarning("TranslationModel::data not implemented when role is DisplayRole");
+    }
+    case Qt::ToolTipRole: {
+        return tr("%1:\n%2 translated\n%3 fuzzy\n%4 total")
+            .arg(lang.key, QString::number(lang.translated), QString::number(lang.fuzzy), QString::number(lang.total));
+    }
+    case Qt::UserRole:
+        return lang.key;
+    default:
+        return QVariant();
     }
 }
 
@@ -403,21 +403,21 @@ QVariant TranslationsModel::headerData(int section, Qt::Orientation orientation,
     auto column = static_cast<Column>(section);
     if (role == Qt::DisplayRole) {
         switch (column) {
-            case Column::Language: {
-                return tr("Language");
-            }
-            case Column::Completeness: {
-                return tr("Completeness");
-            }
+        case Column::Language: {
+            return tr("Language");
+        }
+        case Column::Completeness: {
+            return tr("Completeness");
+        }
         }
     } else if (role == Qt::ToolTipRole) {
         switch (column) {
-            case Column::Language: {
-                return tr("The native language name.");
-            }
-            case Column::Completeness: {
-                return tr("Completeness is the percentage of fully translated strings, not counting automatically guessed ones.");
-            }
+        case Column::Language: {
+            return tr("The native language name.");
+        }
+        case Column::Completeness: {
+            return tr("Completeness is the percentage of fully translated strings, not counting automatically guessed ones.");
+        }
         }
     }
     return QAbstractListModel::headerData(section, orientation, role);

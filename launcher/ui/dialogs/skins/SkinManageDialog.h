@@ -46,7 +46,9 @@
 namespace Ui {
 class SkinManageDialog;
 }
-class SkinManageDialog : public QDialog, public SkinProvider {
+class SkinManageDialog
+    : public QDialog
+    , public SkinProvider {
     Q_OBJECT
    public:
     explicit SkinManageDialog(QWidget* parent, MinecraftAccountPtr acct);

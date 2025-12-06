@@ -263,89 +263,89 @@ void LaunchController::login()
         }
 
         switch (accountToCheck->accountState()) {
-            case AccountState::Offline: {
-                m_session->wants_online = false;
-            }
-            /* fallthrough */
-            case AccountState::Online: {
-                if (!m_session->wants_online) {
-                    // we ask the user for a player name
-                    bool ok = false;
-                    QString name;
-                    if (m_offlineName.isEmpty()) {
-                        name = askOfflineName(m_session->player_name, m_session->demo, ok);
-                        if (!ok) {
-                            tryagain = false;
-                            break;
-                        }
-                    } else {
-                        name = m_offlineName;
+        case AccountState::Offline: {
+            m_session->wants_online = false;
+        }
+        /* fallthrough */
+        case AccountState::Online: {
+            if (!m_session->wants_online) {
+                // we ask the user for a player name
+                bool ok = false;
+                QString name;
+                if (m_offlineName.isEmpty()) {
+                    name = askOfflineName(m_session->player_name, m_session->demo, ok);
+                    if (!ok) {
+                        tryagain = false;
+                        break;
                     }
-                    m_session->MakeOffline(name);
-                    // offline flavored game from here :3
-                } else if (m_accountToUse == accountToCheck && !m_accountToUse->hasProfile()) {
-                    // Now handle setting up a profile name here...
-                    ProfileSetupDialog dialog(m_accountToUse, m_parentWidget);
-                    if (dialog.exec() == QDialog::Accepted) {
-                        tryagain = true;
-                        continue;
-                    } else {
-                        emitFailed(tr("Received undetermined session status during login."));
-                        return;
-                    }
+                } else {
+                    name = m_offlineName;
                 }
-
-                if (m_accountToUse->accountType() == AccountType::Offline)
-                    m_session->wants_online = false;
-
-                // we own Minecraft, there is a profile, it's all ready to go!
-                launchInstance();
-                return;
-            }
-            case AccountState::Errored:
-                // This means some sort of soft error that we can fix with a refresh ... so let's refresh.
-            case AccountState::Unchecked: {
-                accountToCheck->refresh();
-            }
-            /* fallthrough */
-            case AccountState::Working: {
-                // refresh is in progress, we need to wait for it to finish to proceed.
-                ProgressDialog progDialog(m_parentWidget);
-                progDialog.setSkipButton(true, tr("Abort"));
-
-                auto task = accountToCheck->currentTask();
-                progDialog.execWithTask(task.get());
-
-                // don't retry if aborted
-                if (task->getState() == Task::State::AbortedByUser)
-                    tryagain = false;
-
-                continue;
-            }
-            case AccountState::Expired: {
-                if (reauthenticateAccount(accountToCheck))
+                m_session->MakeOffline(name);
+                // offline flavored game from here :3
+            } else if (m_accountToUse == accountToCheck && !m_accountToUse->hasProfile()) {
+                // Now handle setting up a profile name here...
+                ProfileSetupDialog dialog(m_accountToUse, m_parentWidget);
+                if (dialog.exec() == QDialog::Accepted) {
+                    tryagain = true;
                     continue;
-                return;
+                } else {
+                    emitFailed(tr("Received undetermined session status during login."));
+                    return;
+                }
             }
-            case AccountState::Disabled: {
-                auto errorString = tr("The launcher's client identification has changed. Please remove '%1' and try again.")
-                                       .arg(accountToCheck->profileName());
 
-                QMessageBox::warning(m_parentWidget, tr("Client identification changed"), errorString, QMessageBox::StandardButton::Ok,
-                                     QMessageBox::StandardButton::Ok);
-                emitFailed(errorString);
-                return;
-            }
-            case AccountState::Gone: {
-                auto errorString =
-                    tr("'%1' no longer exists on the servers. It may have been migrated, in which case please add the new account "
-                       "you migrated this one to.")
-                        .arg(accountToCheck->profileName());
-                QMessageBox::warning(m_parentWidget, tr("Account gone"), errorString, QMessageBox::StandardButton::Ok,
-                                     QMessageBox::StandardButton::Ok);
-                emitFailed(errorString);
-                return;
-            }
+            if (m_accountToUse->accountType() == AccountType::Offline)
+                m_session->wants_online = false;
+
+            // we own Minecraft, there is a profile, it's all ready to go!
+            launchInstance();
+            return;
+        }
+        case AccountState::Errored:
+            // This means some sort of soft error that we can fix with a refresh ... so let's refresh.
+        case AccountState::Unchecked: {
+            accountToCheck->refresh();
+        }
+        /* fallthrough */
+        case AccountState::Working: {
+            // refresh is in progress, we need to wait for it to finish to proceed.
+            ProgressDialog progDialog(m_parentWidget);
+            progDialog.setSkipButton(true, tr("Abort"));
+
+            auto task = accountToCheck->currentTask();
+            progDialog.execWithTask(task.get());
+
+            // don't retry if aborted
+            if (task->getState() == Task::State::AbortedByUser)
+                tryagain = false;
+
+            continue;
+        }
+        case AccountState::Expired: {
+            if (reauthenticateAccount(accountToCheck))
+                continue;
+            return;
+        }
+        case AccountState::Disabled: {
+            auto errorString = tr("The launcher's client identification has changed. Please remove '%1' and try again.")
+                                   .arg(accountToCheck->profileName());
+
+            QMessageBox::warning(m_parentWidget, tr("Client identification changed"), errorString, QMessageBox::StandardButton::Ok,
+                                 QMessageBox::StandardButton::Ok);
+            emitFailed(errorString);
+            return;
+        }
+        case AccountState::Gone: {
+            auto errorString =
+                tr("'%1' no longer exists on the servers. It may have been migrated, in which case please add the new account "
+                   "you migrated this one to.")
+                    .arg(accountToCheck->profileName());
+            QMessageBox::warning(m_parentWidget, tr("Account gone"), errorString, QMessageBox::StandardButton::Ok,
+                                 QMessageBox::StandardButton::Ok);
+            emitFailed(errorString);
+            return;
+        }
         }
     }
     emitFailed(tr("Failed to launch."));

@@ -59,7 +59,9 @@
 #include "ui/widgets/PageContainer.h"
 #include "ui/widgets/VersionSelectWidget.h"
 
-class InstallJavaPage : public QWidget, public BasePage {
+class InstallJavaPage
+    : public QWidget
+    , public BasePage {
    public:
     Q_OBJECT
    public:
@@ -321,16 +323,16 @@ void InstallDialog::done(int result)
                 auto final_path = FS::PathCombine(APPLICATION->javaPath(), meta->m_name);
                 auto deletePath = [final_path] { FS::deletePath(final_path); };
                 switch (meta->downloadType) {
-                    case Java::DownloadType::Manifest:
-                        task = makeShared<ManifestDownloadTask>(meta->url, final_path, meta->checksumType, meta->checksumHash);
-                        break;
-                    case Java::DownloadType::Archive:
-                        task = makeShared<ArchiveDownloadTask>(meta->url, final_path, meta->checksumType, meta->checksumHash);
-                        break;
-                    case Java::DownloadType::Unknown:
-                        QString error = QString(tr("Could not determine Java download type!"));
-                        CustomMessageBox::selectable(this, tr("Error"), error, QMessageBox::Warning)->show();
-                        deletePath();
+                case Java::DownloadType::Manifest:
+                    task = makeShared<ManifestDownloadTask>(meta->url, final_path, meta->checksumType, meta->checksumHash);
+                    break;
+                case Java::DownloadType::Archive:
+                    task = makeShared<ArchiveDownloadTask>(meta->url, final_path, meta->checksumType, meta->checksumHash);
+                    break;
+                case Java::DownloadType::Unknown:
+                    QString error = QString(tr("Could not determine Java download type!"));
+                    CustomMessageBox::selectable(this, tr("Error"), error, QMessageBox::Warning)->show();
+                    deletePath();
                 }
 #if defined(Q_OS_MACOS)
                 auto seq = makeShared<SequentialTask>(tr("Install Java"));

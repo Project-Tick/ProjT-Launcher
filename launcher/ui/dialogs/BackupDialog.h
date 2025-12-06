@@ -12,18 +12,17 @@
 #pragma once
 
 #include <QDialog>
-#include "minecraft/BackupManager.h"
 #include "BaseInstance.h"
+#include "minecraft/BackupManager.h"
 
 namespace Ui {
 class BackupDialog;
 }
 
-class BackupDialog : public QDialog
-{
+class BackupDialog : public QDialog {
     Q_OBJECT
 
-public:
+   public:
     explicit BackupDialog(InstancePtr instance, QWidget* parent = nullptr);
     ~BackupDialog();
 
@@ -31,7 +30,7 @@ public:
     BackupOptions options() const { return m_pendingOptions; }
     bool hasRequest() const { return !m_pendingBackupName.isEmpty(); }
 
-private slots:
+   private slots:
     void on_createButton_clicked();
     void on_restoreButton_clicked();
     void on_deleteButton_clicked();
@@ -42,7 +41,7 @@ private slots:
     void onBackupCreated(const QString& instanceId, const QString& backupName);
     void onBackupRestored(const QString& instanceId, const QString& backupName);
 
-private:
+   private:
     void refreshBackupList();
     void updateBackupDetails();
     void updateButtons();

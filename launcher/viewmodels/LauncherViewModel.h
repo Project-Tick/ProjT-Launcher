@@ -20,14 +20,7 @@
 class LauncherViewModel : public QObject {
     Q_OBJECT
    public:
-    enum class Page
-    {
-        Instances = 0,
-        News,
-        Settings,
-        About,
-        Logs
-    };
+    enum class Page { Instances = 0, News, Settings, About, Logs };
     Q_ENUM(Page)
 
     Q_PROPERTY(QString displayName READ displayName NOTIFY displayNameChanged)
@@ -67,19 +60,22 @@ class LauncherViewModel : public QObject {
     Q_INVOKABLE void openDataFolder();
     Q_INVOKABLE void openHelp();
     Q_INVOKABLE void checkUpdates();
-    
+
     // Folder actions
     Q_INVOKABLE void openLauncherFolder();
     Q_INVOKABLE void openInstancesFolder();
     Q_INVOKABLE void openModsFolder();
     Q_INVOKABLE void openSkinsFolder();
-    
+
     // Dialog actions
     Q_INVOKABLE void openAccountsManager();
 
     Q_INVOKABLE QString browseForFile(const QString& title, const QString& filter);
     Q_INVOKABLE QString browseForDirectory(const QString& title);
     Q_INVOKABLE QString browseForSave(const QString& title, const QString& filter);
+
+    // Application control
+    Q_INVOKABLE void quit();
 
    signals:
     void displayNameChanged();

@@ -15,125 +15,126 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: languagePage
-    color: Theme.background
-    
+    color: ThemeColors.background
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
         spacing: Theme.spacingM
-        
+
         Label {
             text: qsTr("Select Language")
             font.pointSize: 12
             font.bold: true
-            color: Theme.textPrimary
+            color: ThemeColors.text
         }
-        
+
         TextField {
             id: searchField
             Layout.fillWidth: true
             placeholderText: qsTr("Search languages...")
             selectByMouse: true
         }
-        
+
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Theme.surfaceBackground
-            border.color: Theme.border
+            color: ThemeColors.surface
+            border.color: ThemeColors.border
             border.width: 1
             radius: Theme.radiusS
-            
+
             ListView {
                 id: languageList
                 anchors.fill: parent
                 anchors.margins: 1
                 clip: true
-                
+
                 // Use TranslationsModel from backend
                 model: translationsModel
-                
+
                 // Get selected index from model
                 currentIndex: translationsModel ? translationsModel.selectedIndex().row : 0
-                
+
                 delegate: ItemDelegate {
                     id: langDelegate
                     width: languageList.width
                     highlighted: ListView.isCurrentItem
-                    
+
                     // Filter by search text
                     visible: {
-                        if (searchField.text.length === 0) return true
-                        var langName = model.display || ""
-                        return langName.toLowerCase().indexOf(searchField.text.toLowerCase()) >= 0
+                        if (searchField.text.length === 0)
+                            return true;
+                        var langName = model.display || "";
+                        return langName.toLowerCase().indexOf(searchField.text.toLowerCase()) >= 0;
                     }
                     height: visible ? 40 : 0
-                    
+
                     contentItem: RowLayout {
                         spacing: Theme.spacingM
-                        
+
                         // Column 0: Language name
                         Label {
                             text: model.display || ""
-                            color: langDelegate.highlighted ? Theme.accent : Theme.textPrimary
+                            color: langDelegate.highlighted ? ThemeColors.accent : ThemeColors.text
                             font.bold: langDelegate.highlighted
                             Layout.fillWidth: true
                             elide: Text.ElideRight
                         }
-                        
+
                         // Column 1: Completeness percentage (if available)
                         Label {
                             // Get completeness from column 1
                             text: {
                                 if (translationsModel) {
-                                    var idx = translationsModel.index(index, 1)
-                                    return translationsModel.data(idx, Qt.DisplayRole) || ""
+                                    var idx = translationsModel.index(index, 1);
+                                    return translationsModel.data(idx, Qt.DisplayRole) || "";
                                 }
-                                return ""
+                                return "";
                             }
-                            color: Theme.textSecondary
+                            color: ThemeColors.textSecondary
                             font.pointSize: 9
                         }
                     }
-                    
+
                     background: Rectangle {
-                        color: langDelegate.highlighted ? Theme.selection : 
-                               (langDelegate.hovered ? Theme.hover : "transparent")
+                        color: langDelegate.highlighted ? ThemeColors.highlight : (langDelegate.hovered ? Theme.hover : "transparent")
                     }
-                    
+
                     onClicked: {
-                        languageList.currentIndex = index
+                        languageList.currentIndex = index;
                         // Get the language key from UserRole
                         if (translationsModel) {
-                            var langKey = translationsModel.data(translationsModel.index(index, 0), Qt.UserRole)
+                            var langKey = translationsModel.data(translationsModel.index(index, 0), Qt.UserRole);
                             if (langKey) {
-                                translationsModel.selectLanguage(langKey)
-                                translationsModel.updateLanguage(langKey)
+                                translationsModel.selectLanguage(langKey);
+                                translationsModel.updateLanguage(langKey);
                             }
                         }
                     }
                 }
-                
+
                 ScrollBar.vertical: ScrollBar {}
             }
         }
-        
+
         Label {
             text: qsTr("Translation completeness is shown on the right. Help us translate!")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             font.pointSize: 9
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
         }
-        
+
         Button {
             text: qsTr("Help translate on Weblate")
             onClicked: {
-                Qt.openUrlExternally("https://hosted.weblate.org/engage/prismlauncher/")
+                Qt.openUrlExternally("https://hosted.weblate.org/engage/prismlauncher/");
             }
         }
     }

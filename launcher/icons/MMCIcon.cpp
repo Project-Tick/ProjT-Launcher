@@ -58,17 +58,17 @@ IconType operator--(IconType& t, int)
 {
     IconType temp = t;
     switch (t) {
-        case IconType::Builtin:
-            t = IconType::ToBeDeleted;
-            break;
-        case IconType::Transient:
-            t = IconType::Builtin;
-            break;
-        case IconType::FileBased:
-            t = IconType::Transient;
-            break;
-        default:
-            break;
+    case IconType::Builtin:
+        t = IconType::ToBeDeleted;
+        break;
+    case IconType::Transient:
+        t = IconType::Builtin;
+        break;
+    case IconType::FileBased:
+        t = IconType::Transient;
+        break;
+    default:
+        break;
     }
     return temp;
 }
@@ -97,7 +97,8 @@ QIcon MMCIcon::icon() const
     auto& icon = m_images[m_current_type].icon;
     if (!icon.isNull())
         return icon;
-    // TODO: Theme ikonları için dependency injection uygulanabilir. Şu anda doğrudan erişim var, test edilebilirlik ve özelleştirme için DI önerilir.
+    // TODO: Theme ikonları için dependency injection uygulanabilir. Şu anda doğrudan erişim var, test edilebilirlik ve özelleştirme için DI
+    // önerilir.
     return QIcon::fromTheme(m_images[m_current_type].key);
 }
 

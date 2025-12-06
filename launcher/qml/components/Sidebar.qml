@@ -18,26 +18,45 @@ import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
-/**
- * Sidebar Navigation Component
- * 
- * Provides primary navigation between main application pages.
- * Features:
- * - Navigation buttons (Instances, News, Settings, Logs, About)
- * - Launcher info display (name, version)
- * - Account selector
- * - Theme toggle
- * - Resizable width with persistence
- * 
- * Signals:
- * - pageRequested(int): Emitted when user clicks a nav button
- * - accountRequested(int): Emitted when user selects different account
- * - themeRequested(): Emitted when user toggles theme
- */
-
 Rectangle {
     id: sidebar
-    color: Theme.surface
+    
+    // Theme binding for reactive updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+    
+    color: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    
+    property color toolBarColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
+    }
+    property color borderColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border
+    }
+    property color textColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? themeVM.textColor : ThemeColors.text
+    }
+    property color textSecondaryColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? Qt.darker(themeVM.textColor, 1.3) : ThemeColors.textSecondary
+    }
+    property color highlightColor: {
+        var _ = _themeUpdateCount
+        return themeVM ? themeVM.highlightColor : ThemeColors.highlight
+    }
+    
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            sidebar._themeUpdateCount++
+        }
+    }
     
     signal pageRequested(int page)
     signal accountRequested(int accountIndex)
@@ -92,7 +111,7 @@ Rectangle {
             
             Label {
                 text: ProjT.launcherVM ? ProjT.launcherVM.displayName : qsTr("ProjT Launcher")
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 font.pointSize: 14
                 font.bold: true
                 wrapMode: Text.WordWrap
@@ -101,7 +120,7 @@ Rectangle {
             
             Label {
                 text: ProjT.launcherVM ? ProjT.launcherVM.versionString : ""
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 font.pointSize: 11
                 wrapMode: Text.WordWrap
                 width: parent.width
@@ -139,10 +158,10 @@ Rectangle {
                     background: Rectangle {
                         radius: Theme.radius
                         color: navButton.checked ? 
-                                "#2c3440" : 
-                                (navButton.hovered ? "#2a2d33" : "transparent")
+                                ThemeColors.highlight : 
+                                (navButton.hovered ? ThemeColors.backgroundAlt : "transparent")
                         
-                        border.color: navButton.checked ? Theme.accent : "#323742"
+                        border.color: navButton.checked ? ThemeColors.accent : ThemeColors.border
                         border.width: navButton.checked ? 1 : 0
                         
                         Behavior on color {
@@ -154,7 +173,7 @@ Rectangle {
                     contentItem: Text {
                         text: navButton.text
                         anchors.centerIn: parent
-                        color: navButton.checked ? "#e6f0ff" : Theme.textPrimary
+                        color: navButton.checked ? ThemeColors.highlightedText : ThemeColors.text
                         font.pointSize: 12
                         
                         Behavior on color {
@@ -199,8 +218,8 @@ Rectangle {
                 
                 background: Rectangle {
                     radius: Theme.radius
-                    color: accountButton.hovered ? "#2a2d33" : "#1e2227"
-                    border.color: "#323742"
+                    color: accountButton.hovered ? ThemeColors.backgroundAlt : ThemeColors.surface
+                    border.color: ThemeColors.border
                     border.width: 1
                     
                     Behavior on color {
@@ -217,7 +236,7 @@ Rectangle {
                         width: 32
                         height: 32
                         radius: 4
-                        color: "#3d4d60"
+                        color: ThemeColors.backgroundAlt
                         Layout.alignment: Qt.AlignVCenter
                         
                         Text {
@@ -234,14 +253,14 @@ Rectangle {
                         
                         Text {
                             text: qsTr("Account")
-                            color: Theme.textSecondary
+                            color: ThemeColors.textSecondary
                             font.pointSize: 9
                             font.italic: true
                         }
                         
                         Text {
                             text: accountButton.text
-                            color: Theme.textPrimary
+                            color: ThemeColors.text
                             font.pointSize: 11
                             elide: Text.ElideRight
                             width: parent.width
@@ -250,7 +269,7 @@ Rectangle {
                     
                     Text {
                         text: "▼"
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                         font.pointSize: 8
                         Layout.alignment: Qt.AlignVCenter
                         opacity: 0.6
@@ -343,7 +362,7 @@ Rectangle {
                     
                     Label {
                         text: qsTr("Username:")
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                     }
                     
                     TextField {
@@ -383,7 +402,7 @@ Rectangle {
                     
                     Label {
                         text: qsTr("Please open the following URL in your browser and enter the code:")
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
                     }
@@ -400,7 +419,7 @@ Rectangle {
                         text: qsTr("Code: ") + msLoginUrlDialog.deviceCode
                         font.bold: true
                         font.pointSize: 14
-                        color: Theme.accent
+                        color: ThemeColors.accent
                     }
                     
                     Button {
@@ -418,7 +437,7 @@ Rectangle {
                     
                     Label {
                         text: qsTr("Waiting for authentication...")
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                         Layout.alignment: Qt.AlignHCenter
                     }
                 }
@@ -458,8 +477,8 @@ Rectangle {
                 
                 background: Rectangle {
                     radius: Theme.radius
-                    color: themeButton.hovered ? "#2a2d33" : "#1e2227"
-                    border.color: "#323742"
+                    color: themeButton.hovered ? ThemeColors.backgroundAlt : ThemeColors.surface
+                    border.color: ThemeColors.border
                     border.width: 1
                     
                     Behavior on color {
@@ -480,7 +499,7 @@ Rectangle {
                     
                     Text {
                         text: themeButton.text
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                         font.pointSize: 11
                         Layout.fillWidth: true
                     }

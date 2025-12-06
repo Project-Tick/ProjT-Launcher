@@ -85,47 +85,47 @@ QVariant VersionList::data(const QModelIndex& index, int role) const
     Version::Ptr version = m_versions.at(index.row());
 
     switch (role) {
-        case VersionPointerRole:
-            return QVariant::fromValue(std::dynamic_pointer_cast<BaseVersion>(version));
-        case VersionRole:
-        case VersionIdRole:
-            return version->version();
-        case ParentVersionRole: {
-            // FIXME: HACK: this should be generic and be replaced by something else. Anything that is a hard 'equals' dep is a 'parent
-            // uid'.
-            auto& reqs = version->requiredSet();
-            auto iter = std::find_if(reqs.begin(), reqs.end(), [](const Require& req) { return req.uid == "net.minecraft"; });
-            if (iter != reqs.end()) {
-                return (*iter).equalsVersion;
-            }
-            return QVariant();
+    case VersionPointerRole:
+        return QVariant::fromValue(std::dynamic_pointer_cast<BaseVersion>(version));
+    case VersionRole:
+    case VersionIdRole:
+        return version->version();
+    case ParentVersionRole: {
+        // FIXME: HACK: this should be generic and be replaced by something else. Anything that is a hard 'equals' dep is a 'parent
+        // uid'.
+        auto& reqs = version->requiredSet();
+        auto iter = std::find_if(reqs.begin(), reqs.end(), [](const Require& req) { return req.uid == "net.minecraft"; });
+        if (iter != reqs.end()) {
+            return (*iter).equalsVersion;
         }
-        case TypeRole:
-            return version->type();
+        return QVariant();
+    }
+    case TypeRole:
+        return version->type();
 
-        case UidRole:
-            return version->uid();
-        case TimeRole:
-            return version->time();
-        case RequiresRole:
-            return QVariant::fromValue(version->requiredSet());
-        case SortRole:
-            return version->rawTime();
-        case VersionPtrRole:
-            return QVariant::fromValue(version);
-        case RecommendedRole:
-            return version->isRecommended() || m_externalRecommendsVersions.contains(version->version());
-        case JavaMajorRole: {
-            auto major = version->version();
-            if (major.startsWith("java")) {
-                major = "Java " + major.mid(4);
-            }
-            return major;
+    case UidRole:
+        return version->uid();
+    case TimeRole:
+        return version->time();
+    case RequiresRole:
+        return QVariant::fromValue(version->requiredSet());
+    case SortRole:
+        return version->rawTime();
+    case VersionPtrRole:
+        return QVariant::fromValue(version);
+    case RecommendedRole:
+        return version->isRecommended() || m_externalRecommendsVersions.contains(version->version());
+    case JavaMajorRole: {
+        auto major = version->version();
+        if (major.startsWith("java")) {
+            major = "Java " + major.mid(4);
         }
-        // FIXME: this should be determined in whatever view/proxy is used...
-        // case LatestRole: return version == getLatestStable();
-        default:
-            return QVariant();
+        return major;
+    }
+    // FIXME: this should be determined in whatever view/proxy is used...
+    // case LatestRole: return version == getLatestStable();
+    default:
+        return QVariant();
     }
 }
 

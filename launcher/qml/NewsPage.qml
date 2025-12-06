@@ -15,15 +15,32 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "components"
 import "Theme.js" as Theme
 
 Rectangle {
+    id: newsPage
     objectName: "news"
-    color: Theme.background
     width: parent ? parent.width : 640
     height: parent ? parent.height : 480
     readonly property var vm: ProjT.newsVM
+
+    // Theme binding for reactive updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+
+    color: {
+        var _ = _themeUpdateCount;
+        return themeVM ? themeVM.windowColor : ThemeColors.background;
+    }
+
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            newsPage._themeUpdateCount++;
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -32,9 +49,9 @@ Rectangle {
         Component.onCompleted: {
             if (vm) {
                 if (vm.titles.length === 0) {
-                    vm.refresh()
+                    vm.refresh();
                 } else if (vm.currentIndex < 0 && vm.titles.length > 0) {
-                    vm.setCurrentIndex(0)
+                    vm.setCurrentIndex(0);
                 }
             }
         }
@@ -48,31 +65,32 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
-            Button {
+            ThemedButton {
                 text: qsTr("Refresh")
-                implicitHeight: 34
-                implicitWidth: 90
+                size: "small"
                 Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                 enabled: vm ? !vm.busy : false
                 onClicked: {
                     if (vm) {
-                        vm.refresh()
+                        vm.refresh();
                     }
                 }
             }
-            Button {
+            ThemedButton {
                 text: qsTr("Open in browser")
-                implicitHeight: 34
-                implicitWidth: 110
+                size: "small"
+                primary: true
                 Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                 enabled: vm ? (vm.currentLink.length > 0) : false
                 onClicked: {
                     if (vm) {
-                        vm.openCurrentLink()
+                        vm.openCurrentLink();
                     }
                 }
             }
-            Rectangle { Layout.fillWidth: true; color: "transparent" }
+            Item {
+                Layout.fillWidth: true
+            }
         }
 
         RowLayout {
@@ -90,21 +108,34 @@ Rectangle {
                 delegate: Rectangle {
                     width: newsList.width
                     height: 48
-                    color: vm && index === vm.currentIndex ? "#2c3440" : Theme.surface
-                    border.color: vm && index === vm.currentIndex ? Theme.accent : "#323742"
+                    color: vm && index === vm.currentIndex ? Qt.rgba(ThemeColors.highlight.r, ThemeColors.highlight.g, ThemeColors.highlight.b, 0.2) : ThemeColors.surface
+                    border.color: vm && index === vm.currentIndex ? ThemeColors.highlight : ThemeColors.border
+                    border.width: vm && index === vm.currentIndex ? 2 : 1
                     radius: Theme.radius
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 100
+                        }
+                    }
+                    Behavior on border.color {
+                        ColorAnimation {
+                            duration: 100
+                        }
+                    }
+
                     Text {
                         anchors.fill: parent
                         anchors.margins: 8
                         text: modelData
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                         wrapMode: Text.WordWrap
                     }
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
                             if (vm) {
-                                vm.selectByIndex(index)
+                                vm.selectByIndex(index);
                             }
                         }
                     }
@@ -124,15 +155,13 @@ Rectangle {
                         Text {
                             Layout.fillWidth: true
                             text: vm ? vm.currentTitle : ""
-                            color: Theme.textPrimary
+                            color: ThemeColors.text
                             font.pixelSize: 16
                             wrapMode: Text.WordWrap
                         }
                         Text {
-                            text: vm && vm.lastUpdated && vm.lastUpdated.toString().length > 0
-                                  ? qsTr("Updated: %1").arg(vm.lastUpdated.toString())
-                                  : ""
-                            color: Theme.textSecondary
+                            text: vm && vm.lastUpdated && vm.lastUpdated.toString().length > 0 ? qsTr("Updated: %1").arg(vm.lastUpdated.toString()) : ""
+                            color: ThemeColors.textSecondary
                             font.pixelSize: 12
                             horizontalAlignment: Text.AlignRight
                         }
@@ -144,7 +173,7 @@ Rectangle {
                             width: parent ? parent.width : implicitWidth
                             wrapMode: Text.WordWrap
                             textFormat: Text.RichText
-                            color: Theme.textSecondary
+                            color: ThemeColors.textSecondary
                             text: vm ? vm.currentArticleHtml : ""
                         }
                     }
@@ -154,10 +183,14 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Theme.surfaceVariant
+            color: ThemeColors.backgroundAlt
             opacity: vm ? (vm.busy ? 0.25 : 0) : 0
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 150
+                }
+            }
             BusyIndicator {
                 anchors.centerIn: parent
                 running: vm ? vm.busy : false

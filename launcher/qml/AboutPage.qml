@@ -15,11 +15,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "components"
 
 Rectangle {
     objectName: "about"
-    color: "#1b1b1b"
+    color: ThemeColors.background
     width: parent ? parent.width : 640
     height: parent ? parent.height : 480
 
@@ -42,7 +43,7 @@ Rectangle {
                 width: parent ? parent.width : implicitWidth
                 wrapMode: Text.WordWrap
                 textFormat: Text.RichText
-                color: "#cfd8dc"
+                color: ThemeColors.text
                 text: ProjT.launcherVM ? ProjT.launcherVM.aboutHtml : ""
             }
         }

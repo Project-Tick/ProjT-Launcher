@@ -53,8 +53,10 @@
  ======================================================================== */
 
 #include "Application.h"
+#include <QFileDialog>
+#include <QMimeDatabase>
+#include <QStatusBar>
 #include "BuildConfig.h"
-
 #include "DataMigrationTask.h"
 #include "java/JavaInstallList.h"
 #include "minecraft/BackupManager.h"
@@ -62,21 +64,16 @@
 #include "tasks/Task.h"
 #include "tools/GenericProfiler.h"
 #include "ui/InstanceWindow.h"
-#include "ui/MainWindow.h"
 #include "ui/QmlMainWindow.h"
 #include "ui/ViewLogWindow.h"
-#include "viewmodels/LauncherViewModel.h"
+#include "ui/dialogs/NewInstanceDialog.h"
+#include "ui/dialogs/ProgressDialog.h"
+#include "ui/instanceview/AccessibleInstanceView.h"
 #include "viewmodels/InstanceListViewModel.h"
+#include "viewmodels/LauncherViewModel.h"
 #include "viewmodels/NewsViewModel.h"
 #include "viewmodels/SettingsViewModel.h"
-
-#include "ui/dialogs/ProgressDialog.h"
-#include "ui/dialogs/NewInstanceDialog.h"
-#include "ui/instanceview/AccessibleInstanceView.h"
-
-#include <QStatusBar>
-#include <QFileDialog>
-#include <QMimeDatabase>
+#include "viewmodels/ThemeViewModel.h"
 
 #include "ui/pages/BasePageProvider.h"
 #include "ui/pages/global/APIPage.h"
@@ -124,9 +121,8 @@
 #include <QStyleFactory>
 #include <QTranslator>
 #include <QWindow>
-
-#include "InstanceList.h"
 #include "InstanceImportTask.h"
+#include "InstanceList.h"
 #include "MTPixmapCache.h"
 
 #include <minecraft/auth/AccountList.h>
@@ -480,10 +476,10 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
      * If there is one, tell it what the user actually wanted to do and exit.
      * We want to initialize this before logging to avoid messing with the log of a potential already running copy.
      */
-    auto appID = ApplicationId::fromPathAndVersion(QDir::currentPath(), BuildConfig.printableVersionString());
+    // Include data path in ApplicationId to allow multiple instances with different data dirs
+    // running from the same binary path without update conflicts
+    auto appID = ApplicationId::fromPathAndVersion(QDir::currentPath() + ":" + dataPath, BuildConfig.printableVersionString());
     {
-        // TODO: Multiple instances with different data dirs can run from same binary path
-        // This can cause update conflicts - consider using data path in ApplicationId
         m_peerInstance = new LocalPeer(this, appID);
         connect(m_peerInstance, &LocalPeer::messageReceived, this, &Application::messageReceived);
         if (m_peerInstance->isClient()) {
@@ -1079,17 +1075,17 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
             msgBox.adjustSize();
             auto res = msgBox.exec();
             switch (res) {
-                case QMessageBox::Ignore: {
-                    FS::deletePath(update_lock.absoluteFilePath());
-                    break;
-                }
-                case QMessageBox::Abort:
-                    [[fallthrough]];
-                default: {
-                    qDebug() << "Exiting because update lockfile is present";
-                    QMetaObject::invokeMethod(this, []() { exit(1); }, Qt::QueuedConnection);
-                    return;
-                }
+            case QMessageBox::Ignore: {
+                FS::deletePath(update_lock.absoluteFilePath());
+                break;
+            }
+            case QMessageBox::Abort:
+                [[fallthrough]];
+            default: {
+                qDebug() << "Exiting because update lockfile is present";
+                QMetaObject::invokeMethod(this, []() { exit(1); }, Qt::QueuedConnection);
+                return;
+            }
             }
         }
 
@@ -1111,17 +1107,17 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
             msgBox.adjustSize();
             auto res = msgBox.exec();
             switch (res) {
-                case QMessageBox::Ignore: {
-                    FS::deletePath(update_fail_marker.absoluteFilePath());
-                    break;
-                }
-                case QMessageBox::Abort:
-                    [[fallthrough]];
-                default: {
-                    qDebug() << "Exiting because update lockfile is present";
-                    QMetaObject::invokeMethod(this, []() { exit(1); }, Qt::QueuedConnection);
-                    return;
-                }
+            case QMessageBox::Ignore: {
+                FS::deletePath(update_fail_marker.absoluteFilePath());
+                break;
+            }
+            case QMessageBox::Abort:
+                [[fallthrough]];
+            default: {
+                qDebug() << "Exiting because update lockfile is present";
+                QMetaObject::invokeMethod(this, []() { exit(1); }, Qt::QueuedConnection);
+                return;
+            }
             }
         }
 
@@ -1299,11 +1295,11 @@ bool Application::event(QEvent* event)
 #endif
 
     if (event->type() == QEvent::FileOpen) {
-        if (!m_mainWindow) {
-            showMainWindow(false);
+        if (!m_qmlMainWindow) {
+            showQmlMainWindow(false);
         }
         auto ev = static_cast<QFileOpenEvent*>(event);
-        m_mainWindow->processURLs({ ev->url() });
+        m_qmlMainWindow->processURLs({ ev->url() });
     }
 
     return QApplication::event(event);
@@ -1372,7 +1368,7 @@ void Application::performMainStartupAction()
         m_updater.reset(new MacSparkleUpdater());
 #endif
 #else
-        m_updater.reset(new PrismExternalUpdater(m_mainWindow, m_rootPath, m_dataPath));
+        m_updater.reset(new PrismExternalUpdater(m_qmlMainWindow, m_rootPath, m_dataPath));
 #endif
         qDebug() << "<> Updater started.";
     }
@@ -1385,7 +1381,7 @@ void Application::performMainStartupAction()
 
     if (!m_urlsToImport.isEmpty()) {
         qDebug() << "<> Importing from url:" << m_urlsToImport;
-        m_mainWindow->processURLs(m_urlsToImport);
+        m_qmlMainWindow->processURLs(m_urlsToImport);
     }
 }
 
@@ -1439,10 +1435,10 @@ void Application::messageReceived(const QByteArray& message)
             qWarning() << "Received" << command << "message without a zip path/URL.";
             return;
         }
-        if (!m_mainWindow) {
-            showMainWindow(false);
+        if (!m_qmlMainWindow) {
+            showQmlMainWindow(false);
         }
-        m_mainWindow->processURLs({ normalizeImportUrl(url) });
+        m_qmlMainWindow->processURLs({ normalizeImportUrl(url) });
     } else if (command == "launch") {
         QString id = received.args["id"];
         QString server = received.args["server"];
@@ -1528,7 +1524,7 @@ bool Application::launch(InstancePtr instance,
         if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
             qDebug() << "Creating auto-backup before launch...";
 
-            QProgressDialog* progress = new QProgressDialog("Creating backup before launch...", QString(), 0, 0, m_mainWindow);
+            QProgressDialog* progress = new QProgressDialog("Creating backup before launch...", QString(), 0, 0, m_qmlMainWindow);
             progress->setWindowModality(Qt::WindowModal);
             progress->setMinimumDuration(0);
             progress->setValue(0);
@@ -1597,8 +1593,8 @@ void Application::continueLaunchAfterBackup(QString instanceId, bool online, boo
     controller->setOfflineName(offlineName);
     if (window) {
         controller->setParentWidget(window);
-    } else if (m_mainWindow) {
-        controller->setParentWidget(m_mainWindow);
+    } else if (m_qmlMainWindow) {
+        controller->setParentWidget(m_qmlMainWindow);
     }
     connect(controller.get(), &LaunchController::succeeded, this, &Application::controllerSucceeded);
     connect(controller.get(), &LaunchController::failed, this, &Application::controllerFailed);
@@ -1729,7 +1725,7 @@ MainWindow* Application::showMainWindow(bool minimized)
 {
     // Legacy Widgets window - redirect to QML
     showQmlMainWindow(minimized);
-    return m_mainWindow;  // Return nullptr or create minimal legacy window if needed
+    return nullptr;  // Legacy method - QML window is now primary
 }
 
 QmlMainWindow* Application::showQmlMainWindow(bool minimized)
@@ -1744,8 +1740,9 @@ QmlMainWindow* Application::showQmlMainWindow(bool minimized)
         auto instancesVM = new InstanceListViewModel(this);
         auto newsVM = new NewsViewModel(this);
         auto settingsVM = new SettingsViewModel(this);
-        
-        m_qmlMainWindow = new QmlMainWindow(launcherVM, instancesVM, newsVM, settingsVM);
+        auto themeVM = new ThemeViewModel(this);
+
+        m_qmlMainWindow = new QmlMainWindow(launcherVM, instancesVM, newsVM, settingsVM, themeVM);
         m_qmlMainWindow->restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("QmlMainWindowGeometry").toString().toUtf8()));
 
         if (minimized) {
@@ -1755,6 +1752,8 @@ QmlMainWindow* Application::showQmlMainWindow(bool minimized)
         }
 
         connect(m_qmlMainWindow, &QMainWindow::destroyed, this, &Application::on_windowClose);
+        // Also connect to the close event if possible, or ensure destroyed is emitted on close
+        m_qmlMainWindow->setAttribute(Qt::WA_DeleteOnClose);
         m_openWindows++;
     }
     return m_qmlMainWindow;
@@ -1821,12 +1820,8 @@ void Application::on_windowClose()
         auto& extras = m_instanceExtras[instWindow->instanceId()];
         extras.window = nullptr;
         if (extras.controller) {
-            extras.controller->setParentWidget(m_mainWindow);
+            extras.controller->setParentWidget(m_qmlMainWindow);
         }
-    }
-    auto mainWindow = qobject_cast<MainWindow*>(sender());
-    if (mainWindow) {
-        m_mainWindow = nullptr;
     }
     // Handle QML main window: persist geometry and clear pointer
     auto qmlMain = qobject_cast<QmlMainWindow*>(sender());
@@ -1869,24 +1864,24 @@ void Application::updateProxySettings(QString proxyTypeStr, QString addr, int po
         return;
     }
     switch (proxy.type()) {
-        case QNetworkProxy::DefaultProxy:
-            proxyDesc = "Default proxy: ";
-            break;
-        case QNetworkProxy::Socks5Proxy:
-            proxyDesc = "Socks5 proxy: ";
-            break;
-        case QNetworkProxy::HttpProxy:
-            proxyDesc = "HTTP proxy: ";
-            break;
-        case QNetworkProxy::HttpCachingProxy:
-            proxyDesc = "HTTP caching: ";
-            break;
-        case QNetworkProxy::FtpCachingProxy:
-            proxyDesc = "FTP caching: ";
-            break;
-        default:
-            proxyDesc = "DERP proxy: ";
-            break;
+    case QNetworkProxy::DefaultProxy:
+        proxyDesc = "Default proxy: ";
+        break;
+    case QNetworkProxy::Socks5Proxy:
+        proxyDesc = "Socks5 proxy: ";
+        break;
+    case QNetworkProxy::HttpProxy:
+        proxyDesc = "HTTP proxy: ";
+        break;
+    case QNetworkProxy::HttpCachingProxy:
+        proxyDesc = "HTTP caching: ";
+        break;
+    case QNetworkProxy::FtpCachingProxy:
+        proxyDesc = "FTP caching: ";
+        break;
+    default:
+        proxyDesc = "DERP proxy: ";
+        break;
     }
     proxyDesc += QString("%1:%2").arg(proxy.hostName()).arg(proxy.port());
     qDebug() << proxyDesc;
@@ -2170,4 +2165,3 @@ void Application::migratePastebinSettings()
     // Mark migration as complete
     m_settings->set("PastebinMigrationDone", true);
 }
-

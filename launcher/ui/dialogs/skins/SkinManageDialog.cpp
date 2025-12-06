@@ -339,14 +339,14 @@ bool SkinManageDialog::eventFilter(QObject* obj, QEvent* ev)
         if (ev->type() == QEvent::KeyPress) {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(ev);
             switch (keyEvent->key()) {
-                case Qt::Key_Delete:
-                    on_action_Delete_Skin_triggered(false);
-                    return true;
-                case Qt::Key_F2:
-                    on_action_Rename_Skin_triggered(false);
-                    return true;
-                default:
-                    break;
+            case Qt::Key_Delete:
+                on_action_Delete_Skin_triggered(false);
+                return true;
+            case Qt::Key_F2:
+                on_action_Rename_Skin_triggered(false);
+                return true;
+            default:
+                break;
             }
         }
     }

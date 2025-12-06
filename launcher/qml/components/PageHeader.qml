@@ -15,6 +15,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 
 Item {
     id: root
@@ -34,7 +35,7 @@ Item {
             spacing: 2
             Label {
                 text: root.title
-                color: "#eceff1"
+                color: ThemeColors.text
                 font.pixelSize: 18
                 font.bold: true
                 wrapMode: Text.WordWrap
@@ -42,7 +43,7 @@ Item {
             Label {
                 visible: root.subtitle.length > 0
                 text: root.subtitle
-                color: "#b0bec5"
+                color: ThemeColors.textSecondary
                 font.pixelSize: 12
                 wrapMode: Text.WordWrap
             }

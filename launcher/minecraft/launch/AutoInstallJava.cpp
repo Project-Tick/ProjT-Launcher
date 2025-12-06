@@ -182,15 +182,15 @@ void AutoInstallJava::downloadJava(Meta::Version::Ptr version, QString javaName)
             QDir javaDir(APPLICATION->javaPath());
             auto final_path = javaDir.absoluteFilePath(java->m_name);
             switch (java->downloadType) {
-                case Java::DownloadType::Manifest:
-                    m_current_task = makeShared<Java::ManifestDownloadTask>(java->url, final_path, java->checksumType, java->checksumHash);
-                    break;
-                case Java::DownloadType::Archive:
-                    m_current_task = makeShared<Java::ArchiveDownloadTask>(java->url, final_path, java->checksumType, java->checksumHash);
-                    break;
-                case Java::DownloadType::Unknown:
-                    emitFailed(tr("Could not determine Java download type!"));
-                    return;
+            case Java::DownloadType::Manifest:
+                m_current_task = makeShared<Java::ManifestDownloadTask>(java->url, final_path, java->checksumType, java->checksumHash);
+                break;
+            case Java::DownloadType::Archive:
+                m_current_task = makeShared<Java::ArchiveDownloadTask>(java->url, final_path, java->checksumType, java->checksumHash);
+                break;
+            case Java::DownloadType::Unknown:
+                emitFailed(tr("Could not determine Java download type!"));
+                return;
             }
 #if defined(Q_OS_MACOS)
             auto seq = makeShared<SequentialTask>(tr("Install Java"));

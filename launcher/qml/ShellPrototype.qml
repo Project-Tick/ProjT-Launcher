@@ -15,12 +15,13 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
+import ProjTLauncher 1.0
 
 Rectangle {
     id: root
     width: 520
     height: 420
-    color: "#202125"
+    color: ThemeColors.background
     radius: 6
 
     ColumnLayout {
@@ -30,9 +31,9 @@ Rectangle {
 
         Rectangle {
             Layout.fillWidth: true
-            color: "#2b2d31"
+            color: ThemeColors.surface
             radius: 4
-            border.color: "#404249"
+            border.color: ThemeColors.border
 
             ColumnLayout {
                 anchors.fill: parent
@@ -47,7 +48,7 @@ Rectangle {
                 }
                 Text {
                     text: launcherViewModel ? launcherViewModel.versionString : ""
-                    color: "#b0bec5"
+                    color: ThemeColors.textSecondary
                 }
                 Text {
                     text: launcherViewModel && launcherViewModel.busy ? qsTr("Status: Busy") : qsTr("Status: Idle")
@@ -73,7 +74,7 @@ Rectangle {
                 enabled: instanceListViewModel
                 onClicked: {
                     if (instanceListViewModel) {
-                        console.log("Selected instance:", instanceListViewModel.selectedInstanceId)
+                        console.log("Selected instance:", instanceListViewModel.selectedInstanceId);
                     }
                 }
             }
@@ -82,9 +83,9 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: "#2b2d31"
+            color: ThemeColors.surface
             radius: 4
-            border.color: "#404249"
+            border.color: ThemeColors.border
 
             ColumnLayout {
                 anchors.fill: parent
@@ -112,7 +113,7 @@ Rectangle {
                             anchors.left: parent.left
                             anchors.leftMargin: 8
                             text: modelData
-                            color: "#eceff1"
+                            color: ThemeColors.text
                         }
                     }
                 }
@@ -122,9 +123,9 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 150
-            color: "#2b2d31"
+            color: ThemeColors.surface
             radius: 4
-            border.color: "#404249"
+            border.color: ThemeColors.border
 
             ColumnLayout {
                 anchors.fill: parent
@@ -150,7 +151,7 @@ Rectangle {
                         width: parent.width
                         wrapMode: Text.WordWrap
                         textFormat: Text.RichText
-                        color: "#cfd8dc"
+                        color: ThemeColors.text
                         text: newsViewModel ? newsViewModel.currentContent : ""
                     }
                 }

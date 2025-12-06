@@ -74,26 +74,26 @@ void PreLaunchCommand::on_state(LoggedProcess::State state)
 {
     auto getError = [this]() { return tr("Pre-Launch command failed with code %1.\n\n").arg(m_process.exitCode()); };
     switch (state) {
-        case LoggedProcess::Aborted:
-        case LoggedProcess::Crashed:
-        case LoggedProcess::FailedToStart: {
+    case LoggedProcess::Aborted:
+    case LoggedProcess::Crashed:
+    case LoggedProcess::FailedToStart: {
+        auto error = getError();
+        emit logLine(error, MessageLevel::Fatal);
+        emitFailed(error);
+        return;
+    }
+    case LoggedProcess::Finished: {
+        if (m_process.exitCode() != 0) {
             auto error = getError();
             emit logLine(error, MessageLevel::Fatal);
             emitFailed(error);
-            return;
+        } else {
+            emit logLine(tr("Pre-Launch command ran successfully.\n\n"), MessageLevel::Launcher);
+            emitSucceeded();
         }
-        case LoggedProcess::Finished: {
-            if (m_process.exitCode() != 0) {
-                auto error = getError();
-                emit logLine(error, MessageLevel::Fatal);
-                emitFailed(error);
-            } else {
-                emit logLine(tr("Pre-Launch command ran successfully.\n\n"), MessageLevel::Launcher);
-                emitSucceeded();
-            }
-        }
-        default:
-            break;
+    }
+    default:
+        break;
     }
 }
 

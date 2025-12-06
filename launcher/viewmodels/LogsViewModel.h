@@ -14,11 +14,11 @@
 
 #pragma once
 
+#include <QFileSystemWatcher>
+#include <QFont>
 #include <QObject>
 #include <QString>
 #include <QStringList>
-#include <QFileSystemWatcher>
-#include <QFont>
 
 #include "BaseInstance.h"
 #include "launch/LogModel.h"
@@ -68,7 +68,9 @@ class LogsViewModel : public QObject {
     Q_INVOKABLE void setColorLines(bool color);
     void setSuspended(bool suspended);
     void setFont(const QFont& font);
-    void configure(const InstancePtr& instance, const QString& basePath, const QStringList& searchPaths,
+    void configure(const InstancePtr& instance,
+                   const QString& basePath,
+                   const QStringList& searchPaths,
                    const shared_qobject_ptr<LogModel>& launcherModel = shared_qobject_ptr<LogModel>());
 
    signals:

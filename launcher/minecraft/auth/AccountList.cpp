@@ -282,24 +282,24 @@ int AccountList::count() const
 QString getAccountStatus(AccountState status)
 {
     switch (status) {
-        case AccountState::Unchecked:
-            return QObject::tr("Unchecked", "Account status");
-        case AccountState::Offline:
-            return QObject::tr("Offline", "Account status");
-        case AccountState::Online:
-            return QObject::tr("Ready", "Account status");
-        case AccountState::Working:
-            return QObject::tr("Working", "Account status");
-        case AccountState::Errored:
-            return QObject::tr("Errored", "Account status");
-        case AccountState::Expired:
-            return QObject::tr("Expired", "Account status");
-        case AccountState::Disabled:
-            return QObject::tr("Disabled", "Account status");
-        case AccountState::Gone:
-            return QObject::tr("Gone", "Account status");
-        default:
-            return QObject::tr("Unknown", "Account status");
+    case AccountState::Unchecked:
+        return QObject::tr("Unchecked", "Account status");
+    case AccountState::Offline:
+        return QObject::tr("Offline", "Account status");
+    case AccountState::Online:
+        return QObject::tr("Ready", "Account status");
+    case AccountState::Working:
+        return QObject::tr("Working", "Account status");
+    case AccountState::Errored:
+        return QObject::tr("Errored", "Account status");
+    case AccountState::Expired:
+        return QObject::tr("Expired", "Account status");
+    case AccountState::Disabled:
+        return QObject::tr("Disabled", "Account status");
+    case AccountState::Gone:
+        return QObject::tr("Gone", "Account status");
+    default:
+        return QObject::tr("Unknown", "Account status");
     }
 }
 
@@ -314,78 +314,78 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
     MinecraftAccountPtr account = at(index.row());
 
     switch (role) {
-        case Qt::DisplayRole:
-            switch (index.column()) {
-                case ProfileNameColumn:
-                    return account->profileName();
-                case NameColumn:
-                    return account->accountDisplayString();
-                case TypeColumn: {
-                    switch (account->accountType()) {
-                        case AccountType::MSA: {
-                            return tr("MSA", "Account type");
-                        }
-                        case AccountType::Offline: {
-                            return tr("Offline", "Account type");
-                        }
-                    }
-                    return tr("Unknown", "Account type");
-                }
-                case StatusColumn:
-                    return getAccountStatus(account->accountState());
-                default:
-                    return QVariant();
-            }
-
-        case Qt::ToolTipRole:
+    case Qt::DisplayRole:
+        switch (index.column()) {
+        case ProfileNameColumn:
+            return account->profileName();
+        case NameColumn:
             return account->accountDisplayString();
-
-        case PointerRole:
-            return QVariant::fromValue(account);
-
-        case Qt::CheckStateRole:
-            if (index.column() == ProfileNameColumn)
-                return account == m_defaultAccount ? Qt::Checked : Qt::Unchecked;
-            return QVariant();
-
+        case TypeColumn: {
+            switch (account->accountType()) {
+            case AccountType::MSA: {
+                return tr("MSA", "Account type");
+            }
+            case AccountType::Offline: {
+                return tr("Offline", "Account type");
+            }
+            }
+            return tr("Unknown", "Account type");
+        }
+        case StatusColumn:
+            return getAccountStatus(account->accountState());
         default:
             return QVariant();
+        }
+
+    case Qt::ToolTipRole:
+        return account->accountDisplayString();
+
+    case PointerRole:
+        return QVariant::fromValue(account);
+
+    case Qt::CheckStateRole:
+        if (index.column() == ProfileNameColumn)
+            return account == m_defaultAccount ? Qt::Checked : Qt::Unchecked;
+        return QVariant();
+
+    default:
+        return QVariant();
     }
 }
 
 QVariant AccountList::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, int role) const
 {
     switch (role) {
-        case Qt::DisplayRole:
-            switch (section) {
-                case ProfileNameColumn:
-                    return tr("Username");
-                case NameColumn:
-                    return tr("Account");
-                case TypeColumn:
-                    return tr("Type");
-                case StatusColumn:
-                    return tr("Status");
-                default:
-                    return QVariant();
-            }
-
-        case Qt::ToolTipRole:
-            switch (section) {
-                case ProfileNameColumn:
-                    return tr("Minecraft username associated with the account.");
-                case NameColumn:
-                    return tr("User name of the account.");
-                case TypeColumn:
-                    return tr("Type of the account (MSA or Offline)");
-                case StatusColumn:
-                    return tr("Current status of the account.");
-                default:
-                    return QVariant();
-            }
-
+    case Qt::DisplayRole:
+        switch (section) {
+        case ProfileNameColumn:
+            return tr("Username");
+        case NameColumn:
+            return tr("Account");
+        case TypeColumn:
+            return tr("Type");
+        case StatusColumn:
+            return tr("Status");
         default:
             return QVariant();
+        }
+
+    case Qt::ToolTipRole:
+        switch (section) {
+        case ProfileNameColumn:
+            return tr("Minecraft username associated with the account.");
+        case NameColumn:
+            return tr("User name of the account.");
+        case TypeColumn:
+            return tr("Type of the account (MSA or Offline)");
+        case StatusColumn:
+            return tr("Current status of the account.");
+        default:
+            return QVariant();
+        }
+
+    default:
+        return QVariant();
     }
 }
 

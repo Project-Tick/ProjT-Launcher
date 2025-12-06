@@ -85,11 +85,11 @@ void FlameMod::loadBody(ModPlatform::IndexedPack& pack)
 static QString enumToString(int hash_algorithm)
 {
     switch (hash_algorithm) {
-        default:
-        case 1:
-            return "sha1";
-        case 2:
-            return "md5";
+    default:
+    case 1:
+        return "sha1";
+    case 2:
+        return "md5";
     }
 }
 
@@ -158,17 +158,17 @@ auto FlameMod::loadIndexedPackVersion(QJsonObject& obj, bool load_changelog) -> 
 
     ModPlatform::IndexedVersionType::VersionType ver_type;
     switch (Json::requireInteger(obj, "releaseType")) {
-        case 1:
-            ver_type = ModPlatform::IndexedVersionType::VersionType::Release;
-            break;
-        case 2:
-            ver_type = ModPlatform::IndexedVersionType::VersionType::Beta;
-            break;
-        case 3:
-            ver_type = ModPlatform::IndexedVersionType::VersionType::Alpha;
-            break;
-        default:
-            ver_type = ModPlatform::IndexedVersionType::VersionType::Unknown;
+    case 1:
+        ver_type = ModPlatform::IndexedVersionType::VersionType::Release;
+        break;
+    case 2:
+        ver_type = ModPlatform::IndexedVersionType::VersionType::Beta;
+        break;
+    case 3:
+        ver_type = ModPlatform::IndexedVersionType::VersionType::Alpha;
+        break;
+    default:
+        ver_type = ModPlatform::IndexedVersionType::VersionType::Unknown;
     }
     file.version_type = ModPlatform::IndexedVersionType(ver_type);
 
@@ -190,27 +190,27 @@ auto FlameMod::loadIndexedPackVersion(QJsonObject& obj, bool load_changelog) -> 
         ModPlatform::Dependency dependency;
         dependency.addonId = Json::requireInteger(dep, "modId");
         switch (Json::requireInteger(dep, "relationType")) {
-            case 1:  // EmbeddedLibrary
-                dependency.type = ModPlatform::DependencyType::EMBEDDED;
-                break;
-            case 2:  // OptionalDependency
-                dependency.type = ModPlatform::DependencyType::OPTIONAL;
-                break;
-            case 3:  // RequiredDependency
-                dependency.type = ModPlatform::DependencyType::REQUIRED;
-                break;
-            case 4:  // Tool
-                dependency.type = ModPlatform::DependencyType::TOOL;
-                break;
-            case 5:  // Incompatible
-                dependency.type = ModPlatform::DependencyType::INCOMPATIBLE;
-                break;
-            case 6:  // Include
-                dependency.type = ModPlatform::DependencyType::INCLUDE;
-                break;
-            default:
-                dependency.type = ModPlatform::DependencyType::UNKNOWN;
-                break;
+        case 1:  // EmbeddedLibrary
+            dependency.type = ModPlatform::DependencyType::EMBEDDED;
+            break;
+        case 2:  // OptionalDependency
+            dependency.type = ModPlatform::DependencyType::OPTIONAL;
+            break;
+        case 3:  // RequiredDependency
+            dependency.type = ModPlatform::DependencyType::REQUIRED;
+            break;
+        case 4:  // Tool
+            dependency.type = ModPlatform::DependencyType::TOOL;
+            break;
+        case 5:  // Incompatible
+            dependency.type = ModPlatform::DependencyType::INCOMPATIBLE;
+            break;
+        case 6:  // Include
+            dependency.type = ModPlatform::DependencyType::INCLUDE;
+            break;
+        default:
+            dependency.type = ModPlatform::DependencyType::UNKNOWN;
+            break;
         }
         file.dependencies.append(dependency);
     }

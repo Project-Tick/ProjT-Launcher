@@ -127,49 +127,49 @@ void Resource::setMetadata(std::shared_ptr<Metadata::ModStruct>&& metadata)
 int Resource::compare(const Resource& other, SortType type) const
 {
     switch (type) {
-        default:
-        case SortType::ENABLED:
-            if (enabled() && !other.enabled())
-                return 1;
-            if (!enabled() && other.enabled())
-                return -1;
-            break;
-        case SortType::NAME: {
-            QString this_name{ name() };
-            QString other_name{ other.name() };
+    default:
+    case SortType::ENABLED:
+        if (enabled() && !other.enabled())
+            return 1;
+        if (!enabled() && other.enabled())
+            return -1;
+        break;
+    case SortType::NAME: {
+        QString this_name{ name() };
+        QString other_name{ other.name() };
 
-            // TODO: removeThePrefix fonksiyonu gerekli mi? 0 döndürme ihtimali var, test edilmeli.
-            removeThePrefix(this_name);
-            removeThePrefix(other_name);
+        // TODO: removeThePrefix fonksiyonu gerekli mi? 0 döndürme ihtimali var, test edilmeli.
+        removeThePrefix(this_name);
+        removeThePrefix(other_name);
 
-            return QString::compare(this_name, other_name, Qt::CaseInsensitive);
-        }
-        case SortType::DATE:
-            if (dateTimeChanged() > other.dateTimeChanged())
-                return 1;
-            if (dateTimeChanged() < other.dateTimeChanged())
+        return QString::compare(this_name, other_name, Qt::CaseInsensitive);
+    }
+    case SortType::DATE:
+        if (dateTimeChanged() > other.dateTimeChanged())
+            return 1;
+        if (dateTimeChanged() < other.dateTimeChanged())
+            return -1;
+        break;
+    case SortType::SIZE: {
+        if (this->type() != other.type()) {
+            if (this->type() == ResourceType::FOLDER)
                 return -1;
-            break;
-        case SortType::SIZE: {
-            if (this->type() != other.type()) {
-                if (this->type() == ResourceType::FOLDER)
-                    return -1;
-                if (other.type() == ResourceType::FOLDER)
-                    return 1;
-            }
+            if (other.type() == ResourceType::FOLDER)
+                return 1;
+        }
 
-            if (sizeInfo() > other.sizeInfo())
-                return 1;
-            if (sizeInfo() < other.sizeInfo())
-                return -1;
-            break;
-        }
-        case SortType::PROVIDER: {
-            auto compare_result = QString::compare(provider(), other.provider(), Qt::CaseInsensitive);
-            if (compare_result != 0)
-                return compare_result;
-            break;
-        }
+        if (sizeInfo() > other.sizeInfo())
+            return 1;
+        if (sizeInfo() < other.sizeInfo())
+            return -1;
+        break;
+    }
+    case SortType::PROVIDER: {
+        auto compare_result = QString::compare(provider(), other.provider(), Qt::CaseInsensitive);
+        if (compare_result != 0)
+            return compare_result;
+        break;
+    }
     }
 
     return 0;
@@ -190,16 +190,16 @@ bool Resource::enable(EnableAction action)
 
     bool enable = true;
     switch (action) {
-        case EnableAction::ENABLE:
-            enable = true;
-            break;
-        case EnableAction::DISABLE:
-            enable = false;
-            break;
-        case EnableAction::TOGGLE:
-        default:
-            enable = !enabled();
-            break;
+    case EnableAction::ENABLE:
+        enable = true;
+        break;
+    case EnableAction::DISABLE:
+        enable = false;
+        break;
+    case EnableAction::TOGGLE:
+    default:
+        enable = !enabled();
+        break;
     }
 
     if (m_enabled == enable)

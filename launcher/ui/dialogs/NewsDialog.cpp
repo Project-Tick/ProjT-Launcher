@@ -18,8 +18,7 @@
 
 #include "viewmodels/NewsViewModel.h"
 
-NewsDialog::NewsDialog(NewsViewModel* viewModel, QWidget* parent)
-    : QDialog(parent), ui(new Ui::NewsDialog()), m_viewModel(viewModel)
+NewsDialog::NewsDialog(NewsViewModel* viewModel, QWidget* parent) : QDialog(parent), ui(new Ui::NewsDialog()), m_viewModel(viewModel)
 {
     ui->setupUi(this);
 
@@ -76,8 +75,7 @@ void NewsDialog::refreshArticles()
             break;
         }
     }
-    const QString desiredTitle =
-        !m_viewModel->currentTitle().isEmpty() ? m_viewModel->currentTitle() : fallbackTitle;
+    const QString desiredTitle = !m_viewModel->currentTitle().isEmpty() ? m_viewModel->currentTitle() : fallbackTitle;
     const QSignalBlocker blocker(ui->articleListWidget);
     ui->articleListWidget->clear();
     for (const auto& entry : entries) {

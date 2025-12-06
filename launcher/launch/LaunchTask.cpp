@@ -169,17 +169,17 @@ void LaunchTask::proceed()
 bool LaunchTask::canAbort() const
 {
     switch (state) {
-        case LaunchTask::Aborted:
-        case LaunchTask::Failed:
-        case LaunchTask::Finished:
-            return false;
-        case LaunchTask::NotStarted:
-            return true;
-        case LaunchTask::Running:
-        case LaunchTask::Waiting: {
-            auto step = m_steps[currentStep];
-            return step->canAbort();
-        }
+    case LaunchTask::Aborted:
+    case LaunchTask::Failed:
+    case LaunchTask::Finished:
+        return false;
+    case LaunchTask::NotStarted:
+        return true;
+    case LaunchTask::Running:
+    case LaunchTask::Waiting: {
+        auto step = m_steps[currentStep];
+        return step->canAbort();
+    }
     }
     return false;
 }
@@ -187,28 +187,28 @@ bool LaunchTask::canAbort() const
 bool LaunchTask::abort()
 {
     switch (state) {
-        case LaunchTask::Aborted:
-        case LaunchTask::Failed:
-        case LaunchTask::Finished:
-            return true;
-        case LaunchTask::NotStarted: {
+    case LaunchTask::Aborted:
+    case LaunchTask::Failed:
+    case LaunchTask::Finished:
+        return true;
+    case LaunchTask::NotStarted: {
+        state = LaunchTask::Aborted;
+        emitFailed("Aborted");
+        return true;
+    }
+    case LaunchTask::Running:
+    case LaunchTask::Waiting: {
+        auto step = m_steps[currentStep];
+        if (!step->canAbort()) {
+            return false;
+        }
+        if (step->abort()) {
             state = LaunchTask::Aborted;
-            emitFailed("Aborted");
             return true;
         }
-        case LaunchTask::Running:
-        case LaunchTask::Waiting: {
-            auto step = m_steps[currentStep];
-            if (!step->canAbort()) {
-                return false;
-            }
-            if (step->abort()) {
-                state = LaunchTask::Aborted;
-                return true;
-            }
-        }
-        default:
-            break;
+    }
+    default:
+        break;
     }
     return false;
 }
@@ -219,8 +219,9 @@ shared_qobject_ptr<LogModel> LaunchTask::getLogModel()
         m_logModel.reset(new LogModel());
         m_logModel->setMaxLines(getConsoleMaxLines(m_instance->settings()));
         m_logModel->setStopOnOverflow(shouldStopOnConsoleOverflow(m_instance->settings()));
-        // FIXME: should this really be here?
-        m_logModel->setOverflowMessage(tr("Stopped watching the game log because the log length surpassed %1 lines.\n"
+        // This is here because the overflow message references instance-specific settings (max lines)
+        // and needs to be set after LogModel creation with proper instance context
+        m_logModel->setOverflowMessage(tr("Stopped watching the game log because the log length surpassed %1 lines.\\n"
                                           "You may have to fix your mods because the game is still logging to files and"
                                           " likely wasting harddrive space at an alarming rate!")
                                            .arg(m_logModel->getMaxLines()));
@@ -232,14 +233,14 @@ bool LaunchTask::parseXmlLogs(QString const& line, MessageLevel::Enum level)
 {
     LogParser* parser;
     switch (level) {
-        case MessageLevel::StdErr:
-            parser = &m_stderrParser;
-            break;
-        case MessageLevel::StdOut:
-            parser = &m_stdoutParser;
-            break;
-        default:
-            return false;
+    case MessageLevel::StdErr:
+        parser = &m_stderrParser;
+        break;
+    case MessageLevel::StdOut:
+        parser = &m_stdoutParser;
+        break;
+    default:
+        return false;
     }
 
     parser->appendLine(line);
@@ -328,41 +329,41 @@ QString expandVariables(const QString& input, QProcessEnvironment dict)
     for (int i = 0; i < result.length();) {
         QChar c = result.at(i++);
         switch (state) {
-            case base:
-                if (c == '$')
-                    state = maybeBrace;
-                break;
-            case maybeBrace:
-                if (c == '{') {
-                    state = brace;
-                    startIdx = i;
-                } else if (c.isLetterOrNumber() || c == '_') {
-                    state = variable;
-                    startIdx = i - 1;
-                } else {
-                    state = base;
+        case base:
+            if (c == '$')
+                state = maybeBrace;
+            break;
+        case maybeBrace:
+            if (c == '{') {
+                state = brace;
+                startIdx = i;
+            } else if (c.isLetterOrNumber() || c == '_') {
+                state = variable;
+                startIdx = i - 1;
+            } else {
+                state = base;
+            }
+            break;
+        case brace:
+            if (c == '}') {
+                const auto res = dict.value(result.mid(startIdx, i - 1 - startIdx), "");
+                if (!res.isEmpty()) {
+                    result.replace(startIdx - 2, i - startIdx + 2, res);
+                    i = startIdx - 2 + res.length();
                 }
-                break;
-            case brace:
-                if (c == '}') {
-                    const auto res = dict.value(result.mid(startIdx, i - 1 - startIdx), "");
-                    if (!res.isEmpty()) {
-                        result.replace(startIdx - 2, i - startIdx + 2, res);
-                        i = startIdx - 2 + res.length();
-                    }
-                    state = base;
+                state = base;
+            }
+            break;
+        case variable:
+            if (!c.isLetterOrNumber() && c != '_') {
+                const auto res = dict.value(result.mid(startIdx, i - startIdx - 1), "");
+                if (!res.isEmpty()) {
+                    result.replace(startIdx - 1, i - startIdx, res);
+                    i = startIdx - 1 + res.length();
                 }
-                break;
-            case variable:
-                if (!c.isLetterOrNumber() && c != '_') {
-                    const auto res = dict.value(result.mid(startIdx, i - startIdx - 1), "");
-                    if (!res.isEmpty()) {
-                        result.replace(startIdx - 1, i - startIdx, res);
-                        i = startIdx - 1 + res.length();
-                    }
-                    state = base;
-                }
-                break;
+                state = base;
+            }
+            break;
         }
     }
     if (state == variable) {

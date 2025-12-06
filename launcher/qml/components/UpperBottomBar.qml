@@ -15,93 +15,90 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: upperBar
-    color: Theme.surface
+    color: ThemeColors.toolBar
     height: 36
-    
+
     // Properties - bound to ViewModels with safe defaults
     property string newsHeadline: ProjT.newsVM.latestHeadline || qsTr("Welcome to ProjT Launcher")
     property bool hasUpdate: ProjT.launcherVM.hasUpdate || false
     property string updateVersion: ProjT.launcherVM.updateVersion || ""
-    
+
     // Signals
-    signal moreNewsClicked()
-    signal updateClicked()
-    
+    signal moreNewsClicked
+    signal updateClicked
+
     Rectangle {
         anchors.fill: parent
-        color: Theme.surface
-        border.color: "#323742"
-        border.width: 1
-        
+        color: ThemeColors.toolBar
+
+        // Top border only
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: 1
+            color: ThemeColors.border
+        }
+
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: Theme.spacingM
             anchors.rightMargin: Theme.spacingM
             spacing: Theme.spacingM
-            
+
             // === News Label ===
             Label {
                 text: qsTr("News:")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 font.pointSize: 10
                 Layout.alignment: Qt.AlignVCenter
             }
-            
+
             // === News Headline ===
             Label {
                 id: headlineLabel
                 text: newsHeadline
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 font.pointSize: 10
                 elide: Text.ElideRight
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                
+
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: upperBar.moreNewsClicked()
-                    
+
                     hoverEnabled: true
-                    onEntered: headlineLabel.color = Theme.accent
-                    onExited: headlineLabel.color = Theme.textPrimary
+                    onEntered: headlineLabel.color = ThemeColors.accent
+                    onExited: headlineLabel.color = ThemeColors.text
                 }
             }
-            
+
             // === More News Button ===
-            Button {
+            ThemedToolButton {
                 text: qsTr("More News")
                 Layout.preferredHeight: 28
                 Layout.alignment: Qt.AlignVCenter
-                flat: true
-                
-                contentItem: Text {
-                    text: parent.text
-                    color: Theme.accent
-                    font.pointSize: 9
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                
-                background: Rectangle {
-                    radius: 4
-                    color: parent.hovered ? "#2a2d33" : "transparent"
-                }
-                
+                customTextColor: ThemeColors.accent
+
                 onClicked: upperBar.moreNewsClicked()
             }
-            
+
             // === Separator (visible only when update is available) ===
-            ToolSeparator {
+            Rectangle {
                 visible: hasUpdate
-                orientation: Qt.Vertical
-                Layout.fillHeight: true
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: 20
+                Layout.alignment: Qt.AlignVCenter
+                color: ThemeColors.border
             }
-            
+
             // === Update Available Badge ===
             Rectangle {
                 visible: hasUpdate
@@ -109,28 +106,28 @@ Rectangle {
                 Layout.preferredHeight: 28
                 Layout.alignment: Qt.AlignVCenter
                 radius: 14
-                color: "#1e3a5f"
-                border.color: "#3b82f6"
+                color: Qt.darker(ThemeColors.info, 1.5)
+                border.color: ThemeColors.info
                 border.width: 1
-                
+
                 RowLayout {
                     id: updateRow
                     anchors.centerIn: parent
                     spacing: 4
-                    
+
                     Text {
                         text: "⬆"
                         font.pointSize: 10
-                        color: "#3b82f6"
+                        color: ThemeColors.info
                     }
-                    
+
                     Label {
                         text: qsTr("Update: %1").arg(updateVersion)
-                        color: "#93c5fd"
+                        color: Qt.lighter(ThemeColors.info, 1.3)
                         font.pointSize: 9
                     }
                 }
-                
+
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor

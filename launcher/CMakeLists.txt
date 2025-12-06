@@ -815,6 +815,18 @@ SET(LAUNCHER_SOURCES
     viewmodels/NewInstanceViewModel.cpp
     viewmodels/InstanceViewModel.h
     viewmodels/InstanceViewModel.cpp
+    viewmodels/ATLauncherViewModel.h
+    viewmodels/ATLauncherViewModel.cpp
+    viewmodels/FTBViewModel.h
+    viewmodels/FTBViewModel.cpp
+    viewmodels/TechnicViewModel.h
+    viewmodels/TechnicViewModel.cpp
+    viewmodels/CurseForgeViewModel.h
+    viewmodels/CurseForgeViewModel.cpp
+    viewmodels/ModrinthViewModel.h
+    viewmodels/ModrinthViewModel.cpp
+    viewmodels/ThemeViewModel.h
+    viewmodels/ThemeViewModel.cpp
 
     # Super secret!
     KonamiCode.h
@@ -1358,6 +1370,7 @@ target_link_libraries(Launcher_logic
     Qt${QT_VERSION_MAJOR}::OpenGL
     Qt${QT_VERSION_MAJOR}::Qml
     Qt${QT_VERSION_MAJOR}::Quick
+    Qt${QT_VERSION_MAJOR}::QuickControls2
     Qt${QT_VERSION_MAJOR}::QuickWidgets
     ${Launcher_QT_DBUS}
     ${Launcher_QT_LIBS}

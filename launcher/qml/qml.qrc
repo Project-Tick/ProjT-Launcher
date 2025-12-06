@@ -1,4 +1,8 @@
 <RCC>
+    <qresource prefix="/qml/ProjTLauncher">
+        <file>qmldir</file>
+        <file alias="ThemeColors.qml">ThemeColors.qml</file>
+    </qresource>
     <qresource prefix="/qml">
         <file>TestShell.qml</file>
         <file>ShellPrototype.qml</file>
@@ -25,6 +29,8 @@
         <file>components/InstanceToolBar.qml</file>
         <file>components/NewsToolBar.qml</file>
         <file>components/StatusBar.qml</file>
+        <file>components/ThemedButton.qml</file>
+        <file>components/ThemedToolButton.qml</file>
         <file>components/NewInstanceCustomPage.qml</file>
         <file>components/NewInstanceImportPage.qml</file>
         <file>components/NewInstancePlaceholderPage.qml</file>
@@ -37,6 +43,15 @@
         <file>components/SettingsAccountsPage.qml</file>
         <file>components/SettingsAPIPage.qml</file>
         <file>components/SettingsProxyPage.qml</file>
+        <file>components/ThemePreview.qml</file>
+        <file>components/ThemeGallery.qml</file>
+        <file>components/IconThemeGallery.qml</file>
+        <file>components/PlatformThemeInfo.qml</file>
+        <file>components/InfoFrame.qml</file>
+        <file>components/CustomCommands.qml</file>
+        <file>components/EnvironmentVariables.qml</file>
+        <file>components/ModFilterWidget.qml</file>
+        <file>components/SubTaskProgressBar.qml</file>
         <file>settings/JavaSettingsPage.qml</file>
         <file>settings/MinecraftSettingsPage.qml</file>
         <file>settings/ServersPage.qml</file>
@@ -44,5 +59,64 @@
         <file>settings/ScreenshotsPage.qml</file>
         <file>settings/NotesPage.qml</file>
         <file>settings/ManagedPackPage.qml</file>
+        <!-- Instance Pages -->
+        <file>instance/ModsPage.qml</file>
+        <file>instance/ResourcePacksPage.qml</file>
+        <file>instance/ShaderPacksPage.qml</file>
+        <file>instance/TexturePacksPage.qml</file>
+        <file>instance/DataPacksPage.qml</file>
+        <file>instance/VersionPage.qml</file>
+        <file>instance/InstanceSettingsPage.qml</file>
+        <file>instance/GameOptionsPage.qml</file>
+        <file>instance/LogPage.qml</file>
+        <file>instance/OtherLogsPage.qml</file>
+        <!-- Modplatform Pages -->
+        <file>modplatform/CurseForgePage.qml</file>
+        <file>modplatform/ModrinthPage.qml</file>
+        <file>modplatform/ATLauncherPage.qml</file>
+        <file>modplatform/FTBPage.qml</file>
+        <file>modplatform/TechnicPage.qml</file>
+        <file>modplatform/ImportPage.qml</file>
+        <file>modplatform/ImportFTBPage.qml</file>
+        <!-- Dialogs -->
+        <file>dialogs/ExportDialog.qml</file>
+        <file>dialogs/BackupDialog.qml</file>
+        <file>dialogs/ProgressDialog.qml</file>
+        <file>dialogs/MSALoginDialog.qml</file>
+        <file>dialogs/UpdateDialog.qml</file>
+        <file>dialogs/IconPickerDialog.qml</file>
+        <file>dialogs/VersionSelectDialog.qml</file>
+        <file>dialogs/ProfileSelectDialog.qml</file>
+        <file>dialogs/CopyInstanceDialog.qml</file>
+        <file>dialogs/CreateShortcutDialog.qml</file>
+        <file>dialogs/BlockedModsDialog.qml</file>
+        <file>dialogs/ChooseProviderDialog.qml</file>
+        <file>dialogs/ImportResourceDialog.qml</file>
+        <file>dialogs/InstallLoaderDialog.qml</file>
+        <file>dialogs/ResourceDownloadDialog.qml</file>
+        <file>dialogs/ResourceUpdateDialog.qml</file>
+        <file>dialogs/NewComponentDialog.qml</file>
+        <file>dialogs/ReviewMessageBox.qml</file>
+        <file>dialogs/ScrollMessageBox.qml</file>
+        <file>dialogs/CustomMessageBox.qml</file>
+        <file>dialogs/NewInstanceDialog.qml</file>
+        <file>dialogs/OfflineLoginDialog.qml</file>
+        <file>dialogs/ProfileSetupDialog.qml</file>
+        <file>dialogs/NewsDialog.qml</file>
+        <file>dialogs/AboutDialog.qml</file>
+        <file>dialogs/ExportPackDialog.qml</file>
+        <file>dialogs/ExportToModListDialog.qml</file>
+        <file>dialogs/OptionalModDialog.qml</file>
+        <file>dialogs/SkinManageDialog.qml</file>
+        <file>dialogs/AtlOptionalModDialog.qml</file>
+        <file>dialogs/SelectReleaseDialog.qml</file>
+        <!-- Wizard Pages -->
+        <file>wizard/SetupWizard.qml</file>
+        <file>wizard/LanguageWizardPage.qml</file>
+        <file>wizard/ThemeWizardPage.qml</file>
+        <file>wizard/JavaWizardPage.qml</file>
+        <file>wizard/AutoJavaWizardPage.qml</file>
+        <file>wizard/LoginWizardPage.qml</file>
+        <file>wizard/PasteWizardPage.qml</file>
     </qresource>
 </RCC>

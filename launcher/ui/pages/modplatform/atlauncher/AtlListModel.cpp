@@ -62,47 +62,61 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
 
     ATLauncher::IndexedPack pack = modpacks.at(pos);
     switch (role) {
-        case Qt::ToolTipRole: {
-            if (pack.description.length() > 100) {
-                // some magic to prevent to long tooltips and replace html linebreaks
-                QString edit = pack.description.left(97);
-                edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
-                return edit;
-            }
-            return pack.description;
+    case Qt::ToolTipRole: {
+        if (pack.description.length() > 100) {
+            // some magic to prevent to long tooltips and replace html linebreaks
+            QString edit = pack.description.left(97);
+            edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
+            return edit;
         }
-        case Qt::DecorationRole: {
-            if (m_logoMap.contains(pack.safeName)) {
-                return (m_logoMap.value(pack.safeName));
-            }
-            auto icon = QIcon::fromTheme("atlauncher-placeholder");
+        return pack.description;
+    }
+    case Qt::DecorationRole: {
+        if (m_logoMap.contains(pack.safeName)) {
+            return (m_logoMap.value(pack.safeName));
+        }
+        auto icon = QIcon::fromTheme("atlauncher-placeholder");
 
-            auto url = QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1").arg(pack.safeName);
-            ((ListModel*)this)->requestLogo(pack.safeName, url);
+        auto url = QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1").arg(pack.safeName);
+        ((ListModel*)this)->requestLogo(pack.safeName, url);
 
-            return icon;
-        }
-        case Qt::UserRole: {
-            QVariant v;
-            v.setValue(pack);
-            return v;
-        }
-        case Qt::DisplayRole:
-            return pack.name;
-        case Qt::SizeHintRole:
-            return QSize(0, 58);
-        // Custom data
-        case UserDataTypes::TITLE:
-            return pack.name;
-        case UserDataTypes::DESCRIPTION:
-            return pack.description;
-        case UserDataTypes::INSTALLED:
-            return false;
-        default:
-            break;
+        return icon;
+    }
+    case Qt::UserRole:
+    case PackDataRole: {
+        QVariant v;
+        v.setValue(pack);
+        return v;
+    }
+    case Qt::DisplayRole:
+        return pack.name;
+    case Qt::SizeHintRole:
+        return QSize(0, 58);
+    // Custom data for QML
+    case NameRole:
+        return pack.name;
+    case DescriptionRole:
+        return pack.description;
+    case IconUrlRole:
+        return QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1.png").arg(pack.safeName);
+    // Legacy Widget roles
+    case UserDataTypes::TITLE:
+        return pack.name;
+    case UserDataTypes::DESCRIPTION:
+        return pack.description;
+    case UserDataTypes::INSTALLED:
+        return false;
+    default:
+        break;
     }
 
     return {};
+}
+
+QHash<int, QByteArray> ListModel::roleNames() const
+{
+    return { { NameRole, "name" },         { DescriptionRole, "description" }, { IconUrlRole, "iconUrl" },
+             { PackDataRole, "packData" }, { Qt::DisplayRole, "display" },     { Qt::ToolTipRole, "toolTip" } };
 }
 
 void ListModel::request()
@@ -130,6 +144,7 @@ void ListModel::requestFinished()
     if (parse_error.error != QJsonParseError::NoError) {
         qWarning() << "Error while parsing JSON response from ATL at " << parse_error.offset << " reason: " << parse_error.errorString();
         qWarning() << *response;
+        emit requestError(tr("Failed to parse ATLauncher pack list: %1").arg(parse_error.errorString()));
         return;
     }
 
@@ -165,11 +180,14 @@ void ListModel::requestFinished()
     beginInsertRows(QModelIndex(), modpacks.size(), modpacks.size() + newList.size() - 1);
     modpacks.append(newList);
     endInsertRows();
+
+    emit requestCompleted();
 }
 
 void ListModel::requestFailed(QString reason)
 {
     jobPtr.reset();
+    emit requestError(reason);
 }
 
 void ListModel::getLogo(const QString& logo, const QString& logoUrl, LogoCallback callback)

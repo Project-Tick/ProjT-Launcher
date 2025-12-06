@@ -18,14 +18,14 @@
 #include <QString>
 #include <QVariantMap>
 
-#include "minecraft/auth/MinecraftAccount.h"
 #include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/MinecraftAccount.h"
 
 class AccountList;
 
 class AccountsViewModel : public QObject {
     Q_OBJECT
-    
+
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(int defaultAccountIndex READ defaultAccountIndex NOTIFY defaultAccountChanged)
     Q_PROPERTY(QString defaultAccountName READ defaultAccountName NOTIFY defaultAccountChanged)
@@ -35,9 +35,9 @@ class AccountsViewModel : public QObject {
     Q_PROPERTY(bool isActive READ isActive NOTIFY activityChanged)
     Q_PROPERTY(QAbstractListModel* model READ model CONSTANT)
 
-public:
+   public:
     explicit AccountsViewModel(QObject* parent = nullptr);
-    
+
     // Properties
     int count() const;
     int defaultAccountIndex() const;
@@ -47,7 +47,7 @@ public:
     bool hasAccounts() const;
     bool isActive() const;
     QAbstractListModel* model() const;
-    
+
     // Account operations
     Q_INVOKABLE void addMicrosoftAccount();
     Q_INVOKABLE void addMicrosoftAccountWithDevice();
@@ -56,7 +56,7 @@ public:
     Q_INVOKABLE void setDefaultAccount(int index);
     Q_INVOKABLE void refreshAccount(int index);
     Q_INVOKABLE void refreshAllAccounts();
-    
+
     // Account info
     Q_INVOKABLE QVariantMap getAccountInfo(int index) const;
     Q_INVOKABLE QString getAccountName(int index) const;
@@ -65,12 +65,12 @@ public:
     Q_INVOKABLE QString getAccountProfileId(int index) const;
     Q_INVOKABLE bool isAccountDefault(int index) const;
     Q_INVOKABLE bool isAccountExpired(int index) const;
-    
+
     // Utility
     Q_INVOKABLE void selectAccount(int index);
     Q_INVOKABLE void cancelCurrentLogin();
-    
-signals:
+
+   signals:
     void countChanged();
     void defaultAccountChanged();
     void activityChanged();
@@ -81,14 +81,14 @@ signals:
     void loginFinished(bool success, const QString& message);
     void loginUrlReady(const QString& url, const QString& code);
 
-private slots:
+   private slots:
     void onListChanged();
     void onDefaultAccountChanged();
     void onActivityChanged(bool active);
     void onAuthSucceeded();
     void onAuthFailed(const QString& reason);
 
-private:
+   private:
     AccountList* m_accountList = nullptr;
     shared_qobject_ptr<AuthFlow> m_currentLoginTask;
     int m_pendingAccountIndex = -1;

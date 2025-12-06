@@ -293,12 +293,12 @@ auto ResourceUpdateDialog::ensureMetadata() -> bool
     // adds resource to list based on provider
     auto addToTmp = [&modrinth_tmp, &flame_tmp](Resource* resource, ModPlatform::ResourceProvider p) {
         switch (p) {
-            case ModPlatform::ResourceProvider::MODRINTH:
-                modrinth_tmp.push_back(resource);
-                break;
-            case ModPlatform::ResourceProvider::FLAME:
-                flame_tmp.push_back(resource);
-                break;
+        case ModPlatform::ResourceProvider::MODRINTH:
+            modrinth_tmp.push_back(resource);
+            break;
+        case ModPlatform::ResourceProvider::FLAME:
+            flame_tmp.push_back(resource);
+            break;
         }
     };
 
@@ -395,22 +395,22 @@ void ResourceUpdateDialog::onMetadataEnsured(Resource* resource)
         return;
 
     switch (resource->metadata()->provider) {
-        case ModPlatform::ResourceProvider::MODRINTH:
-            m_modrinthToUpdate.push_back(resource);
-            break;
-        case ModPlatform::ResourceProvider::FLAME:
-            m_flameToUpdate.push_back(resource);
-            break;
+    case ModPlatform::ResourceProvider::MODRINTH:
+        m_modrinthToUpdate.push_back(resource);
+        break;
+    case ModPlatform::ResourceProvider::FLAME:
+        m_flameToUpdate.push_back(resource);
+        break;
     }
 }
 
 ModPlatform::ResourceProvider next(ModPlatform::ResourceProvider p)
 {
     switch (p) {
-        case ModPlatform::ResourceProvider::MODRINTH:
-            return ModPlatform::ResourceProvider::FLAME;
-        case ModPlatform::ResourceProvider::FLAME:
-            return ModPlatform::ResourceProvider::MODRINTH;
+    case ModPlatform::ResourceProvider::MODRINTH:
+        return ModPlatform::ResourceProvider::FLAME;
+    case ModPlatform::ResourceProvider::FLAME:
+        return ModPlatform::ResourceProvider::MODRINTH;
     }
 
     return ModPlatform::ResourceProvider::FLAME;

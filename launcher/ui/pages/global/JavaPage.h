@@ -64,7 +64,9 @@ namespace Ui {
 class JavaPage;
 }
 
-class JavaPage : public QWidget, public BasePage {
+class JavaPage
+    : public QWidget
+    , public BasePage {
     Q_OBJECT
 
    public:
