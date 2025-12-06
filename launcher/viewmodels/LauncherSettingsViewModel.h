@@ -39,7 +39,8 @@ class LauncherSettingsViewModel : public QObject {
     Q_PROPERTY(QString javaFolder READ javaFolder WRITE setJavaFolder NOTIFY javaFolderChanged)
     Q_PROPERTY(QString skinsFolder READ skinsFolder WRITE setSkinsFolder NOTIFY skinsFolderChanged)
     Q_PROPERTY(QString downloadsFolder READ downloadsFolder WRITE setDownloadsFolder NOTIFY downloadsFolderChanged)
-    Q_PROPERTY(bool downloadsDirWatchRecursive READ downloadsDirWatchRecursive WRITE setDownloadsDirWatchRecursive NOTIFY downloadsDirWatchRecursiveChanged)
+    Q_PROPERTY(bool downloadsDirWatchRecursive READ downloadsDirWatchRecursive WRITE setDownloadsDirWatchRecursive NOTIFY
+                   downloadsDirWatchRecursiveChanged)
     Q_PROPERTY(bool downloadsDirMove READ downloadsDirMove WRITE setDownloadsDirMove NOTIFY downloadsDirMoveChanged)
     Q_PROPERTY(bool metadataEnabled READ metadataEnabled WRITE setMetadataEnabled NOTIFY metadataEnabledChanged)
     Q_PROPERTY(bool dependenciesEnabled READ dependenciesEnabled WRITE setDependenciesEnabled NOTIFY dependenciesEnabledChanged)

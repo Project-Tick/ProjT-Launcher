@@ -26,7 +26,7 @@ Dialog {
     width: 440
     height: 480
     standardButtons: Dialog.Cancel
-    
+
     property var vm: typeof ProjT !== "undefined" && ProjT ? ProjT.accountsVM : null
     property string loginUrl: ""
     property string userCode: ""
@@ -34,22 +34,22 @@ Dialog {
     property string statusText: ""
     property int topPanelState: 0  // 0: loading, 1: button ready
     property int bottomPanelState: 0  // 0: loading, 1: code ready
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
-        
+
         // Top StackedWidget - Login Button or Loading
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 80
-            
+
             // Loading state
             ColumnLayout {
                 anchors.centerIn: parent
                 visible: topPanelState === 0
                 spacing: Theme.spacingS
-                
+
                 Label {
                     text: qsTr("Please wait...")
                     font.pointSize: 16
@@ -57,7 +57,7 @@ Dialog {
                     color: ThemeColors.text
                     Layout.alignment: Qt.AlignHCenter
                 }
-                
+
                 Label {
                     text: statusText || qsTr("Initializing...")
                     color: ThemeColors.textSecondary
@@ -65,7 +65,7 @@ Dialog {
                     wrapMode: Text.WordWrap
                 }
             }
-            
+
             // Button state
             Button {
                 anchors.centerIn: parent
@@ -76,51 +76,51 @@ Dialog {
                 highlighted: true
                 onClicked: {
                     if (vm) {
-                        topPanelState = 0
-                        bottomPanelState = 0
-                        vm.addMicrosoftAccount()
+                        topPanelState = 0;
+                        bottomPanelState = 0;
+                        vm.addMicrosoftAccount();
                     }
                 }
             }
         }
-        
+
         // "Or" separator with lines
         RowLayout {
             Layout.fillWidth: true
             Layout.topMargin: Theme.spacingM
             Layout.bottomMargin: Theme.spacingM
             spacing: Theme.spacingM
-            
+
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
                 color: ThemeColors.border
             }
-            
+
             Label {
                 text: qsTr("Or")
                 font.pointSize: 16
                 color: ThemeColors.textSecondary
             }
-            
+
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
                 color: ThemeColors.border
             }
         }
-        
+
         // Bottom StackedWidget - QR Code/Device Code or Loading
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            
+
             // Loading state
             ColumnLayout {
                 anchors.centerIn: parent
                 visible: bottomPanelState === 0
                 spacing: Theme.spacingS
-                
+
                 Label {
                     text: qsTr("Please wait...")
                     font.pointSize: 16
@@ -128,27 +128,27 @@ Dialog {
                     color: ThemeColors.text
                     Layout.alignment: Qt.AlignHCenter
                 }
-                
+
                 Label {
                     text: statusText || qsTr("Waiting for device code...")
                     color: ThemeColors.textSecondary
                     Layout.alignment: Qt.AlignHCenter
                     wrapMode: Text.WordWrap
                 }
-                
+
                 BusyIndicator {
                     Layout.alignment: Qt.AlignHCenter
                     running: bottomPanelState === 0
                 }
             }
-            
+
             // Code ready state
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.spacingM
                 visible: bottomPanelState === 1
                 spacing: Theme.spacingM
-                
+
                 // QR Code
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
@@ -156,7 +156,7 @@ Dialog {
                     Layout.preferredHeight: 150
                     color: "white"
                     radius: 4
-                    
+
                     Image {
                         id: qrImage
                         anchors.fill: parent
@@ -165,7 +165,7 @@ Dialog {
                         fillMode: Image.PreserveAspectFit
                         visible: qrCodeData !== ""
                     }
-                    
+
                     Label {
                         anchors.centerIn: parent
                         text: qsTr("QR Code")
@@ -173,25 +173,25 @@ Dialog {
                         visible: qrCodeData === ""
                     }
                 }
-                
+
                 // Device Code with Copy button
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter
                     spacing: Theme.spacingS
-                    
+
                     Label {
                         id: codeLabel
                         text: userCode || "--------"
                         font.pointSize: 30
                         font.bold: true
                         color: ThemeColors.accent
-                        
+
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.IBeamCursor
                         }
                     }
-                    
+
                     Button {
                         id: copyCodeBtn
                         flat: true
@@ -202,12 +202,12 @@ Dialog {
                         ToolTip.text: qsTr("Copy code to clipboard")
                         onClicked: {
                             if (vm && userCode) {
-                                vm.copyCodeToClipboard(userCode)
+                                vm.copyCodeToClipboard(userCode);
                             }
                         }
                     }
                 }
-                
+
                 // Info message
                 Label {
                     Layout.fillWidth: true
@@ -215,61 +215,63 @@ Dialog {
                     color: ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
-                    onLinkActivated: (link) => Qt.openUrlExternally(link)
-                    
+                    onLinkActivated: link => Qt.openUrlExternally(link)
+
                     MouseArea {
                         anchors.fill: parent
                         acceptedButtons: Qt.NoButton
                         cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
                     }
                 }
-                
-                Item { Layout.fillHeight: true }
+
+                Item {
+                    Layout.fillHeight: true
+                }
             }
         }
     }
-    
+
     Connections {
         target: vm
-        
+
         function onLoginUrlReady(url, code) {
-            loginUrl = url
-            userCode = code
-            bottomPanelState = 1
-            topPanelState = 1
+            loginUrl = url;
+            userCode = code;
+            bottomPanelState = 1;
+            topPanelState = 1;
         }
-        
+
         function onQrCodeReady(qrData) {
-            qrCodeData = qrData
+            qrCodeData = qrData;
         }
-        
+
         function onLoginStatusChanged(status) {
-            statusText = status
+            statusText = status;
         }
-        
+
         function onLoginStarted() {
-            statusText = qsTr("Authenticating...")
+            statusText = qsTr("Authenticating...");
         }
-        
+
         function onLoginFinished(success, message) {
             if (success) {
-                statusText = qsTr("Account added successfully!")
-                closeTimer.start()
+                statusText = qsTr("Account added successfully!");
+                closeTimer.start();
             } else {
-                topPanelState = 1
-                bottomPanelState = 1
-                errorDialog.message = message
-                errorDialog.open()
+                topPanelState = 1;
+                bottomPanelState = 1;
+                errorDialog.message = message;
+                errorDialog.open();
             }
         }
     }
-    
+
     Timer {
         id: closeTimer
         interval: 1500
         onTriggered: msaLoginDialog.accept()
     }
-    
+
     Dialog {
         id: errorDialog
         title: qsTr("Login Error")
@@ -277,27 +279,29 @@ Dialog {
         standardButtons: Dialog.Ok
         x: (parent.width - width) / 2
         y: (parent.height - height) / 2
-        
+
         property string message: ""
-        
+
         Label {
             text: errorDialog.message
             color: ThemeColors.error
             wrapMode: Text.WordWrap
         }
     }
-    
+
     onOpened: {
-        topPanelState = 0
-        bottomPanelState = 0
-        statusText = ""
-        loginUrl = ""
-        userCode = ""
-        qrCodeData = ""
-        if (vm) vm.addMicrosoftAccount()
+        topPanelState = 0;
+        bottomPanelState = 0;
+        statusText = "";
+        loginUrl = "";
+        userCode = "";
+        qrCodeData = "";
+        if (vm)
+            vm.addMicrosoftAccount();
     }
-    
+
     onRejected: {
-        if (vm) vm.cancelLogin()
+        if (vm)
+            vm.cancelLogin();
     }
 }

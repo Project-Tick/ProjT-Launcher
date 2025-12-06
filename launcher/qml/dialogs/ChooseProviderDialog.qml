@@ -26,17 +26,17 @@ Dialog {
     standardButtons: Dialog.Cancel
     width: 450
     height: 350
-    
+
     property var providers: []
     property var selectedProvider: null
     property string resourceName: ""
-    
+
     signal providerSelected(var provider)
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Header
         Label {
             Layout.fillWidth: true
@@ -44,24 +44,24 @@ Dialog {
             color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
-        
+
         // Providers list
         Frame {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            
+
             ListView {
                 id: providerList
                 anchors.fill: parent
                 clip: true
                 model: providers
                 spacing: 4
-                
+
                 delegate: ItemDelegate {
                     width: providerList.width
                     height: 64
                     highlighted: selectedProvider && selectedProvider.id === modelData.id
-                    
+
                     Rectangle {
                         anchors.fill: parent
                         radius: 6
@@ -69,23 +69,25 @@ Dialog {
                         border.color: highlighted ? ThemeColors.accent : "transparent"
                         border.width: 1
                     }
-                    
+
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: Theme.spacingS
                         spacing: Theme.spacingM
-                        
+
                         // Provider icon
                         Rectangle {
                             Layout.preferredWidth: 44
                             Layout.preferredHeight: 44
                             radius: 8
                             color: {
-                                if (modelData.id === "curseforge") return ThemeColors.error
-                                if (modelData.id === "modrinth") return "#1bd96a"
-                                return ThemeColors.backgroundAlt
+                                if (modelData.id === "curseforge")
+                                    return ThemeColors.error;
+                                if (modelData.id === "modrinth")
+                                    return "#1bd96a";
+                                return ThemeColors.backgroundAlt;
                             }
-                            
+
                             Image {
                                 anchors.centerIn: parent
                                 width: 28
@@ -94,7 +96,7 @@ Dialog {
                                 fillMode: Image.PreserveAspectFit
                                 visible: status === Image.Ready
                             }
-                            
+
                             Label {
                                 anchors.centerIn: parent
                                 text: modelData.name ? modelData.name.charAt(0).toUpperCase() : "?"
@@ -104,17 +106,17 @@ Dialog {
                                 visible: parent.children[0].status !== Image.Ready
                             }
                         }
-                        
+
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
-                            
+
                             Label {
                                 text: modelData.name || qsTr("Unknown")
                                 color: ThemeColors.text
                                 font.bold: true
                             }
-                            
+
                             Label {
                                 text: modelData.description || ""
                                 color: ThemeColors.textSecondary
@@ -123,7 +125,7 @@ Dialog {
                                 Layout.fillWidth: true
                             }
                         }
-                        
+
                         // Preferred badge
                         Rectangle {
                             Layout.preferredWidth: preferredLabel.implicitWidth + 12
@@ -131,7 +133,7 @@ Dialog {
                             radius: 10
                             color: ThemeColors.accent
                             visible: modelData.preferred === true
-                            
+
                             Label {
                                 id: preferredLabel
                                 anchors.centerIn: parent
@@ -141,44 +143,46 @@ Dialog {
                             }
                         }
                     }
-                    
+
                     onClicked: {
-                        selectedProvider = modelData
+                        selectedProvider = modelData;
                     }
-                    
+
                     onDoubleClicked: {
-                        selectedProvider = modelData
-                        providerSelected(modelData)
-                        chooseProviderDialog.accept()
+                        selectedProvider = modelData;
+                        providerSelected(modelData);
+                        chooseProviderDialog.accept();
                     }
                 }
-                
+
                 ScrollBar.vertical: ScrollBar {}
             }
         }
-        
+
         // Buttons
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
+
             CheckBox {
                 id: rememberCheck
                 text: qsTr("Remember my choice")
             }
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             ThemedButton {
                 text: qsTr("Select")
                 primary: true
                 enabled: selectedProvider !== null
                 onClicked: {
                     if (rememberCheck.checked && ProjT) {
-                        ProjT.settings.preferredProvider = selectedProvider.id
+                        ProjT.settings.preferredProvider = selectedProvider.id;
                     }
-                    providerSelected(selectedProvider)
-                    chooseProviderDialog.accept()
+                    providerSelected(selectedProvider);
+                    chooseProviderDialog.accept();
                 }
             }
         }

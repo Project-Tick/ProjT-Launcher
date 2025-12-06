@@ -21,16 +21,16 @@ import "../Theme.js" as Theme
 Rectangle {
     id: autoJavaPage
     color: ThemeColors.background
-    
+
     property bool autoDownloadEnabled: true
-    
-    signal settingsChanged()
-    
+
+    signal settingsChanged
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingL
         spacing: Theme.spacingM
-        
+
         // Title
         Label {
             text: qsTr("New Feature Alert!")
@@ -38,7 +38,7 @@ Rectangle {
             font.bold: true
             color: ThemeColors.text
         }
-        
+
         // Description
         Label {
             Layout.fillWidth: true
@@ -46,43 +46,45 @@ Rectangle {
             color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
-        
+
         // Separator
         Rectangle {
             Layout.fillWidth: true
             height: 1
             color: ThemeColors.border
         }
-        
+
         // Options
         ColumnLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
-            
+
             RadioButton {
                 id: enableRadio
                 text: qsTr("Enable Auto-Download")
                 checked: autoDownloadEnabled
                 onCheckedChanged: {
                     if (checked) {
-                        autoDownloadEnabled = true
-                        settingsChanged()
+                        autoDownloadEnabled = true;
+                        settingsChanged();
                     }
                 }
             }
-            
+
             RadioButton {
                 text: qsTr("Disable Auto-Download")
                 checked: !autoDownloadEnabled
                 onCheckedChanged: {
                     if (checked) {
-                        autoDownloadEnabled = false
-                        settingsChanged()
+                        autoDownloadEnabled = false;
+                        settingsChanged();
                     }
                 }
             }
         }
-        
-        Item { Layout.fillHeight: true }
+
+        Item {
+            Layout.fillHeight: true
+        }
     }
 }

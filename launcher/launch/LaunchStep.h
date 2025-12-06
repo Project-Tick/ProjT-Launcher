@@ -55,9 +55,9 @@ class LaunchStep : public Task {
     void progressReportingRequest();
 
    public slots:
-    virtual void proceed(){};
+    virtual void proceed() {};
     // called in the opposite order than the Task launch(), used to clean up or otherwise undo things after the launch ends
-    virtual void finalize(){};
+    virtual void finalize() {};
 
    protected: /* data */
     LaunchTask* m_parent;

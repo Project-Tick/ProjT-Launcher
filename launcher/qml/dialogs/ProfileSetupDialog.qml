@@ -27,28 +27,28 @@ Dialog {
     height: 350
     standardButtons: Dialog.NoButton
     closePolicy: Dialog.NoAutoClose
-    
+
     property var vm: ProjT ? ProjT.accountsVM : null
     property var account: null
     property string gameName: ""
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Welcome message
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacingS
-            
+
             Rectangle {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: 80
                 Layout.preferredHeight: 80
                 radius: 40
                 color: ThemeColors.accent
-                
+
                 Image {
                     anchors.fill: parent
                     anchors.margins: 8
@@ -56,7 +56,7 @@ Dialog {
                     fillMode: Image.PreserveAspectFit
                     visible: status === Image.Ready
                 }
-                
+
                 Label {
                     anchors.centerIn: parent
                     text: account && account.username ? account.username.charAt(0).toUpperCase() : "?"
@@ -65,7 +65,7 @@ Dialog {
                     visible: parent.children[0].status !== Image.Ready
                 }
             }
-            
+
             Label {
                 text: qsTr("Welcome, %1!").arg(account ? account.username : "")
                 color: ThemeColors.text
@@ -74,35 +74,35 @@ Dialog {
                 Layout.alignment: Qt.AlignHCenter
             }
         }
-        
+
         // Game name setup
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("In-Game Name")
-            
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacingS
-                
+
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Your Microsoft account doesn't have a Minecraft profile yet. Please create one:")
                     color: ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                 }
-                
+
                 TextField {
                     id: gameNameField
                     Layout.fillWidth: true
                     placeholderText: qsTr("Enter your desired in-game name...")
                     text: gameName
                     onTextChanged: gameName = text
-                    
+
                     validator: RegularExpressionValidator {
                         regularExpression: /^[a-zA-Z0-9_]{3,16}$/
                     }
                 }
-                
+
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Must be 3-16 characters. Only letters, numbers, and underscores allowed.")
@@ -111,7 +111,7 @@ Dialog {
                 }
             }
         }
-        
+
         // Status message
         Rectangle {
             Layout.fillWidth: true
@@ -119,18 +119,18 @@ Dialog {
             radius: 8
             color: vm && vm.profileSetupError ? "#ef444420" : "transparent"
             visible: vm && (vm.profileSetupError || vm.profileSetupBusy)
-            
+
             RowLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.spacingS
-                
+
                 BusyIndicator {
                     Layout.preferredWidth: 24
                     Layout.preferredHeight: 24
                     running: vm ? vm.profileSetupBusy : false
                     visible: running
                 }
-                
+
                 Label {
                     id: statusLabel
                     Layout.fillWidth: true
@@ -140,39 +140,43 @@ Dialog {
                 }
             }
         }
-        
-        Item { Layout.fillHeight: true }
-        
+
+        Item {
+            Layout.fillHeight: true
+        }
+
         // Buttons
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
+
             ThemedButton {
                 text: qsTr("Cancel")
                 outline: true
                 onClicked: profileSetupDialog.reject()
             }
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             ThemedButton {
                 text: qsTr("Create Profile")
                 primary: true
                 enabled: gameNameField.text.length >= 3 && (!vm || !vm.profileSetupBusy)
                 onClicked: {
                     if (vm && account) {
-                        vm.createGameProfile(account.id, gameNameField.text)
+                        vm.createGameProfile(account.id, gameNameField.text);
                     }
                 }
             }
         }
     }
-    
+
     Connections {
         target: vm
         function onProfileSetupComplete() {
-            profileSetupDialog.accept()
+            profileSetupDialog.accept();
         }
     }
 }

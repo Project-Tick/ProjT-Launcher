@@ -25,51 +25,51 @@ Rectangle {
     border.color: ThemeColors.border
     border.width: 1
     radius: ThemeColors.radiusM
-    
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: ThemeColors.spacingM
         spacing: ThemeColors.spacingS
-        
+
         Label {
             text: qsTr("Theme Preview")
             font.pixelSize: ThemeColors.fontHeader
             font.bold: true
             color: ThemeColors.windowText
         }
-        
+
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 40
             color: ThemeColors.base
             border.color: ThemeColors.border
             radius: ThemeColors.radiusS
-            
+
             Label {
                 anchors.centerIn: parent
                 text: qsTr("Base Background")
                 color: ThemeColors.text
             }
         }
-        
+
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 40
             color: ThemeColors.alternateBase
             border.color: ThemeColors.border
             radius: ThemeColors.radiusS
-            
+
             Label {
                 anchors.centerIn: parent
                 text: qsTr("Alternate Base")
                 color: ThemeColors.text
             }
         }
-        
+
         RowLayout {
             Layout.fillWidth: true
             spacing: ThemeColors.spacingS
-            
+
             Button {
                 Layout.fillWidth: true
                 text: qsTr("Button")
@@ -85,7 +85,7 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                 }
             }
-            
+
             Button {
                 Layout.fillWidth: true
                 text: qsTr("Highlight")
@@ -101,21 +101,21 @@ Rectangle {
                 }
             }
         }
-        
+
         RowLayout {
             Layout.fillWidth: true
             spacing: ThemeColors.spacingS
-            
+
             Label {
                 text: qsTr("Link:")
                 color: ThemeColors.textSecondary
             }
-            
+
             Label {
                 text: qsTr("Click here")
                 color: ThemeColors.link
                 font.underline: true
-                
+
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor

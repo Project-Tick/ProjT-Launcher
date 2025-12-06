@@ -112,8 +112,7 @@ class ThemeViewModel::IconThemeListModel : public QAbstractListModel {
 // ThemeViewModel Implementation
 ThemeViewModel::ThemeViewModel(QObject* parent)
     : QObject(parent), m_themeListModel(new ThemeListModel(this)), m_iconThemeListModel(new IconThemeListModel(this))
-{
-}
+{}
 
 QString ThemeViewModel::currentTheme() const
 {
@@ -127,7 +126,7 @@ void ThemeViewModel::setCurrentTheme(const QString& themeId)
 
     APPLICATION->settings()->set("ApplicationTheme", themeId);
     emit currentThemeChanged();
-    
+
     // Apply the theme immediately
     APPLICATION->themeManager()->applyCurrentlySelectedTheme();
     emit themeColorsChanged();
@@ -145,7 +144,7 @@ void ThemeViewModel::setCurrentIconTheme(const QString& themeId)
 
     APPLICATION->settings()->set("IconTheme", themeId);
     emit currentIconThemeChanged();
-    
+
     // Apply the icon theme immediately
     APPLICATION->themeManager()->setIconTheme(themeId);
     APPLICATION->themeManager()->applyCurrentlySelectedTheme();
@@ -232,13 +231,13 @@ QColor ThemeViewModel::fadeColor() const
     auto* themeManager = APPLICATION->themeManager();
     auto themes = themeManager->getValidApplicationThemes();
     QString currentThemeId = currentTheme();
-    
+
     for (auto* theme : themes) {
         if (theme && theme->id() == currentThemeId) {
             return theme->fadeColor();
         }
     }
-    
+
     // Default fade color
     return QColor(0, 0, 0);
 }
@@ -249,13 +248,13 @@ QString ThemeViewModel::currentThemeName() const
     auto* themeManager = APPLICATION->themeManager();
     auto themes = themeManager->getValidApplicationThemes();
     QString currentThemeId = currentTheme();
-    
+
     for (auto* theme : themes) {
         if (theme && theme->id() == currentThemeId) {
             return theme->name();
         }
     }
-    
+
     return QStringLiteral("Unknown");
 }
 
@@ -264,13 +263,13 @@ QString ThemeViewModel::currentThemeTooltip() const
     auto* themeManager = APPLICATION->themeManager();
     auto themes = themeManager->getValidApplicationThemes();
     QString currentThemeId = currentTheme();
-    
+
     for (auto* theme : themes) {
         if (theme && theme->id() == currentThemeId) {
             return theme->tooltip();
         }
     }
-    
+
     return QString();
 }
 
@@ -279,13 +278,13 @@ double ThemeViewModel::fadeAmount() const
     auto* themeManager = APPLICATION->themeManager();
     auto themes = themeManager->getValidApplicationThemes();
     QString currentThemeId = currentTheme();
-    
+
     for (auto* theme : themes) {
         if (theme && theme->id() == currentThemeId) {
             return theme->fadeAmount();
         }
     }
-    
+
     return 0.5;
 }
 
@@ -294,13 +293,13 @@ bool ThemeViewModel::hasStyleSheet() const
     auto* themeManager = APPLICATION->themeManager();
     auto themes = themeManager->getValidApplicationThemes();
     QString currentThemeId = currentTheme();
-    
+
     for (auto* theme : themes) {
         if (theme && theme->id() == currentThemeId) {
             return theme->hasStyleSheet();
         }
     }
-    
+
     return false;
 }
 
@@ -309,12 +308,12 @@ QString ThemeViewModel::qtTheme() const
     auto* themeManager = APPLICATION->themeManager();
     auto themes = themeManager->getValidApplicationThemes();
     QString currentThemeId = currentTheme();
-    
+
     for (auto* theme : themes) {
         if (theme && theme->id() == currentThemeId) {
             return theme->qtTheme();
         }
     }
-    
+
     return QString();
 }

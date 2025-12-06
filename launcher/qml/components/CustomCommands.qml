@@ -21,20 +21,20 @@ import "../Theme.js" as Theme
 Rectangle {
     id: customCommandsWidget
     color: "transparent"
-    
+
     // Properties for external binding
     property bool overrideGlobalSettings: false
     property string preLaunchCommand: ""
     property string wrapperCommand: ""
     property string postExitCommand: ""
-    
+
     implicitHeight: mainLayout.implicitHeight
-    
+
     ColumnLayout {
         id: mainLayout
         anchors.fill: parent
         spacing: Theme.spacingS
-        
+
         // Override checkbox
         CheckBox {
             id: overrideCheckBox
@@ -42,20 +42,20 @@ Rectangle {
             checked: overrideGlobalSettings
             onCheckedChanged: overrideGlobalSettings = checked
         }
-        
+
         // Commands container
         ColumnLayout {
             Layout.fillWidth: true
             enabled: overrideCheckBox.checked
             opacity: enabled ? 1.0 : 0.5
             spacing: Theme.spacingS
-            
+
             // Pre-launch command
             Label {
                 text: qsTr("Pre-launch Command")
                 color: ThemeColors.text
             }
-            
+
             TextField {
                 id: preLaunchField
                 Layout.fillWidth: true
@@ -63,15 +63,17 @@ Rectangle {
                 onTextChanged: preLaunchCommand = text
                 placeholderText: qsTr("Command to run before launching")
             }
-            
-            Item { height: Theme.spacingXS }
-            
+
+            Item {
+                height: Theme.spacingXS
+            }
+
             // Wrapper command
             Label {
                 text: qsTr("Wrapper Command")
                 color: ThemeColors.text
             }
-            
+
             TextField {
                 id: wrapperField
                 Layout.fillWidth: true
@@ -79,15 +81,17 @@ Rectangle {
                 onTextChanged: wrapperCommand = text
                 placeholderText: qsTr("Wrapper program (e.g., optirun)")
             }
-            
-            Item { height: Theme.spacingXS }
-            
+
+            Item {
+                height: Theme.spacingXS
+            }
+
             // Post-exit command
             Label {
                 text: qsTr("Post-exit Command")
                 color: ThemeColors.text
             }
-            
+
             TextField {
                 id: postExitField
                 Layout.fillWidth: true
@@ -96,28 +100,20 @@ Rectangle {
                 placeholderText: qsTr("Command to run after game exits")
             }
         }
-        
+
         // Description
         Label {
             Layout.fillWidth: true
             Layout.topMargin: Theme.spacingM
-            text: qsTr("<p>Pre-launch command runs before the instance launches and post-exit command runs after it exits.</p>" +
-                      "<p>Both will be run in the launcher's working folder with extra environment variables:</p>" +
-                      "<ul>" +
-                      "<li><b>$INST_NAME</b> - Name of the instance</li>" +
-                      "<li><b>$INST_ID</b> - ID of the instance (its folder name)</li>" +
-                      "<li><b>$INST_DIR</b> - absolute path of the instance</li>" +
-                      "<li><b>$INST_MC_DIR</b> - absolute path of Minecraft</li>" +
-                      "<li><b>$INST_JAVA</b> - Java binary used for launch</li>" +
-                      "<li><b>$INST_JAVA_ARGS</b> - command-line parameters used for launch</li>" +
-                      "</ul>" +
-                      "<p>Wrapper command allows launching using an extra wrapper program (like 'optirun' on Linux)</p>")
+            text: qsTr("<p>Pre-launch command runs before the instance launches and post-exit command runs after it exits.</p>" + "<p>Both will be run in the launcher's working folder with extra environment variables:</p>" + "<ul>" + "<li><b>$INST_NAME</b> - Name of the instance</li>" + "<li><b>$INST_ID</b> - ID of the instance (its folder name)</li>" + "<li><b>$INST_DIR</b> - absolute path of the instance</li>" + "<li><b>$INST_MC_DIR</b> - absolute path of Minecraft</li>" + "<li><b>$INST_JAVA</b> - Java binary used for launch</li>" + "<li><b>$INST_JAVA_ARGS</b> - command-line parameters used for launch</li>" + "</ul>" + "<p>Wrapper command allows launching using an extra wrapper program (like 'optirun' on Linux)</p>")
             color: ThemeColors.textSecondary
             wrapMode: Text.WordWrap
             textFormat: Text.RichText
             font.pixelSize: 11
         }
-        
-        Item { Layout.fillHeight: true }
+
+        Item {
+            Layout.fillHeight: true
+        }
     }
 }

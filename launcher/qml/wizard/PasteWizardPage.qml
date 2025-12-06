@@ -21,16 +21,16 @@ import "../Theme.js" as Theme
 Rectangle {
     id: pastePage
     color: ThemeColors.background
-    
+
     property bool useDefaultService: true
-    
-    signal settingsChanged()
-    
+
+    signal settingsChanged
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingL
         spacing: Theme.spacingM
-        
+
         // Description
         Label {
             Layout.fillWidth: true
@@ -38,42 +38,44 @@ Rectangle {
             color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
-        
+
         // Separator
         Rectangle {
             Layout.fillWidth: true
             height: 1
             color: ThemeColors.border
         }
-        
+
         // Options
         ColumnLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
-            
+
             RadioButton {
                 text: qsTr("Use new default service")
                 checked: useDefaultService
                 onCheckedChanged: {
                     if (checked) {
-                        useDefaultService = true
-                        settingsChanged()
+                        useDefaultService = true;
+                        settingsChanged();
                     }
                 }
             }
-            
+
             RadioButton {
                 text: qsTr("Keep previous settings")
                 checked: !useDefaultService
                 onCheckedChanged: {
                     if (checked) {
-                        useDefaultService = false
-                        settingsChanged()
+                        useDefaultService = false;
+                        settingsChanged();
                     }
                 }
             }
         }
-        
-        Item { Layout.fillHeight: true }
+
+        Item {
+            Layout.fillHeight: true
+        }
     }
 }

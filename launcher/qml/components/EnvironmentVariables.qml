@@ -21,20 +21,20 @@ import "../Theme.js" as Theme
 Rectangle {
     id: envVarsWidget
     color: "transparent"
-    
+
     // Properties for external binding
     property bool overrideGlobalSettings: false
     property var environmentVariables: []  // Array of {name: "", value: ""}
-    
-    signal variablesChanged()
-    
+
+    signal variablesChanged
+
     implicitHeight: mainLayout.implicitHeight
-    
+
     ColumnLayout {
         id: mainLayout
         anchors.fill: parent
         spacing: Theme.spacingS
-        
+
         // Override checkbox
         CheckBox {
             id: overrideCheckBox
@@ -42,7 +42,7 @@ Rectangle {
             checked: overrideGlobalSettings
             onCheckedChanged: overrideGlobalSettings = checked
         }
-        
+
         // Variables container
         ColumnLayout {
             Layout.fillWidth: true
@@ -50,47 +50,52 @@ Rectangle {
             enabled: overrideCheckBox.checked
             opacity: enabled ? 1.0 : 0.5
             spacing: Theme.spacingS
-            
+
             // Toolbar
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.spacingS
-                
+
                 Button {
                     text: qsTr("Add")
                     onClicked: {
-                        var newVars = environmentVariables.slice()
-                        newVars.push({name: "", value: ""})
-                        environmentVariables = newVars
-                        variablesChanged()
+                        var newVars = environmentVariables.slice();
+                        newVars.push({
+                            name: "",
+                            value: ""
+                        });
+                        environmentVariables = newVars;
+                        variablesChanged();
                     }
                 }
-                
+
                 Button {
                     text: qsTr("Remove")
                     enabled: varsList.currentIndex >= 0
                     onClicked: {
                         if (varsList.currentIndex >= 0) {
-                            var newVars = environmentVariables.slice()
-                            newVars.splice(varsList.currentIndex, 1)
-                            environmentVariables = newVars
-                            variablesChanged()
+                            var newVars = environmentVariables.slice();
+                            newVars.splice(varsList.currentIndex, 1);
+                            environmentVariables = newVars;
+                            variablesChanged();
                         }
                     }
                 }
-                
-                Item { Layout.fillWidth: true }
-                
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
                 Button {
                     text: qsTr("Clear")
                     enabled: environmentVariables.length > 0
                     onClicked: {
-                        environmentVariables = []
-                        variablesChanged()
+                        environmentVariables = [];
+                        variablesChanged();
                     }
                 }
             }
-            
+
             // Variables list
             Rectangle {
                 Layout.fillWidth: true
@@ -99,7 +104,7 @@ Rectangle {
                 color: ThemeColors.backgroundAlt
                 border.color: ThemeColors.border
                 radius: Theme.radiusS
-                
+
                 ListView {
                     id: varsList
                     anchors.fill: parent
@@ -107,26 +112,26 @@ Rectangle {
                     clip: true
                     model: environmentVariables
                     currentIndex: -1
-                    
+
                     // Header
                     header: Rectangle {
                         width: varsList.width
                         height: 30
                         color: ThemeColors.surface
-                        
+
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: Theme.spacingS
                             anchors.rightMargin: Theme.spacingS
                             spacing: Theme.spacingM
-                            
+
                             Label {
                                 Layout.preferredWidth: parent.width * 0.4
                                 text: qsTr("Name")
                                 font.bold: true
                                 color: ThemeColors.text
                             }
-                            
+
                             Label {
                                 Layout.fillWidth: true
                                 text: qsTr("Value")
@@ -135,49 +140,55 @@ Rectangle {
                             }
                         }
                     }
-                    
+
                     delegate: Rectangle {
                         width: varsList.width
                         height: 36
                         color: index === varsList.currentIndex ? ThemeColors.accent : (index % 2 === 0 ? "transparent" : ThemeColors.surface)
-                        
+
                         MouseArea {
                             anchors.fill: parent
                             onClicked: varsList.currentIndex = index
                         }
-                        
+
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: Theme.spacingS
                             anchors.rightMargin: Theme.spacingS
                             spacing: Theme.spacingM
-                            
+
                             TextField {
                                 Layout.preferredWidth: parent.width * 0.4
                                 text: modelData.name || ""
                                 placeholderText: qsTr("VAR_NAME")
                                 onTextChanged: {
-                                    var newVars = environmentVariables.slice()
-                                    newVars[index] = {name: text, value: newVars[index].value}
-                                    environmentVariables = newVars
-                                    variablesChanged()
+                                    var newVars = environmentVariables.slice();
+                                    newVars[index] = {
+                                        name: text,
+                                        value: newVars[index].value
+                                    };
+                                    environmentVariables = newVars;
+                                    variablesChanged();
                                 }
                             }
-                            
+
                             TextField {
                                 Layout.fillWidth: true
                                 text: modelData.value || ""
                                 placeholderText: qsTr("value")
                                 onTextChanged: {
-                                    var newVars = environmentVariables.slice()
-                                    newVars[index] = {name: newVars[index].name, value: text}
-                                    environmentVariables = newVars
-                                    variablesChanged()
+                                    var newVars = environmentVariables.slice();
+                                    newVars[index] = {
+                                        name: newVars[index].name,
+                                        value: text
+                                    };
+                                    environmentVariables = newVars;
+                                    variablesChanged();
                                 }
                             }
                         }
                     }
-                    
+
                     ScrollBar.vertical: ScrollBar {}
                 }
             }

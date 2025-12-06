@@ -21,17 +21,17 @@ import "../Theme.js" as Theme
 Rectangle {
     id: themePage
     color: ThemeColors.background
-    
+
     property var vm: ProjT.themeVM
     property string selectedTheme: "system"
-    
+
     signal themeChanged(string themeId)
-    
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingL
         spacing: Theme.spacingM
-        
+
         // Title
         Label {
             text: qsTr("Choose Your Theme")
@@ -39,7 +39,7 @@ Rectangle {
             font.bold: true
             color: ThemeColors.text
         }
-        
+
         // Description
         Label {
             Layout.fillWidth: true
@@ -47,21 +47,21 @@ Rectangle {
             color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
-        
+
         // Separator
         Rectangle {
             Layout.fillWidth: true
             height: 1
             color: ThemeColors.border
         }
-        
+
         // Theme options
         GridLayout {
             Layout.fillWidth: true
             columns: 3
             rowSpacing: Theme.spacingM
             columnSpacing: Theme.spacingM
-            
+
             // System Theme
             ThemeOption {
                 themeId: "system"
@@ -70,11 +70,11 @@ Rectangle {
                 previewColors: ["#f5f5f5", "#333333"]
                 selected: selectedTheme === "system"
                 onClicked: {
-                    selectedTheme = "system"
-                    themeChanged("system")
+                    selectedTheme = "system";
+                    themeChanged("system");
                 }
             }
-            
+
             // Light Theme
             ThemeOption {
                 themeId: "light"
@@ -83,11 +83,11 @@ Rectangle {
                 previewColors: ["#ffffff", "#1a1a1a"]
                 selected: selectedTheme === "light"
                 onClicked: {
-                    selectedTheme = "light"
-                    themeChanged("light")
+                    selectedTheme = "light";
+                    themeChanged("light");
                 }
             }
-            
+
             // Dark Theme
             ThemeOption {
                 themeId: "dark"
@@ -96,15 +96,17 @@ Rectangle {
                 previewColors: ["#1e1e1e", "#ffffff"]
                 selected: selectedTheme === "dark"
                 onClicked: {
-                    selectedTheme = "dark"
-                    themeChanged("dark")
+                    selectedTheme = "dark";
+                    themeChanged("dark");
                 }
             }
         }
-        
-        Item { Layout.fillHeight: true }
+
+        Item {
+            Layout.fillHeight: true
+        }
     }
-    
+
     // Theme preview component
     component ThemeOption: Rectangle {
         property string themeId
@@ -112,45 +114,45 @@ Rectangle {
         property string themeDescription
         property var previewColors: ["#ffffff", "#000000"]
         property bool selected: false
-        
-        signal clicked()
-        
+
+        signal clicked
+
         Layout.fillWidth: true
         Layout.preferredHeight: 120
         radius: Theme.radiusM
         border.color: selected ? ThemeColors.accent : ThemeColors.border
         border.width: selected ? 2 : 1
         color: ThemeColors.surface
-        
+
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: parent.clicked()
         }
-        
+
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: Theme.spacingM
             spacing: Theme.spacingS
-            
+
             // Preview
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 radius: Theme.radiusS
                 color: previewColors[0]
-                
+
                 RowLayout {
                     anchors.centerIn: parent
                     spacing: Theme.spacingS
-                    
+
                     Rectangle {
                         width: 30
                         height: 30
                         radius: Theme.radiusS
                         color: previewColors[1]
                     }
-                    
+
                     Rectangle {
                         width: 60
                         height: 8
@@ -160,14 +162,14 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Name
             Label {
                 text: themeName
                 font.bold: true
                 color: ThemeColors.text
             }
-            
+
             // Description
             Label {
                 text: themeDescription
@@ -175,7 +177,7 @@ Rectangle {
                 color: ThemeColors.textSecondary
             }
         }
-        
+
         // Selected indicator
         Rectangle {
             anchors.right: parent.right
@@ -187,7 +189,7 @@ Rectangle {
             color: selected ? ThemeColors.accent : "transparent"
             border.color: selected ? ThemeColors.accent : ThemeColors.border
             visible: selected
-            
+
             Label {
                 anchors.centerIn: parent
                 text: "✓"

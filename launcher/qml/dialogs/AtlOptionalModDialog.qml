@@ -25,16 +25,16 @@ Dialog {
     width: 550
     height: 400
     standardButtons: Dialog.NoButton
-    
+
     property var optionalMods: []  // Array of {name, description, recommended, selected}
     property string shareCode: ""
-    
+
     signal installRequested(var selectedMods)
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingS
-        
+
         // Mod list
         Rectangle {
             Layout.fillWidth: true
@@ -42,46 +42,46 @@ Dialog {
             color: ThemeColors.backgroundAlt
             border.color: ThemeColors.border
             radius: Theme.radiusS
-            
+
             TreeView {
                 id: modTree
                 anchors.fill: parent
                 anchors.margins: 1
                 clip: true
                 model: optionalMods
-                
+
                 delegate: ItemDelegate {
                     width: modTree.width
                     height: 50
-                    
+
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: Theme.spacingS
                         spacing: Theme.spacingM
-                        
+
                         CheckBox {
                             id: modCheckbox
                             checked: modelData.selected || modelData.recommended
                             onCheckedChanged: {
-                                var mods = optionalMods.slice()
-                                mods[index].selected = checked
-                                optionalMods = mods
+                                var mods = optionalMods.slice();
+                                mods[index].selected = checked;
+                                optionalMods = mods;
                             }
                         }
-                        
+
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
-                            
+
                             RowLayout {
                                 spacing: Theme.spacingS
-                                
+
                                 Label {
                                     text: modelData.name || ""
                                     color: ThemeColors.text
                                     font.bold: true
                                 }
-                                
+
                                 Label {
                                     text: qsTr("(Recommended)")
                                     color: ThemeColors.accent
@@ -89,7 +89,7 @@ Dialog {
                                     visible: modelData.recommended
                                 }
                             }
-                            
+
                             Label {
                                 Layout.fillWidth: true
                                 text: modelData.description || ""
@@ -100,62 +100,64 @@ Dialog {
                         }
                     }
                 }
-                
+
                 ScrollBar.vertical: ScrollBar {}
             }
         }
-        
+
         // Buttons
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
-            
+
             Button {
                 text: qsTr("Use Share Code")
                 onClicked: shareCodeDialog.open()
             }
-            
+
             Button {
                 text: qsTr("Select Recommended")
                 onClicked: {
-                    var mods = optionalMods.slice()
+                    var mods = optionalMods.slice();
                     for (var i = 0; i < mods.length; i++) {
-                        mods[i].selected = mods[i].recommended
+                        mods[i].selected = mods[i].recommended;
                     }
-                    optionalMods = mods
+                    optionalMods = mods;
                 }
             }
-            
+
             Button {
                 text: qsTr("Clear All")
                 onClicked: {
-                    var mods = optionalMods.slice()
+                    var mods = optionalMods.slice();
                     for (var i = 0; i < mods.length; i++) {
-                        mods[i].selected = false
+                        mods[i].selected = false;
                     }
-                    optionalMods = mods
+                    optionalMods = mods;
                 }
             }
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             Button {
                 text: qsTr("Install")
                 highlighted: true
                 onClicked: {
-                    var selected = []
+                    var selected = [];
                     for (var i = 0; i < optionalMods.length; i++) {
                         if (optionalMods[i].selected) {
-                            selected.push(optionalMods[i])
+                            selected.push(optionalMods[i]);
                         }
                     }
-                    installRequested(selected)
-                    atlModDialog.accept()
+                    installRequested(selected);
+                    atlModDialog.accept();
                 }
             }
         }
     }
-    
+
     // Share code dialog
     Dialog {
         id: shareCodeDialog
@@ -163,25 +165,25 @@ Dialog {
         modal: true
         standardButtons: Dialog.Ok | Dialog.Cancel
         width: 300
-        
+
         ColumnLayout {
             anchors.fill: parent
-            
+
             Label {
                 text: qsTr("Enter the share code to apply mod selections:")
                 color: ThemeColors.text
                 wrapMode: Text.WordWrap
             }
-            
+
             TextField {
                 id: shareCodeField
                 Layout.fillWidth: true
                 placeholderText: qsTr("Share code...")
             }
         }
-        
+
         onAccepted: {
-            shareCode = shareCodeField.text
+            shareCode = shareCodeField.text;
             // Apply share code logic would be handled by ViewModel
         }
     }

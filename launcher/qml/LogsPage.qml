@@ -32,7 +32,7 @@ Rectangle {
         spacing: Theme.spacingS
         Component.onCompleted: {
             if (vm) {
-                vm.loadLogs(vm.selectedLog)
+                vm.loadLogs(vm.selectedLog);
             }
         }
 
@@ -53,12 +53,12 @@ Rectangle {
                 textRole: ""
                 onActivated: {
                     if (vm && currentIndex >= 0 && currentIndex < model.length) {
-                        vm.selectedLog = model[currentIndex]
+                        vm.selectedLog = model[currentIndex];
                     }
                 }
                 Component.onCompleted: {
                     if (vm && vm.logList.length > 0 && vm.selectedLog === "") {
-                        vm.selectedLog = vm.logList[0]
+                        vm.selectedLog = vm.logList[0];
                     }
                 }
                 delegate: ItemDelegate {
@@ -66,8 +66,8 @@ Rectangle {
                     text: modelData
                     highlighted: logSelector.currentIndex === index
                     onClicked: {
-                        logSelector.currentIndex = index
-                        logSelector.activated(index)
+                        logSelector.currentIndex = index;
+                        logSelector.activated(index);
                     }
                 }
             }
@@ -79,7 +79,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onClicked: {
                     if (vm) {
-                        vm.loadLogs(vm.selectedLog)
+                        vm.loadLogs(vm.selectedLog);
                     }
                 }
             }
@@ -90,7 +90,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onClicked: {
                     if (vm) {
-                        vm.clearLogs(vm.selectedLog)
+                        vm.clearLogs(vm.selectedLog);
                     }
                 }
             }
@@ -100,7 +100,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onToggled: {
                     if (vm) {
-                        vm.setTailing(checked)
+                        vm.setTailing(checked);
                     }
                 }
             }
@@ -110,7 +110,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onToggled: {
                     if (vm) {
-                        vm.setWrapLines(checked)
+                        vm.setWrapLines(checked);
                     }
                 }
             }
@@ -120,7 +120,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onToggled: {
                     if (vm) {
-                        vm.setColorLines(checked)
+                        vm.setColorLines(checked);
                     }
                 }
             }
@@ -143,7 +143,9 @@ Rectangle {
                     selectByMouse: true
                     font.family: "Noto Sans Mono"
                     color: ThemeColors.text
-                    background: Rectangle { color: ThemeColors.backgroundAlt }
+                    background: Rectangle {
+                        color: ThemeColors.backgroundAlt
+                    }
                 }
             }
 

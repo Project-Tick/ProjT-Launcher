@@ -26,47 +26,55 @@ Dialog {
     standardButtons: Dialog.Ok
     width: 500
     height: 400
-    
+
     property string message: ""
     property string icon: "" // info, warning, error, question
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Icon and title row
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
             visible: icon.length > 0
-            
+
             Rectangle {
                 Layout.preferredWidth: 48
                 Layout.preferredHeight: 48
                 radius: 24
                 color: {
-                    if (icon === "info") return "#3b82f6"
-                    if (icon === "warning") return ThemeColors.warning
-                    if (icon === "error") return ThemeColors.error
-                    if (icon === "question") return "#8b5cf6"
-                    return ThemeColors.accent
+                    if (icon === "info")
+                        return "#3b82f6";
+                    if (icon === "warning")
+                        return ThemeColors.warning;
+                    if (icon === "error")
+                        return ThemeColors.error;
+                    if (icon === "question")
+                        return "#8b5cf6";
+                    return ThemeColors.accent;
                 }
-                
+
                 Label {
                     anchors.centerIn: parent
                     text: {
-                        if (icon === "info") return "i"
-                        if (icon === "warning") return "!"
-                        if (icon === "error") return "×"
-                        if (icon === "question") return "?"
-                        return ""
+                        if (icon === "info")
+                            return "i";
+                        if (icon === "warning")
+                            return "!";
+                        if (icon === "error")
+                            return "×";
+                        if (icon === "question")
+                            return "?";
+                        return "";
                     }
                     color: "white"
                     font.bold: true
                     font.pointSize: 20
                 }
             }
-            
+
             Label {
                 Layout.fillWidth: true
                 text: scrollMessageBox.title
@@ -76,16 +84,16 @@ Dialog {
                 wrapMode: Text.WordWrap
             }
         }
-        
+
         // Scrollable message content
         Frame {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            
+
             ScrollView {
                 anchors.fill: parent
                 clip: true
-                
+
                 TextArea {
                     id: messageText
                     readOnly: true
@@ -99,20 +107,22 @@ Dialog {
                 }
             }
         }
-        
+
         // Copy button
         RowLayout {
             Layout.fillWidth: true
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             ThemedButton {
                 text: qsTr("Copy to Clipboard")
                 flatStyle: true
                 size: "small"
                 onClicked: {
                     if (ProjT) {
-                        ProjT.copyToClipboard(message)
+                        ProjT.copyToClipboard(message);
                     }
                 }
             }

@@ -44,7 +44,7 @@
 class QuitAfterGameStop : public LaunchStep {
     Q_OBJECT
    public:
-    explicit QuitAfterGameStop(LaunchTask* parent) : LaunchStep(parent){};
+    explicit QuitAfterGameStop(LaunchTask* parent) : LaunchStep(parent) {};
     virtual ~QuitAfterGameStop() = default;
 
     virtual void executeTask();

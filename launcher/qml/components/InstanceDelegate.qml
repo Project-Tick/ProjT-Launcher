@@ -20,7 +20,7 @@ import "../Theme.js" as Theme
 
 Rectangle {
     id: delegate
-    
+
     // Properties
     property string instanceId: ""
     property string instanceName: ""
@@ -29,31 +29,33 @@ Rectangle {
     property bool isSelected: false
     property bool isRunning: false
     property string lastPlayedText: ""
-    
+
     // Signals
     signal clicked(string instanceId)
     signal doubleClicked(string instanceId)
     signal rightClicked(string instanceId, int mouseX, int mouseY)
-    
+
     Component.onCompleted: {
-        console.log("[InstanceDelegate] Created - name:", instanceName, "id:", instanceId)
+        console.log("[InstanceDelegate] Created - name:", instanceName, "id:", instanceId);
     }
-    
+
     height: 56
     color: isSelected ? ThemeColors.highlight : (mouseArea.containsMouse ? ThemeColors.backgroundAlt : ThemeColors.surface)
     border.color: isSelected ? ThemeColors.accent : ThemeColors.border
     border.width: isSelected ? 1 : 0
     radius: Theme.radius
-    
+
     Behavior on color {
-        ColorAnimation { duration: 100 }
+        ColorAnimation {
+            duration: 100
+        }
     }
-    
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingS
         spacing: Theme.spacingS
-        
+
         // === Instance Icon ===
         Rectangle {
             width: 40
@@ -61,7 +63,7 @@ Rectangle {
             radius: Theme.radius
             color: ThemeColors.backgroundAlt
             Layout.alignment: Qt.AlignVCenter
-            
+
             Image {
                 anchors.fill: parent
                 anchors.margins: 2
@@ -69,13 +71,13 @@ Rectangle {
                 sourceSize: Qt.size(36, 36)
                 fillMode: Image.PreserveAspectFit
                 smooth: true
-                
+
                 // Fallback text if no icon
                 Rectangle {
                     anchors.fill: parent
                     visible: !parent.status || parent.status === Image.Error
                     color: ThemeColors.backgroundAlt
-                    
+
                     Text {
                         anchors.centerIn: parent
                         text: instanceName.charAt(0).toUpperCase()
@@ -86,16 +88,16 @@ Rectangle {
                 }
             }
         }
-        
+
         // === Instance Info ===
         ColumnLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingXS
-            
+
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.spacingS
-                
+
                 Text {
                     text: instanceName
                     color: ThemeColors.text
@@ -104,7 +106,7 @@ Rectangle {
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
-                
+
                 // Running indicator
                 Rectangle {
                     width: 24
@@ -112,7 +114,7 @@ Rectangle {
                     radius: 12
                     visible: isRunning
                     color: ThemeColors.success
-                    
+
                     Text {
                         anchors.centerIn: parent
                         text: qsTr("R")
@@ -122,11 +124,11 @@ Rectangle {
                     }
                 }
             }
-            
+
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.spacingS
-                
+
                 Text {
                     text: instanceGroup ? (instanceGroup) : qsTr("No Group")
                     color: ThemeColors.textSecondary
@@ -134,7 +136,7 @@ Rectangle {
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
-                
+
                 // Last played info
                 Text {
                     text: lastPlayedText
@@ -145,7 +147,7 @@ Rectangle {
                 }
             }
         }
-        
+
         // === Launch Button ===
         Button {
             id: playButton
@@ -154,16 +156,14 @@ Rectangle {
             implicitWidth: 56
             enabled: !isRunning
             Layout.alignment: Qt.AlignVCenter
-            
+
             background: Rectangle {
                 radius: Theme.radius
-                color: playButton.enabled ? 
-                       (playButton.hovered ? Qt.lighter(ThemeColors.success, 1.1) : ThemeColors.success) :
-                       ThemeColors.disabled
+                color: playButton.enabled ? (playButton.hovered ? Qt.lighter(ThemeColors.success, 1.1) : ThemeColors.success) : ThemeColors.disabled
                 border.color: Qt.darker(ThemeColors.success, 1.2)
                 border.width: 1
             }
-            
+
             contentItem: Text {
                 text: playButton.text
                 color: playButton.enabled ? ThemeColors.highlightedText : ThemeColors.textSecondary
@@ -172,35 +172,35 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
-            
+
             onClicked: delegate.doubleClicked(instanceId)
         }
     }
-    
+
     // === Mouse Area for Selection & Context Menu ===
     MouseArea {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        
-        onClicked: function(mouse) {
+
+        onClicked: function (mouse) {
             if (mouse.button === Qt.LeftButton) {
-                delegate.clicked(instanceId)
+                delegate.clicked(instanceId);
             } else if (mouse.button === Qt.RightButton) {
                 // Map to global screen coordinates for context menu
-                var globalPos = mapToGlobal(mouse.x, mouse.y)
-                delegate.rightClicked(instanceId, globalPos.x, globalPos.y)
+                var globalPos = mapToGlobal(mouse.x, mouse.y);
+                delegate.rightClicked(instanceId, globalPos.x, globalPos.y);
             }
         }
-        
-        onDoubleClicked: function(mouse) {
+
+        onDoubleClicked: function (mouse) {
             if (mouse.button === Qt.LeftButton) {
-                delegate.doubleClicked(instanceId)
+                delegate.doubleClicked(instanceId);
             }
         }
     }
-    
+
     // === Tooltip ===
     ToolTip.text: qsTr("Left-click to select, double-click to launch, right-click for more options")
     ToolTip.visible: mouseArea.containsMouse && !isRunning

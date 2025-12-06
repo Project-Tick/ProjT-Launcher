@@ -25,14 +25,14 @@ Dialog {
     standardButtons: Dialog.Ok
     width: 550
     height: 450
-    
+
     property var blockedMods: []
     property string instanceName: ""
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Warning header
         Rectangle {
             Layout.fillWidth: true
@@ -40,18 +40,18 @@ Dialog {
             radius: 8
             color: ThemeColors.warning
             opacity: 0.15
-            
+
             RowLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.spacingM
                 spacing: Theme.spacingM
-                
+
                 Rectangle {
                     Layout.preferredWidth: 40
                     Layout.preferredHeight: 40
                     radius: 20
                     color: ThemeColors.warning
-                    
+
                     Label {
                         anchors.centerIn: parent
                         text: "!"
@@ -60,17 +60,17 @@ Dialog {
                         color: "white"
                     }
                 }
-                
+
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-                    
+
                     Label {
                         text: qsTr("Some mods require manual download")
                         color: ThemeColors.warning
                         font.bold: true
                     }
-                    
+
                     Label {
                         text: qsTr("These mods cannot be downloaded automatically due to licensing restrictions.")
                         color: ThemeColors.textSecondary
@@ -80,7 +80,7 @@ Dialog {
                 }
             }
         }
-        
+
         // Instructions
         Label {
             Layout.fillWidth: true
@@ -88,40 +88,40 @@ Dialog {
             color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
-        
+
         // Blocked mods list
         Frame {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            
+
             ListView {
                 id: modsList
                 anchors.fill: parent
                 clip: true
                 model: blockedMods
                 spacing: 2
-                
+
                 delegate: Rectangle {
                     width: modsList.width
                     height: 56
                     radius: 4
                     color: index % 2 === 0 ? "transparent" : ThemeColors.backgroundAlt
-                    
+
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: Theme.spacingS
                         spacing: Theme.spacingM
-                        
+
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
-                            
+
                             Label {
                                 text: modelData.name || qsTr("Unknown Mod")
                                 color: ThemeColors.text
                                 font.bold: true
                             }
-                            
+
                             Label {
                                 text: modelData.version || ""
                                 color: ThemeColors.textSecondary
@@ -129,32 +129,32 @@ Dialog {
                                 visible: text.length > 0
                             }
                         }
-                        
+
                         Button {
                             text: qsTr("Open Page")
                             icon.name: "internet-web-browser"
                             visible: modelData.url && modelData.url.length > 0
                             onClicked: {
-                                Qt.openUrlExternally(modelData.url)
+                                Qt.openUrlExternally(modelData.url);
                             }
                         }
-                        
+
                         Button {
                             text: qsTr("Copy URL")
                             icon.name: "edit-copy"
                             visible: modelData.url && modelData.url.length > 0
                             onClicked: {
                                 if (ProjT) {
-                                    ProjT.copyToClipboard(modelData.url)
+                                    ProjT.copyToClipboard(modelData.url);
                                 }
                             }
                         }
                     }
                 }
-                
+
                 ScrollBar.vertical: ScrollBar {}
             }
-            
+
             Label {
                 anchors.centerIn: parent
                 text: qsTr("No blocked mods")
@@ -162,24 +162,26 @@ Dialog {
                 visible: blockedMods.length === 0
             }
         }
-        
+
         // Actions
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
+
             Button {
                 text: qsTr("Open Mods Folder")
                 icon.name: "folder-open"
                 onClicked: {
                     if (ProjT && ProjT.instanceVM) {
-                        ProjT.instanceVM.openModsFolder()
+                        ProjT.instanceVM.openModsFolder();
                     }
                 }
             }
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             Label {
                 text: qsTr("%1 mod(s) require manual download").arg(blockedMods.length)
                 color: ThemeColors.textSecondary

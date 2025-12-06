@@ -22,68 +22,70 @@ Rectangle {
     id: root
     objectName: "notesPage"
     color: ThemeColors.background
-    
+
     property var vm: ProjT.instanceVM
-    
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
         spacing: Theme.spacingM
-        
+
         Text {
             text: qsTr("Notes")
             font.pixelSize: 24
             font.weight: Font.Bold
             color: ThemeColors.text
         }
-        
+
         Text {
             text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
             font.pixelSize: 14
             color: ThemeColors.textSecondary
             visible: root.vm !== null
         }
-        
+
         ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            
+
             TextArea {
                 id: notesTextArea
                 placeholderText: qsTr("Add notes about this instance...")
                 text: root.vm ? root.vm.notes : ""
                 wrapMode: TextEdit.Wrap
                 selectByMouse: true
-                
+
                 background: Rectangle {
                     color: ThemeColors.surface
                     border.color: notesTextArea.activeFocus ? ThemeColors.accent : ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 color: ThemeColors.text
                 placeholderTextColor: ThemeColors.textSecondary
             }
         }
-        
+
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             Button {
                 text: qsTr("Clear")
                 onClicked: notesTextArea.text = ""
-                
+
                 background: Rectangle {
                     color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
                     border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
-                
+
                 contentItem: Text {
                     text: parent.text
                     color: ThemeColors.text
@@ -91,7 +93,7 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                 }
             }
-            
+
             Button {
                 text: qsTr("Save")
                 onClicked: {
@@ -100,12 +102,12 @@ Rectangle {
                         root.vm.saveSettings();
                     }
                 }
-                
+
                 background: Rectangle {
                     color: parent.hovered ? Qt.lighter(ThemeColors.accent, 1.1) : ThemeColors.accent
                     radius: Theme.radiusS
                 }
-                
+
                 contentItem: Text {
                     text: parent.text
                     color: ThemeColors.surface

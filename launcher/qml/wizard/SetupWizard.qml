@@ -24,51 +24,73 @@ Dialog {
     modal: true
     width: 600
     height: 500
-    
+
     property var vm: ProjT.settingsVM
     property int currentPageIndex: 0
-    
+
     // Wizard pages
     property var pages: [
-        {id: "language", title: qsTr("Language"), component: languagePage},
-        {id: "theme", title: qsTr("Theme"), component: themePage},
-        {id: "java", title: qsTr("Java"), component: javaPage},
-        {id: "autoJava", title: qsTr("Auto Java"), component: autoJavaPage},
-        {id: "login", title: qsTr("Account"), component: loginPage}
+        {
+            id: "language",
+            title: qsTr("Language"),
+            component: languagePage
+        },
+        {
+            id: "theme",
+            title: qsTr("Theme"),
+            component: themePage
+        },
+        {
+            id: "java",
+            title: qsTr("Java"),
+            component: javaPage
+        },
+        {
+            id: "autoJava",
+            title: qsTr("Auto Java"),
+            component: autoJavaPage
+        },
+        {
+            id: "login",
+            title: qsTr("Account"),
+            component: loginPage
+        }
     ]
-    
+
     // Collected settings
     property string selectedLanguage: "en_US"
     property string selectedTheme: "system"
     property string javaPath: ""
     property bool autoDetectJava: true
     property bool autoDownloadJava: true
-    
+
     header: Rectangle {
         height: 60
         color: ThemeColors.surface
-        
+
         RowLayout {
             anchors.fill: parent
             anchors.margins: Theme.spacingM
             spacing: Theme.spacingS
-            
+
             Repeater {
                 model: pages
-                
+
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 4
                     radius: 2
                     color: index <= currentPageIndex ? ThemeColors.accent : ThemeColors.border
-                    
+
                     Behavior on color {
-                        ColorAnimation { duration: 200 }
+                        ColorAnimation {
+                            duration: 200
+                        }
                     }
                 }
             }
         }
-        
+
         Label {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: Theme.spacingS
@@ -78,7 +100,7 @@ Dialog {
             color: ThemeColors.text
         }
     }
-    
+
     footer: DialogButtonBox {
         Button {
             text: qsTr("Back")
@@ -86,84 +108,84 @@ Dialog {
             DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             onClicked: {
                 if (currentPageIndex > 0) {
-                    currentPageIndex--
+                    currentPageIndex--;
                 }
             }
         }
-        
+
         Button {
             text: currentPageIndex < pages.length - 1 ? qsTr("Next") : qsTr("Finish")
             highlighted: true
             DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             onClicked: {
                 if (currentPageIndex < pages.length - 1) {
-                    currentPageIndex++
+                    currentPageIndex++;
                 } else {
-                    finishSetup()
+                    finishSetup();
                 }
             }
         }
-        
+
         Button {
             text: qsTr("Skip")
             DialogButtonBox.buttonRole: DialogButtonBox.DestructiveRole
             onClicked: {
-                setupWizard.close()
+                setupWizard.close();
             }
         }
     }
-    
+
     // Page container
     StackLayout {
         anchors.fill: parent
         currentIndex: currentPageIndex
-        
+
         // Language page
         LanguageWizardPage {
             id: languagePage
             selectedLanguage: setupWizard.selectedLanguage
-            onLanguageChanged: function(code) {
-                setupWizard.selectedLanguage = code
+            onLanguageChanged: function (code) {
+                setupWizard.selectedLanguage = code;
             }
         }
-        
+
         // Theme page
         ThemeWizardPage {
             id: themePage
             selectedTheme: setupWizard.selectedTheme
-            onThemeChanged: function(themeId) {
-                setupWizard.selectedTheme = themeId
+            onThemeChanged: function (themeId) {
+                setupWizard.selectedTheme = themeId;
             }
         }
-        
+
         // Java page
         JavaWizardPage {
             id: javaPage
             javaPath: setupWizard.javaPath
             autoDetect: setupWizard.autoDetectJava
-            onJavaPathChanged: function(path) {
-                setupWizard.javaPath = path
+            onJavaPathChanged: function (path) {
+                setupWizard.javaPath = path;
             }
-            onAutoDetectChanged: function(enabled) {
-                setupWizard.autoDetectJava = enabled
+            onAutoDetectChanged: function (enabled) {
+                setupWizard.autoDetectJava = enabled;
             }
         }
-        
+
         // Auto Java page
         AutoJavaWizardPage {
             id: autoJavaPage
             autoDownloadEnabled: setupWizard.autoDownloadJava
             onSettingsChanged: {
-                setupWizard.autoDownloadJava = autoJavaPage.autoDownloadEnabled
+                setupWizard.autoDownloadJava = autoJavaPage.autoDownloadEnabled;
             }
         }
-        
+
         // Login page
         LoginWizardPage {
             id: loginPage
         }
     }
-    
+
     function finishSetup() {
         if (vm) {
             vm.applyWizardSettings({
@@ -172,8 +194,8 @@ Dialog {
                 javaPath: javaPath,
                 autoDetectJava: autoDetectJava,
                 autoDownloadJava: autoDownloadJava
-            })
+            });
         }
-        setupWizard.accept()
+        setupWizard.accept();
     }
 }

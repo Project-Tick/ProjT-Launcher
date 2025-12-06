@@ -26,71 +26,73 @@ Dialog {
     width: 636
     height: 352
     standardButtons: Dialog.NoButton
-    
+
     property string currentVersion: ""
     property string newVersion: ""
     property string releaseNotes: ""
     property string downloadUrl: ""
     property var vm: null
-    
-    signal skipVersion()
-    signal remindLater()
-    signal installUpdate()
-    
+
+    signal skipVersion
+    signal remindLater
+    signal installUpdate
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingM
-            
+
             // Icon
             ColumnLayout {
                 Layout.alignment: Qt.AlignTop
-                
+
                 Image {
                     Layout.preferredWidth: 64
                     Layout.preferredHeight: 64
                     source: "qrc:/icons/multimc/scalable/instances/default.svg"
                     fillMode: Image.PreserveAspectFit
                 }
-                
-                Item { Layout.fillHeight: true }
+
+                Item {
+                    Layout.fillHeight: true
+                }
             }
-            
+
             // Content
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.margins: 9
                 spacing: Theme.spacingS
-                
+
                 Label {
                     text: qsTr("A new version is available!")
                     font.bold: true
                     font.pointSize: 11
                     color: ThemeColors.text
                 }
-                
+
                 Label {
                     text: qsTr("Version %1 is now available - you have %2. Would you like to download it now?").arg(newVersion).arg(currentVersion)
                     color: ThemeColors.text
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                 }
-                
+
                 Label {
                     text: qsTr("Release Notes:")
                     font.bold: true
                     color: ThemeColors.text
                 }
-                
+
                 ScrollView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
-                    
+
                     TextArea {
                         id: releaseNotesText
                         readOnly: true
@@ -98,7 +100,7 @@ Dialog {
                         wrapMode: TextEdit.Wrap
                         textFormat: TextEdit.MarkdownText
                         color: ThemeColors.text
-                        
+
                         background: Rectangle {
                             color: ThemeColors.base
                             border.color: ThemeColors.mid
@@ -109,46 +111,48 @@ Dialog {
                 }
             }
         }
-        
+
         // Button row
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
-            
+
             ThemedButton {
                 text: qsTr("Skip This Version")
                 flatStyle: true
                 onClicked: {
-                    skipVersion()
-                    updateDialog.close()
+                    skipVersion();
+                    updateDialog.close();
                 }
             }
-            
-            Item { Layout.fillWidth: true }
-            
+
+            Item {
+                Layout.fillWidth: true
+            }
+
             ThemedButton {
                 text: qsTr("Remind Me Later")
                 outline: true
                 onClicked: {
-                    remindLater()
-                    updateDialog.close()
+                    remindLater();
+                    updateDialog.close();
                 }
             }
-            
+
             ThemedButton {
                 text: qsTr("Install Update")
                 success: true
                 onClicked: {
-                    installUpdate()
+                    installUpdate();
                     if (downloadUrl) {
-                        Qt.openUrlExternally(downloadUrl)
+                        Qt.openUrlExternally(downloadUrl);
                     }
-                    updateDialog.close()
+                    updateDialog.close();
                 }
             }
         }
     }
-    
+
     background: Rectangle {
         color: ThemeColors.window
         border.color: ThemeColors.mid

@@ -24,18 +24,18 @@ Dialog {
     standardButtons: Dialog.NoButton
     width: 400
     height: contentHeight + 120
-    
+
     property string message: ""
     property string icon: "" // info, warning, error, question, success
     property var buttons: [] // Array of { text: "Button", role: "accept/reject/custom", highlighted: bool }
     property int contentHeight: Math.max(messageLabel.implicitHeight + iconRect.height, 100)
-    
+
     signal buttonClicked(string role)
-    
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
-        
+
         // Icon
         Rectangle {
             id: iconRect
@@ -45,30 +45,40 @@ Dialog {
             radius: 32
             visible: icon.length > 0
             color: {
-                if (icon === "info") return "#3b82f6"
-                if (icon === "warning") return ThemeColors.warning
-                if (icon === "error") return ThemeColors.error
-                if (icon === "question") return "#8b5cf6"
-                if (icon === "success") return ThemeColors.success
-                return ThemeColors.accent
+                if (icon === "info")
+                    return "#3b82f6";
+                if (icon === "warning")
+                    return ThemeColors.warning;
+                if (icon === "error")
+                    return ThemeColors.error;
+                if (icon === "question")
+                    return "#8b5cf6";
+                if (icon === "success")
+                    return ThemeColors.success;
+                return ThemeColors.accent;
             }
-            
+
             Label {
                 anchors.centerIn: parent
                 text: {
-                    if (icon === "info") return "i"
-                    if (icon === "warning") return "!"
-                    if (icon === "error") return "×"
-                    if (icon === "question") return "?"
-                    if (icon === "success") return "✓"
-                    return ""
+                    if (icon === "info")
+                        return "i";
+                    if (icon === "warning")
+                        return "!";
+                    if (icon === "error")
+                        return "×";
+                    if (icon === "question")
+                        return "?";
+                    if (icon === "success")
+                        return "✓";
+                    return "";
                 }
                 color: "white"
                 font.bold: true
                 font.pointSize: 28
             }
         }
-        
+
         // Title
         Label {
             Layout.fillWidth: true
@@ -80,7 +90,7 @@ Dialog {
             wrapMode: Text.WordWrap
             visible: customMessageBox.title.length > 0
         }
-        
+
         // Message
         Label {
             id: messageLabel
@@ -91,76 +101,107 @@ Dialog {
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
         }
-        
+
         // Buttons
         RowLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacingS
-            
+
             Repeater {
                 model: buttons
-                
+
                 delegate: Button {
                     text: modelData.text
                     highlighted: modelData.highlighted === true
-                    
+
                     onClicked: {
-                        buttonClicked(modelData.role || "custom")
+                        buttonClicked(modelData.role || "custom");
                         if (modelData.role === "accept") {
-                            customMessageBox.accept()
+                            customMessageBox.accept();
                         } else if (modelData.role === "reject") {
-                            customMessageBox.reject()
+                            customMessageBox.reject();
                         } else {
-                            customMessageBox.close()
+                            customMessageBox.close();
                         }
                     }
                 }
             }
         }
     }
-    
+
     // Convenience factory functions
     function showInfo(title, message) {
-        customMessageBox.title = title
-        customMessageBox.message = message
-        customMessageBox.icon = "info"
-        customMessageBox.buttons = [{ text: qsTr("OK"), role: "accept", highlighted: true }]
-        customMessageBox.open()
-    }
-    
-    function showWarning(title, message) {
-        customMessageBox.title = title
-        customMessageBox.message = message
-        customMessageBox.icon = "warning"
-        customMessageBox.buttons = [{ text: qsTr("OK"), role: "accept", highlighted: true }]
-        customMessageBox.open()
-    }
-    
-    function showError(title, message) {
-        customMessageBox.title = title
-        customMessageBox.message = message
-        customMessageBox.icon = "error"
-        customMessageBox.buttons = [{ text: qsTr("OK"), role: "accept", highlighted: true }]
-        customMessageBox.open()
-    }
-    
-    function showQuestion(title, message, yesText, noText) {
-        customMessageBox.title = title
-        customMessageBox.message = message
-        customMessageBox.icon = "question"
+        customMessageBox.title = title;
+        customMessageBox.message = message;
+        customMessageBox.icon = "info";
         customMessageBox.buttons = [
-            { text: noText || qsTr("No"), role: "reject" },
-            { text: yesText || qsTr("Yes"), role: "accept", highlighted: true }
-        ]
-        customMessageBox.open()
+            {
+                text: qsTr("OK"),
+                role: "accept",
+                highlighted: true
+            }
+        ];
+        customMessageBox.open();
     }
-    
+
+    function showWarning(title, message) {
+        customMessageBox.title = title;
+        customMessageBox.message = message;
+        customMessageBox.icon = "warning";
+        customMessageBox.buttons = [
+            {
+                text: qsTr("OK"),
+                role: "accept",
+                highlighted: true
+            }
+        ];
+        customMessageBox.open();
+    }
+
+    function showError(title, message) {
+        customMessageBox.title = title;
+        customMessageBox.message = message;
+        customMessageBox.icon = "error";
+        customMessageBox.buttons = [
+            {
+                text: qsTr("OK"),
+                role: "accept",
+                highlighted: true
+            }
+        ];
+        customMessageBox.open();
+    }
+
+    function showQuestion(title, message, yesText, noText) {
+        customMessageBox.title = title;
+        customMessageBox.message = message;
+        customMessageBox.icon = "question";
+        customMessageBox.buttons = [
+            {
+                text: noText || qsTr("No"),
+                role: "reject"
+            },
+            {
+                text: yesText || qsTr("Yes"),
+                role: "accept",
+                highlighted: true
+            }
+        ];
+        customMessageBox.open();
+    }
+
     function showSuccess(title, message) {
-        customMessageBox.title = title
-        customMessageBox.message = message
-        customMessageBox.icon = "success"
-        customMessageBox.buttons = [{ text: qsTr("OK"), role: "accept", highlighted: true }]
-        customMessageBox.open()
+        customMessageBox.title = title;
+        customMessageBox.message = message;
+        customMessageBox.icon = "success";
+        customMessageBox.buttons = [
+            {
+                text: qsTr("OK"),
+                role: "accept",
+                highlighted: true
+            }
+        ];
+        customMessageBox.open();
     }
 }

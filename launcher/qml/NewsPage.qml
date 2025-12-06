@@ -25,20 +25,20 @@ Rectangle {
     width: parent ? parent.width : 640
     height: parent ? parent.height : 480
     readonly property var vm: ProjT.newsVM
-    
+
     // Theme binding for reactive updates
     property var themeVM: ProjT.themeVM
     property int _themeUpdateCount: 0
-    
+
     color: {
-        var _ = _themeUpdateCount
-        return themeVM ? themeVM.windowColor : ThemeColors.background
+        var _ = _themeUpdateCount;
+        return themeVM ? themeVM.windowColor : ThemeColors.background;
     }
-    
+
     Connections {
         target: themeVM
         function onThemeColorsChanged() {
-            newsPage._themeUpdateCount++
+            newsPage._themeUpdateCount++;
         }
     }
 
@@ -49,9 +49,9 @@ Rectangle {
         Component.onCompleted: {
             if (vm) {
                 if (vm.titles.length === 0) {
-                    vm.refresh()
+                    vm.refresh();
                 } else if (vm.currentIndex < 0 && vm.titles.length > 0) {
-                    vm.setCurrentIndex(0)
+                    vm.setCurrentIndex(0);
                 }
             }
         }
@@ -72,7 +72,7 @@ Rectangle {
                 enabled: vm ? !vm.busy : false
                 onClicked: {
                     if (vm) {
-                        vm.refresh()
+                        vm.refresh();
                     }
                 }
             }
@@ -84,11 +84,13 @@ Rectangle {
                 enabled: vm ? (vm.currentLink.length > 0) : false
                 onClicked: {
                     if (vm) {
-                        vm.openCurrentLink()
+                        vm.openCurrentLink();
                     }
                 }
             }
-            Item { Layout.fillWidth: true }
+            Item {
+                Layout.fillWidth: true
+            }
         }
 
         RowLayout {
@@ -110,10 +112,18 @@ Rectangle {
                     border.color: vm && index === vm.currentIndex ? ThemeColors.highlight : ThemeColors.border
                     border.width: vm && index === vm.currentIndex ? 2 : 1
                     radius: Theme.radius
-                    
-                    Behavior on color { ColorAnimation { duration: 100 } }
-                    Behavior on border.color { ColorAnimation { duration: 100 } }
-                    
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 100
+                        }
+                    }
+                    Behavior on border.color {
+                        ColorAnimation {
+                            duration: 100
+                        }
+                    }
+
                     Text {
                         anchors.fill: parent
                         anchors.margins: 8
@@ -125,7 +135,7 @@ Rectangle {
                         anchors.fill: parent
                         onClicked: {
                             if (vm) {
-                                vm.selectByIndex(index)
+                                vm.selectByIndex(index);
                             }
                         }
                     }
@@ -150,9 +160,7 @@ Rectangle {
                             wrapMode: Text.WordWrap
                         }
                         Text {
-                            text: vm && vm.lastUpdated && vm.lastUpdated.toString().length > 0
-                                  ? qsTr("Updated: %1").arg(vm.lastUpdated.toString())
-                                  : ""
+                            text: vm && vm.lastUpdated && vm.lastUpdated.toString().length > 0 ? qsTr("Updated: %1").arg(vm.lastUpdated.toString()) : ""
                             color: ThemeColors.textSecondary
                             font.pixelSize: 12
                             horizontalAlignment: Text.AlignRight
@@ -178,7 +186,11 @@ Rectangle {
             color: ThemeColors.backgroundAlt
             opacity: vm ? (vm.busy ? 0.25 : 0) : 0
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 150
+                }
+            }
             BusyIndicator {
                 anchors.centerIn: parent
                 running: vm ? vm.busy : false
