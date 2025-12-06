@@ -55,6 +55,7 @@
    ======================================================================== */
 
 #include "Application.h"
+
 #include <QQuickStyle>
 
 int main(int argc, char* argv[])
