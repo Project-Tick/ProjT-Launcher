@@ -1,10 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "../components"
 
 Dialog {
     id: versionSelectDialog
@@ -49,9 +62,10 @@ Dialog {
             
             Item { Layout.fillWidth: true }
             
-            Button {
+            ThemedButton {
                 text: qsTr("Refresh")
-                icon.name: "view-refresh"
+                flatStyle: true
+                size: "small"
                 onClicked: {
                     if (vm) vm.refreshVersions()
                 }
@@ -102,12 +116,12 @@ Dialog {
                             radius: 4
                             color: {
                                 if (modelData.includes("snapshot") || modelData.includes("pre") || modelData.includes("rc")) {
-                                    return "#f59e0b" // Snapshot - amber
+                                    return ThemeColors.warning // Snapshot - amber
                                 }
                                 if (modelData.startsWith("b") || modelData.startsWith("a") || modelData.includes("inf")) {
                                     return "#8b5cf6" // Old - purple
                                 }
-                                return "#22c55e" // Release - green
+                                return ThemeColors.success // Release - green
                             }
                             
                             Label {
@@ -125,7 +139,7 @@ Dialog {
                         
                         Label {
                             text: modelData
-                            color: Theme.textPrimary
+                            color: ThemeColors.text
                             Layout.fillWidth: true
                         }
                     }
@@ -156,12 +170,12 @@ Dialog {
             
             Label {
                 text: qsTr("Selected:")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
             }
             
             Label {
                 text: selectedVersion.length > 0 ? selectedVersion : qsTr("None")
-                color: selectedVersion.length > 0 ? Theme.accent : Theme.textSecondary
+                color: selectedVersion.length > 0 ? ThemeColors.accent : ThemeColors.textSecondary
                 font.bold: selectedVersion.length > 0
             }
             

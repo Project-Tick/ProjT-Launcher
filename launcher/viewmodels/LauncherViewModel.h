@@ -74,6 +74,9 @@ class LauncherViewModel : public QObject {
     Q_INVOKABLE QString browseForDirectory(const QString& title);
     Q_INVOKABLE QString browseForSave(const QString& title, const QString& filter);
 
+    // Application control
+    Q_INVOKABLE void quit();
+
    signals:
     void displayNameChanged();
     void versionStringChanged();

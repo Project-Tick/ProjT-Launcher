@@ -15,12 +15,13 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "." as Components
 import "../Theme.js" as Theme
 
 Rectangle {
     id: topBar
-    color: Theme.surface
+    color: ThemeColors.surface
     height: 48
     width: parent.width
     
@@ -35,8 +36,8 @@ Rectangle {
     
     Rectangle {
         anchors.fill: parent
-        color: Theme.surface
-        border.color: "#323742"
+        color: ThemeColors.surface
+        border.color: ThemeColors.border
         border.width: 1
         
         RowLayout {

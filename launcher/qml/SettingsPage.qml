@@ -15,11 +15,13 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "components"
+import "Theme.js" as Theme
 
 Rectangle {
     objectName: "settings"
-    color: "#1b1b1b"
+    color: ThemeColors.background
     width: parent ? parent.width : 640
     height: parent ? parent.height : 480
 
@@ -53,13 +55,13 @@ Rectangle {
                 delegate: Rectangle {
                     width: categoryList.width
                     height: 36
-                    color: (vm && vm.currentCategory === modelData) ? "#2c3440" : "#23262b"
-                    border.color: "#323742"
+                    color: (vm && vm.currentCategory === modelData) ? ThemeColors.highlight : ThemeColors.surface
+                    border.color: ThemeColors.border
                     radius: 6
                     Text {
                         anchors.centerIn: parent
                         text: modelData.charAt(0).toUpperCase() + modelData.slice(1)
-                        color: "#e0e0e0"
+                        color: ThemeColors.text
                     }
                     MouseArea {
                         anchors.fill: parent
@@ -116,7 +118,7 @@ Rectangle {
 
     Rectangle {
         anchors.fill: parent
-        color: "#000000"
+        color: ThemeColors.background
         opacity: vm && vm.busy ? 0.25 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -129,7 +131,7 @@ Rectangle {
             }
             Label {
                 text: vm && vm.busyReason ? vm.busyReason : ""
-                color: "#e0e0e0"
+                color: ThemeColors.text
                 visible: text.length > 0
             }
         }
@@ -169,7 +171,7 @@ Rectangle {
             ColumnLayout {
                 anchors.fill: parent
                 spacing: 8
-                Label { text: qsTr("This category is not yet ported to QML."); color: "#e0e0e0" }
+                Label { text: qsTr("This category is not yet ported to QML."); color: ThemeColors.text }
             }
         }
     }
@@ -184,7 +186,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 10
-                Label { text: qsTr("Java Runtime"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Java Runtime"); color: ThemeColors.text; font.bold: true }
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
@@ -222,16 +224,16 @@ Rectangle {
                     checked: vm ? vm.overrideJavaLocation : false
                     onToggled: vm ? vm.setOverrideJavaLocation(vm.instanceId, checked) : undefined
                 }
-                Label { text: qsTr("Memory"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Memory"); color: ThemeColors.text; font.bold: true }
                 RowLayout {
                     spacing: 8
-                    Label { text: qsTr("Min (MiB)"); color: "#b0bec5" }
+                    Label { text: qsTr("Min (MiB)"); color: ThemeColors.textSecondary }
                     SpinBox { id: minMemJava; from: 0; to: 16384; value: vm ? vm.minMemory : 0 }
-                    Label { text: qsTr("Max (MiB)"); color: "#b0bec5" }
+                    Label { text: qsTr("Max (MiB)"); color: ThemeColors.textSecondary }
                     SpinBox { id: maxMemJava; from: 0; to: 32768; value: vm ? vm.maxMemory : 0 }
                     Button { text: qsTr("Apply"); onClicked: vm ? vm.setMemorySettings(vm.instanceId, minMemJava.value, maxMemJava.value) : undefined }
                 }
-                Label { text: qsTr("JVM Arguments"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("JVM Arguments"); color: ThemeColors.text; font.bold: true }
                 TextArea {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -254,12 +256,12 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 10
-                Label { text: qsTr("Memory"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Memory"); color: ThemeColors.text; font.bold: true }
                 RowLayout {
                     spacing: 8
-                    Label { text: qsTr("Min (MiB)"); color: "#b0bec5" }
+                    Label { text: qsTr("Min (MiB)"); color: ThemeColors.textSecondary }
                     SpinBox { id: memMin; from: 0; to: 16384; value: vm ? vm.minMemory : 0 }
-                    Label { text: qsTr("Max (MiB)"); color: "#b0bec5" }
+                    Label { text: qsTr("Max (MiB)"); color: ThemeColors.textSecondary }
                     SpinBox { id: memMax; from: 0; to: 32768; value: vm ? vm.maxMemory : 0 }
                     Button { text: qsTr("Apply memory"); onClicked: vm ? vm.setMemorySettings(vm.instanceId, memMin.value, memMax.value) : undefined }
                 }
@@ -282,7 +284,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 10
-                Label { text: qsTr("JVM Arguments"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("JVM Arguments"); color: ThemeColors.text; font.bold: true }
                 TextArea {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -305,7 +307,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 10
-                Label { text: qsTr("Custom Commands"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Custom Commands"); color: ThemeColors.text; font.bold: true }
                 TextField {
                     Layout.fillWidth: true
                     placeholderText: qsTr("Pre-launch command")
@@ -332,7 +334,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 8
-                Label { text: qsTr("Environment Variables"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Environment Variables"); color: ThemeColors.text; font.bold: true }
                 ListView {
                     id: envList
                     Layout.fillWidth: true
@@ -342,13 +344,13 @@ Rectangle {
                     delegate: Rectangle {
                         width: envList.width
                         height: 36
-                        color: "#23262b"
+                        color: ThemeColors.surface
                         RowLayout {
                             anchors.fill: parent
                             anchors.margins: 6
                             spacing: 6
-                            Label { text: modelData; color: "#e0e0e0"; Layout.fillWidth: true }
-                            Label { text: vm ? vm.environmentValue(vm.instanceId, modelData) : ""; color: "#b0bec5"; Layout.fillWidth: true }
+                            Label { text: modelData; color: ThemeColors.text; Layout.fillWidth: true }
+                            Label { text: vm ? vm.environmentValue(vm.instanceId, modelData) : ""; color: ThemeColors.textSecondary; Layout.fillWidth: true }
                             Button { text: qsTr("Remove"); onClicked: vm ? vm.removeEnvironmentVar(vm.instanceId, modelData) : undefined }
                         }
                     }
@@ -387,7 +389,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 10
-                Label { text: qsTr("Loader"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Loader"); color: ThemeColors.text; font.bold: true }
                 RowLayout {
                     spacing: 8
                     ComboBox {
@@ -430,7 +432,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 10
-                Label { text: qsTr("Game Settings"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Game Settings"); color: ThemeColors.text; font.bold: true }
                 TextArea {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -442,9 +444,9 @@ Rectangle {
                 RowLayout {
                     spacing: 8
                     CheckBox { text: qsTr("Fullscreen"); checked: vm ? vm.fullscreen : false; onToggled: vm ? vm.setFullscreen(vm.instanceId, checked) : undefined }
-                    Label { text: qsTr("Width"); color: "#b0bec5" }
+                    Label { text: qsTr("Width"); color: ThemeColors.textSecondary }
                     SpinBox { id: gameW; from: 640; to: 3840; value: vm ? vm.resolutionWidth : 0 }
-                    Label { text: qsTr("Height"); color: "#b0bec5" }
+                    Label { text: qsTr("Height"); color: ThemeColors.textSecondary }
                     SpinBox { id: gameH; from: 480; to: 2160; value: vm ? vm.resolutionHeight : 0 }
                     Button { text: qsTr("Apply size"); onClicked: vm ? vm.setResolution(vm.instanceId, gameW.value, gameH.value) : undefined }
                 }
@@ -485,7 +487,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 10
-                Label { text: qsTr("Notes"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Notes"); color: ThemeColors.text; font.bold: true }
                 TextArea {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -508,7 +510,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 10
-                Label { text: qsTr("Icon"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Icon"); color: ThemeColors.text; font.bold: true }
                 ComboBox {
                     id: iconCombo
                     model: vm ? vm.availableIcons : []
@@ -530,7 +532,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
                 spacing: 10
-                Label { text: qsTr("Overrides"); color: "#e0e0e0"; font.bold: true }
+                Label { text: qsTr("Overrides"); color: ThemeColors.text; font.bold: true }
                 CheckBox { text: qsTr("Override Java"); checked: vm ? vm.overrideJavaLocation : false; onToggled: vm ? vm.setOverrideJavaLocation(vm.instanceId, checked) : undefined }
                 CheckBox { text: qsTr("Override Memory"); checked: vm ? vm.overrideMemory : false; onToggled: vm ? vm.setOverrideMemory(vm.instanceId, checked) : undefined }
                 CheckBox { text: qsTr("Override Loader"); checked: vm ? vm.overrideLoader : false; onToggled: vm ? vm.setOverrideLoader(vm.instanceId, checked) : undefined }

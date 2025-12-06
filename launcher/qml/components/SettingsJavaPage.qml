@@ -7,11 +7,15 @@
  *
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 ColumnLayout {
@@ -31,7 +35,7 @@ ColumnLayout {
         }
         function onJavaTestResult(success, message) {
             javaTestResultLabel.text = message
-            javaTestResultLabel.color = success ? Theme.success : Theme.error
+            javaTestResultLabel.color = success ? ThemeColors.success : ThemeColors.error
         }
     }
     
@@ -82,7 +86,7 @@ ColumnLayout {
                             
                             Label {
                                 text: qsTr("Java path:")
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                             }
                             
                             TextField {
@@ -111,7 +115,7 @@ ColumnLayout {
                         Label {
                             id: javaTestResultLabel
                             text: ""
-                            color: Theme.textSecondary
+                            color: ThemeColors.textSecondary
                             font.pointSize: 9
                             wrapMode: Text.WordWrap
                             Layout.fillWidth: true
@@ -143,7 +147,7 @@ ColumnLayout {
                             
                             Label {
                                 text: qsTr("Minimum memory allocation:")
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                             }
                             
                             SpinBox {
@@ -158,7 +162,7 @@ ColumnLayout {
                             
                             Label {
                                 text: qsTr("MiB")
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                             }
                         }
                         
@@ -168,7 +172,7 @@ ColumnLayout {
                             
                             Label {
                                 text: qsTr("Maximum memory allocation:")
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                             }
                             
                             SpinBox {
@@ -183,13 +187,13 @@ ColumnLayout {
                             
                             Label {
                                 text: qsTr("MiB")
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                             }
                         }
                         
                         Label {
                             text: qsTr("Note: You generally don't need more than 4-8 GB for Minecraft")
-                            color: Theme.textSecondary
+                            color: ThemeColors.textSecondary
                             font.pointSize: 9
                             wrapMode: Text.WordWrap
                             Layout.fillWidth: true
@@ -218,7 +222,7 @@ ColumnLayout {
                         
                         Label {
                             text: qsTr("Custom JVM arguments. Leave empty for defaults.")
-                            color: Theme.textSecondary
+                            color: ThemeColors.textSecondary
                             font.pointSize: 9
                         }
                     }
@@ -296,13 +300,13 @@ ColumnLayout {
                                 
                                 Label {
                                     text: model.name || model.version || ""
-                                    color: Theme.textPrimary
+                                    color: ThemeColors.text
                                     font.bold: true
                                 }
                                 
                                 Label {
                                     text: model.path || ""
-                                    color: Theme.textSecondary
+                                    color: ThemeColors.textSecondary
                                     font.pointSize: 9
                                     elide: Text.ElideMiddle
                                     Layout.fillWidth: true
@@ -311,7 +315,7 @@ ColumnLayout {
                             
                             Label {
                                 text: model.vendor || ""
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                             }
                         }
                         
@@ -349,7 +353,7 @@ ColumnLayout {
             
             Label {
                 text: qsTr("Found %1 Java installation(s):").arg(detectedJavas.length)
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             ListView {

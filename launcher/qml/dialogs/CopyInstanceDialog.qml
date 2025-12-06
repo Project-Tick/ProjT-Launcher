@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -80,7 +92,7 @@ Dialog {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: Theme.border
+                color: ThemeColors.border
             }
             
             // Group selection
@@ -189,7 +201,7 @@ Dialog {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: Theme.border
+                color: ThemeColors.border
             }
             
             // Advanced Copy Options header
@@ -213,7 +225,7 @@ Dialog {
                         Layout.fillWidth: true
                         text: qsTr("Links are supported on most filesystems except FAT")
                         horizontalAlignment: Text.AlignHCenter
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                         font.pointSize: Theme.fontSizeSmall
                     }
                     
@@ -293,7 +305,7 @@ Dialog {
                     
                     Label {
                         text: cloneSupported ? qsTr("Reflinks supported") : qsTr("Your filesystem and/or OS doesn't support reflinks")
-                        color: cloneSupported ? Theme.success : Theme.textSecondary
+                        color: cloneSupported ? ThemeColors.success : ThemeColors.textSecondary
                         font.pointSize: Theme.fontSizeSmall
                     }
                 }

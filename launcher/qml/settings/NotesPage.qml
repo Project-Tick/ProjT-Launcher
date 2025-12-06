@@ -15,18 +15,13 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
-
-
-/**
- * Notes Page – Phase 11.C.3
- * Instance notes editor
- */
 
 Rectangle {
     id: root
     objectName: "notesPage"
-    color: Theme.background
+    color: ThemeColors.background
     
     property var vm: ProjT.instanceVM
     
@@ -39,13 +34,13 @@ Rectangle {
             text: qsTr("Notes")
             font.pixelSize: 24
             font.weight: Font.Bold
-            color: Theme.foreground
+            color: ThemeColors.text
         }
         
         Text {
             text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
             font.pixelSize: 14
-            color: Theme.mutedForeground
+            color: ThemeColors.textSecondary
             visible: root.vm !== null
         }
         
@@ -61,14 +56,14 @@ Rectangle {
                 selectByMouse: true
                 
                 background: Rectangle {
-                    color: Theme.surface0
-                    border.color: notesTextArea.activeFocus ? Theme.accent : Theme.surface1
+                    color: ThemeColors.surface
+                    border.color: notesTextArea.activeFocus ? ThemeColors.accent : ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
-                color: Theme.foreground
-                placeholderTextColor: Theme.mutedForeground
+                color: ThemeColors.text
+                placeholderTextColor: ThemeColors.textSecondary
             }
         }
         
@@ -83,15 +78,15 @@ Rectangle {
                 onClicked: notesTextArea.text = ""
                 
                 background: Rectangle {
-                    color: parent.hovered ? Theme.surface1 : Theme.surface0
-                    border.color: Theme.surface2
+                    color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                    border.color: ThemeColors.border
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -107,13 +102,13 @@ Rectangle {
                 }
                 
                 background: Rectangle {
-                    color: parent.hovered ? Qt.lighter(Theme.accent, 1.1) : Theme.accent
+                    color: parent.hovered ? Qt.lighter(ThemeColors.accent, 1.1) : ThemeColors.accent
                     radius: Theme.radiusS
                 }
                 
                 contentItem: Text {
                     text: parent.text
-                    color: Theme.base
+                    color: ThemeColors.surface
                     font.weight: Font.DemiBold
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter

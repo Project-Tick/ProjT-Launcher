@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -25,7 +37,7 @@ Dialog {
             Layout.fillWidth: true
             Layout.preferredHeight: 200
             radius: 8
-            color: Theme.backgroundAlt
+            color: ThemeColors.backgroundAlt
             clip: true
             visible: newsItem && newsItem.imageUrl
             
@@ -43,7 +55,7 @@ Dialog {
             
             Label {
                 text: newsItem ? newsItem.title : ""
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 font.bold: true
                 font.pointSize: Theme.fontSizeMedium + 2
                 wrapMode: Text.WordWrap
@@ -56,7 +68,7 @@ Dialog {
                 
                 Label {
                     text: newsItem ? newsItem.date : ""
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: Theme.fontSizeSmall
                 }
                 
@@ -64,7 +76,7 @@ Dialog {
                     Layout.preferredWidth: categoryLabel.implicitWidth + 12
                     Layout.preferredHeight: 20
                     radius: 10
-                    color: Theme.accent
+                    color: ThemeColors.accent
                     visible: newsItem && newsItem.category
                     
                     Label {
@@ -88,7 +100,7 @@ Dialog {
                 readOnly: true
                 text: newsItem ? newsItem.content : ""
                 wrapMode: Text.WordWrap
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 textFormat: Text.MarkdownText
                 background: Rectangle {
                     color: "transparent"

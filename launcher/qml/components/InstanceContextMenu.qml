@@ -14,33 +14,8 @@
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
-
-/**
- * InstanceContextMenu – Right-click Menu for Instance Actions
- * 
- * Provides all instance-related actions:
- * - Launch
- * - Create New Instance
- * - Import Instance
- * - Edit Settings
- * - Rename
- * - Duplicate
- * - Open Folder
- * - Backup
- * - Export
- * - Delete
- * 
- * Usage:
- *   InstanceContextMenu {
- *       id: contextMenu
- *       instanceId: selectedInstanceId
- *       onEditSettings: { ... }
- *       onDelete: { ... }
- *   }
- *   
- *   onRightClicked: contextMenu.popup(mouse.x, mouse.y)
- */
 
 Menu {
     id: contextMenu
@@ -64,8 +39,8 @@ Menu {
     
     // Styling
     background: Rectangle {
-        color: Theme.surface
-        border.color: "#323742"
+        color: ThemeColors.surface
+        border.color: ThemeColors.border
         border.width: 1
         radius: Theme.radius
     }
@@ -151,7 +126,7 @@ Menu {
     MenuItem {
         text: qsTr("Delete")
         icon.name: "edit-delete"
-        palette.buttonText: "#ff6b6b"  // Red for delete
+        palette.buttonText: ThemeColors.error  // Red for delete
         onTriggered: contextMenu.deleteInstance()
     }
 }

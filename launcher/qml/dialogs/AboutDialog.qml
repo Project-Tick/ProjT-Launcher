@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -38,7 +50,7 @@ Dialog {
         Label {
             Layout.fillWidth: true
             text: "ProjT Launcher"
-            color: Theme.textPrimary
+            color: ThemeColors.text
             font.pointSize: 15
             horizontalAlignment: Text.AlignHCenter
         }
@@ -47,7 +59,7 @@ Dialog {
         Label {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("Version %1").arg(appInfo ? appInfo.version : "")
-            color: Theme.textSecondary
+            color: ThemeColors.textSecondary
             
             MouseArea {
                 anchors.fill: parent
@@ -83,7 +95,7 @@ Dialog {
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("A custom launcher that makes managing Minecraft easier by allowing you to have multiple instances of Minecraft at once.")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
                 }
@@ -91,7 +103,7 @@ Dialog {
                 Label {
                     Layout.fillWidth: true
                     text: "<a href='https://github.com/Project-Tick/ProjT-Launcher'>https://github.com/Project-Tick/ProjT-Launcher</a>"
-                    color: Theme.accent
+                    color: ThemeColors.accent
                     font.pointSize: 10
                     horizontalAlignment: Text.AlignHCenter
                     onLinkActivated: (link) => Qt.openUrlExternally(link)
@@ -106,7 +118,7 @@ Dialog {
                 Label {
                     Layout.fillWidth: true
                     text: appInfo ? appInfo.copyright : "© 2025 Project Tick Contributors"
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     font.pointSize: 8
                     horizontalAlignment: Text.AlignHCenter
                 }
@@ -114,14 +126,14 @@ Dialog {
                 Rectangle {
                     Layout.fillWidth: true
                     height: 1
-                    color: Theme.border
+                    color: ThemeColors.border
                 }
                 
                 // Platform info
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Platform: %1").arg(appInfo ? appInfo.platform : Qt.platform.os)
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     
                     MouseArea {
                         anchors.fill: parent
@@ -133,7 +145,7 @@ Dialog {
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Build Date: %1").arg(appInfo ? appInfo.buildDate : "")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     
                     MouseArea {
                         anchors.fill: parent
@@ -145,7 +157,7 @@ Dialog {
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Commit: %1").arg(appInfo ? appInfo.gitCommit : "")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     
                     MouseArea {
                         anchors.fill: parent
@@ -157,7 +169,7 @@ Dialog {
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Channel: %1").arg(appInfo ? appInfo.channel : "stable")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     
                     MouseArea {
                         anchors.fill: parent
@@ -178,7 +190,7 @@ Dialog {
                     textFormat: TextArea.RichText
                     text: appInfo ? appInfo.credits : qsTr("<h3>Contributors</h3><p>Thanks to all the amazing contributors who have helped make this project possible!</p><p>Based on PolyMC and Prism Launcher.</p>")
                     wrapMode: Text.WordWrap
-                    color: Theme.textPrimary
+                    color: ThemeColors.text
                     onLinkActivated: (link) => Qt.openUrlExternally(link)
                     background: Rectangle {
                         color: "transparent"
@@ -196,7 +208,7 @@ Dialog {
                     font.family: "DejaVu Sans Mono"
                     text: qsTr("ProjT Launcher is licensed under the GNU General Public License v3.0.\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.")
                     wrapMode: Text.WordWrap
-                    color: Theme.textPrimary
+                    color: ThemeColors.text
                     background: Rectangle {
                         color: "transparent"
                     }

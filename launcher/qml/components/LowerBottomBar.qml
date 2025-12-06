@@ -15,11 +15,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: lowerBar
-    color: Theme.surface
+    color: ThemeColors.toolBar
     height: 32
     
     // Properties from ViewModels
@@ -40,9 +41,16 @@ Rectangle {
     
     Rectangle {
         anchors.fill: parent
-        color: "#1a1d23"
-        border.color: "#323742"
-        border.width: 1
+        color: ThemeColors.toolBar
+        
+        // Top border only
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: 1
+            color: ThemeColors.border
+        }
         
         RowLayout {
             anchors.fill: parent
@@ -56,9 +64,9 @@ Rectangle {
                 height: 8
                 radius: 4
                 color: {
-                    if (isBusy) return "#f59e0b"  // Yellow for busy
-                    if (isAnyRunning) return "#22c55e"  // Green for running
-                    return "#6b7280"  // Gray for idle
+                    if (isBusy) return ThemeColors.warning
+                    if (isAnyRunning) return ThemeColors.success
+                    return ThemeColors.textSecondary
                 }
                 
                 // Pulse animation when busy or running
@@ -73,7 +81,7 @@ Rectangle {
             // === Status Message ===
             Label {
                 text: displayStatus
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 font.pointSize: 9
                 Layout.fillWidth: true
                 elide: Text.ElideRight
@@ -88,7 +96,7 @@ Rectangle {
                 Layout.alignment: Qt.AlignVCenter
                 
                 background: Rectangle {
-                    color: "#2a2d33"
+                    color: ThemeColors.backgroundAlt
                     radius: 2
                 }
                 
@@ -97,7 +105,7 @@ Rectangle {
                         width: parent.width * 0.3
                         height: parent.height
                         radius: 2
-                        color: Theme.accent
+                        color: ThemeColors.accent
                         
                         SequentialAnimation on x {
                             running: isBusy
@@ -120,7 +128,7 @@ Rectangle {
             // === Version Info ===
             Label {
                 text: ProjT.launcherVM ? ProjT.launcherVM.versionString : ""
-                color: "#4b5563"
+                color: ThemeColors.textSecondary
                 font.pointSize: 8
                 Layout.alignment: Qt.AlignVCenter
             }

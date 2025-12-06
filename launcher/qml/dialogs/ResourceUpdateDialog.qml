@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Dialog {
@@ -26,7 +38,7 @@ Dialog {
         Label {
             Layout.fillWidth: true
             text: qsTr("The following resources have updates available:")
-            color: Theme.textPrimary
+            color: ThemeColors.text
         }
         
         // Select all
@@ -50,7 +62,7 @@ Dialog {
             
             Label {
                 text: qsTr("%1 of %2 selected").arg(selectedResources.length).arg(updatableResources.length)
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
             }
         }
         
@@ -70,8 +82,8 @@ Dialog {
                     width: resourcesList.width
                     height: 64
                     radius: 6
-                    color: selectedResources.indexOf(modelData.id) >= 0 ? Theme.accent + "15" : "transparent"
-                    border.color: selectedResources.indexOf(modelData.id) >= 0 ? Theme.accent : "transparent"
+                    color: selectedResources.indexOf(modelData.id) >= 0 ? ThemeColors.accent + "15" : "transparent"
+                    border.color: selectedResources.indexOf(modelData.id) >= 0 ? ThemeColors.accent : "transparent"
                     border.width: 1
                     
                     RowLayout {
@@ -98,7 +110,7 @@ Dialog {
                             Layout.preferredWidth: 44
                             Layout.preferredHeight: 44
                             radius: 6
-                            color: Theme.backgroundAlt
+                            color: ThemeColors.backgroundAlt
                             
                             Image {
                                 anchors.fill: parent
@@ -114,7 +126,7 @@ Dialog {
                             
                             Label {
                                 text: modelData.name || qsTr("Unknown")
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                                 font.bold: true
                             }
                             
@@ -123,18 +135,18 @@ Dialog {
                                 
                                 Label {
                                     text: modelData.currentVersion || ""
-                                    color: Theme.textSecondary
+                                    color: ThemeColors.textSecondary
                                     font.pointSize: Theme.fontSizeSmall
                                 }
                                 
                                 Label {
                                     text: "→"
-                                    color: Theme.accent
+                                    color: ThemeColors.accent
                                 }
                                 
                                 Label {
                                     text: modelData.newVersion || ""
-                                    color: Theme.accent
+                                    color: ThemeColors.accent
                                     font.pointSize: Theme.fontSizeSmall
                                     font.bold: true
                                 }
@@ -161,7 +173,7 @@ Dialog {
             Label {
                 anchors.centerIn: parent
                 text: qsTr("No updates available")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 visible: updatableResources.length === 0
             }
         }
@@ -214,7 +226,7 @@ Dialog {
                 readOnly: true
                 text: changelogDialog.changelog
                 wrapMode: Text.WordWrap
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
         }
     }

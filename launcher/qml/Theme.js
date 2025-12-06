@@ -1,3 +1,4 @@
+.pragma library
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
@@ -12,23 +13,28 @@
  *  their original copyright and license notices are preserved below.
  */
 
-.pragma library
-
-// Dark palette
-var background = "#0a0c10"
-var backgroundAlt = "#161a22"
-var surface = "#12151a"
-var surfaceBackground = "#12151a"
-var surfaceVariant = "#171c24"
-var textPrimary = "#dfe3e9"
-var textSecondary = "#9aa6b7"
-var accent = "#3c7be0"
-var primary = "#3c7be0"
-var danger = "#d55f5f"
-var error = "#d55f5f"
-var success = "#4caf50"
-var warning = "#ff9800"
-var border = "#323742"
+var background = "#1b1b1b"
+var backgroundAlt = "#222222"
+var surface = "#252525"
+var surfaceBackground = "#1e1e1e"
+var surfaceVariant = "#2a2a2a"
+var surface0 = "#252525"
+var surface1 = "#303030"
+var surface2 = "#3a3a3a"
+var mantle = "#181818"
+var textPrimary = "#e0e0e0"
+var textSecondary = "#a0a0a0"
+var text = "#ffffff"
+var subtext0 = "#b0b0b0"
+var subtext1 = "#909090"
+var border = "#404040"
+var accent = "#96db59"
+var primary = "#2fa3c6"
+var selection = "#3d4d60"
+var red = "#d55f5f"
+var green = "#4caf50"
+var yellow = "#ff9800"
+var blue = "#2196f3"
 
 // Layout
 var radius = 8
@@ -48,11 +54,6 @@ var fontCaption = 11
 var fontSizeSmall = 10
 var fontSizeMedium = 12
 var fontSizeLarge = 14
-
-// Additional colors for UI states
-var selection = "#2a3a4f"
-var hover = "#1e2633"
-var disabled = "#555555"
 
 // Icon theme - matches Qt theme icons
 // Icons are stored as qrc:/icons/{theme}/scalable/{name}.svg

@@ -15,18 +15,13 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
-
-
-/**
- * Minecraft Settings Page – Phase 11.C.1
- * Configures Minecraft-specific settings per instance
- */
 
 Rectangle {
     id: root
     objectName: "minecraftSettings"
-    color: Theme.background
+    color: ThemeColors.background
     
     property var vm: ProjT.instanceVM
     
@@ -46,13 +41,13 @@ Rectangle {
                 text: qsTr("Minecraft Settings")
                 font.pixelSize: 24
                 font.weight: Font.Bold
-                color: Theme.foreground
+                color: ThemeColors.text
             }
             
             Text {
                 text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
                 font.pixelSize: 14
-                color: Theme.mutedForeground
+                color: ThemeColors.textSecondary
                 visible: root.vm !== null
             }
             
@@ -62,15 +57,15 @@ Rectangle {
                 Layout.fillWidth: true
                 
                 background: Rectangle {
-                    color: Theme.mantle
-                    border.color: Theme.surface1
+                    color: ThemeColors.disabled
+                    border.color: ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 label: Text {
                     text: parent.title
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     font.weight: Font.DemiBold
                     leftPadding: Theme.spacingS
                 }
@@ -82,7 +77,7 @@ Rectangle {
                     rowSpacing: Theme.spacingS
                     
                     // Override checkbox
-                    Text { text: ""; color: Theme.foreground }
+                    Text { text: ""; color: ThemeColors.text }
                     CheckBox {
                         id: overrideWindowCheck
                         text: qsTr("Override window settings")
@@ -91,7 +86,7 @@ Rectangle {
                         
                         contentItem: Text {
                             text: overrideWindowCheck.text
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             leftPadding: overrideWindowCheck.indicator.width + 8
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -99,7 +94,7 @@ Rectangle {
                     
                     Text { 
                         text: qsTr("Width:")
-                        color: overrideWindowCheck.checked ? Theme.foreground : Theme.mutedForeground
+                        color: overrideWindowCheck.checked ? ThemeColors.text : ThemeColors.textSecondary
                     }
                     SpinBox {
                         id: widthSpinBox
@@ -111,8 +106,8 @@ Rectangle {
                         onValueModified: if (root.vm) root.vm.windowWidth = value
                         
                         background: Rectangle {
-                            color: Theme.surface0
-                            border.color: widthSpinBox.enabled ? Theme.accent : Theme.surface1
+                            color: ThemeColors.surface
+                            border.color: widthSpinBox.enabled ? ThemeColors.accent : ThemeColors.hover
                             border.width: 1
                             radius: Theme.radiusS
                             opacity: widthSpinBox.enabled ? 1.0 : 0.5
@@ -121,7 +116,7 @@ Rectangle {
                     
                     Text { 
                         text: qsTr("Height:")
-                        color: overrideWindowCheck.checked ? Theme.foreground : Theme.mutedForeground
+                        color: overrideWindowCheck.checked ? ThemeColors.text : ThemeColors.textSecondary
                     }
                     SpinBox {
                         id: heightSpinBox
@@ -133,15 +128,15 @@ Rectangle {
                         onValueModified: if (root.vm) root.vm.windowHeight = value
                         
                         background: Rectangle {
-                            color: Theme.surface0
-                            border.color: heightSpinBox.enabled ? Theme.accent : Theme.surface1
+                            color: ThemeColors.surface
+                            border.color: heightSpinBox.enabled ? ThemeColors.accent : ThemeColors.hover
                             border.width: 1
                             radius: Theme.radiusS
                             opacity: heightSpinBox.enabled ? 1.0 : 0.5
                         }
                     }
                     
-                    Text { text: ""; color: Theme.foreground }
+                    Text { text: ""; color: ThemeColors.text }
                     CheckBox {
                         id: fullscreenCheck
                         text: qsTr("Fullscreen")
@@ -151,7 +146,7 @@ Rectangle {
                         
                         contentItem: Text {
                             text: fullscreenCheck.text
-                            color: fullscreenCheck.enabled ? Theme.foreground : Theme.mutedForeground
+                            color: fullscreenCheck.enabled ? ThemeColors.text : ThemeColors.textSecondary
                             leftPadding: fullscreenCheck.indicator.width + 8
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -165,15 +160,15 @@ Rectangle {
                 Layout.fillWidth: true
                 
                 background: Rectangle {
-                    color: Theme.mantle
-                    border.color: Theme.surface1
+                    color: ThemeColors.disabled
+                    border.color: ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 label: Text {
                     text: parent.title
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     font.weight: Font.DemiBold
                     leftPadding: Theme.spacingS
                 }
@@ -190,7 +185,7 @@ Rectangle {
                         
                         contentItem: Text {
                             text: showConsoleCheck.text
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             leftPadding: showConsoleCheck.indicator.width + 8
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -204,7 +199,7 @@ Rectangle {
                         
                         contentItem: Text {
                             text: closeOnLaunchCheck.text
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             leftPadding: closeOnLaunchCheck.indicator.width + 8
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -218,7 +213,7 @@ Rectangle {
                         
                         contentItem: Text {
                             text: quitAfterGameCheck.text
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             leftPadding: quitAfterGameCheck.indicator.width + 8
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -239,15 +234,15 @@ Rectangle {
                     onClicked: if (root.vm) root.vm.reloadSettings()
                     
                     background: Rectangle {
-                        color: parent.hovered ? Theme.surface1 : Theme.surface0
-                        border.color: Theme.surface2
+                        color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                        border.color: ThemeColors.border
                         border.width: 1
                         radius: Theme.radiusS
                     }
                     
                     contentItem: Text {
                         text: parent.text
-                        color: Theme.foreground
+                        color: ThemeColors.text
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -258,13 +253,13 @@ Rectangle {
                     onClicked: if (root.vm) root.vm.saveSettings()
                     
                     background: Rectangle {
-                        color: parent.hovered ? Qt.lighter(Theme.accent, 1.1) : Theme.accent
+                        color: parent.hovered ? Qt.lighter(ThemeColors.accent, 1.1) : ThemeColors.accent
                         radius: Theme.radiusS
                     }
                     
                     contentItem: Text {
                         text: parent.text
-                        color: Theme.base
+                        color: ThemeColors.surface
                         font.weight: Font.DemiBold
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter

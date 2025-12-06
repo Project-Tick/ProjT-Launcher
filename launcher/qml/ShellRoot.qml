@@ -25,17 +25,43 @@ import "Theme.js" as Theme
 
 Rectangle {
     id: root
-    color: Theme.background
     anchors.fill: parent
+    
+    // Theme binding - directly from themeVM for reliable updates
+    property var themeVM: ProjT.themeVM
+    property int _themeUpdateCount: 0
+    
+    // Root background color with direct theme binding
+    color: {
+        var _ = _themeUpdateCount
+        return themeVM ? themeVM.windowColor : ThemeColors.background
+    }
     
     // Instance toolbar visibility (only on Instances page)
     // Main window always shows Instances - other pages open as dialogs/windows
     readonly property bool isInstancesPage: true
     
+    // Theme change connection - forces ThemeColors singleton and root to update
+    Connections {
+        target: themeVM
+        function onThemeColorsChanged() {
+            console.log("[ShellRoot] Theme colors changed - updating UI")
+            ThemeColors.forceUpdate()
+            root._themeUpdateCount++
+        }
+    }
+    
     Component.onCompleted: {
         console.log("[ShellRoot] Component loaded")
         console.log("[ShellRoot] LauncherVM available:", !!ProjT.launcherVM)
         console.log("[ShellRoot] InstancesVM available:", !!ProjT.instancesVM)
+        console.log("[ShellRoot] ThemeVM available:", !!ProjT.themeVM)
+        
+        // Initialize theme colors
+        if (themeVM) {
+            ThemeColors.forceUpdate()
+            _themeUpdateCount++
+        }
         
         // Initialize instance list from backend
         if (ProjT.instancesVM) {
@@ -58,7 +84,7 @@ Rectangle {
             height: 600
             minimumWidth: 600
             minimumHeight: 450
-            color: Theme.background
+            color: ThemeColors.background
             flags: Qt.Window
             visible: true
             
@@ -76,7 +102,7 @@ Rectangle {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 100
-                    color: Theme.surfaceBackground
+                    color: ThemeColors.surface
                     
                     RowLayout {
                         anchors.fill: parent
@@ -111,8 +137,8 @@ Rectangle {
                                 modal: true
                                 
                                 background: Rectangle {
-                                    color: Theme.surface
-                                    border.color: "#323742"
+                                    color: ThemeColors.surface
+                                    border.color: ThemeColors.border
                                     radius: Theme.radius
                                 }
                                 
@@ -123,7 +149,7 @@ Rectangle {
                                     
                                     Label {
                                         text: qsTr("Select Icon")
-                                        color: Theme.textPrimary
+                                        color: ThemeColors.text
                                         font.bold: true
                                     }
                                     
@@ -141,9 +167,9 @@ Rectangle {
                                             height: 48
                                             
                                             background: Rectangle {
-                                                color: newInstanceWindow.selectedIconKey === modelData ? Theme.accent : (parent.hovered ? "#3d4d60" : "transparent")
+                                                color: newInstanceWindow.selectedIconKey === modelData ? ThemeColors.accent : (parent.hovered ? "#3d4d60" : "transparent")
                                                 radius: Theme.radius
-                                                border.color: newInstanceWindow.selectedIconKey === modelData ? Theme.accent : "transparent"
+                                                border.color: newInstanceWindow.selectedIconKey === modelData ? ThemeColors.accent : "transparent"
                                                 border.width: 2
                                             }
                                             
@@ -175,7 +201,7 @@ Rectangle {
                             
                             Label {
                                 text: qsTr("&Name:")
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                             }
                             
                             TextField {
@@ -188,7 +214,7 @@ Rectangle {
                             
                             Label {
                                 text: qsTr("&Group:")
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                             }
                             
                             ComboBox {
@@ -218,7 +244,7 @@ Rectangle {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 1
-                    color: Theme.border
+                    color: ThemeColors.border
                 }
                 
                 // === Page Container Area ===
@@ -231,7 +257,7 @@ Rectangle {
                     Rectangle {
                         Layout.preferredWidth: 150
                         Layout.fillHeight: true
-                        color: Theme.surfaceBackground
+                        color: ThemeColors.surface
                         
                         ListView {
                             id: pageList
@@ -270,7 +296,7 @@ Rectangle {
                                     
                                     Label {
                                         text: model.name
-                                        color: Theme.textPrimary
+                                        color: ThemeColors.text
                                         Layout.fillWidth: true
                                     }
                                 }
@@ -287,7 +313,7 @@ Rectangle {
                     Rectangle {
                         Layout.preferredWidth: 1
                         Layout.fillHeight: true
-                        color: Theme.border
+                        color: ThemeColors.border
                     }
                     
                     // Right content area - Page stack
@@ -343,23 +369,23 @@ Rectangle {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 1
-                    color: Theme.border
+                    color: ThemeColors.border
                 }
                 
                 // === Bottom buttons ===
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 50
-                    color: Theme.surfaceBackground
+                    color: ThemeColors.surface
                     
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: Theme.spacingM
                         spacing: Theme.spacingM
                         
-                        Button {
+                        ThemedButton {
                             text: qsTr("Help")
-                            icon.name: "help-contents"
+                            flat: true
                             onClicked: {
                                 // Open help URL
                                 Qt.openUrlExternally("https://projtlauncher.yongdohyun.org.tr/wiki/getting-started/create-instance/")
@@ -368,8 +394,9 @@ Rectangle {
                         
                         Item { Layout.fillWidth: true }
                         
-                        Button {
+                        ThemedButton {
                             text: qsTr("OK")
+                            primary: true
                             enabled: instNameField.text.length > 0
                             onClicked: {
                                 if (ProjT.instancesVM && instNameField.text.length > 0) {
@@ -387,8 +414,9 @@ Rectangle {
                             }
                         }
                         
-                        Button {
+                        ThemedButton {
                             text: qsTr("Cancel")
+                            outline: true
                             onClicked: newInstanceWindow.close()
                         }
                     }
@@ -415,7 +443,7 @@ Rectangle {
             
             Label {
                 text: qsTr("New name:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             TextField {
@@ -457,7 +485,7 @@ Rectangle {
             
             Label {
                 text: qsTr("New instance name:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             TextField {
@@ -499,7 +527,7 @@ Rectangle {
         
         Label {
             text: qsTr("Delete \"%1\"?\n\nThis action cannot be undone.").arg(deleteDialog.currentName)
-            color: "#ff6b6b"
+            color: ThemeColors.error
             wrapMode: Text.WordWrap
             width: parent.width
         }
@@ -527,7 +555,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Group name:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             TextField {
@@ -637,7 +665,7 @@ Rectangle {
                 visible: isInstancesPage
                 Layout.preferredWidth: 1
                 Layout.fillHeight: true
-                color: "#323742"
+                color: ThemeColors.border
             }
             
             // === INSTANCE TOOLBAR (right vertical toolbar) ===
@@ -777,7 +805,7 @@ Rectangle {
             height: 650
             minimumWidth: 700
             minimumHeight: 500
-            color: Theme.background
+            color: ThemeColors.background
             flags: Qt.Window
             visible: true
             
@@ -799,7 +827,7 @@ Rectangle {
                     Rectangle {
                         Layout.preferredWidth: 180
                         Layout.fillHeight: true
-                        color: Theme.surfaceBackground
+                        color: ThemeColors.surface
                         
                         ListView {
                             id: settingsPageList
@@ -843,7 +871,7 @@ Rectangle {
                     Rectangle {
                         Layout.preferredWidth: 1
                         Layout.fillHeight: true
-                        color: Theme.border
+                        color: ThemeColors.border
                     }
                     
                     // Right content area
@@ -856,7 +884,7 @@ Rectangle {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 40
-                            color: Theme.surfaceBackground
+                            color: ThemeColors.surface
                             
                             RowLayout {
                                 anchors.fill: parent
@@ -867,7 +895,7 @@ Rectangle {
                                     text: settingsPageList.model.get(settingsWindow.currentPageIndex).name
                                     font.pointSize: 12
                                     font.bold: true
-                                    color: Theme.textPrimary
+                                    color: ThemeColors.text
                                 }
                                 
                                 Item { Layout.fillWidth: true }
@@ -877,7 +905,7 @@ Rectangle {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 1
-                            color: Theme.border
+                            color: ThemeColors.border
                         }
                         
                         // Page stack
@@ -921,23 +949,23 @@ Rectangle {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 1
-                    color: Theme.border
+                    color: ThemeColors.border
                 }
                 
                 // === Bottom buttons ===
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 50
-                    color: Theme.surfaceBackground
+                    color: ThemeColors.surface
                     
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: Theme.spacingM
                         spacing: Theme.spacingM
                         
-                        Button {
+                        ThemedButton {
                             text: qsTr("Help")
-                            icon.name: "help-contents"
+                            flatStyle: true
                             onClicked: {
                                 Qt.openUrlExternally("https://projtlauncher.yongdohyun.org.tr/wiki/")
                             }
@@ -945,8 +973,9 @@ Rectangle {
                         
                         Item { Layout.fillWidth: true }
                         
-                        Button {
+                        ThemedButton {
                             text: qsTr("OK")
+                            primary: true
                             onClicked: {
                                 // Apply settings and close
                                 if (ProjT.settingsVM) {
@@ -956,8 +985,9 @@ Rectangle {
                             }
                         }
                         
-                        Button {
+                        ThemedButton {
                             text: qsTr("Cancel")
+                            outline: true
                             onClicked: settingsWindow.close()
                         }
                     }
@@ -977,7 +1007,7 @@ Rectangle {
             height: 500
             minimumWidth: 400
             minimumHeight: 350
-            color: Theme.background
+            color: ThemeColors.background
             flags: Qt.Window
             visible: true
             
@@ -1001,7 +1031,7 @@ Rectangle {
             height: 650
             minimumWidth: 600
             minimumHeight: 400
-            color: Theme.background
+            color: ThemeColors.background
             flags: Qt.Window
             visible: true
             
@@ -1025,7 +1055,7 @@ Rectangle {
             height: 600
             minimumWidth: 500
             minimumHeight: 400
-            color: Theme.background
+            color: ThemeColors.background
             flags: Qt.Window
             visible: true
             
@@ -1049,7 +1079,7 @@ Rectangle {
             height: 450
             minimumWidth: 400
             minimumHeight: 350
-            color: Theme.background
+            color: ThemeColors.background
             flags: Qt.Window
             visible: true
             
@@ -1064,12 +1094,12 @@ Rectangle {
                     text: qsTr("Account Management")
                     font.pointSize: 14
                     font.bold: true
-                    color: Theme.textPrimary
+                    color: ThemeColors.text
                 }
                 
                 Label {
                     text: qsTr("Manage your Minecraft accounts below.")
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                 }
@@ -1078,15 +1108,15 @@ Rectangle {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: Theme.surfaceBackground
+                    color: ThemeColors.surface
                     radius: Theme.radiusS
-                    border.color: Theme.border
+                    border.color: ThemeColors.border
                     border.width: 1
                     
                     Label {
                         anchors.centerIn: parent
                         text: qsTr("No accounts added yet")
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                     }
                 }
                 
@@ -1094,16 +1124,17 @@ Rectangle {
                     Layout.fillWidth: true
                     spacing: Theme.spacingM
                     
-                    Button {
+                    ThemedButton {
                         text: qsTr("Add Microsoft Account")
-                        icon.name: "list-add"
+                        primary: true
                         onClicked: {
                             showMSALoginDialog()
                         }
                     }
                     
-                    Button {
+                    ThemedButton {
                         text: qsTr("Add Offline Account")
+                        success: true
                         onClicked: {
                             showOfflineLoginDialog()
                         }
@@ -1111,8 +1142,9 @@ Rectangle {
                     
                     Item { Layout.fillWidth: true }
                     
-                    Button {
+                    ThemedButton {
                         text: qsTr("Close")
+                        outline: true
                         onClicked: accountsWindow.close()
                     }
                 }
@@ -1155,7 +1187,7 @@ Rectangle {
         sourceComponent: ProgressDialog {
             id: progressDialog
             title: progressDialogLoader.dialogTitle
-            statusText: progressDialogLoader.dialogMessage
+            globalStatus: progressDialogLoader.dialogMessage
             visible: true
             onClosed: progressDialogLoader.active = false
         }
@@ -1329,7 +1361,7 @@ Rectangle {
             height: 650
             minimumWidth: 700
             minimumHeight: 500
-            color: Theme.background
+            color: ThemeColors.background
             flags: Qt.Window
             visible: true
             
@@ -1358,7 +1390,7 @@ Rectangle {
                     Rectangle {
                         Layout.preferredWidth: 180
                         Layout.fillHeight: true
-                        color: Theme.surfaceBackground
+                        color: ThemeColors.surface
                         
                         ListView {
                             id: instancePageList
@@ -1401,7 +1433,7 @@ Rectangle {
                     Rectangle {
                         Layout.preferredWidth: 1
                         Layout.fillHeight: true
-                        color: Theme.border
+                        color: ThemeColors.border
                     }
                     
                     // Right content area
@@ -1461,7 +1493,7 @@ Rectangle {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 50
-                    color: Theme.surfaceBackground
+                    color: ThemeColors.surface
                     
                     RowLayout {
                         anchors.fill: parent
@@ -1515,7 +1547,7 @@ Rectangle {
             height: 650
             minimumWidth: 700
             minimumHeight: 500
-            color: Theme.background
+            color: ThemeColors.background
             flags: Qt.Window
             visible: true
             

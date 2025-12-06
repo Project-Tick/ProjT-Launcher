@@ -1,0 +1,30 @@
+module ProjTLauncher
+singleton ThemeColors 1.0 ThemeColors.qml
+ThemeGallery 1.0 qrc:/qml/components/ThemeGallery.qml
+IconThemeGallery 1.0 qrc:/qml/components/IconThemeGallery.qml
+ThemePreview 1.0 qrc:/qml/components/ThemePreview.qml
+PlatformThemeInfo 1.0 qrc:/qml/components/PlatformThemeInfo.qml
+
+# Themed Controls - Reactive to theme changes
+ThemedButton 1.0 qrc:/qml/components/ThemedButton.qml
+ThemedToolButton 1.0 qrc:/qml/components/ThemedToolButton.qml
+
+# Toolbars and Status
+MainToolBar 1.0 qrc:/qml/components/MainToolBar.qml
+InstanceToolBar 1.0 qrc:/qml/components/InstanceToolBar.qml
+StatusBar 1.0 qrc:/qml/components/StatusBar.qml
+Sidebar 1.0 qrc:/qml/components/Sidebar.qml
+
+# Components - Widgets
+InfoFrame 1.0 qrc:/qml/components/InfoFrame.qml
+CustomCommands 1.0 qrc:/qml/components/CustomCommands.qml
+EnvironmentVariables 1.0 qrc:/qml/components/EnvironmentVariables.qml
+ModFilterWidget 1.0 qrc:/qml/components/ModFilterWidget.qml
+SubTaskProgressBar 1.0 qrc:/qml/components/SubTaskProgressBar.qml
+
+# Instance Pages
+OtherLogsPage 1.0 qrc:/qml/instance/OtherLogsPage.qml
+
+# Dialogs
+ExportPackDialog 1.0 qrc:/qml/dialogs/ExportPackDialog.qml
+ExportToModListDialog 1.0 qrc:/qml/dialogs/ExportToModListDialog.qml

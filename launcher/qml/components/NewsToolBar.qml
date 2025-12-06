@@ -15,11 +15,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: newsToolbar
-    color: Theme.surface
+    color: ThemeColors.toolBar
     height: 32
     
     // News data from ViewModel
@@ -33,9 +34,16 @@ Rectangle {
     
     Rectangle {
         anchors.fill: parent
-        color: Theme.surface
-        border.color: "#323742"
-        border.width: 1
+        color: ThemeColors.toolBar
+        
+        // Top border only
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: 1
+            color: ThemeColors.border
+        }
         
         RowLayout {
             anchors.fill: parent
@@ -53,7 +61,7 @@ Rectangle {
             // News label
             Label {
                 text: qsTr("News:")
-                color: Theme.textSecondary
+                color: ThemeColors.textSecondary
                 font.pointSize: 10
                 Layout.alignment: Qt.AlignVCenter
             }
@@ -62,7 +70,7 @@ Rectangle {
             Label {
                 id: headlineLabel
                 text: isBusy ? qsTr("Loading news...") : (latestHeadline.length > 0 ? latestHeadline : qsTr("No news available"))
-                color: Theme.textPrimary
+                color: ThemeColors.text
                 font.pointSize: 10
                 elide: Text.ElideRight
                 Layout.fillWidth: true
@@ -74,13 +82,13 @@ Rectangle {
                     hoverEnabled: true
                     
                     onClicked: newsToolbar.newsClicked()
-                    onEntered: headlineLabel.color = Theme.accent
-                    onExited: headlineLabel.color = Theme.textPrimary
+                    onEntered: headlineLabel.color = ThemeColors.accent
+                    onExited: headlineLabel.color = ThemeColors.text
                 }
             }
             
             // === More News Button ===
-            ToolButton {
+            ThemedToolButton {
                 text: qsTr("More News...")
                 icon.name: "go-next"
                 display: AbstractButton.TextBesideIcon

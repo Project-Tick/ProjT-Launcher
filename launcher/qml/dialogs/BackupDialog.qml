@@ -1,161 +1,363 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "../components"
 
 Dialog {
     id: backupDialog
-    title: qsTr("Backup Instance")
+    title: qsTr("Manage Backups")
     modal: true
-    standardButtons: Dialog.Ok | Dialog.Cancel
-    width: 500
-    height: 400
+    width: 700
+    height: 500
+    standardButtons: Dialog.Close
     
     property var vm: ProjT.instancesVM
     property string instanceId: ""
     property string instanceName: ""
+    property int selectedBackupIndex: -1
     
-    ColumnLayout {
+    RowLayout {
         anchors.fill: parent
         spacing: Theme.spacingM
         
-        Label {
-            text: qsTr("Create backup of '%1'").arg(instanceName)
-            font.bold: true
-            color: Theme.textPrimary
-        }
-        
-        // Backup name
-        RowLayout {
-            Layout.fillWidth: true
+        // Left panel - Backup list
+        ColumnLayout {
+            Layout.preferredWidth: parent.width * 0.45
+            Layout.fillHeight: true
+            spacing: Theme.spacingS
             
             Label {
-                text: qsTr("Backup name:")
-                color: Theme.textPrimary
+                text: qsTr("Available Backups:")
+                color: ThemeColors.text
+                font.bold: true
             }
             
-            TextField {
-                id: backupName
+            Rectangle {
                 Layout.fillWidth: true
-                text: instanceName + "_backup_" + Qt.formatDateTime(new Date(), "yyyyMMdd_HHmmss")
-                selectByMouse: true
-            }
-        }
-        
-        // Options
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Options")
-            
-            ColumnLayout {
-                anchors.fill: parent
+                Layout.fillHeight: true
+                color: ThemeColors.backgroundAlt
+                border.color: ThemeColors.border
+                radius: Theme.radiusS
                 
-                CheckBox {
-                    id: includeWorlds
-                    text: qsTr("Include worlds/saves")
-                    checked: true
-                }
-                
-                CheckBox {
-                    id: includeResourcePacks
-                    text: qsTr("Include resource packs")
-                    checked: true
-                }
-                
-                CheckBox {
-                    id: includeShaderPacks
-                    text: qsTr("Include shader packs")
-                    checked: true
-                }
-                
-                CheckBox {
-                    id: includeScreenshots
-                    text: qsTr("Include screenshots")
-                    checked: false
-                }
-                
-                CheckBox {
-                    id: compressBackup
-                    text: qsTr("Compress backup (smaller size)")
-                    checked: true
-                }
-            }
-        }
-        
-        // Existing backups
-        GroupBox {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            title: qsTr("Existing Backups")
-            
-            ListView {
-                id: backupsList
-                anchors.fill: parent
-                clip: true
-                model: vm ? vm.backupsList : []
-                
-                delegate: ItemDelegate {
-                    width: backupsList.width
-                    height: 40
+                ListView {
+                    id: backupList
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    clip: true
+                    model: vm ? vm.backupsList : []
+                    currentIndex: selectedBackupIndex
                     
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingS
+                    delegate: ItemDelegate {
+                        width: backupList.width
+                        height: 50
+                        highlighted: index === backupList.currentIndex
                         
-                        Label {
-                            text: modelData.name || modelData
-                            color: Theme.textPrimary
-                            Layout.fillWidth: true
+                        onClicked: {
+                            backupList.currentIndex = index
+                            selectedBackupIndex = index
                         }
                         
-                        Label {
-                            text: modelData.date || ""
-                            color: Theme.textSecondary
-                        }
-                        
-                        Label {
-                            text: modelData.size || ""
-                            color: Theme.textSecondary
-                        }
-                        
-                        ToolButton {
-                            icon.name: "edit-delete"
-                            onClicked: {
-                                if (vm) vm.deleteBackup(modelData.path)
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.spacingS
+                            spacing: 2
+                            
+                            Label {
+                                text: modelData.name || modelData
+                                color: ThemeColors.text
+                                font.bold: true
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
                             }
+                            
+                            Label {
+                                text: (modelData.date || "") + " - " + (modelData.size || "")
+                                color: ThemeColors.textSecondary
+                                font.pixelSize: 11
+                            }
+                        }
+                    }
+                    
+                    ScrollBar.vertical: ScrollBar {}
+                }
+                
+                Label {
+                    anchors.centerIn: parent
+                    visible: backupList.count === 0
+                    text: qsTr("No backups available")
+                    color: ThemeColors.textSecondary
+                }
+            }
+            
+            // Buttons
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spacingS
+                
+                ThemedButton {
+                    text: qsTr("Create")
+                    primary: true
+                    onClicked: createBackup()
+                }
+                
+                ThemedButton {
+                    text: qsTr("Restore")
+                    success: true
+                    enabled: selectedBackupIndex >= 0
+                    onClicked: {
+                        if (vm && selectedBackupIndex >= 0) {
+                            vm.restoreBackup(instanceId, vm.backupsList[selectedBackupIndex].path)
                         }
                     }
                 }
                 
-                ScrollBar.vertical: ScrollBar {}
+                ThemedButton {
+                    text: qsTr("Delete")
+                    danger: true
+                    enabled: selectedBackupIndex >= 0
+                    onClicked: {
+                        if (vm && selectedBackupIndex >= 0) {
+                            vm.deleteBackup(vm.backupsList[selectedBackupIndex].path)
+                            selectedBackupIndex = -1
+                        }
+                    }
+                }
+                
+                ThemedButton {
+                    text: qsTr("Refresh")
+                    flatStyle: true
+                    onClicked: {
+                        if (vm) vm.loadBackupsList(instanceId)
+                    }
+                }
+            }
+        }
+        
+        // Right panel - Details and options
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: Theme.spacingS
+            
+            // Backup Details
+            GroupBox {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 150
+                title: qsTr("Backup Details")
+                
+                background: Rectangle {
+                    y: parent.topPadding - parent.padding
+                    width: parent.width
+                    height: parent.height - parent.topPadding + parent.padding
+                    color: "transparent"
+                    border.color: ThemeColors.border
+                    radius: Theme.radiusS
+                }
+                
+                label: Label {
+                    x: Theme.spacingS
+                    text: parent.title
+                    color: ThemeColors.text
+                }
+                
+                ScrollView {
+                    anchors.fill: parent
+                    clip: true
+                    
+                    TextArea {
+                        id: backupDetails
+                        readOnly: true
+                        wrapMode: TextEdit.Wrap
+                        color: ThemeColors.text
+                        text: selectedBackupIndex >= 0 && vm && vm.backupsList[selectedBackupIndex] ? 
+                              qsTr("Name: %1\nDate: %2\nSize: %3\nPath: %4").arg(
+                                  vm.backupsList[selectedBackupIndex].name || "",
+                                  vm.backupsList[selectedBackupIndex].date || "",
+                                  vm.backupsList[selectedBackupIndex].size || "",
+                                  vm.backupsList[selectedBackupIndex].path || ""
+                              ) : qsTr("Select a backup to view details")
+                        
+                        background: Rectangle {
+                            color: ThemeColors.backgroundAlt
+                        }
+                    }
+                }
             }
             
-            Label {
-                anchors.centerIn: parent
-                visible: backupsList.count === 0
-                text: qsTr("No backups yet")
-                color: Theme.textSecondary
+            // Backup Options
+            GroupBox {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                title: qsTr("Backup Options")
+                
+                background: Rectangle {
+                    y: parent.topPadding - parent.padding
+                    width: parent.width
+                    height: parent.height - parent.topPadding + parent.padding
+                    color: "transparent"
+                    border.color: ThemeColors.border
+                    radius: Theme.radiusS
+                }
+                
+                label: Label {
+                    x: Theme.spacingS
+                    text: parent.title
+                    color: ThemeColors.text
+                }
+                
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: Theme.spacingXS
+                    
+                    CheckBox {
+                        id: includeSaves
+                        text: qsTr("Include Saves")
+                        checked: true
+                    }
+                    
+                    CheckBox {
+                        id: includeConfig
+                        text: qsTr("Include Config")
+                        checked: true
+                    }
+                    
+                    CheckBox {
+                        id: includeMods
+                        text: qsTr("Include Mods")
+                        checked: false
+                    }
+                    
+                    CheckBox {
+                        id: includeResourcePacks
+                        text: qsTr("Include Resource Packs")
+                        checked: false
+                    }
+                    
+                    CheckBox {
+                        id: includeShaderPacks
+                        text: qsTr("Include Shader Packs")
+                        checked: false
+                    }
+                    
+                    CheckBox {
+                        id: includeScreenshots
+                        text: qsTr("Include Screenshots")
+                        checked: false
+                    }
+                    
+                    CheckBox {
+                        id: includeOptions
+                        text: qsTr("Include Options (options.txt)")
+                        checked: true
+                    }
+                    
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: ThemeColors.border
+                    }
+                    
+                    Label {
+                        text: qsTr("Custom Paths:")
+                        color: ThemeColors.text
+                    }
+                    
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 80
+                        color: ThemeColors.backgroundAlt
+                        border.color: ThemeColors.border
+                        radius: Theme.radiusS
+                        
+                        ListView {
+                            id: customPathsList
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            clip: true
+                            model: []
+                            
+                            delegate: ItemDelegate {
+                                width: customPathsList.width
+                                text: modelData
+                            }
+                        }
+                    }
+                    
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.spacingS
+                        
+                        ThemedButton {
+                            text: qsTr("Add...")
+                            primary: true
+                            size: "small"
+                            onClicked: {
+                                if (vm) vm.browseCustomBackupPath()
+                            }
+                        }
+                        
+                        ThemedButton {
+                            text: qsTr("Remove")
+                            danger: true
+                            size: "small"
+                            enabled: customPathsList.currentIndex >= 0
+                            onClicked: {
+                                var paths = customPathsList.model.slice()
+                                paths.splice(customPathsList.currentIndex, 1)
+                                customPathsList.model = paths
+                            }
+                        }
+                    }
+                }
             }
         }
     }
     
-    onAccepted: {
-        if (vm && backupName.text.length > 0) {
-            var options = {
-                includeWorlds: includeWorlds.checked,
-                includeResourcePacks: includeResourcePacks.checked,
-                includeShaderPacks: includeShaderPacks.checked,
-                includeScreenshots: includeScreenshots.checked,
-                compress: compressBackup.checked
-            }
-            vm.createBackup(instanceId, backupName.text, options)
+    function createBackup() {
+        if (!vm) return
+        
+        var options = {
+            includeSaves: includeSaves.checked,
+            includeConfig: includeConfig.checked,
+            includeMods: includeMods.checked,
+            includeResourcePacks: includeResourcePacks.checked,
+            includeShaderPacks: includeShaderPacks.checked,
+            includeScreenshots: includeScreenshots.checked,
+            includeOptions: includeOptions.checked,
+            customPaths: customPathsList.model
         }
+        
+        vm.createBackup(instanceId, instanceName + "_backup_" + Qt.formatDateTime(new Date(), "yyyyMMdd_HHmmss"), options)
     }
     
     onOpened: {
         if (vm) vm.loadBackupsList(instanceId)
+        selectedBackupIndex = -1
+    }
+    
+    Connections {
+        target: vm
+        ignoreUnknownSignals: true
+        function onCustomPathSelected(path) {
+            var paths = customPathsList.model.slice()
+            paths.push(path)
+            customPathsList.model = paths
+        }
     }
 }

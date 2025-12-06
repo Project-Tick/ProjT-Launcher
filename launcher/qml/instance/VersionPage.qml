@@ -1,14 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: versionPage
-    color: Theme.background
+    color: ThemeColors.background
     
     property var vm: ProjT.instanceVM
     property int selectedIndex: -1
@@ -54,13 +66,13 @@ Rectangle {
                             
                             Label {
                                 text: model.name || ""
-                                color: Theme.textPrimary
+                                color: ThemeColors.text
                                 Layout.fillWidth: true
                             }
                             
                             Label {
                                 text: model.version || ""
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                             }
                         }
                         
@@ -95,14 +107,14 @@ Rectangle {
                         text: selectedIndex >= 0 && vm && vm.componentsModel ? 
                               (vm.componentsModel[selectedIndex]?.name || "") : ""
                         font.bold: true
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                     }
                     
                     Label {
                         Layout.fillWidth: true
                         text: selectedIndex >= 0 && vm && vm.componentsModel ?
                               (vm.componentsModel[selectedIndex]?.description || "") : ""
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                         wrapMode: Text.WordWrap
                     }
                 }
@@ -113,7 +125,7 @@ Rectangle {
         Rectangle {
             Layout.preferredWidth: 160
             Layout.fillHeight: true
-            color: Theme.backgroundAlt
+            color: ThemeColors.backgroundAlt
             
             ColumnLayout {
                 anchors.fill: parent
@@ -123,7 +135,7 @@ Rectangle {
                 Label {
                     text: qsTr("Actions")
                     font.bold: true
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                 }
@@ -169,7 +181,7 @@ Rectangle {
                     }
                 }
                 
-                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
                 
                 ToolButton {
                     text: qsTr("Customize")
@@ -204,7 +216,7 @@ Rectangle {
                     }
                 }
                 
-                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
                 
                 ToolButton {
                     text: qsTr("Install Loader")
@@ -262,7 +274,7 @@ Rectangle {
                     }
                 }
                 
-                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
                 
                 ToolButton {
                     text: qsTr("Open .minecraft")
@@ -385,7 +397,7 @@ Rectangle {
             
             Label {
                 text: qsTr("Select a mod loader to install:")
-                color: Theme.textPrimary
+                color: ThemeColors.text
             }
             
             Repeater {

@@ -7,23 +7,21 @@
  *
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
  */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
-
-
-/**
- * Managed Pack Page – Phase 11.C.3
- * Displays information about managed pack (CurseForge, Modrinth, etc.)
- */
 
 Rectangle {
     id: root
     objectName: "managedPackPage"
-    color: Theme.background
+    color: ThemeColors.background
     
     property var vm: ProjT.instanceVM
     property bool isManagedPack: vm ? vm.isManagedPack : false
@@ -68,13 +66,13 @@ Rectangle {
                 text: qsTr("Managed Pack")
                 font.pixelSize: 24
                 font.weight: Font.Bold
-                color: Theme.foreground
+                color: ThemeColors.text
             }
             
             Text {
                 text: root.vm && root.vm.instanceName ? root.vm.instanceName : qsTr("No instance selected")
                 font.pixelSize: 14
-                color: Theme.mutedForeground
+                color: ThemeColors.textSecondary
                 visible: root.vm !== null
             }
             
@@ -82,8 +80,8 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 height: 100
-                color: Theme.mantle
-                border.color: Theme.surface1
+                color: ThemeColors.disabled
+                border.color: ThemeColors.hover
                 border.width: 1
                 radius: Theme.radiusS
                 visible: !root.isManagedPack
@@ -101,7 +99,7 @@ Rectangle {
                     
                     Text {
                         text: qsTr("This instance is not a managed pack")
-                        color: Theme.mutedForeground
+                        color: ThemeColors.textSecondary
                         font.pixelSize: 14
                         horizontalAlignment: Text.AlignHCenter
                         Layout.alignment: Qt.AlignHCenter
@@ -116,15 +114,15 @@ Rectangle {
                 visible: root.isManagedPack
                 
                 background: Rectangle {
-                    color: Theme.mantle
-                    border.color: Theme.surface1
+                    color: ThemeColors.disabled
+                    border.color: ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 label: Text {
                     text: parent.title
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     font.weight: Font.DemiBold
                     leftPadding: Theme.spacingS
                 }
@@ -137,7 +135,7 @@ Rectangle {
                     
                     Text { 
                         text: qsTr("Platform:")
-                        color: Theme.mutedForeground
+                        color: ThemeColors.textSecondary
                         font.pixelSize: 13
                     }
                     RowLayout {
@@ -152,31 +150,31 @@ Rectangle {
                         
                         Text { 
                             text: root.vm ? root.vm.managedPackType : ""
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             font.pixelSize: 13
                         }
                     }
                     
                     Text { 
                         text: qsTr("Pack Name:")
-                        color: Theme.mutedForeground
+                        color: ThemeColors.textSecondary
                         font.pixelSize: 13
                     }
                     Text { 
                         text: root.vm ? root.vm.managedPackName : ""
-                        color: Theme.foreground
+                        color: ThemeColors.text
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                     }
                     
                     Text { 
                         text: qsTr("Version:")
-                        color: Theme.mutedForeground
+                        color: ThemeColors.textSecondary
                         font.pixelSize: 13
                     }
                     Text { 
                         text: root.vm ? root.vm.managedPackVersionName : ""
-                        color: Theme.accent
+                        color: ThemeColors.accent
                         font.pixelSize: 13
                     }
                 }
@@ -189,15 +187,15 @@ Rectangle {
                 visible: root.isManagedPack
                 
                 background: Rectangle {
-                    color: Theme.mantle
-                    border.color: Theme.surface1
+                    color: ThemeColors.disabled
+                    border.color: ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 label: Text {
                     text: parent.title
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     font.weight: Font.DemiBold
                     leftPadding: Theme.spacingS
                 }
@@ -214,14 +212,14 @@ Rectangle {
                             width: 12
                             height: 12
                             radius: 6
-                            color: root.vm && root.vm.hasUpdateAvailable ? Theme.green : Theme.mutedForeground
+                            color: root.vm && root.vm.hasUpdateAvailable ? ThemeColors.success : ThemeColors.textSecondary
                         }
                         
                         Text {
                             text: root.vm && root.vm.hasUpdateAvailable 
                                 ? qsTr("Update available!") 
                                 : qsTr("No updates available")
-                            color: root.vm && root.vm.hasUpdateAvailable ? Theme.green : Theme.foreground
+                            color: root.vm && root.vm.hasUpdateAvailable ? ThemeColors.success : ThemeColors.text
                             font.pixelSize: 14
                         }
                         
@@ -234,15 +232,15 @@ Rectangle {
                             }
                             
                             background: Rectangle {
-                                color: parent.hovered ? Theme.surface1 : Theme.surface0
-                                border.color: Theme.surface2
+                                color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                                border.color: ThemeColors.border
                                 border.width: 1
                                 radius: Theme.radiusS
                             }
                             
                             contentItem: Text {
                                 text: parent.text
-                                color: Theme.foreground
+                                color: ThemeColors.text
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -257,13 +255,13 @@ Rectangle {
                         }
                         
                         background: Rectangle {
-                            color: parent.hovered ? Qt.lighter(Theme.accent, 1.1) : Theme.accent
+                            color: parent.hovered ? Qt.lighter(ThemeColors.accent, 1.1) : ThemeColors.accent
                             radius: Theme.radiusS
                         }
                         
                         contentItem: Text {
                             text: parent.text
-                            color: Theme.base
+                            color: ThemeColors.surface
                             font.weight: Font.DemiBold
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -279,15 +277,15 @@ Rectangle {
                 visible: root.isManagedPack
                 
                 background: Rectangle {
-                    color: Theme.mantle
-                    border.color: Theme.surface1
+                    color: ThemeColors.disabled
+                    border.color: ThemeColors.hover
                     border.width: 1
                     radius: Theme.radiusS
                 }
                 
                 label: Text {
                     text: parent.title
-                    color: Theme.foreground
+                    color: ThemeColors.text
                     font.weight: Font.DemiBold
                     leftPadding: Theme.spacingS
                 }
@@ -305,15 +303,15 @@ Rectangle {
                         }
                         
                         background: Rectangle {
-                            color: parent.hovered ? Theme.surface1 : Theme.surface0
-                            border.color: Theme.surface2
+                            color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                            border.color: ThemeColors.border
                             border.width: 1
                             radius: Theme.radiusS
                         }
                         
                         contentItem: Text {
                             text: parent.text
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -326,15 +324,15 @@ Rectangle {
                         }
                         
                         background: Rectangle {
-                            color: parent.hovered ? Theme.surface1 : Theme.surface0
-                            border.color: Theme.surface2
+                            color: parent.hovered ? ThemeColors.hover : ThemeColors.surface
+                            border.color: ThemeColors.border
                             border.width: 1
                             radius: Theme.radiusS
                         }
                         
                         contentItem: Text {
                             text: parent.text
-                            color: Theme.foreground
+                            color: ThemeColors.text
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -361,7 +359,7 @@ Rectangle {
         
         Label {
             text: qsTr("A new version of this pack is available: %1").arg(updateAvailableDialog.newVersion)
-            color: Theme.foreground
+            color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
     }
@@ -377,7 +375,7 @@ Rectangle {
         
         Label {
             text: qsTr("You are using the latest version of this pack.")
-            color: Theme.foreground
+            color: ThemeColors.text
             wrapMode: Text.WordWrap
         }
     }

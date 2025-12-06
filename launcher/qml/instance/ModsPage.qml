@@ -1,14 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This file is part of ProjT Launcher and is licensed under
+ *  the GNU General Public License version 3 or later.
+ *
+ *  If this file includes work from previous open-source projects,
+ *  their original copyright and license notices are preserved below.
+ */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
 Rectangle {
     id: modsPage
-    color: Theme.background
+    color: ThemeColors.background
     
     property var vm: ProjT.instanceVM
     property var selectedIndices: []
@@ -60,7 +72,7 @@ Rectangle {
                                 Rectangle {
                                     anchors.fill: parent
                                     visible: parent.status !== Image.Ready
-                                    color: Theme.surfaceVariant
+                                    color: ThemeColors.backgroundAlt
                                     radius: 4
                                     
                                     Label {
@@ -73,14 +85,14 @@ Rectangle {
                             
                             Label {
                                 text: model.name || model.fileName || ""
-                                color: model.enabled !== false ? Theme.textPrimary : Theme.textSecondary
+                                color: model.enabled !== false ? ThemeColors.text : ThemeColors.textSecondary
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
                             
                             Label {
                                 text: model.version || ""
-                                color: Theme.textSecondary
+                                color: ThemeColors.textSecondary
                             }
                         }
                         
@@ -105,7 +117,7 @@ Rectangle {
                         anchors.centerIn: parent
                         visible: modsList.count === 0
                         text: qsTr("No mods installed.\nClick 'Add File' or 'Download' to add mods.")
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                         horizontalAlignment: Text.AlignHCenter
                     }
                 }
@@ -129,7 +141,7 @@ Rectangle {
                             return ""
                         }
                         font.bold: true
-                        color: Theme.textPrimary
+                        color: ThemeColors.text
                     }
                     
                     Label {
@@ -140,7 +152,7 @@ Rectangle {
                             }
                             return ""
                         }
-                        color: Theme.textSecondary
+                        color: ThemeColors.textSecondary
                         wrapMode: Text.WordWrap
                         elide: Text.ElideRight
                         maximumLineCount: 2
@@ -163,7 +175,7 @@ Rectangle {
         Rectangle {
             Layout.preferredWidth: 140
             Layout.fillHeight: true
-            color: Theme.backgroundAlt
+            color: ThemeColors.backgroundAlt
             
             ColumnLayout {
                 anchors.fill: parent
@@ -173,7 +185,7 @@ Rectangle {
                 Label {
                     text: qsTr("Actions")
                     font.bold: true
-                    color: Theme.textSecondary
+                    color: ThemeColors.textSecondary
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                 }
@@ -188,7 +200,7 @@ Rectangle {
                     }
                 }
                 
-                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
                 
                 ToolButton {
                     text: qsTr("&Remove")
@@ -231,7 +243,7 @@ Rectangle {
                     }
                 }
                 
-                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
                 
                 ToolButton {
                     text: qsTr("&Download")
@@ -253,7 +265,7 @@ Rectangle {
                     }
                 }
                 
-                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
                 
                 ToolButton {
                     text: qsTr("View &Configs")
@@ -275,7 +287,7 @@ Rectangle {
                     }
                 }
                 
-                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                Rectangle { Layout.fillWidth: true; height: 1; color: ThemeColors.border }
                 
                 ToolButton {
                     text: qsTr("Reset Metadata")
@@ -321,7 +333,7 @@ Rectangle {
         
         Label {
             text: qsTr("Delete %1 selected mod(s)?\n\nThis cannot be undone.").arg(selectedIndices.length)
-            color: Theme.error
+            color: ThemeColors.error
             wrapMode: Text.WordWrap
         }
         
