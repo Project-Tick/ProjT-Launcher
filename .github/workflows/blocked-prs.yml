@@ -1,6 +1,7 @@
 name: Blocked/Stacked Pull Requests Automation
 
 on:
+  merge_group:
   pull_request_target:
     types:
       - opened
