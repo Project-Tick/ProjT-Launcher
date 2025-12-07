@@ -1,6 +1,7 @@
 name: Blocked/Stacked Pull Requests Automation
 
 on:
+  merge_group:
   pull_request_target:
     types:
       - opened
@@ -34,42 +35,49 @@ jobs:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
           PR_NUMBER: ${{ inputs.pr_id }}
         run: |
-          # setup env for the rest of the workflow
           OWNER=$(dirname "${{ github.repository }}")
           REPO=$(basename "${{ github.repository }}")
+          # Fetch and Transform PR JSON to match expected schema
           PR_JSON=$(
             gh api \
               -H "Accept: application/vnd.github.raw+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
-              "/repos/$OWNER/$REPO/pulls/$PR_NUMBER"
+              "/repos/$OWNER/$REPO/pulls/$PR_NUMBER" \
+              | jq -c '{ prBody: (.body // ""), prLabels: [.labels[].name], prHeadSha: .head.sha, prHeadLabel: .head.label } + .'
           )
-          echo "PR_JSON=$PR_JSON" >> "$GITHUB_ENV"
+          echo "JOB_DATA=$PR_JSON" >> "$GITHUB_ENV"
 
-      - name: Setup Environment
-        id: env_setup
+      - name: Setup PR for merge_group
+        if: github.event_name == 'merge_group'
+        id: setup_pr_merge_group
         env:
-          EVENT_PR_JSON: ${{ toJSON(github.event.pull_request) }}
+          HEAD_REF: ${{ github.event.merge_group.head_ref }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
-          # setup env for the rest of the workflow
-          PR_JSON=${PR_JSON:-"$EVENT_PR_JSON"}
-          {
-            echo "REPO=$(jq -r '.base.repo.name' <<< "$PR_JSON")"
-            echo "OWNER=$(jq -r '.base.repo.owner.login' <<< "$PR_JSON")"
-            echo "PR_NUMBER=$(jq -r '.number' <<< "$PR_JSON")"
-            echo "JOB_DATA=$(jq -c '
-              {
-                "repo": .base.repo.name,
-                "owner": .base.repo.owner.login,
-                "repoUrl": .base.repo.html_url,
-                "prNumber": .number,
-                "prHeadSha": .head.sha,
-                "prHeadLabel": .head.label,
-                "prBody": (.body // ""),
-                "prLabels": (reduce .labels[].name as $l ([]; . + [$l]))
-              }
-            ' <<< "$PR_JSON")"
-          } >> "$GITHUB_ENV"
-
+          # Extract PR number from merge group ref
+          # Expected format: refs/heads/gh-readonly-queue/master/pr-123-abc
+          if [[ "$HEAD_REF" =~ pr-([0-9]+) ]]; then
+            PR_NUMBER="${BASH_REMATCH[1]}"
+            echo "Identified PR #$PR_NUMBER from merge queue ref"
+          else
+            echo "Error: Could not extract PR number from ref: $HEAD_REF"
+            exit 1
+          fi
+          
+          OWNER=$(dirname "${{ github.repository }}")
+          REPO=$(basename "${{ github.repository }}")
+          
+          # Fetch and Transform PR JSON
+          DATA=$(
+            gh api \
+              -H "Accept: application/vnd.github.raw+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/$OWNER/$REPO/pulls/$PR_NUMBER" \
+              | jq -c '{ prBody: (.body // ""), prLabels: [.labels[].name], prHeadSha: .head.sha, prHeadLabel: .head.label } + .'
+          )
+          
+          # Export as JOB_DATA to match downstream usage
+          echo "JOB_DATA=$DATA" >> "$GITHUB_ENV"
 
       - name: Find Blocked/Stacked PRs in body
         id: pr_ids
