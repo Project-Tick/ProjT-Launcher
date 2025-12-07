@@ -46,6 +46,27 @@ jobs:
           )
           echo "PR_JSON=$PR_JSON" >> "$GITHUB_ENV"
 
+            - name: Setup PR for merge_group
+        if: github.event_name == 'merge_group'
+        id: setup_pr_merge_group
+        env:
+          HEAD_REF: ${{ github.event.merge_group.head_ref }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          # Extract PR number from head_ref (refs/pull/123/merge)
+          PR_NUMBER=$(echo "$HEAD_REF" | grep -oE '[0-9]+')
+          OWNER=$(dirname "${{ github.repository }}")
+          REPO=$(basename "${{ github.repository }}")
+
+          PR_JSON=$(
+            gh api \
+              -H "Accept: application/vnd.github.raw+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/$OWNER/$REPO/pulls/$PR_NUMBER"
+          )
+
+          echo "PR_JSON=$PR_JSON" >> "$GITHUB_ENV"
+
       - name: Setup Environment
         id: env_setup
         env:
