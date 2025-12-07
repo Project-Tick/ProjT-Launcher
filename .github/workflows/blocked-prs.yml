@@ -35,7 +35,6 @@ jobs:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
           PR_NUMBER: ${{ inputs.pr_id }}
         run: |
-          # setup env for the rest of the workflow
           OWNER=$(dirname "${{ github.repository }}")
           REPO=$(basename "${{ github.repository }}")
           PR_JSON=$(
@@ -46,52 +45,12 @@ jobs:
           )
           echo "PR_JSON=$PR_JSON" >> "$GITHUB_ENV"
 
-            - name: Setup PR for merge_group
+      - name: Setup PR for merge_group
         if: github.event_name == 'merge_group'
         id: setup_pr_merge_group
         env:
           HEAD_REF: ${{ github.event.merge_group.head_ref }}
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |
-          # Extract PR number from head_ref (refs/pull/123/merge)
-          PR_NUMBER=$(echo "$HEAD_REF" | grep -oE '[0-9]+')
-          OWNER=$(dirname "${{ github.repository }}")
-          REPO=$(basename "${{ github.repository }}")
-
-          PR_JSON=$(
-            gh api \
-              -H "Accept: application/vnd.github.raw+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "/repos/$OWNER/$REPO/pulls/$PR_NUMBER"
-          )
-
-          echo "PR_JSON=$PR_JSON" >> "$GITHUB_ENV"
-
-      - name: Setup Environment
-        id: env_setup
-        env:
-          EVENT_PR_JSON: ${{ toJSON(github.event.pull_request) }}
-        run: |
-          # setup env for the rest of the workflow
-          PR_JSON=${PR_JSON:-"$EVENT_PR_JSON"}
-          {
-            echo "REPO=$(jq -r '.base.repo.name' <<< "$PR_JSON")"
-            echo "OWNER=$(jq -r '.base.repo.owner.login' <<< "$PR_JSON")"
-            echo "PR_NUMBER=$(jq -r '.number' <<< "$PR_JSON")"
-            echo "JOB_DATA=$(jq -c '
-              {
-                "repo": .base.repo.name,
-                "owner": .base.repo.owner.login,
-                "repoUrl": .base.repo.html_url,
-                "prNumber": .number,
-                "prHeadSha": .head.sha,
-                "prHeadLabel": .head.label,
-                "prBody": (.body // ""),
-                "prLabels": (reduce .labels[].name as $l ([]; . + [$l]))
-              }
-            ' <<< "$PR_JSON")"
-          } >> "$GITHUB_ENV"
-
 
       - name: Find Blocked/Stacked PRs in body
         id: pr_ids
