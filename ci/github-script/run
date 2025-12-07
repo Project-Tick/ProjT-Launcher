@@ -1,0 +1,151 @@
+#!/usr/bin/env -S node --import ./run
+/**
+ * ProjT Launcher - CI Script Runner
+ * CLI tool for running CI automation scripts locally
+ */
+import { execSync } from 'node:child_process'
+import { closeSync, mkdtempSync, openSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { program } from 'commander'
+import * as core from '@actions/core'
+import { getOctokit } from '@actions/github'
+
+/**
+ * Run a CI action locally
+ */
+async function run(action, owner, repo, pull_number, options = {}) {
+  // Get GitHub token from gh CLI
+  const token = execSync('gh auth token', { encoding: 'utf-8' }).trim()
+  const github = getOctokit(token)
+
+  // Build payload
+  const payload = !pull_number ? {} : {
+    pull_request: (await github.rest.pulls.get({
+      owner,
+      repo,
+      pull_number,
+    })).data
+  }
+
+  process.env['INPUT_GITHUB-TOKEN'] = token
+
+  // Set up step summary file
+  closeSync(openSync('step-summary.md', 'w'))
+  process.env.GITHUB_STEP_SUMMARY = 'step-summary.md'
+
+  await action({
+    github,
+    context: {
+      payload,
+      repo: {
+        owner,
+        repo,
+      },
+    },
+    core,
+    dry: true,
+    ...options,
+  })
+}
+
+program
+  .name('projt-ci')
+  .description('ProjT Launcher CI automation script runner')
+  .version('1.0.0')
+
+program
+  .command('prepare')
+  .description('Prepare and validate a pull request')
+  .argument('<owner>', 'Repository owner (e.g., YongDo-Hyun)')
+  .argument('<repo>', 'Repository name (e.g., ProjT-Launcher)')
+  .argument('<pr>', 'Pull Request number')
+  .option('--no-dry', 'Make actual modifications')
+  .action(async (owner, repo, pr, options) => {
+    const prepare = (await import('./prepare.js')).default
+    await run(prepare, owner, repo, pr, options)
+  })
+
+program
+  .command('commits')
+  .description('Validate commit messages and structure')
+  .argument('<owner>', 'Repository owner')
+  .argument('<repo>', 'Repository name')
+  .argument('<pr>', 'Pull Request number')
+  .option('--no-dry', 'Make actual modifications')
+  .action(async (owner, repo, pr, options) => {
+    const commits = (await import('./commits.js')).default
+    await run(commits, owner, repo, pr, options)
+  })
+
+program
+  .command('bot')
+  .description('Run PR labeling and automation')
+  .argument('<owner>', 'Repository owner')
+  .argument('<repo>', 'Repository name')
+  .argument('[pr]', 'Pull Request number (optional for batch processing)')
+  .option('--no-dry', 'Make actual modifications')
+  .action(async (owner, repo, pr, options) => {
+    const bot = (await import('./bot.js')).default
+    const tmp = mkdtempSync(join(tmpdir(), 'projt-ci-'))
+    try {
+      process.env.GITHUB_WORKSPACE = tmp
+      process.chdir(tmp)
+      await run(bot, owner, repo, pr, options)
+    } finally {
+      rmSync(tmp, { recursive: true })
+    }
+  })
+
+program
+  .command('get-teams')
+  .description('Fetch team information from GitHub organization')
+  .argument('<owner>', 'Organization/owner name')
+  .argument('<repo>', 'Repository name')
+  .argument('[outFile]', 'Output file path (prints to stdout if omitted)')
+  .action(async (owner, repo, outFile, options) => {
+    const getTeams = (await import('./get-teams.js')).default
+    await run(getTeams, owner, repo, undefined, { ...options, outFile })
+  })
+
+program
+  .command('reviewers')
+  .description('Assign reviewers to a pull request')
+  .argument('<owner>', 'Repository owner')
+  .argument('<repo>', 'Repository name')
+  .argument('<pr>', 'Pull Request number')
+  .option('--no-dry', 'Make actual modifications')
+  .action(async (owner, repo, pr, options) => {
+    const { handleReviewers } = await import('./reviewers.js')
+    const token = execSync('gh auth token', { encoding: 'utf-8' }).trim()
+    const github = getOctokit(token)
+    
+    const pull_request = (await github.rest.pulls.get({
+      owner,
+      repo,
+      pull_number: pr,
+    })).data
+
+    const reviews = await github.paginate(github.rest.pulls.listReviews, {
+      owner,
+      repo,
+      pull_number: pr,
+    })
+
+    await handleReviewers({
+      github,
+      context: { repo: { owner, repo } },
+      core,
+      log: console.log,
+      dry: options.dry ?? true,
+      pull_request,
+      reviews,
+      maintainers: [],
+      owners: [],
+      getTeamMembers: async () => [],
+      getUser: async (id) => ({ login: `user-${id}`, id }),
+    })
+  })
+
+// Parse CLI arguments
+await program.parse()

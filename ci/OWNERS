@@ -1,0 +1,163 @@
+# =============================================================================
+# ProjT Launcher - Code Owners
+# =============================================================================
+# This file is used to describe who owns what in this repository.
+# Users/teams will get review requests for PRs that change their files.
+#
+# This file uses the same syntax as the natively supported CODEOWNERS file,
+# see https://help.github.com/articles/about-codeowners/ for documentation.
+#
+# Processing of this file is implemented in workflows/codeowners-v2.yml
+#
+# ProjT Launcher is a Qt6/QML-based Minecraft launcher
+# Repository: YongDo-Hyun/ProjT-Launcher
+# =============================================================================
+
+# =============================================================================
+# GLOBAL OWNERS
+# =============================================================================
+# Default owners for everything in the repo
+*                                       @YongDo-Hyun
+
+# =============================================================================
+# CI/CD & AUTOMATION
+# =============================================================================
+/.github/*_TEMPLATE*                    @YongDo-Hyun
+/.github/actions/                       @YongDo-Hyun
+/.github/workflows/                     @YongDo-Hyun
+/ci/                                    @YongDo-Hyun
+/ci/OWNERS                              @YongDo-Hyun
+
+# =============================================================================
+# BUILD SYSTEM
+# =============================================================================
+/CMakeLists.txt                         @YongDo-Hyun
+/CMakePresets.json                      @YongDo-Hyun
+/cmake/                                 @YongDo-Hyun
+/buildconfig/                           @YongDo-Hyun
+
+# vcpkg dependencies
+/vcpkg.json                             @YongDo-Hyun
+/vcpkg-configuration.json               @YongDo-Hyun
+
+# =============================================================================
+# NIX BUILD SUPPORT
+# =============================================================================
+/flake.nix                              @YongDo-Hyun
+/flake.lock                             @YongDo-Hyun
+/default.nix                            @YongDo-Hyun
+/shell.nix                              @YongDo-Hyun
+/nix/                                   @YongDo-Hyun
+
+# =============================================================================
+# CORE APPLICATION
+# =============================================================================
+/launcher/                              @YongDo-Hyun
+/launcher/Application.*                 @YongDo-Hyun
+/launcher/BaseInstance.*                @YongDo-Hyun
+/launcher/DesktopServices.*             @YongDo-Hyun
+/launcher/FileSystem.*                  @YongDo-Hyun
+
+# =============================================================================
+# UI COMPONENTS
+# =============================================================================
+# Qt/QML UI
+/launcher/ui/                           @YongDo-Hyun
+/launcher/qtquick/                      @YongDo-Hyun
+/launcher/resources/                    @YongDo-Hyun
+
+# =============================================================================
+# MINECRAFT INTEGRATION
+# =============================================================================
+# Minecraft core
+/launcher/minecraft/                    @YongDo-Hyun
+
+# Auth system
+/launcher/minecraft/auth/               @YongDo-Hyun
+
+# Mod loaders
+/launcher/modplatform/                  @YongDo-Hyun
+/launcher/modplatform/modrinth/         @YongDo-Hyun
+/launcher/modplatform/flame/            @YongDo-Hyun
+/launcher/modplatform/legacy_ftb/       @YongDo-Hyun
+/launcher/modplatform/atlauncher/       @YongDo-Hyun
+/launcher/modplatform/technic/          @YongDo-Hyun
+
+# =============================================================================
+# JAVA & LAUNCH SYSTEM
+# =============================================================================
+/launcher/java/                         @YongDo-Hyun
+/launcher/launch/                       @YongDo-Hyun
+
+# =============================================================================
+# NETWORKING
+# =============================================================================
+/launcher/net/                          @YongDo-Hyun
+
+# =============================================================================
+# SETTINGS & CONFIGURATION
+# =============================================================================
+/launcher/settings/                     @YongDo-Hyun
+
+# =============================================================================
+# LIBRARIES
+# =============================================================================
+/libraries/                             @YongDo-Hyun
+/libraries/rainbow/                     @YongDo-Hyun
+/libraries/tomlplusplus/                @YongDo-Hyun
+/libraries/libnbtplusplus/              @YongDo-Hyun
+/libraries/LocalPeer/                   @YongDo-Hyun
+/libraries/qdcss/                       @YongDo-Hyun
+/libraries/katabasis/                   @YongDo-Hyun
+/libraries/launcher/                    @YongDo-Hyun
+
+# =============================================================================
+# TOOLS & SCRIPTS
+# =============================================================================
+/tools/                                 @YongDo-Hyun
+/scripts/                               @YongDo-Hyun
+
+# =============================================================================
+# PROGRAM INFO & BRANDING
+# =============================================================================
+/program_info/                          @YongDo-Hyun
+
+# =============================================================================
+# TESTS
+# =============================================================================
+/tests/                                 @YongDo-Hyun
+
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
+/docs/                                  @YongDo-Hyun
+/README.md                              @YongDo-Hyun
+/CONTRIBUTING.md                        @YongDo-Hyun
+/COPYING.md                             @YongDo-Hyun
+/LICENSE                                @YongDo-Hyun
+/CODE_OF_CONDUCT.md                     @YongDo-Hyun
+/SECURITY.md                            @YongDo-Hyun
+
+# =============================================================================
+# PLATFORM-SPECIFIC
+# =============================================================================
+# Linux
+/debian/                                @YongDo-Hyun
+/flatpak/                               @YongDo-Hyun
+
+# macOS
+/cmake/MacOSXBundleInfo.plist.in        @YongDo-Hyun
+
+# =============================================================================
+# TRANSLATIONS
+# =============================================================================
+/translations/                          @YongDo-Hyun
+
+# =============================================================================
+# DEVELOPMENT ENVIRONMENT
+# =============================================================================
+/.editorconfig                          @YongDo-Hyun
+/.clang-format                          @YongDo-Hyun
+/.clang-tidy                            @YongDo-Hyun
+/.gitignore                             @YongDo-Hyun
+/.gitattributes                         @YongDo-Hyun

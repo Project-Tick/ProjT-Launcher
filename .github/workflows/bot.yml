@@ -1,0 +1,162 @@
+# =============================================================================
+# ProjT Launcher - PR Automation Bot
+# =============================================================================
+# Automatically labels PRs, assigns reviewers, and manages PR lifecycle.
+# WARNING: This workflow has write access - be careful with user input.
+# =============================================================================
+
+name: Bot
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: '05,15,25,35,45,55 * * * *'
+  
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to process (leave empty for all)'
+        required: false
+        type: string
+
+concurrency:
+  group: bot-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || 'scheduled' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  bot:
+    name: PR Automation
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule' || github.repository_owner == 'YongDo-Hyun'
+    
+    steps:
+      - name: Checkout CI scripts
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            ci/github-script
+            .github/CODEOWNERS
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd ci/github-script
+          npm ci
+
+      - name: Log API rate limits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api /rate_limit | jq '.rate'
+
+      - name: Run bot
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          retries: 3
+          script: |
+            const bot = require('./ci/github-script/bot.js');
+            await bot({
+              github,
+              context,
+              core,
+              dry: context.eventName === 'pull_request_target',
+            });
+
+      - name: Log API rate limits (after)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api /rate_limit | jq '.rate'
+
+  # Auto-label based on file changes
+  label:
+    name: Auto Label
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target'
+    
+    steps:
+      - name: Label PR by component
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: .github/labeler.yml
+          sync-labels: false
+
+  # Assign reviewers from CODEOWNERS
+  reviewers:
+    name: Assign Reviewers
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target' && github.event.action == 'opened'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            ci/github-script
+            .github/CODEOWNERS
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd ci/github-script
+          npm ci
+
+      - name: Assign reviewers
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { handleReviewers } = require('./ci/github-script/reviewers.js');
+            
+            const pull_request = context.payload.pull_request;
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              ...context.repo,
+              pull_number: pull_request.number,
+            });
+            
+            await handleReviewers({
+              github,
+              context,
+              core,
+              log: console.log,
+              dry: false,
+              pull_request,
+              reviews,
+              maintainers: [],
+              owners: [],
+              getTeamMembers: async (team) => {
+                try {
+                  return await github.paginate(github.rest.teams.listMembersInOrg, {
+                    org: context.repo.owner,
+                    team_slug: team,
+                  });
+                } catch {
+                  return [];
+                }
+              },
+              getUser: async (id) => {
+                const { data } = await github.rest.users.getByUsername({ username: String(id) });
+                return data;
+              },
+            });

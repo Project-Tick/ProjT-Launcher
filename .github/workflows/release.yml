@@ -109,3 +109,61 @@ jobs:
             ProjTLauncher-Windows-MSVC-Setup-${{ env.VERSION }}.exe
             ProjTLauncher-macOS-${{ env.VERSION }}.zip
             ProjTLauncher-${{ env.VERSION }}.tar.gz
+
+  release-status:
+    name: Release Status Report
+    runs-on: ubuntu-latest
+    needs: [build_release, create_release]
+    if: always()
+    
+    steps:
+      - name: Check release results
+        id: check-results
+        run: |
+          echo "## Release Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** Release" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          build_result='${{ needs.build_release.result }}'
+          release_result='${{ needs.create_release.result }}'
+          
+          echo "**Build Result:** \`$build_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Result:** \`$release_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "$build_result" == "failure" ]] || [[ "$release_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Release Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$build_result" == "cancelled" ]] || [[ "$release_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Release Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$build_result" == "success" ]] && [[ "$release_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Release Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run Number:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          
+          echo "status=$status" >> $GITHUB_OUTPUT
+          exit $exit_code
+      
+      - name: Report final status
+        if: always()
+        run: |
+          echo "Final release status: ${{ steps.check-results.outputs.status }}"

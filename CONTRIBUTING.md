@@ -1,117 +1,79 @@
-# Contributions Guidelines
+# 🤝 Contribution Guidelines
 
-## Code style
+> **ProjT Launcher - Minecraft Launcher**  
+> Copyright (C) 2025 Project Tick  
+> Licensed under GPL-3.0-or-later
 
-All files are formatted with `clang-format` using the configuration in `.clang-format`. Ensure it is run on changed files before committing!
+## 🛠 Engineering Standards
 
-Please also follow the project's conventions for C++:
+This project follows specific engineering standards to ensure maintainability and quality. Please review them before contributing.
 
-- Class and type names should be formatted as `PascalCase`: `MyClass`.
-- Private or protected class data members should be formatted as `camelCase` prefixed with `m_`: `m_myCounter`.
-- Private or protected `static` class data members should be formatted as `camelCase` prefixed with `s_`: `s_instance`.
-- Public class data members should be formatted as `camelCase` without the prefix: `dateOfBirth`.
-- Public, private or protected `static const` class data members should be formatted as `SCREAMING_SNAKE_CASE`: `MAX_VALUE`.
-- Class function members should be formatted as `camelCase` without a prefix: `incrementCounter`.
-- Global functions and non-`const` global variables should be formatted as `camelCase` without a prefix: `globalData`.
-- `const` global variables, macros, and enum constants should be formatted as `SCREAMING_SNAKE_CASE`: `LIGHT_GRAY`.
-- Avoid inventing acronyms or abbreviations especially for a name of multiple words - like `tp` for `texturePack`.
-- Avoid using `[[nodiscard]]` unless ignoring the return value is likely to cause a bug in cases such as:
-  - A function allocates memory or another resource and the caller needs to clean it up.
-  - A function has side effects and an error status is returned.
-  - A function is likely be mistaken for having side effects.
-- A plain getter is unlikely to cause confusion and adding `[[nodiscard]]` can create clutter and inconsistency.
+**Key Principles:**
 
-Most of these rules are included in the `.clang-tidy` file, so you can run `clang-tidy` to check for any violations.
+- ✅ **Formatted Code**: Use `clang-format` to keep code consistent.
+- ✅ **Tested Features**: Write tests for new functionality.
+- ✅ **MVVM Architecture**: Keep business logic out of the UI.
+- ✅ **Signed Commits**: Sign-off your commits (DCO).
 
-Here is what these conventions with the formatting configuration look like:
+---
 
-```c++
-#define AWESOMENESS 10
+## 📚 Documentation Index
 
-constexpr double PI = 3.14159;
+Please read the specific sections below before writing a single line of code:
 
-enum class PizzaToppings { HAM_AND_PINEAPPLE, OREO_AND_KETCHUP };
+### 1. [🚀 Getting Started](docs/contributing/GETTING_STARTED.md)
 
-struct Person {
-    QString name;
-    QDateTime dateOfBirth;
+- **Setup**: Required tools (Qt 6.x, CMake 3.22+).
+- **Environment**: How to set up VS Code or Visual Studio.
 
-    long daysOld() const { return dateOfBirth.daysTo(QDateTime::currentDateTime()); }
-};
+### 2. [📝 Code Style & Standards](docs/contributing/CODE_STYLE.md)
 
-class ImportantClass {
-   public:
-    void incrementCounter()
-    {
-        if (m_counter + 1 > MAX_COUNTER_VALUE)
-            throw std::runtime_error("Counter has reached limit!");
+- **Formatting**: `clang-format` usage.
+- **Modern C++**: C++20 features and best practices.
+- **QML**: Component structure and formatting.
 
-        ++m_counter;
-    }
+### 3. [📁 Project Structure](docs/contributing/PROJECT_STRUCTURE.md)
 
-    int counter() const { return m_counter; }
+- **Organization**: Where to put your files.
+- **Naming**: File and class naming conventions.
 
-   private:
-    static constexpr int MAX_COUNTER_VALUE = 100;
-    int m_counter;
-};
+### 4. [🏗 Architecture (MVVM)](docs/contributing/ARCHITECTURE.md)
 
-ImportantClass importantClassInstance;
-```
+- **MVVM**: Model-View-ViewModel pattern explained.
+- **Threading**: Keeping the UI responsive.
 
-If you see any names which do not follow these conventions, it is preferred that you leave them be - renames increase the number of changes therefore make reviewing harder and make your PR more prone to conflicts. However, if you're refactoring a whole class anyway, it's fine.
+### 5. [🧪 Testing Standards](docs/contributing/TESTING.md)
 
-## Signing your work
+- **QtTest**: How to write and run unit tests.
+- **Best Practices**: Mocking and async testing.
 
-In an effort to ensure that the code you contribute is actually compatible with the licenses in this codebase, we require you to sign-off all your contributions.
+### 6. [🔄 Workflow & Git](docs/contributing/WORKFLOW.md)
 
-This can be done by appending `-s` to your `git commit` call, or by manually appending the following text to your commit message:
+- **Process**: Pull Request lifecycle.
+- **Commits**: Conventional Commits and DCO.
 
-```text
-<commit message>
+---
 
-Signed-off-by: Author name <Author email>
-```
+## ❓ Quick FAQ
 
-By signing off your work, you agree to the terms below:
+### Why is my PR failing CI?
 
-```text
-Developer's Certificate of Origin 1.1
+- Did you run `clang-format`?
+- Did you sign off your commits (`-s`)?
+- Did you write tests?
 
-By making a contribution to this project, I certify that:
+### Can I use a different Qt version?
 
-(a) The contribution was created in whole or in part by me and I
-    have the right to submit it under the open source license
-    indicated in the file; or
+**No.** We require exact version matching to prevent "works on my machine" issues.
 
-(b) The contribution is based upon previous work that, to the best
-    of my knowledge, is covered under an appropriate open source
-    license and I have the right under that license to submit that
-    work with modifications, whether created in whole or in part
-    by me, under the same open source license (unless I am
-    permitted to submit under a different license), as indicated
-    in the file; or
+---
 
-(c) The contribution was provided directly to me by some other
-    person who certified (a), (b) or (c) and I have not modified
-    it.
+## 📞 Contact
 
-(d) I understand and agree that this project and the contribution
-    are public and that a record of the contribution (including all
-    personal information I submit with it, including my sign-off) is
-    maintained indefinitely and may be redistributed consistent with
-    this project or the open source license(s) involved.
-```
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: Questions and discussions
+- **Email**: `yongdohyun@projtlauncher.yongdohyun.org.tr`
 
-These terms will be enforced once you create a pull request, and you will be informed automatically if any of your commits aren't signed-off by you.
+---
 
-As a bonus, you can also [cryptographically sign your commits][gh-signing-commits] and enable [vigilant mode][gh-vigilant-mode] on GitHub.
-
-[gh-signing-commits]: https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits
-[gh-vigilant-mode]: https://docs.github.com/en/authentication/managing-commit-signature-verification/displaying-verification-statuses-for-all-of-your-commits
-
-## Backporting to Release Branches
-
-We use [automated backports](https://github.com/Project-Tick/ProjT-Launcher/blob/develop/.github/workflows/backport.yml) to merge specific contributions from develop into `release` branches.
-
-This is done when pull requests are merged and have labels such as `backport release-7.x` - which should be added along with the milestone for the release.
+### Last updated: December 2025

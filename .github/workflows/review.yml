@@ -1,0 +1,151 @@
+# =============================================================================
+# ProjT Launcher - Review Handler
+# =============================================================================
+# Handles PR review events and merge commands.
+# =============================================================================
+
+name: Review
+
+on:
+  workflow_run:
+    workflows:
+      - Reviewed
+    types: [completed]
+  
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  process:
+    name: Process Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout CI scripts
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            ci/github-script
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd ci/github-script
+          npm ci
+
+      - name: Process review
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          retries: 3
+          script: |
+            const { handleMergeComment } = require('./ci/github-script/merge.js');
+            
+            // Get PR information
+            let pull_request;
+            
+            if (context.eventName === 'workflow_run') {
+              // Get PR from workflow run
+              const { head_sha, repository } = context.payload.workflow_run;
+              
+              const prs = await github.rest.pulls.list({
+                owner: repository.owner.login,
+                repo: repository.name,
+                head: `${repository.owner.login}:${head_sha}`,
+                state: 'open',
+              });
+              
+              if (prs.data.length === 0) {
+                core.info('No open PR found for this commit');
+                return;
+              }
+              
+              pull_request = prs.data[0];
+            } else if (context.eventName === 'pull_request_review') {
+              pull_request = context.payload.pull_request;
+              const review = context.payload.review;
+              
+              // Handle merge command in review
+              await handleMergeComment({
+                github,
+                body: review.body,
+                node_id: review.node_id,
+                reaction: review.state === 'approved' ? 'ROCKET' : 'EYES',
+              });
+            }
+            
+            if (!pull_request) {
+              core.info('No PR to process');
+              return;
+            }
+            
+            core.info(`Processing review for PR #${pull_request.number}`);
+            
+            // Update labels based on review state
+            const reviews = await github.rest.pulls.listReviews({
+              ...context.repo,
+              pull_number: pull_request.number,
+            });
+            
+            const hasApproval = reviews.data.some(r => r.state === 'APPROVED');
+            const hasChangesRequested = reviews.data.some(r => r.state === 'CHANGES_REQUESTED');
+            
+            const labelsToAdd = [];
+            const labelsToRemove = [];
+            
+            if (hasApproval && !hasChangesRequested) {
+              labelsToAdd.push('approved');
+              labelsToRemove.push('needs-review', 'changes-requested');
+            } else if (hasChangesRequested) {
+              labelsToAdd.push('changes-requested');
+              labelsToRemove.push('approved', 'needs-review');
+            } else {
+              labelsToAdd.push('needs-review');
+              labelsToRemove.push('approved', 'changes-requested');
+            }
+            
+            // Apply label changes
+            const currentLabels = pull_request.labels.map(l => l.name);
+            
+            for (const label of labelsToAdd) {
+              if (!currentLabels.includes(label)) {
+                try {
+                  await github.rest.issues.addLabels({
+                    ...context.repo,
+                    issue_number: pull_request.number,
+                    labels: [label],
+                  });
+                } catch (e) {
+                  core.warning(`Could not add label ${label}: ${e.message}`);
+                }
+              }
+            }
+            
+            for (const label of labelsToRemove) {
+              if (currentLabels.includes(label)) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    ...context.repo,
+                    issue_number: pull_request.number,
+                    name: label,
+                  });
+                } catch (e) {
+                  // Label might not exist
+                }
+              }
+            }
+            
+            core.info('Review processing complete');
