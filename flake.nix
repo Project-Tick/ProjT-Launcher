@@ -211,8 +211,7 @@
         in
 
         # Only output them if they're available on the current system
-        # Use an empty set as default to ensure we always return an attribute set
-        lib.filterAttrs (_: lib.meta.availableOn pkgs.stdenv.hostPlatform) packages
+        packages
       );
 
       # We put these under legacyPackages as they are meant for CI, not end user consumption
