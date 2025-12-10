@@ -1548,7 +1548,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-${{ matrix.artifact-name }}
-          path: build/
+          path: .
 
       # We need dependencies to run tests too (Qt libs etc)
       - name: Setup dependencies
