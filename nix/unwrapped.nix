@@ -24,6 +24,26 @@
 assert lib.assertMsg (
   gamemodeSupport -> stdenv.hostPlatform.isLinux
 ) "gamemodeSupport is only available on Linux.";
+
+let
+  date =
+    let
+      # YYYYMMDD
+      date' = lib.substring 0 8 self.lastModifiedDate;
+      year = lib.substring 0 4 date';
+      month = lib.substring 4 2 date';
+      date = lib.substring 6 2 date';
+    in
+    if (self ? "lastModifiedDate") then
+      lib.concatStringsSep "-" [
+        year
+        month
+        date
+      ]
+    else
+      "unknown";
+in
+
 stdenv.mkDerivation (finalAttrs: {
   pname = "projtlauncher";
   version = "0.0.3-unstable-${date}";
