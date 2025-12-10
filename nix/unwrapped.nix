@@ -1,26 +1,25 @@
 {
   lib,
   stdenv,
-  fetchFromGitHub,
   cmake,
   cmark,
-  extra-cmake-modules,
-  fetchpatch2,
-  gamemode,
   apple-sdk_14,
-  ghc_filesystem,
+  extra-cmake-modules,
+  gamemode,
   jdk17,
-  self,
   kdePackages,
+  libnbtplusplus,
+  qrcodegenerator,
   ninja,
-  nix-update-script,
+  self,
+  launcher,
+  javacheck,
   stripJavaArchivesHook,
   tomlplusplus,
   zlib,
   msaClientID ? null,
   gamemodeSupport ? stdenv.hostPlatform.isLinux,
 }:
-
 assert lib.assertMsg (
   gamemodeSupport -> stdenv.hostPlatform.isLinux
 ) "gamemodeSupport is only available on Linux.";
@@ -44,17 +43,38 @@ let
       "unknown";
 in
 
-stdenv.mkDerivation (finalAttrs: {
-  pname = "projtlauncher";
+stdenv.mkDerivation {
+  pname = "projtlauncher-unwrapped";
   version = "0.0.3-unstable-${date}";
 
-  src = fetchFromGitHub {
-    owner = "Project-Tick";
-    repo = "ProjT-Launcher";
-    tag = finalAttrs.version;
-    hash = "sha256-26NfnIfjngFb6cZeAq6NeQ7XGafhaJWwR8MOGAO9uiQ=";
-    fetchSubmodules = true;
+  src = lib.fileset.toSource {
+    root = ../.;
+    fileset = lib.fileset.unions [
+      ../CMakeLists.txt
+      ../COPYING.md
+
+      ../buildconfig
+      ../cmake
+      ../launcher
+      ../libraries
+      ../program_info
+      ../tests
+    ];
   };
+
+  postUnpack = ''
+    rm -rf source/libraries/libnbtplusplus
+    ln -s ${libnbtplusplus} source/libraries/libnbtplusplus
+
+    rm -rf source/libraries/qrcodegenerator
+    ln -s ${qrcodegenerator} source/libraries/qrcodegenerator
+
+    rm -rf source/libraries/javacheck
+    ln -s ${javacheck} source/libraries/javacheck
+
+    rm -rf source/libraries/launcher
+    ln -s ${launcher} source/libraries/launcher
+  '';
 
   nativeBuildInputs = [
     cmake
@@ -97,30 +117,19 @@ stdenv.mkDerivation (finalAttrs: {
   dontWrapQtApps = true;
 
   meta = {
-    description = "ProjT Launcher an free, open-source Minecraft launcher.";
+    description = "Free, open source launcher for Minecraft";
     longDescription = ''
-      This application lets you create and manage multiple
-      independent Minecraft instances, each with its own
-      unique mods, texture packs, worlds, and settings.
-      Easily switch between different setups without conflicts,
-      keep all your saves and customizations organized, and
-      configure options for each instance through a simple and
-      intuitive interface. Perfect for players who want to
-      experiment with different modpacks, resource packs, or
-      gameplay styles while keeping everything neatly separated.
+      Allows you to have multiple, separate instances of Minecraft (each with
+      their own mods, texture packs, saves, etc) and helps you manage them and
+      their associated options with a simple interface.
     '';
     homepage = "https://projtlauncher.yongdohyun.org.tr/";
-    changelog = "https://github.com/Project-Tick/ProjT-Launcher/releases/tag/${finalAttrs.version}";
-    license = with lib.licenses; [
-      gpl3Plus
-      gpl3Only
-      asl20
-      cc-by-sa-40
-    ];
+    license = lib.licenses.gpl3Only;
     maintainers = with lib.maintainers; [
-      yongdohyun
+      Scrumplex
+      getchoo
     ];
     mainProgram = "projtlauncher";
     platforms = lib.platforms.linux ++ lib.platforms.darwin;
   };
-})
+}
