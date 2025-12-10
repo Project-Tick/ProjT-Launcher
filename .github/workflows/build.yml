@@ -1492,11 +1492,7 @@ jobs:
             -e APP_ID="tr.org.yongdohyun.ProjTLauncher" \
             -e REF="master" \
             -e BUILD_ARCH="${{ matrix.arch }}" \
-            ghcr.io/flathub-infra/flatpak-builder-lint:unprivileged \
-            /bin/bash -c '
-              just -f /repo/.flathub.justfile prepare-env || exit 1
-              just -f /repo/.flathub.justfile build $APP_ID $REF $BUILD_ARCH || exit 1
-            '
+            ghcr.io/flathub-infra/flatpak-builder-lint:unprivileged
 
   unit-tests:
     name: Unit Tests (${{ matrix.artifact-name }})
