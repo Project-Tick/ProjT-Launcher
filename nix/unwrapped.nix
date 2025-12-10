@@ -63,17 +63,18 @@ stdenv.mkDerivation {
   };
 
   postUnpack = ''
-    rm -rf source/libraries/libnbtplusplus
-    ln -s ${libnbtplusplus} source/libraries/libnbtplusplus
-
-    rm -rf source/libraries/qrcodegenerator
-    ln -s ${qrcodegenerator} source/libraries/qrcodegenerator
-
-    rm -rf source/libraries/javacheck
-    ln -s ${javacheck} source/libraries/javacheck
-
-    rm -rf source/libraries/launcher
-    ln -s ${launcher} source/libraries/launcher
+    
+        rm -rf source/libraries/libnbtplusplus
+        ln -s ${libnbtplusplus} source/libraries/libnbtplusplus
+    
+        rm -rf source/libraries/qrcodegenerator
+        ln -s ${qrcodegenerator} source/libraries/qrcodegenerator
+    
+        rm -rf source/libraries/javacheck
+        ln -s ${javacheck} source/libraries/javacheck
+    
+        rm -rf source/libraries/launcher
+        ln -s ${launcher} source/libraries/launcher
   '';
 
   nativeBuildInputs = [
@@ -119,9 +120,10 @@ stdenv.mkDerivation {
   meta = {
     description = "Free, open source launcher for Minecraft";
     longDescription = ''
-      Allows you to have multiple, separate instances of Minecraft (each with
-      their own mods, texture packs, saves, etc) and helps you manage them and
-      their associated options with a simple interface.
+      
+            Allows you to have multiple, separate instances of Minecraft (each with
+            their own mods, texture packs, saves, etc) and helps you manage them and
+            their associated options with a simple interface.
     '';
     homepage = "https://projtlauncher.yongdohyun.org.tr/";
     license = lib.licenses.gpl3Only;

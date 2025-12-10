@@ -73,24 +73,25 @@
                 ];
               }
               ''
-                cd ${self}
-
-                echo "Running clang-format...."
-                clang-format --dry-run --style='file' --Werror */**.{c,cc,cpp,h,hh,hpp}
-
-                echo "Running deadnix..."
-                deadnix --fail
-
-                echo "Running markdownlint..."
-                markdownlint --dot .
-
-                echo "Running nixfmt..."
-                find -type f -name '*.nix' -exec nixfmt --check {} +
-
-                echo "Running statix"
-                statix check .
-
-                touch $out
+                
+                                cd ${self}
+                
+                                echo "Running clang-format...."
+                                clang-format --dry-run --style='file' --Werror */**.{c,cc,cpp,h,hh,hpp}
+                
+                                echo "Running deadnix..."
+                                deadnix --fail
+                
+                                echo "Running markdownlint..."
+                                markdownlint --dot .
+                
+                                echo "Running nixfmt..."
+                                find -type f -name '*.nix' -exec nixfmt --check {} +
+                
+                                echo "Running statix"
+                                statix check .
+                
+                                touch $out
               '';
         }
       );
@@ -105,21 +106,22 @@
           packages' = self.packages.${system};
 
           welcomeMessage = ''
-            Welcome to the ProjT Launcher repository! ✨
-
-            We just set some things up for you. To get building, you can run:
-
-            ```
-            $ cd "$cmakeBuildDir"
-            $ ninjaBuildPhase
-            $ ninjaInstallPhase
-            ```
-
-            Feel free to ask any questions in our Discord server or Matrix space:
-              - https://projtlauncher.yongdohyun.org.tr/discord
-              - https://matrix.to/#/#projtlauncher:matrix.org
-
-            And thanks for helping out :)
+            
+                        Welcome to the ProjT Launcher repository! ✨
+            
+                        We just set some things up for you. To get building, you can run:
+            
+                        ```
+                        $ cd "$cmakeBuildDir"
+                        $ ninjaBuildPhase
+                        $ ninjaInstallPhase
+                        ```
+            
+                        Feel free to ask any questions in our Discord server or Matrix space:
+                          - https://projtlauncher.yongdohyun.org.tr/discord
+                          - https://matrix.to/#/#projtlauncher:matrix.org
+            
+                        And thanks for helping out :)
           '';
 
           # Re-use our package wrapper to wrap our development environment
@@ -139,8 +141,9 @@
 
             # Inspired by https://discourse.nixos.org/t/python-qt-woes/11808/10
             buildCommand = ''
-              makeQtWrapper ${lib.getExe pkgs.runtimeShellPackage} "$out"
-              sed -i '/^exec/d' "$out"
+              
+                            makeQtWrapper ${lib.getExe pkgs.runtimeShellPackage} "$out"
+                            sed -i '/^exec/d' "$out"
             '';
           });
         in
@@ -161,18 +164,19 @@
             dontFixCmake = true;
 
             shellHook = ''
-              echo "Sourcing ${qt-wrapper-env}"
-              source ${qt-wrapper-env}
-
-              git submodule update --init --force
-
-              if [ ! -f compile_commands.json ]; then
-                cmakeConfigurePhase
-                cd ..
-                ln -s "$cmakeBuildDir"/compile_commands.json compile_commands.json
-              fi
-
-              echo ${lib.escapeShellArg welcomeMessage}
+              
+                            echo "Sourcing ${qt-wrapper-env}"
+                            source ${qt-wrapper-env}
+              
+                            git submodule update --init --force
+              
+                            if [ ! -f compile_commands.json ]; then
+                              cmakeConfigurePhase
+                              cd ..
+                              ln -s "$cmakeBuildDir"/compile_commands.json compile_commands.json
+                            fi
+              
+                            echo ${lib.escapeShellArg welcomeMessage}
             '';
           };
         }
