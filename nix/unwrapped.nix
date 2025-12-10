@@ -7,8 +7,10 @@
   extra-cmake-modules,
   fetchpatch2,
   gamemode,
+  apple-sdk_14,
   ghc_filesystem,
   jdk17,
+  self,
   kdePackages,
   ninja,
   nix-update-script,
@@ -24,7 +26,7 @@ assert lib.assertMsg (
 ) "gamemodeSupport is only available on Linux.";
 stdenv.mkDerivation (finalAttrs: {
   pname = "projtlauncher";
-  version = "0.0.3";
+  version = "0.0.3-unstable-${date}";
 
   src = fetchFromGitHub {
     owner = "Project-Tick";
@@ -50,7 +52,10 @@ stdenv.mkDerivation (finalAttrs: {
     tomlplusplus
     zlib
   ]
+  ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_14 ]
   ++ lib.optional gamemodeSupport gamemode;
+
+  hardeningEnable = lib.optionals stdenv.hostPlatform.isLinux [ "pie" ];
 
   cmakeFlags = [
     # downstream branding
