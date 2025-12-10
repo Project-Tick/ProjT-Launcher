@@ -1493,6 +1493,11 @@ jobs:
             -e REF="master" \
             -e BUILD_ARCH="${{ matrix.arch }}" \
             ghcr.io/flathub-infra/flatpak-builder-lint:unprivileged
+            /bin/bash -c "
+              flatpak-builder --user --install --force-clean \
+              /work/build-dir \
+              /repo/flatpak/tr.org.yongdohyun.ProjTLauncher.yml || exit 1
+            "
 
   unit-tests:
     name: Unit Tests (${{ matrix.artifact-name }})
