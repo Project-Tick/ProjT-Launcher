@@ -960,6 +960,13 @@ jobs:
           name: build-${{ matrix.artifact-name }}
           path: build/
 
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
       - name: Get short version
         id: short-version
         shell: bash
@@ -1053,6 +1060,13 @@ jobs:
           name: build-${{ matrix.artifact-name }}
           path: build/
 
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
       - name: Get short version
         id: short-version
         shell: bash
@@ -1142,6 +1156,13 @@ jobs:
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
 
       - name: Get short version
         id: short-version
@@ -1235,6 +1256,13 @@ jobs:
           name: build-${{ matrix.artifact-name }}
           path: build/
 
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
       - name: Get short version
         id: short-version
         shell: bash
@@ -1327,6 +1355,13 @@ jobs:
           name: build-${{ matrix.artifact-name }}
           path: build/
 
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
       - name: Get short version
         id: short-version
         shell: bash
@@ -1412,6 +1447,13 @@ jobs:
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
 
       - name: Get short version
         id: short-version
@@ -1877,7 +1919,7 @@ jobs:
 
   test-status:
     name: Test Status Report
-    needs: [unit-tests]
+    needs: [build-linux, build-windows-msvc, build-windows-msvc-arm64, build-windows-mingw, build-windows-mingw-arm64, build-macos]
     if: always()
     runs-on: ubuntu-latest
     
@@ -1892,20 +1934,48 @@ jobs:
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          tests_result='${{ needs.unit-tests.result }}'
-          
-          echo "**Unit Tests:** \`$tests_result\`" >> $GITHUB_STEP_SUMMARY
+          macos_tests_result='${{ needs.build-macos.result }}'
+          linux_tests_result='${{ needs.build-linux.result }}'
+          windows_msvc_tests_result='${{ needs.build-windows-msvc.result }}'
+          windows_msvc_arm64_tests_result='${{ needs.build-windows-msvc-arm64.result }}'
+          windows_mingw_tests_result='${{ needs.build-windows-mingw.result }}'
+          windows_mingw_arm64_tests_result='${{ needs.build-windows-mingw-arm64.result }}'
+
+          echo "**macOS Unit Tests:** \`$macos_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Linux Unit Tests:** \`$linux_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Windows MSVC Unit Tests:** \`$windows_msvc_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Windows MSVC ARM64 Unit Tests:** \`$windows_msvc_arm64_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Windows MinGW Unit Tests:** \`$windows_mingw_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Windows MinGW ARM64 Unit Tests:** \`$windows_mingw_arm64_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [[ "$tests_result" == "failure" ]]; then
+          if [[ "$macos_tests_result" == "failure" ]]; then
             status="failure"
             echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
-          elif [[ "$tests_result" == "cancelled" ]]; then
+          elif [[ "$macos_tests_result" == "cancelled" ]]; then
             status="cancelled"
             echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
-          elif [[ "$tests_result" == "success" ]]; then
+          elif [[ "$macos_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+
+          if [[ "$linux_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$linux_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$linux_tests_result" == "success" ]]; then
             status="success"
             echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
@@ -1915,6 +1985,78 @@ jobs:
             exit_code=1
           fi
           
+          if [[ "$windows_msvc_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_msvc_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_msvc_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+
+          if [[ "$windows_mingw_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_mingw_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_mingw_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+
+          if [[ "$windows_msvc_arm64_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_msvc_arm64_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_msvc_arm64_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+
+          if [[ "$windows_mingw_arm64_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_mingw_arm64_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_mingw_arm64_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           
