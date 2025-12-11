@@ -44,7 +44,15 @@ runs:
         esac
 
         for url in "${!appimage_deps[@]}"; do
-          curl -LO "$url"
+          echo "Downloading: $url"
+          curl -fL --retry 3 --retry-delay 3 -O "$url"
+
+          echo "DEBUG: File information for $(basename "$url")"
+          ls -lh "$(basename "$url")"
+          file "$(basename "$url")"
+          head -n 20 "$(basename "$url")" || true
+          echo "DEBUG END"
+
           sha256sum -c - <<< "${appimage_deps[$url]}"
         done
 
