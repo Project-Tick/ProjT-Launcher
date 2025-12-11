@@ -71,8 +71,7 @@ symlinkJoin {
   ) kdePackages.qtwayland;
 
   postBuild = ''
-    
-        wrapQtAppsHook
+    wrapQtAppsHook
   '';
 
   qtWrapperArgs =

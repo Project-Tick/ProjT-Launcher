@@ -949,12 +949,16 @@ jobs:
         run: |
           cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
 
-      - name: Upload build for testing
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
-          retention-days: 1
 
       - name: Get short version
         id: short-version
@@ -1038,12 +1042,16 @@ jobs:
         run: |
           cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
 
-      - name: Upload build for testing
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
-          retention-days: 1
 
       - name: Get short version
         id: short-version
@@ -1124,12 +1132,16 @@ jobs:
         run: |
           cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
 
-      - name: Upload build for testing
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
-          retention-days: 1
 
       - name: Get short version
         id: short-version
@@ -1212,12 +1224,16 @@ jobs:
         run: |
           cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
 
-      - name: Upload build for testing
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
-          retention-days: 1
 
       - name: Get short version
         id: short-version
@@ -1300,12 +1316,16 @@ jobs:
         run: |
           cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
 
-      - name: Upload build for testing
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
-          retention-days: 1
 
       - name: Get short version
         id: short-version
@@ -1382,12 +1402,16 @@ jobs:
         run: |
           cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
 
-      - name: Upload build for testing
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
-          retention-days: 1
 
       - name: Get short version
         id: short-version
@@ -1498,81 +1522,6 @@ jobs:
               /work/build-dir \
               /repo/flatpak/tr.org.yongdohyun.ProjTLauncher.yml || exit 1
             "
-
-  unit-tests:
-    name: Unit Tests (${{ matrix.artifact-name }})
-    needs: [build-linux, build-windows-msvc, build-windows-msvc-arm64, build-windows-mingw, build-windows-mingw-arm64, build-macos]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-24.04
-            artifact-name: Linux
-            cmake-preset: linux
-
-          - os: ubuntu-24.04-arm
-            artifact-name: Linux-aarch64
-            cmake-preset: linux
-
-          - os: windows-2022
-            artifact-name: Windows-MinGW-w64
-            cmake-preset: windows_mingw
-            msystem: CLANG64
-            vcvars-arch: amd64_x86
-
-          - os: windows-11-arm
-            artifact-name: Windows-MinGW-arm64
-            cmake-preset: windows_mingw
-            msystem: CLANGARM64
-            vcvars-arch: arm64
-
-          - os: windows-2022
-            artifact-name: Windows-MSVC
-            cmake-preset: windows_msvc
-            vcvars-arch: amd64
-
-          - os: windows-11-arm
-            artifact-name: Windows-MSVC-arm64
-            cmake-preset: windows_msvc
-            vcvars-arch: arm64
-
-          - os: macos-26
-            artifact-name: macOS
-            cmake-preset: macos_universal
-            macosx-deployment-target: 12.0
-    
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download build
-        uses: actions/download-artifact@v4
-        with:
-          name: build-${{ matrix.artifact-name }}
-          path: .
-
-      # We need dependencies to run tests too (Qt libs etc)
-      - name: Setup dependencies
-        id: setup-dependencies
-        uses: ./.github/actions/setup-dependencies
-        with:
-          build-type: ${{ env.BUILD_TYPE }}
-          artifact-name: ${{ matrix.artifact-name }}
-          msystem: ${{ matrix.msystem }}
-          vcvars-arch: ${{ matrix.vcvars-arch }}
-          qt-architecture: ${{ matrix.qt-architecture }}
-
-      - name: Run tests
-        run: |
-          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
-        continue-on-error: false
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-${{ matrix.artifact-name }}
-          path: build/Testing/
 
   nix-system-build:
     name: Build via Nix (${{ matrix.system }})
