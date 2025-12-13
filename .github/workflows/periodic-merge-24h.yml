@@ -73,9 +73,20 @@ jobs:
           echo "⚠️ Merge conflicts detected; force-resolving in favor of source ($FROM) except README.md"
 
           # Force resolve by taking all files from source and keeping target README.md from destination
-          git checkout --theirs .
+          git checkout --theirs . || true
+
+          # Clean up delete/modify conflicts by honoring source deletions
+          git status --porcelain | awk '$1 ~ /^UD/ || $1 ~ /^DU/' | while read -r _ path; do
+            echo "Removing $path (deleted in $FROM)"
+            git rm -f -- "$path" || true
+          done
+
           git checkout --ours README.md || true
           git add -A
-          git commit -m "Auto-resolve conflicts preferring $FROM (README kept from $INTO)"
+          if git diff --cached --quiet; then
+            echo "No changes to commit after auto-resolve"
+          else
+            git commit -m "Auto-resolve conflicts preferring $FROM (README kept from $INTO)"
+          fi
           git push origin "$INTO"
           echo "✅ Merge forced in favor of $FROM"
