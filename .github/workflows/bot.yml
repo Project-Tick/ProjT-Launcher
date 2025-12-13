@@ -66,7 +66,7 @@ jobs:
         run: gh api /rate_limit | jq '.rate'
 
       - name: Run bot
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ github.token }}
           retries: 3
@@ -123,7 +123,7 @@ jobs:
           npm ci --omit=dev
 
       - name: Assign reviewers
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ github.token }}
           script: |

@@ -47,7 +47,7 @@ jobs:
           npm ci --omit=dev
 
       - name: Process review
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ github.token }}
           retries: 3
