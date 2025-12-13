@@ -53,19 +53,28 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Prepare merge branch
+        id: prep
+        run: |
+          FROM="${{ matrix.pairs.from }}"
+          INTO="${{ matrix.pairs.into }}"
+          BRANCH="auto-merge/${INTO}-from-${FROM}-$(date +%Y%m%d%H%M%S)"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
       - name: Merge branches (auto-resolve conflicts preferring source)
         run: |
           FROM="${{ matrix.pairs.from }}"
           INTO="${{ matrix.pairs.into }}"
+          BRANCH="${{ steps.prep.outputs.branch }}"
           
           echo "Merging $FROM into $INTO"
           
           git fetch origin "$FROM" "$INTO"
-          git checkout "$INTO"
+          git checkout -b "$BRANCH" "origin/$INTO"
           
           # First try a standard merge preferring source changes
           if git merge --no-edit -X theirs "origin/$FROM"; then
-            git push origin "$INTO"
+            git push origin "$BRANCH"
             echo "✅ Merge successful"
             exit 0
           fi
@@ -88,5 +97,41 @@ jobs:
           else
             git commit -m "Auto-resolve conflicts preferring $FROM (README kept from $INTO)"
           fi
-          git push origin "$INTO"
+          git push origin "$BRANCH"
           echo "✅ Merge forced in favor of $FROM"
+
+      - name: Open PR for merged branch
+        uses: actions/github-script@v8
+        env:
+          FROM: ${{ matrix.pairs.from }}
+          INTO: ${{ matrix.pairs.into }}
+          BRANCH: ${{ steps.prep.outputs.branch }}
+        with:
+          script: |
+            const { FROM, INTO, BRANCH } = process.env;
+            const title = `Auto-merge ${FROM} into ${INTO}`;
+            const body = `Automated merge from \`${FROM}\` into \`${INTO}\` (README kept from target).`;
+
+            // If a PR with the same head/base exists, reuse it.
+            const prs = await github.rest.pulls.list({
+              ...context.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${BRANCH}`,
+              base: INTO,
+            });
+
+            if (prs.data.length > 0) {
+              core.info(`PR already exists: ${prs.data[0].html_url}`);
+              return;
+            }
+
+            const { data: pr } = await github.rest.pulls.create({
+              ...context.repo,
+              title,
+              body,
+              head: BRANCH,
+              base: INTO,
+              maintainer_can_modify: true,
+            });
+
+            core.info(`Created PR: ${pr.html_url}`)
