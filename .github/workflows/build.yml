@@ -518,7 +518,7 @@ jobs:
           pacman -Qe
 
       - name: Retrieve ccache cache (MinGW)
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v5.0.1
         with:
           path: '${{ github.workspace }}\.ccache'
           key: ${{ runner.os }}-mingw-w64-ccache-${{ github.run_id }}
@@ -626,7 +626,7 @@ jobs:
           pacman -Qe
 
       - name: Retrieve ccache cache (MinGW)
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v5.0.1
         with:
           path: '${{ github.workspace }}\.ccache'
           key: ${{ runner.os }}-mingw-w64-ccache-${{ github.run_id }}
