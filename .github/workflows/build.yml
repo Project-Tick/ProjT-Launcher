@@ -40,7 +40,7 @@ on:
       qt-version:
         description: Version of Qt to use
         required: true
-        default: 6.9.3
+        default: 6.10.0
       qt-architecture:
         description: Qt architecture
         required: false
