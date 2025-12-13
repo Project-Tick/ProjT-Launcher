@@ -63,12 +63,19 @@ jobs:
           git fetch origin "$FROM" "$INTO"
           git checkout "$INTO"
           
-          # Use -X theirs to prefer the source branch on conflicts
+          # First try a standard merge preferring source changes
           if git merge --no-edit -X theirs "origin/$FROM"; then
             git push origin "$INTO"
             echo "✅ Merge successful"
-          else
-            echo "❌ Merge conflicts detected"
-            git merge --abort
-            exit 1
+            exit 0
           fi
+
+          echo "⚠️ Merge conflicts detected; force-resolving in favor of source ($FROM) except README.md"
+
+          # Force resolve by taking all files from source and keeping target README.md from destination
+          git checkout --theirs .
+          git checkout --ours README.md || true
+          git add -A
+          git commit -m "Auto-resolve conflicts preferring $FROM (README kept from $INTO)"
+          git push origin "$INTO"
+          echo "✅ Merge forced in favor of $FROM"
