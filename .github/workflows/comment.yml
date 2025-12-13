@@ -26,7 +26,7 @@ jobs:
     if: contains(github.event.comment.body, '@projt-launcher-bot merge')
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
           sparse-checkout: |

@@ -34,7 +34,7 @@ jobs:
       mergeable: ${{ steps.prepare.outputs.mergeable }}
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
           sparse-checkout: |
@@ -96,7 +96,7 @@ jobs:
       contents: read
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
