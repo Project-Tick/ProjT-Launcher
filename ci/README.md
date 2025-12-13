@@ -23,4 +23,3 @@ This directory contains support files and scripts used by CI/CD for the ProjT La
 # Enter Nix dev shell (if you use Nix)
 nix develop -f ci/default.nix
 ```
-
