@@ -15,9 +15,3 @@ rules:
   # Ignore GitHub Script runners using checkout sparse paths
   set-output:
     disable: true
-
-  # Labeler is third-party; allow usage
-  third-party-actions:
-    ignore:
-      - actions/labeler@v5
-      - woodruffw/zizmor-action@v0.3.0
