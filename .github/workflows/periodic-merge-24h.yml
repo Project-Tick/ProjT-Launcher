@@ -109,8 +109,8 @@ jobs:
         with:
           script: |
             const { FROM, INTO, BRANCH } = process.env;
-            const title = `Auto-merge ${FROM} into ${INTO}`;
-            const body = `Automated merge from \`${FROM}\` into \`${INTO}\` (README kept from target).`;
+            const title = `chore: Auto-merge ${FROM} into ${INTO}`;
+            const body = `Automated merge from \`${FROM}\` into \`${INTO}\``;
 
             // If a PR with the same head/base exists, reuse it.
             const prs = await github.rest.pulls.list({
