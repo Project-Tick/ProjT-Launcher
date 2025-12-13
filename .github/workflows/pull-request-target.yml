@@ -113,6 +113,7 @@ jobs:
     needs: [prepare]
     uses: ./.github/workflows/build.yml
     permissions:
+      contents: read
       packages: write
 
   # Run tests
