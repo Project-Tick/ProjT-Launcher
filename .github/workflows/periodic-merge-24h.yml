@@ -32,7 +32,7 @@ defaults:
 jobs:
   periodic-merge:
     name: Merge ${{ matrix.pairs.from }} → ${{ matrix.pairs.into }}
-    if: github.repository_owner == 'YongDo-Hyun'
+    if: github.repository_owner == 'Project-Tick'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
