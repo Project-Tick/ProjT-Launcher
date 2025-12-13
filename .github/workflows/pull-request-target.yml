@@ -119,29 +119,6 @@ jobs:
       contents: read
       packages: write
 
-  label-prefix:
-    name: Enforce PR title prefix
-    needs: [prepare]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Enforce title prefix
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const allowed = ['ci','build','docs','feat','fix','refactor','test','chore','deps']
-            const pr = context.payload.pull_request
-            const prefixPattern = new RegExp(`^\\[(${allowed.join('|')})\\]\\s+`)
-
-            if (!prefixPattern.test(pr.title)) {
-              core.setFailed(`PR title must start with one of: ${allowed.map(p => `[${p}]`).join(' ')}`)
-            } else {
-              core.info('PR title prefix OK')
-            }
-
   # PR summary
   summary:
     name: Summary
