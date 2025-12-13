@@ -160,24 +160,6 @@ jobs:
               core.info('PR title prefix OK')
             }
 
-  # Run tests
-  test:
-    name: Test
-    needs: [build]
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-
-      - name: Run tests
-        run: |
-          echo "Running tests..."
-          # Add test commands when available
-
   # PR summary
   summary:
     name: Summary
