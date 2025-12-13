@@ -177,7 +177,11 @@ module.exports = async ({ github, context, core, dry }) => {
 
       // Add branch type label
       const branchType = classify(pullRequest.head.ref);
-      if (branchType.type) {
+      if (Array.isArray(branchType.type)) {
+        for (const t of branchType.type) {
+          labelsToAdd.add(`branch:${t}`);
+        }
+      } else if (branchType.type) {
         labelsToAdd.add(`branch:${branchType.type}`);
       }
 

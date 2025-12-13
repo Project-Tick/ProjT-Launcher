@@ -1,7 +1,7 @@
 # Used by `.github/workflows/bot.yml` (actions/labeler@v5).
 # Applies labels to PRs based on changed files.
 
-ci:
+1.main-ci-changes:
   - changed-files:
       - any-glob-to-any-file:
           - .github/**/*
@@ -15,13 +15,13 @@ ci:
           - .markdownlintignore
           - renovate.json
 
-ci-scripts:
+1.ci-script-changes:
   - changed-files:
       - any-glob-to-any-file:
           - ci/github-script/**/*
           - .github/workflows/**/*.yml
 
-ci-config:
+1.ci-config-changes:
   - changed-files:
       - any-glob-to-any-file:
           - ci/pinned.json
@@ -30,7 +30,7 @@ ci-config:
           - ci/default.nix
           - ci/eval/**/*
 
-launcher:
+2.code-base-changes:
   - changed-files:
       - any-glob-to-any-file:
           - launcher/**/*.{cpp,h,mm,qml,ui,json,yml,xml,js}
@@ -39,7 +39,7 @@ launcher:
           - launcher/**/*.ps1
           - launcher/CMakeLists.txt
 
-launcher-ui:
+2.ui-changes:
   - changed-files:
       - any-glob-to-any-file:
           - launcher/ui/**/*
@@ -49,12 +49,12 @@ launcher-ui:
           - launcher/icons/**/*
           - launcher/news/**/*
 
-launcher-updater:
+2.updater-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - launcher/updater/**/*
 
-launcher-modplatform:
+2.modplatform-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - launcher/modplatform/**/*
@@ -62,7 +62,7 @@ launcher-modplatform:
           - launcher/minecraft/**/*
           - launcher/launch/**/*
 
-launcher-settings:
+2.settings-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - launcher/settings/**/*
@@ -72,20 +72,20 @@ launcher-settings:
           - launcher/tools/**/*
           - launcher/console/**/*
 
-launcher-java:
+2.launcher-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - launcher/java/**/*
           - launcher/launch/**/*
 
-launcher-network:
+2.launcher-network-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - launcher/net/**/*
           - launcher/filelink/**/*
           - launcher/console/**/*
 
-libraries:
+3.libraries-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - libraries/**/*.{cpp,h,mm}
@@ -105,7 +105,7 @@ libraries:
           - libraries/gamemode/**/*
           - libraries/javacheck/**/*
 
-build-system:
+4.main-compile-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - CMakeLists.txt
@@ -117,7 +117,7 @@ build-system:
           - vcpkg-ports/**/*
           - vcpkg-triplets/**/*
 
-packaging:
+5.packaging-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - debian/**/*
@@ -134,7 +134,7 @@ packaging:
           - shell.nix
           - program_info/**/*
 
-docs:
+6.docs-changes:
   - changed-files:
       - any-glob-to-any-file:
           - docs/**/*
@@ -144,27 +144,27 @@ docs:
           - SECURITY.md
           - .github/workflows/README.md
 
-tests:
+7.test-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - tests/**/*
           - ci/github-script/test/**/*
 
-scripts:
+8.script-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - scripts/**/*
           - tools/**/*
           - launcher/tools/**/*
 
-translations:
+9.translation-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - launcher/translations/**/*
           - launcher/resources/translations/**/*
           - translations/**/*.{po,pot,ts,txt,json}
 
-Linux:
+10.Linux-based-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - debian/**/*
@@ -173,7 +173,7 @@ Linux:
           - libraries/systeminfo/src/sys_unix.cpp
           - libraries/systeminfo/src/distroutils.cpp
 
-macOS:
+10.macOS-based-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - "**/*.mm"
@@ -181,7 +181,7 @@ macOS:
           - launcher/updater/MacSparkleUpdater.h
           - launcher/updater/MacSparkleUpdater.mm
 
-Windows:
+10.Windows-based-system-changes:
   - changed-files:
       - any-glob-to-any-file:
           - "**/*.rc"
