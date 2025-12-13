@@ -39,7 +39,7 @@ jobs:
   bot:
     name: PR Automation
     runs-on: ubuntu-latest
-    if: github.event_name != 'schedule' || github.repository_owner == 'YongDo-Hyun'
+    if: github.event_name != 'schedule' || github.repository_owner == 'Project-Tick' || github.repository_owner == 'YongDo-Hyun'
     
     steps:
       - name: Checkout CI scripts
