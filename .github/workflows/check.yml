@@ -45,7 +45,7 @@ jobs:
     
     steps:
       - name: Checkout CI scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           path: trusted
@@ -97,7 +97,7 @@ jobs:
     
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           ref: ${{ inputs.mergedSha }}
@@ -131,7 +131,7 @@ jobs:
     
     steps:
       - name: Checkout merged code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.mergedSha }}
           fetch-depth: 0
