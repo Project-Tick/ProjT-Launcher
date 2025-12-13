@@ -14,11 +14,12 @@ on:
         required: true
         type: string
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   prepare:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     outputs:
       baseBranch: ${{ steps.prepare.outputs.base }}
       mergedSha: ${{ steps.prepare.outputs.mergedSha }}
@@ -29,6 +30,7 @@ jobs:
         with:
           persist-credentials: false
           sparse-checkout: |
+            ci/supportedBranches.js
             ci/supportedSystems.json
 
       - id: prepare
@@ -59,46 +61,18 @@ jobs:
     uses: ./.github/workflows/check.yml
     permissions:
       # cherry-picks; formality right now, but unused
+      contents: read
       pull-requests: write
-    secrets:
-      CACHIX_AUTH_TOKEN_GHA: ${{ secrets.CACHIX_AUTH_TOKEN_GHA }}
     with:
       mergedSha: ${{ needs.prepare.outputs.mergedSha }}
       targetSha: ${{ needs.prepare.outputs.targetSha }}
-
-  lint:
-    name: Lint
-    needs: [prepare]
-    uses: ./.github/workflows/lint.yml
-    secrets:
-      CACHIX_AUTH_TOKEN_GHA: ${{ secrets.CACHIX_AUTH_TOKEN_GHA }}
-    with:
-      mergedSha: ${{ needs.prepare.outputs.mergedSha }}
-      targetSha: ${{ needs.prepare.outputs.targetSha }}
-
-  eval:
-    name: Eval
-    needs: [prepare]
-    uses: ./.github/workflows/eval.yml
-    # The eval workflow requests these permissions so we must explicitly allow them,
-    # even though they are unused when working with the merge queue.
-    permissions:
-      # compare
-      statuses: write
-    secrets:
-      CACHIX_AUTH_TOKEN_GHA: ${{ secrets.CACHIX_AUTH_TOKEN_GHA }}
-    with:
-      artifact-prefix: ${{ inputs.artifact-prefix }}
-      mergedSha: ${{ needs.prepare.outputs.mergedSha }}
-      targetSha: ${{ needs.prepare.outputs.targetSha }}
-      systems: ${{ needs.prepare.outputs.systems }}
 
   build:
     name: Build
     needs: [prepare]
     uses: ./.github/workflows/build.yml
-    secrets:
-      CACHIX_AUTH_TOKEN_GHA: ${{ secrets.CACHIX_AUTH_TOKEN_GHA }}
+    permissions:
+      contents: read
     with:
       artifact-prefix: ${{ inputs.artifact-prefix }}
       baseBranch: ${{ needs.prepare.outputs.baseBranch }}
@@ -112,8 +86,6 @@ jobs:
     # Modify this list to add or remove jobs from required status checks.
     needs:
       - check
-      - lint
-      - eval
       - build
     runs-on: ubuntu-slim
     permissions:
