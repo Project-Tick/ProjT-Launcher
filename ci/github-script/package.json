@@ -4,7 +4,6 @@
   "description": "GitHub Actions scripts for ProjT Launcher CI",
   "private": true,
   "scripts": {
-    "lint": "eslint *.js",
     "test": "echo \"No tests configured\""
   },
   "dependencies": {
@@ -13,9 +12,6 @@
     "@actions/github": "6.0.1",
     "bottleneck": "2.19.5",
     "commander": "14.0.0"
-  },
-  "devDependencies": {
-    "eslint": "^8.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
