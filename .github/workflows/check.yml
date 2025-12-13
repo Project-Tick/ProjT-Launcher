@@ -60,7 +60,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd trusted/ci/github-script
-          npm ci
+          npm ci --omit=dev
 
       - name: Log API rate limits
         env:

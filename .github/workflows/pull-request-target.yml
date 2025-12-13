@@ -47,7 +47,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ci/github-script
-          npm ci
+          npm ci --omit=dev
 
       - name: Prepare PR information
         id: prepare

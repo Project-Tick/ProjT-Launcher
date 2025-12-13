@@ -6,41 +6,32 @@ This directory contains workflow configurations for the ProjT Launcher CI/CD pip
 
 The workflows are organized by functionality:
 
-### Build & Test Workflows
+### Pull Request Automation
 
-- **`build.yml`**: Main build workflow that compiles the launcher on Linux, macOS, and Windows
-  - Triggers: Push to `develop`/`release-*`, Pull Requests, Manual dispatch
-  - Tests code, builds packages, uploads artifacts
-  
-- **`lint.yml`**: Code quality and formatting checks
-  - Uses `clang-format` to validate C++ code formatting
-  - Checks CMakeLists.txt and configuration files
-  - Runs on: Pull Requests, Push to develop/release branches
+- **`pull-request-target.yml`**: Prepares PR metadata used by other workflows (safe for forks)
+- **`check.yml`**: Reusable workflow for PR validation (commits/CODEOWNERS/basic quality checks)
+- **`bot.yml`**: PR automation (labeling, assigning reviewers, scheduled maintenance)
+- **`comment.yml`**: Handles bot commands in PR comments
+- **`review.yml`** / **`reviewed.yml`**: Review event handling and status updates
+- **`edited.yml`**: Re-triggers CI when PR base branch changes
 
-- **`eval.yml`**: Dependency and configuration validation
-  - Verifies CMakeLists.txt, vcpkg.json, conan.txt syntax
-  - Validates required dependencies (Qt6, CMake, etc.)
-  - Ensures configuration files are valid JSON
+### Builds & Releases
 
-### Release & Maintenance Workflows
+- **`build.yml`**: Main build workflow (Linux/macOS/Windows) including packaging steps (AppImage/Flatpak/Nix/Windows installers)
+- **`release.yml`**: Creates GitHub releases from build artifacts
+- **`publish.yml`**: Publishes installers/assets after release
 
-- **`nix.yml`**: Nix Flake builds and checks
-  - Checks flake.nix syntax and outputs
-  - Builds packages via Nix on multiple systems
-  - Validates flake checks
+### Branch / Merge Maintenance
 
-- **`backport.yml`**: Automated backport to release branches
-  - Creates backport PRs when labeled with `backport/release-*`
-  - Requires PR to be merged first
-  - Automatically adds labels and comments
+- **`merge-group.yml`**, **`merge-blocking-pr.yml`**: Merge-group and merge safety helpers
+- **`periodic-merge.yml`**, **`periodic-merge-24h.yml`**: Periodically merges branches and opens issues on failure
 
-### Other Workflows
+### Repo Maintenance
 
-- **`publish.yml`**: Publishing and release artifacts
-- **`release.yml`**: Release management
-- **`flatpak.yml`**: Flatpak package building
-- **`update-flake.yml`**: Flake.lock updates
-- **`codeql.yml`**: Security analysis
+- **`teams.yml`**: Syncs `.github/teams.json`
+- **`backport.yml`**: Creates backport PRs when a merged PR is labeled `backport/release-*`
+- **`stale.yml`**: Marks inactive issues/PRs (never closes them)
+- **`update-flake.yml`**: Weekly `flake.lock` updates
 
 ## Key Design Principles
 

@@ -40,7 +40,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ci/github-script
-          npm ci
+          npm ci --omit=dev
 
       - name: React to comment
         uses: actions/github-script@v7
