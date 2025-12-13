@@ -34,9 +34,9 @@
   controllerSupport ? stdenv.hostPlatform.isLinux,
   gamemodeSupport ? stdenv.hostPlatform.isLinux,
   jdks ? [
-    jdk21
-    jdk17
-    jdk8
+    jdk21 # need for newest Minecraft versions
+    jdk17 # need for old and new Minecraft versions
+    jdk8 # need for legacy Minecraft versions
   ],
   msaClientID ? null,
   textToSpeechSupport ? stdenv.hostPlatform.isLinux,
@@ -55,7 +55,8 @@ let
 in
 
 symlinkJoin {
-  name = "projtlauncher-${projtlauncher'.version}";
+  pname = "projtlauncher";
+  inherit (projtlauncher') version;
 
   paths = [ projtlauncher' ];
 

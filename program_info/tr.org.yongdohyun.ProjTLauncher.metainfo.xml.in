@@ -25,10 +25,26 @@
     </ul>
   </description>
   <screenshots>
-	<screenshot type="default">
-		<caption>The main ProjT Launcher window</caption>
-		<image type="source" width="1030" height="764">https://projtlauncher.yongdohyun.org.tr/img/screenshots/launcher.png</image>
-	</screenshot>
+    <screenshot type="default">
+      <caption>The main ProjT Launcher window</caption>
+      <image type="source">https://projtlauncher.yongdohyun.org.tr/img/screenshots/projtlauncher_dark_main_window.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Modpack installation</caption>
+      <image type="source">https://projtlauncher.yongdohyun.org.tr/img/screenshots/projtlauncher_dark_new_instance_modrinth.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Mod installation</caption>
+      <image type="source">https://projtlauncher.yongdohyun.org.tr/img/screenshots/projtlauncher_dark_download_mods.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Mod updating</caption>
+      <image type="source">https://projtlauncher.yongdohyun.org.tr/img/screenshots/projtlauncher_dark_confirm_mods_selection.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Instance management</caption>
+      <image type="source">https://projtlauncher.yongdohyun.org.tr/img/screenshots/projtlauncher_dark_console_window_version.png</image>
+    </screenshot>
   </screenshots>
   <releases>
     <release version="@Launcher_VERSION_NAME@" date="@Launcher_BUILD_TIMESTAMP@"></release>

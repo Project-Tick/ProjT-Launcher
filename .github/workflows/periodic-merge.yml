@@ -1,0 +1,109 @@
+# =============================================================================
+# ProjT Launcher - Reusable Merge Workflow
+# =============================================================================
+# Reusable workflow for merging branches periodically.
+# =============================================================================
+
+name: "Merge"
+
+on:
+  workflow_call:
+    inputs:
+      from:
+        description: Branch to merge from
+        required: true
+        type: string
+      into:
+        description: Target branch to merge into
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ github.token }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Find merge base (if two branches specified)
+        if: contains(inputs.from, ' ')
+        id: merge_base
+        env:
+          BRANCHES: ${{ inputs.from }}
+        run: |
+          read -ra branches <<< "$BRANCHES"
+          git fetch --shallow-since="1 month ago" origin "${branches[@]}"
+          merge_base="$(git merge-base "refs/remotes/origin/${branches[0]}" "refs/remotes/origin/${branches[1]}")"
+          echo "Found merge base: $merge_base"
+          echo "merge_base=$merge_base" >> "$GITHUB_OUTPUT"
+
+      - name: Merge ${{ inputs.from }} → ${{ inputs.into }}
+        env:
+          FROM_REF: ${{ steps.merge_base.outputs.merge_base || inputs.from }}
+          INTO_BRANCH: ${{ inputs.into }}
+        run: |
+          echo "Merging $FROM_REF into $INTO_BRANCH"
+          
+          git fetch origin "$INTO_BRANCH"
+          git checkout "$INTO_BRANCH"
+          
+          if git merge --no-edit "$FROM_REF"; then
+            git push origin "$INTO_BRANCH"
+            echo "✅ Merge successful: $FROM_REF → $INTO_BRANCH"
+          else
+            echo "❌ Merge failed with conflicts"
+            git merge --abort
+            exit 1
+          fi
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = `Periodic merge failed: ${process.env.FROM_REF} → ${process.env.INTO_BRANCH}`;
+            const body = `
+            The periodic merge from \`${{ inputs.from }}\` into \`${{ inputs.into }}\` has failed.
+            
+            **Run:** [${context.runId}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            
+            Please resolve any conflicts manually.
+            `;
+            
+            // Check if similar issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              ...context.repo,
+              state: 'open',
+              labels: 'merge-failure'
+            });
+            
+            const existingIssue = issues.data.find(i => i.title.includes(process.env.INTO_BRANCH));
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                ...context.repo,
+                title,
+                body,
+                labels: ['merge-failure', 'ci']
+              });
+            }
+        env:
+          FROM_REF: ${{ steps.merge_base.outputs.merge_base || inputs.from }}
+          INTO_BRANCH: ${{ inputs.into }}

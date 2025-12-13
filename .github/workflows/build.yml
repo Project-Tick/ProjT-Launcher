@@ -1,4 +1,4 @@
-name: Build
+name: Build-Test-Check
 
 on:
   push:
@@ -7,52 +7,9 @@ on:
       - "release-*"
       - "qml_migration"
     paths:
-      # File types
-      - "**.cpp"
-      - "**.h"
-      - "**.java"
-      - "**.ui"
-
-      # Directories
-      - "buildconfig/**"
-      - "cmake/**"
-      - "launcher/**"
-      - "libraries/**"
-      - "program_info/**"
-      - "tests/**"
-
       # Files
-      - "CMakeLists.txt"
-      - "COPYING.md"
-
-      # Workflows
-      - ".github/workflows/build.yml"
-      - ".github/actions/package/**"
-      - ".github/actions/setup-dependencies/**"
-  pull_request:
-    paths:
-      # File types
-      - "**.cpp"
-      - "**.h"
-      - "**.java"
-      - "**.ui"
-
-      # Directories
-      - "buildconfig/**"
-      - "cmake/**"
-      - "launcher/**"
-      - "libraries/**"
-      - "program_info/**"
-      - "tests/**"
-
-      # Files
-      - "CMakeLists.txt"
-      - "COPYING.md"
-
-      # Workflows
-      - ".github/workflows/build.yml"
-      - ".github/actions/package/**"
-      - ".github/actions/setup-dependencies/**"
+      - "**"
+  merge_group:
   workflow_call:
     inputs:
       build-type:
@@ -65,10 +22,298 @@ on:
         description: Type of build (Debug or Release)
         type: string
         default: Debug
+      version:
+        description: Launcher version
+        required: true
+      artifact-name:
+        description: Name of the uploaded artifact
+        required: true
+        default: Linux
+      qt-version:
+        description: Version of Qt to use
+        required: true
+        default: 6.10.0
+      qt-architecture:
+        description: Qt architecture
+        required: false
+      gpg-private-key:
+        description: Private key for AppImage signing
+        required: false
+      gpg-private-key-id:
+        description: ID for the gpg-private-key, to select the signing key
+        required: false
+      apple-codesign-cert:
+        description: Certificate for signing macOS builds
+        required: false
+      apple-codesign-password:
+        description: Password for signing macOS builds
+        required: false
+      apple-codesign-id:
+        description: Certificate ID for signing macOS builds
+        required: false
+      apple-notarize-apple-id:
+        description: Apple ID used for notarizing macOS builds
+        required: false
+      apple-notarize-team-id:
+        description: Team ID used for notarizing macOS builds
+        required: false
+      apple-notarize-password:
+        description: Password used for notarizing macOS builds
+        required: false
+      sparkle-ed25519-key:
+        description: Private key for signing Sparkle updates
+        required: false
+      msystem:
+        description: MSYS2 subsystem to use
+        required: false
+      windows-codesign-cert:
+        description: Certificate for signing Windows builds
+        required: false
+      windows-codesign-password:
+        description: Password for signing Windows builds
+        required: false
+      vcvars-arch:
+        description: Visual Studio architecture to use
+        required: true
+        default: amd64
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        required: false
+      path:
+        description: 'Path to place the repository'
+        required: false
+      fetch-depth:
+        description: 'Fetch depth (default 0 = full history)'
+        required: false
+        default: '0'
+      submodules:
+        description: 'Checkout submodules (true/false/recursive)'
+        required: false
+        default: 'true'
+      app_id:
+        description: 'Application ID'
+        required: true
+      git_ref:
+        description: 'Git reference'
+        required: true
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-    name: Build (${{ matrix.artifact-name }})
+  prepare:
+    name: Prepare Workflow
+    runs-on: ubuntu-latest
+    outputs:
+      should-test: ${{ steps.check.outputs.should-test }}
+      mergedSha: ${{ github.event.pull_request.head.sha || github.sha }}
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check for testable and buildable changes
+        id: check
+        run: |
+          # Always test on pull requests
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "should-test=true" >> $GITHUB_OUTPUT
+            echo "Pull request detected — forcing test/build."
+            exit 0
+          fi
+
+          # Check if test-relevant files changed for push or dispatch
+          regex="^(launcher|libraries|tests|buildconfig|cmake|program_info)/|CMakeLists.txt|.*\.cpp|.*\.h|.*\.ui"
+
+          changed=$(git diff --name-only HEAD~1 | grep -E "$regex" || true)
+          changed_count=$(printf "%s\n" "$changed" | sed '/^$/d' | wc -l)
+
+          # Always run on manual dispatch or merge queue
+          if [ "$changed_count" -gt 0 ] || [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ github.event_name }}" == "merge_group" ]; then
+            echo "should-test=true" >> $GITHUB_OUTPUT
+            echo "Relevant changes detected or manual/queue trigger."
+            printf "Changed:\n%s\n" "$changed"
+          else
+            echo "should-test=false" >> $GITHUB_OUTPUT
+            echo "No relevant changes."
+          fi
+
+  verify-vcpkg:
+    name: Verify vcpkg Configuration
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate JSON files
+        run: |
+          echo "=== Validating JSON configuration files ==="
+          
+          # Check vcpkg.json
+          if [ -f "vcpkg.json" ]; then
+            if python3 -m json.tool vcpkg.json >/dev/null 2>&1; then
+              echo "vcpkg.json is valid JSON"
+            else
+              echo "ERROR: vcpkg.json is invalid JSON"
+              exit 1
+            fi
+          fi
+          
+          # Check vcpkg-configuration.json
+          if [ -f "vcpkg-configuration.json" ]; then
+            if python3 -m json.tool vcpkg-configuration.json >/dev/null 2>&1; then
+              echo "vcpkg-configuration.json is valid JSON"
+            else
+              echo "ERROR: vcpkg-configuration.json is invalid JSON"
+              exit 1
+            fi
+          fi
+          
+          # Check CMakePresets.json
+          if [ -f "CMakePresets.json" ]; then
+            if python3 -m json.tool CMakePresets.json >/dev/null 2>&1; then
+              echo "CMakePresets.json is valid JSON"
+            else
+              echo "ERROR: CMakePresets.json is invalid JSON"
+              exit 1
+            fi
+          fi
+
+      - name: Check CMakeLists.txt for required dependencies
+        run: |
+          echo "=== Checking CMakeLists.txt dependencies ==="
+          
+          # Check for Qt6
+          if grep -q "find_package(Qt6" CMakeLists.txt; then
+            echo "Qt6 dependency declared"
+          else
+            echo "WARNING: Qt6 dependency not found (may be in subdirectory)"
+          fi
+          
+          # Check for minimum CMake version
+          if grep -q "cmake_minimum_required" CMakeLists.txt; then
+            version=$(grep "cmake_minimum_required" CMakeLists.txt | head -1)
+            echo "CMake minimum version: $version"
+          fi
+          
+          # Check for project declaration
+          if grep -q "project(" CMakeLists.txt; then
+            project=$(grep "project(" CMakeLists.txt | head -1)
+            echo "Project declaration: $project"
+          fi
+
+      - name: List declared vcpkg dependencies
+        if: hashFiles('vcpkg.json') != ''
+        run: |
+          echo "=== vcpkg Dependencies ==="
+          python3 -c "
+          import json
+          with open('vcpkg.json') as f:
+              data = json.load(f)
+          deps = data.get('dependencies', [])
+          for dep in deps:
+              if isinstance(dep, str):
+                  print(f'  - {dep}')
+              else:
+                  name = dep.get('name', 'unknown')
+                  features = dep.get('features', [])
+                  if features:
+                      print(f'  - {name} [{', '.join(features)}]')
+                  else:
+                      print(f'  - {name}')
+          "
+
+  flake-check:
+    name: Flake Check
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Check flake.nix syntax and outputs
+        run: |
+          nix flake show --all-systems
+
+      - name: Run flake checks
+        run: |
+          nix flake check --show-trace
+
+  project-checkout:
+    needs: [prepare]
+    name: Project Checkout Submodules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve inputs safely
+        id: resolved
+        run: |
+          # Resolve fetch-depth
+          if [ -z "${{ github.event.inputs.fetch-depth }}" ]; then
+            echo "depth=0" >> $GITHUB_OUTPUT
+          else
+            echo "depth=${{ github.event.inputs.fetch-depth }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Resolve ref
+          if [ -z "${{ github.event.inputs.ref }}" ]; then
+            echo "ref=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          else
+            echo "ref=${{ github.event.inputs.ref }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Resolve path (default repo root)
+          if [ -z "${{ github.event.inputs.path }}" ]; then
+            echo "path=." >> $GITHUB_OUTPUT
+          else
+            echo "path=${{ github.event.inputs.path }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Resolve submodules
+          if [ -z "${{ github.event.inputs.submodules }}" ]; then
+            echo "submodules=recursive" >> $GITHUB_OUTPUT
+          else
+            echo "submodules=${{ github.event.inputs.submodules }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: ${{ steps.resolved.outputs.depth }}
+          ref: ${{ steps.resolved.outputs.ref }}
+          submodules: ${{ steps.resolved.outputs.submodules }}
+          path: ${{ steps.resolved.outputs.path }}
+
+      - name: Mark repo as safe directory
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Validate checkout state
+        run: |
+          echo "Checked out commit:"
+          git -C "${{ steps.resolved.outputs.path }}" rev-parse HEAD
+
+          echo "Submodule status:"
+          git -C "${{ steps.resolved.outputs.path }}" submodule status || true
+
+  cmake-linux-preset-config:
+    name: Verify CMake Configuration (${{ matrix.artifact-name }})
+    needs: [project-checkout]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
 
     permissions:
       # Required for vcpkg binary cache
@@ -82,58 +327,689 @@ jobs:
             artifact-name: Linux
             cmake-preset: linux
 
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      BUILD_TYPE: Debug
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+          
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure CMake
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+        continue-on-error: false
+
+      - name: Report configuration status
+        run: |
+          if [ -f "build/CMakeCache.txt" ] || [ -d "out" ]; then
+            echo "CMake configuration completed"
+            echo "## CMake Configuration Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "WARNING: CMake configuration may have issues"
+            echo "## CMake Configuration Issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  cmake-linux-arm64-preset-config:
+    name: Verify CMake Configuration (${{ matrix.artifact-name }})
+    needs: [project-checkout]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    permissions:
+      # Required for vcpkg binary cache
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - os: ubuntu-24.04-arm
             artifact-name: Linux-aarch64
             cmake-preset: linux
 
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      BUILD_TYPE: Debug
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure CMake
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+        continue-on-error: false
+
+      - name: Report configuration status
+        run: |
+          if [ -f "build/CMakeCache.txt" ] || [ -d "out" ]; then
+            echo "CMake configuration completed"
+            echo "## CMake Configuration Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "WARNING: CMake configuration may have issues"
+            echo "## CMake Configuration Issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  cmake-windows-mingw-preset-config:
+    name: Verify CMake Configuration (${{ matrix.artifact-name }})
+    needs: [verify-vcpkg, project-checkout]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    permissions:
+      # Required for vcpkg binary cache
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - os: windows-2022
             artifact-name: Windows-MinGW-w64
             cmake-preset: windows_mingw
             msystem: CLANG64
             vcvars-arch: amd64_x86
 
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      BUILD_TYPE: Debug
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Enter VS Developer shell
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.vcvars-arch }}
+          vsversion: 2022
+
+      - name: Setup MSYS2 (MinGW)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            git
+          pacboy: >-
+            toolchain:p
+            ccache:p
+            cmake:p
+            extra-cmake-modules:p
+            ninja:p
+            qt6-base:p
+            qt6-svg:p
+            qt6-imageformats:p
+            qt6-5compat:p
+            qt6-networkauth:p
+            qt6-declarative:p
+            cmark:p
+            tomlplusplus:p
+            quazip-qt6:p
+
+      - name: List pacman packages (MinGW)
+        shell: msys2 {0}
+        run: |
+          pacman -Qe
+
+      - name: Retrieve ccache cache (MinGW)
+        uses: actions/cache@v5.0.1
+        with:
+          path: '${{ github.workspace }}\.ccache'
+          key: ${{ runner.os }}-mingw-w64-ccache-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-mingw-w64-ccache
+
+      - name: Setup ccache (MinGW)
+        shell: msys2 {0}
+        run: |
+          ccache --set-config=cache_dir='${{ github.workspace }}\.ccache'
+          ccache --set-config=max_size='500M'
+          ccache --set-config=compression=true
+          ccache -p  # Show config
+  
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure CMake
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+        continue-on-error: false
+
+      - name: Report configuration status
+        run: |
+          if [ -f "build/CMakeCache.txt" ] || [ -d "out" ]; then
+            echo "CMake configuration completed"
+            echo "## CMake Configuration Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "WARNING: CMake configuration may have issues"
+            echo "## CMake Configuration Issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  cmake-windows-mingw-arm64-preset-config:
+    name: Verify CMake Configuration (${{ matrix.artifact-name }})
+    needs: [verify-vcpkg, project-checkout]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    permissions:
+      # Required for vcpkg binary cache
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - os: windows-11-arm
             artifact-name: Windows-MinGW-arm64
             cmake-preset: windows_mingw
             msystem: CLANGARM64
             vcvars-arch: arm64
 
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      BUILD_TYPE: Debug
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Enter VS Developer shell
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.vcvars-arch }}
+          vsversion: 2022
+
+      - name: Setup MSYS2 (MinGW)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            git
+          pacboy: >-
+            toolchain:p
+            ccache:p
+            cmake:p
+            extra-cmake-modules:p
+            ninja:p
+            qt6-base:p
+            qt6-svg:p
+            qt6-imageformats:p
+            qt6-5compat:p
+            qt6-networkauth:p
+            qt6-declarative:p
+            cmark:p
+            tomlplusplus:p
+            quazip-qt6:p
+
+      - name: List pacman packages (MinGW)
+        shell: msys2 {0}
+        run: |
+          pacman -Qe
+
+      - name: Retrieve ccache cache (MinGW)
+        uses: actions/cache@v5.0.1
+        with:
+          path: '${{ github.workspace }}\.ccache'
+          key: ${{ runner.os }}-mingw-w64-ccache-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-mingw-w64-ccache
+
+      - name: Setup ccache (MinGW)
+        shell: msys2 {0}
+        run: |
+          ccache --set-config=cache_dir='${{ github.workspace }}\.ccache'
+          ccache --set-config=max_size='500M'
+          ccache --set-config=compression=true
+          ccache -p  # Show config
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure CMake
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+        continue-on-error: false
+
+      - name: Report configuration status
+        run: |
+          if [ -f "build/CMakeCache.txt" ] || [ -d "out" ]; then
+            echo "CMake configuration completed"
+            echo "## CMake Configuration Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "WARNING: CMake configuration may have issues"
+            echo "## CMake Configuration Issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  cmake-windows-msvc-preset-config:
+    name: Verify CMake Configuration (${{ matrix.artifact-name }})
+    needs: [verify-vcpkg, project-checkout]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    permissions:
+      # Required for vcpkg binary cache
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - os: windows-2022
             artifact-name: Windows-MSVC
             cmake-preset: windows_msvc
             vcvars-arch: amd64
 
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      BUILD_TYPE: Debug
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure CMake
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+        continue-on-error: false
+
+      - name: Report configuration status
+        run: |
+          if [ -f "build/CMakeCache.txt" ] || [ -d "out" ]; then
+            echo "CMake configuration completed"
+            echo "## CMake Configuration Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "WARNING: CMake configuration may have issues"
+            echo "## CMake Configuration Issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  cmake-windows-msvc-arm64-preset-config:
+    name: Verify CMake Configuration (${{ matrix.artifact-name }})
+    needs: [verify-vcpkg, project-checkout]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    permissions:
+      # Required for vcpkg binary cache
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - os: windows-11-arm
             artifact-name: Windows-MSVC-arm64
             cmake-preset: windows_msvc
             vcvars-arch: arm64
 
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      BUILD_TYPE: Debug
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure CMake
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+        continue-on-error: false
+
+      - name: Report configuration status
+        run: |
+          if [ -f "build/CMakeCache.txt" ] || [ -d "out" ]; then
+            echo "CMake configuration completed"
+            echo "## CMake Configuration Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "WARNING: CMake configuration may have issues"
+            echo "## CMake Configuration Issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  cmake-macos-preset-config:
+    name: Verify CMake Configuration (${{ matrix.artifact-name }})
+    needs: [project-checkout]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    permissions:
+      # Required for vcpkg binary cache
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - os: macos-26
             artifact-name: macOS
             cmake-preset: macos_universal
             macosx-deployment-target: 12.0
 
-    runs-on: ${{ matrix.os }}
-
     defaults:
       run:
-        shell: ${{ matrix.msystem != '' && 'msys2 {0}' || 'bash' }}
+        shell: bash
 
     env:
       ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
       BUILD_PLATFORM: official
-      BUILD_TYPE: ${{ inputs.build-type || 'Debug' }}
+      BUILD_TYPE: Debug
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-
       MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
-      ##
-      # SETUP
-      ##
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure CMake
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+        continue-on-error: false
+
+      - name: Report configuration status
+        run: |
+          if [ -f "build/CMakeCache.txt" ] || [ -d "out" ]; then
+            echo "CMake configuration completed"
+            echo "## CMake Configuration Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "WARNING: CMake configuration may have issues"
+            echo "## CMake Configuration Issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  CodeQL:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    needs: [project-checkout]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: "true"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          config-file: ./.github/codeql/codeql-config.yml
+          queries: security-and-quality
+          languages: cpp, java
+
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: Debug
+
+      - name: Configure and Build
+        run: |
+          cmake --preset linux
+          cmake --build --preset linux --config Debug
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+
+  build-linux:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [cmake-linux-preset-config, CodeQL, cmake-linux-arm64-preset-config]
+    if: needs.prepare.outputs.should-test == 'true'
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact-name: Linux
+            cmake-preset: linux
+        
+          - os: ubuntu-24.04-arm
+            artifact-name: Linux-aarch64
+            cmake-preset: linux
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set version variable
+        run: echo "VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || steps.short-version.outputs.version }}" >> $GITHUB_ENV
+
+      - name: Package (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        uses: ./.github/actions/package/linux
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          artifact-name: ${{ matrix.artifact-name }}
+          qt-version: ${{ steps.setup-dependencies.outputs.qt-version }}
+
+          gpg-private-key: ${{ secrets.LINUX_GPG_KEY }}
+          gpg-private-key-id: ${{ secrets.LINUX_GPG_ID }}
+
+  build-windows-msvc:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [CodeQL, cmake-windows-msvc-preset-config]
+    if: needs.prepare.outputs.should-test == 'true'
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            artifact-name: Windows-MSVC
+            cmake-preset: windows_msvc
+            vcvars-arch: amd64
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
           submodules: true
 
@@ -147,15 +1023,10 @@ jobs:
           vcvars-arch: ${{ matrix.vcvars-arch }}
           qt-architecture: ${{ matrix.qt-architecture }}
 
-      - name: Clean build directory for Release builds
-        if: ${{ (inputs.build-type || 'Debug') == 'Release' }}
+      - name: Clean build directory for builds
         run: |
           rm -rf build
           git clean -fdx libraries/zlib/
-
-      ##
-      # BUILD
-      ##
 
       - name: Configure Preset
         run: |
@@ -167,11 +1038,409 @@ jobs:
 
       - name: Run tests
         run: |
-          ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
 
-      ##
-      # PACKAGE
-      ##
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+  
+      - name: Package (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: ./.github/actions/package/windows
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+
+          windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
+          windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+
+  build-windows-msvc-arm64:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [CodeQL, cmake-windows-msvc-arm64-preset-config]
+    if: needs.prepare.outputs.should-test == 'true'
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-11-arm
+            artifact-name: Windows-MSVC-arm64
+            cmake-preset: windows_msvc
+            vcvars-arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+          qt-architecture: ${{ matrix.qt-architecture }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+  
+      - name: Package (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: ./.github/actions/package/windows
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+
+          windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
+          windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+        
+  build-windows-mingw:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [CodeQL, cmake-windows-mingw-preset-config]
+    if: needs.prepare.outputs.should-test == 'true'
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            artifact-name: Windows-MinGW-w64
+            cmake-preset: windows_mingw
+            msystem: CLANG64
+            vcvars-arch: amd64_x86
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+
+      - name: Set build type
+        shell: bash
+        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+          qt-architecture: ${{ matrix.qt-architecture }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+  
+      - name: Package (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: ./.github/actions/package/windows
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+
+          windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
+          windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+
+  build-windows-mingw-arm64:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [CodeQL, cmake-windows-mingw-arm64-preset-config]
+    if: needs.prepare.outputs.should-test == 'true'
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-11-arm
+            artifact-name: Windows-MinGW-arm64
+            cmake-preset: windows_mingw
+            msystem: CLANGARM64
+            vcvars-arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+
+      - name: Set build type
+        shell: bash
+        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+          qt-architecture: ${{ matrix.qt-architecture }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+  
+      - name: Package (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: ./.github/actions/package/windows
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+
+          windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
+          windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+
+  build-macos:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [cmake-macos-preset-config, CodeQL]
+    if: needs.prepare.outputs.should-test == 'true'
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-26
+            artifact-name: macOS
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+          qt-architecture: ${{ matrix.qt-architecture }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
 
       - name: Get short version
         id: short-version
@@ -179,17 +1448,8 @@ jobs:
         run: |
           echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Package (Linux)
-        if: ${{ runner.os == 'Linux' }}
-        uses: ./.github/actions/package/linux
-        with:
-          version: ${{ steps.short-version.outputs.version }}
-          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
-          artifact-name: ${{ matrix.artifact-name }}
-          qt-version: ${{ steps.setup-dependencies.outputs.qt-version }}
-
-          gpg-private-key: ${{ secrets.LINUX_GPG_KEY }}
-          gpg-private-key-id: ${{ secrets.LINUX_GPG_ID }}
+      - name: Set version variable
+        run: echo "VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || steps.short-version.outputs.version }}" >> $GITHUB_ENV
 
       - name: Package (macOS)
         if: ${{ runner.os == 'macOS' }}
@@ -207,14 +1467,446 @@ jobs:
           apple-notarize-password: ${{ secrets.APPLE-NOTARIZE_PASSWORD }}
           sparkle-ed25519-key: ${{ secrets.SPARKLE-ED25519_KEY }}
 
-      - name: Package (Windows)
-        if: ${{ runner.os == 'Windows' }}
-        uses: ./.github/actions/package/windows
-        with:
-          version: ${{ steps.short-version.outputs.version }}
-          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
-          artifact-name: ${{ matrix.artifact-name }}
-          msystem: ${{ matrix.msystem }}
+  flatpak-build:
+    name: Flatpak Build (${{ matrix.arch }})
+    needs: [prepare]
 
-          windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
-          windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+
+    runs-on: ${{ matrix.os }}
+
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Set short version
+        shell: bash
+        run: |
+          echo "VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: ProjTLauncher-${{ runner.os }}-${{ env.VERSION }}-Flatpak.flatpak
+          manifest-path: flatpak/tr.org.yongdohyun.ProjTLauncher.yml
+          arch: ${{ matrix.arch }}
+
+  nix-system-build:
+    name: Build via Nix (${{ matrix.system }})
+    needs: [flake-check]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            system: x86_64-linux
+          - os: ubuntu-24.04-arm
+            system: aarch64-linux
+          - os: macos-latest
+            system: aarch64-darwin
+    
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build package via Nix (Debug)
+        if: github.ref_type != 'tag'
+        run: |
+          nix build --no-link --print-build-logs .#packages.${{ matrix.system }}.projtlauncher-debug || \
+          nix build --no-link --print-build-logs .#projtlauncher
+
+      - name: Build package via Nix (Release)
+        if: github.ref_type == 'tag'
+        run: |
+          nix build --no-link --print-build-logs .#packages.${{ matrix.system }}.projtlauncher || \
+          nix build --no-link --print-build-logs .#projtlauncher
+
+      - name: Install package for testing
+        run: |
+          nix profile install .#packages.${{ matrix.system }}.projtlauncher || \
+          nix profile install .#projtlauncher || \
+          echo "Package installation skipped or not available"
+
+      - name: Run tests via Nix
+        continue-on-error: true
+        run: |
+          nix build --no-link --print-build-logs .#checks.${{ matrix.system }}.default || \
+          echo "No tests defined in flake"
+
+      - name: Build package with result link
+        id: build-result
+        run: |
+          # Build with result link for artifact upload
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            nix build --print-build-logs .#packages.${{ matrix.system }}.projtlauncher -o result || \
+            nix build --print-build-logs .#projtlauncher -o result
+          else
+            nix build --print-build-logs .#packages.${{ matrix.system }}.projtlauncher-debug -o result || \
+            nix build --print-build-logs .#projtlauncher -o result
+          fi
+          
+          # Check if result exists
+          if [ -L result ]; then
+            echo "result-path=$(readlink -f result)" >> $GITHUB_OUTPUT
+            echo "has-result=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-result=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Nix package
+        if: steps.build-result.outputs.has-result == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ProjTLauncher-Nix-${{ matrix.system }}-${{ github.sha }}
+          path: result/**/*
+          retention-days: 7
+          if-no-files-found: warn
+
+  eval-status:
+    name: Dependency Check Status Report
+    runs-on: ubuntu-latest
+    needs: [verify-vcpkg, cmake-windows-mingw-preset-config, cmake-windows-msvc-preset-config, cmake-windows-mingw-arm64-preset-config, cmake-windows-msvc-arm64-preset-config, cmake-linux-preset-config, cmake-macos-preset-config]
+    if: always()
+
+    steps:
+      - name: Check evaluation results
+        id: check-results
+        run: |
+          echo "## Dependency Check Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** Dependency Check" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          deps_result='${{ needs.verify-vcpkg.result }}'
+          cmake_results=(
+            '${{ needs.cmake-windows-mingw-preset-config.result }}'
+            '${{ needs.cmake-windows-msvc-preset-config.result }}'
+            '${{ needs.cmake-windows-mingw-arm64-preset-config.result }}'
+            '${{ needs.cmake-windows-msvc-arm64-preset-config.result }}'
+            '${{ needs.cmake-linux-preset-config.result }}'
+            '${{ needs.cmake-macos-preset-config.result }}'
+          )
+
+          cmake_status="success"
+          any_cmake=false
+          for r in "${cmake_results[@]}"; do
+            [[ -z "$r" ]] && continue
+            any_cmake=true
+            if [[ "$r" == "failure" ]]; then cmake_status="failure"; break; fi
+            if [[ "$r" == "cancelled" && "$cmake_status" != "failure" ]]; then cmake_status="cancelled"; fi
+          done
+          if [[ "$cmake_status" == "success" && "$any_cmake" == false ]]; then
+            cmake_status="skipped"
+          fi
+
+          echo "**Dependencies Check:** \`$deps_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**CMake Config:** \`$cmake_status\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "$deps_result" == "failure" || "$cmake_status" == "failure" ]]; then
+            status="failure"; exit_code=1
+            echo "**Status:** Dependency Check Failed" >> $GITHUB_STEP_SUMMARY
+          elif [[ "$deps_result" == "cancelled" || "$cmake_status" == "cancelled" ]]; then
+            status="cancelled"; exit_code=1
+            echo "**Status:** Dependency Check Cancelled" >> $GITHUB_STEP_SUMMARY
+          elif [[ "$deps_result" == "success" && ( "$cmake_status" == "success" || "$cmake_status" == "skipped" ) ]]; then
+            status="success"; exit_code=0
+            echo "**Status:** Dependency Check Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            status="unknown"; exit_code=1
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+
+          echo "status=$status" >> $GITHUB_OUTPUT
+          exit $exit_code
+
+  codeql-status:
+    name: CodeQL Status Report
+    runs-on: ubuntu-latest
+    needs: [CodeQL]
+    if: always()
+    
+    steps:
+      - name: Check CodeQL results
+        id: check-results
+        run: |
+          echo "## CodeQL Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** CodeQL Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          codeql_result='${{ needs.CodeQL.result }}'
+          echo "**CodeQL Result:** \`$codeql_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "$codeql_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** CodeQL Analysis Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$codeql_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** CodeQL Analysis Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$codeql_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** CodeQL Analysis Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          
+          echo "status=$status" >> $GITHUB_OUTPUT
+          exit $exit_code
+  
+  build-status:
+    name: Build Status Report
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-windows-msvc, build-windows-msvc-arm64, build-windows-mingw, build-windows-mingw-arm64, build-macos]
+    if: always()
+    
+    steps:
+      - name: Check build results
+        id: check-results
+        run: |
+          echo "## Build Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** Build" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check individual build results
+          build_linux_result='${{ needs.build-linux.result }}'
+          build_windows_msvc_result='${{ needs.build-windows-msvc.result }}'
+          build_windows_msvc_arm64_result='${{ needs.build-windows-msvc-arm64.result }}'
+          build_windows_mingw_result='${{ needs.build-windows-mingw.result }}'
+          build_windows_mingw_arm64_result='${{ needs.build-windows-mingw-arm64.result }}'
+          build_macos_result='${{ needs.build-macos.result }}'
+          
+          echo "**Build Results:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux: \`$build_linux_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows MSVC: \`$build_windows_msvc_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows MSVC ARM64: \`$build_windows_msvc_arm64_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows MinGW: \`$build_windows_mingw_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows MinGW ARM64: \`$build_windows_mingw_arm64_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS: \`$build_macos_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Determine overall status
+          if [[ "$build_linux_result" == "failure" ]] || [[ "$build_windows_msvc_result" == "failure" ]] || [[ "$build_windows_msvc_arm64_result" == "failure" ]] || [[ "$build_windows_mingw_result" == "failure" ]] || [[ "$build_windows_mingw_arm64_result" == "failure" ]] || [[ "$build_macos_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Build Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$build_linux_result" == "cancelled" ]] || [[ "$build_windows_msvc_result" == "cancelled" ]] || [[ "$build_windows_msvc_arm64_result" == "cancelled" ]] || [[ "$build_windows_mingw_result" == "cancelled" ]] || [[ "$build_windows_mingw_arm64_result" == "cancelled" ]] || [[ "$build_macos_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Build Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$build_linux_result" == "success" ]] && [[ "$build_windows_msvc_result" == "success" ]] && [[ "$build_windows_msvc_arm64_result" == "success" ]] && [[ "$build_windows_mingw_result" == "success" ]] && [[ "$build_windows_mingw_arm64_result" == "success" ]] && [[ "$build_macos_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Build Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run Number:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          
+          echo "status=$status" >> $GITHUB_OUTPUT
+          exit $exit_code
+      
+      - name: Report final status
+        if: always()
+        run: |
+          echo "Final build status: ${{ steps.check-results.outputs.status }}"
+
+  test-status:
+    name: Test Status Report
+    needs: [build-linux, build-windows-msvc, build-windows-msvc-arm64, build-windows-mingw, build-windows-mingw-arm64, build-macos]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check test results
+        id: check-results
+        run: |
+          echo "## Test Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** Test" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          macos_tests_result='${{ needs.build-macos.result }}'
+          linux_tests_result='${{ needs.build-linux.result }}'
+          windows_msvc_tests_result='${{ needs.build-windows-msvc.result }}'
+          windows_msvc_arm64_tests_result='${{ needs.build-windows-msvc-arm64.result }}'
+          windows_mingw_tests_result='${{ needs.build-windows-mingw.result }}'
+          windows_mingw_arm64_tests_result='${{ needs.build-windows-mingw-arm64.result }}'
+
+          echo "**macOS Unit Tests:** \`$macos_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Linux Unit Tests:** \`$linux_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Windows MSVC Unit Tests:** \`$windows_msvc_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Windows MSVC ARM64 Unit Tests:** \`$windows_msvc_arm64_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Windows MinGW Unit Tests:** \`$windows_mingw_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Windows MinGW ARM64 Unit Tests:** \`$windows_mingw_arm64_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "$macos_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$macos_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$macos_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+
+          if [[ "$linux_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$linux_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$linux_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+          
+          if [[ "$windows_msvc_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_msvc_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_msvc_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+
+          if [[ "$windows_mingw_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_mingw_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_mingw_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+
+          if [[ "$windows_msvc_arm64_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_msvc_arm64_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_msvc_arm64_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+
+          if [[ "$windows_mingw_arm64_tests_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_mingw_arm64_tests_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$windows_mingw_arm64_tests_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          
+          echo "status=$status" >> $GITHUB_OUTPUT
+          exit $exit_code
+

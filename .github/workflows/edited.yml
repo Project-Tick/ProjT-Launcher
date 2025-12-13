@@ -1,0 +1,36 @@
+# =============================================================================
+# ProjT Launcher - Base Branch Change Handler
+# =============================================================================
+# When the base branch changes, the file diff changes too. Re-run labeler so
+# component/CI labels stay correct.
+# =============================================================================
+
+name: "Edited base branch"
+
+on:
+  pull_request_target:
+    types: [edited]
+
+concurrency:
+  group: edited-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  relabel:
+    name: Re-apply labels on base change
+    runs-on: ubuntu-latest
+    if: github.event.changes.base.ref.from && github.event.changes.base.ref.from != github.event.pull_request.base.ref
+    timeout-minutes: 2
+
+    steps:
+      - name: Sync labels
+        uses: actions/labeler@v6
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: .github/labeler.yml
+          sync-labels: false
+
