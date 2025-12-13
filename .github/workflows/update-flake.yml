@@ -22,7 +22,7 @@ jobs:
       - name: Use PAT
         run: echo "GITHUB_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
 
-      - uses: DeterminateSystems/update-flake-lock@v27
+      - uses: DeterminateSystems/update-flake-lock@v28
         with:
           commit-msg: "chore(nix): update lockfile"
           pr-title: "chore(nix): update lockfile"
