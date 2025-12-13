@@ -45,7 +45,7 @@ in
 
 stdenv.mkDerivation {
   pname = "projtlauncher-unwrapped";
-  version = "0.0.2-unstable-${date}";
+  version = "0.0.3-unstable-${date}";
 
   src = lib.fileset.toSource {
     root = ../.;
@@ -119,6 +119,7 @@ stdenv.mkDerivation {
   meta = {
     description = "Free, open source launcher for Minecraft";
     longDescription = ''
+
       Allows you to have multiple, separate instances of Minecraft (each with
       their own mods, texture packs, saves, etc) and helps you manage them and
       their associated options with a simple interface.

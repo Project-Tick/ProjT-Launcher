@@ -33,6 +33,17 @@ Developer requirements
 - C++20 capable compiler
 - Git and submodules (if used)
 
+## 📚 Documentation
+
+We have comprehensive documentation for contributors:
+
+- [**Getting Started**](docs/contributing/GETTING_STARTED.md): Setup your environment (Windows/Linux/macOS).
+- [**Code Style**](docs/contributing/CODE_STYLE.md): Strict rules for C++ and QML.
+- [**Project Structure**](docs/contributing/PROJECT_STRUCTURE.md): Where to put your files.
+- [**Architecture**](docs/contributing/ARCHITECTURE.md): Understanding MVVM and the Task system.
+- [**Workflow**](docs/contributing/WORKFLOW.md): How to submit a Pull Request.
+- [**Testing**](docs/contributing/TESTING.md): How to write and run tests.
+
 # Quick start (example commands for fish shell)
 
 ```fish

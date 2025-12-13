@@ -12,17 +12,17 @@ permissions:
 
 jobs:
   update-flake:
-    if: github.repository == 'Project-Tick/ProjT-Launcher'
+    if: github.repository == 'YongDo-Hyun/ProjT-Launcher'
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
-      - uses: cachix/install-nix-action@fd24c48048070c1be9acd18c9d369a83f0fe94d7 # v31
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
 
       - name: Use PAT
         run: echo "GITHUB_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
 
-      - uses: DeterminateSystems/update-flake-lock@v27
+      - uses: DeterminateSystems/update-flake-lock@v28
         with:
           commit-msg: "chore(nix): update lockfile"
           pr-title: "chore(nix): update lockfile"

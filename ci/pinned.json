@@ -1,0 +1,44 @@
+{
+  "dependencies": {
+    "cmake": {
+      "version": "3.28.0",
+      "description": "Build system"
+    },
+    "qt6": {
+      "version": "6.7.0",
+      "description": "Qt framework for UI"
+    },
+    "gcc": {
+      "version": "13.2.0",
+      "description": "GCC compiler"
+    },
+    "clang": {
+      "version": "17.0.0",
+      "description": "Clang compiler"
+    },
+    "ninja": {
+      "version": "1.11.1",
+      "description": "Fast build system"
+    },
+    "gtest": {
+      "version": "1.14.0",
+      "description": "Google Test framework"
+    }
+  },
+  "platforms": {
+    "linux": {
+      "runner": "ubuntu-24.04",
+      "compiler": "gcc"
+    },
+    "macos": {
+      "runner": "macos-14",
+      "compiler": "clang"
+    },
+    "windows": {
+      "runner": "windows-2022",
+      "compiler": "msvc"
+    }
+  },
+  "version": 1,
+  "updated": "2025-12-06"
+}

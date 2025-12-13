@@ -1,0 +1,91 @@
+# =============================================================================
+# ProjT Launcher - Team Synchronization
+# =============================================================================
+# Synchronizes GitHub team information for CI purposes.
+# Runs weekly to keep team data up to date.
+# =============================================================================
+
+name: Teams
+
+on:
+  schedule:
+    # Every Monday at 03:00 UTC
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sync:
+    name: Sync Team Data
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule' || github.repository_owner == 'Project-Tick'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+          sparse-checkout: |
+            ci/github-script
+            .github/teams.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd ci/github-script
+          npm install
+          npm ci --omit=dev
+
+      - name: Synchronize teams
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const getTeams = require('./ci/github-script/get-teams.js');
+            
+            await getTeams({
+              github,
+              context,
+              core,
+              outFile: '.github/teams.json',
+            });
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet .github/teams.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create PR if changed
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          branch="ci/update-teams-$(date +%Y%m%d)"
+          git checkout -b "$branch"
+          git add .github/teams.json
+          git commit -m "ci: update team data"
+          git push -u origin "$branch"
+          
+          gh pr create \
+            --title "ci: update team data" \
+            --body "Automated team data synchronization from GitHub." \
+            --base develop \
+            --head "$branch"
+        env:
+          GH_TOKEN: ${{ github.token }}
