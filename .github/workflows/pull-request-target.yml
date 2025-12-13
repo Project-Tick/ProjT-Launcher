@@ -15,7 +15,8 @@ concurrency:
   group: pr-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   # Prepare PR information
