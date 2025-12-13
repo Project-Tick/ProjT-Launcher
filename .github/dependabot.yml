@@ -1,7 +1,40 @@
 version: 2
+
 updates:
-  - package-ecosystem: "github-actions"
+  # Keep GitHub Actions up to date
+  - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: "weekly" # force refresh
-    labels: []
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: "UTC"
+    labels: ["dependencies", "ci"]
+    rebase-strategy: auto
+    commit-message:
+      prefix: "deps"
+      include: scope
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # Update CI helper scripts (npm) in ci/github-script
+  - package-ecosystem: npm
+    directory: /ci/github-script
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "03:00"
+      timezone: "UTC"
+    labels: ["dependencies", "ci", "npm"]
+    open-pull-requests-limit: 5
+    rebase-strategy: auto
+    versioning-strategy: increase
+    commit-message:
+      prefix: "deps"
+      include: scope
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
