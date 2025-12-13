@@ -119,6 +119,47 @@ jobs:
       contents: read
       packages: write
 
+  label-prefix:
+    name: Enforce PR title prefix
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Enforce title prefix
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs')
+            const path = '.github/labeler.yml'
+            const pr = context.payload.pull_request
+
+            if (!fs.existsSync(path)) {
+              core.setFailed('labeler.yml not found; cannot enforce prefixes.')
+              return
+            }
+
+            const yaml = fs.readFileSync(path, 'utf8')
+            // Grab top-level labels with no spaces
+            const matches = [...yaml.matchAll(/^([A-Za-z0-9_.:-]+):\s*$/gm)].map(m => m[1])
+            const allowed = matches.filter(l => !/\s/.test(l))
+
+            if (allowed.length === 0) {
+              core.setFailed('No usable labels found in labeler.yml for prefix enforcement.')
+              return
+            }
+
+            const escaped = allowed.map(l => l.replace(/[[\]{}()*+?.\\^$|]/g, '\\$&'))
+            const prefixPattern = new RegExp(`^\\[(${escaped.join('|')})\\]\\s+`)
+
+            if (!prefixPattern.test(pr.title)) {
+              core.setFailed(`PR title must start with one of: ${allowed.map(p => `[${p}]`).join(' ')}`)
+            } else {
+              core.info('PR title prefix OK')
+            }
+
   # Run tests
   test:
     name: Test
