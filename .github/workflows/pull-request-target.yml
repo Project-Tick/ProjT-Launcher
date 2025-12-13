@@ -132,27 +132,9 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            const fs = require('fs')
-            const path = '.github/labeler.yml'
+            const allowed = ['ci','build','docs','feat','fix','refactor','test','chore','deps']
             const pr = context.payload.pull_request
-
-            if (!fs.existsSync(path)) {
-              core.setFailed('labeler.yml not found; cannot enforce prefixes.')
-              return
-            }
-
-            const yaml = fs.readFileSync(path, 'utf8')
-            // Grab top-level labels with no spaces
-            const matches = [...yaml.matchAll(/^([A-Za-z0-9_.:-]+):\s*$/gm)].map(m => m[1])
-            const allowed = matches.filter(l => !/\s/.test(l))
-
-            if (allowed.length === 0) {
-              core.setFailed('No usable labels found in labeler.yml for prefix enforcement.')
-              return
-            }
-
-            const escaped = allowed.map(l => l.replace(/[[\]{}()*+?.\\^$|]/g, '\\$&'))
-            const prefixPattern = new RegExp(`^\\[(${escaped.join('|')})\\]\\s+`)
+            const prefixPattern = new RegExp(`^\\[(${allowed.join('|')})\\]\\s+`)
 
             if (!prefixPattern.test(pr.title)) {
               core.setFailed(`PR title must start with one of: ${allowed.map(p => `[${p}]`).join(' ')}`)
