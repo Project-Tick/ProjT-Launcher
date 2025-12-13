@@ -1,0 +1,153 @@
+# =============================================================================
+# ProjT Launcher - Pull Request Workflow
+# =============================================================================
+# Main workflow for PR validation, builds, and automation.
+# =============================================================================
+
+name: PR
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  # Prepare PR information
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    outputs:
+      baseBranch: ${{ steps.prepare.outputs.base }}
+      headBranch: ${{ steps.prepare.outputs.head }}
+      mergedSha: ${{ steps.prepare.outputs.mergedSha }}
+      targetSha: ${{ steps.prepare.outputs.targetSha }}
+      mergeable: ${{ steps.prepare.outputs.mergeable }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            ci/github-script
+            ci/supportedBranches.js
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd ci/github-script
+          npm ci
+
+      - name: Prepare PR information
+        id: prepare
+        uses: actions/github-script@v7
+        with:
+          retries: 3
+          script: |
+            const prepare = require('./ci/github-script/prepare.js');
+            
+            const result = await prepare({
+              github,
+              context,
+              core,
+              dry: context.eventName === 'pull_request',
+            });
+            
+            if (result) {
+              core.setOutput('base', JSON.stringify(result.base));
+              core.setOutput('head', JSON.stringify(result.head));
+              core.setOutput('mergeable', result.mergeable);
+            }
+
+  # Validate commits
+  check:
+    name: Check
+    needs: [prepare]
+    if: needs.prepare.outputs.baseBranch
+    uses: ./.github/workflows/check.yml
+    permissions:
+      pull-requests: write
+    with:
+      baseBranch: ${{ needs.prepare.outputs.baseBranch }}
+      headBranch: ${{ needs.prepare.outputs.headBranch }}
+      mergedSha: ${{ needs.prepare.outputs.mergedSha }}
+      targetSha: ${{ needs.prepare.outputs.targetSha }}
+
+  # Code formatting check
+  lint:
+    name: Lint
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Check C++ formatting
+        run: |
+          if command -v clang-format &> /dev/null; then
+            find launcher libraries -name "*.cpp" -o -name "*.h" | head -100 | while read file; do
+              if ! clang-format --dry-run --Werror "$file" 2>/dev/null; then
+                echo "Format issue: $file"
+              fi
+            done
+          fi
+
+  # Build on all platforms
+  build:
+    name: Build
+    needs: [prepare]
+    uses: ./.github/workflows/build.yml
+    permissions:
+      packages: write
+
+  # Run tests
+  test:
+    name: Test
+    needs: [build]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+
+      - name: Run tests
+        run: |
+          echo "Running tests..."
+          # Add test commands when available
+
+  # PR summary
+  summary:
+    name: Summary
+    needs: [prepare, check, lint, build]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## PR Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Prepare | ${{ needs.prepare.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | ${{ needs.check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY

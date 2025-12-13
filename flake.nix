@@ -105,6 +105,7 @@
           packages' = self.packages.${system};
 
           welcomeMessage = ''
+
             Welcome to the ProjT Launcher repository! ✨
 
             We just set some things up for you. To get building, you can run:
@@ -139,6 +140,7 @@
 
             # Inspired by https://discourse.nixos.org/t/python-qt-woes/11808/10
             buildCommand = ''
+
               makeQtWrapper ${lib.getExe pkgs.runtimeShellPackage} "$out"
               sed -i '/^exec/d' "$out"
             '';
@@ -161,6 +163,7 @@
             dontFixCmake = true;
 
             shellHook = ''
+
               echo "Sourcing ${qt-wrapper-env}"
               source ${qt-wrapper-env}
 
@@ -211,26 +214,23 @@
         in
 
         # Only output them if they're available on the current system
-        lib.filterAttrs (_: lib.meta.availableOn pkgs.stdenv.hostPlatform) packages
+        packages
       );
 
       # We put these under legacyPackages as they are meant for CI, not end user consumption
       legacyPackages = forAllSystems (
         system:
-
         let
           packages' = self.packages.${system};
-          legacyPackages' = self.legacyPackages.${system};
         in
-
         {
-          projtlauncher-debug = packages'.projtlauncher.override {
-            projtlauncher-unwrapped = legacyPackages'.projtlauncher-unwrapped-debug;
-          };
-
           projtlauncher-unwrapped-debug = packages'.projtlauncher-unwrapped.overrideAttrs {
             cmakeBuildType = "Debug";
             dontStrip = true;
+          };
+
+          projtlauncher-debug = packages'.projtlauncher.override {
+            projtlauncher-unwrapped = packages'.projtlauncher-unwrapped-debug;
           };
         }
       );

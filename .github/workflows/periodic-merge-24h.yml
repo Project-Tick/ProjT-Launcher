@@ -1,0 +1,73 @@
+# =============================================================================
+# ProjT Launcher - Periodic Branch Merge (Daily)
+# =============================================================================
+# Periodically merges develop into release branches to keep them up to date.
+# =============================================================================
+
+name: "Periodic Merges (Daily)"
+
+on:
+  schedule:
+    # Run daily at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      from:
+        description: 'Source branch'
+        required: true
+        default: 'develop'
+      into:
+        description: 'Target branch'
+        required: true
+        default: 'qml_migration'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  periodic-merge:
+    name: Merge ${{ matrix.pairs.from }} → ${{ matrix.pairs.into }}
+    if: github.repository_owner == 'YongDo-Hyun'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        pairs:
+          - from: develop
+            into: qml_migration
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ github.token }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge branches
+        run: |
+          FROM="${{ matrix.pairs.from }}"
+          INTO="${{ matrix.pairs.into }}"
+          
+          echo "Merging $FROM into $INTO"
+          
+          git fetch origin "$FROM" "$INTO"
+          git checkout "$INTO"
+          
+          if git merge --no-edit "origin/$FROM"; then
+            git push origin "$INTO"
+            echo "✅ Merge successful"
+          else
+            echo "❌ Merge conflicts detected"
+            git merge --abort
+            exit 1
+          fi
