@@ -34,7 +34,7 @@ jobs:
             ci/supportedSystems.json
 
       - id: prepare
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           MERGED_SHA: ${{ inputs.mergedSha }}
           TARGET_SHA: ${{ inputs.targetSha }}
@@ -91,7 +91,7 @@ jobs:
     permissions:
       statuses: write
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         env:
           RESULTS: ${{ toJSON(needs.*.result) }}
         with:

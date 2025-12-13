@@ -48,7 +48,7 @@ jobs:
 
       - name: Create backport PR
         if: steps.target.outputs.target_branch != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const branch = '${{ steps.target.outputs.target_branch }}';
