@@ -21,6 +21,7 @@ const COMMIT_TYPES = [
   'chore',     // Maintenance tasks
   'revert',    // Revert changes
   'deps',      // Dependency updates
+  'deps(deps)', // Dependency updates (explicit)
 ]
 
 // Component scopes for ProjT Launcher

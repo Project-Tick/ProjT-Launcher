@@ -14,6 +14,9 @@ on:
   
   pull_request_target:
     types: [opened, synchronize, reopened, labeled, unlabeled]
+
+  issue_comment:
+    types: [created]
   
   workflow_dispatch:
     inputs:
@@ -160,4 +163,55 @@ jobs:
                 const { data } = await github.rest.users.getByUsername({ username: String(id) });
                 return data;
               },
+            });
+
+  review-on-comment:
+    name: Re-run bot on command
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@projt-launcher-bot') &&
+      contains(github.event.comment.body, 'review') &&
+      (github.event.comment.author_association == 'OWNER' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'COLLABORATOR')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            ci/github-script
+            .github/CODEOWNERS
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd ci/github-script
+          npm ci --omit=dev
+
+      - name: Run bot on PR
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const prNumber = context.payload.issue.number;
+            const { data: pull_request } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: prNumber,
+            });
+
+            // Inject PR into context for bot.js
+            context.payload.pull_request = pull_request;
+
+            const bot = require('./ci/github-script/bot.js');
+            await bot({
+              github,
+              context,
+              core,
+              dry: false,
             });
