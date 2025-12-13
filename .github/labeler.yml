@@ -15,6 +15,21 @@ ci:
           - .markdownlintignore
           - renovate.json
 
+ci-scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ci/github-script/**/*
+          - .github/workflows/**/*.yml
+
+ci-config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ci/pinned.json
+          - ci/supportedSystems.json
+          - ci/supportedBranches.js
+          - ci/default.nix
+          - ci/eval/**/*
+
 launcher:
   - changed-files:
       - any-glob-to-any-file:
@@ -22,6 +37,7 @@ launcher:
           - launcher/**/*.sh
           - launcher/**/*.bat
           - launcher/**/*.ps1
+          - launcher/CMakeLists.txt
 
 launcher-ui:
   - changed-files:
@@ -29,6 +45,9 @@ launcher-ui:
           - launcher/ui/**/*
           - launcher/resources/**/*
           - launcher/qtquick/**/*
+          - launcher/resources/**/*
+          - launcher/icons/**/*
+          - launcher/news/**/*
 
 launcher-updater:
   - changed-files:
@@ -40,13 +59,18 @@ launcher-modplatform:
       - any-glob-to-any-file:
           - launcher/modplatform/**/*
           - launcher/minecraft/**/*
+          - launcher/minecraft/**/*
+          - launcher/launch/**/*
 
 launcher-settings:
   - changed-files:
       - any-glob-to-any-file:
           - launcher/settings/**/*
           - launcher/tasks/**/*
+          - launcher/meta/**/*
           - launcher/logs/**/*
+          - launcher/tools/**/*
+          - launcher/console/**/*
 
 launcher-java:
   - changed-files:
@@ -59,12 +83,27 @@ launcher-network:
       - any-glob-to-any-file:
           - launcher/net/**/*
           - launcher/filelink/**/*
+          - launcher/console/**/*
 
 libraries:
   - changed-files:
       - any-glob-to-any-file:
           - libraries/**/*.{cpp,h,mm}
           - libraries/**/CMakeLists.txt
+          - libraries/**/CMakeLists.txt.in
+          - libraries/**/README.md
+          - libraries/systeminfo/**/*
+          - libraries/qdcss/**/*
+          - libraries/rainbow/**/*
+          - libraries/tomlplusplus/**/*
+          - libraries/libnbtplusplus/**/*
+          - libraries/quazip/**/*
+          - libraries/murmur2/**/*
+          - libraries/qrcodegenerator/**/*
+          - libraries/LocalPeer/**/*
+          - libraries/launcher/**/*
+          - libraries/gamemode/**/*
+          - libraries/javacheck/**/*
 
 build-system:
   - changed-files:
@@ -75,6 +114,8 @@ build-system:
           - buildconfig/**/*
           - vcpkg.json
           - vcpkg-configuration.json
+          - vcpkg-ports/**/*
+          - vcpkg-triplets/**/*
 
 packaging:
   - changed-files:
@@ -91,6 +132,7 @@ packaging:
           - flake.lock
           - default.nix
           - shell.nix
+          - program_info/**/*
 
 docs:
   - changed-files:
@@ -100,22 +142,27 @@ docs:
           - CONTRIBUTING.md
           - CODE_OF_CONDUCT.md
           - SECURITY.md
+          - .github/workflows/README.md
 
 tests:
   - changed-files:
       - any-glob-to-any-file:
           - tests/**/*
+          - ci/github-script/test/**/*
 
 scripts:
   - changed-files:
       - any-glob-to-any-file:
           - scripts/**/*
           - tools/**/*
+          - launcher/tools/**/*
 
 translations:
   - changed-files:
       - any-glob-to-any-file:
-          - translations/**/*
+          - launcher/translations/**/*
+          - launcher/resources/translations/**/*
+          - translations/**/*.{po,pot,ts,txt,json}
 
 Linux:
   - changed-files:
