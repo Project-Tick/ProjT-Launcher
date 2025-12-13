@@ -7,7 +7,8 @@
 # This file uses the same syntax as the natively supported CODEOWNERS file,
 # see https://help.github.com/articles/about-codeowners/ for documentation.
 #
-# Processing of this file is implemented in workflows/codeowners-v2.yml
+# This file is an OWNERS/CODEOWNERS-style mapping for this repository.
+# It is not automatically enforced unless a validator is wired into CI.
 #
 # ProjT Launcher is a Qt6/QML-based Minecraft launcher
 # Repository: YongDo-Hyun/ProjT-Launcher

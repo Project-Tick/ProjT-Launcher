@@ -15,6 +15,7 @@
   lib,
   runCommand,
   cmake,
+  nix,
   jq,
 }:
 
@@ -60,7 +61,7 @@ let
         mkdir -p $out
         cd $src
 
-        echo "=== Validating CMakeLists.txt syntax ==="
+        echo "=== Validating CMakeLists.txt (basic) ==="
 
         # Check main CMakeLists.txt exists
         if [ ! -f CMakeLists.txt ]; then
@@ -68,8 +69,16 @@ let
           exit 1
         fi
 
-        # Validate CMakeLists.txt can be parsed
-        cmake --trace-expand -P CMakeLists.txt 2>&1 | head -50 || true
+        # Basic sanity checks (cheap and dependency-free)
+        if ! grep -Eq '^[[:space:]]*cmake_minimum_required\\(' CMakeLists.txt; then
+          echo "ERROR: Missing cmake_minimum_required(...)"
+          exit 1
+        fi
+
+        if ! grep -Eq '^[[:space:]]*project\\(' CMakeLists.txt; then
+          echo "ERROR: Missing project(...)"
+          exit 1
+        fi
 
         echo "CMake validation passed" > $out/cmake.txt
       '';
@@ -164,6 +173,7 @@ let
     runCommand "projt-validate-nix"
       {
         src = projectSrc;
+        nativeBuildInputs = [ nix ];
       }
       ''
         mkdir -p $out
@@ -218,7 +228,7 @@ let
         # Check required directories exist
         for dir in launcher libraries cmake buildconfig program_info; do
           if [ -d "$dir" ]; then
-            echo "✓ Directory exists: $dir"
+            echo "OK: Directory exists: $dir"
           else
             echo "WARNING: Expected directory not found: $dir"
           fi
@@ -226,7 +236,7 @@ let
 
         # Check launcher source files
         if [ -f launcher/Application.cpp ] && [ -f launcher/Application.h ]; then
-          echo "✓ Core launcher files found"
+          echo "OK: Core launcher files found"
         else
           echo "WARNING: Core launcher files may be missing"
         fi
@@ -269,11 +279,11 @@ let
 
         | Check | Status |
         |-------|--------|
-        | CMake | ✅ Passed |
-        | vcpkg | ✅ Passed |
-        | Presets | ✅ Passed |
-        | Nix | ✅ Passed |
-        | Structure | ✅ Passed |
+        | CMake | Passed |
+        | vcpkg | Passed |
+        | Presets | Passed |
+        | Nix | Passed |
+        | Structure | Passed |
 
         All validation checks completed successfully.
         EOF

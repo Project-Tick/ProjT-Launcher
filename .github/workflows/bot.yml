@@ -58,7 +58,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ci/github-script
-          npm ci
+          npm ci --omit=dev
 
       - name: Log API rate limits
         env:
@@ -120,7 +120,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ci/github-script
-          npm ci
+          npm ci --omit=dev
 
       - name: Assign reviewers
         uses: actions/github-script@v7

@@ -44,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ci/github-script
-          npm ci
+          npm ci --omit=dev
 
       - name: Synchronize teams
         uses: actions/github-script@v7
@@ -88,4 +88,3 @@ jobs:
             --head "$branch"
         env:
           GH_TOKEN: ${{ github.token }}
-

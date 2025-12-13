@@ -1,6 +1,6 @@
 # ProjT Launcher CI Evaluation
 
-The code in this directory is used by the [eval.yml](../../.github/workflows/eval.yml) GitHub Actions workflow to validate project configuration for PRs, ensuring the CMake project structure and Nix flake are correct.
+This directory contains Nix helpers for validating repository configuration locally (and can be wired into CI if desired).
 
 ## Purpose
 
@@ -71,10 +71,4 @@ The evaluation checks:
 
 ## CI Integration
 
-The evaluation workflow runs on:
-
-- All pull requests
-- Push to develop/release branches
-- Merge queue validation
-
-Results are reported in the PR checks.
+There is currently no dedicated `eval.yml` workflow in `.github/workflows/`. If you want to run these checks in CI, add a workflow that runs `nix build`/`nix develop` and calls the targets described above.

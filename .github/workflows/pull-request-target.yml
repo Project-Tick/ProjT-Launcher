@@ -8,19 +8,21 @@ name: PR
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
 
 concurrency:
   group: pr-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   # Prepare PR information
   prepare:
     name: Prepare
+    if: github.event.action != 'edited' || github.event.changes.base.ref.from != github.event.pull_request.base.ref
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -47,7 +49,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ci/github-script
-          npm ci
+          npm ci --omit=dev
 
       - name: Prepare PR information
         id: prepare
@@ -113,6 +115,7 @@ jobs:
     needs: [prepare]
     uses: ./.github/workflows/build.yml
     permissions:
+      contents: read
       packages: write
 
   # Run tests
