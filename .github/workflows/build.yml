@@ -1,14 +1,6 @@
 name: Build-Test-Check
 
 on:
-  pull_request:
-    branches:
-      - "develop"
-      - "release-*"
-      - "qml_migration"
-    paths:
-      # File types
-      - "**"
   push:
     branches:
       - "develop"
@@ -40,7 +32,7 @@ on:
       qt-version:
         description: Version of Qt to use
         required: true
-        default: 6.9.3
+        default: 6.10.0
       qt-architecture:
         description: Qt architecture
         required: false

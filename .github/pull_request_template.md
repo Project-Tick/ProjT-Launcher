@@ -1,4 +1,4 @@
-# Pull Request Template
+# Project Tick Launcher Pull Request
 
 ## Description
 <!-- Summarize the changes and why they are needed. -->
