@@ -1496,12 +1496,15 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+
     steps:
-      - name: Create work directory
-        run: |
-          mkdir -p ${GITHUB_WORKSPACE}/work/tmp
-          mkdir -p ${GITHUB_WORKSPACE}/flatpak
-          chmod -R 777 ${GITHUB_WORKSPACE}/work
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: true
 
       - name: Free up disk space
         run: |
@@ -1533,37 +1536,17 @@ jobs:
           timeout 5 free -h --giga || true
           timeout 120 sudo du -xh --max-depth=3 / 2>/dev/null | sort -rh | head -40 || true
 
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          submodules: true
-
       - name: Set short version
         shell: bash
         run: |
           echo "VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
       - name: Build Flatpak
-        run: |
-          docker run --rm \
-            --security-opt apparmor=unconfined \
-            --cap-drop all \
-            --entrypoint="" \
-            -e TMPDIR=/work/tmp \
-            -v /proc:/host/proc \
-            -v "${GITHUB_WORKSPACE}:/repo" \
-            -v "${GITHUB_WORKSPACE}/work:/work" \
-            -v "${GITHUB_WORKSPACE}/flatpak:/home/flatbld/.local/share/flatpak" \
-            -w /repo \
-            -e APP_ID="tr.org.yongdohyun.ProjTLauncher" \
-            -e REF="master" \
-            -e BUILD_ARCH="${{ matrix.arch }}" \
-            ghcr.io/flathub-infra/flatpak-builder-lint:unprivileged
-            /bin/bash -c "
-              flatpak-builder --user --install --force-clean \
-              /work/build-dir \
-              /repo/flatpak/tr.org.yongdohyun.ProjTLauncher.yml || exit 1
-            "
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: ProjTLauncher-${{ runner.os }}-${{ env.VERSION }}-Flatpak.flatpak
+          manifest-path: flatpak/tr.org.yongdohyun.ProjTLauncher.yml
+          arch: ${{ matrix.arch }}
 
   nix-system-build:
     name: Build via Nix (${{ matrix.system }})
