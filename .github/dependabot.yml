@@ -9,7 +9,7 @@ updates:
       day: monday
       time: "03:00"
       timezone: "UTC"
-    labels: ["dependencies", "ci"]
+    labels: ["11.dependencies", "1.main-ci-changes"]
     rebase-strategy: auto
     commit-message:
       prefix: "deps"
@@ -27,7 +27,7 @@ updates:
       day: tuesday
       time: "03:00"
       timezone: "UTC"
-    labels: ["dependencies", "ci", "npm"]
+    labels: ["11.dependencies", "1.main-ci-changes", "12.npm"]
     open-pull-requests-limit: 5
     rebase-strategy: auto
     versioning-strategy: increase
