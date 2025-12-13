@@ -4,7 +4,25 @@
  */
 
 module.exports = async ({ github, core, maxConcurrent = 1 }, callback) => {
-  const Bottleneck = require('bottleneck')
+  let Bottleneck
+  try {
+    Bottleneck = require('bottleneck')
+  } catch (err) {
+    core?.warning?.('bottleneck not installed; running without explicit rate limiting')
+    Bottleneck = class {
+      constructor() {}
+      wrap(fn) {
+        return (...args) => fn(...args)
+      }
+      chain() {
+        return this
+      }
+      schedule(fn, ...args) {
+        return fn(...args)
+      }
+      updateSettings() {}
+    }
+  }
 
   const stats = {
     issues: 0,
