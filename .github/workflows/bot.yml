@@ -58,6 +58,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ci/github-script
+          npm install
           npm ci --omit=dev
 
       - name: Log API rate limits

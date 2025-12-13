@@ -15,6 +15,67 @@ ci:
           - .markdownlintignore
           - renovate.json
 
+launcher:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/**/*.{cpp,h,mm,qml,ui,json,yml,xml,js}
+          - launcher/**/*.sh
+          - launcher/**/*.bat
+          - launcher/**/*.ps1
+
+launcher-ui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/ui/**/*
+          - launcher/resources/**/*
+          - launcher/qtquick/**/*
+
+launcher-updater:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/updater/**/*
+
+launcher-modplatform:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/modplatform/**/*
+          - launcher/minecraft/**/*
+
+launcher-settings:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/settings/**/*
+          - launcher/tasks/**/*
+          - launcher/logs/**/*
+
+launcher-java:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/java/**/*
+          - launcher/launch/**/*
+
+launcher-network:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/net/**/*
+          - launcher/filelink/**/*
+
+libraries:
+  - changed-files:
+      - any-glob-to-any-file:
+          - libraries/**/*.{cpp,h,mm}
+          - libraries/**/CMakeLists.txt
+
+build-system:
+  - changed-files:
+      - any-glob-to-any-file:
+          - CMakeLists.txt
+          - CMakePresets.json
+          - cmake/**/*
+          - buildconfig/**/*
+          - vcpkg.json
+          - vcpkg-configuration.json
+
 packaging:
   - changed-files:
       - any-glob-to-any-file:
@@ -30,6 +91,31 @@ packaging:
           - flake.lock
           - default.nix
           - shell.nix
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**/*
+          - README.md
+          - CONTRIBUTING.md
+          - CODE_OF_CONDUCT.md
+          - SECURITY.md
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - tests/**/*
+
+scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - scripts/**/*
+          - tools/**/*
+
+translations:
+  - changed-files:
+      - any-glob-to-any-file:
+          - translations/**/*
 
 Linux:
   - changed-files:
