@@ -20,6 +20,7 @@ const COMMIT_TYPES = [
   'ci',        // CI configuration
   'chore',     // Maintenance tasks
   'revert',    // Revert changes
+  'deps',      // Dependency updates
 ]
 
 // Component scopes for ProjT Launcher
@@ -43,6 +44,7 @@ const VALID_SCOPES = [
   'build',
   'nix',
   'vcpkg',
+  'deps',
 ]
 
 /**
