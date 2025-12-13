@@ -1,14 +1,6 @@
 name: Build-Test-Check
 
 on:
-  pull_request:
-    branches:
-      - "develop"
-      - "release-*"
-      - "qml_migration"
-    paths:
-      # File types
-      - "**"
   push:
     branches:
       - "develop"
