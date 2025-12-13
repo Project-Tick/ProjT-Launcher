@@ -53,7 +53,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Merge branches
+      - name: Merge branches (auto-resolve conflicts preferring source)
         run: |
           FROM="${{ matrix.pairs.from }}"
           INTO="${{ matrix.pairs.into }}"
@@ -63,7 +63,8 @@ jobs:
           git fetch origin "$FROM" "$INTO"
           git checkout "$INTO"
           
-          if git merge --no-edit "origin/$FROM"; then
+          # Use -X theirs to prefer the source branch on conflicts
+          if git merge --no-edit -X theirs "origin/$FROM"; then
             git push origin "$INTO"
             echo "✅ Merge successful"
           else
