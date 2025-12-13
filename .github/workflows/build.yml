@@ -950,13 +950,13 @@ jobs:
         continue-on-error: false
 
       - name: Upload build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-results-${{ matrix.artifact-name }}
@@ -1050,13 +1050,13 @@ jobs:
         continue-on-error: false
 
       - name: Upload build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-results-${{ matrix.artifact-name }}
@@ -1147,13 +1147,13 @@ jobs:
         continue-on-error: false
 
       - name: Upload build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-results-${{ matrix.artifact-name }}
@@ -1246,13 +1246,13 @@ jobs:
         continue-on-error: false
 
       - name: Upload build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-results-${{ matrix.artifact-name }}
@@ -1345,13 +1345,13 @@ jobs:
         continue-on-error: false
 
       - name: Upload build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-results-${{ matrix.artifact-name }}
@@ -1438,13 +1438,13 @@ jobs:
         continue-on-error: false
 
       - name: Upload build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-${{ matrix.artifact-name }}
           path: build/
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-results-${{ matrix.artifact-name }}
@@ -1587,7 +1587,7 @@ jobs:
 
       - name: Upload Nix package
         if: steps.build-result.outputs.has-result == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ProjTLauncher-Nix-${{ matrix.system }}-${{ github.sha }}
           path: result/**/*
