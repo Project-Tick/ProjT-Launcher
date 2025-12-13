@@ -4,7 +4,7 @@
 - Our stale bot will never close an issue or PR.
 - To remove the stale label, just leave a new comment.
 - _How to find the right people to ping?_ &rarr; [`git blame`](https://git-scm.com/docs/git-blame) to the rescue! (or GitHub's history and blame buttons.)
-- If you need user support (not a bug), please ask in our Matrix support room: https://matrix.to/#/#projt-support:matrix.org
+- If you need user support (not a bug), please ask in our Matrix support room: <https://matrix.to/#/#projt-support:matrix.org>
 
 ## Suggestions for PRs
 
