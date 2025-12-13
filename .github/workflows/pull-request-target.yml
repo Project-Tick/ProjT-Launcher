@@ -8,7 +8,7 @@ name: PR
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
 
 concurrency:
@@ -21,6 +21,7 @@ jobs:
   # Prepare PR information
   prepare:
     name: Prepare
+    if: github.event.action != 'edited' || github.event.changes.base.ref.from != github.event.pull_request.base.ref
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write

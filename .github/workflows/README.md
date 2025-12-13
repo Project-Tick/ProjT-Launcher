@@ -13,7 +13,7 @@ The workflows are organized by functionality:
 - **`bot.yml`**: PR automation (labeling, assigning reviewers, scheduled maintenance)
 - **`comment.yml`**: Handles bot commands in PR comments
 - **`review.yml`** / **`reviewed.yml`**: Review event handling and status updates
-- **`edited.yml`**: Re-triggers CI when PR base branch changes
+- **`edited.yml`**: Re-runs labeler when PR base branch changes
 
 ### Builds & Releases
 
