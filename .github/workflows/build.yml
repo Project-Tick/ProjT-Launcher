@@ -120,7 +120,7 @@ permissions:
 
 jobs:
   prepare:
-    uses: ./.github/workflows/buildsystem-check-prepare.yml
+    uses: ./.github/buildsystem/buildsystem-check-prepare.yml
     with:
       build-type: ${{ github.event.inputs.build-type || 'Debug' }}
       version: ${{ github.event.inputs.version }}
@@ -150,7 +150,7 @@ jobs:
 
   verify-vcpkg:
     needs: prepare
-    uses: ./.github/workflows/buildsystem-check-verify-vcpkg.yml
+    uses: ./.github/buildsystem/buildsystem-check-verify-vcpkg.yml
     with:
       build-type: ${{ github.event.inputs.build-type || 'Debug' }}
       version: ${{ github.event.inputs.version }}
@@ -180,7 +180,7 @@ jobs:
 
   flake-check:
     needs: prepare
-    uses: ./.github/workflows/buildsystem-check-flake-check.yml
+    uses: ./.github/buildsystem/buildsystem-check-flake-check.yml
     with:
       build-type: ${{ github.event.inputs.build-type || 'Debug' }}
       version: ${{ github.event.inputs.version }}
@@ -210,7 +210,7 @@ jobs:
 
   project-checkout:
     needs: prepare
-    uses: ./.github/workflows/buildsystem-check-project-checkout.yml
+    uses: ./.github/buildsystem/buildsystem-check-project-checkout.yml
     with:
       build-type: ${{ github.event.inputs.build-type || 'Debug' }}
       version: ${{ github.event.inputs.version }}
@@ -240,7 +240,7 @@ jobs:
 
   cmake-linux-preset-config:
     needs: project-checkout
-    uses: ./.github/workflows/buildsystem-cmake-preset-linux.yml
+    uses: ./.github/buildsystem/buildsystem-cmake-preset-linux.yml
     permissions:
       contents: read
       packages: write
@@ -273,7 +273,7 @@ jobs:
 
   cmake-linux-arm64-preset-config:
     needs: project-checkout
-    uses: ./.github/workflows/buildsystem-cmake-preset-linux-arm64.yml
+    uses: ./.github/buildsystem/buildsystem-cmake-preset-linux-arm64.yml
     permissions:
       contents: read
       packages: write
@@ -306,7 +306,7 @@ jobs:
 
   cmake-windows-mingw-preset-config:
     needs: [verify-vcpkg, project-checkout]
-    uses: ./.github/workflows/buildsystem-cmake-preset-windows-mingw.yml
+    uses: ./.github/buildsystem/buildsystem-cmake-preset-windows-mingw.yml
     permissions:
       contents: read
       packages: write
@@ -339,7 +339,7 @@ jobs:
 
   cmake-windows-mingw-arm64-preset-config:
     needs: [verify-vcpkg, project-checkout]
-    uses: ./.github/workflows/buildsystem-cmake-preset-windows-mingw-arm64.yml
+    uses: ./.github/buildsystem/buildsystem-cmake-preset-windows-mingw-arm64.yml
     permissions:
       contents: read
       packages: write
@@ -372,7 +372,7 @@ jobs:
 
   cmake-windows-msvc-preset-config:
     needs: [verify-vcpkg, project-checkout]
-    uses: ./.github/workflows/buildsystem-cmake-preset-windows-msvc.yml
+    uses: ./.github/buildsystem/buildsystem-cmake-preset-windows-msvc.yml
     permissions:
       contents: read
       packages: write
@@ -405,7 +405,7 @@ jobs:
 
   cmake-windows-msvc-arm64-preset-config:
     needs: [verify-vcpkg, project-checkout]
-    uses: ./.github/workflows/buildsystem-cmake-preset-windows-msvc-arm64.yml
+    uses: ./.github/buildsystem/buildsystem-cmake-preset-windows-msvc-arm64.yml
     permissions:
       contents: read
       packages: write
@@ -438,7 +438,7 @@ jobs:
 
   cmake-macos-preset-config:
     needs: project-checkout
-    uses: ./.github/workflows/buildsystem-cmake-preset-macos.yml
+    uses: ./.github/buildsystem/buildsystem-cmake-preset-macos.yml
     permissions:
       contents: read
       packages: write
@@ -472,7 +472,7 @@ jobs:
   CodeQL:
     needs: project-checkout
     if: github.event_name != 'pull_request'
-    uses: ./.github/workflows/buildsystem-codeql.yml
+    uses: ./.github/buildsystem/buildsystem-codeql.yml
     permissions:
       actions: read
       contents: read
@@ -506,7 +506,7 @@ jobs:
 
   build-linux:
     needs: cmake-linux-preset-config
-    uses: ./.github/workflows/buildsystem-build-linux.yml
+    uses: ./.github/buildsystem/buildsystem-build-linux.yml
     permissions:
       contents: read
       packages: write
@@ -540,7 +540,7 @@ jobs:
 
   build-linux-arm64:
     needs: cmake-linux-arm64-preset-config
-    uses: ./.github/workflows/buildsystem-build-linux-arm64.yml
+    uses: ./.github/buildsystem/buildsystem-build-linux-arm64.yml
     permissions:
       contents: read
       packages: write
@@ -574,7 +574,7 @@ jobs:
 
   build-windows-msvc:
     needs: cmake-windows-msvc-preset-config
-    uses: ./.github/workflows/buildsystem-build-windows-msvc.yml
+    uses: ./.github/buildsystem/buildsystem-build-windows-msvc.yml
     permissions:
       contents: read
       packages: write
@@ -608,7 +608,7 @@ jobs:
 
   build-windows-msvc-arm64:
     needs: cmake-windows-msvc-arm64-preset-config
-    uses: ./.github/workflows/buildsystem-build-windows-msvc-arm64.yml
+    uses: ./.github/buildsystem/buildsystem-build-windows-msvc-arm64.yml
     permissions:
       contents: read
       packages: write
@@ -642,7 +642,7 @@ jobs:
 
   build-windows-mingw:
     needs: cmake-windows-mingw-preset-config
-    uses: ./.github/workflows/buildsystem-build-windows-mingw.yml
+    uses: ./.github/buildsystem/buildsystem-build-windows-mingw.yml
     permissions:
       contents: read
       packages: write
@@ -676,7 +676,7 @@ jobs:
 
   build-windows-mingw-arm64:
     needs: cmake-windows-mingw-arm64-preset-config
-    uses: ./.github/workflows/buildsystem-build-windows-mingw-arm64.yml
+    uses: ./.github/buildsystem/buildsystem-build-windows-mingw-arm64.yml
     permissions:
       contents: read
       packages: write
@@ -710,7 +710,7 @@ jobs:
 
   build-macos:
     needs: cmake-macos-preset-config
-    uses: ./.github/workflows/buildsystem-build-macos.yml
+    uses: ./.github/buildsystem/buildsystem-build-macos.yml
     permissions:
       contents: read
       packages: write
@@ -744,7 +744,7 @@ jobs:
 
   flatpak-build:
     needs: prepare
-    uses: ./.github/workflows/buildsystem-build-flatpak.yml
+    uses: ./.github/buildsystem/buildsystem-build-flatpak.yml
     with:
       build-type: ${{ github.event.inputs.build-type || 'Debug' }}
       version: ${{ github.event.inputs.version }}
@@ -774,7 +774,7 @@ jobs:
 
   nix-system-build:
     needs: flake-check
-    uses: ./.github/workflows/buildsystem-build-nix-system.yml
+    uses: ./.github/buildsystem/buildsystem-build-nix-system.yml
     with:
       build-type: ${{ github.event.inputs.build-type || 'Debug' }}
       version: ${{ github.event.inputs.version }}
@@ -811,7 +811,7 @@ jobs:
       - cmake-windows-msvc-arm64-preset-config
       - cmake-linux-preset-config
       - cmake-macos-preset-config
-    uses: ./.github/workflows/buildsystem-status-eval.yml
+    uses: ./.github/buildsystem/buildsystem-status-eval.yml
     secrets: inherit
     with:
       verify-vcpkg-result: ${{ needs.verify-vcpkg.result }}
@@ -824,7 +824,7 @@ jobs:
 
   codeql-status:
     needs: CodeQL
-    uses: ./.github/workflows/buildsystem-status-codeql.yml
+    uses: ./.github/buildsystem/buildsystem-status-codeql.yml
     secrets: inherit
     with:
       codeql-result: ${{ needs.CodeQL.result }}
@@ -838,7 +838,7 @@ jobs:
       - build-windows-mingw
       - build-windows-mingw-arm64
       - build-macos
-    uses: ./.github/workflows/buildsystem-status-build.yml
+    uses: ./.github/buildsystem/buildsystem-status-build.yml
     secrets: inherit
     with:
       build-linux-result: ${{ needs.build-linux.result }}
@@ -858,7 +858,7 @@ jobs:
       - build-windows-mingw
       - build-windows-mingw-arm64
       - build-macos
-    uses: ./.github/workflows/buildsystem-status-test.yml
+    uses: ./.github/buildsystem/buildsystem-status-test.yml
     secrets: inherit
     with:
       macos-result: ${{ needs.build-macos.result }}
