@@ -18,7 +18,7 @@ jobs:
   backport:
     name: Backport to Release Branch
     # Only run if PR is merged and has backport label
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'backport')
+    if: github.event.pull_request.merged == true && contains(join(github.event.pull_request.labels.*.name, ','), 'backport/')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -37,7 +37,8 @@ jobs:
         id: target
         run: |
           # Extract version from label like "backport/release-1.0" -> "release-1.0"
-          label=$(echo "${{ github.event.pull_request.labels[*].name }}" | grep -o "backport/release-[0-9.]*" | head -1)
+          labels="${{ join(github.event.pull_request.labels.*.name, ' ') }}"
+          label=$(echo "$labels" | tr ' ' '\n' | grep -E "^backport/release-[0-9A-Za-z._-]+$" | head -1)
           if [ -z "$label" ]; then
             echo "No valid backport label found"
             exit 0
