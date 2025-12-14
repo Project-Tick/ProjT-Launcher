@@ -1,6 +1,3 @@
-# ProjT Launcher Code Quality Checker
-# Validates code quality and consistency across the project
-
 {
   lib,
   runCommand,
