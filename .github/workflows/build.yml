@@ -1881,6 +1881,7 @@ jobs:
           
           macos_tests_result='${{ needs.build-macos.result }}'
           linux_tests_result='${{ needs.build-linux.result }}'
+          linux_arm64_tests_result='${{ needs.build-linux-arm64.result }}'
           windows_msvc_tests_result='${{ needs.build-windows-msvc.result }}'
           windows_msvc_arm64_tests_result='${{ needs.build-windows-msvc-arm64.result }}'
           windows_mingw_tests_result='${{ needs.build-windows-mingw.result }}'
@@ -1888,6 +1889,7 @@ jobs:
 
           echo "**macOS Unit Tests:** \`$macos_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Linux Unit Tests:** \`$linux_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Linux ARM64 Unit Tests:** \`$linux_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Windows MSVC Unit Tests:** \`$windows_msvc_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Windows MSVC ARM64 Unit Tests:** \`$windows_msvc_arm64_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Windows MinGW Unit Tests:** \`$windows_mingw_tests_result\`" >> $GITHUB_STEP_SUMMARY
@@ -1896,109 +1898,109 @@ jobs:
           
           if [[ "$macos_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**macOS Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$macos_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**macOS Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$macos_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**macOS Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**macOS Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
 
           if [[ "$linux_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Linux Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$linux_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**Linux Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$linux_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**Linux Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**Linux Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
           
           if [[ "$windows_msvc_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_msvc_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_msvc_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
 
           if [[ "$windows_mingw_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_mingw_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_mingw_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
 
           if [[ "$windows_msvc_arm64_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC ARM64 Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_msvc_arm64_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC ARM64 Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_msvc_arm64_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC ARM64 Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC ARM64 Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
 
           if [[ "$windows_mingw_arm64_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW ARM64 Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_mingw_arm64_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW ARM64 Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_mingw_arm64_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW ARM64 Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW ARM64 Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
 
