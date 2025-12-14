@@ -19,30 +19,30 @@ module.exports = async ({ github, context, core, dry }) => {
   const config = {
     // Labels for different types of changes
     labels: {
-      core: 'area:core',
-      ui: 'area:ui',
-      minecraft: 'area:minecraft',
-      modplatform: 'area:modplatform',
-      build: 'area:build',
-      ci: 'area:ci',
-      documentation: 'area:docs',
-      translations: 'area:translations',
+      core: '11.area:core',
+      ui: '11.area:ui',
+      minecraft: '11.area:minecraft',
+      modplatform: '11.area:modplatform',
+      build: '11.area:build',
+      ci: '11.area:ci',
+      documentation: '11.area:docs',
+      translations: '11.area:translations',
     },
     
     // Size labels based on lines changed
     sizeLabels: {
-      xs: { max: 10, label: 'size:xs' },
-      s: { max: 50, label: 'size:s' },
-      m: { max: 200, label: 'size:m' },
-      l: { max: 500, label: 'size:l' },
-      xl: { max: Infinity, label: 'size:xl' },
+      xs: { max: 10, label: '12.size:xs' },
+      s: { max: 50, label: '12.size:s' },
+      m: { max: 200, label: '12.size:m' },
+      l: { max: 500, label: '12.size:l' },
+      xl: { max: Infinity, label: '12.size:xl' },
     },
     
     // Platform labels
     platformLabels: {
-      linux: 'platform:linux',
-      macos: 'platform:macos',
-      windows: 'platform:windows',
+      linux: '13.platform:linux',
+      macos: '13.platform:macos',
+      windows: '13.platform:windows',
     },
   };
 
