@@ -105,12 +105,12 @@ let
             exit 1
           }
           
-          # Check required fields
-          jq -e '.name' vcpkg.json > /dev/null || {
-            echo "ERROR: vcpkg.json missing 'name' field"
-            exit 1
-          }
-          
+          if jq -e '.name' vcpkg.json > /dev/null; then
+            echo "INFO: vcpkg.json name field present: $(jq -r '.name' vcpkg.json)"
+          else
+            echo "WARNING: vcpkg.json missing 'name' field (optional for manifest mode)"
+          fi
+
           echo "vcpkg.json validation passed"
         else
           echo "WARNING: vcpkg.json not found (may not be using vcpkg)"
