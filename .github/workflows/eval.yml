@@ -19,7 +19,7 @@ defaults:
 
 jobs:
   eval:
-    name: Nix Evaluation
+    name: System Evaluation
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

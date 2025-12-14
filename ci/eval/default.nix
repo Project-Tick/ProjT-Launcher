@@ -70,12 +70,12 @@ let
         fi
 
         # Basic sanity checks (cheap and dependency-free)
-        if ! grep -Eq '^[[:space:]]*cmake_minimum_required[[:space:]]*\\(' CMakeLists.txt; then
+        if ! grep -Fqi 'cmake_minimum_required(' CMakeLists.txt; then
           echo "ERROR: Missing cmake_minimum_required(...)"
           exit 1
         fi
 
-        if ! grep -Eq '^[[:space:]]*project[[:space:]]*\\(' CMakeLists.txt; then
+        if ! grep -Fqi 'project(' CMakeLists.txt; then
           echo "ERROR: Missing project(...)"
           exit 1
         fi
