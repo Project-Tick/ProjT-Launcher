@@ -134,10 +134,10 @@ jobs:
       - name: Check for testable and buildable changes
         id: check
         run: |
-          # Always test on pull requests
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          # Always test on pull requests (including workflow_call carrying PR payload)
+          if [ -n "${{ github.event.pull_request.number || '' }}" ]; then
             echo "should-test=true" >> $GITHUB_OUTPUT
-            echo "Pull request detected — forcing test/build."
+            echo "Pull request context detected — forcing test/build."
             exit 0
           fi
 
