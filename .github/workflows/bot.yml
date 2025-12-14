@@ -95,6 +95,12 @@ jobs:
     if: github.event_name == 'pull_request_target'
     
     steps:
+      - name: Checkout config
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            .github/labeler.yml
+
       - name: Label PR by component
         uses: actions/labeler@v6
         with:

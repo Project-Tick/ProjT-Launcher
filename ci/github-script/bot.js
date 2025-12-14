@@ -19,32 +19,86 @@ module.exports = async ({ github, context, core, dry }) => {
   const config = {
     // Labels for different types of changes
     labels: {
-      core: 'area:core',
-      ui: 'area:ui',
-      minecraft: 'area:minecraft',
-      modplatform: 'area:modplatform',
-      build: 'area:build',
-      ci: 'area:ci',
-      documentation: 'area:docs',
-      translations: 'area:translations',
+      core: '11.area:core',
+      ui: '11.area:ui',
+      minecraft: '11.area:minecraft',
+      modplatform: '11.area:modplatform',
+      build: '11.area:build',
+      ci: '11.area:ci',
+      documentation: '11.area:docs',
+      translations: '11.area:translations',
     },
     
     // Size labels based on lines changed
     sizeLabels: {
-      xs: { max: 10, label: 'size:xs' },
-      s: { max: 50, label: 'size:s' },
-      m: { max: 200, label: 'size:m' },
-      l: { max: 500, label: 'size:l' },
-      xl: { max: Infinity, label: 'size:xl' },
+      xs: { max: 10, label: '12.size:xs' },
+      s: { max: 50, label: '12.size:s' },
+      m: { max: 200, label: '12.size:m' },
+      l: { max: 500, label: '12.size:l' },
+      xl: { max: Infinity, label: '12.size:xl' },
     },
     
     // Platform labels
     platformLabels: {
-      linux: 'platform:linux',
-      macos: 'platform:macos',
-      windows: 'platform:windows',
+      linux: '13.platform:linux',
+      macos: '13.platform:macos',
+      windows: '13.platform:windows',
     },
+
+    // Labels inferred from template checkboxes
+    templateTypeLabels: [
+      { option: 'Bug fix', candidates: ['21.type:bugfix', 'bug', 'Bug'] },
+      { option: 'Feature', candidates: ['21.type:feature', 'enhancement', 'Feature'] },
+      { option: 'Documentation', candidates: ['21.type:docs', 'documentation', 'docs'] },
+      { option: 'Refactor', candidates: ['21.type:refactor', 'refactor'] },
+      { option: 'Test', candidates: ['21.type:test', 'tests', 'test'] },
+      { option: 'Build / CI', candidates: ['21.type:build', 'ci', 'build'] },
+      { option: 'Other', candidates: ['21.type:other', 'other'] },
+    ],
   };
+
+  let repoLabelsPromise = null;
+
+  function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  async function getRepositoryLabels() {
+    if (!repoLabelsPromise) {
+      repoLabelsPromise = github
+        .paginate(github.rest.issues.listLabelsForRepo, {
+          ...context.repo,
+          per_page: 100,
+        })
+        .then(labels => new Set(labels.map(label => label.name)))
+        .catch(error => {
+          core.warning(`Could not fetch repository labels: ${error.message}`);
+          return new Set();
+        });
+    }
+    return repoLabelsPromise;
+  }
+
+  function getTemplateSelections(body = '') {
+    const normalized = body.replace(/\r/g, '');
+    const selections = [];
+    for (const entry of config.templateTypeLabels) {
+      const pattern = new RegExp(`- \\[[xX]\\]\\s+${escapeRegExp(entry.option)}(?:\\s|$)`);
+      if (pattern.test(normalized)) {
+        selections.push(entry);
+      }
+    }
+    return selections;
+  }
+
+  function resolveTemplateLabel(selection, repoLabels) {
+    for (const candidate of selection.candidates) {
+      if (repoLabels.has(candidate)) {
+        return candidate;
+      }
+    }
+    return null;
+  }
 
   // =============================================================================
   // Helper Functions
@@ -135,6 +189,7 @@ module.exports = async ({ github, context, core, dry }) => {
         ...context.repo,
         pull_number: pullNumber,
       });
+      const repoLabels = await getRepositoryLabels();
 
       log(pullNumber, 'Author', pullRequest.user?.login || 'unknown');
       log(pullNumber, 'Base', pullRequest.base.ref);
@@ -183,6 +238,17 @@ module.exports = async ({ github, context, core, dry }) => {
         }
       } else if (branchType.type) {
         labelsToAdd.add(`branch:${branchType.type}`);
+      }
+
+      // Labels inferred from PR template
+      const templateSelections = getTemplateSelections(pullRequest.body);
+      for (const selection of templateSelections) {
+        const resolved = resolveTemplateLabel(selection, repoLabels);
+        if (resolved) {
+          labelsToAdd.add(resolved);
+        } else {
+          log(pullNumber, 'Template type label missing', selection.option);
+        }
       }
 
       // Check for merge conflicts

@@ -4,7 +4,7 @@
   "description": "GitHub Actions scripts for ProjT Launcher CI",
   "private": true,
   "scripts": {
-    "test": "echo \"No tests configured\""
+    "test": "node test/commits.test.js"
   },
   "dependencies": {
     "@actions/artifact": "5.0.1",

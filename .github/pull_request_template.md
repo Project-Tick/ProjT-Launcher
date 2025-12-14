@@ -1,4 +1,4 @@
-# Project Tick Launcher Pull Request
+# Project Tick - ProjT Launcher Pull Request
 
 ## Description
 <!-- Summarize the changes and why they are needed. -->
@@ -26,3 +26,6 @@
 
 ## Additional Notes
 <!-- Any additional information, screenshots, or context. -->
+
+## Signed Off By
+<!-- Please use signed-off-by: name <email> -->
