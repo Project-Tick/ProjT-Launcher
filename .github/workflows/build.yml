@@ -852,6 +852,7 @@ jobs:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
     needs: [project-checkout]
+    if: github.event_name != 'pull_request'
 
     steps:
       - name: Checkout repository
@@ -2009,4 +2010,3 @@ jobs:
           
           echo "status=$status" >> $GITHUB_OUTPUT
           exit $exit_code
-
