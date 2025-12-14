@@ -1,0 +1,158 @@
+name: General Evaluation Process
+
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+    outputs:
+      should-test:
+        description: Whether build/test should run
+        value: ${{ jobs.prepare.outputs.should-test }}
+      mergedSha:
+        description: Merged SHA for the run
+        value: ${{ jobs.prepare.outputs.mergedSha }}
+      changed-files:
+        description: Changed files list
+        value: ${{ jobs.prepare.outputs.changed-files }}
+  workflow_dispatch:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+      version:
+        description: Launcher version
+        required: false
+      artifact-name:
+        description: Name of the uploaded artifact
+        required: false
+        default: Linux
+      qt-version:
+        description: Version of Qt to use
+        required: false
+        default: 6.10.0
+      qt-architecture:
+        description: Qt architecture
+        required: false
+      gpg-private-key:
+        description: Private key for AppImage signing
+        required: false
+      gpg-private-key-id:
+        description: ID for the gpg-private-key, to select the signing key
+        required: false
+      apple-codesign-cert:
+        description: Certificate for signing macOS builds
+        required: false
+      apple-codesign-password:
+        description: Password for signing macOS builds
+        required: false
+      apple-codesign-id:
+        description: Certificate ID for signing macOS builds
+        required: false
+      apple-notarize-apple-id:
+        description: Apple ID used for notarizing macOS builds
+        required: false
+      apple-notarize-team-id:
+        description: Team ID used for notarizing macOS builds
+        required: false
+      apple-notarize-password:
+        description: Password used for notarizing macOS builds
+        required: false
+      sparkle-ed25519-key:
+        description: Private key for signing Sparkle updates
+        required: false
+      msystem:
+        description: MSYS2 subsystem to use
+        required: false
+      windows-codesign-cert:
+        description: Certificate for signing Windows builds
+        required: false
+      windows-codesign-password:
+        description: Password for signing Windows builds
+        required: false
+      vcvars-arch:
+        description: Visual Studio architecture to use
+        required: false
+        default: amd64
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        required: false
+      path:
+        description: 'Path to place the repository'
+        required: false
+      fetch-depth:
+        description: 'Fetch depth (default 0 = full history)'
+        required: false
+        default: '0'
+      submodules:
+        description: 'Checkout submodules (true/false/recursive)'
+        required: false
+        default: 'true'
+      app_id:
+        description: 'Application ID'
+        required: false
+      git_ref:
+        description: 'Git reference'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Prepare Workflow
+    runs-on: ubuntu-latest
+    outputs:
+      should-test: ${{ steps.check.outputs.should-test }}
+      mergedSha: ${{ github.event.pull_request.head.sha || github.sha }}
+      changed-files: ${{ steps.collect.outputs.changed-files }}
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check for testable and buildable changes
+        id: check
+        run: |
+          # Always test on pull requests
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "should-test=true" >> $GITHUB_OUTPUT
+            echo "Pull request detected — forcing test/build."
+            exit 0
+          fi
+
+          # Always run for Dependabot pushes (branches like dependabot/*)
+          if [ "${{ github.actor }}" = "dependabot[bot]" ] || [[ "${{ github.ref }}" =~ refs/heads/dependabot/ ]]; then
+            echo "should-test=true" >> $GITHUB_OUTPUT
+            echo "Dependabot update detected — forcing test/build."
+            exit 0
+          fi
+
+          # Check if test-relevant files changed for push or dispatch
+          regex="^(launcher|libraries|tests|buildconfig|cmake|program_info)/|CMakeLists.txt|.*\.cpp|.*\.h|.*\.ui"
+
+          changed=$(git diff --name-only HEAD~1 | grep -E "$regex" || true)
+          changed_count=$(printf "%s\n" "$changed" | sed '/^$/d' | wc -l)
+
+          # Always run on manual dispatch or merge queue
+          if [ "$changed_count" -gt 0 ] || [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ github.event_name }}" == "merge_group" ]; then
+            echo "should-test=true" >> $GITHUB_OUTPUT
+            echo "Relevant changes detected or manual/queue trigger."
+            printf "Changed:\n%s\n" "$changed"
+          else
+            echo "should-test=false" >> $GITHUB_OUTPUT
+            echo "No relevant changes."
+          fi
+
+      - name: Collect changed files
+        id: collect
+        run: |
+          git fetch --no-tags --prune --depth=100 origin +refs/heads/*:refs/remotes/origin/*
+          base_ref=${{ github.event.pull_request.base.ref || github.event.before || 'origin/develop' }}
+          git diff --name-only "$base_ref"...HEAD > changed.txt || true
+          changed_files=$(cat changed.txt | tr '\n' ',' | sed 's/,$//')
+          echo "changed-files=$changed_files" >> $GITHUB_OUTPUT

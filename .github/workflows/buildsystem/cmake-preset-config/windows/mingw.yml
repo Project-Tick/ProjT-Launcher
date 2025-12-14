@@ -1,0 +1,200 @@
+name: General Evaluation Process
+
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+  workflow_dispatch:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+      version:
+        description: Launcher version
+        required: false
+      artifact-name:
+        description: Name of the uploaded artifact
+        required: false
+        default: Linux
+      qt-version:
+        description: Version of Qt to use
+        required: false
+        default: 6.10.0
+      qt-architecture:
+        description: Qt architecture
+        required: false
+      gpg-private-key:
+        description: Private key for AppImage signing
+        required: false
+      gpg-private-key-id:
+        description: ID for the gpg-private-key, to select the signing key
+        required: false
+      apple-codesign-cert:
+        description: Certificate for signing macOS builds
+        required: false
+      apple-codesign-password:
+        description: Password for signing macOS builds
+        required: false
+      apple-codesign-id:
+        description: Certificate ID for signing macOS builds
+        required: false
+      apple-notarize-apple-id:
+        description: Apple ID used for notarizing macOS builds
+        required: false
+      apple-notarize-team-id:
+        description: Team ID used for notarizing macOS builds
+        required: false
+      apple-notarize-password:
+        description: Password used for notarizing macOS builds
+        required: false
+      sparkle-ed25519-key:
+        description: Private key for signing Sparkle updates
+        required: false
+      msystem:
+        description: MSYS2 subsystem to use
+        required: false
+      windows-codesign-cert:
+        description: Certificate for signing Windows builds
+        required: false
+      windows-codesign-password:
+        description: Password for signing Windows builds
+        required: false
+      vcvars-arch:
+        description: Visual Studio architecture to use
+        required: false
+        default: amd64
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        required: false
+      path:
+        description: 'Path to place the repository'
+        required: false
+      fetch-depth:
+        description: 'Fetch depth (default 0 = full history)'
+        required: false
+        default: '0'
+      submodules:
+        description: 'Checkout submodules (true/false/recursive)'
+        required: false
+        default: 'true'
+      app_id:
+        description: 'Application ID'
+        required: false
+      git_ref:
+        description: 'Git reference'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-windows-mingw-preset-config:
+    name: Verify CMake Configuration (${{ matrix.artifact-name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    permissions:
+      # Required for vcpkg binary cache
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            artifact-name: Windows-MinGW-w64
+            cmake-preset: windows_mingw
+            msystem: CLANG64
+            vcvars-arch: amd64_x86
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      BUILD_TYPE: Debug
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Enter VS Developer shell
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.vcvars-arch }}
+          vsversion: 2022
+
+      - name: Setup MSYS2 (MinGW)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            git
+          pacboy: >-
+            toolchain:p
+            ccache:p
+            cmake:p
+            extra-cmake-modules:p
+            ninja:p
+            qt6-base:p
+            qt6-svg:p
+            qt6-imageformats:p
+            qt6-5compat:p
+            qt6-networkauth:p
+            qt6-declarative:p
+            cmark:p
+            tomlplusplus:p
+            quazip-qt6:p
+
+      - name: List pacman packages (MinGW)
+        shell: msys2 {0}
+        run: |
+          pacman -Qe
+
+      - name: Retrieve ccache cache (MinGW)
+        uses: actions/cache@v5.0.1
+        with:
+          path: '${{ github.workspace }}\.ccache'
+          key: ${{ runner.os }}-mingw-w64-ccache-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-mingw-w64-ccache
+
+      - name: Setup ccache (MinGW)
+        shell: msys2 {0}
+        run: |
+          ccache --set-config=cache_dir='${{ github.workspace }}\.ccache'
+          ccache --set-config=max_size='500M'
+          ccache --set-config=compression=true
+          ccache -p  # Show config
+  
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure CMake
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+        continue-on-error: false
+
+      - name: Report configuration status
+        run: |
+          if [ -f "build/CMakeCache.txt" ] || [ -d "out" ]; then
+            echo "CMake configuration completed"
+            echo "## CMake Configuration Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "WARNING: CMake configuration may have issues"
+            echo "## CMake Configuration Issues" >> $GITHUB_STEP_SUMMARY
+          fi

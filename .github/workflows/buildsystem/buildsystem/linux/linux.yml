@@ -1,0 +1,193 @@
+name: General Evaluation Process
+
+on:
+  workflow_call:
+    inputs:
+      should-test:
+        description: Whether to run build/tests
+        required: false
+        default: 'true'
+        type: string
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+  workflow_dispatch:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+      version:
+        description: Launcher version
+        required: false
+      artifact-name:
+        description: Name of the uploaded artifact
+        required: false
+        default: Linux
+      qt-version:
+        description: Version of Qt to use
+        required: false
+        default: 6.10.0
+      qt-architecture:
+        description: Qt architecture
+        required: false
+      gpg-private-key:
+        description: Private key for AppImage signing
+        required: false
+      gpg-private-key-id:
+        description: ID for the gpg-private-key, to select the signing key
+        required: false
+      apple-codesign-cert:
+        description: Certificate for signing macOS builds
+        required: false
+      apple-codesign-password:
+        description: Password for signing macOS builds
+        required: false
+      apple-codesign-id:
+        description: Certificate ID for signing macOS builds
+        required: false
+      apple-notarize-apple-id:
+        description: Apple ID used for notarizing macOS builds
+        required: false
+      apple-notarize-team-id:
+        description: Team ID used for notarizing macOS builds
+        required: false
+      apple-notarize-password:
+        description: Password used for notarizing macOS builds
+        required: false
+      sparkle-ed25519-key:
+        description: Private key for signing Sparkle updates
+        required: false
+      msystem:
+        description: MSYS2 subsystem to use
+        required: false
+      windows-codesign-cert:
+        description: Certificate for signing Windows builds
+        required: false
+      windows-codesign-password:
+        description: Password for signing Windows builds
+        required: false
+      vcvars-arch:
+        description: Visual Studio architecture to use
+        required: false
+        default: amd64
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        required: false
+      path:
+        description: 'Path to place the repository'
+        required: false
+      fetch-depth:
+        description: 'Fetch depth (default 0 = full history)'
+        required: false
+        default: '0'
+      submodules:
+        description: 'Checkout submodules (true/false/recursive)'
+        required: false
+        default: 'true'
+      app_id:
+        description: 'Application ID'
+        required: false
+      git_ref:
+        description: 'Git reference'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    name: Build (${{ matrix.artifact-name }})
+    if: inputs.should-test == 'true'
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact-name: Linux
+            cmake-preset: linux
+        
+          - os: ubuntu-24.04-arm
+            artifact-name: Linux-aarch64
+            cmake-preset: linux
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set version variable
+        run: echo "VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || steps.short-version.outputs.version }}" >> $GITHUB_ENV
+
+      - name: Package (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        uses: ./.github/actions/package/linux
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          artifact-name: ${{ matrix.artifact-name }}
+          qt-version: ${{ steps.setup-dependencies.outputs.qt-version }}
+
+          gpg-private-key: ${{ secrets.LINUX_GPG_KEY }}
+          gpg-private-key-id: ${{ secrets.LINUX_GPG_ID }}

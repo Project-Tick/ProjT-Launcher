@@ -1,0 +1,192 @@
+name: General Evaluation Process
+
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+  workflow_dispatch:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+      version:
+        description: Launcher version
+        required: false
+      artifact-name:
+        description: Name of the uploaded artifact
+        required: false
+        default: Linux
+      qt-version:
+        description: Version of Qt to use
+        required: false
+        default: 6.10.0
+      qt-architecture:
+        description: Qt architecture
+        required: false
+      gpg-private-key:
+        description: Private key for AppImage signing
+        required: false
+      gpg-private-key-id:
+        description: ID for the gpg-private-key, to select the signing key
+        required: false
+      apple-codesign-cert:
+        description: Certificate for signing macOS builds
+        required: false
+      apple-codesign-password:
+        description: Password for signing macOS builds
+        required: false
+      apple-codesign-id:
+        description: Certificate ID for signing macOS builds
+        required: false
+      apple-notarize-apple-id:
+        description: Apple ID used for notarizing macOS builds
+        required: false
+      apple-notarize-team-id:
+        description: Team ID used for notarizing macOS builds
+        required: false
+      apple-notarize-password:
+        description: Password used for notarizing macOS builds
+        required: false
+      sparkle-ed25519-key:
+        description: Private key for signing Sparkle updates
+        required: false
+      msystem:
+        description: MSYS2 subsystem to use
+        required: false
+      windows-codesign-cert:
+        description: Certificate for signing Windows builds
+        required: false
+      windows-codesign-password:
+        description: Password for signing Windows builds
+        required: false
+      vcvars-arch:
+        description: Visual Studio architecture to use
+        required: false
+        default: amd64
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        required: false
+      path:
+        description: 'Path to place the repository'
+        required: false
+      fetch-depth:
+        description: 'Fetch depth (default 0 = full history)'
+        required: false
+        default: '0'
+      submodules:
+        description: 'Checkout submodules (true/false/recursive)'
+        required: false
+        default: 'true'
+      app_id:
+        description: 'Application ID'
+        required: false
+      git_ref:
+        description: 'Git reference'
+        required: false
+      build-linux-result:
+        description: Result of the build-linux job
+        required: false
+        type: string
+      build-linux-arm64-result:
+        description: Result of the build-linux-arm64 job
+        required: false
+        type: string
+      build-windows-msvc-result:
+        description: Result of the build-windows-msvc job
+        required: false
+        type: string
+      build-windows-msvc-arm64-result:
+        description: Result of the build-windows-msvc-arm64 job
+        required: false
+        type: string
+      build-windows-mingw-result:
+        description: Result of the build-windows-mingw job
+        required: false
+        type: string
+      build-windows-mingw-arm64-result:
+        description: Result of the build-windows-mingw-arm64 job
+        required: false
+        type: string
+      build-macos-result:
+        description: Result of the build-macos job
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-status:
+    name: Build Status Report
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Check build results
+        id: check-results
+        run: |
+          echo "## Build Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** Build" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check individual build results
+          build_linux_result='${{ inputs.build-linux-result }}'
+          build_linux_arm64_result='${{ inputs.build-linux-arm64-result }}'
+          build_windows_msvc_result='${{ inputs.build-windows-msvc-result }}'
+          build_windows_msvc_arm64_result='${{ inputs.build-windows-msvc-arm64-result }}'
+          build_windows_mingw_result='${{ inputs.build-windows-mingw-result }}'
+          build_windows_mingw_arm64_result='${{ inputs.build-windows-mingw-arm64-result }}'
+          build_macos_result='${{ inputs.build-macos-result }}'
+          
+          echo "**Build Results:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux: \`$build_linux_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux: \`$build_linux_arm64_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows MSVC: \`$build_windows_msvc_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows MSVC ARM64: \`$build_windows_msvc_arm64_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows MinGW: \`$build_windows_mingw_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows MinGW ARM64: \`$build_windows_mingw_arm64_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS: \`$build_macos_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Determine overall status
+          if [[ "$build_linux_result" == "failure" ]] || [[ "$build_windows_msvc_result" == "failure" ]] || [[ "$build_windows_msvc_arm64_result" == "failure" ]] || [[ "$build_windows_mingw_result" == "failure" ]] || [[ "$build_windows_mingw_arm64_result" == "failure" ]] || [[ "$build_macos_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Build Failed" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$build_linux_result" == "cancelled" ]] || [[ "$build_windows_msvc_result" == "cancelled" ]] || [[ "$build_windows_msvc_arm64_result" == "cancelled" ]] || [[ "$build_windows_mingw_result" == "cancelled" ]] || [[ "$build_windows_mingw_arm64_result" == "cancelled" ]] || [[ "$build_macos_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Build Cancelled" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          elif [[ "$build_linux_result" == "success" ]] && [[ "$build_windows_msvc_result" == "success" ]] && [[ "$build_windows_msvc_arm64_result" == "success" ]] && [[ "$build_windows_mingw_result" == "success" ]] && [[ "$build_windows_mingw_arm64_result" == "success" ]] && [[ "$build_macos_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Build Successful" >> $GITHUB_STEP_SUMMARY
+            exit_code=0
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            exit_code=1
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run Number:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          
+          echo "status=$status" >> $GITHUB_OUTPUT
+          exit $exit_code
+      
+      - name: Report final status
+        if: always()
+        run: |
+          echo "Final build status: ${{ steps.check-results.outputs.status }}"
