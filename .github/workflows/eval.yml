@@ -1,0 +1,52 @@
+# =============================================================================
+# ProjT Launcher - CI Evaluation Workflow
+# =============================================================================
+# Runs the Nix-based evaluation helpers in ci/eval to validate project structure.
+# =============================================================================
+
+name: Eval
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+    working-directory: .
+
+jobs:
+  eval:
+    name: Nix Evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Run full evaluation
+        id: eval
+        run: |
+          set -euo pipefail
+          result=$(nix-build ci/eval -A full)
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+
+      - name: Publish evaluation summary
+        if: steps.eval.outputs.result != ''
+        run: |
+          summary="${{ steps.eval.outputs.result }}/summary.md"
+          if [ -f "$summary" ]; then
+            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "CI evaluation succeeded (no summary file)." >> "$GITHUB_STEP_SUMMARY"
+          fi
