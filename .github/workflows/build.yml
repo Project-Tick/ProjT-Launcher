@@ -881,7 +881,103 @@ jobs:
 
   build-linux:
     name: Build (${{ matrix.artifact-name }})
-    needs: [cmake-linux-preset-config, CodeQL, cmake-linux-arm64-preset-config]
+    needs: [cmake-linux-preset-config]
+    if: needs.prepare.outputs.should-test == 'true'
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact-name: Linux
+            cmake-preset: linux
+        
+          - os: ubuntu-24.04-arm
+            artifact-name: Linux-aarch64
+            cmake-preset: linux
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set version variable
+        run: echo "VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || steps.short-version.outputs.version }}" >> $GITHUB_ENV
+
+      - name: Package (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        uses: ./.github/actions/package/linux
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          artifact-name: ${{ matrix.artifact-name }}
+          qt-version: ${{ steps.setup-dependencies.outputs.qt-version }}
+
+          gpg-private-key: ${{ secrets.LINUX_GPG_KEY }}
+          gpg-private-key-id: ${{ secrets.LINUX_GPG_ID }}
+
+  build-linux-arm64:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [cmake-linux-arm64-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -977,7 +1073,7 @@ jobs:
 
   build-windows-msvc:
     name: Build (${{ matrix.artifact-name }})
-    needs: [CodeQL, cmake-windows-msvc-preset-config]
+    needs: [cmake-windows-msvc-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -1074,7 +1170,7 @@ jobs:
 
   build-windows-msvc-arm64:
     name: Build (${{ matrix.artifact-name }})
-    needs: [CodeQL, cmake-windows-msvc-arm64-preset-config]
+    needs: [cmake-windows-msvc-arm64-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -1171,7 +1267,7 @@ jobs:
         
   build-windows-mingw:
     name: Build (${{ matrix.artifact-name }})
-    needs: [CodeQL, cmake-windows-mingw-preset-config]
+    needs: [cmake-windows-mingw-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -1270,7 +1366,7 @@ jobs:
 
   build-windows-mingw-arm64:
     name: Build (${{ matrix.artifact-name }})
-    needs: [CodeQL, cmake-windows-mingw-arm64-preset-config]
+    needs: [cmake-windows-mingw-arm64-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -1369,7 +1465,7 @@ jobs:
 
   build-macos:
     name: Build (${{ matrix.artifact-name }})
-    needs: [cmake-macos-preset-config, CodeQL]
+    needs: [cmake-macos-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -1714,6 +1810,7 @@ jobs:
           
           # Check individual build results
           build_linux_result='${{ needs.build-linux.result }}'
+          build_linux_arm64_result='${{ needs.build-linux-arm64.result }}'
           build_windows_msvc_result='${{ needs.build-windows-msvc.result }}'
           build_windows_msvc_arm64_result='${{ needs.build-windows-msvc-arm64.result }}'
           build_windows_mingw_result='${{ needs.build-windows-mingw.result }}'
@@ -1722,6 +1819,7 @@ jobs:
           
           echo "**Build Results:**" >> $GITHUB_STEP_SUMMARY
           echo "- Linux: \`$build_linux_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux: \`$build_linux_arm64_result\`" >> $GITHUB_STEP_SUMMARY
           echo "- Windows MSVC: \`$build_windows_msvc_result\`" >> $GITHUB_STEP_SUMMARY
           echo "- Windows MSVC ARM64: \`$build_windows_msvc_arm64_result\`" >> $GITHUB_STEP_SUMMARY
           echo "- Windows MinGW: \`$build_windows_mingw_result\`" >> $GITHUB_STEP_SUMMARY
