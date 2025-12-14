@@ -71,9 +71,9 @@ The evaluation checks:
 
 ## CI Integration
 
-Evaluation now runs automatically in `.github/workflows/eval.yml`. The workflow installs Nix on `ubuntu-latest`, builds the `full` target via `nix-build ci/eval -A full`, and publishes the generated summary to the workflow run. Trigger it manually with **Run workflow** or let it execute on every pull request. You can mirror the same steps locally with:
+Evaluation now runs automatically in `.github/workflows/eval.yml`. The workflow installs Nix on `ubuntu-latest`, evaluates the module with `nix-build --expr 'let pkgs = import <nixpkgs> {}; eval = (import ./ci/eval { inherit (pkgs) lib runCommand cmake nix jq; }) {}; in eval.full'`, and publishes the generated summary to the workflow run. Trigger it manually with **Run workflow** or let it execute on every pull request. You can mirror the same steps locally with:
 
 ```bash
-nix-build ci/eval -A full
+nix-build --expr 'let pkgs = import <nixpkgs> {}; eval = (import ./ci/eval { inherit (pkgs) lib runCommand cmake nix jq; }) {}; in eval.full'
 cat result/summary.md
 ```

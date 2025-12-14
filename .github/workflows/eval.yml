@@ -38,7 +38,15 @@ jobs:
         id: eval
         run: |
           set -euo pipefail
-          result=$(nix-build ci/eval -A full)
+          result=$(nix-build --expr '
+            let
+              pkgs = import <nixpkgs> {};
+              evalModule = import ./ci/eval {
+                inherit (pkgs) lib runCommand cmake nix jq;
+              };
+              eval = evalModule {};
+            in eval.full
+          ')
           echo "result=$result" >> "$GITHUB_OUTPUT"
 
       - name: Publish evaluation summary
