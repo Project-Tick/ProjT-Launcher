@@ -3,10 +3,89 @@ name: General Evaluation Process
 on:
   workflow_call:
     inputs:
+      should-test:
+        description: Whether to run build/tests
+        required: false
+        default: 'true'
+        type: string
       build-type:
         description: Type of build (Debug or Release)
         type: string
         default: Debug
+      version:
+        description: Launcher version
+        required: false
+      artifact-name:
+        description: Name of the uploaded artifact
+        required: false
+        default: Linux
+      qt-version:
+        description: Version of Qt to use
+        required: false
+        default: 6.10.0
+      qt-architecture:
+        description: Qt architecture
+        required: false
+      gpg-private-key:
+        description: Private key for AppImage signing
+        required: false
+      gpg-private-key-id:
+        description: ID for the gpg-private-key, to select the signing key
+        required: false
+      apple-codesign-cert:
+        description: Certificate for signing macOS builds
+        required: false
+      apple-codesign-password:
+        description: Password for signing macOS builds
+        required: false
+      apple-codesign-id:
+        description: Certificate ID for signing macOS builds
+        required: false
+      apple-notarize-apple-id:
+        description: Apple ID used for notarizing macOS builds
+        required: false
+      apple-notarize-team-id:
+        description: Team ID used for notarizing macOS builds
+        required: false
+      apple-notarize-password:
+        description: Password used for notarizing macOS builds
+        required: false
+      sparkle-ed25519-key:
+        description: Private key for signing Sparkle updates
+        required: false
+      msystem:
+        description: MSYS2 subsystem to use
+        required: false
+      windows-codesign-cert:
+        description: Certificate for signing Windows builds
+        required: false
+      windows-codesign-password:
+        description: Password for signing Windows builds
+        required: false
+      vcvars-arch:
+        description: Visual Studio architecture to use
+        required: false
+        default: amd64
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        required: false
+      path:
+        description: 'Path to place the repository'
+        required: false
+      fetch-depth:
+        description: 'Fetch depth (default 0 = full history)'
+        required: false
+        default: '0'
+      submodules:
+        description: 'Checkout submodules (true/false/recursive)'
+        required: false
+        default: 'true'
+      app_id:
+        description: 'Application ID'
+        required: false
+      git_ref:
+        description: 'Git reference'
+        required: false
 
 permissions:
   contents: read
@@ -44,31 +123,31 @@ jobs:
         id: resolved
         run: |
           # Resolve fetch-depth
-          if [ -z "${{ github.event.inputs.fetch-depth }}" ]; then
+          if [ -z "${{ inputs.fetch-depth }}" ]; then
             echo "depth=0" >> $GITHUB_OUTPUT
           else
-            echo "depth=${{ github.event.inputs.fetch-depth }}" >> $GITHUB_OUTPUT
+            echo "depth=${{ inputs.fetch-depth }}" >> $GITHUB_OUTPUT
           fi
 
           # Resolve ref
-          if [ -z "${{ github.event.inputs.ref }}" ]; then
+          if [ -z "${{ inputs.ref }}" ]; then
             echo "ref=${GITHUB_SHA}" >> $GITHUB_OUTPUT
           else
-            echo "ref=${{ github.event.inputs.ref }}" >> $GITHUB_OUTPUT
+            echo "ref=${{ inputs.ref }}" >> $GITHUB_OUTPUT
           fi
 
           # Resolve path (default repo root)
-          if [ -z "${{ github.event.inputs.path }}" ]; then
+          if [ -z "${{ inputs.path }}" ]; then
             echo "path=." >> $GITHUB_OUTPUT
           else
-            echo "path=${{ github.event.inputs.path }}" >> $GITHUB_OUTPUT
+            echo "path=${{ inputs.path }}" >> $GITHUB_OUTPUT
           fi
 
           # Resolve submodules
-          if [ -z "${{ github.event.inputs.submodules }}" ]; then
+          if [ -z "${{ inputs.submodules }}" ]; then
             echo "submodules=recursive" >> $GITHUB_OUTPUT
           else
-            echo "submodules=${{ github.event.inputs.submodules }}" >> $GITHUB_OUTPUT
+            echo "submodules=${{ inputs.submodules }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Checkout repository

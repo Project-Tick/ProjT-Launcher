@@ -42,14 +42,14 @@ on:
         default: Debug
       version:
         description: Launcher version
-        required: true
+        required: false
       artifact-name:
         description: Name of the uploaded artifact
-        required: true
+        required: false
         default: Linux
       qt-version:
         description: Version of Qt to use
-        required: true
+        required: false
         default: 6.10.0
       qt-architecture:
         description: Qt architecture
@@ -92,7 +92,7 @@ on:
         required: false
       vcvars-arch:
         description: Visual Studio architecture to use
-        required: true
+        required: false
         default: amd64
       ref:
         description: 'Ref (branch, tag, or SHA) to check out'
@@ -110,10 +110,10 @@ on:
         default: 'true'
       app_id:
         description: 'Application ID'
-        required: true
+        required: false
       git_ref:
         description: 'Git reference'
-        required: true
+        required: false
 
 permissions:
   contents: read
@@ -121,70 +121,352 @@ permissions:
 jobs:
   prepare:
     uses: ./.github/workflows/buildsystem-check-prepare.yml
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   verify-vcpkg:
     needs: prepare
     uses: ./.github/workflows/buildsystem-check-verify-vcpkg.yml
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   flake-check:
     needs: prepare
     uses: ./.github/workflows/buildsystem-check-flake-check.yml
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   project-checkout:
     needs: prepare
     uses: ./.github/workflows/buildsystem-check-project-checkout.yml
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   cmake-linux-preset-config:
     needs: project-checkout
     uses: ./.github/workflows/buildsystem-cmake-preset-linux.yml
     permissions:
+      contents: read
       packages: write
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   cmake-linux-arm64-preset-config:
     needs: project-checkout
     uses: ./.github/workflows/buildsystem-cmake-preset-linux-arm64.yml
     permissions:
+      contents: read
       packages: write
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   cmake-windows-mingw-preset-config:
     needs: [verify-vcpkg, project-checkout]
     uses: ./.github/workflows/buildsystem-cmake-preset-windows-mingw.yml
     permissions:
+      contents: read
       packages: write
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   cmake-windows-mingw-arm64-preset-config:
     needs: [verify-vcpkg, project-checkout]
     uses: ./.github/workflows/buildsystem-cmake-preset-windows-mingw-arm64.yml
     permissions:
+      contents: read
       packages: write
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   cmake-windows-msvc-preset-config:
     needs: [verify-vcpkg, project-checkout]
     uses: ./.github/workflows/buildsystem-cmake-preset-windows-msvc.yml
     permissions:
+      contents: read
       packages: write
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   cmake-windows-msvc-arm64-preset-config:
     needs: [verify-vcpkg, project-checkout]
     uses: ./.github/workflows/buildsystem-cmake-preset-windows-msvc-arm64.yml
     permissions:
+      contents: read
       packages: write
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   cmake-macos-preset-config:
     needs: project-checkout
     uses: ./.github/workflows/buildsystem-cmake-preset-macos.yml
     permissions:
+      contents: read
       packages: write
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   CodeQL:
@@ -195,79 +477,329 @@ jobs:
       actions: read
       contents: read
       security-events: write
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   build-linux:
     needs: cmake-linux-preset-config
     uses: ./.github/workflows/buildsystem-build-linux.yml
     permissions:
+      contents: read
       packages: write
     secrets: inherit
     with:
       should-test: ${{ needs.prepare.outputs.should-test }}
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
 
   build-linux-arm64:
     needs: cmake-linux-arm64-preset-config
     uses: ./.github/workflows/buildsystem-build-linux-arm64.yml
     permissions:
+      contents: read
       packages: write
     secrets: inherit
     with:
       should-test: ${{ needs.prepare.outputs.should-test }}
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
 
   build-windows-msvc:
     needs: cmake-windows-msvc-preset-config
     uses: ./.github/workflows/buildsystem-build-windows-msvc.yml
     permissions:
+      contents: read
       packages: write
     secrets: inherit
     with:
       should-test: ${{ needs.prepare.outputs.should-test }}
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
 
   build-windows-msvc-arm64:
     needs: cmake-windows-msvc-arm64-preset-config
     uses: ./.github/workflows/buildsystem-build-windows-msvc-arm64.yml
     permissions:
+      contents: read
       packages: write
     secrets: inherit
     with:
       should-test: ${{ needs.prepare.outputs.should-test }}
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
 
   build-windows-mingw:
     needs: cmake-windows-mingw-preset-config
     uses: ./.github/workflows/buildsystem-build-windows-mingw.yml
     permissions:
+      contents: read
       packages: write
     secrets: inherit
     with:
       should-test: ${{ needs.prepare.outputs.should-test }}
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
 
   build-windows-mingw-arm64:
     needs: cmake-windows-mingw-arm64-preset-config
     uses: ./.github/workflows/buildsystem-build-windows-mingw-arm64.yml
     permissions:
+      contents: read
       packages: write
     secrets: inherit
     with:
       should-test: ${{ needs.prepare.outputs.should-test }}
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
 
   build-macos:
     needs: cmake-macos-preset-config
     uses: ./.github/workflows/buildsystem-build-macos.yml
     permissions:
+      contents: read
       packages: write
     secrets: inherit
     with:
       should-test: ${{ needs.prepare.outputs.should-test }}
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
 
   flatpak-build:
     needs: prepare
     uses: ./.github/workflows/buildsystem-build-flatpak.yml
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   nix-system-build:
     needs: flake-check
     uses: ./.github/workflows/buildsystem-build-nix-system.yml
+    with:
+      build-type: ${{ github.event.inputs.build-type || 'Debug' }}
+      version: ${{ github.event.inputs.version }}
+      artifact-name: ${{ github.event.inputs['artifact-name'] || 'Linux' }}
+      qt-version: ${{ github.event.inputs['qt-version'] || '6.10.0' }}
+      qt-architecture: ${{ github.event.inputs['qt-architecture'] }}
+      gpg-private-key: ${{ github.event.inputs['gpg-private-key'] }}
+      gpg-private-key-id: ${{ github.event.inputs['gpg-private-key-id'] }}
+      apple-codesign-cert: ${{ github.event.inputs['apple-codesign-cert'] }}
+      apple-codesign-password: ${{ github.event.inputs['apple-codesign-password'] }}
+      apple-codesign-id: ${{ github.event.inputs['apple-codesign-id'] }}
+      apple-notarize-apple-id: ${{ github.event.inputs['apple-notarize-apple-id'] }}
+      apple-notarize-team-id: ${{ github.event.inputs['apple-notarize-team-id'] }}
+      apple-notarize-password: ${{ github.event.inputs['apple-notarize-password'] }}
+      sparkle-ed25519-key: ${{ github.event.inputs['sparkle-ed25519-key'] }}
+      msystem: ${{ github.event.inputs.msystem }}
+      windows-codesign-cert: ${{ github.event.inputs['windows-codesign-cert'] }}
+      windows-codesign-password: ${{ github.event.inputs['windows-codesign-password'] }}
+      vcvars-arch: ${{ github.event.inputs['vcvars-arch'] || 'amd64' }}
+      ref: ${{ github.event.inputs.ref }}
+      path: ${{ github.event.inputs.path }}
+      fetch-depth: ${{ github.event.inputs['fetch-depth'] || '0' }}
+      submodules: ${{ github.event.inputs.submodules || 'true' }}
+      app_id: ${{ github.event.inputs.app_id }}
+      git_ref: ${{ github.event.inputs.git_ref }}
     secrets: inherit
 
   eval-status:
