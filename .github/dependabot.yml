@@ -6,7 +6,7 @@ updates:
     directory: "/"
     schedule:
       interval: cron
-      cronjob: "0 * * * *"
+      cronjob: "0 3 * * *"
       timezone: "UTC"
     labels: ["11.dependencies", "1.main-ci-changes"]
     rebase-strategy: auto
@@ -23,7 +23,7 @@ updates:
     directory: "/ci/github-script"
     schedule:
       interval: cron
-      cronjob: "0 * * * *"
+      cronjob: "0 3 * * *"
       timezone: "UTC"
     labels: ["11.dependencies", "1.main-ci-changes", "12.npm"]
     open-pull-requests-limit: 5
@@ -42,7 +42,7 @@ updates:
     directory: "/"
     schedule:
       interval: cron
-      cronjob: "0 * * * *"
+      cronjob: "0 3 * * *"
       timezone: "UTC"
     labels: ["11.dependencies", "15.vcpkg"]
     rebase-strategy: auto
@@ -55,7 +55,7 @@ updates:
     directory: "/"
     schedule:
       interval: cron
-      cronjob: "0 * * * *"
+      cronjob: "0 3 * * *"
       timezone: "UTC"
     ignore:
       - dependency-name: libraries/zlib
