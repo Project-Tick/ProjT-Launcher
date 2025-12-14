@@ -5,9 +5,8 @@ updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
-      day: monday
-      time: "03:00"
+      interval: cron
+      cronjob: "0 * * * *"
       timezone: "UTC"
     labels: ["11.dependencies", "1.main-ci-changes"]
     rebase-strategy: auto
@@ -21,11 +20,10 @@ updates:
 
   # Update CI helper scripts (npm) in ci/github-script
   - package-ecosystem: npm
-    directory: /ci/github-script
+    directory: "/ci/github-script"
     schedule:
-      interval: weekly
-      day: tuesday
-      time: "03:00"
+      interval: cron
+      cronjob: "0 * * * *"
       timezone: "UTC"
     labels: ["11.dependencies", "1.main-ci-changes", "12.npm"]
     open-pull-requests-limit: 5
@@ -38,3 +36,31 @@ updates:
       npm-minor-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+
+  # Keep vcpkg manifest in sync
+  - package-ecosystem: vcpkg
+    directory: "/"
+    schedule:
+      interval: cron
+      cronjob: "0 * * * *"
+      timezone: "UTC"
+    labels: ["11.dependencies", "15.vcpkg"]
+    rebase-strategy: auto
+    commit-message:
+      prefix: "deps"
+      include: scope
+
+  # Monitor git submodules
+  - package-ecosystem: gitsubmodule
+    directory: "/"
+    schedule:
+      interval: cron
+      cronjob: "0 * * * *"
+      timezone: "UTC"
+    ignore:
+      - dependency-name: libraries/zlib
+    labels: ["11.dependencies", "16.submodules"]
+    rebase-strategy: auto
+    commit-message:
+      prefix: "deps"
+      include: scope
