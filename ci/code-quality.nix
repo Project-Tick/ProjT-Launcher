@@ -5,18 +5,18 @@
   cmake,
   cmake-format,
 }:
-{
-  src ? ../.,
-}:
+{ src ? ../. }:
+
 let
-  sourceFiles = lib.fileset.toSource {
-    root = src;
-    fileset = lib.fileset.unions [
-      (src + /launcher)
-      (src + /tests)
-      (src + /buildconfig)
-    ];
-  };
+  sourceFiles =
+    lib.fileset.toSource {
+      root = src;
+      fileset = lib.fileset.unions [
+        (src + /launcher)
+        (src + /tests)
+        (src + /buildconfig)
+      ];
+    };
 in
 runCommand "projt-code-check"
   {
