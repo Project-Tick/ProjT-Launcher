@@ -120,69 +120,69 @@ permissions:
 
 jobs:
   prepare:
-    uses: ./.github/workflows/buildsystem/check/prepare.yml
+    uses: ./.github/workflows/buildsystem-check-prepare.yml
     secrets: inherit
 
   verify-vcpkg:
     needs: prepare
-    uses: ./.github/workflows/buildsystem/check/verify-vcpkg.yml
+    uses: ./.github/workflows/buildsystem-check-verify-vcpkg.yml
     secrets: inherit
 
   flake-check:
     needs: prepare
-    uses: ./.github/workflows/buildsystem/check/flake-check.yml
+    uses: ./.github/workflows/buildsystem-check-flake-check.yml
     secrets: inherit
 
   project-checkout:
     needs: prepare
-    uses: ./.github/workflows/buildsystem/check/project-checkout.yml
+    uses: ./.github/workflows/buildsystem-check-project-checkout.yml
     secrets: inherit
 
   cmake-linux-preset-config:
     needs: project-checkout
-    uses: ./.github/workflows/buildsystem/cmake-preset-config/linux/linux.yml
+    uses: ./.github/workflows/buildsystem-cmake-preset-linux.yml
     permissions:
       packages: write
     secrets: inherit
 
   cmake-linux-arm64-preset-config:
     needs: project-checkout
-    uses: ./.github/workflows/buildsystem/cmake-preset-config/linux/linux-arm64.yml
+    uses: ./.github/workflows/buildsystem-cmake-preset-linux-arm64.yml
     permissions:
       packages: write
     secrets: inherit
 
   cmake-windows-mingw-preset-config:
     needs: [verify-vcpkg, project-checkout]
-    uses: ./.github/workflows/buildsystem/cmake-preset-config/windows/mingw.yml
+    uses: ./.github/workflows/buildsystem-cmake-preset-windows-mingw.yml
     permissions:
       packages: write
     secrets: inherit
 
   cmake-windows-mingw-arm64-preset-config:
     needs: [verify-vcpkg, project-checkout]
-    uses: ./.github/workflows/buildsystem/cmake-preset-config/windows/mingw-arm64.yml
+    uses: ./.github/workflows/buildsystem-cmake-preset-windows-mingw-arm64.yml
     permissions:
       packages: write
     secrets: inherit
 
   cmake-windows-msvc-preset-config:
     needs: [verify-vcpkg, project-checkout]
-    uses: ./.github/workflows/buildsystem/cmake-preset-config/windows/msvc.yml
+    uses: ./.github/workflows/buildsystem-cmake-preset-windows-msvc.yml
     permissions:
       packages: write
     secrets: inherit
 
   cmake-windows-msvc-arm64-preset-config:
     needs: [verify-vcpkg, project-checkout]
-    uses: ./.github/workflows/buildsystem/cmake-preset-config/windows/msvc-arm64.yml
+    uses: ./.github/workflows/buildsystem-cmake-preset-windows-msvc-arm64.yml
     permissions:
       packages: write
     secrets: inherit
 
   cmake-macos-preset-config:
     needs: project-checkout
-    uses: ./.github/workflows/buildsystem/cmake-preset-config/macos/macos.yml
+    uses: ./.github/workflows/buildsystem-cmake-preset-macos.yml
     permissions:
       packages: write
     secrets: inherit
@@ -190,7 +190,7 @@ jobs:
   CodeQL:
     needs: project-checkout
     if: github.event_name != 'pull_request'
-    uses: ./.github/workflows/buildsystem/code-scanning/codeql.yml
+    uses: ./.github/workflows/buildsystem-codeql.yml
     permissions:
       actions: read
       contents: read
@@ -199,7 +199,7 @@ jobs:
 
   build-linux:
     needs: cmake-linux-preset-config
-    uses: ./.github/workflows/buildsystem/buildsystem/linux/linux.yml
+    uses: ./.github/workflows/buildsystem-build-linux.yml
     permissions:
       packages: write
     secrets: inherit
@@ -208,7 +208,7 @@ jobs:
 
   build-linux-arm64:
     needs: cmake-linux-arm64-preset-config
-    uses: ./.github/workflows/buildsystem/buildsystem/linux/linux-arm64.yml
+    uses: ./.github/workflows/buildsystem-build-linux-arm64.yml
     permissions:
       packages: write
     secrets: inherit
@@ -217,7 +217,7 @@ jobs:
 
   build-windows-msvc:
     needs: cmake-windows-msvc-preset-config
-    uses: ./.github/workflows/buildsystem/buildsystem/windows/msvc.yml
+    uses: ./.github/workflows/buildsystem-build-windows-msvc.yml
     permissions:
       packages: write
     secrets: inherit
@@ -226,7 +226,7 @@ jobs:
 
   build-windows-msvc-arm64:
     needs: cmake-windows-msvc-arm64-preset-config
-    uses: ./.github/workflows/buildsystem/buildsystem/windows/msvc-arm64.yml
+    uses: ./.github/workflows/buildsystem-build-windows-msvc-arm64.yml
     permissions:
       packages: write
     secrets: inherit
@@ -235,7 +235,7 @@ jobs:
 
   build-windows-mingw:
     needs: cmake-windows-mingw-preset-config
-    uses: ./.github/workflows/buildsystem/buildsystem/windows/mingw.yml
+    uses: ./.github/workflows/buildsystem-build-windows-mingw.yml
     permissions:
       packages: write
     secrets: inherit
@@ -244,7 +244,7 @@ jobs:
 
   build-windows-mingw-arm64:
     needs: cmake-windows-mingw-arm64-preset-config
-    uses: ./.github/workflows/buildsystem/buildsystem/windows/mingw-arm64.yml
+    uses: ./.github/workflows/buildsystem-build-windows-mingw-arm64.yml
     permissions:
       packages: write
     secrets: inherit
@@ -253,7 +253,7 @@ jobs:
 
   build-macos:
     needs: cmake-macos-preset-config
-    uses: ./.github/workflows/buildsystem/buildsystem/macos/macos.yml
+    uses: ./.github/workflows/buildsystem-build-macos.yml
     permissions:
       packages: write
     secrets: inherit
@@ -262,12 +262,12 @@ jobs:
 
   flatpak-build:
     needs: prepare
-    uses: ./.github/workflows/buildsystem/buildsystem/flatpak/flatpak.yml
+    uses: ./.github/workflows/buildsystem-build-flatpak.yml
     secrets: inherit
 
   nix-system-build:
     needs: flake-check
-    uses: ./.github/workflows/buildsystem/buildsystem/nix/system-build.yml
+    uses: ./.github/workflows/buildsystem-build-nix-system.yml
     secrets: inherit
 
   eval-status:
@@ -279,7 +279,7 @@ jobs:
       - cmake-windows-msvc-arm64-preset-config
       - cmake-linux-preset-config
       - cmake-macos-preset-config
-    uses: ./.github/workflows/buildsystem/status/eval.yml
+    uses: ./.github/workflows/buildsystem-status-eval.yml
     secrets: inherit
     with:
       verify-vcpkg-result: ${{ needs.verify-vcpkg.result }}
@@ -292,7 +292,7 @@ jobs:
 
   codeql-status:
     needs: CodeQL
-    uses: ./.github/workflows/buildsystem/status/codeql.yml
+    uses: ./.github/workflows/buildsystem-status-codeql.yml
     secrets: inherit
     with:
       codeql-result: ${{ needs.CodeQL.result }}
@@ -306,7 +306,7 @@ jobs:
       - build-windows-mingw
       - build-windows-mingw-arm64
       - build-macos
-    uses: ./.github/workflows/buildsystem/status/build.yml
+    uses: ./.github/workflows/buildsystem-status-build.yml
     secrets: inherit
     with:
       build-linux-result: ${{ needs.build-linux.result }}
@@ -326,7 +326,7 @@ jobs:
       - build-windows-mingw
       - build-windows-mingw-arm64
       - build-macos
-    uses: ./.github/workflows/buildsystem/status/test.yml
+    uses: ./.github/workflows/buildsystem-status-test.yml
     secrets: inherit
     with:
       macos-result: ${{ needs.build-macos.result }}

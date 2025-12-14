@@ -1,0 +1,50 @@
+name: General Evaluation Process
+
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+
+permissions:
+  contents: read
+
+jobs:
+  flatpak-build:
+    name: Flatpak Build (${{ matrix.arch }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+
+    runs-on: ${{ matrix.os }}
+
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Set short version
+        shell: bash
+        run: |
+          echo "VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: ProjTLauncher-${{ runner.os }}-${{ env.VERSION }}-Flatpak.flatpak
+          manifest-path: flatpak/tr.org.yongdohyun.ProjTLauncher.yml
+          arch: ${{ matrix.arch }}

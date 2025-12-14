@@ -1,0 +1,69 @@
+name: General Evaluation Process
+
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+
+permissions:
+  contents: read
+
+jobs:
+  project-checkout:
+    name: Project Checkout Submodules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve inputs safely
+        id: resolved
+        run: |
+          # Resolve fetch-depth
+          if [ -z "${{ github.event.inputs.fetch-depth }}" ]; then
+            echo "depth=0" >> $GITHUB_OUTPUT
+          else
+            echo "depth=${{ github.event.inputs.fetch-depth }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Resolve ref
+          if [ -z "${{ github.event.inputs.ref }}" ]; then
+            echo "ref=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          else
+            echo "ref=${{ github.event.inputs.ref }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Resolve path (default repo root)
+          if [ -z "${{ github.event.inputs.path }}" ]; then
+            echo "path=." >> $GITHUB_OUTPUT
+          else
+            echo "path=${{ github.event.inputs.path }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Resolve submodules
+          if [ -z "${{ github.event.inputs.submodules }}" ]; then
+            echo "submodules=recursive" >> $GITHUB_OUTPUT
+          else
+            echo "submodules=${{ github.event.inputs.submodules }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: ${{ steps.resolved.outputs.depth }}
+          ref: ${{ steps.resolved.outputs.ref }}
+          submodules: ${{ steps.resolved.outputs.submodules }}
+          path: ${{ steps.resolved.outputs.path }}
+
+      - name: Mark repo as safe directory
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Validate checkout state
+        run: |
+          echo "Checked out commit:"
+          git -C "${{ steps.resolved.outputs.path }}" rev-parse HEAD
+
+          echo "Submodule status:"
+          git -C "${{ steps.resolved.outputs.path }}" submodule status || true

@@ -1,0 +1,77 @@
+name: General Evaluation Process
+
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-windows-msvc-preset-config:
+    name: Verify CMake Configuration (${{ matrix.artifact-name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    permissions:
+      # Required for vcpkg binary cache
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            artifact-name: Windows-MSVC
+            cmake-preset: windows_msvc
+            vcvars-arch: amd64
+
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      BUILD_TYPE: Debug
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure CMake
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+        continue-on-error: false
+
+      - name: Report configuration status
+        run: |
+          if [ -f "build/CMakeCache.txt" ] || [ -d "out" ]; then
+            echo "CMake configuration completed"
+            echo "## CMake Configuration Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "WARNING: CMake configuration may have issues"
+            echo "## CMake Configuration Issues" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,44 @@
+name: General Evaluation Process
+
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+
+permissions:
+  contents: read
+
+jobs:
+  CodeQL:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: "true"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          config-file: ./.github/codeql/codeql-config.yml
+          queries: security-and-quality
+          languages: cpp, java
+
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: Debug
+
+      - name: Configure and Build
+        run: |
+          cmake --preset linux
+          cmake --build --preset linux --config Debug
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
