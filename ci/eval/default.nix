@@ -183,12 +183,24 @@ let
 
         check_nix_file() {
           local file="$1"
-          if [ -f "$file" ]; then
-            if nix-instantiate --parse "$file" > /dev/null 2>&1; then
-              echo "$file syntax OK"
-            else
-              echo "WARNING: Could not parse $file (tool unavailable or syntax error); skipping strict failure"
-            fi
+          if [ ! -f "$file" ]; then
+            return 0
+          fi
+
+          mkdir -p "$TMPDIR/nix/state" "$TMPDIR/nix/log" "$TMPDIR/nix/etc"
+          if env -i \
+            PATH="$PATH" \
+            HOME="$TMPDIR" \
+            TMPDIR="$TMPDIR" \
+            NIX_REMOTE=local \
+            NIX_STATE_DIR="$TMPDIR/nix/state" \
+            NIX_LOG_DIR="$TMPDIR/nix/log" \
+            NIX_CONF_DIR="$TMPDIR/nix/etc" \
+            nix-instantiate --parse "$file" > /dev/null 2>&1; then
+            echo "$file syntax OK"
+          else
+            echo "ERROR: Failed to parse $file"
+            exit 1
           fi
         }
 
