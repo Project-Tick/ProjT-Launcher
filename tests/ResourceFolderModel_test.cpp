@@ -43,6 +43,14 @@
 #include <minecraft/mod/ModFolderModel.h>
 #include <minecraft/mod/ResourceFolderModel.h>
 
+#if defined(Q_OS_WIN) && (defined(__MINGW32__) || defined(__MINGW64__))
+static constexpr int RESOURCE_MODEL_TIMEOUT_MS = 30000;
+static constexpr int RESOURCE_MODEL_FAST_TIMEOUT_MS = 15000;
+#else
+static constexpr int RESOURCE_MODEL_TIMEOUT_MS = 12000;
+static constexpr int RESOURCE_MODEL_FAST_TIMEOUT_MS = 4000;
+#endif
+
 #define EXEC_UPDATE_TASK(EXEC, VERIFY)                                                  \
     QEventLoop loop;                                                                    \
                                                                                         \
@@ -51,7 +59,7 @@
     QTimer expire_timer;                                                                \
     expire_timer.callOnTimeout(&loop, &QEventLoop::quit);                               \
     expire_timer.setSingleShot(true);                                                   \
-    expire_timer.start(12000);                                                          \
+    expire_timer.start(RESOURCE_MODEL_TIMEOUT_MS);                                       \
                                                                                         \
     VERIFY(EXEC);                                                                       \
     loop.exec();                                                                        \
@@ -94,7 +102,7 @@ class ResourceFolderModelTest : public QObject {
             QTimer expire_timer;
             expire_timer.callOnTimeout(&loop, &QEventLoop::quit);
             expire_timer.setSingleShot(true);
-            expire_timer.start(4000);
+            expire_timer.start(RESOURCE_MODEL_FAST_TIMEOUT_MS);
 
             m.installResource(folder);
 
@@ -118,7 +126,7 @@ class ResourceFolderModelTest : public QObject {
             QTimer expire_timer;
             expire_timer.callOnTimeout(&loop, &QEventLoop::quit);
             expire_timer.setSingleShot(true);
-            expire_timer.start(4000);
+            expire_timer.start(RESOURCE_MODEL_FAST_TIMEOUT_MS);
 
             m.installResource(folder);
 

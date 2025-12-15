@@ -73,6 +73,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
+      packages: write
     with:
       artifact-prefix: ${{ inputs.artifact-prefix }}
       baseBranch: ${{ needs.prepare.outputs.baseBranch }}
@@ -87,7 +88,7 @@ jobs:
     needs:
       - check
       - build
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     permissions:
       statuses: write
     steps:

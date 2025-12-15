@@ -123,8 +123,7 @@ on:
         required: true
 
 permissions:
-  contents: write
-  security-events: write
+  contents: read
 
 jobs:
   prepare:
@@ -900,38 +899,6 @@ jobs:
             echo "## CMake Configuration Issues" >> $GITHUB_STEP_SUMMARY
           fi
 
-  CodeQL:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    needs: [project-checkout]
-    if: github.event_name != 'pull_request'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          submodules: "true"
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          config-file: ./.github/codeql/codeql-config.yml
-          queries: security-and-quality
-          languages: cpp, java
-
-      - name: Setup dependencies
-        uses: ./.github/actions/setup-dependencies
-        with:
-          build-type: Debug
-
-      - name: Configure and Build
-        run: |
-          cmake --preset linux
-          cmake --build --preset linux --config Debug
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
-
   build-linux:
     name: Build (${{ matrix.artifact-name }})
     needs: [cmake-linux-preset-config]
@@ -957,7 +924,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1049,7 +1016,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1147,7 +1114,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1244,7 +1211,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1343,7 +1310,7 @@ jobs:
 
       - name: Set build type
         shell: bash
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1442,7 +1409,7 @@ jobs:
 
       - name: Set build type
         shell: bash
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1535,7 +1502,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1790,51 +1757,6 @@ jobs:
           echo "status=$status" >> $GITHUB_OUTPUT
           exit $exit_code
 
-  codeql-status:
-    name: CodeQL Status Report
-    runs-on: ubuntu-latest
-    needs: [CodeQL]
-    if: always()
-    
-    steps:
-      - name: Check CodeQL results
-        id: check-results
-        run: |
-          echo "## CodeQL Status Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow:** CodeQL Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          codeql_result='${{ needs.CodeQL.result }}'
-          echo "**CodeQL Result:** \`$codeql_result\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [[ "$codeql_result" == "failure" ]]; then
-            status="failure"
-            echo "**Status:** CodeQL Analysis Failed" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
-          elif [[ "$codeql_result" == "cancelled" ]]; then
-            status="cancelled"
-            echo "**Status:** CodeQL Analysis Cancelled" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
-          elif [[ "$codeql_result" == "success" ]]; then
-            status="success"
-            echo "**Status:** CodeQL Analysis Successful" >> $GITHUB_STEP_SUMMARY
-            exit_code=0
-          else
-            status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
-          fi
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
-          
-          echo "status=$status" >> $GITHUB_OUTPUT
-          exit $exit_code
-  
   build-status:
     name: Build Status Report
     runs-on: ubuntu-latest

@@ -48,6 +48,10 @@
 
 #include <toml++/toml.h>
 
+#ifdef Q_OS_WIN32
+#include <windows.h>
+#endif
+
 namespace Packwiz {
 
 auto getRealIndexName(const QDir& index_dir, QString normalized_fname, bool should_find_match) -> QString
@@ -167,6 +171,12 @@ void V1::updateModIndex(const QDir& index_dir, Mod& mod)
     } else {
         FS::ensureFilePathExists(index_file.fileName());
     }
+
+#ifdef Q_OS_WIN32
+    // `.index` is an internal metadata directory and should be hidden on Windows.
+    // This covers paths that create it implicitly (e.g. via `ensureFilePathExists`) instead of via LocalResourceUpdateTask.
+    SetFileAttributesW(index_dir.path().toStdWString().c_str(), FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_NOT_CONTENT_INDEXED);
+#endif
 
     toml::table update;
     switch (mod.provider) {
