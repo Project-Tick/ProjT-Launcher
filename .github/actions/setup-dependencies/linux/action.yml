@@ -12,7 +12,8 @@ runs:
           dpkg-dev \
           ninja-build extra-cmake-modules scdoc \
           appstream libxcb-cursor-dev \
-          openjdk-17-jdk
+          openjdk-17-jdk \
+          libtiff6
 
     - name: Set JAVA_HOME
       shell: bash
