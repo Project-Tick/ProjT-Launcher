@@ -9,6 +9,9 @@ jobs:
   build_release:
     name: Build Release
     uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+      packages: write
     with:
       build-type: Release
       force-prepare-yes: true
