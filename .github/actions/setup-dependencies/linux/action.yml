@@ -15,6 +15,14 @@ runs:
           openjdk-17-jdk \
           libtiff6
 
+        # Qt imageformat plugin was looking for libtiff.so.5; we standardize on libtiff6 and expose compat symlink.
+        archdir="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"
+        if [ -e "/usr/lib/$archdir/libtiff.so.6" ] && [ ! -e "/usr/lib/$archdir/libtiff.so.5" ]; then
+          sudo ln -sf /usr/lib/$archdir/libtiff.so.6 /usr/lib/$archdir/libtiff.so.5
+          sudo ldconfig
+          echo ":warning: libtiff6 installed; created libtiff.so.5 compat symlink to libtiff6" >> "$GITHUB_STEP_SUMMARY"
+        fi
+
     - name: Set JAVA_HOME
       shell: bash
       run: |
