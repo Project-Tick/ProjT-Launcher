@@ -86,6 +86,13 @@ void ResourceFolderLoadTask::executeTask()
     // Read JAR files that don't have metadata
     m_resource_dir.refresh();
     for (auto entry : m_resource_dir.entryInfoList()) {
+        // The `.index` directory is an internal metadata store and should never be treated as a resource.
+        // On Unix it is usually hidden by name (and therefore excluded by QDir filters), but on Windows
+        // it may be visible if the hidden attribute wasn't applied yet.
+        if (entry.fileName() == ".index") {
+            continue;
+        }
+
         auto filePath = entry.absoluteFilePath();
         if (auto app = APPLICATION_DYN; app && app->checkQSavePath(filePath)) {
             continue;
