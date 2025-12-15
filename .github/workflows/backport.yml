@@ -43,8 +43,10 @@ jobs:
             exit 0
           fi
           target_branch="${label#backport/}"
+          pr_number="${{ github.event.pull_request.number }}"
+          backport_branch="backport/${target_branch}/pr-${pr_number}"
           echo "target_branch=$target_branch" >> "$GITHUB_OUTPUT"
-          echo "backport_branch=backport/${target_branch}/pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          echo "backport_branch=$backport_branch" >> "$GITHUB_OUTPUT"
           echo "Creating backport to: $target_branch"
 
       - name: Create backport branch
@@ -55,8 +57,8 @@ jobs:
           MERGE_SHA="${{ github.event.pull_request.merge_commit_sha }}"
           
           # Verify target branch exists
-          if ! git ls-remote --heads origin "$TARGET_BRANCH" | grep -q "$TARGET_BRANCH"; then
-            echo "Target branch $TARGET_BRANCH does not exist"
+          if ! git ls-remote --exit-code --heads origin "$TARGET_BRANCH" > /dev/null 2>&1; then
+            echo "Error: Target branch '$TARGET_BRANCH' does not exist"
             exit 1
           fi
           
@@ -68,7 +70,14 @@ jobs:
           if git cherry-pick -m 1 "$MERGE_SHA"; then
             echo "Successfully cherry-picked $MERGE_SHA"
           else
-            echo "Cherry-pick failed. Manual backport required."
+            echo "Error: Cherry-pick failed with conflicts"
+            echo "The following files have conflicts:"
+            git diff --name-only --diff-filter=U
+            echo ""
+            echo "Manual backport required. Please:"
+            echo "1. Create a branch from $TARGET_BRANCH"
+            echo "2. Manually apply changes from PR #${{ github.event.pull_request.number }}"
+            echo "3. Create a pull request to $TARGET_BRANCH"
             git cherry-pick --abort
             exit 1
           fi
