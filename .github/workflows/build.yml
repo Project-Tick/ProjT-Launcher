@@ -1757,51 +1757,6 @@ jobs:
           echo "status=$status" >> $GITHUB_OUTPUT
           exit $exit_code
 
-  codeql-status:
-    name: CodeQL Status Report
-    runs-on: ubuntu-latest
-    needs: [CodeQL]
-    if: always()
-    
-    steps:
-      - name: Check CodeQL results
-        id: check-results
-        run: |
-          echo "## CodeQL Status Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow:** CodeQL Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          codeql_result='${{ needs.CodeQL.result }}'
-          echo "**CodeQL Result:** \`$codeql_result\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [[ "$codeql_result" == "failure" ]]; then
-            status="failure"
-            echo "**Status:** CodeQL Analysis Failed" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
-          elif [[ "$codeql_result" == "cancelled" ]]; then
-            status="cancelled"
-            echo "**Status:** CodeQL Analysis Cancelled" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
-          elif [[ "$codeql_result" == "success" ]]; then
-            status="success"
-            echo "**Status:** CodeQL Analysis Successful" >> $GITHUB_STEP_SUMMARY
-            exit_code=0
-          else
-            status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
-          fi
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
-          
-          echo "status=$status" >> $GITHUB_OUTPUT
-          exit $exit_code
-  
   build-status:
     name: Build Status Report
     runs-on: ubuntu-latest
