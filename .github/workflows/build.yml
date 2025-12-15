@@ -33,12 +33,20 @@ on:
         description: Type of build (Debug or Release)
         type: string
         default: Debug
+      force-prepare-yes:
+        description: Force prepare job to enable tests/builds (used by release workflow)
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       build-type:
         description: Type of build (Debug or Release)
         type: string
         default: Debug
+      force-prepare-yes:
+        description: Force prepare job to enable tests/builds (used by release workflow)
+        type: boolean
+        default: false
       version:
         description: Launcher version
         required: true
@@ -115,7 +123,8 @@ on:
         required: true
 
 permissions:
-  contents: read
+  contents: write
+  security-events: write
 
 jobs:
   prepare:
@@ -133,7 +142,16 @@ jobs:
 
       - name: Check for testable and buildable changes
         id: check
+        env:
+          FORCE_PREPARE_YES: ${{ inputs.force-prepare-yes || github.event.inputs.force-prepare-yes || 'false' }}
         run: |
+          # Force the prepare job to green when explicitly requested (e.g., release workflow)
+          if [ "$FORCE_PREPARE_YES" = "true" ]; then
+            echo "should-test=true" >> $GITHUB_OUTPUT
+            echo "Force flag enabled — running test/build."
+            exit 0
+          fi
+
           # Always test on pull requests (including workflow_call carrying PR payload)
           if [ -n "${{ github.event.pull_request.number || '' }}" ]; then
             echo "should-test=true" >> $GITHUB_OUTPUT
