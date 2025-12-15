@@ -13,7 +13,7 @@ runs:
           ninja-build extra-cmake-modules scdoc \
           appstream libxcb-cursor-dev \
           openjdk-17-jdk \
-          libtiff5
+          libtiff6
 
     - name: Set JAVA_HOME
       shell: bash
