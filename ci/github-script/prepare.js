@@ -6,6 +6,44 @@
 const { classify } = require('../supportedBranches.js')
 const { postReview } = require('./reviews.js')
 
+const SIGNOFF_MARKER = '<!-- bot:missing-signed-off-by -->'
+
+function stripNoise(body = '') {
+  return String(body)
+    .replace(/\r/g, '')
+    .replace(/<!--.*?-->/gms, '')
+    .replace(/(^`{3,})[^`].*?\1/gms, '')
+}
+
+function hasSignedOffBy(body = '') {
+  const cleaned = stripNoise(body)
+  return /^signed-off-by:\s+.+<[^<>]+>\s*$/im.test(cleaned)
+}
+
+async function dismissSignoffReviews({ github, context, pull_number }) {
+  const reviews = await github.paginate(github.rest.pulls.listReviews, {
+    ...context.repo,
+    pull_number,
+  })
+
+  const signoffReviews = reviews.filter(
+    (r) =>
+      r.user?.login === 'github-actions[bot]' &&
+      r.state === 'CHANGES_REQUESTED' &&
+      typeof r.body === 'string' &&
+      r.body.includes(SIGNOFF_MARKER),
+  )
+
+  for (const review of signoffReviews) {
+    await github.rest.pulls.dismissReview({
+      ...context.repo,
+      pull_number,
+      review_id: review.id,
+      message: 'Signed-off-by found, thank you!',
+    })
+  }
+}
+
 /**
  * Main PR preparation function
  * Validates that the PR targets the correct branch and can be merged
@@ -36,6 +74,30 @@ module.exports = async ({ github, context, core, dry }) => {
     }
 
     const { base, head } = prInfo
+
+    // Enforce PR template sign-off (Signed-off-by: Name <email>)
+    if (!hasSignedOffBy(prInfo.body)) {
+      const body = [
+        SIGNOFF_MARKER,
+        '',
+        '## Missing Signed-off-by',
+        '',
+        'This repository requires a DCO-style sign-off line in the PR description.',
+        '',
+        'Add a line like this to the PR description (under “Signed-off-by”):',
+        '',
+        '```',
+        'Signed-off-by: Your Name <you@example.com>',
+        '```',
+        '',
+        'After updating the PR description, this check will re-run automatically.',
+      ].join('\n')
+
+      await postReview({ github, context, core, dry, body })
+      throw new Error('Missing Signed-off-by in PR description')
+    } else if (!dry) {
+      await dismissSignoffReviews({ github, context, pull_number })
+    }
 
     // Classify base branch
     const baseClassification = classify(base.ref)

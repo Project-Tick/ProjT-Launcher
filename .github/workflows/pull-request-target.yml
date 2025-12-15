@@ -116,8 +116,9 @@ jobs:
     needs: [prepare]
     uses: ./.github/workflows/build.yml
     permissions:
-      contents: read
+      contents: write
       packages: write
+      security-events: write
 
   # PR summary
   summary:
