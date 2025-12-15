@@ -222,7 +222,7 @@ jobs:
               dry: false,
             });
 
-backport-on-comment:
+  backport-on-comment:
     name: Backport on command
     runs-on: ubuntu-latest
     timeout-minutes: 15
