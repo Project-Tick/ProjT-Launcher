@@ -957,7 +957,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1049,7 +1049,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1147,7 +1147,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1244,7 +1244,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1343,7 +1343,7 @@ jobs:
 
       - name: Set build type
         shell: bash
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1442,7 +1442,7 @@ jobs:
 
       - name: Set build type
         shell: bash
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1535,7 +1535,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
