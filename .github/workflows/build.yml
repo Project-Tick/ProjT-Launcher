@@ -928,10 +928,6 @@ jobs:
           - os: ubuntu-24.04
             artifact-name: Linux
             cmake-preset: linux
-        
-          - os: ubuntu-24.04-arm
-            artifact-name: Linux-aarch64
-            cmake-preset: linux
 
     runs-on: ${{ matrix.os }}
 
@@ -1021,10 +1017,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-24.04
-            artifact-name: Linux
-            cmake-preset: linux
-        
           - os: ubuntu-24.04-arm
             artifact-name: Linux-aarch64
             cmake-preset: linux
