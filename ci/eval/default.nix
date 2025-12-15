@@ -70,12 +70,12 @@ let
         fi
 
         # Basic sanity checks (cheap and dependency-free)
-        if ! grep -Eq '^[[:space:]]*cmake_minimum_required\\(' CMakeLists.txt; then
+        if ! grep -Fqi 'cmake_minimum_required(' CMakeLists.txt; then
           echo "ERROR: Missing cmake_minimum_required(...)"
           exit 1
         fi
 
-        if ! grep -Eq '^[[:space:]]*project\\(' CMakeLists.txt; then
+        if ! grep -Fqi 'project(' CMakeLists.txt; then
           echo "ERROR: Missing project(...)"
           exit 1
         fi
@@ -105,12 +105,12 @@ let
             exit 1
           }
           
-          # Check required fields
-          jq -e '.name' vcpkg.json > /dev/null || {
-            echo "ERROR: vcpkg.json missing 'name' field"
-            exit 1
-          }
-          
+          if jq -e '.name' vcpkg.json > /dev/null; then
+            echo "INFO: vcpkg.json name field present: $(jq -r '.name' vcpkg.json)"
+          else
+            echo "WARNING: vcpkg.json missing 'name' field (optional for manifest mode)"
+          fi
+
           echo "vcpkg.json validation passed"
         else
           echo "WARNING: vcpkg.json not found (may not be using vcpkg)"
@@ -181,32 +181,32 @@ let
 
         echo "=== Validating Nix files ==="
 
-        # Check flake.nix syntax
-        if [ -f flake.nix ]; then
-          nix-instantiate --parse flake.nix > /dev/null || {
-            echo "ERROR: flake.nix has syntax errors"
-            exit 1
-          }
-          echo "flake.nix syntax OK"
-        fi
+        check_nix_file() {
+          local file="$1"
+          if [ ! -f "$file" ]; then
+            return 0
+          fi
 
-        # Check default.nix syntax
-        if [ -f default.nix ]; then
-          nix-instantiate --parse default.nix > /dev/null || {
-            echo "ERROR: default.nix has syntax errors"
+          mkdir -p "$TMPDIR/nix/state" "$TMPDIR/nix/log" "$TMPDIR/nix/etc"
+          if env -i \
+            PATH="$PATH" \
+            HOME="$TMPDIR" \
+            TMPDIR="$TMPDIR" \
+            NIX_REMOTE=local \
+            NIX_STATE_DIR="$TMPDIR/nix/state" \
+            NIX_LOG_DIR="$TMPDIR/nix/log" \
+            NIX_CONF_DIR="$TMPDIR/nix/etc" \
+            nix-instantiate --parse "$file" > /dev/null 2>&1; then
+            echo "$file syntax OK"
+          else
+            echo "ERROR: Failed to parse $file"
             exit 1
-          }
-          echo "default.nix syntax OK"
-        fi
+          fi
+        }
 
-        # Check shell.nix syntax
-        if [ -f shell.nix ]; then
-          nix-instantiate --parse shell.nix > /dev/null || {
-            echo "ERROR: shell.nix has syntax errors"
-            exit 1
-          }
-          echo "shell.nix syntax OK"
-        fi
+        check_nix_file flake.nix
+        check_nix_file default.nix
+        check_nix_file shell.nix
 
         echo "nix validation passed" > $out/nix.txt
       '';

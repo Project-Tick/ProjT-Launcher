@@ -71,4 +71,10 @@ The evaluation checks:
 
 ## CI Integration
 
-There is currently no dedicated `eval.yml` workflow in `.github/workflows/`. If you want to run these checks in CI, add a workflow that runs `nix build`/`nix develop` and calls the targets described above.
+Evaluation now runs automatically in `.github/workflows/eval.yml`. The workflow installs Nix on `ubuntu-latest`, evaluates the module with `nix-build --expr 'let pkgs = import <nixpkgs> {}; eval = (import ./ci/eval { inherit (pkgs) lib runCommand cmake nix jq; }) {}; in eval.full'`, and publishes the generated summary to the workflow run. Trigger it manually with **Run workflow** or let it execute on every pull request. You can mirror the same steps locally with:
+
+```bash
+NIX_PATH=nixpkgs=channel:nixos-unstable \
+nix-build --expr 'let pkgs = import <nixpkgs> {}; eval = (import ./ci/eval { inherit (pkgs) lib runCommand cmake nix jq; }) {}; in eval.full'
+cat result/summary.md
+```
