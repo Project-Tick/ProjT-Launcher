@@ -262,3 +262,42 @@ jobs:
           script: |
             const { handleBackportComment } = require('./ci/github-script/backport.js');
             await handleBackportComment({ github, context, core });
+
+  backport-on-close:
+    name: Backport on merge (labels)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: >
+      github.event_name == 'pull_request_target' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      contains(join(github.event.pull_request.labels.*.name, ','), 'backport/') &&
+      github.repository_owner == 'Project-Tick'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ github.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd ci/github-script
+          npm ci --omit=dev
+
+      - name: Run backport handler (labels)
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          retries: 3
+          script: |
+            const { handleBackportOnClose } = require('./ci/github-script/backport.js');
+            await handleBackportOnClose({ github, context, core });
