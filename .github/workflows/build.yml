@@ -1,4 +1,4 @@
-name: Build-Test-Check
+name: General Evaluation Process
 
 on:
   push:
@@ -7,8 +7,25 @@ on:
       - "release-*"
       - "qml_migration"
     paths:
-      # Files
-      - "**"
+      # Core build and source paths
+      - "launcher/**"
+      - "libraries/**"
+      - "tests/**"
+      - "buildconfig/**"
+      - "cmake/**"
+      - "program_info/**"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+      - "vcpkg.json"
+      - "vcpkg-configuration.json"
+      - "ci/**"
+      - ".github/**"
+      - "flake.nix"
+      - "shell.nix"
+      - "default.nix"
+      - "nix/**"
+      - "flatpak/**"
+      - "debian/**"
   merge_group:
   workflow_call:
     inputs:
@@ -107,6 +124,7 @@ jobs:
     outputs:
       should-test: ${{ steps.check.outputs.should-test }}
       mergedSha: ${{ github.event.pull_request.head.sha || github.sha }}
+      changed-files: ${{ steps.collect.outputs.changed-files }}
     
     steps:
       - uses: actions/checkout@v6
@@ -116,10 +134,17 @@ jobs:
       - name: Check for testable and buildable changes
         id: check
         run: |
-          # Always test on pull requests
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          # Always test on pull requests (including workflow_call carrying PR payload)
+          if [ -n "${{ github.event.pull_request.number || '' }}" ]; then
             echo "should-test=true" >> $GITHUB_OUTPUT
-            echo "Pull request detected — forcing test/build."
+            echo "Pull request context detected — forcing test/build."
+            exit 0
+          fi
+
+          # Always run for Dependabot pushes (branches like dependabot/*)
+          if [ "${{ github.actor }}" = "dependabot[bot]" ] || [[ "${{ github.ref }}" =~ refs/heads/dependabot/ ]]; then
+            echo "should-test=true" >> $GITHUB_OUTPUT
+            echo "Dependabot update detected — forcing test/build."
             exit 0
           fi
 
@@ -138,6 +163,15 @@ jobs:
             echo "should-test=false" >> $GITHUB_OUTPUT
             echo "No relevant changes."
           fi
+
+      - name: Collect changed files
+        id: collect
+        run: |
+          git fetch --no-tags --prune --depth=100 origin +refs/heads/*:refs/remotes/origin/*
+          base_ref=${{ github.event.pull_request.base.ref || github.event.before || 'origin/develop' }}
+          git diff --name-only "$base_ref"...HEAD > changed.txt || true
+          changed_files=$(cat changed.txt | tr '\n' ',' | sed 's/,$//')
+          echo "changed-files=$changed_files" >> $GITHUB_OUTPUT
 
   verify-vcpkg:
     name: Verify vcpkg Configuration
@@ -239,7 +273,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@v31.9.0
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
@@ -852,6 +886,7 @@ jobs:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
     needs: [project-checkout]
+    if: github.event_name != 'pull_request'
 
     steps:
       - name: Checkout repository
@@ -881,7 +916,103 @@ jobs:
 
   build-linux:
     name: Build (${{ matrix.artifact-name }})
-    needs: [cmake-linux-preset-config, CodeQL, cmake-linux-arm64-preset-config]
+    needs: [cmake-linux-preset-config]
+    if: needs.prepare.outputs.should-test == 'true'
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact-name: Linux
+            cmake-preset: linux
+        
+          - os: ubuntu-24.04-arm
+            artifact-name: Linux-aarch64
+            cmake-preset: linux
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+          git clean -fdx libraries/zlib/
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set version variable
+        run: echo "VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || steps.short-version.outputs.version }}" >> $GITHUB_ENV
+
+      - name: Package (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        uses: ./.github/actions/package/linux
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          artifact-name: ${{ matrix.artifact-name }}
+          qt-version: ${{ steps.setup-dependencies.outputs.qt-version }}
+
+          gpg-private-key: ${{ secrets.LINUX_GPG_KEY }}
+          gpg-private-key-id: ${{ secrets.LINUX_GPG_ID }}
+
+  build-linux-arm64:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [cmake-linux-arm64-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -977,7 +1108,7 @@ jobs:
 
   build-windows-msvc:
     name: Build (${{ matrix.artifact-name }})
-    needs: [CodeQL, cmake-windows-msvc-preset-config]
+    needs: [cmake-windows-msvc-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -1074,7 +1205,7 @@ jobs:
 
   build-windows-msvc-arm64:
     name: Build (${{ matrix.artifact-name }})
-    needs: [CodeQL, cmake-windows-msvc-arm64-preset-config]
+    needs: [cmake-windows-msvc-arm64-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -1171,7 +1302,7 @@ jobs:
         
   build-windows-mingw:
     name: Build (${{ matrix.artifact-name }})
-    needs: [CodeQL, cmake-windows-mingw-preset-config]
+    needs: [cmake-windows-mingw-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -1270,7 +1401,7 @@ jobs:
 
   build-windows-mingw-arm64:
     name: Build (${{ matrix.artifact-name }})
-    needs: [CodeQL, cmake-windows-mingw-arm64-preset-config]
+    needs: [cmake-windows-mingw-arm64-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -1369,7 +1500,7 @@ jobs:
 
   build-macos:
     name: Build (${{ matrix.artifact-name }})
-    needs: [cmake-macos-preset-config, CodeQL]
+    needs: [cmake-macos-preset-config]
     if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
@@ -1714,6 +1845,7 @@ jobs:
           
           # Check individual build results
           build_linux_result='${{ needs.build-linux.result }}'
+          build_linux_arm64_result='${{ needs.build-linux-arm64.result }}'
           build_windows_msvc_result='${{ needs.build-windows-msvc.result }}'
           build_windows_msvc_arm64_result='${{ needs.build-windows-msvc-arm64.result }}'
           build_windows_mingw_result='${{ needs.build-windows-mingw.result }}'
@@ -1722,6 +1854,7 @@ jobs:
           
           echo "**Build Results:**" >> $GITHUB_STEP_SUMMARY
           echo "- Linux: \`$build_linux_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux: \`$build_linux_arm64_result\`" >> $GITHUB_STEP_SUMMARY
           echo "- Windows MSVC: \`$build_windows_msvc_result\`" >> $GITHUB_STEP_SUMMARY
           echo "- Windows MSVC ARM64: \`$build_windows_msvc_arm64_result\`" >> $GITHUB_STEP_SUMMARY
           echo "- Windows MinGW: \`$build_windows_mingw_result\`" >> $GITHUB_STEP_SUMMARY
@@ -1783,6 +1916,7 @@ jobs:
           
           macos_tests_result='${{ needs.build-macos.result }}'
           linux_tests_result='${{ needs.build-linux.result }}'
+          linux_arm64_tests_result='${{ needs.build-linux-arm64.result }}'
           windows_msvc_tests_result='${{ needs.build-windows-msvc.result }}'
           windows_msvc_arm64_tests_result='${{ needs.build-windows-msvc-arm64.result }}'
           windows_mingw_tests_result='${{ needs.build-windows-mingw.result }}'
@@ -1790,6 +1924,7 @@ jobs:
 
           echo "**macOS Unit Tests:** \`$macos_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Linux Unit Tests:** \`$linux_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Linux ARM64 Unit Tests:** \`$linux_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Windows MSVC Unit Tests:** \`$windows_msvc_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Windows MSVC ARM64 Unit Tests:** \`$windows_msvc_arm64_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Windows MinGW Unit Tests:** \`$windows_mingw_tests_result\`" >> $GITHUB_STEP_SUMMARY
@@ -1798,109 +1933,109 @@ jobs:
           
           if [[ "$macos_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**macOS Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$macos_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**macOS Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$macos_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**macOS Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**macOS Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
 
           if [[ "$linux_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Linux Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$linux_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**Linux Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$linux_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**Linux Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**Linux Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
           
           if [[ "$windows_msvc_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_msvc_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_msvc_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
 
           if [[ "$windows_mingw_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_mingw_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_mingw_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
 
           if [[ "$windows_msvc_arm64_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC ARM64 Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_msvc_arm64_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC ARM64 Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_msvc_arm64_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC ARM64 Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MSVC ARM64 Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
 
           if [[ "$windows_mingw_arm64_tests_result" == "failure" ]]; then
             status="failure"
-            echo "**Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW ARM64 Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_mingw_arm64_tests_result" == "cancelled" ]]; then
             status="cancelled"
-            echo "**Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW ARM64 Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           elif [[ "$windows_mingw_arm64_tests_result" == "success" ]]; then
             status="success"
-            echo "**Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW ARM64 Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
             exit_code=0
           else
             status="unknown"
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+            echo "**Windows MINGW ARM64 Status:** Unknown" >> $GITHUB_STEP_SUMMARY
             exit_code=1
           fi
 
@@ -1909,4 +2044,3 @@ jobs:
           
           echo "status=$status" >> $GITHUB_OUTPUT
           exit $exit_code
-

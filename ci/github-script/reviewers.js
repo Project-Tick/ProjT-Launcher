@@ -3,17 +3,82 @@
  * Automatically assigns reviewers based on changed files and CODEOWNERS
  */
 
-// Component to reviewer mapping for ProjT Launcher
-const COMPONENT_REVIEWERS = {
-  core: ['YongDo-Hyun'],
-  ui: ['YongDo-Hyun'],
-  minecraft: ['YongDo-Hyun'],
-  modplatform: ['YongDo-Hyun'],
-  build: ['YongDo-Hyun'],
-  ci: ['YongDo-Hyun'],
-  docs: ['YongDo-Hyun'],
-  translations: ['YongDo-Hyun'],
+const fs = require('node:fs')
+const path = require('node:path')
+
+function extractMaintainersBlock(source) {
+  const token = 'maintainers ='
+  const start = source.indexOf(token)
+  if (start === -1) {
+    return ''
+  }
+
+  const braceStart = source.indexOf('{', start)
+  if (braceStart === -1) {
+    return ''
+  }
+
+  let depth = 0
+  for (let i = braceStart; i < source.length; i += 1) {
+    const char = source[i]
+    if (char === '{') {
+      depth += 1
+    } else if (char === '}') {
+      depth -= 1
+      if (depth === 0) {
+        return source.slice(braceStart, i + 1)
+      }
+    }
+  }
+  return ''
 }
+
+function parseAreas(areaBlock) {
+  const matches = areaBlock.match(/"([^"]+)"/g) || []
+  return matches.map(entry => entry.replace(/"/g, ''))
+}
+
+function loadMaintainersFromNix() {
+  const maintainersPath = path.join(__dirname, '..', 'eval', 'compare', 'maintainers.nix')
+  try {
+    const source = fs.readFileSync(maintainersPath, 'utf8')
+    const block = extractMaintainersBlock(source)
+    if (!block) {
+      return []
+    }
+
+    const entryRegex = /(\w+)\s*=\s*{([\s\S]*?)\n\s*};/g
+    const maintainers = []
+    let match
+    while ((match = entryRegex.exec(block)) !== null) {
+      const [, , body] = match
+      const githubMatch = body.match(/github\s*=\s*"([^"]+)"/)
+      if (!githubMatch) continue
+      const areasMatch = body.match(/areas\s*=\s*\[([\s\S]*?)\]/)
+      const areas = areasMatch ? parseAreas(areasMatch[1]) : []
+      maintainers.push({
+        handle: githubMatch[1],
+        areas,
+      })
+    }
+    return maintainers
+  } catch (error) {
+    console.warn(`Could not read maintainers from maintainers.nix: ${error.message}`)
+    return []
+  }
+}
+
+const FALLBACK_MAINTAINERS = [
+  {
+    handle: 'YongDo-Hyun',
+    areas: ['all'],
+  },
+]
+
+const MAINTAINERS = (() => {
+  const parsed = loadMaintainersFromNix()
+  return parsed.length > 0 ? parsed : FALLBACK_MAINTAINERS
+})()
 
 // File patterns to components mapping
 const FILE_PATTERNS = [
@@ -32,6 +97,22 @@ const FILE_PATTERNS = [
   { pattern: /\.md$/, component: 'docs' },
   { pattern: /translations\//, component: 'translations' },
 ]
+
+const COMPONENTS = Array.from(new Set(FILE_PATTERNS.map(({ component }) => component)))
+
+const getMaintainersForComponent = component => {
+  const assigned = MAINTAINERS.filter(
+    maintainer =>
+      maintainer.areas.includes(component) || maintainer.areas.includes('all')
+  ).map(maintainer => maintainer.handle)
+
+  return assigned.length > 0 ? assigned : MAINTAINERS.map(maintainer => maintainer.handle)
+}
+
+// Component to reviewer mapping for ProjT Launcher
+const COMPONENT_REVIEWERS = Object.fromEntries(
+  COMPONENTS.map(component => [component, getMaintainersForComponent(component)])
+)
 
 /**
  * Get components affected by file changes

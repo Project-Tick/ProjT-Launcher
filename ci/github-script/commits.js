@@ -7,22 +7,53 @@ const { classify } = require('../supportedBranches.js')
 const withRateLimit = require('./withRateLimit.js')
 const { dismissReviews, postReview } = require('./reviews.js')
 
-// Commit message conventions for ProjT Launcher
-const COMMIT_TYPES = [
-  'feat',      // New feature
-  'fix',       // Bug fix
-  'docs',      // Documentation
-  'style',     // Formatting, no code change
-  'refactor',  // Code restructuring
-  'perf',      // Performance improvement
-  'test',      // Adding tests
-  'build',     // Build system changes
-  'ci',        // CI configuration
-  'chore',     // Maintenance tasks
-  'revert',    // Revert changes
-  'deps',      // Dependency updates
-  'deps(deps)', // Dependency updates (explicit)
+const commitTypeConfig = (() => {
+  try {
+    return require('./commit-types.json')
+  } catch (error) {
+    console.warn(`commit validator: could not load commit-types.json (${error.message})`)
+    return {}
+  }
+})()
+
+const parseCommitTypeList = (value) => {
+  if (!value) {
+    return []
+  }
+  return value
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+}
+
+const DEFAULT_COMMIT_TYPES = [
+  'build',
+  'chore',
+  'ci',
+  'docs',
+  'feat',
+  'fix',
+  'perf',
+  'refactor',
+  'revert',
+  'style',
+  'test',
+  'deps',
 ]
+
+const EXTENDED_COMMIT_TYPES = [
+  ...(commitTypeConfig.types ?? []),
+]
+
+const ENV_COMMIT_TYPES = parseCommitTypeList(
+  process.env.COMMIT_TYPES ?? process.env.ADDITIONAL_COMMIT_TYPES ?? ''
+)
+
+const COMMIT_TYPES = Array.from(
+  new Set([...DEFAULT_COMMIT_TYPES, ...EXTENDED_COMMIT_TYPES, ...ENV_COMMIT_TYPES])
+)
+
+const COMMIT_TYPE_SET = new Set(COMMIT_TYPES)
 
 // Component scopes for ProjT Launcher
 const VALID_SCOPES = [
@@ -43,6 +74,7 @@ const VALID_SCOPES = [
   'skins',
   'translations',
   'build',
+  'ci',
   'nix',
   'vcpkg',
   'deps',
@@ -54,12 +86,21 @@ const VALID_SCOPES = [
  * @param {string} message - Commit message
  * @returns {object} Validation result
  */
+function normalizeCommitType(type) {
+  if (!type) {
+    return ''
+  }
+  const trimmed = type.toLowerCase()
+  const legacyMatch = trimmed.match(/^\d+\.(.+)$/)
+  return legacyMatch ? legacyMatch[1] : trimmed
+}
+
 function validateCommitMessage(message) {
   const firstLine = message.split('\n')[0]
   
   // Check for conventional commit format
   const conventionalMatch = firstLine.match(
-    /^(?<type>\w+)(?:\((?<scope>[\w-]+)\))?!?:\s*(?<description>.+)$/
+    /^(?<type>[\w.-]+)(?:\((?<scope>[\w-]+)\))?!?:\s*(?<description>.+)$/
   )
   
   if (!conventionalMatch) {
@@ -71,9 +112,10 @@ function validateCommitMessage(message) {
   }
   
   const { type, scope, description } = conventionalMatch.groups
+  const normalizedType = normalizeCommitType(type)
   
   // Validate type
-  if (!COMMIT_TYPES.includes(type.toLowerCase())) {
+  if (!COMMIT_TYPE_SET.has(normalizedType)) {
     return {
       valid: false,
       severity: 'warning',
@@ -99,11 +141,11 @@ function validateCommitMessage(message) {
     }
   }
   
-  if (firstLine.length > 72) {
+  if (firstLine.length > 140) {
     return {
       valid: false,
       severity: 'info',
-      message: 'First line exceeds 72 characters',
+      message: 'First line exceeds 140 characters',
     }
   }
   
@@ -157,7 +199,7 @@ function checkCommitPatterns(commit) {
 /**
  * Validate all commits in a PR
  */
-module.exports = async ({ github, context, core, dry }) => {
+async function run({ github, context, core, dry }) {
   await withRateLimit({ github, core }, async (stats) => {
     stats.prs = 1
 
@@ -288,3 +330,8 @@ module.exports = async ({ github, context, core, dry }) => {
     }
   })
 }
+
+module.exports = run
+module.exports.validateCommitMessage = validateCommitMessage
+module.exports.checkCommitPatterns = checkCommitPatterns
+module.exports.normalizeCommitType = normalizeCommitType

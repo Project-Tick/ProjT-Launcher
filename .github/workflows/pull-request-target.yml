@@ -4,7 +4,7 @@
 # Main workflow for PR validation, builds, and automation.
 # =============================================================================
 
-name: PR
+name: General Evaluation Process for Pull Requests
 
 on:
   pull_request_target:
