@@ -241,7 +241,7 @@ Every new file must start with this header:
 **C++ files:**
 
 ```cpp
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -256,7 +256,7 @@ Every new file must start with this header:
 **QML files:**
 
 ```qml
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -273,7 +273,7 @@ Every new file must start with this header:
 Preserve original copyright notices when modifying code from other projects:
 
 ```cpp
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
