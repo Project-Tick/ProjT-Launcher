@@ -1,2 +1,4 @@
 libraries/nbtplusplus
 libraries/quazip
+_site
+node_modules

@@ -1,0 +1,74 @@
+<header class="site-hero">
+  <div class="bg hero-pattern" aria-hidden="true"></div>
+  <nav class="container hero-nav">
+    <a class="brand home" href="{{ '/' | url }}" aria-label="ProjT Launcher">
+      <img class="brand-logo" src="/img/logo.svg" alt="ProjT Launcher logo" />
+      <div class="brand-copy">
+        <span>ProjT Launcher</span>
+        <small>Freedom-first Minecraft launcher</small>
+      </div>
+    </a>
+    <ul class="main-menu">
+      {%- for entry in collections.nav | eleventyNavigation %}
+      <li class="nav-item{% if entry.url == page.url %} nav-item-active{% endif %}">
+        <a href="{{ entry.url | url }}">{{ entry.title }}</a>
+      </li>
+      {%- endfor %}
+    </ul>
+    <div class="links">
+      <div class="social-links">
+        <a href="https://github.com/Project-Tick/ProjT-Launcher" target="_blank" aria-label="GitHub"><i class="fa fa-github"></i></a>
+        <a href="mailto:froster12@naver.com" target="_blank" aria-label="Email"><i class="fa fa-envelope-square"></i></a>
+        <a href="https://matrix.to/#/#projtlauncher:matrix.org" target="_blank" aria-label="Matrix"><i class="fa fa-matrix-org"></i></a>
+      </div>
+      <a class="button" href="{{ '/download/?from=button' | url }}">Download</a>
+    </div>
+  </nav>
+
+  {% if hero %}
+  <div class="hero-body container">
+    <div class="hero-description">
+      <p class="eyebrow">Open &amp; customizable</p>
+      <h1 class="hero-title">{{ hero.title }}</h1>
+      <p class="subtitle">{{ hero.description }}</p>
+      <div class="hero-highlights">
+        <div class="hero-highlight">
+          <span class="hero-highlight-label">License</span>
+          <span class="hero-highlight-value">GPL-3 / AGPL-3</span>
+        </div>
+        <div class="hero-highlight">
+          <span class="hero-highlight-label">Integrations</span>
+          <span class="hero-highlight-value">Modrinth · CurseForge · Technic · ATLauncher </span>
+        </div>
+        <div class="hero-highlight">
+          <span class="hero-highlight-label">Telemetry</span>
+          <span class="hero-highlight-value">Never collected</span>
+        </div>
+      </div>
+      <div class="hero-actions">
+        {%- if hero.button %}
+        <a class="button size-large" href="{{ hero.button.url | url }}">{{ hero.button.content }}</a>
+        {%- endif %}
+        <a class="button ghost-button size-large" href="https://github.com/Project-Tick/ProjT-Launcher" target="_blank">View on GitHub</a>
+      </div>
+      <div class="hero-metrics">
+        <div>
+          <span class="metric-value">100%</span>
+          <span class="metric-label">Free &amp; open source</span>
+        </div>
+        <div>
+          <span class="metric-value">Multi-platform</span>
+          <span class="metric-label">Windows • macOS • Linux</span>
+        </div>
+      </div>
+    </div>
+    {%- if hero.image %}
+    <div class="hero-media">
+      <div class="hero-media-frame">
+        <img src="{{ hero.image.light }}" alt="{{ hero.title }}">
+      </div>
+    </div>
+    {%- endif %}
+  </div>
+  {% endif %}
+</header>
