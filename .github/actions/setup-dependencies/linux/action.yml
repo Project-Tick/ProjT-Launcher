@@ -4,6 +4,31 @@ runs:
   using: composite
 
   steps:
+    - name: Free disk space (GitHub-hosted runners)
+      shell: bash
+      run: |
+        echo "Disk usage before cleanup:"
+        df -h
+
+        # Free up space on GitHub-hosted runners (safe to ignore missing paths).
+        SUDO=""
+        if command -v sudo >/dev/null 2>&1; then
+          SUDO="sudo"
+        fi
+
+        $SUDO swapoff -a || true
+        $SUDO rm -rf /swapfile || true
+
+        $SUDO rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/share/swift /usr/local/.ghcup || true
+        $SUDO rm -rf /opt/hostedtoolcache/CodeQL || true
+        $SUDO rm -rf /usr/local/share/boost /usr/local/share/powershell || true
+
+        $SUDO apt-get clean || true
+        $SUDO rm -rf /var/lib/apt/lists/* || true
+
+        echo "Disk usage after cleanup:"
+        df -h
+
     - name: Install host dependencies
       shell: bash
       run: |
@@ -12,7 +37,16 @@ runs:
           dpkg-dev \
           ninja-build extra-cmake-modules scdoc \
           appstream libxcb-cursor-dev \
-          openjdk-17-jdk
+          openjdk-17-jdk \
+          libtiff6
+
+        # Qt imageformat plugin was looking for libtiff.so.5; we standardize on libtiff6 and expose compat symlink.
+        archdir="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"
+        if [ -e "/usr/lib/$archdir/libtiff.so.6" ] && [ ! -e "/usr/lib/$archdir/libtiff.so.5" ]; then
+          sudo ln -sf /usr/lib/$archdir/libtiff.so.6 /usr/lib/$archdir/libtiff.so.5
+          sudo ldconfig
+          echo ":warning: libtiff6 installed; created libtiff.so.5 compat symlink to libtiff6" >> "$GITHUB_STEP_SUMMARY"
+        fi
 
     - name: Set JAVA_HOME
       shell: bash

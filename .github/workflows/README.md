@@ -10,7 +10,7 @@ The workflows are organized by functionality:
 
 - **`pull-request-target.yml`**: Prepares PR metadata used by other workflows (safe for forks)
 - **`check.yml`**: Reusable workflow for PR validation (commits/CODEOWNERS/basic quality checks)
-- **`bot.yml`**: PR automation (labeling, assigning reviewers, scheduled maintenance)
+- **`bot.yml`**: PR automation (labeling, assigning reviewers, and maintainer-only bot commands like `backport`)
 - **`comment.yml`**: Handles bot commands in PR comments
 - **`review.yml`** / **`reviewed.yml`**: Review event handling and status updates
 - **`edited.yml`**: Re-runs labeler when PR base branch changes
@@ -32,6 +32,16 @@ The workflows are organized by functionality:
 - **`backport.yml`**: Creates backport PRs when a merged PR is labeled `backport/release-*`
 - **`stale.yml`**: Marks inactive issues/PRs (never closes them)
 - **`update-flake.yml`**: Weekly `flake.lock` updates
+
+## Bot Commands
+
+Maintainers can trigger certain actions via PR comments:
+
+- Backport to latest release branch: `@projt-launcher-bot backport latest`
+- Backport to all release branches: `@projt-launcher-bot backport all`
+- Backport to a specific release branch: `@projt-launcher-bot backport release-1.2.3`
+- Re-run an existing backport branch: add `--force`
+- Only push the branch (no PR): add `--no-pr`
 
 ## Key Design Principles
 
