@@ -1,0 +1,64 @@
+# Bot (Cloudflare Workers)
+
+This directory contains a Cloudflare Worker that can auto-label GitHub pull requests (similar to the CI bot).
+
+## Endpoints
+
+- `GET /` or `GET /healthz`: health check
+- `POST /github/webhook`: GitHub webhook receiver (requires signature)
+- `POST /run` or `GET /run`: manual run (requires `Authorization: Bearer <ADMIN_TOKEN>`)
+
+## Required secrets (Cloudflare)
+
+Set these as Worker secrets:
+
+- `GITHUB_TOKEN`: token with permission to add labels (repo access as needed)
+- `GITHUB_WEBHOOK_SECRET`: the webhook secret configured in GitHub
+- `ADMIN_TOKEN`: (optional but recommended) protects `/run`
+
+Example (local):
+
+```bash
+cd bot
+wrangler secret put GITHUB_TOKEN
+wrangler secret put GITHUB_WEBHOOK_SECRET
+wrangler secret put ADMIN_TOKEN
+```
+
+## Local smoke test
+
+```bash
+cd bot
+wrangler dev
+curl -sS http://localhost:8787/healthz
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:8787/run?pr=123"
+```
+
+## Config vars
+
+Defined in `bot/wrangler.json`:
+
+- `GITHUB_OWNER` (default: `Project-Tick`)
+- `GITHUB_REPO` (default: `ProjT-Launcher`)
+- `BOT_DRY_RUN` (`true`/`false`)
+
+## GitHub webhook setup
+
+Create a GitHub webhook pointing to:
+
+- Payload URL: `https://<your-worker-domain>/github/webhook`
+- Content type: `application/json`
+- Secret: same as `GITHUB_WEBHOOK_SECRET`
+- Events: `Pull requests` (at minimum)
+
+## GitHub Actions deploy
+
+Workflow: `.github/workflows/deploy-bot-worker.yml`
+
+Repository secrets expected:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `PROJT_BOT_GITHUB_TOKEN` (mapped to Worker `GITHUB_TOKEN`)
+- `PROJT_BOT_WEBHOOK_SECRET` (mapped to Worker `GITHUB_WEBHOOK_SECRET`)
+- `PROJT_BOT_ADMIN_TOKEN` (mapped to Worker `ADMIN_TOKEN`)

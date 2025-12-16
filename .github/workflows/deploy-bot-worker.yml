@@ -1,0 +1,39 @@
+name: Deploy Bot Worker
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "bot/**"
+      - ".github/workflows/deploy-bot-worker.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-bot-worker
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'Project-Tick'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: bot
+          command: deploy
+          secrets: |
+            GITHUB_TOKEN
+            GITHUB_WEBHOOK_SECRET
+            ADMIN_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.PROJT_BOT_GITHUB_TOKEN }}
+          GITHUB_WEBHOOK_SECRET: ${{ secrets.PROJT_BOT_WEBHOOK_SECRET }}
+          ADMIN_TOKEN: ${{ secrets.PROJT_BOT_ADMIN_TOKEN }}
