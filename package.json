@@ -1,0 +1,47 @@
+{
+  "name": "projtlauncher",
+  "version": "1.0.0",
+  "description": "Official ProjT Launcher website",
+  "scripts": {
+    "build": "eleventy",
+    "watch": "eleventy --watch",
+    "serve": "eleventy --serve",
+    "start": "eleventy --serve",
+    "debug": "DEBUG=* npx eleventy",
+    "lint": "markdownlint .",
+    "lint:fix": "markdownlint --fix .",
+    "update-contributors": "node ./scripts/update-contributors.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Project-Tick/projtlauncher.yongdohyun.org.tr.git"
+  },
+  "author": {
+    "name": "Do-Hyun YONG",
+    "email": "froster12@naver.com",
+    "url": "https://github.com/YongDo-Hyun"
+  },
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/Project-Tick/projtlauncher.yongdohyun.org.tr/issues"
+  },
+  "homepage": "https://projtlauncher.yongdohyun.org.tr/",
+  "devDependencies": {
+    "@11ty/eleventy": "3.1.2",
+    "@11ty/eleventy-fetch": "5.1.0",
+    "@11ty/eleventy-img": "6.0.4",
+    "@11ty/eleventy-navigation": "1.0.4",
+    "@11ty/eleventy-plugin-rss": "2.0.4",
+    "@11ty/eleventy-plugin-syntaxhighlight": "5.0.2",
+    "@fontsource/inter": "5.2.8",
+    "@fortawesome/fontawesome-free": "6.7.2",
+    "axios": "1.12.2",
+    "clean-css": "5.3.3",
+    "luxon": "3.7.2",
+    "markdown-it": "14.1.0",
+    "markdown-it-anchor": "9.2.0",
+    "markdown-it-table-of-contents": "0.9.0",
+    "markdownlint-cli": "0.45.0"
+  },
+  "packageManager": "pnpm@10.18.3"
+}
