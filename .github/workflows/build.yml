@@ -37,6 +37,10 @@ on:
         description: Force prepare job to enable tests/builds (used by release workflow)
         type: boolean
         default: false
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        type: string
+        required: false
   workflow_dispatch:
     inputs:
       build-type:
@@ -125,6 +129,9 @@ on:
 permissions:
   contents: read
 
+env:
+  CHECKOUT_REF: ${{ inputs.ref || github.event.inputs.ref || github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   prepare:
     name: Prepare Workflow
@@ -138,6 +145,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Check for testable and buildable changes
         id: check
@@ -200,6 +208,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Validate JSON files
         run: |
@@ -288,6 +297,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31.9.0
@@ -320,11 +330,7 @@ jobs:
           fi
 
           # Resolve ref
-          if [ -z "${{ github.event.inputs.ref }}" ]; then
-            echo "ref=${GITHUB_SHA}" >> $GITHUB_OUTPUT
-          else
-            echo "ref=${{ github.event.inputs.ref }}" >> $GITHUB_OUTPUT
-          fi
+          echo "ref=${{ env.CHECKOUT_REF }}" >> $GITHUB_OUTPUT
 
           # Resolve path (default repo root)
           if [ -z "${{ github.event.inputs.path }}" ]; then
@@ -394,6 +400,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
           
       - name: Setup dependencies
@@ -458,6 +465,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -524,6 +532,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Enter VS Developer shell
@@ -632,6 +641,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Enter VS Developer shell
@@ -739,6 +749,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -804,6 +815,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -869,6 +881,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -929,6 +942,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -1021,6 +1035,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -1119,6 +1134,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -1216,6 +1232,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -1315,6 +1332,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -1414,6 +1432,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -1507,6 +1526,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Setup dependencies
@@ -1599,6 +1619,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
       - name: Set short version
@@ -1634,6 +1655,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31

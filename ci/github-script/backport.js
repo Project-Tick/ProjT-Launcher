@@ -258,6 +258,7 @@ async function createOrReuseBackportPR({
   originalPR,
   originalTitle,
   cherryPickedSha,
+  requestedVia = 'bot comment',
 }) {
   const head = `${context.repo.owner}:${backportBranch}`
 
@@ -281,7 +282,7 @@ async function createOrReuseBackportPR({
       ``,
       `- Original PR: #${originalPR}`,
       `- Cherry-picked: \`${cherryPickedSha}\``,
-      `- Requested via bot comment`,
+      `- Requested via ${requestedVia}`,
     ].join('\n'),
     head: backportBranch,
     base: targetBranch,
@@ -311,6 +312,7 @@ async function performBackport({
   backportBranch,
   mergeSha,
   options,
+  requestedVia,
 }) {
   const baseBranch = pull_request.base.ref
 
@@ -367,6 +369,7 @@ async function performBackport({
     originalPR: pull_request.number,
     originalTitle: pull_request.title,
     cherryPickedSha: mergeSha,
+    requestedVia,
   })
 
   return {
@@ -484,6 +487,7 @@ async function handleBackportComment({ github, context, core }) {
       backportBranch,
       mergeSha,
       options: command.options,
+      requestedVia: 'bot comment',
     })
     results.push(res)
   }
@@ -530,7 +534,155 @@ async function handleBackportComment({ github, context, core }) {
   return true
 }
 
+function getBackportLabelTargets(labels = []) {
+  return labels
+    .filter((l) => typeof l === 'string' && l.startsWith('backport/'))
+    .map((l) => l.slice('backport/'.length))
+}
+
+function optionsFromLabels(labelTargets = []) {
+  return {
+    force: labelTargets.includes('force'),
+    noPr: labelTargets.includes('no-pr'),
+    skip: labelTargets.includes('skip'),
+  }
+}
+
+async function upsertBackportSummaryComment({ github, context, pull_number, body }) {
+  const marker = '<!-- projt-bot:backport-summary -->'
+  const fullBody = [marker, body].join('\n')
+
+  const comments = await github.paginate(github.rest.issues.listComments, {
+    ...context.repo,
+    issue_number: pull_number,
+    per_page: 100,
+  })
+
+  const existing = comments.find(
+    (c) => c.user?.login === 'github-actions[bot]' && typeof c.body === 'string' && c.body.includes(marker),
+  )
+
+  if (existing) {
+    await github.rest.issues.updateComment({
+      ...context.repo,
+      comment_id: existing.id,
+      body: fullBody,
+    })
+  } else {
+    await github.rest.issues.createComment({
+      ...context.repo,
+      issue_number: pull_number,
+      body: fullBody,
+    })
+  }
+}
+
+async function handleBackportOnClose({ github, context, core }) {
+  const payload = context.payload
+  const pr = payload.pull_request
+  if (!pr) return false
+
+  // Only act when a PR is merged and has backport/* labels.
+  if (!pr.merged) return false
+
+  const labelNames = (pr.labels ?? []).map((l) => l.name)
+  const labelTargets = getBackportLabelTargets(labelNames)
+  if (labelTargets.length === 0) return false
+
+  const opts = optionsFromLabels(labelTargets)
+  if (opts.skip) {
+    core.info('Backport skipped via backport/skip label')
+    return true
+  }
+
+  const requestedTargets = labelTargets.filter((t) => !['force', 'no-pr', 'skip'].includes(t))
+
+  const targets = await resolveTargets({
+    github,
+    context,
+    core,
+    pull_request: pr,
+    requestedTargets,
+  })
+
+  if (targets.length === 0) {
+    await upsertBackportSummaryComment({
+      github,
+      context,
+      pull_number: pr.number,
+      body: [
+        '## Backport results',
+        '',
+        'No valid targets resolved from backport labels.',
+        '',
+        `Labels: ${labelNames.filter((n) => n.startsWith('backport/')).join(', ')}`,
+      ].join('\n'),
+    })
+    return true
+  }
+
+  const mergeSha = pr.merge_commit_sha
+  if (!mergeSha) {
+    await upsertBackportSummaryComment({
+      github,
+      context,
+      pull_number: pr.number,
+      body: 'Backport failed: merge commit SHA is missing for this PR.',
+    })
+    return true
+  }
+
+  const cwd = process.env.GITHUB_WORKSPACE || process.cwd()
+  const results = []
+  for (const targetBranch of targets) {
+    const backportBranch = `backport/${targetBranch}/pr-${pr.number}`
+    const res = await performBackport({
+      github,
+      context,
+      core,
+      cwd,
+      pull_request: pr,
+      targetBranch,
+      backportBranch,
+      mergeSha,
+      options: { force: opts.force, noPr: opts.noPr },
+      requestedVia: 'labels',
+    })
+    results.push(res)
+  }
+
+  const lines = []
+  lines.push('## Backport results')
+  lines.push('')
+  lines.push(`Original PR: #${pr.number}`)
+  lines.push(`Cherry-picked: \`${mergeSha}\``)
+  lines.push('')
+  for (const r of results) {
+    if (r.status === 'pr') {
+      lines.push(`- OK \`${r.targetBranch}\`: ${r.message}`)
+    } else if (r.status === 'pushed') {
+      lines.push(`- OK \`${r.targetBranch}\`: ${r.message}`)
+    } else if (r.status === 'skipped') {
+      lines.push(`- SKIP \`${r.targetBranch}\`: ${r.message}`)
+    } else if (r.status === 'conflict') {
+      lines.push(`- FAIL \`${r.targetBranch}\`: ${r.message}`)
+    } else {
+      lines.push(`- WARN \`${r.targetBranch}\`: ${r.message ?? 'unknown status'}`)
+    }
+  }
+
+  await upsertBackportSummaryComment({
+    github,
+    context,
+    pull_number: pr.number,
+    body: lines.join('\n'),
+  })
+
+  return true
+}
+
 module.exports = {
   parseBackportCommand,
   handleBackportComment,
+  handleBackportOnClose,
 }
