@@ -177,7 +177,7 @@ jobs:
     if: >
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
-      contains(github.event.comment.body, '@projt-launcher-bot') &&
+      contains(github.event.comment.body, 'bot') &&
       contains(github.event.comment.body, 'review') &&
       (github.event.comment.author_association == 'OWNER' ||
        github.event.comment.author_association == 'MEMBER' ||
@@ -229,7 +229,7 @@ jobs:
     if: >
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
-      contains(github.event.comment.body, '@projt-launcher-bot') &&
+      contains(github.event.comment.body, 'bot') &&
       contains(github.event.comment.body, 'backport') &&
       (github.event.comment.author_association == 'OWNER' ||
        github.event.comment.author_association == 'MEMBER' ||
