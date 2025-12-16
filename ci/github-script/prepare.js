@@ -284,6 +284,10 @@ module.exports = async ({ github, context, core, dry }) => {
 
     return {
       mergeable: prInfo.mergeable,
+      mergedSha,
+      targetSha,
+      headSha: head.sha,
+      baseSha: base.sha,
       base: baseClassification,
       head: headClassification,
       files: files.length,
