@@ -55,15 +55,21 @@ ProjT Launcher is available in various package repositories. Check the badge abo
 
 ## Installation
 
-Official releases aren't available yet. Use development builds or build from source.
+Official releases are available. For the most stable experience, use a release build or your distro package when available.
 
-### Development Builds
+### Stable Options
 
-These are unstable and for testing only.
+- **Official Releases**: Download installers/binaries from [GitHub Releases](https://github.com/YongDo-Hyun/ProjT-Launcher/releases).
+- **Package Manager**: Install your distro's `projtlauncher` package (see the Repology badge above for availability).
+- **Build from Source**: Follow the [`Building from Source`](#building-from-source) section for a reproducible release build.
 
-- **Local Build**: `cmake -S . -B build && cmake --build build`
-- **Nix Flake**: `nix build .#projtlauncher`
+### Development Builds (Unstable)
+
+These are for testing and contributors only:
+
 - **CI Artifacts**: Check GitHub Actions for builds.
+- **Nix Flake**: `nix build .#projtlauncher`
+- **Local Build**: `cmake -S . -B build && cmake --build build`
 
 ## Documentation
 
