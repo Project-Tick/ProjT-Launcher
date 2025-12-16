@@ -17,6 +17,18 @@ on:
         description: Target branch to merge into
         required: true
         type: string
+  workflow_dispatch:
+    inputs:
+      from:
+        description: Branch to merge from
+        required: true
+        default: develop
+        type: string
+      into:
+        description: Target branch to merge into
+        required: true
+        default: qml_migration
+        type: string
 
 permissions:
   contents: write
