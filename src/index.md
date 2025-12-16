@@ -179,7 +179,7 @@ hero:
         <h3>Source code</h3>
         <p>ProjT Launcher is GPL-3 and accepts contributions from anyone who cares about user freedom. Fork it, remix it, or ship your own build.</p>
         <a class="button ghost-button size-small" href="https://github.com/Project-Tick/ProjT-Launcher" target="_blank">Explore on GitHub</a>
-        <p class="eyebrow">Website: <a href="https://github.com/Project-Tick/projtlauncher.yongdohyun.org.tr">AGPL-3</a></p>
+        <p class="eyebrow">Website: <a href="https://github.com/Project-Tick/ProjT-Launcher/src">AGPL-3</a></p>
       </article>
       <article class="community-card">
         <h3>Docs &amp; Wiki</h3>

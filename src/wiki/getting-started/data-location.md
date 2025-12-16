@@ -10,7 +10,7 @@ ProjT Launcher stores your data in your OS's standard application data folder. F
 
 | OS                         | Folder                                                          |
 | -------------------------- | --------------------------------------------------------------- |
-| Portable (Windows / Linux) | In the ProjT-Launcher folder                                     |
+| Portable (Windows / Linux) | In the ProjT-Launcher folder                                    |
 | Windows                    | `%APPDATA%/ProjTLauncher`                                       |
 | Scoop                      | `%HOMEPATH%\scoop\persist\projtlauncher`                        |
 | macOS                      | `~/Library/Application Support/ProjTLauncher`                   |

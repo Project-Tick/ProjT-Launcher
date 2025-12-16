@@ -2,7 +2,7 @@ local_backend: false # use for testing
 
 backend:
   name: github
-  repo: Project-Tick/projtlauncher.yongdohyun.org.tr
+  repo: Project-Tick/ProjT-Launcher
   open_authoring: true
 publish_mode: editorial_workflow
 media_folder: "src/img/screenshots"

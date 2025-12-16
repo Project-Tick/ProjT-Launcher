@@ -22,7 +22,43 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Deploy to Cloudflare Workers
+      - name: Validate required secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJT_BOT_GITHUB_TOKEN: ${{ secrets.PROJT_BOT_GITHUB_TOKEN }}
+          PROJT_BOT_WEBHOOK_SECRET: ${{ secrets.PROJT_BOT_WEBHOOK_SECRET }}
+        run: |
+          missing=0
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID PROJT_BOT_GITHUB_TOKEN PROJT_BOT_WEBHOOK_SECRET; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing GitHub Actions secret: $name" >&2
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "" >&2
+            echo "Note: Cloudflare API token needs Workers edit permissions to deploy + upload secrets." >&2
+            exit 1
+          fi
+
+      - name: Deploy to Cloudflare Workers (no admin token)
+        if: ${{ secrets.PROJT_BOT_ADMIN_TOKEN == '' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: bot
+          command: deploy
+          secrets: |
+            GITHUB_TOKEN
+            GITHUB_WEBHOOK_SECRET
+        env:
+          GITHUB_TOKEN: ${{ secrets.PROJT_BOT_GITHUB_TOKEN }}
+          GITHUB_WEBHOOK_SECRET: ${{ secrets.PROJT_BOT_WEBHOOK_SECRET }}
+
+      - name: Deploy to Cloudflare Workers (with admin token)
+        if: ${{ secrets.PROJT_BOT_ADMIN_TOKEN != '' }}
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
