@@ -186,7 +186,7 @@ Use these templates when creating new files to ensure you follow all rules.
 ## 1. C++ Header Template (`.h`)
 
 ```cpp
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -230,7 +230,7 @@ class MyNewClass : public QObject {
 ## 2. C++ Source Template (`.cpp`)
 
 ```cpp
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -272,7 +272,7 @@ void MyNewClass::internalHelper() {
 ## 3. QML Component Template (`.qml`)
 
 ```qml
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 /*
  *  ProjT Launcher - Minecraft Launcher
  *  Copyright (C) 2025 Project Tick
