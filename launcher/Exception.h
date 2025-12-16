@@ -13,20 +13,21 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  * // SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
- * Prism Launcher - Minecraft Launcher
- * Copyright (c) 2024 TheKodeToad <TheKodeToad@proton.me>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3.
+ *  Prism Launcher - Minecraft Launcher
+ *  Copyright (c) 2024 TheKodeToad <TheKodeToad@proton.me>
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * This file incorporates work covered by the following copyright and
  * permission notice:
@@ -44,8 +45,7 @@
  *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *      See the License for the specific language governing permissions and
  *      limitations under the License.
- *   ========================================================================
- */
+ * ======================================================================== */
 
 #pragma once
 

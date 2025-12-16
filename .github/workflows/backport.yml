@@ -7,7 +7,7 @@ on:
     types: [closed, labeled]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 defaults:
@@ -24,7 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -44,8 +43,47 @@ jobs:
             exit 0
           fi
           target_branch="${label#backport/}"
+          pr_number="${{ github.event.pull_request.number }}"
+          backport_branch="backport/${target_branch}/pr-${pr_number}"
           echo "target_branch=$target_branch" >> "$GITHUB_OUTPUT"
+          echo "backport_branch=$backport_branch" >> "$GITHUB_OUTPUT"
           echo "Creating backport to: $target_branch"
+
+      - name: Create backport branch
+        if: steps.target.outputs.target_branch != ''
+        run: |
+          TARGET_BRANCH="${{ steps.target.outputs.target_branch }}"
+          BACKPORT_BRANCH="${{ steps.target.outputs.backport_branch }}"
+          MERGE_SHA="${{ github.event.pull_request.merge_commit_sha }}"
+          
+          # Verify target branch exists
+          if ! git ls-remote --exit-code --heads origin "$TARGET_BRANCH" > /dev/null 2>&1; then
+            echo "Error: Target branch '$TARGET_BRANCH' does not exist"
+            exit 1
+          fi
+          
+          # Create backport branch from target branch
+          git fetch origin "$TARGET_BRANCH"
+          git checkout -b "$BACKPORT_BRANCH" "origin/$TARGET_BRANCH"
+          
+          # Cherry-pick the merge commit
+          if git cherry-pick -m 1 "$MERGE_SHA"; then
+            echo "Successfully cherry-picked $MERGE_SHA"
+          else
+            echo "Error: Cherry-pick failed with conflicts"
+            echo "The following files have conflicts:"
+            git diff --name-only --diff-filter=U
+            echo ""
+            echo "Manual backport required. Please:"
+            echo "1. Create a branch from $TARGET_BRANCH"
+            echo "2. Manually apply changes from PR #${{ github.event.pull_request.number }}"
+            echo "3. Create a pull request to $TARGET_BRANCH"
+            git cherry-pick --abort
+            exit 1
+          fi
+          
+          # Push the backport branch
+          git push origin "$BACKPORT_BRANCH"
 
       - name: Create backport PR
         if: steps.target.outputs.target_branch != ''
@@ -53,28 +91,31 @@ jobs:
         with:
           script: |
             const branch = '${{ steps.target.outputs.target_branch }}';
+            const backportBranch = '${{ steps.target.outputs.backport_branch }}';
             const originalPR = context.payload.pull_request.number;
             const originalTitle = context.payload.pull_request.title;
             
             try {
-              // Check if target branch exists
-              await github.rest.repos.getBranch({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                branch: branch
-              });
-              
               // Create backport PR
               const response = await github.rest.pulls.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: `[backport ${branch}] ${originalTitle}`,
-                body: `Backport of #${originalPR} to ${branch}\n\nPlease review and test before merging.`,
-                head: `backport/${branch}/${originalPR}`,
+                title: `[Backport ${branch}] ${originalTitle}`,
+                body: `Automated backport of #${originalPR} to \`${branch}\`\n\n---\n\nOriginal PR: #${originalPR}`,
+                head: backportBranch,
                 base: branch
               });
               
               console.log(`Created backport PR: #${response.data.number}`);
+              
+              // Add backport label to the new PR
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: response.data.number,
+                labels: ['automated-backport']
+              });
             } catch (error) {
-              console.log(`Target branch ${branch} does not exist or already has a backport PR`);
+              console.error(`Failed to create backport PR: ${error.message}`);
+              throw error;
             }

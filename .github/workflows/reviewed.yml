@@ -12,6 +12,6 @@ defaults:
 
 jobs:
   trigger:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     steps:
       - run: echo This is a no-op only used as a trigger for workflow_run.

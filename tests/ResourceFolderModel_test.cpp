@@ -43,22 +43,30 @@
 #include <minecraft/mod/ModFolderModel.h>
 #include <minecraft/mod/ResourceFolderModel.h>
 
-#define EXEC_UPDATE_TASK(EXEC, VERIFY)                                                                                                     \
-    QEventLoop loop;                                                                                                                       \
-                                                                                                                                           \
-    connect(&model, &ResourceFolderModel::updateFinished, &loop, &QEventLoop::quit);                                                       \
-                                                                                                                                           \
-    QTimer expire_timer;                                                                                                                   \
-    expire_timer.callOnTimeout(&loop, &QEventLoop::quit);                                                                                  \
-    expire_timer.setSingleShot(true);                                                                                                      \
-    expire_timer.start(30000);                                                                                                             \
-                                                                                                                                           \
-    VERIFY(EXEC);                                                                                                                          \
-    loop.exec();                                                                                                                           \
-                                                                                                                                           \
-    QVERIFY2(expire_timer.isActive(), "Timer has expired. The update never finished.");                                                    \
-    expire_timer.stop();                                                                                                                   \
-                                                                                                                                           \
+#if defined(Q_OS_WIN) && (defined(__MINGW32__) || defined(__MINGW64__))
+static constexpr int RESOURCE_MODEL_TIMEOUT_MS = 30000;
+static constexpr int RESOURCE_MODEL_FAST_TIMEOUT_MS = 15000;
+#else
+static constexpr int RESOURCE_MODEL_TIMEOUT_MS = 12000;
+static constexpr int RESOURCE_MODEL_FAST_TIMEOUT_MS = 4000;
+#endif
+
+#define EXEC_UPDATE_TASK(EXEC, VERIFY)                                                  \
+    QEventLoop loop;                                                                    \
+                                                                                        \
+    connect(&model, &ResourceFolderModel::updateFinished, &loop, &QEventLoop::quit);    \
+                                                                                        \
+    QTimer expire_timer;                                                                \
+    expire_timer.callOnTimeout(&loop, &QEventLoop::quit);                               \
+    expire_timer.setSingleShot(true);                                                   \
+    expire_timer.start(RESOURCE_MODEL_TIMEOUT_MS);                                       \
+                                                                                        \
+    VERIFY(EXEC);                                                                       \
+    loop.exec();                                                                        \
+                                                                                        \
+    QVERIFY2(expire_timer.isActive(), "Timer has expired. The update never finished."); \
+    expire_timer.stop();                                                                \
+                                                                                        \
     disconnect(&model, nullptr, &loop, nullptr);
 
 class ResourceFolderModelTest : public QObject {
@@ -94,7 +102,7 @@ class ResourceFolderModelTest : public QObject {
             QTimer expire_timer;
             expire_timer.callOnTimeout(&loop, &QEventLoop::quit);
             expire_timer.setSingleShot(true);
-            expire_timer.start(15000);
+            expire_timer.start(RESOURCE_MODEL_FAST_TIMEOUT_MS);
 
             m.installResource(folder);
 
@@ -118,7 +126,7 @@ class ResourceFolderModelTest : public QObject {
             QTimer expire_timer;
             expire_timer.callOnTimeout(&loop, &QEventLoop::quit);
             expire_timer.setSingleShot(true);
-            expire_timer.start(15000);
+            expire_timer.start(RESOURCE_MODEL_FAST_TIMEOUT_MS);
 
             m.installResource(folder);
 
