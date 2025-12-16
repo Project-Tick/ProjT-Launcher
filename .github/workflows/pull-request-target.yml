@@ -70,6 +70,8 @@ jobs:
             if (result) {
               core.setOutput('base', JSON.stringify(result.base));
               core.setOutput('head', JSON.stringify(result.head));
+              core.setOutput('mergedSha', result.mergedSha);
+              core.setOutput('targetSha', result.targetSha);
               core.setOutput('mergeable', result.mergeable);
             }
 
@@ -118,6 +120,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    with:
+      ref: ${{ needs.prepare.outputs.mergedSha }}
 
   # PR summary
   summary:

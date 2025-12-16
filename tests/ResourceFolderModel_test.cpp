@@ -59,7 +59,7 @@ static constexpr int RESOURCE_MODEL_FAST_TIMEOUT_MS = 4000;
     QTimer expire_timer;                                                                \
     expire_timer.callOnTimeout(&loop, &QEventLoop::quit);                               \
     expire_timer.setSingleShot(true);                                                   \
-    expire_timer.start(RESOURCE_MODEL_TIMEOUT_MS);                                       \
+    expire_timer.start(RESOURCE_MODEL_TIMEOUT_MS);                                      \
                                                                                         \
     VERIFY(EXEC);                                                                       \
     loop.exec();                                                                        \
