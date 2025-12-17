@@ -19,15 +19,16 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: github.repository_owner == 'Project-Tick'
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROJT_BOT_GITHUB_TOKEN: ${{ secrets.PROJT_BOT_GITHUB_TOKEN }}
+      PROJT_BOT_WEBHOOK_SECRET: ${{ secrets.PROJT_BOT_WEBHOOK_SECRET }}
+      PROJT_BOT_ADMIN_TOKEN: ${{ secrets.PROJT_BOT_ADMIN_TOKEN || '' }}
     steps:
       - uses: actions/checkout@v6
 
       - name: Validate required secrets
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          PROJT_BOT_GITHUB_TOKEN: ${{ secrets.PROJT_BOT_GITHUB_TOKEN }}
-          PROJT_BOT_WEBHOOK_SECRET: ${{ secrets.PROJT_BOT_WEBHOOK_SECRET }}
         run: |
           missing=0
           for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID PROJT_BOT_GITHUB_TOKEN PROJT_BOT_WEBHOOK_SECRET; do
@@ -43,26 +44,26 @@ jobs:
           fi
 
       - name: Deploy to Cloudflare Workers (no admin token)
-        if: ${{ secrets.PROJT_BOT_ADMIN_TOKEN == '' }}
+        if: ${{ env.PROJT_BOT_ADMIN_TOKEN == '' }}
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: bot
           command: deploy
           secrets: |
             GITHUB_TOKEN
             GITHUB_WEBHOOK_SECRET
         env:
-          GITHUB_TOKEN: ${{ secrets.PROJT_BOT_GITHUB_TOKEN }}
-          GITHUB_WEBHOOK_SECRET: ${{ secrets.PROJT_BOT_WEBHOOK_SECRET }}
+          GITHUB_TOKEN: ${{ env.PROJT_BOT_GITHUB_TOKEN }}
+          GITHUB_WEBHOOK_SECRET: ${{ env.PROJT_BOT_WEBHOOK_SECRET }}
 
       - name: Deploy to Cloudflare Workers (with admin token)
-        if: ${{ secrets.PROJT_BOT_ADMIN_TOKEN != '' }}
+        if: ${{ env.PROJT_BOT_ADMIN_TOKEN != '' }}
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: bot
           command: deploy
           secrets: |
@@ -70,6 +71,6 @@ jobs:
             GITHUB_WEBHOOK_SECRET
             ADMIN_TOKEN
         env:
-          GITHUB_TOKEN: ${{ secrets.PROJT_BOT_GITHUB_TOKEN }}
-          GITHUB_WEBHOOK_SECRET: ${{ secrets.PROJT_BOT_WEBHOOK_SECRET }}
-          ADMIN_TOKEN: ${{ secrets.PROJT_BOT_ADMIN_TOKEN }}
+          GITHUB_TOKEN: ${{ env.PROJT_BOT_GITHUB_TOKEN }}
+          GITHUB_WEBHOOK_SECRET: ${{ env.PROJT_BOT_WEBHOOK_SECRET }}
+          ADMIN_TOKEN: ${{ env.PROJT_BOT_ADMIN_TOKEN }}
