@@ -7,6 +7,7 @@ This directory contains a Cloudflare Worker that can auto-label GitHub pull requ
 - `GET /` or `GET /healthz`: health check
 - `POST /github/webhook`: GitHub webhook receiver (requires signature)
 - `POST /run` or `GET /run`: manual run (requires `Authorization: Bearer <ADMIN_TOKEN>`)
+- `issue_comment` webhook: `bot rerun` / `bot labels` (or `/bot rerun`) triggers re-label for that PR (author association must be owner/member/collaborator by default). Set `BOT_COMMENT_ON_COMMAND=true` to let the bot reply with a short summary.
 
 ## Required secrets (Cloudflare)
 
@@ -15,6 +16,8 @@ Set these as Worker secrets:
 - `GITHUB_TOKEN`: token with permission to add labels (repo access as needed)
 - `GITHUB_WEBHOOK_SECRET`: the webhook secret configured in GitHub
 - `ADMIN_TOKEN`: (optional but recommended) protects `/run`
+- `BOT_COMMENT_ON_COMMAND`: (optional) `true` to comment after handling `issue_comment` commands
+- `BOT_ALLOWED_ASSOCIATIONS`: (optional) comma-separated GitHub author_association values allowed to run commands (default: `OWNER,MEMBER,COLLABORATOR`)
 
 Example (local):
 
