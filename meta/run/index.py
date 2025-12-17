@@ -34,8 +34,12 @@ for package in sorted(os.listdir(LAUNCHER_DIR)):
     if package in ignore:
         continue
 
+    package_path = os.path.join(LAUNCHER_DIR, package)
+    if not os.path.isdir(package_path):
+        continue
+
     sharedData = MetaPackage.parse_file(
-        os.path.join(LAUNCHER_DIR, package, "package.json")
+        os.path.join(package_path, "package.json")
     )
     recommendedVersions = set()
     if sharedData.recommended:
@@ -45,11 +49,13 @@ for package in sorted(os.listdir(LAUNCHER_DIR)):
     versionList = MetaVersionIndex(uid=package, name=sharedData.name)
 
     # walk through all the versions of the package
-    for filename in os.listdir(LAUNCHER_DIR + "/%s" % package):
+    for filename in os.listdir(package_path):
         if filename in ignore:
             continue
         # parse and hash the version file
-        filepath = LAUNCHER_DIR + "/%s/%s" % (package, filename)
+        filepath = os.path.join(package_path, filename)
+        if not os.path.isfile(filepath):
+            continue
         filehash = hash_file(hashlib.sha256, filepath)
         versionFile = MetaVersion.parse_file(filepath)
         is_recommended = versionFile.version in recommendedVersions
@@ -66,7 +72,7 @@ for package in sorted(os.listdir(LAUNCHER_DIR)):
     )
 
     # write the version index for the package
-    outFilePath = LAUNCHER_DIR + "/%s/index.json" % package
+    outFilePath = os.path.join(package_path, "index.json")
     versionList.write(outFilePath)
 
     # insert entry into the package index
