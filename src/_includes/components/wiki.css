@@ -1,0 +1,175 @@
+.wiki-content h1, .wiki-content h2 {
+    border-bottom: 2px solid var(--primary-text-muted);
+}
+
+.wiki-content.wiki-content {
+  border-radius: 1em 1em 0 0;
+  background: linear-gradient(150deg, rgba(6, 10, 18, 0.95), rgba(12, 18, 30, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.45);
+  padding: 1.5em;
+  backdrop-filter: blur(6px);
+}
+
+.wiki-content {
+  margin-top: 1em;
+}
+
+.wiki-toc {
+  padding: 1em 0 1em 1em;
+  background: linear-gradient(160deg, rgba(4, 8, 15, 0.92), rgba(8, 14, 26, 0.85));
+  border-radius: 0 0 1em 1em;
+  font-size: 1em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 25px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  /* Reset */
+  flex: 1;
+}
+
+.wiki-toc ul {
+  list-style: none;
+  padding: 0;
+}
+
+.wiki-toc [href] {
+  color: var(--primary-text-muted);
+} 
+
+/* RAINBOW!!!!! */
+.wiki-toc>ul>li:nth-child(3n + 1) {
+  --toc-header-rainbow: var(--primary)
+}
+.wiki-toc>ul>li:nth-child(3n + 2) {
+  --toc-header-rainbow: var(--danger)
+}
+.wiki-toc>ul>li:nth-child(3n + 3) {
+  --toc-header-rainbow: var(--warn)
+}
+.wiki-toc>ul>li:nth-child(3n + 4) {
+  --toc-header-rainbow: var(--success)
+}
+.wiki-toc>ul>li:nth-child(3n + 5) {
+  --toc-header-rainbow: var(--link)
+}
+.wiki-toc>ul>li:nth-child(3n + 6) {
+  --toc-header-rainbow: var(--info)
+}
+
+.wiki-toc>ul>li.toggle>details>summary [href], .wiki-toc>ul>li.section [href]{
+  color: var(--toc-header-rainbow);
+  font-weight: bold;
+}
+
+.wiki-toc .section, .toggle>details>summary {
+  border-radius: 0.75em 0 0 0.75em;
+  display: flex;
+  font-size: .95em;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.wiki-toc .section>a, .toggle>details>summary>a {
+  padding: 0.3em 0.5em;
+  flex-grow: 1;
+}
+
+
+/* fold dropdown + icon */
+summary {
+  position: relative;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--primary-text-muted);
+}
+
+.toggle:not(.wiki-toc-active) > details[open] > summary {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Menus nested 2 or more deep */
+.wiki-toc-list {
+  margin: 0;
+}
+
+.wiki-toc-list ul {
+  padding-bottom: 0;
+  padding-left: 0.625rem;
+  /* 10px /16 */
+}
+
+.wiki-toc-list a {
+  text-decoration: none;
+}
+
+.wiki-toc-list>li {
+  flex-grow: 1;
+  flex-basis: 14.375rem;
+  /* 230px /16 */
+}
+
+/* Active links */
+.wiki-toc-active.section, .wiki-toc-active.toggle>details>summary {
+  background-color: var(--background);
+}
+
+.section:hover, .toggle summary:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Show only active nested lists */
+.wiki-toc-list ul.wiki-toc-active,
+.wiki-toc-list li.wiki-toc-active>ul {
+  display: block;
+}
+
+.inlinelist {
+  padding: 0;
+}
+
+.inlinelist-no-nest ul,
+.inlinelist-no-nest ol {
+  display: none;
+}
+
+.wiki-tag {
+  display: inline;
+}
+
+.wiki-tag a {
+  display: inline-flex;
+  /* 12px /16 */
+  padding: 0.3em 0.3em;
+  margin: 0.5em 0.5em 0.5em 0;
+  color: var(--link);
+  background-color: var(--accent);
+  border-radius: 0.25em;
+  /* 3px /12 */
+  text-decoration: none;
+  line-height: 1.8;
+}
+
+.wiki-tag:hover a {
+  text-decoration: underline;
+}
+
+.wiki-tag-active a {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+@media (min-width: 64em) {
+  .wiki-content {
+    width: 80%;
+    border-radius: 0 1em 1em 0;
+    background: linear-gradient(150deg, rgba(6, 10, 18, 0.95), rgba(12, 18, 30, 0.92));
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+  }
+  .wiki-content.wiki-content {
+    border-radius: 0 1em 1em 0;
+  }
+  .wiki-toc {
+    border-radius: 1em 0 0 1em;
+    margin-top: 1em;
+  }
+}

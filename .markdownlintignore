@@ -1,2 +1,8 @@
 libraries/nbtplusplus
 libraries/quazip
+_site
+node_modules
+LICENSE
+src/LICENSE
+src/_redirects
+src/favicon.ico
