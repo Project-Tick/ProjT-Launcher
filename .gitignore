@@ -39,7 +39,6 @@ tags
 
 branding/
 secrets/
-run/
 
 .cache/
 .pre-commit-config.yaml
