@@ -8,7 +8,7 @@ fi
 
 export META_CACHE_DIR=${CACHE_DIRECTORY:-./caches}
 export META_UPSTREAM_DIR=${META_UPSTREAM_DIR:-${STATE_DIRECTORY:-.}/upstream}
-export META_LAUNCHER_DIR=${META_LAUNCHER_DIR:-${STATE_DIRECTORY:-.}/launcher}
+export META_LAUNCHER_DIR=${META_LAUNCHER_DIR:-${STATE_DIRECTORY:-.}/metalauncher}
 
 function init_repo {
     # no op if target already exists
