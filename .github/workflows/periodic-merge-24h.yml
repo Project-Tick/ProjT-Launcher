@@ -16,10 +16,12 @@ on:
         description: 'Source branch'
         required: true
         default: 'develop'
+        type: string
       into:
         description: 'Target branch'
         required: true
         default: 'qml_migration'
+        type: string
 
 permissions:
   contents: write
@@ -41,6 +43,9 @@ jobs:
         pairs:
           - from: develop
             into: qml_migration
+    env:
+      FROM: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.from || matrix.pairs.from }}
+      INTO: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.into || matrix.pairs.into }}
     
     steps:
       - uses: actions/checkout@v6
@@ -56,15 +61,15 @@ jobs:
       - name: Prepare merge branch
         id: prep
         run: |
-          FROM="${{ matrix.pairs.from }}"
-          INTO="${{ matrix.pairs.into }}"
+          FROM="${FROM}"
+          INTO="${INTO}"
           BRANCH="auto-merge/${INTO}-from-${FROM}-$(date +%Y%m%d%H%M%S)"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
 
       - name: Merge branches (auto-resolve conflicts preferring source)
         run: |
-          FROM="${{ matrix.pairs.from }}"
-          INTO="${{ matrix.pairs.into }}"
+          FROM="${FROM}"
+          INTO="${INTO}"
           BRANCH="${{ steps.prep.outputs.branch }}"
           
           echo "Merging $FROM into $INTO"
@@ -103,8 +108,8 @@ jobs:
       - name: Open PR for merged branch
         uses: actions/github-script@v8
         env:
-          FROM: ${{ matrix.pairs.from }}
-          INTO: ${{ matrix.pairs.into }}
+          FROM: ${{ env.FROM }}
+          INTO: ${{ env.INTO }}
           BRANCH: ${{ steps.prep.outputs.branch }}
         with:
           script: |

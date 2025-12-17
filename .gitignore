@@ -23,7 +23,7 @@ CMakeUserPresets.json
 cmake-build-*/
 Debug
 compile_commands.json
-
+_site/
 # Build dirs
 build
 /build-*
@@ -42,7 +42,7 @@ secrets/
 run/
 
 .cache/
-
+.pre-commit-config.yaml
 # Nix/NixOS
 .direnv/
 ## Used when manually invoking stdenv phases
