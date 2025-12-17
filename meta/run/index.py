@@ -1,5 +1,6 @@
 import hashlib
 import os
+import sys
 from operator import attrgetter
 
 from meta.common import launcher_path
@@ -38,9 +39,15 @@ for package in sorted(os.listdir(LAUNCHER_DIR)):
     if not os.path.isdir(package_path):
         continue
 
-    sharedData = MetaPackage.parse_file(
-        os.path.join(package_path, "package.json")
-    )
+    package_json_path = os.path.join(package_path, "package.json")
+    if not os.path.isfile(package_json_path):
+        print(
+            f"Skipping '{package}': no package.json found in {package_path}",
+            file=sys.stderr,
+        )
+        continue
+
+    sharedData = MetaPackage.parse_file(package_json_path)
     recommendedVersions = set()
     if sharedData.recommended:
         recommendedVersions = set(sharedData.recommended)
