@@ -1,9 +1,9 @@
-name: Auto Update
+name: Update ProjT Launcher Minecraft Meta Files
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 5,10,15,20,23,0 * * *"
+    - cron: "0 * * * *" # Every hour
 
 concurrency:
   group: auto-update
@@ -29,6 +29,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Configure git user
+        run: |
+          git config --global user.name "Project Tick Bot"
+          git config --global user.email "github@bot.yongdohyun.org.tr"
 
       - name: Prepare SSH keys for clones/pushes
         env:
@@ -67,7 +72,7 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install .
 
-      - name: Choose repo URLs (fallback to HTTPS if no SSH keys)
+      - name: Choose repo URLs (prefer HTTPS token)
         env:
           META_UPSTREAM_URL: ${{ secrets.META_UPSTREAM_URL }}
           META_LAUNCHER_URL: ${{ secrets.META_LAUNCHER_URL }}
@@ -76,20 +81,23 @@ jobs:
           DEPLOY_PAT: ${{ secrets.DEPLOY_PAT }}
           META_BOT_TOKEN: ${{ secrets.META_BOT_TOKEN }}
         run: |
-          if [ -n "$DEPLOY_SSH_KEY_UPSTREAM" ] || [ -n "$DEPLOY_SSH_KEY_LAUNCHER" ]; then
-            echo "Using SSH URLs"
-            echo "META_UPSTREAM_URL=${META_UPSTREAM_URL:-git@github.com:Project-Tick/meta-upstream.git}" >> "$GITHUB_ENV"
-            echo "META_LAUNCHER_URL=${META_LAUNCHER_URL:-git@github.com:Project-Tick/meta-launcher.git}" >> "$GITHUB_ENV"
-          else
-            token="${DEPLOY_PAT:-$META_BOT_TOKEN}"
-            if [ -z "$token" ]; then
-              echo "No SSH keys or PAT provided; cannot push over HTTPS." >&2
-              exit 1
-            fi
+          token="${DEPLOY_PAT:-$META_BOT_TOKEN}"
+          if [ -n "$token" ]; then
             echo "Using HTTPS URLs with token"
             echo "META_UPSTREAM_URL=https://x-access-token:${token}@github.com/Project-Tick/meta-upstream.git" >> "$GITHUB_ENV"
             echo "META_LAUNCHER_URL=https://x-access-token:${token}@github.com/Project-Tick/meta-launcher.git" >> "$GITHUB_ENV"
+            exit 0
           fi
+
+          if [ -n "$DEPLOY_SSH_KEY_UPSTREAM" ] || [ -n "$DEPLOY_SSH_KEY_LAUNCHER" ]; then
+            echo "Using SSH URLs (no token supplied)"
+            echo "META_UPSTREAM_URL=${META_UPSTREAM_URL:-git@github.com:Project-Tick/meta-upstream.git}" >> "$GITHUB_ENV"
+            echo "META_LAUNCHER_URL=${META_LAUNCHER_URL:-git@github.com:Project-Tick/meta-launcher.git}" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          echo "No token or SSH keys provided; cannot push to repos." >&2
+          exit 1
 
       - name: Configure git auth for HTTPS (PAT recommended)
         env:

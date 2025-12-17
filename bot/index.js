@@ -59,6 +59,14 @@ export default {
         return json({ ok: true, accepted: true, event: eventName, pr: prNumber }, 202);
       }
 
+      if (eventName === "issue_comment") {
+        const result = await handleIssueComment({
+          payload,
+          env,
+        });
+        return json({ ok: true, event: eventName, result }, 200);
+      }
+
       return json({ ok: true, ignored: true, event: eventName }, 200);
     }
 
@@ -145,6 +153,12 @@ const CONFIG = {
     { option: "Test", candidates: ["21.type:test", "tests", "test"] },
     { option: "Build / CI", candidates: ["21.type:build", "ci", "build"] },
     { option: "Other", candidates: ["21.type:other", "other"] },
+  ],
+  commentCommands: [
+    "bot rerun",
+    "bot labels",
+    "/bot rerun",
+    "/bot labels",
   ],
 };
 
@@ -309,6 +323,10 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     path: `/repos/${owner}/${repo}/pulls/${pullNumber}`,
   });
 
+  if (pullRequest.state !== "open") {
+    return { ok: true, changed: false, added: [], skipped: "closed", dryRun };
+  }
+
   const files = await listPullRequestFiles({ owner, repo, pullNumber, env });
   const repoLabels = await getRepositoryLabels({ owner, repo, env });
 
@@ -389,6 +407,44 @@ async function listPullRequestFiles({ owner, repo, pullNumber, env }) {
   return files;
 }
 
+async function handleIssueComment({ payload, env }) {
+  const issue = payload?.issue;
+  const commentBody = String(payload?.comment?.body ?? "");
+  const association = String(payload?.comment?.author_association ?? "");
+  const issueNumber = issue?.number;
+  const isPR = Boolean(issue?.pull_request);
+
+  if (!isPR || typeof issueNumber !== "number") {
+    return { ok: true, ignored: true, reason: "not-a-pr" };
+  }
+
+  const allowed = parseAllowedAssociations(env);
+  if (!allowed.has(association.toUpperCase())) {
+    return { ok: true, ignored: true, reason: "association-denied", association };
+  }
+
+  if (!containsCommand(commentBody, CONFIG.commentCommands)) {
+    return { ok: true, ignored: true, reason: "no-command" };
+  }
+
+  const owner = env.GITHUB_OWNER;
+  const repo = env.GITHUB_REPO;
+  const result = await handlePullRequest({ owner, repo, pullNumber: issueNumber, env });
+
+  const shouldComment = String(env.BOT_COMMENT_ON_COMMAND ?? "false").toLowerCase() === "true";
+  if (shouldComment) {
+    const summary = formatResultComment({ result, pr: issueNumber });
+    await githubApi({
+      env,
+      method: "POST",
+      path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
+      body: { body: summary },
+    });
+  }
+
+  return { ok: true, handled: true, result };
+}
+
 async function githubApi({ env, method, path, body }) {
   const token = env.GITHUB_TOKEN;
   const url = `https://api.github.com${path}`;
@@ -444,4 +500,36 @@ async function hmacSha256Hex(secret, message) {
   );
   const sig = await crypto.subtle.sign({ name: "HMAC" }, key, encoder.encode(message));
   return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function containsCommand(body, commands) {
+  const normalized = body.toLowerCase();
+  return commands.some(cmd => normalized.includes(cmd.toLowerCase()));
+}
+
+function parseAllowedAssociations(env) {
+  const value = env.BOT_ALLOWED_ASSOCIATIONS;
+  if (value && typeof value === "string") {
+    return new Set(
+      value
+        .split(",")
+        .map(v => v.trim().toUpperCase())
+        .filter(Boolean)
+    );
+  }
+  // Default: owners, members, collaborators
+  return new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
+}
+
+function formatResultComment({ result, pr }) {
+  if (!result?.ok) {
+    return `PR #${pr}: Bot failed: ${result?.error ?? "unknown error"}`;
+  }
+  if (result.dryRun) {
+    return `PR #${pr}: DRY_RUN enabled; would add labels: ${result.added?.join(", ") || "none"}.`;
+  }
+  if (!result.changed) {
+    return `PR #${pr}: No new labels needed.`;
+  }
+  return `PR #${pr}: Added labels: ${result.added.join(", ")}`;
 }
