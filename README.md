@@ -201,7 +201,7 @@ Building with default API keys implies acceptance of:
 [![GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-C4282D?logo=gnu)](LICENSE)
 [![AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-C4282D?logo=gnu)](LICENSE)
 
-Code: GPL-3.0-only (Launcher) / AGPL-3.0-only (Website) / MS-PL (Metadata generation scripts)
+Code: GPL-3.0-only (Launcher) / AGPL-3.0-only (Website) / MS-PL (Metadata generation scripts)<br>
 Assets: CC BY-SA 4.0
 
 ---
