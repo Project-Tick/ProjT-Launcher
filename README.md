@@ -11,18 +11,29 @@
 
 <p align="center">
   <strong>ProjT Launcher</strong><br>
-  Custom Minecraft launcher for managing multiple installations with ease.<br>
+  Minecraft launcher plus website and automation tools in one monorepo.<br>
   <em>A fork of Prism Launcher, evolving into an independent project.</em>
 </p>
 
 <p align="center">
-  <a href="#installation">Installation</a> •
-  <a href="#building">Building</a> •
+  <a href="#projects">Projects</a> •
+  <a href="#launcher-releases">Launcher Releases</a> •
+  <a href="#quick-starts">Quick Starts</a> •
   <a href="#contributing">Contributing</a> •
   <a href="#license">License</a>
 </p>
 
 ---
+
+## Projects
+
+This repository is a monorepo that hosts the launcher and its supporting services:
+
+- **Launcher app (C++/Qt)**: `launcher/`, `libraries/`, `CMakeLists.txt`
+- **Website (Eleventy)**: `src/`, `public/`, `package.json`
+- **Automation bot (Cloudflare Workers)**: `bot/`
+- **Docs/CI/Tools**: `docs/`, `ci/`, `.github/workflows/`, `scripts/`, `tools/`
+- **Metadata Generator**: `meta/`
 
 ## What is ProjT Launcher?
 
@@ -45,7 +56,7 @@ ProjT Launcher is a powerful, user-friendly launcher for Minecraft that lets you
 
 > **Note**: Infrastructure is still being built. Some links/assets may point to Prism Launcher temporarily.
 
-## Packaging Status
+## Launcher Releases
 
 <a href="https://repology.org/project/projtlauncher/versions">
   <img src="https://repology.org/badge/vertical-allrepos/projtlauncher.svg" alt="Packaging status" align="right">
@@ -53,15 +64,11 @@ ProjT Launcher is a powerful, user-friendly launcher for Minecraft that lets you
 
 ProjT Launcher is available in various package repositories. Check the badge above for current distributions and versions.
 
-## Installation
-
-Official releases are available. For the most stable experience, use a release build or your distro package when available.
-
 ### Stable Options
 
 - **Official Releases**: Download installers/binaries from [GitHub Releases](https://github.com/YongDo-Hyun/ProjT-Launcher/releases).
 - **Package Manager**: Install your distro's `projtlauncher` package (see the Repology badge above for availability).
-- **Build from Source**: Follow the [`Building from Source`](#building-from-source) section for a reproducible release build.
+- **Build from Source**: Follow the launcher build steps below for a reproducible release build.
 
 ### Development Builds (Unstable)
 
@@ -71,27 +78,18 @@ These are for testing and contributors only:
 - **Nix Flake**: `nix build .#projtlauncher`
 - **Local Build**: `cmake -S . -B build && cmake --build build`
 
-## Documentation
+## Quick Starts
 
-We have comprehensive documentation for contributors:
+### Launcher (C++/Qt)
 
-- [**Getting Started**](docs/contributing/GETTING_STARTED.md): Setup your environment (Windows/Linux/macOS).
-- [**Code Style**](docs/contributing/CODE_STYLE.md): Strict rules for C++ and QML.
-- [**Project Structure**](docs/contributing/PROJECT_STRUCTURE.md): Where to put your files.
-- [**Architecture**](docs/contributing/ARCHITECTURE.md): Understanding MVVM and the Task system.
-- [**Workflow**](docs/contributing/WORKFLOW.md): How to submit a Pull Request.
-- [**Testing**](docs/contributing/TESTING.md): How to write and run tests.
-
-## Building from Source
-
-### Prerequisites
+#### Prerequisites
 
 - CMake 3.22+
 - Qt 6.x
 - C++20 compiler
 - Git submodules
 
-### Quick Build
+#### Quick Build
 
 ```bash
 git clone --recursive https://github.com/YongDo-Hyun/ProjT-Launcher.git
@@ -105,6 +103,45 @@ For detailed instructions:
 - [Nix Flake](nix/README.md)
 - [CMake Guide](CMakeLists.txt)
 - [GitHub Actions](.github/workflows/)
+
+### Website (Eleventy)
+
+```bash
+pnpm install
+pnpm serve
+```
+
+The website source lives in `src/`, and the production output is built into `public/`.
+
+### Bot (Cloudflare Workers)
+
+See [`bot/README.md`](bot/README.md) for secrets, endpoints, and deployment details.
+
+Local smoke test:
+
+```bash
+cd bot
+wrangler dev
+```
+
+## Documentation
+
+Launcher contributor docs:
+
+- [**Getting Started**](docs/contributing/GETTING_STARTED.md): Setup your environment (Windows/Linux/macOS).
+- [**Code Style**](docs/contributing/CODE_STYLE.md): Strict rules for C++ and QML.
+- [**Project Structure**](docs/contributing/PROJECT_STRUCTURE.md): Where to put your files.
+- [**Architecture**](docs/contributing/ARCHITECTURE.md): Understanding MVVM and the Task system.
+- [**Workflow**](docs/contributing/WORKFLOW.md): How to submit a Pull Request.
+- [**Testing**](docs/contributing/TESTING.md): How to write and run tests.
+
+## Contributing
+
+Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) for engineering standards and workflow. Project-specific notes:
+
+- **Launcher**: `docs/contributing/` and `CMakeLists.txt`
+- **Website**: `.eleventy.js`, `src/`, `package.json`
+- **Bot**: `bot/README.md`
 
 ## macOS Notes
 
@@ -136,7 +173,7 @@ Building with default API keys implies acceptance of:
 [![GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-C4282D?logo=gnu)](LICENSE)
 [![AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-C4282D?logo=gnu)](LICENSE)
 
-Code: GPL-3.0-only (Only for Launcher)/ AGPL-3.0-only (Only for website)/ MS-PL (Only for metadata generation scripts)
+Code: GPL-3.0-only (Launcher) / AGPL-3.0-only (Website) / MS-PL (Metadata generation scripts)
 Assets: CC BY-SA 4.0
 
 ---
