@@ -330,27 +330,18 @@ module.exports = async ({ github, context, core, dry }) => {
   }
 
   // =============================================================================
-  // Entry Point
+  // Entry Point (webhook-only)
   // =============================================================================
 
-  // Determine what to process based on context
-  if (context.eventName === 'pull_request' || context.eventName === 'pull_request_target') {
-    // Single PR from event
-    const pullRequest = context.payload.pull_request;
+  const pullRequest = context.payload.pull_request;
+
+  if (pullRequest && (context.eventName === 'pull_request' || context.eventName === 'pull_request_target' || context.eventName === 'issue_comment')) {
     return handlePullRequest({
       item: { number: pullRequest.number },
       stats: { processed: 0, errors: 0 },
     });
-  } else if (context.eventName === 'schedule' || context.eventName === 'workflow_dispatch') {
-    // Batch processing - get open PRs
-    const { data: pullRequests } = await github.rest.pulls.list({
-      ...context.repo,
-      state: 'open',
-      per_page: 100,
-    });
-    return processPullRequests(pullRequests);
-  } else {
-    core.warning(`Unsupported event: ${context.eventName}`);
-    return { success: false, error: 'Unsupported event' };
   }
+
+  core.warning(`Unsupported event: ${context.eventName}`);
+  return { success: false, error: 'Unsupported event' };
 };

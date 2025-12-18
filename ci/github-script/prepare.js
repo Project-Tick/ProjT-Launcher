@@ -73,10 +73,19 @@ module.exports = async ({ github, context, core, dry }) => {
       continue
     }
 
-    const { base, head } = prInfo
+    const { base, head, user } = prInfo
+
+    const authorLogin = user?.login ?? ''
+    const isBotAuthor =
+      (user?.type ?? '').toLowerCase() === 'bot' || /\[bot\]$/i.test(authorLogin)
 
     // Enforce PR template sign-off (Signed-off-by: Name <email>)
-    if (!hasSignedOffBy(prInfo.body)) {
+    if (isBotAuthor) {
+      core.info(`Skipping Signed-off-by requirement for bot author: ${authorLogin}`)
+      if (!dry) {
+        await dismissSignoffReviews({ github, context, pull_number })
+      }
+    } else if (!hasSignedOffBy(prInfo.body)) {
       const body = [
         SIGNOFF_MARKER,
         '',
