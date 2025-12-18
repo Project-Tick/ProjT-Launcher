@@ -119,8 +119,8 @@ void test_FullInstanceCreationFlow() {
 }
 ```
 
-- **Prefer**: Testing the ViewModel (C++) instead of the View (QML).
-- **If needed**: Use `QQuickTest` to verify visual states.
+- **Prefer**: Testing core logic in C++ (models, tasks, parsers).
+- **UI tests**: Optional and should be minimal; keep them focused on widget behavior.
 
 ## Running Tests from CLI
 

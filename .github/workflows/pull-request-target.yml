@@ -129,8 +129,7 @@ jobs:
     needs: [prepare, check, lint, build]
     if: always()
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
+    permissions: {}
     
     steps:
       - name: Generate summary
@@ -143,71 +142,3 @@ jobs:
           echo "| Check | ${{ needs.check.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
-
-      - name: Post PR summary comment
-        if: ${{ github.event_name == 'pull_request_target' }}
-        uses: actions/github-script@v8
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PREPARE_RESULT: ${{ needs.prepare.result }}
-          CHECK_RESULT: ${{ needs.check.result }}
-          LINT_RESULT: ${{ needs.lint.result }}
-          BUILD_RESULT: ${{ needs.build.result }}
-          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const prNumber = Number(process.env.PR_NUMBER);
-            const marker = '<!-- projt-bot:pr-summary -->';
-
-            function badge(result) {
-              switch (result) {
-                case 'success': return '✅ success';
-                case 'failure': return '❌ failure';
-                case 'cancelled': return '⚠️ cancelled';
-                case 'skipped': return '⏭️ skipped';
-                default: return `❓ ${result}`;
-              }
-            }
-
-            const rows = [
-              ['Prepare', badge(process.env.PREPARE_RESULT)],
-              ['Check', badge(process.env.CHECK_RESULT)],
-              ['Lint', badge(process.env.LINT_RESULT)],
-              ['Build', badge(process.env.BUILD_RESULT)],
-            ];
-
-            const body = [
-              marker,
-              '## PR CI Summary',
-              '',
-              `Run: ${process.env.RUN_URL}`,
-              '',
-              '| Job | Result |',
-              '|-----|--------|',
-              ...rows.map(([name, res]) => `| ${name} | ${res} |`),
-            ].join('\n');
-
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              ...context.repo,
-              issue_number: prNumber,
-              per_page: 100,
-            });
-
-            const existing = comments.find(
-              (c) => c.user?.login === 'github-actions[bot]' && typeof c.body === 'string' && c.body.includes(marker),
-            );
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                ...context.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                ...context.repo,
-                issue_number: prNumber,
-                body,
-              });
-            }

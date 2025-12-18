@@ -65,3 +65,5 @@ obj-*/
 docs/TODO_FIXME_REPORT.md
 memory-bank/
 tree.txt
+
+node_modules/

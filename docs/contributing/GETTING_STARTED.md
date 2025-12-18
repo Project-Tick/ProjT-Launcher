@@ -4,6 +4,8 @@
 
 **This project requires a consistent development environment.** Deviating from the specified tool versions or configurations may result in build failures.
 
+These steps focus on the launcher. For the bot, website, or metadata generator, see their respective README files.
+
 ## Prerequisites
 
 Before you write any code, you need to set up your workspace. If you are new to open source, follow these steps carefully.
@@ -98,7 +100,7 @@ This will provide all necessary dependencies including Qt 6, CMake, Ninja, and c
   - **C/C++** (Microsoft)
   - **CMake Tools** (Microsoft)
   - **clangd** (LLVM) - *Disable C/C++ IntelliSense if using this.*
-  - **Qt All Extensions Pack** (Optional, for QML syntax highlighting)
+  - **Qt All Extensions Pack** (Optional, for Qt UI files and tooling)
 
 - Settings (`.vscode/settings.json`):
 
@@ -109,7 +111,7 @@ This will provide all necessary dependencies including Qt 6, CMake, Ninja, and c
     "files.associations": {
         "*.h": "cpp",
         "*.cpp": "cpp",
-        "*.qml": "qml"
+        "*.ui": "xml"
     }
 }
 ```
