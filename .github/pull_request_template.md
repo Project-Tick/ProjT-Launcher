@@ -36,3 +36,6 @@
 
 ## Additional Notes
 <!-- Any additional information, screenshots, or context. -->
+
+## Signed-off-by
+<!-- Please use signed-off-by: name <email> -->
