@@ -1,4 +1,4 @@
-# Project Tick - ProjT Launcher Monorepo Pull Request
+# Project Tick - ProjT Launcher Pull Request
 
 ## Description
 <!-- Summarize the changes and why they are needed. -->
