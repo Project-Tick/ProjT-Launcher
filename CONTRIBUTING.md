@@ -99,4 +99,4 @@ Please read the specific sections below before writing a single line of code (st
 
 ---
 
-### Last updated: March 2025
+### Last updated: December 2025
