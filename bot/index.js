@@ -152,8 +152,14 @@ const CONFIG = {
     { option: "Refactor", candidates: ["21.type:refactor", "refactor"] },
     { option: "Test", candidates: ["21.type:test", "tests", "test"] },
     { option: "Build / CI", candidates: ["21.type:build", "ci", "build"] },
+    { option: "Chore", candidates: ["21.type:chore", "21.type:other", "chore"] },
     { option: "Other", candidates: ["21.type:other", "other"] },
   ],
+  dco: {
+    label: "status:dco-missing",
+    color: "B60205",
+    description: "Missing DCO Signed-off-by in one or more commits",
+  },
   commentCommands: [
     "bot rerun",
     "bot labels",
@@ -182,6 +188,38 @@ function safeJsonParse(text) {
 
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasSignedOffBy(message) {
+  return /(^|\n)\s*signed-off-by:\s+.+/i.test(String(message));
+}
+
+function isBotIdentity({ name, email, login }) {
+  const lowerName = String(name ?? "").toLowerCase();
+  const lowerEmail = String(email ?? "").toLowerCase();
+  const lowerLogin = String(login ?? "").toLowerCase();
+  const combined = `${lowerName} ${lowerEmail} ${lowerLogin}`;
+
+  if (!combined.trim()) return false;
+  if (combined.includes("[bot]")) return true;
+  if (combined.includes("project tick bot")) return true;
+  if (combined.includes("projt-launcher-bot")) return true;
+  if (lowerEmail.includes("@bot.")) return true;
+  if (lowerEmail.includes("bot.yongdohyun.org.tr")) return true;
+
+  return false;
+}
+
+function isBotCommit(commit) {
+  const author = commit?.commit?.author ?? {};
+  const committer = commit?.commit?.committer ?? {};
+  const authorUser = commit?.author ?? {};
+  const committerUser = commit?.committer ?? {};
+
+  return (
+    isBotIdentity({ name: author.name, email: author.email, login: authorUser.login }) ||
+    isBotIdentity({ name: committer.name, email: committer.email, login: committerUser.login })
+  );
 }
 
 function getTemplateSelections(body = "") {
@@ -286,6 +324,24 @@ async function getRepositoryLabels({ owner, repo, env }) {
   return labels;
 }
 
+async function ensureLabelExists({ owner, repo, env, repoLabels, name, color, description }) {
+  if (repoLabels.has(name)) return true;
+
+  try {
+    await githubApi({
+      env,
+      method: "POST",
+      path: `/repos/${owner}/${repo}/labels`,
+      body: { name, color, description },
+    });
+    repoLabels.add(name);
+    return true;
+  } catch (error) {
+    console.warn(`Failed to create label "${name}":`, error?.message ?? error);
+    return false;
+  }
+}
+
 async function processOpenPullRequests(env) {
   const owner = env.GITHUB_OWNER;
   const repo = env.GITHUB_REPO;
@@ -331,6 +387,8 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
   const repoLabels = await getRepositoryLabels({ owner, repo, env });
 
   const labelsToAdd = new Set();
+  const labelsToRemove = new Set();
+  const currentLabels = new Set((pullRequest.labels ?? []).map((l) => l.name));
 
   for (const file of files) {
     const filename = file.filename;
@@ -356,25 +414,55 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
 
   if (pullRequest.mergeable === false) labelsToAdd.add("status:merge-conflict");
 
-  const currentLabels = new Set((pullRequest.labels ?? []).map((l) => l.name));
-  const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
+  const dcoResult = await checkDcoForPullRequest({ owner, repo, pullNumber, env });
+  if (!dcoResult.ok) {
+    const dcoLabel = CONFIG.dco.label;
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name: dcoLabel,
+      color: CONFIG.dco.color,
+      description: CONFIG.dco.description,
+    });
+    if (ready) labelsToAdd.add(dcoLabel);
+  } else {
+    labelsToRemove.add(CONFIG.dco.label);
+  }
 
-  if (newLabels.length === 0) {
-    return { ok: true, changed: false, added: [], dryRun };
+  const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
+  const labelsToDelete = [...labelsToRemove].filter((l) => currentLabels.has(l));
+
+  if (newLabels.length === 0 && labelsToDelete.length === 0) {
+    return { ok: true, changed: false, added: [], removed: [], dryRun };
   }
 
   if (!dryRun) {
-    await githubApi({
-      env,
-      method: "POST",
-      path: `/repos/${owner}/${repo}/issues/${pullNumber}/labels`,
-      body: { labels: newLabels },
-    });
+    if (newLabels.length > 0) {
+      await githubApi({
+        env,
+        method: "POST",
+        path: `/repos/${owner}/${repo}/issues/${pullNumber}/labels`,
+        body: { labels: newLabels },
+      });
+    }
+
+    for (const label of labelsToDelete) {
+      await githubApi({
+        env,
+        method: "DELETE",
+        path: `/repos/${owner}/${repo}/issues/${pullNumber}/labels/${encodeURIComponent(label)}`,
+      });
+    }
   } else {
     console.log(`DRY_RUN: would add labels to PR #${pullNumber}:`, newLabels);
+    if (labelsToDelete.length > 0) {
+      console.log(`DRY_RUN: would remove labels from PR #${pullNumber}:`, labelsToDelete);
+    }
   }
 
-  return { ok: true, changed: true, added: newLabels, dryRun };
+  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun };
 }
 
 async function listOpenPullRequests({ owner, repo, env }) {
@@ -405,6 +493,36 @@ async function listPullRequestFiles({ owner, repo, pullNumber, env }) {
     if (!Array.isArray(data) || data.length < perPage) break;
   }
   return files;
+}
+
+async function listPullRequestCommits({ owner, repo, pullNumber, env }) {
+  const perPage = 100;
+  const commits = [];
+  for (let page = 1; page <= 50; page++) {
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/pulls/${pullNumber}/commits?per_page=${perPage}&page=${page}`,
+    });
+    commits.push(...data);
+    if (!Array.isArray(data) || data.length < perPage) break;
+  }
+  return commits;
+}
+
+async function checkDcoForPullRequest({ owner, repo, pullNumber, env }) {
+  const commits = await listPullRequestCommits({ owner, repo, pullNumber, env });
+  const missing = [];
+
+  for (const commit of commits) {
+    if (isBotCommit(commit)) continue;
+    const message = commit?.commit?.message ?? "";
+    if (!hasSignedOffBy(message)) {
+      missing.push(commit.sha);
+    }
+  }
+
+  return { ok: missing.length === 0, missing };
 }
 
 async function handleIssueComment({ payload, env }) {
@@ -531,5 +649,8 @@ function formatResultComment({ result, pr }) {
   if (!result.changed) {
     return `PR #${pr}: No new labels needed.`;
   }
-  return `PR #${pr}: Added labels: ${result.added.join(", ")}`;
+  const added = result.added?.length ? `Added labels: ${result.added.join(", ")}.` : "";
+  const removed = result.removed?.length ? `Removed labels: ${result.removed.join(", ")}.` : "";
+  const details = [added, removed].filter(Boolean).join(" ");
+  return `PR #${pr}: ${details || "Label updates applied."}`;
 }

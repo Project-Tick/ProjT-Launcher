@@ -1,7 +1,16 @@
-# Project Tick - ProjT Launcher Pull Request
+# Project Tick - ProjT Launcher Monorepo Pull Request
 
 ## Description
 <!-- Summarize the changes and why they are needed. -->
+
+## Scope
+
+- [ ] Launcher (C++/Qt)
+- [ ] Website (Eleventy)
+- [ ] Bot (Cloudflare Workers)
+- [ ] Metadata Generator (Python)
+- [ ] Docs/CI/Tools
+- [ ] Other (describe):
 
 ## Type of Change
 
@@ -11,21 +20,19 @@
 - [ ] Refactor
 - [ ] Test
 - [ ] Build / CI
-- [ ] Other
+- [ ] Chore
 
 ## Checklist
 
-- [ ] I have read the contributing guidelines.
+- [ ] I have read `CONTRIBUTING.md`.
 - [ ] My code follows the project's style guidelines.
-- [ ] I have added tests that prove my fix is effective or that my feature works.
-- [ ] All new and existing tests pass.
-- [ ] I have updated documentation accordingly.
+- [ ] I have added tests that prove my fix is effective or explained why not.
+- [ ] All new and existing tests pass or I explained why not.
+- [ ] I have updated documentation accordingly or confirmed it is not needed.
+- [ ] DCO: each commit includes `Signed-off-by:` (bot commits are exempt).
 
 ## Related Issues
 <!-- Link to any related issues, e.g., `Fixes #123` -->
 
 ## Additional Notes
 <!-- Any additional information, screenshots, or context. -->
-
-## Signed-off-by
-<!-- Please use signed-off-by: name <email> -->
