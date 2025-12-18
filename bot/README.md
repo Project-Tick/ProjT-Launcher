@@ -49,6 +49,10 @@ Defined in `bot/wrangler.json`:
 
 The bot validates that each non-bot commit in a PR includes `Signed-off-by:`. If any are missing, it applies the `status:dco-missing` label (created automatically if needed). Bot commits (`[bot]`, `Project Tick Bot`, or `*@bot.*`) are exempt.
 
+## Scope labels (PR template)
+
+If a PR checks any options in the **Scope** section of `.github/pull_request_template.md`, the bot adds corresponding `scope:*` labels (created automatically if needed).
+
 ## CI summary comment
 
 The bot posts or updates a `PR CI Summary` comment based on the latest `pull-request-target.yml` run for the PR. It requires `actions:read` in addition to issues/labels write access.

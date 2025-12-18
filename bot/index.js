@@ -155,6 +155,32 @@ const CONFIG = {
     { option: "Chore", candidates: ["21.type:chore", "21.type:other", "chore"] },
     { option: "Other", candidates: ["21.type:other", "other"] },
   ],
+  templateScopeLabels: [
+    {
+      option: "Launcher (C++/Qt)",
+      label: { name: "scope:launcher", color: "0E8A16", description: "Launcher app changes" },
+    },
+    {
+      option: "Website (Eleventy)",
+      label: { name: "scope:website", color: "0E8A16", description: "Website changes" },
+    },
+    {
+      option: "Bot (Cloudflare Workers)",
+      label: { name: "scope:bot", color: "0E8A16", description: "Automation bot changes" },
+    },
+    {
+      option: "Metadata Generator (Python)",
+      label: { name: "scope:metadata", color: "0E8A16", description: "Metadata generator changes" },
+    },
+    {
+      option: "Docs/CI/Tools",
+      label: { name: "scope:docs-ci-tools", color: "0E8A16", description: "Docs/CI/tools changes" },
+    },
+    {
+      option: "Other (describe):",
+      label: { name: "scope:other", color: "6A737D", description: "Other changes" },
+    },
+  ],
   dco: {
     label: "status:dco-missing",
     color: "B60205",
@@ -249,10 +275,10 @@ function isBotCommit(commit) {
   );
 }
 
-function getTemplateSelections(body = "") {
+function getTemplateSelections(body = "", entries = []) {
   const normalized = body.replace(/\r/g, "");
   const selections = [];
-  for (const entry of CONFIG.templateTypeLabels) {
+  for (const entry of entries) {
     const pattern = new RegExp(`- \\[[xX]\\]\\s+${escapeRegExp(entry.option)}(?:\\s|$)`);
     if (pattern.test(normalized)) {
       selections.push(entry);
@@ -441,10 +467,26 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
   const types = Array.isArray(branchType.type) ? branchType.type : branchType.type ? [branchType.type] : [];
   for (const t of types) labelsToAdd.add(`branch:${t}`);
 
-  const templateSelections = getTemplateSelections(pullRequest.body ?? "");
+  const templateSelections = getTemplateSelections(pullRequest.body ?? "", CONFIG.templateTypeLabels);
   for (const selection of templateSelections) {
     const resolved = resolveTemplateLabel(selection, repoLabels);
     if (resolved) labelsToAdd.add(resolved);
+  }
+
+  const scopeSelections = getTemplateSelections(pullRequest.body ?? "", CONFIG.templateScopeLabels);
+  for (const selection of scopeSelections) {
+    const label = selection.label;
+    if (!label?.name) continue;
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name: label.name,
+      color: label.color,
+      description: label.description,
+    });
+    if (ready) labelsToAdd.add(label.name);
   }
 
   if (pullRequest.mergeable === false) labelsToAdd.add("status:merge-conflict");
