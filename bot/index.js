@@ -160,6 +160,11 @@ const CONFIG = {
     color: "B60205",
     description: "Missing DCO Signed-off-by in one or more commits",
   },
+  ciSummary: {
+    marker: "<!-- projt-bot:pr-summary -->",
+    workflowFile: "pull-request-target.yml",
+    jobs: ["Prepare", "Check", "Lint", "Build"],
+  },
   commentCommands: [
     "bot rerun",
     "bot labels",
@@ -188,6 +193,28 @@ function safeJsonParse(text) {
 
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function badgeForJob({ status, conclusion }) {
+  if (status && status !== "completed") return "⏳ in_progress";
+  switch (conclusion) {
+    case "success":
+      return "✅ success";
+    case "failure":
+      return "❌ failure";
+    case "cancelled":
+      return "⚠️ cancelled";
+    case "skipped":
+      return "⏭️ skipped";
+    case "timed_out":
+      return "⏱️ timed_out";
+    case "neutral":
+      return "➖ neutral";
+    case "action_required":
+      return "🛑 action_required";
+    default:
+      return "❓ unknown";
+  }
 }
 
 function hasSignedOffBy(message) {
@@ -302,6 +329,7 @@ function classifyBranch(branch) {
 }
 
 let repoLabelsCache = null;
+let botLoginCache = null;
 
 async function getRepositoryLabels({ owner, repo, env }) {
   const now = Date.now();
@@ -322,6 +350,13 @@ async function getRepositoryLabels({ owner, repo, env }) {
 
   repoLabelsCache = { ts: now, labels };
   return labels;
+}
+
+async function getBotLogin(env) {
+  if (botLoginCache) return botLoginCache;
+  const { data } = await githubApi({ env, method: "GET", path: "/user" });
+  botLoginCache = String(data?.login ?? "");
+  return botLoginCache;
 }
 
 async function ensureLabelExists({ owner, repo, env, repoLabels, name, color, description }) {
@@ -434,8 +469,23 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
   const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
   const labelsToDelete = [...labelsToRemove].filter((l) => currentLabels.has(l));
 
+  let ciSummary = null;
+  try {
+    ciSummary = await updateCiSummaryComment({
+      owner,
+      repo,
+      pullNumber,
+      pullRequest,
+      env,
+      dryRun,
+    });
+  } catch (error) {
+    console.warn("CI summary update failed:", error?.message ?? error);
+    ciSummary = { ok: false, error: String(error?.message ?? error) };
+  }
+
   if (newLabels.length === 0 && labelsToDelete.length === 0) {
-    return { ok: true, changed: false, added: [], removed: [], dryRun };
+    return { ok: true, changed: false, added: [], removed: [], dryRun, ciSummary };
   }
 
   if (!dryRun) {
@@ -462,7 +512,7 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     }
   }
 
-  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun };
+  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciSummary };
 }
 
 async function listOpenPullRequests({ owner, repo, env }) {
@@ -495,6 +545,21 @@ async function listPullRequestFiles({ owner, repo, pullNumber, env }) {
   return files;
 }
 
+async function listIssueComments({ owner, repo, issueNumber, env }) {
+  const perPage = 100;
+  const comments = [];
+  for (let page = 1; page <= 20; page++) {
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments?per_page=${perPage}&page=${page}`,
+    });
+    comments.push(...data);
+    if (!Array.isArray(data) || data.length < perPage) break;
+  }
+  return comments;
+}
+
 async function listPullRequestCommits({ owner, repo, pullNumber, env }) {
   const perPage = 100;
   const commits = [];
@@ -523,6 +588,115 @@ async function checkDcoForPullRequest({ owner, repo, pullNumber, env }) {
   }
 
   return { ok: missing.length === 0, missing };
+}
+
+async function findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env }) {
+  const workflow = CONFIG.ciSummary.workflowFile;
+  const { data } = await githubApi({
+    env,
+    method: "GET",
+    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30&event=pull_request_target`,
+  });
+  const runs = Array.isArray(data?.workflow_runs) ? data.workflow_runs : [];
+  return (
+    runs.find((run) => {
+      const prs = run.pull_requests ?? [];
+      const matchesPr = prs.some((pr) => pr.number === pullNumber);
+      if (!matchesPr) return false;
+      if (headSha && run.head_sha && run.head_sha !== headSha) return false;
+      return true;
+    }) ?? null
+  );
+}
+
+async function listJobsForRun({ owner, repo, runId, env }) {
+  const perPage = 100;
+  const jobs = [];
+  for (let page = 1; page <= 10; page++) {
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/actions/runs/${runId}/jobs?per_page=${perPage}&page=${page}`,
+    });
+    jobs.push(...(data?.jobs ?? []));
+    if (!Array.isArray(data?.jobs) || data.jobs.length < perPage) break;
+  }
+  return jobs;
+}
+
+function buildCiSummaryBody({ run, jobs }) {
+  const jobMap = new Map(jobs.map((job) => [job.name, job]));
+  const rows = CONFIG.ciSummary.jobs.map((name) => {
+    const job = jobMap.get(name);
+    const badge = job
+      ? badgeForJob({ status: job.status, conclusion: job.conclusion })
+      : "❓ unknown";
+    return `| ${name} | ${badge} |`;
+  });
+
+  return [
+    CONFIG.ciSummary.marker,
+    "## PR CI Summary",
+    "",
+    `Run: ${run.html_url}`,
+    "",
+    "| Job | Result |",
+    "|-----|--------|",
+    ...rows,
+  ].join("\n");
+}
+
+async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, env, dryRun }) {
+  const headSha = pullRequest?.head?.sha ?? "";
+  const run = await findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env });
+  if (!run) return { ok: false, skipped: true, reason: "no-workflow-run" };
+
+  const jobs = await listJobsForRun({ owner, repo, runId: run.id, env });
+  const body = buildCiSummaryBody({ run, jobs });
+
+  const comments = await listIssueComments({ owner, repo, issueNumber: pullNumber, env });
+  const marker = CONFIG.ciSummary.marker;
+  const existing = comments.find((comment) => String(comment.body ?? "").includes(marker));
+  const botLogin = await getBotLogin(env);
+
+  if (existing && existing.user?.login === botLogin) {
+    if (String(existing.body ?? "") === body) {
+      return { ok: true, updated: false, commentId: existing.id };
+    }
+    if (!dryRun) {
+      await githubApi({
+        env,
+        method: "PATCH",
+        path: `/repos/${owner}/${repo}/issues/comments/${existing.id}`,
+        body: { body },
+      });
+    }
+    return { ok: true, updated: true, commentId: existing.id };
+  }
+
+  if (existing && existing.user?.login === "github-actions[bot]" && !dryRun) {
+    try {
+      await githubApi({
+        env,
+        method: "DELETE",
+        path: `/repos/${owner}/${repo}/issues/comments/${existing.id}`,
+      });
+    } catch (error) {
+      console.warn("Failed to remove previous summary comment:", error?.message ?? error);
+    }
+  }
+
+  if (!dryRun) {
+    const { data } = await githubApi({
+      env,
+      method: "POST",
+      path: `/repos/${owner}/${repo}/issues/${pullNumber}/comments`,
+      body: { body },
+    });
+    return { ok: true, created: true, commentId: data?.id ?? null };
+  }
+
+  return { ok: true, created: false, dryRun: true };
 }
 
 async function handleIssueComment({ payload, env }) {

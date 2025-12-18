@@ -3,7 +3,7 @@
   "main": "index.js",
   "compatibility_date": "2025-12-16",
   "triggers": {
-    "crons": ["*/10 * * * *"]
+    "crons": ["*/1 * * * *"]
   },
   "vars": {
     "GITHUB_OWNER": "Project-Tick",
