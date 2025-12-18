@@ -29,7 +29,7 @@
 - [ ] I have added tests that prove my fix is effective or explained why not.
 - [ ] All new and existing tests pass or I explained why not.
 - [ ] I have updated documentation accordingly or confirmed it is not needed.
-- [ ] DCO: each commit includes `Signed-off-by:` (bot commits are exempt).
+- [ ] DCO: each commit includes `Signed-off-by:`
 
 ## Related Issues
 <!-- Link to any related issues, e.g., `Fixes #123` -->
