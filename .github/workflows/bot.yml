@@ -8,25 +8,14 @@
 name: Bot
 
 on:
-  schedule:
-    # Run every 10 minutes
-    - cron: '05,15,25,35,45,55 * * * *'
-  
   pull_request_target:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
   issue_comment:
     types: [created]
-  
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'PR number to process (leave empty for all)'
-        required: false
-        type: string
 
 concurrency:
-  group: bot-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || 'scheduled' }}
+  group: bot-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
 
 permissions:
@@ -42,7 +31,7 @@ jobs:
   bot:
     name: PR Automation
     runs-on: ubuntu-latest
-    if: github.event_name != 'schedule' || github.repository_owner == 'Project-Tick'
+    if: github.repository_owner == 'Project-Tick'
     
     steps:
       - name: Checkout CI scripts
@@ -80,7 +69,7 @@ jobs:
               github,
               context,
               core,
-              dry: context.eventName === 'pull_request_target',
+              dry: false,
             });
 
       - name: Log API rate limits (after)
