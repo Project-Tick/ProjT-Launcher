@@ -2,7 +2,7 @@
 
 > **ProjT Launcher - Minecraft Launcher**  
 > Copyright (C) 2025 Project Tick  
-> Licensed under GPL-3.0-or-later
+> Licensed under GPL-3.0-only
 
 ## 🛠 Engineering Standards
 

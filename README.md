@@ -32,6 +32,7 @@ This repository is a monorepo that hosts the launcher and its supporting service
 - **Launcher app (C++/Qt)**: `launcher/`, `libraries/`, `CMakeLists.txt`
 - **Website (Eleventy)**: `src/`, `public/`, `package.json`
 - **Automation bot (Cloudflare Workers)**: `bot/`
+- **Metadata generator (Python/Poetry)**: `meta/`, `pyproject.toml`
 - **Docs/CI/Tools**: `docs/`, `ci/`, `.github/workflows/`, `scripts/`, `tools/`
 - **Metadata Generator**: `meta/`
 
@@ -124,6 +125,32 @@ cd bot
 wrangler dev
 ```
 
+### Metadata Generator (Python/Poetry)
+
+ProjT Launcher Meta by Yong Do-Hyun. Scripts to generate JSONs and jars that ProjT Launcher will access. The metadata generator lives in `meta/` and is wired via `pyproject.toml`.
+
+#### Recommended Deployment (CI)
+
+The old Flake-based NixOS deployment is removed. Use the GitHub Actions workflow in `.github/workflows/auto-update.yml` (hourly schedule + manual dispatch).
+
+Secrets supported by the workflow:
+
+- `DEPLOY_PAT` (preferred, must have access to `meta-upstream` and `meta-launcher`)
+- `META_BOT_TOKEN` (fallback if no PAT)
+- `DEPLOY_SSH_KEY_UPSTREAM` and `DEPLOY_SSH_KEY_LAUNCHER` (SSH alternative)
+- `META_UPSTREAM_URL` and `META_LAUNCHER_URL` (optional custom repo URLs)
+
+#### Local Run
+
+Set `META_UPSTREAM_URL` and `META_LAUNCHER_URL` (or define them in `config.sh`), then:
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install .
+./init.sh
+./update.sh
+```
+
 ## Documentation
 
 Launcher contributor docs:
@@ -142,6 +169,7 @@ Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) for engineering standards and wo
 - **Launcher**: `docs/contributing/` and `CMakeLists.txt`
 - **Website**: `.eleventy.js`, `src/`, `package.json`
 - **Bot**: `bot/README.md`
+- **Metadata generator**: `meta/`, `pyproject.toml`
 
 ## macOS Notes
 
