@@ -13,8 +13,8 @@ export default {
       if (!env.GITHUB_OWNER || !env.GITHUB_REPO) {
         return json({ ok: false, error: "Missing GITHUB_OWNER/GITHUB_REPO" }, 500);
       }
-      if (!env.GITHUB_TOKEN) {
-        return json({ ok: false, error: "Missing GITHUB_TOKEN" }, 500);
+      if (!hasGitHubAuth(env)) {
+        return json({ ok: false, error: "Missing GitHub auth (token or app credentials)" }, 500);
       }
       if (!env.GITHUB_WEBHOOK_SECRET) {
         return json({ ok: false, error: "Missing GITHUB_WEBHOOK_SECRET" }, 500);
@@ -356,6 +356,12 @@ function classifyBranch(branch) {
 
 let repoLabelsCache = null;
 let botLoginCache = null;
+let appTokenCache = null;
+
+function hasGitHubAuth(env) {
+  if (env.GITHUB_TOKEN) return true;
+  return Boolean(env.GITHUB_APP_ID && env.GITHUB_APP_INSTALLATION_ID && env.GITHUB_APP_PRIVATE_KEY);
+}
 
 async function getRepositoryLabels({ owner, repo, env }) {
   const now = Date.now();
@@ -430,7 +436,7 @@ async function processOpenPullRequests(env) {
 
 async function handlePullRequest({ owner, repo, pullNumber, env }) {
   if (!owner || !repo) throw new Error("Missing owner/repo");
-  if (!env.GITHUB_TOKEN) throw new Error("Missing GITHUB_TOKEN");
+  if (!hasGitHubAuth(env)) throw new Error("Missing GitHub auth (GITHUB_TOKEN or GitHub App creds)");
 
   const dryRun = String(env.BOT_DRY_RUN ?? "false").toLowerCase() === "true";
 
@@ -780,7 +786,7 @@ async function handleIssueComment({ payload, env }) {
 }
 
 async function githubApi({ env, method, path, body }) {
-  const token = env.GITHUB_TOKEN;
+  const { token } = await getGitHubAuth(env);
   const url = `https://api.github.com${path}`;
   const init = {
     method,
@@ -806,6 +812,97 @@ async function githubApi({ env, method, path, body }) {
   }
 
   return { res, data };
+}
+
+async function getGitHubAuth(env) {
+  if (env.GITHUB_TOKEN) {
+    return { token: env.GITHUB_TOKEN, source: "token" };
+  }
+
+  const appId = env.GITHUB_APP_ID;
+  const installationId = env.GITHUB_APP_INSTALLATION_ID;
+  const privateKey = env.GITHUB_APP_PRIVATE_KEY;
+  if (!appId || !installationId || !privateKey) {
+    throw new Error("Missing GITHUB_TOKEN or GitHub App credentials");
+  }
+
+  const now = Date.now();
+  if (appTokenCache && now < appTokenCache.expiresAt - 60 * 1000) {
+    return { token: appTokenCache.token, source: "app" };
+  }
+
+  const jwt = await createGitHubAppJwt({ appId, privateKey });
+  const res = await fetch(
+    `https://api.github.com/app/installations/${installationId}/access_tokens`,
+    {
+      method: "POST",
+      headers: {
+        accept: "application/vnd.github+json",
+        authorization: `Bearer ${jwt}`,
+        "user-agent": "projtlauncher-bot-worker",
+      },
+    }
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`GitHub App token exchange failed: ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  const expiresAt = Date.parse(data?.expires_at ?? "") || now + 30 * 60 * 1000;
+
+  appTokenCache = { token: data.token, expiresAt };
+  return { token: data.token, source: "app" };
+}
+
+async function createGitHubAppJwt({ appId, privateKey }) {
+  const header = { alg: "RS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iat: now - 60,
+    exp: now + 9 * 60, // GitHub requires max 10 minutes
+    iss: String(appId),
+  };
+
+  const enc = (obj) => base64UrlEncode(new TextEncoder().encode(JSON.stringify(obj)));
+  const unsigned = `${enc(header)}.${enc(payload)}`;
+
+  const keyData = pemToArrayBuffer(normalizePrivateKey(privateKey));
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    keyData,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign(
+    { name: "RSASSA-PKCS1-v1_5" },
+    key,
+    new TextEncoder().encode(unsigned)
+  );
+
+  return `${unsigned}.${base64UrlEncode(new Uint8Array(signature))}`;
+}
+
+function normalizePrivateKey(pem) {
+  const normalized = String(pem).replace(/\\n/g, "\n").trim();
+  if (normalized.includes("BEGIN")) return normalized;
+  // Allow raw base64 content without headers
+  return `-----BEGIN PRIVATE KEY-----\n${normalized}\n-----END PRIVATE KEY-----`;
+}
+
+function pemToArrayBuffer(pem) {
+  const base64 = pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+function base64UrlEncode(data) {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 async function verifyGitHubSignature({ secret, signatureHeader, rawBody }) {

@@ -11,9 +11,20 @@ This directory contains a Cloudflare Worker that can auto-label GitHub pull requ
 
 ## Required secrets (Cloudflare)
 
-Set these as Worker secrets:
+Set these as Worker secrets (choose ONE auth method):
+
+PAT (simple):
 
 - `GITHUB_TOKEN`: token with permission to add/create labels (repo access as needed)
+
+GitHub App (recommended for non-personal auth):
+
+- `GITHUB_APP_ID`
+- `GITHUB_APP_INSTALLATION_ID`
+- `GITHUB_APP_PRIVATE_KEY` (PKCS#8 PEM; use `\n` for newlines when pasting)
+
+Common secrets:
+
 - `GITHUB_WEBHOOK_SECRET`: the webhook secret configured in GitHub
 - `ADMIN_TOKEN`: (optional but recommended) protects `/run`
 - `BOT_COMMENT_ON_COMMAND`: (optional) `true` to comment after handling `issue_comment` commands
