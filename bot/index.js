@@ -190,14 +190,22 @@ const CONFIG = {
   maintainersFile: "ci/eval/compare/maintainers.nix",
   maintainerLabel: "32.maintainer:PR",
   alwaysRequestReviewers: [],
+  branchLabelPrefix: "14.branch",
+  statusLabels: {
+    mergeConflict: {
+      name: "41.status:merge-conflict",
+      color: "D93F0B",
+      description: "PR has merge conflicts",
+    },
+    dcoMissing: {
+      name: "41.status:dco-missing",
+      color: "B60205",
+      description: "Missing DCO Signed-off-by in one or more commits",
+    },
+  },
   autoMerge: {
     enabled: true,
     mergeMethod: "squash",
-  },
-  dco: {
-    label: "status:dco-missing",
-    color: "B60205",
-    description: "Missing DCO Signed-off-by in one or more commits",
   },
   ciSummary: {
     marker: "<!-- projt-bot:pr-summary -->",
@@ -216,6 +224,11 @@ const CONFIG = {
     "/bot rerun",
     "/bot labels",
   ],
+  labeler: {
+    enabled: true,
+    path: ".github/labeler.yml",
+    ttlMs: 5 * 60 * 1000, // cache parsed labeler for 5 minutes
+  },
 };
 
 function json(data, status = 200) {
@@ -581,6 +594,7 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
 
   const files = await listPullRequestFiles({ owner, repo, pullNumber, env });
   const repoLabels = await getRepositoryLabels({ owner, repo, env });
+  const labelerRules = await loadLabelerRules({ owner, repo, env, ref: pullRequest?.base?.sha ?? null });
 
   const labelsToAdd = new Set();
   const labelsToRemove = new Set();
@@ -597,13 +611,29 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
 
     const platform = getPlatformFromPath(filename);
     if (platform && CONFIG.platformLabels[platform]) labelsToAdd.add(CONFIG.platformLabels[platform]);
+
+    // Labeler-style glob rules
+    const matchedLabeler = matchLabelerRules(labelerRules, filename);
+    for (const lbl of matchedLabeler) labelsToAdd.add(lbl);
   }
 
   labelsToAdd.add(getSizeLabel(pullRequest.additions, pullRequest.deletions));
 
   const branchType = classifyBranch(pullRequest?.head?.ref ?? "");
   const types = Array.isArray(branchType.type) ? branchType.type : branchType.type ? [branchType.type] : [];
-  for (const t of types) labelsToAdd.add(`branch:${t}`);
+  for (const t of types) {
+    const name = `${CONFIG.branchLabelPrefix}:${t}`;
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name,
+      color: "6F42C1",
+      description: `Branch type: ${t}`,
+    });
+    if (ready) labelsToAdd.add(name);
+  }
 
   if (maintainers.has(author)) {
     const ready = await ensureLabelExists({
@@ -640,23 +670,35 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     if (ready) labelsToAdd.add(label.name);
   }
 
-  if (pullRequest.mergeable === false) labelsToAdd.add("status:merge-conflict");
+  if (pullRequest.mergeable === false) {
+    const statusLabel = CONFIG.statusLabels.mergeConflict;
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name: statusLabel.name,
+      color: statusLabel.color,
+      description: statusLabel.description,
+    });
+    if (ready) labelsToAdd.add(statusLabel.name);
+  }
 
   const dcoResult = await checkDcoForPullRequest({ owner, repo, pullNumber, env });
   if (!dcoResult.ok) {
-    const dcoLabel = CONFIG.dco.label;
+    const dcoLabel = CONFIG.statusLabels.dcoMissing.name;
     const ready = await ensureLabelExists({
       owner,
       repo,
       env,
       repoLabels,
       name: dcoLabel,
-      color: CONFIG.dco.color,
-      description: CONFIG.dco.description,
+      color: CONFIG.statusLabels.dcoMissing.color,
+      description: CONFIG.statusLabels.dcoMissing.description,
     });
     if (ready) labelsToAdd.add(dcoLabel);
   } else {
-    labelsToRemove.add(CONFIG.dco.label);
+    labelsToRemove.add(CONFIG.statusLabels.dcoMissing.name);
   }
 
   const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
@@ -905,6 +947,100 @@ function buildCiSummaryBody({ run, jobs }) {
     "|-----|--------|",
     ...rows,
   ].join("\n");
+}
+
+let labelerCache = null;
+
+async function loadLabelerRules({ owner, repo, env, ref }) {
+  if (!CONFIG.labeler.enabled) return [];
+  const now = Date.now();
+  if (labelerCache && now - labelerCache.ts < CONFIG.labeler.ttlMs) return labelerCache.rules;
+
+  const path = CONFIG.labeler.path;
+  try {
+    const refSuffix = ref ? `?ref=${encodeURIComponent(ref)}` : "";
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/contents/${path}${refSuffix}`,
+    });
+    const content = data?.content ? atob(data.content) : "";
+    const rules = parseLabelerYaml(content);
+    labelerCache = { ts: now, rules };
+    return rules;
+  } catch (error) {
+    console.warn("Failed to load labeler config:", error?.message ?? error);
+    return [];
+  }
+}
+
+function parseLabelerYaml(text) {
+  const rules = [];
+  let currentLabel = null;
+  let collectingGlobs = false;
+  for (const rawLine of String(text).split(/\r?\n/)) {
+    const line = rawLine.replace(/\t/g, "  ");
+    const labelMatch = line.match(/^([A-Za-z0-9._:-]+):\s*$/);
+    if (labelMatch) {
+      currentLabel = labelMatch[1];
+      collectingGlobs = false;
+      continue;
+    }
+    if (!currentLabel) continue;
+    if (line.includes("any-glob-to-any-file")) {
+      collectingGlobs = true;
+      continue;
+    }
+    if (collectingGlobs) {
+      const globMatch = line.match(/^\s*-\s+(.+?)\s*$/);
+      if (globMatch && globMatch[1]) {
+        const pattern = globMatch[1].trim().replace(/^"|"$/g, "");
+        rules.push({ label: currentLabel, pattern });
+      }
+    }
+  }
+  return rules;
+}
+
+function matchLabelerRules(rules, filePath) {
+  const matched = new Set();
+  for (const { label, pattern } of rules) {
+    if (globMatch(pattern, filePath)) matched.add(label);
+  }
+  return [...matched];
+}
+
+function globMatch(pattern, text) {
+  const regex = globToRegExp(pattern);
+  return regex.test(text);
+}
+
+function globToRegExp(pattern) {
+  // Very small glob-to-regex converter supporting *, **, ?, [].
+  let re = "";
+  let i = 0;
+  while (i < pattern.length) {
+    const ch = pattern[i];
+    if (ch === "*") {
+      if (pattern[i + 1] === "*") {
+        re += ".*";
+        i += 2;
+      } else {
+        re += "[^/]*";
+        i += 1;
+      }
+    } else if (ch === "?") {
+      re += ".";
+      i += 1;
+    } else if ("\\.[]{}()+-^$|".includes(ch)) {
+      re += "\\" + ch;
+      i += 1;
+    } else {
+      re += ch;
+      i += 1;
+    }
+  }
+  return new RegExp("^" + re + "$");
 }
 
 async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, env, dryRun }) {
