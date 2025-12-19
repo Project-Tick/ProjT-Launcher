@@ -26,7 +26,6 @@ on:
       - "nix/**"
       - "flatpak/**"
       - "debian/**"
-  merge_group:
   workflow_call:
     inputs:
       build-type:

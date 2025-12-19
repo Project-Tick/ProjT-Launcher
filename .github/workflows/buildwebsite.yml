@@ -1,6 +1,7 @@
 name: Build Eleventy
 
 on:
+  merge_group:
   push:
     branches:
       - develop
