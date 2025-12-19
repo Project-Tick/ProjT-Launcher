@@ -13,7 +13,7 @@ This directory contains a Cloudflare Worker that can auto-label GitHub pull requ
 
 Set these as Worker secrets:
 
-- `GITHUB_TOKEN`: token with permission to add labels (repo access as needed)
+- `GITHUB_TOKEN`: token with permission to add/create labels (repo access as needed)
 - `GITHUB_WEBHOOK_SECRET`: the webhook secret configured in GitHub
 - `ADMIN_TOKEN`: (optional but recommended) protects `/run`
 - `BOT_COMMENT_ON_COMMAND`: (optional) `true` to comment after handling `issue_comment` commands
@@ -44,6 +44,18 @@ Defined in `bot/wrangler.json`:
 - `GITHUB_OWNER` (default: `Project-Tick`)
 - `GITHUB_REPO` (default: `ProjT-Launcher`)
 - `BOT_DRY_RUN` (`true`/`false`)
+
+## DCO check
+
+The bot validates that each non-bot commit in a PR includes `Signed-off-by:`. If any are missing, it applies the `status:dco-missing` label (created automatically if needed). Bot commits (`[bot]`, `Project Tick Bot`, or `*@bot.*`) are exempt.
+
+## Scope labels (PR template)
+
+If a PR checks any options in the **Scope** section of `.github/pull_request_template.md`, the bot adds corresponding `scope:*` labels (created automatically if needed).
+
+## CI summary comment
+
+The bot posts or updates a `PR CI Summary` comment based on the latest `pull-request-target.yml` run for the PR. It requires `actions:read` in addition to issues/labels write access.
 
 ## GitHub webhook setup
 

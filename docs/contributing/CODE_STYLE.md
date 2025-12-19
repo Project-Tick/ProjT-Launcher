@@ -89,7 +89,7 @@ BreakBeforeBraces: Custom
 
 | Type | Format | Example | Why? |
 | ------ | -------- | --------- | ------ |
-| Class/Struct | PascalCase | `ThemeViewModel` | Standard C++ style. |
+| Class/Struct | PascalCase | `MainWindow` | Standard C++ style. |
 | Private Member | `m_` + camelCase | `m_currentTheme` | **Crucial.** Distinguishes `m_name` (class variable) from `name` (local variable). |
 | Static Member | `s_` + camelCase | `s_instance` | Tells you this variable is shared across all instances. |
 | Public Member | camelCase | `dateOfBirth` | Standard for structs. |
@@ -104,78 +104,25 @@ BreakBeforeBraces: Custom
 
 ---
 
-## QML Coding Standards
+## Qt Widgets UI Standards
 
-### 1. Formatting
+### 1. `.ui` Files (Qt Designer)
 
-- **Indentation**: 4 spaces. No tabs.
-- **Property Order**: Strict ordering required.
+- **Use Qt Designer** for layout and widgets.
+- **Do not edit** generated `ui_*.h` files by hand.
+- Keep layout in `.ui` and logic in the paired `.cpp`/`.h`.
+- Set meaningful `objectName` values for widgets that are referenced in code.
 
-```qml
-Type {
-    id: root // 1. ID (Mandatory first)
+### 2. Widget Classes
 
-    // 2. Layout/Positioning
-    anchors.fill: parent
-    width: 100
-    height: 100
+- Avoid heavy logic in UI classes; delegate to core services or tasks.
+- Use signals/slots instead of tight coupling between widgets.
+- Prefer existing models/proxies (e.g., `InstanceList`, `InstanceProxyModel`) for data views.
 
-    // 3. Visual Properties
-    color: "red"
-    visible: true
+### 3. Styling
 
-    // 4. Custom Properties
-    property string title: ""
-
-    // 5. Signals
-    signal clicked()
-
-    // 6. Functions
-    function doSomething() {}
-
-    // 7. Child Objects
-    Text { ... }
-}
-```
-
-### 2. Logic in QML
-
-- **Limit**: No JavaScript blocks longer than **5 lines**.
-- **Complex Logic**: Must be moved to a C++ ViewModel or a separate `.js` file.
-- **`console.log`**: **Forbidden** in production code. Use C++ logging or a custom logger wrapper.
-
-### 3. Component API Design
-
-- **Root Element**: The root element of a component should usually be `Item` or `Rectangle`.
-  - **Property Aliasing**: Expose internal properties using `property alias`.
-
-```qml
-// ✅ CORRECT
-property alias text: label.text
-
-// ❌ INCORRECT
-property string text: ""
-onTextChanged: label.text = text
-```
-
-- **Implicit Size**: Always define `implicitWidth` and `implicitHeight` for reusable components.
-
-### 4. Theme Usage
-
-- **Hardcoded Colors**: **Strictly Forbidden**. You must use `ThemeColors`.
-- **Hardcoded Sizes**: **Strictly Forbidden**. You must use `Theme` constants (e.g., `Theme.spacingM`).
-
-### 5. Performance
-
-- **Bindings**: Avoid complex bindings that evaluate frequently.
-- **Images**: Always use `sourceSize` when loading large images.
-- **Loaders**: Use `Loader` for heavy components that are not immediately visible.
-- **Anchors vs Layouts**: Prefer `anchors` for simple positioning (faster). Use `Layouts` (RowLayout, ColumnLayout) for complex, dynamic UIs.
-
-### 6. Signal Handlers
-
-- **Naming**: Explicitly defined signal handlers (e.g., `onClicked:`) are preferred over `Connections` for direct children.
-- **Parameters**: Always specify parameters if used (e.g., `onClicked: (mouse) => { ... }`).
+- Avoid inline style sheets unless necessary.
+- Reuse existing style helpers and theme settings for consistency.
 
 ---
 
@@ -281,67 +228,7 @@ void MyNewClass::internalHelper() {
 }
 ```
 
-## 3. QML Component Template (`.qml`)
-
-```qml
-// SPDX-License-Identifier: GPL-3.0-only
-// SPDX-FileCopyrightText: 2025 Project Tick
-// SPDX-FileContributor: Project Tick Team
-/*
- *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.15
-import ProjTLauncher 1.0
-import "components"
-
-Item {
-    id: root
-
-    // Public API
-    property string text: ""
-    signal clicked()
-
-    // Layout
-    implicitWidth: 200
-    implicitHeight: 50
-
-    Rectangle {
-        anchors.fill: parent
-        color: ThemeColors.surface
-        radius: 4 // Use Theme constants if available
-
-        Text {
-            anchors.centerIn: parent
-            text: root.text
-            color: ThemeColors.text
-            font.pixelSize: 14
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.clicked()
-        }
-    }
-}
-```
-
-## 4. CMakeLists.txt Template (New Module)
+## 3. CMakeLists.txt Template (New Module)
 
 ```cmake
 # Define the library

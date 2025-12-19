@@ -152,8 +152,45 @@ const CONFIG = {
     { option: "Refactor", candidates: ["21.type:refactor", "refactor"] },
     { option: "Test", candidates: ["21.type:test", "tests", "test"] },
     { option: "Build / CI", candidates: ["21.type:build", "ci", "build"] },
+    { option: "Chore", candidates: ["21.type:chore", "21.type:other", "chore"] },
     { option: "Other", candidates: ["21.type:other", "other"] },
   ],
+  templateScopeLabels: [
+    {
+      option: "Launcher (C++/Qt)",
+      label: { name: "scope:launcher", color: "0E8A16", description: "Launcher app changes" },
+    },
+    {
+      option: "Website (Eleventy)",
+      label: { name: "scope:website", color: "0E8A16", description: "Website changes" },
+    },
+    {
+      option: "Bot (Cloudflare Workers)",
+      label: { name: "scope:bot", color: "0E8A16", description: "Automation bot changes" },
+    },
+    {
+      option: "Metadata Generator (Python)",
+      label: { name: "scope:metadata", color: "0E8A16", description: "Metadata generator changes" },
+    },
+    {
+      option: "Docs/CI/Tools",
+      label: { name: "scope:docs-ci-tools", color: "0E8A16", description: "Docs/CI/tools changes" },
+    },
+    {
+      option: "Other (describe):",
+      label: { name: "scope:other", color: "6A737D", description: "Other changes" },
+    },
+  ],
+  dco: {
+    label: "status:dco-missing",
+    color: "B60205",
+    description: "Missing DCO Signed-off-by in one or more commits",
+  },
+  ciSummary: {
+    marker: "<!-- projt-bot:pr-summary -->",
+    workflowFile: "pull-request-target.yml",
+    jobs: ["Prepare", "Check", "Lint", "Build"],
+  },
   commentCommands: [
     "bot rerun",
     "bot labels",
@@ -184,10 +221,64 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function getTemplateSelections(body = "") {
+function badgeForJob({ status, conclusion }) {
+  if (status && status !== "completed") return "⏳ in_progress";
+  switch (conclusion) {
+    case "success":
+      return "✅ success";
+    case "failure":
+      return "❌ failure";
+    case "cancelled":
+      return "⚠️ cancelled";
+    case "skipped":
+      return "⏭️ skipped";
+    case "timed_out":
+      return "⏱️ timed_out";
+    case "neutral":
+      return "➖ neutral";
+    case "action_required":
+      return "🛑 action_required";
+    default:
+      return "❓ unknown";
+  }
+}
+
+function hasSignedOffBy(message) {
+  return /(^|\n)\s*signed-off-by:\s+.+/i.test(String(message));
+}
+
+function isBotIdentity({ name, email, login }) {
+  const lowerName = String(name ?? "").toLowerCase();
+  const lowerEmail = String(email ?? "").toLowerCase();
+  const lowerLogin = String(login ?? "").toLowerCase();
+  const combined = `${lowerName} ${lowerEmail} ${lowerLogin}`;
+
+  if (!combined.trim()) return false;
+  if (combined.includes("[bot]")) return true;
+  if (combined.includes("project tick bot")) return true;
+  if (combined.includes("projt-launcher-bot")) return true;
+  if (lowerEmail.includes("@bot.")) return true;
+  if (lowerEmail.includes("bot.yongdohyun.org.tr")) return true;
+
+  return false;
+}
+
+function isBotCommit(commit) {
+  const author = commit?.commit?.author ?? {};
+  const committer = commit?.commit?.committer ?? {};
+  const authorUser = commit?.author ?? {};
+  const committerUser = commit?.committer ?? {};
+
+  return (
+    isBotIdentity({ name: author.name, email: author.email, login: authorUser.login }) ||
+    isBotIdentity({ name: committer.name, email: committer.email, login: committerUser.login })
+  );
+}
+
+function getTemplateSelections(body = "", entries = []) {
   const normalized = body.replace(/\r/g, "");
   const selections = [];
-  for (const entry of CONFIG.templateTypeLabels) {
+  for (const entry of entries) {
     const pattern = new RegExp(`- \\[[xX]\\]\\s+${escapeRegExp(entry.option)}(?:\\s|$)`);
     if (pattern.test(normalized)) {
       selections.push(entry);
@@ -264,6 +355,7 @@ function classifyBranch(branch) {
 }
 
 let repoLabelsCache = null;
+let botLoginCache = null;
 
 async function getRepositoryLabels({ owner, repo, env }) {
   const now = Date.now();
@@ -284,6 +376,31 @@ async function getRepositoryLabels({ owner, repo, env }) {
 
   repoLabelsCache = { ts: now, labels };
   return labels;
+}
+
+async function getBotLogin(env) {
+  if (botLoginCache) return botLoginCache;
+  const { data } = await githubApi({ env, method: "GET", path: "/user" });
+  botLoginCache = String(data?.login ?? "");
+  return botLoginCache;
+}
+
+async function ensureLabelExists({ owner, repo, env, repoLabels, name, color, description }) {
+  if (repoLabels.has(name)) return true;
+
+  try {
+    await githubApi({
+      env,
+      method: "POST",
+      path: `/repos/${owner}/${repo}/labels`,
+      body: { name, color, description },
+    });
+    repoLabels.add(name);
+    return true;
+  } catch (error) {
+    console.warn(`Failed to create label "${name}":`, error?.message ?? error);
+    return false;
+  }
 }
 
 async function processOpenPullRequests(env) {
@@ -331,6 +448,8 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
   const repoLabels = await getRepositoryLabels({ owner, repo, env });
 
   const labelsToAdd = new Set();
+  const labelsToRemove = new Set();
+  const currentLabels = new Set((pullRequest.labels ?? []).map((l) => l.name));
 
   for (const file of files) {
     const filename = file.filename;
@@ -348,33 +467,94 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
   const types = Array.isArray(branchType.type) ? branchType.type : branchType.type ? [branchType.type] : [];
   for (const t of types) labelsToAdd.add(`branch:${t}`);
 
-  const templateSelections = getTemplateSelections(pullRequest.body ?? "");
+  const templateSelections = getTemplateSelections(pullRequest.body ?? "", CONFIG.templateTypeLabels);
   for (const selection of templateSelections) {
     const resolved = resolveTemplateLabel(selection, repoLabels);
     if (resolved) labelsToAdd.add(resolved);
   }
 
+  const scopeSelections = getTemplateSelections(pullRequest.body ?? "", CONFIG.templateScopeLabels);
+  for (const selection of scopeSelections) {
+    const label = selection.label;
+    if (!label?.name) continue;
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name: label.name,
+      color: label.color,
+      description: label.description,
+    });
+    if (ready) labelsToAdd.add(label.name);
+  }
+
   if (pullRequest.mergeable === false) labelsToAdd.add("status:merge-conflict");
 
-  const currentLabels = new Set((pullRequest.labels ?? []).map((l) => l.name));
-  const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
+  const dcoResult = await checkDcoForPullRequest({ owner, repo, pullNumber, env });
+  if (!dcoResult.ok) {
+    const dcoLabel = CONFIG.dco.label;
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name: dcoLabel,
+      color: CONFIG.dco.color,
+      description: CONFIG.dco.description,
+    });
+    if (ready) labelsToAdd.add(dcoLabel);
+  } else {
+    labelsToRemove.add(CONFIG.dco.label);
+  }
 
-  if (newLabels.length === 0) {
-    return { ok: true, changed: false, added: [], dryRun };
+  const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
+  const labelsToDelete = [...labelsToRemove].filter((l) => currentLabels.has(l));
+
+  let ciSummary = null;
+  try {
+    ciSummary = await updateCiSummaryComment({
+      owner,
+      repo,
+      pullNumber,
+      pullRequest,
+      env,
+      dryRun,
+    });
+  } catch (error) {
+    console.warn("CI summary update failed:", error?.message ?? error);
+    ciSummary = { ok: false, error: String(error?.message ?? error) };
+  }
+
+  if (newLabels.length === 0 && labelsToDelete.length === 0) {
+    return { ok: true, changed: false, added: [], removed: [], dryRun, ciSummary };
   }
 
   if (!dryRun) {
-    await githubApi({
-      env,
-      method: "POST",
-      path: `/repos/${owner}/${repo}/issues/${pullNumber}/labels`,
-      body: { labels: newLabels },
-    });
+    if (newLabels.length > 0) {
+      await githubApi({
+        env,
+        method: "POST",
+        path: `/repos/${owner}/${repo}/issues/${pullNumber}/labels`,
+        body: { labels: newLabels },
+      });
+    }
+
+    for (const label of labelsToDelete) {
+      await githubApi({
+        env,
+        method: "DELETE",
+        path: `/repos/${owner}/${repo}/issues/${pullNumber}/labels/${encodeURIComponent(label)}`,
+      });
+    }
   } else {
     console.log(`DRY_RUN: would add labels to PR #${pullNumber}:`, newLabels);
+    if (labelsToDelete.length > 0) {
+      console.log(`DRY_RUN: would remove labels from PR #${pullNumber}:`, labelsToDelete);
+    }
   }
 
-  return { ok: true, changed: true, added: newLabels, dryRun };
+  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciSummary };
 }
 
 async function listOpenPullRequests({ owner, repo, env }) {
@@ -405,6 +585,160 @@ async function listPullRequestFiles({ owner, repo, pullNumber, env }) {
     if (!Array.isArray(data) || data.length < perPage) break;
   }
   return files;
+}
+
+async function listIssueComments({ owner, repo, issueNumber, env }) {
+  const perPage = 100;
+  const comments = [];
+  for (let page = 1; page <= 20; page++) {
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments?per_page=${perPage}&page=${page}`,
+    });
+    comments.push(...data);
+    if (!Array.isArray(data) || data.length < perPage) break;
+  }
+  return comments;
+}
+
+async function listPullRequestCommits({ owner, repo, pullNumber, env }) {
+  const perPage = 100;
+  const commits = [];
+  for (let page = 1; page <= 50; page++) {
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/pulls/${pullNumber}/commits?per_page=${perPage}&page=${page}`,
+    });
+    commits.push(...data);
+    if (!Array.isArray(data) || data.length < perPage) break;
+  }
+  return commits;
+}
+
+async function checkDcoForPullRequest({ owner, repo, pullNumber, env }) {
+  const commits = await listPullRequestCommits({ owner, repo, pullNumber, env });
+  const missing = [];
+
+  for (const commit of commits) {
+    if (isBotCommit(commit)) continue;
+    const message = commit?.commit?.message ?? "";
+    if (!hasSignedOffBy(message)) {
+      missing.push(commit.sha);
+    }
+  }
+
+  return { ok: missing.length === 0, missing };
+}
+
+async function findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env }) {
+  const workflow = CONFIG.ciSummary.workflowFile;
+  const { data } = await githubApi({
+    env,
+    method: "GET",
+    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30&event=pull_request_target`,
+  });
+  const runs = Array.isArray(data?.workflow_runs) ? data.workflow_runs : [];
+  return (
+    runs.find((run) => {
+      const prs = run.pull_requests ?? [];
+      const matchesPr = prs.some((pr) => pr.number === pullNumber);
+      if (!matchesPr) return false;
+      if (headSha && run.head_sha && run.head_sha !== headSha) return false;
+      return true;
+    }) ?? null
+  );
+}
+
+async function listJobsForRun({ owner, repo, runId, env }) {
+  const perPage = 100;
+  const jobs = [];
+  for (let page = 1; page <= 10; page++) {
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/actions/runs/${runId}/jobs?per_page=${perPage}&page=${page}`,
+    });
+    jobs.push(...(data?.jobs ?? []));
+    if (!Array.isArray(data?.jobs) || data.jobs.length < perPage) break;
+  }
+  return jobs;
+}
+
+function buildCiSummaryBody({ run, jobs }) {
+  const jobMap = new Map(jobs.map((job) => [job.name, job]));
+  const rows = CONFIG.ciSummary.jobs.map((name) => {
+    const job = jobMap.get(name);
+    const badge = job
+      ? badgeForJob({ status: job.status, conclusion: job.conclusion })
+      : "❓ unknown";
+    return `| ${name} | ${badge} |`;
+  });
+
+  return [
+    CONFIG.ciSummary.marker,
+    "## PR CI Summary",
+    "",
+    `Run: ${run.html_url}`,
+    "",
+    "| Job | Result |",
+    "|-----|--------|",
+    ...rows,
+  ].join("\n");
+}
+
+async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, env, dryRun }) {
+  const headSha = pullRequest?.head?.sha ?? "";
+  const run = await findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env });
+  if (!run) return { ok: false, skipped: true, reason: "no-workflow-run" };
+
+  const jobs = await listJobsForRun({ owner, repo, runId: run.id, env });
+  const body = buildCiSummaryBody({ run, jobs });
+
+  const comments = await listIssueComments({ owner, repo, issueNumber: pullNumber, env });
+  const marker = CONFIG.ciSummary.marker;
+  const existing = comments.find((comment) => String(comment.body ?? "").includes(marker));
+  const botLogin = await getBotLogin(env);
+
+  if (existing && existing.user?.login === botLogin) {
+    if (String(existing.body ?? "") === body) {
+      return { ok: true, updated: false, commentId: existing.id };
+    }
+    if (!dryRun) {
+      await githubApi({
+        env,
+        method: "PATCH",
+        path: `/repos/${owner}/${repo}/issues/comments/${existing.id}`,
+        body: { body },
+      });
+    }
+    return { ok: true, updated: true, commentId: existing.id };
+  }
+
+  if (existing && existing.user?.login === "github-actions[bot]" && !dryRun) {
+    try {
+      await githubApi({
+        env,
+        method: "DELETE",
+        path: `/repos/${owner}/${repo}/issues/comments/${existing.id}`,
+      });
+    } catch (error) {
+      console.warn("Failed to remove previous summary comment:", error?.message ?? error);
+    }
+  }
+
+  if (!dryRun) {
+    const { data } = await githubApi({
+      env,
+      method: "POST",
+      path: `/repos/${owner}/${repo}/issues/${pullNumber}/comments`,
+      body: { body },
+    });
+    return { ok: true, created: true, commentId: data?.id ?? null };
+  }
+
+  return { ok: true, created: false, dryRun: true };
 }
 
 async function handleIssueComment({ payload, env }) {
@@ -531,5 +865,8 @@ function formatResultComment({ result, pr }) {
   if (!result.changed) {
     return `PR #${pr}: No new labels needed.`;
   }
-  return `PR #${pr}: Added labels: ${result.added.join(", ")}`;
+  const added = result.added?.length ? `Added labels: ${result.added.join(", ")}.` : "";
+  const removed = result.removed?.length ? `Removed labels: ${result.removed.join(", ")}.` : "";
+  const details = [added, removed].filter(Boolean).join(" ");
+  return `PR #${pr}: ${details || "Label updates applied."}`;
 }
