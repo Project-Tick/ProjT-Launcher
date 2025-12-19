@@ -164,27 +164,27 @@ const CONFIG = {
   templateScopeLabels: [
     {
       option: "Launcher (C++/Qt)",
-      label: { name: "scope:launcher", color: "0E8A16", description: "Launcher app changes" },
+      label: { name: "31.scope:launcher", color: "0E8A16", description: "Launcher app changes" },
     },
     {
       option: "Website (Eleventy)",
-      label: { name: "scope:website", color: "0E8A16", description: "Website changes" },
+      label: { name: "31.scope:website", color: "0E8A16", description: "Website changes" },
     },
     {
       option: "Bot (Cloudflare Workers)",
-      label: { name: "scope:bot", color: "0E8A16", description: "Automation bot changes" },
+      label: { name: "31.scope:bot", color: "0E8A16", description: "Automation bot changes" },
     },
     {
       option: "Metadata Generator (Python)",
-      label: { name: "scope:metadata", color: "0E8A16", description: "Metadata generator changes" },
+      label: { name: "31.scope:metadata", color: "0E8A16", description: "Metadata generator changes" },
     },
     {
       option: "Docs/CI/Tools",
-      label: { name: "scope:docs-ci-tools", color: "0E8A16", description: "Docs/CI/tools changes" },
+      label: { name: "31.scope:docs-ci-tools", color: "0E8A16", description: "Docs/CI/tools changes" },
     },
     {
       option: "Other (describe):",
-      label: { name: "scope:other", color: "6A737D", description: "Other changes" },
+      label: { name: "31.scope:other", color: "6A737D", description: "Other changes" },
     },
   ],
   dco: {
@@ -195,7 +195,13 @@ const CONFIG = {
   ciSummary: {
     marker: "<!-- projt-bot:pr-summary -->",
     workflowFile: "pull-request-target.yml",
-    jobs: ["Prepare", "Check", "Lint", "Build"],
+    jobs: [
+      { label: "Prepare", match: ["prepare"] },
+      { label: "Check", match: ["check"] },
+      { label: "Lint", match: ["lint"] },
+      // Aggregate all build-* jobs into a single Build row
+      { label: "Build", match: ["build", "cmake-"] },
+    ],
   },
   commentCommands: [
     "bot rerun",
@@ -692,14 +698,52 @@ async function listJobsForRun({ owner, repo, runId, env }) {
   return jobs;
 }
 
+function pickJobStatus(matched) {
+  // Prefer failure > action_required > cancelled > timed_out > in_progress > success > skipped > neutral > unknown
+  const order = [
+    "failure",
+    "action_required",
+    "cancelled",
+    "timed_out",
+    "in_progress",
+    "success",
+    "skipped",
+    "neutral",
+  ];
+  if (!matched.length) return { status: null, conclusion: null };
+
+  // Normalize statuses/conclusions
+  const normalized = matched.map((job) => {
+    const status = job.status === "completed" ? job.conclusion : job.status;
+    return { status: status ?? job.status, conclusion: job.conclusion };
+  });
+
+  for (const key of order) {
+    const hit = normalized.find(
+      (j) => j.status === key || j.conclusion === key
+    );
+    if (hit) {
+      return { status: hit.status, conclusion: hit.conclusion ?? hit.status };
+    }
+  }
+  return { status: matched[0].status, conclusion: matched[0].conclusion };
+}
+
 function buildCiSummaryBody({ run, jobs }) {
-  const jobMap = new Map(jobs.map((job) => [job.name, job]));
-  const rows = CONFIG.ciSummary.jobs.map((name) => {
-    const job = jobMap.get(name);
-    const badge = job
-      ? badgeForJob({ status: job.status, conclusion: job.conclusion })
+  const rows = CONFIG.ciSummary.jobs.map(({ label, match }) => {
+    const matchers = Array.isArray(match) ? match : [match];
+    const matched = jobs.filter((job) => {
+      const name = String(job.name ?? "").toLowerCase();
+      return matchers.some((m) => {
+        const needle = String(m ?? "").toLowerCase();
+        return name === needle || name.includes(needle);
+      });
+    });
+    const { status, conclusion } = pickJobStatus(matched);
+    const badge = matched.length
+      ? badgeForJob({ status, conclusion })
       : "❓ unknown";
-    return `| ${name} | ${badge} |`;
+    return `| ${label} | ${badge} |`;
   });
 
   return [

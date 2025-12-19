@@ -1,15 +1,7 @@
-# =============================================================================
-# ProjT Launcher - Team Synchronization
-# =============================================================================
-# Synchronizes GitHub team information for CI purposes.
-# Runs weekly to keep team data up to date.
-# =============================================================================
-
 name: Teams
 
 on:
   schedule:
-    # Every Hour
     - cron: '0 * * * *'
   workflow_dispatch:
 

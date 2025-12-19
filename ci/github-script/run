@@ -79,25 +79,6 @@ program
   })
 
 program
-  .command('bot')
-  .description('Run PR labeling and automation')
-  .argument('<owner>', 'Repository owner')
-  .argument('<repo>', 'Repository name')
-  .argument('[pr]', 'Pull Request number (optional for batch processing)')
-  .option('--no-dry', 'Make actual modifications')
-  .action(async (owner, repo, pr, options) => {
-    const bot = (await import('./bot.js')).default
-    const tmp = mkdtempSync(join(tmpdir(), 'projt-ci-'))
-    try {
-      process.env.GITHUB_WORKSPACE = tmp
-      process.chdir(tmp)
-      await run(bot, owner, repo, pr, options)
-    } finally {
-      rmSync(tmp, { recursive: true })
-    }
-  })
-
-program
   .command('get-teams')
   .description('Fetch team information from GitHub organization')
   .argument('<owner>', 'Organization/owner name')
