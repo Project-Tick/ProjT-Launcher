@@ -1,9 +1,3 @@
-# =============================================================================
-# ProjT Launcher - Pull Request Workflow
-# =============================================================================
-# Main workflow for PR validation, builds, and automation.
-# =============================================================================
-
 name: General Evaluation Process for Pull Requests
 
 on:

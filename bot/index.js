@@ -164,38 +164,59 @@ const CONFIG = {
   templateScopeLabels: [
     {
       option: "Launcher (C++/Qt)",
-      label: { name: "scope:launcher", color: "0E8A16", description: "Launcher app changes" },
+      label: { name: "31.scope:launcher", color: "0E8A16", description: "Launcher app changes" },
     },
     {
       option: "Website (Eleventy)",
-      label: { name: "scope:website", color: "0E8A16", description: "Website changes" },
+      label: { name: "31.scope:website", color: "0E8A16", description: "Website changes" },
     },
     {
       option: "Bot (Cloudflare Workers)",
-      label: { name: "scope:bot", color: "0E8A16", description: "Automation bot changes" },
+      label: { name: "31.scope:bot", color: "0E8A16", description: "Automation bot changes" },
     },
     {
       option: "Metadata Generator (Python)",
-      label: { name: "scope:metadata", color: "0E8A16", description: "Metadata generator changes" },
+      label: { name: "31.scope:metadata", color: "0E8A16", description: "Metadata generator changes" },
     },
     {
       option: "Docs/CI/Tools",
-      label: { name: "scope:docs-ci-tools", color: "0E8A16", description: "Docs/CI/tools changes" },
+      label: { name: "31.scope:docs-ci-tools", color: "0E8A16", description: "Docs/CI/tools changes" },
     },
     {
       option: "Other (describe):",
-      label: { name: "scope:other", color: "6A737D", description: "Other changes" },
+      label: { name: "31.scope:other", color: "6A737D", description: "Other changes" },
     },
   ],
-  dco: {
-    label: "status:dco-missing",
-    color: "B60205",
-    description: "Missing DCO Signed-off-by in one or more commits",
+  maintainersFile: "ci/eval/compare/maintainers.nix",
+  maintainerLabel: "32.maintainer:PR",
+  alwaysRequestReviewers: [],
+  branchLabelPrefix: "14.branch",
+  statusLabels: {
+    mergeConflict: {
+      name: "41.status:merge-conflict",
+      color: "D93F0B",
+      description: "PR has merge conflicts",
+    },
+    dcoMissing: {
+      name: "41.status:dco-missing",
+      color: "B60205",
+      description: "Missing DCO Signed-off-by in one or more commits",
+    },
+  },
+  autoMerge: {
+    enabled: true,
+    mergeMethod: "squash",
   },
   ciSummary: {
     marker: "<!-- projt-bot:pr-summary -->",
     workflowFile: "pull-request-target.yml",
-    jobs: ["Prepare", "Check", "Lint", "Build"],
+    jobs: [
+      { label: "Prepare", match: ["prepare"] },
+      { label: "Check", match: ["check"] },
+      { label: "Lint", match: ["lint"] },
+      // Aggregate all build-* jobs into a single Build row
+      { label: "Build", match: ["build", "cmake-"] },
+    ],
   },
   commentCommands: [
     "bot rerun",
@@ -203,6 +224,11 @@ const CONFIG = {
     "/bot rerun",
     "/bot labels",
   ],
+  labeler: {
+    enabled: true,
+    path: ".github/labeler.yml",
+    ttlMs: 5 * 60 * 1000, // cache parsed labeler for 5 minutes
+  },
 };
 
 function json(data, status = 200) {
@@ -429,6 +455,102 @@ async function ensureLabelExists({ owner, repo, env, repoLabels, name, color, de
   }
 }
 
+async function getMaintainers({ owner, repo, ref, env }) {
+  const maintainers = new Set();
+  const path = CONFIG.maintainersFile;
+  if (!path) return maintainers;
+
+  try {
+    const refSuffix = ref ? `?ref=${encodeURIComponent(ref)}` : "";
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/contents/${path}${refSuffix}`,
+    });
+    const content = data?.content ? atob(data.content) : "";
+    const githubMatches = [...String(content).matchAll(/github\s*=\s*"([^"]+)"/g)];
+    for (const m of githubMatches) {
+      if (m[1]) maintainers.add(m[1].toLowerCase());
+    }
+  } catch (error) {
+    console.warn(`Failed to load maintainers from ${path}:`, error?.message ?? error);
+  }
+
+  return maintainers;
+}
+
+async function ensureReviewers({ owner, repo, pullNumber, pullRequest, maintainers, env }) {
+  const desired = new Set(getAlwaysRequestReviewers(env).map((r) => String(r).toLowerCase()));
+  for (const m of maintainers) desired.add(m);
+
+  const author = String(pullRequest?.user?.login ?? "").toLowerCase();
+  desired.delete(author);
+
+  const existing = new Set((pullRequest.requested_reviewers ?? []).map((r) => String(r.login ?? "").toLowerCase()));
+  const toAdd = [...desired].filter((r) => r && !existing.has(r));
+  if (toAdd.length === 0) return { ok: true, added: [] };
+
+  await githubApi({
+    env,
+    method: "POST",
+    path: `/repos/${owner}/${repo}/pulls/${pullNumber}/requested_reviewers`,
+    body: { reviewers: toAdd },
+  });
+
+  return { ok: true, added: toAdd };
+}
+
+function getAlwaysRequestReviewers(env) {
+  const fromEnv = parseListEnv(env.BOT_ALWAYS_REVIEWERS);
+  if (fromEnv.length > 0) return fromEnv;
+  return Array.isArray(CONFIG.alwaysRequestReviewers) ? CONFIG.alwaysRequestReviewers : [];
+}
+
+function parseListEnv(value) {
+  if (!value || typeof value !== "string") return [];
+  return value
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
+async function maybeAutoMerge({ owner, repo, pullNumber, pullRequest, maintainers, currentLabels, ciSummary, env }) {
+  if (!CONFIG.autoMerge?.enabled) return { ok: true, skipped: "disabled" };
+
+  const author = String(pullRequest?.user?.login ?? "").toLowerCase();
+  const isMaintainer = maintainers.has(author) || currentLabels.has(CONFIG.maintainerLabel);
+  if (!isMaintainer) return { ok: true, skipped: "not-maintainer" };
+
+  if (pullRequest.state !== "open" || pullRequest.draft) return { ok: true, skipped: "not-open-or-draft" };
+  if (pullRequest.mergeable === false) return { ok: true, skipped: "merge-conflict" };
+
+  if (!ciSummary?.ok) return { ok: true, skipped: "no-ci-summary" };
+
+  const jobs = ciSummary?.jobs ?? [];
+  const runConclusion = ciSummary?.runConclusion;
+  const jobsOk = jobs.length === 0 || jobs.every((j) => (j.conclusion ?? j.status) === "success");
+  const runOk = runConclusion ? runConclusion === "success" : jobsOk;
+  if (!runOk || !jobsOk) return { ok: true, skipped: "ci-not-green" };
+
+  // Approve (idempotent; GitHub will no-op if already approved by this actor)
+  await githubApi({
+    env,
+    method: "POST",
+    path: `/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`,
+    body: { event: "APPROVE", body: "Auto-approved by maintainer bot (CI green)." },
+  });
+
+  // Merge
+  await githubApi({
+    env,
+    method: "PUT",
+    path: `/repos/${owner}/${repo}/pulls/${pullNumber}/merge`,
+    body: { merge_method: CONFIG.autoMerge.mergeMethod || "squash" },
+  });
+
+  return { ok: true, merged: true, method: CONFIG.autoMerge.mergeMethod || "squash" };
+}
+
 async function processOpenPullRequests(env) {
   const owner = env.GITHUB_OWNER;
   const repo = env.GITHUB_REPO;
@@ -472,10 +594,14 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
 
   const files = await listPullRequestFiles({ owner, repo, pullNumber, env });
   const repoLabels = await getRepositoryLabels({ owner, repo, env });
+  const labelerRules = await loadLabelerRules({ owner, repo, env, ref: pullRequest?.base?.sha ?? null });
 
   const labelsToAdd = new Set();
   const labelsToRemove = new Set();
   const currentLabels = new Set((pullRequest.labels ?? []).map((l) => l.name));
+  const baseRef = pullRequest?.base?.sha ?? pullRequest?.base?.ref ?? null;
+  const maintainers = await getMaintainers({ owner, repo, ref: baseRef, env });
+  const author = String(pullRequest?.user?.login ?? "").toLowerCase();
 
   for (const file of files) {
     const filename = file.filename;
@@ -485,13 +611,42 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
 
     const platform = getPlatformFromPath(filename);
     if (platform && CONFIG.platformLabels[platform]) labelsToAdd.add(CONFIG.platformLabels[platform]);
+
+    // Labeler-style glob rules
+    const matchedLabeler = matchLabelerRules(labelerRules, filename);
+    for (const lbl of matchedLabeler) labelsToAdd.add(lbl);
   }
 
   labelsToAdd.add(getSizeLabel(pullRequest.additions, pullRequest.deletions));
 
   const branchType = classifyBranch(pullRequest?.head?.ref ?? "");
   const types = Array.isArray(branchType.type) ? branchType.type : branchType.type ? [branchType.type] : [];
-  for (const t of types) labelsToAdd.add(`branch:${t}`);
+  for (const t of types) {
+    const name = `${CONFIG.branchLabelPrefix}:${t}`;
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name,
+      color: "6F42C1",
+      description: `Branch type: ${t}`,
+    });
+    if (ready) labelsToAdd.add(name);
+  }
+
+  if (maintainers.has(author)) {
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name: CONFIG.maintainerLabel,
+      color: "0E8A16",
+      description: "Maintainer-authored pull request",
+    });
+    if (ready) labelsToAdd.add(CONFIG.maintainerLabel);
+  }
 
   const templateSelections = getTemplateSelections(pullRequest.body ?? "", CONFIG.templateTypeLabels);
   for (const selection of templateSelections) {
@@ -515,23 +670,35 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     if (ready) labelsToAdd.add(label.name);
   }
 
-  if (pullRequest.mergeable === false) labelsToAdd.add("status:merge-conflict");
+  if (pullRequest.mergeable === false) {
+    const statusLabel = CONFIG.statusLabels.mergeConflict;
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name: statusLabel.name,
+      color: statusLabel.color,
+      description: statusLabel.description,
+    });
+    if (ready) labelsToAdd.add(statusLabel.name);
+  }
 
   const dcoResult = await checkDcoForPullRequest({ owner, repo, pullNumber, env });
   if (!dcoResult.ok) {
-    const dcoLabel = CONFIG.dco.label;
+    const dcoLabel = CONFIG.statusLabels.dcoMissing.name;
     const ready = await ensureLabelExists({
       owner,
       repo,
       env,
       repoLabels,
       name: dcoLabel,
-      color: CONFIG.dco.color,
-      description: CONFIG.dco.description,
+      color: CONFIG.statusLabels.dcoMissing.color,
+      description: CONFIG.statusLabels.dcoMissing.description,
     });
     if (ready) labelsToAdd.add(dcoLabel);
   } else {
-    labelsToRemove.add(CONFIG.dco.label);
+    labelsToRemove.add(CONFIG.statusLabels.dcoMissing.name);
   }
 
   const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
@@ -552,8 +719,38 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     ciSummary = { ok: false, error: String(error?.message ?? error) };
   }
 
+  try {
+    await ensureReviewers({
+      owner,
+      repo,
+      pullNumber,
+      pullRequest,
+      maintainers,
+      env,
+    });
+  } catch (error) {
+    console.warn("Reviewer assignment failed:", error?.message ?? error);
+  }
+
+  let autoMergeResult = null;
+  try {
+    autoMergeResult = await maybeAutoMerge({
+      owner,
+      repo,
+      pullNumber,
+      pullRequest,
+      maintainers,
+      currentLabels,
+      ciSummary,
+      env,
+    });
+  } catch (error) {
+    console.warn("Auto-merge failed:", error?.message ?? error);
+    autoMergeResult = { ok: false, error: String(error?.message ?? error) };
+  }
+
   if (newLabels.length === 0 && labelsToDelete.length === 0) {
-    return { ok: true, changed: false, added: [], removed: [], dryRun, ciSummary };
+    return { ok: true, changed: false, added: [], removed: [], dryRun, ciSummary, autoMerge: autoMergeResult };
   }
 
   if (!dryRun) {
@@ -580,7 +777,7 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     }
   }
 
-  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciSummary };
+  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciSummary, autoMerge: autoMergeResult };
 }
 
 async function listOpenPullRequests({ owner, repo, env }) {
@@ -692,14 +889,52 @@ async function listJobsForRun({ owner, repo, runId, env }) {
   return jobs;
 }
 
+function pickJobStatus(matched) {
+  // Prefer failure > action_required > cancelled > timed_out > in_progress > success > skipped > neutral > unknown
+  const order = [
+    "failure",
+    "action_required",
+    "cancelled",
+    "timed_out",
+    "in_progress",
+    "success",
+    "skipped",
+    "neutral",
+  ];
+  if (!matched.length) return { status: null, conclusion: null };
+
+  // Normalize statuses/conclusions
+  const normalized = matched.map((job) => {
+    const status = job.status === "completed" ? job.conclusion : job.status;
+    return { status: status ?? job.status, conclusion: job.conclusion };
+  });
+
+  for (const key of order) {
+    const hit = normalized.find(
+      (j) => j.status === key || j.conclusion === key
+    );
+    if (hit) {
+      return { status: hit.status, conclusion: hit.conclusion ?? hit.status };
+    }
+  }
+  return { status: matched[0].status, conclusion: matched[0].conclusion };
+}
+
 function buildCiSummaryBody({ run, jobs }) {
-  const jobMap = new Map(jobs.map((job) => [job.name, job]));
-  const rows = CONFIG.ciSummary.jobs.map((name) => {
-    const job = jobMap.get(name);
-    const badge = job
-      ? badgeForJob({ status: job.status, conclusion: job.conclusion })
+  const rows = CONFIG.ciSummary.jobs.map(({ label, match }) => {
+    const matchers = Array.isArray(match) ? match : [match];
+    const matched = jobs.filter((job) => {
+      const name = String(job.name ?? "").toLowerCase();
+      return matchers.some((m) => {
+        const needle = String(m ?? "").toLowerCase();
+        return name === needle || name.includes(needle);
+      });
+    });
+    const { status, conclusion } = pickJobStatus(matched);
+    const badge = matched.length
+      ? badgeForJob({ status, conclusion })
       : "❓ unknown";
-    return `| ${name} | ${badge} |`;
+    return `| ${label} | ${badge} |`;
   });
 
   return [
@@ -714,6 +949,100 @@ function buildCiSummaryBody({ run, jobs }) {
   ].join("\n");
 }
 
+let labelerCache = null;
+
+async function loadLabelerRules({ owner, repo, env, ref }) {
+  if (!CONFIG.labeler.enabled) return [];
+  const now = Date.now();
+  if (labelerCache && now - labelerCache.ts < CONFIG.labeler.ttlMs) return labelerCache.rules;
+
+  const path = CONFIG.labeler.path;
+  try {
+    const refSuffix = ref ? `?ref=${encodeURIComponent(ref)}` : "";
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/contents/${path}${refSuffix}`,
+    });
+    const content = data?.content ? atob(data.content) : "";
+    const rules = parseLabelerYaml(content);
+    labelerCache = { ts: now, rules };
+    return rules;
+  } catch (error) {
+    console.warn("Failed to load labeler config:", error?.message ?? error);
+    return [];
+  }
+}
+
+function parseLabelerYaml(text) {
+  const rules = [];
+  let currentLabel = null;
+  let collectingGlobs = false;
+  for (const rawLine of String(text).split(/\r?\n/)) {
+    const line = rawLine.replace(/\t/g, "  ");
+    const labelMatch = line.match(/^([A-Za-z0-9._:-]+):\s*$/);
+    if (labelMatch) {
+      currentLabel = labelMatch[1];
+      collectingGlobs = false;
+      continue;
+    }
+    if (!currentLabel) continue;
+    if (line.includes("any-glob-to-any-file")) {
+      collectingGlobs = true;
+      continue;
+    }
+    if (collectingGlobs) {
+      const globMatch = line.match(/^\s*-\s+(.+?)\s*$/);
+      if (globMatch && globMatch[1]) {
+        const pattern = globMatch[1].trim().replace(/^"|"$/g, "");
+        rules.push({ label: currentLabel, pattern });
+      }
+    }
+  }
+  return rules;
+}
+
+function matchLabelerRules(rules, filePath) {
+  const matched = new Set();
+  for (const { label, pattern } of rules) {
+    if (globMatch(pattern, filePath)) matched.add(label);
+  }
+  return [...matched];
+}
+
+function globMatch(pattern, text) {
+  const regex = globToRegExp(pattern);
+  return regex.test(text);
+}
+
+function globToRegExp(pattern) {
+  // Very small glob-to-regex converter supporting *, **, ?, [].
+  let re = "";
+  let i = 0;
+  while (i < pattern.length) {
+    const ch = pattern[i];
+    if (ch === "*") {
+      if (pattern[i + 1] === "*") {
+        re += ".*";
+        i += 2;
+      } else {
+        re += "[^/]*";
+        i += 1;
+      }
+    } else if (ch === "?") {
+      re += ".";
+      i += 1;
+    } else if ("\\.[]{}()+-^$|".includes(ch)) {
+      re += "\\" + ch;
+      i += 1;
+    } else {
+      re += ch;
+      i += 1;
+    }
+  }
+  return new RegExp("^" + re + "$");
+}
+
 async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, env, dryRun }) {
   const headSha = pullRequest?.head?.sha ?? "";
   const run = await findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env });
@@ -721,6 +1050,16 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
 
   const jobs = await listJobsForRun({ owner, repo, runId: run.id, env });
   const body = buildCiSummaryBody({ run, jobs });
+  const summaryMeta = {
+    runId: run.id,
+    runConclusion: run.conclusion ?? null,
+    jobs: jobs.map((job) => ({
+      id: job.id,
+      name: job.name,
+      status: job.status,
+      conclusion: job.conclusion,
+    })),
+  };
 
   const comments = await listIssueComments({ owner, repo, issueNumber: pullNumber, env });
   const marker = CONFIG.ciSummary.marker;
@@ -728,7 +1067,7 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
 
   if (existing) {
     if (String(existing.body ?? "") === body) {
-      return { ok: true, updated: false, commentId: existing.id };
+      return { ok: true, updated: false, commentId: existing.id, ...summaryMeta };
     }
     if (!dryRun) {
       await githubApi({
@@ -738,7 +1077,7 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
         body: { body },
       });
     }
-    return { ok: true, updated: true, commentId: existing.id };
+    return { ok: true, updated: true, commentId: existing.id, ...summaryMeta };
   }
 
   if (!dryRun) {
@@ -748,10 +1087,10 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
       path: `/repos/${owner}/${repo}/issues/${pullNumber}/comments`,
       body: { body },
     });
-    return { ok: true, created: true, commentId: data?.id ?? null };
+    return { ok: true, created: true, commentId: data?.id ?? null, ...summaryMeta };
   }
 
-  return { ok: true, created: false, dryRun: true };
+  return { ok: true, created: false, dryRun: true, ...summaryMeta };
 }
 
 async function handleIssueComment({ payload, env }) {

@@ -1,5 +1,3 @@
-# Backport workflow for releasing changes to stable branches
-
 name: Backport
 
 on:

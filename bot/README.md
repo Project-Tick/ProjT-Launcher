@@ -30,6 +30,7 @@ Common secrets:
 - `ADMIN_TOKEN`: (optional but recommended) protects `/run`
 - `BOT_COMMENT_ON_COMMAND`: (optional) `true` to comment after handling `issue_comment` commands
 - `BOT_ALLOWED_ASSOCIATIONS`: (optional) comma-separated GitHub author_association values allowed to run commands (default: `OWNER,MEMBER,COLLABORATOR`)
+- `BOT_ALWAYS_REVIEWERS`: (optional) comma-separated GitHub usernames to always request as reviewers (in addition to maintainers from `ci/eval/compare/maintainers.nix`)
 
 Example (local):
 
@@ -63,7 +64,7 @@ The bot validates that each non-bot commit in a PR includes `Signed-off-by:`. If
 
 ## Scope labels (PR template)
 
-If a PR checks any options in the **Scope** section of `.github/pull_request_template.md`, the bot adds corresponding `scope:*` labels (created automatically if needed).
+If a PR checks any options in the **Scope** section of `.github/pull_request_template.md`, the bot adds corresponding `31.scope:*` labels (created automatically if needed).
 
 ## CI summary comment
 
