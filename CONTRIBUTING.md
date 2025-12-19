@@ -1,8 +1,17 @@
 # 🤝 Contribution Guidelines
 
-> **ProjT Launcher - Minecraft Launcher**  
+> **ProjT Launcher**  
 > Copyright (C) 2025 Project Tick  
-> Licensed under GPL-3.0-or-later
+> Licensed under multiple licenses (Launcher: GPL-3.0-only, Website: AGPL-3.0-only, Metadata generator: MS-PL). See `LICENSE` and `COPYING`.
+
+## 🧭 Project Areas
+
+- **Launcher app (C++/Qt)**: `launcher/`, `libraries/`, `CMakeLists.txt`
+- **Website (Eleventy)**: `src/`, `public/`, `package.json`
+- **Automation bot (Cloudflare Workers)**: `bot/`
+- **Metadata generator (Python)**: `meta/`, `pyproject.toml`
+- **Documentation**: `docs/`
+- **CI/Tools**: `ci/`, `.github/`, `scripts/`, `tools/`
 
 ## 🛠 Engineering Standards
 
@@ -10,16 +19,24 @@ This project follows specific engineering standards to ensure maintainability an
 
 **Key Principles:**
 
-- ✅ **Formatted Code**: Use `clang-format` to keep code consistent.
+- ✅ **Formatted Code**: Use the formatter for your area (`clang-format` for C++/Qt).
 - ✅ **Tested Features**: Write tests for new functionality.
 - ✅ **MVVM Architecture**: Keep business logic out of the UI.
-- ✅ **Signed Commits**: Sign-off your commits (DCO).
+- ✅ **Signed Commits**: Sign-off your commits (DCO). The bot enforces this on PRs and will label `status:dco-missing` if any non-bot commit lacks `Signed-off-by:`.
+
+## ✅ DCO Sign-off
+
+Every commit must include a `Signed-off-by:` line. Example:
+
+```bash
+git commit -s -m "Fix: explain what changed"
+```
 
 ---
 
 ## 📚 Documentation Index
 
-Please read the specific sections below before writing a single line of code:
+Please read the specific sections below before writing a single line of code (start with `docs/contributing/`):
 
 ### 1. [🚀 Getting Started](docs/contributing/GETTING_STARTED.md)
 
@@ -52,6 +69,12 @@ Please read the specific sections below before writing a single line of code:
 - **Process**: Pull Request lifecycle.
 - **Commits**: Conventional Commits and DCO.
 
+### Other Areas
+
+- **Bot**: `bot/README.md`
+- **Website**: `.eleventy.js`, `src/`, `package.json`
+- **Metadata generator**: `meta/`, `pyproject.toml`
+
 ---
 
 ## ❓ Quick FAQ
@@ -59,12 +82,12 @@ Please read the specific sections below before writing a single line of code:
 ### Why is my PR failing CI?
 
 - Did you run `clang-format`?
-- Did you sign off your commits (`-s`)?
+- Did you sign off your commits (`-s`)? The bot adds `status:dco-missing` when DCO is missing.
 - Did you write tests?
 
 ### Can I use a different Qt version?
 
-**No.** We require exact version matching to prevent "works on my machine" issues.
+**No (launcher).** We require exact version matching to prevent "works on my machine" issues.
 
 ---
 
