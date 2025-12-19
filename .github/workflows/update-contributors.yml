@@ -37,7 +37,7 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v8
         with:
-          base: "main"
+          base: "develop"
           branch: "update-contributors"
           delete-branch: true
           title: "chore: update contributors"
