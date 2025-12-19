@@ -13,8 +13,8 @@ export default {
       if (!env.GITHUB_OWNER || !env.GITHUB_REPO) {
         return json({ ok: false, error: "Missing GITHUB_OWNER/GITHUB_REPO" }, 500);
       }
-      if (!env.GITHUB_TOKEN) {
-        return json({ ok: false, error: "Missing GITHUB_TOKEN" }, 500);
+      if (!hasGitHubAuth(env)) {
+        return json({ ok: false, error: "Missing GitHub auth (token or app credentials)" }, 500);
       }
       if (!env.GITHUB_WEBHOOK_SECRET) {
         return json({ ok: false, error: "Missing GITHUB_WEBHOOK_SECRET" }, 500);
@@ -358,6 +358,11 @@ let repoLabelsCache = null;
 let botLoginCache = null;
 let appTokenCache = null;
 
+function hasGitHubAuth(env) {
+  if (env.GITHUB_TOKEN) return true;
+  return Boolean(env.GITHUB_APP_ID && env.GITHUB_APP_INSTALLATION_ID && env.GITHUB_APP_PRIVATE_KEY);
+}
+
 async function getRepositoryLabels({ owner, repo, env }) {
   const now = Date.now();
   if (repoLabelsCache && now - repoLabelsCache.ts < 10 * 60 * 1000) return repoLabelsCache.labels;
@@ -431,7 +436,7 @@ async function processOpenPullRequests(env) {
 
 async function handlePullRequest({ owner, repo, pullNumber, env }) {
   if (!owner || !repo) throw new Error("Missing owner/repo");
-  if (!env.GITHUB_TOKEN) throw new Error("Missing GITHUB_TOKEN");
+  if (!hasGitHubAuth(env)) throw new Error("Missing GitHub auth (GITHUB_TOKEN or GitHub App creds)");
 
   const dryRun = String(env.BOT_DRY_RUN ?? "false").toLowerCase() === "true";
 
