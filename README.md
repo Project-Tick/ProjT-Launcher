@@ -16,6 +16,10 @@
 </p>
 
 <p align="center">
+  This fork exists to keep a stable, maintainable launcher with deliberate architecture and long-lived infrastructure.
+</p>
+
+<p align="center">
   <a href="#projects">Projects</a> •
   <a href="#launcher-releases">Launcher Releases</a> •
   <a href="#quick-starts">Quick Starts</a> •
@@ -34,28 +38,27 @@ This repository is a monorepo that hosts the launcher and its supporting service
 - **Automation bot (Cloudflare Workers)**: `bot/`
 - **Metadata generator (Python/Poetry)**: `meta/`, `pyproject.toml`
 - **Docs/CI/Tools**: `docs/`, `ci/`, `.github/workflows/`, `scripts/`, `tools/`
-- **Metadata Generator**: `meta/`
 
 ## What is ProjT Launcher?
 
-ProjT Launcher is a fork of Prism Launcher with a deliberate focus on long-term maintainability, structural clarity, and respect for upstream ecosystems. This is not a race for features or popularity. It is an engineering-first project that prioritizes clean architecture, reproducible builds, disciplined CI, and packaging correctness across Linux, Windows, macOS, Nix, and Flatpak.
+ProjT Launcher is a fork of Prism Launcher with a deliberate focus on long-term maintainability, structural clarity, and respect for upstream ecosystems. This is not a race for features or popularity. It is an engineering-first project that prioritizes clean architecture, reproducible builds, disciplined CI, and packaging correctness across Linux, Windows, macOS, Nix, and Flatpak. Sustained maintenance and understandable code take priority over feature velocity.
 
 It intentionally diverges where the original architecture or maintenance model no longer supports sustainable growth. That divergence is a choice, not a statement about upstream quality.
 
 ### Project Philosophy
 
-- Stability and clarity over feature volume.
-- Changes are designed to be explainable and maintainable years later.
-- Infrastructure, tooling, CI, and refactoring are first-class work.
-- Packaging correctness and reproducible builds are non-negotiable.
-- Avoid ego-driven development, vanity metrics, and artificial activity.
+- Stability, clarity, and auditability come before adding features.
+- Every change must be traceable and maintainable years later.
+- Infrastructure, tooling, CI, and refactoring are first-class contributions.
+- Packaging correctness and reproducible builds are non-negotiable work items.
+- Development decisions ignore popularity contests and vanity metrics.
 
 ### Design Goals
 
-- Maintain a clean, modular architecture with minimal hidden coupling.
-- Keep CI strict and deterministic across platforms and ecosystems.
-- Prefer boring, documented solutions over clever but fragile ones.
-- Keep build and packaging workflows aligned with downstream expectations.
+- Maintain a modular architecture with explicit boundaries and minimal hidden coupling.
+- Keep CI deterministic, with consistent tooling across platforms and ecosystems.
+- Prefer documented, repeatable solutions over clever but fragile shortcuts.
+- Keep build and packaging workflows aligned with downstream expectations and policies.
 
 ### Who This Project Is For
 
@@ -66,9 +69,9 @@ It intentionally diverges where the original architecture or maintenance model n
 
 ### Who This Project Is Not For
 
-- People looking for the fastest pace of new features regardless of maintenance cost.
-- Communities driven by hype, metrics, or outward activity rather than quality.
-- Those expecting this fork to mirror upstream decisions or timelines.
+- Anyone prioritizing rapid feature churn over maintainability and clarity.
+- Contributors driven by hype, vanity metrics, or appearances of activity.
+- Those expecting this fork to track upstream decisions, timelines, or design shortcuts.
 
 ## Launcher Releases
 
@@ -219,4 +222,4 @@ Assets: CC BY-SA 4.0
 
 ---
 
-<p align="center">Made with love for the ProjT contributors.</p>
+<p align="center">Maintained by the ProjT contributors.</p>
