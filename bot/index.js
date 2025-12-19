@@ -486,8 +486,19 @@ async function ensureReviewers({ owner, repo, pullNumber, pullRequest, maintaine
   const author = String(pullRequest?.user?.login ?? "").toLowerCase();
   desired.delete(author);
 
-  const existing = new Set((pullRequest.requested_reviewers ?? []).map((r) => String(r.login ?? "").toLowerCase()));
-  const toAdd = [...desired].filter((r) => r && !existing.has(r));
+  const existingRequested = new Set((pullRequest.requested_reviewers ?? []).map((r) => String(r.login ?? "").toLowerCase()));
+
+  // Skip users who already left a review (avoid re-request after approve)
+  const reviews = await listPullRequestReviews({ owner, repo, pullNumber, env });
+  const alreadyReviewed = new Set(
+    reviews
+      .filter((r) => typeof r?.user?.login === "string")
+      .map((r) => String(r.user.login).toLowerCase())
+  );
+
+  const toAdd = [...desired].filter(
+    (r) => r && !existingRequested.has(r) && !alreadyReviewed.has(r)
+  );
   if (toAdd.length === 0) return { ok: true, added: [] };
 
   await githubApi({
@@ -838,6 +849,21 @@ async function listPullRequestCommits({ owner, repo, pullNumber, env }) {
     if (!Array.isArray(data) || data.length < perPage) break;
   }
   return commits;
+}
+
+async function listPullRequestReviews({ owner, repo, pullNumber, env }) {
+  const perPage = 100;
+  const reviews = [];
+  for (let page = 1; page <= 10; page++) {
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/pulls/${pullNumber}/reviews?per_page=${perPage}&page=${page}`,
+    });
+    reviews.push(...data);
+    if (!Array.isArray(data) || data.length < perPage) break;
+  }
+  return reviews;
 }
 
 async function checkDcoForPullRequest({ owner, repo, pullNumber, env }) {
