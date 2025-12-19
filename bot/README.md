@@ -66,14 +66,6 @@ Create a GitHub webhook pointing to:
 - Secret: same as `GITHUB_WEBHOOK_SECRET`
 - Events: `Pull requests` (at minimum)
 
-## GitHub Actions deploy
+## Deploy
 
-Workflow: `.github/workflows/deploy-bot-worker.yml`
-
-Repository secrets expected:
-
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-- `PROJT_BOT_GITHUB_TOKEN` (mapped to Worker `GITHUB_TOKEN`)
-- `PROJT_BOT_WEBHOOK_SECRET` (mapped to Worker `GITHUB_WEBHOOK_SECRET`)
-- `PROJT_BOT_ADMIN_TOKEN` (mapped to Worker `ADMIN_TOKEN`)
+Cloudflare handles deploys via the existing webhook/automation pipeline, so no GitHub Actions workflow is required in this repo. Use `wrangler deploy` locally only for manual smoke tests.
