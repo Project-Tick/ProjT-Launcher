@@ -187,6 +187,13 @@ const CONFIG = {
       label: { name: "31.scope:other", color: "6A737D", description: "Other changes" },
     },
   ],
+  maintainersFile: "ci/eval/compare/maintainers.nix",
+  maintainerLabel: "32.maintainer:PR",
+  alwaysRequestReviewers: [],
+  autoMerge: {
+    enabled: true,
+    mergeMethod: "squash",
+  },
   dco: {
     label: "status:dco-missing",
     color: "B60205",
@@ -435,6 +442,102 @@ async function ensureLabelExists({ owner, repo, env, repoLabels, name, color, de
   }
 }
 
+async function getMaintainers({ owner, repo, ref, env }) {
+  const maintainers = new Set();
+  const path = CONFIG.maintainersFile;
+  if (!path) return maintainers;
+
+  try {
+    const refSuffix = ref ? `?ref=${encodeURIComponent(ref)}` : "";
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/contents/${path}${refSuffix}`,
+    });
+    const content = data?.content ? atob(data.content) : "";
+    const githubMatches = [...String(content).matchAll(/github\s*=\s*"([^"]+)"/g)];
+    for (const m of githubMatches) {
+      if (m[1]) maintainers.add(m[1].toLowerCase());
+    }
+  } catch (error) {
+    console.warn(`Failed to load maintainers from ${path}:`, error?.message ?? error);
+  }
+
+  return maintainers;
+}
+
+async function ensureReviewers({ owner, repo, pullNumber, pullRequest, maintainers, env }) {
+  const desired = new Set(getAlwaysRequestReviewers(env).map((r) => String(r).toLowerCase()));
+  for (const m of maintainers) desired.add(m);
+
+  const author = String(pullRequest?.user?.login ?? "").toLowerCase();
+  desired.delete(author);
+
+  const existing = new Set((pullRequest.requested_reviewers ?? []).map((r) => String(r.login ?? "").toLowerCase()));
+  const toAdd = [...desired].filter((r) => r && !existing.has(r));
+  if (toAdd.length === 0) return { ok: true, added: [] };
+
+  await githubApi({
+    env,
+    method: "POST",
+    path: `/repos/${owner}/${repo}/pulls/${pullNumber}/requested_reviewers`,
+    body: { reviewers: toAdd },
+  });
+
+  return { ok: true, added: toAdd };
+}
+
+function getAlwaysRequestReviewers(env) {
+  const fromEnv = parseListEnv(env.BOT_ALWAYS_REVIEWERS);
+  if (fromEnv.length > 0) return fromEnv;
+  return Array.isArray(CONFIG.alwaysRequestReviewers) ? CONFIG.alwaysRequestReviewers : [];
+}
+
+function parseListEnv(value) {
+  if (!value || typeof value !== "string") return [];
+  return value
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
+async function maybeAutoMerge({ owner, repo, pullNumber, pullRequest, maintainers, currentLabels, ciSummary, env }) {
+  if (!CONFIG.autoMerge?.enabled) return { ok: true, skipped: "disabled" };
+
+  const author = String(pullRequest?.user?.login ?? "").toLowerCase();
+  const isMaintainer = maintainers.has(author) || currentLabels.has(CONFIG.maintainerLabel);
+  if (!isMaintainer) return { ok: true, skipped: "not-maintainer" };
+
+  if (pullRequest.state !== "open" || pullRequest.draft) return { ok: true, skipped: "not-open-or-draft" };
+  if (pullRequest.mergeable === false) return { ok: true, skipped: "merge-conflict" };
+
+  if (!ciSummary?.ok) return { ok: true, skipped: "no-ci-summary" };
+
+  const jobs = ciSummary?.jobs ?? [];
+  const runConclusion = ciSummary?.runConclusion;
+  const jobsOk = jobs.length === 0 || jobs.every((j) => (j.conclusion ?? j.status) === "success");
+  const runOk = runConclusion ? runConclusion === "success" : jobsOk;
+  if (!runOk || !jobsOk) return { ok: true, skipped: "ci-not-green" };
+
+  // Approve (idempotent; GitHub will no-op if already approved by this actor)
+  await githubApi({
+    env,
+    method: "POST",
+    path: `/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`,
+    body: { event: "APPROVE", body: "Auto-approved by maintainer bot (CI green)." },
+  });
+
+  // Merge
+  await githubApi({
+    env,
+    method: "PUT",
+    path: `/repos/${owner}/${repo}/pulls/${pullNumber}/merge`,
+    body: { merge_method: CONFIG.autoMerge.mergeMethod || "squash" },
+  });
+
+  return { ok: true, merged: true, method: CONFIG.autoMerge.mergeMethod || "squash" };
+}
+
 async function processOpenPullRequests(env) {
   const owner = env.GITHUB_OWNER;
   const repo = env.GITHUB_REPO;
@@ -482,6 +585,9 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
   const labelsToAdd = new Set();
   const labelsToRemove = new Set();
   const currentLabels = new Set((pullRequest.labels ?? []).map((l) => l.name));
+  const baseRef = pullRequest?.base?.sha ?? pullRequest?.base?.ref ?? null;
+  const maintainers = await getMaintainers({ owner, repo, ref: baseRef, env });
+  const author = String(pullRequest?.user?.login ?? "").toLowerCase();
 
   for (const file of files) {
     const filename = file.filename;
@@ -498,6 +604,19 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
   const branchType = classifyBranch(pullRequest?.head?.ref ?? "");
   const types = Array.isArray(branchType.type) ? branchType.type : branchType.type ? [branchType.type] : [];
   for (const t of types) labelsToAdd.add(`branch:${t}`);
+
+  if (maintainers.has(author)) {
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name: CONFIG.maintainerLabel,
+      color: "0E8A16",
+      description: "Maintainer-authored pull request",
+    });
+    if (ready) labelsToAdd.add(CONFIG.maintainerLabel);
+  }
 
   const templateSelections = getTemplateSelections(pullRequest.body ?? "", CONFIG.templateTypeLabels);
   for (const selection of templateSelections) {
@@ -558,8 +677,38 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     ciSummary = { ok: false, error: String(error?.message ?? error) };
   }
 
+  try {
+    await ensureReviewers({
+      owner,
+      repo,
+      pullNumber,
+      pullRequest,
+      maintainers,
+      env,
+    });
+  } catch (error) {
+    console.warn("Reviewer assignment failed:", error?.message ?? error);
+  }
+
+  let autoMergeResult = null;
+  try {
+    autoMergeResult = await maybeAutoMerge({
+      owner,
+      repo,
+      pullNumber,
+      pullRequest,
+      maintainers,
+      currentLabels,
+      ciSummary,
+      env,
+    });
+  } catch (error) {
+    console.warn("Auto-merge failed:", error?.message ?? error);
+    autoMergeResult = { ok: false, error: String(error?.message ?? error) };
+  }
+
   if (newLabels.length === 0 && labelsToDelete.length === 0) {
-    return { ok: true, changed: false, added: [], removed: [], dryRun, ciSummary };
+    return { ok: true, changed: false, added: [], removed: [], dryRun, ciSummary, autoMerge: autoMergeResult };
   }
 
   if (!dryRun) {
@@ -586,7 +735,7 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     }
   }
 
-  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciSummary };
+  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciSummary, autoMerge: autoMergeResult };
 }
 
 async function listOpenPullRequests({ owner, repo, env }) {
@@ -765,6 +914,16 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
 
   const jobs = await listJobsForRun({ owner, repo, runId: run.id, env });
   const body = buildCiSummaryBody({ run, jobs });
+  const summaryMeta = {
+    runId: run.id,
+    runConclusion: run.conclusion ?? null,
+    jobs: jobs.map((job) => ({
+      id: job.id,
+      name: job.name,
+      status: job.status,
+      conclusion: job.conclusion,
+    })),
+  };
 
   const comments = await listIssueComments({ owner, repo, issueNumber: pullNumber, env });
   const marker = CONFIG.ciSummary.marker;
@@ -772,7 +931,7 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
 
   if (existing) {
     if (String(existing.body ?? "") === body) {
-      return { ok: true, updated: false, commentId: existing.id };
+      return { ok: true, updated: false, commentId: existing.id, ...summaryMeta };
     }
     if (!dryRun) {
       await githubApi({
@@ -782,7 +941,7 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
         body: { body },
       });
     }
-    return { ok: true, updated: true, commentId: existing.id };
+    return { ok: true, updated: true, commentId: existing.id, ...summaryMeta };
   }
 
   if (!dryRun) {
@@ -792,10 +951,10 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
       path: `/repos/${owner}/${repo}/issues/${pullNumber}/comments`,
       body: { body },
     });
-    return { ok: true, created: true, commentId: data?.id ?? null };
+    return { ok: true, created: true, commentId: data?.id ?? null, ...summaryMeta };
   }
 
-  return { ok: true, created: false, dryRun: true };
+  return { ok: true, created: false, dryRun: true, ...summaryMeta };
 }
 
 async function handleIssueComment({ payload, env }) {
