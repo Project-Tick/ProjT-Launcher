@@ -725,15 +725,8 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
   const comments = await listIssueComments({ owner, repo, issueNumber: pullNumber, env });
   const marker = CONFIG.ciSummary.marker;
   const existing = comments.find((comment) => String(comment.body ?? "").includes(marker));
-  const botLogin = await getBotLogin(env);
-  const knownBotLogins = new Set(
-    [botLogin, env.BOT_LOGIN, "github-actions[bot]"]
-      .filter(Boolean)
-      .map((v) => String(v).toLowerCase())
-  );
-  const isFromBot = (comment) => knownBotLogins.has(String(comment?.user?.login ?? "").toLowerCase());
 
-  if (existing && isFromBot(existing)) {
+  if (existing) {
     if (String(existing.body ?? "") === body) {
       return { ok: true, updated: false, commentId: existing.id };
     }
@@ -746,18 +739,6 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
       });
     }
     return { ok: true, updated: true, commentId: existing.id };
-  }
-
-  if (existing && existing.user?.login === "github-actions[bot]" && !dryRun) {
-    try {
-      await githubApi({
-        env,
-        method: "DELETE",
-        path: `/repos/${owner}/${repo}/issues/comments/${existing.id}`,
-      });
-    } catch (error) {
-      console.warn("Failed to remove previous summary comment:", error?.message ?? error);
-    }
   }
 
   if (!dryRun) {
