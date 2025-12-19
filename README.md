@@ -222,4 +222,4 @@ Assets: CC BY-SA 4.0
 
 ---
 
-<p align="center">Maintained by the ProjT contributors.</p>
+<p align="center">Maintained by the [Project Tick](https://github.com/Project-Tick) contributors.</p>
