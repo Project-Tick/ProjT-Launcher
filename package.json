@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/Project-Tick/projtlauncher.yongdohyun.org.tr.git"
+    "url": "git://github.com/Project-Tick/ProjT-Launcher.git"
   },
   "author": {
     "name": "Do-Hyun YONG",
@@ -23,7 +23,7 @@
   },
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/Project-Tick/projtlauncher.yongdohyun.org.tr/issues"
+    "url": "https://github.com/Project-Tick/ProjT-Launcher/issues"
   },
   "homepage": "https://projtlauncher.yongdohyun.org.tr/",
   "devDependencies": {
