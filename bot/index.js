@@ -720,6 +720,8 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
       description: statusLabel.description,
     });
     if (ready) labelsToAdd.add(statusLabel.name);
+  } else {
+    labelsToRemove.add(CONFIG.statusLabels.mergeConflict.name);
   }
 
   const dcoResult = await checkDcoForPullRequest({ owner, repo, pullNumber, env });
