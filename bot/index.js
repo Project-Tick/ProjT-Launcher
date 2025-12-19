@@ -2,6 +2,19 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    if (request.method === "GET" && url.pathname === CONFIG.statusPage.path) {
+      try {
+        const data = await buildStatusPage({ env });
+        return new Response(renderStatusPage(data), {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+        });
+      } catch (error) {
+        console.error("Status page failed:", error?.message ?? error);
+        return json({ ok: false, error: "Status page failed", detail: String(error?.message ?? error) }, 500);
+      }
+    }
+
     if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/healthz")) {
       return json({ ok: true, service: "projtlauncher-bot", ts: new Date().toISOString() });
     }
@@ -224,6 +237,15 @@ const CONFIG = {
     "/bot rerun",
     "/bot labels",
   ],
+  statusPage: {
+    path: "/status",
+    workflows: [
+      { file: "pull-request-target.yml", label: "PR Checks" },
+      { file: "build.yml", label: "Build" },
+      { file: "buildwebsite.yml", label: "Build Website" },
+      { file: "lint.yml", label: "Lint" },
+    ],
+  },
   labeler: {
     enabled: true,
     path: ".github/labeler.yml",
@@ -486,8 +508,19 @@ async function ensureReviewers({ owner, repo, pullNumber, pullRequest, maintaine
   const author = String(pullRequest?.user?.login ?? "").toLowerCase();
   desired.delete(author);
 
-  const existing = new Set((pullRequest.requested_reviewers ?? []).map((r) => String(r.login ?? "").toLowerCase()));
-  const toAdd = [...desired].filter((r) => r && !existing.has(r));
+  const existingRequested = new Set((pullRequest.requested_reviewers ?? []).map((r) => String(r.login ?? "").toLowerCase()));
+
+  // Skip users who already left a review (avoid re-request after approve)
+  const reviews = await listPullRequestReviews({ owner, repo, pullNumber, env });
+  const alreadyReviewed = new Set(
+    reviews
+      .filter((r) => typeof r?.user?.login === "string")
+      .map((r) => String(r.user.login).toLowerCase())
+  );
+
+  const toAdd = [...desired].filter(
+    (r) => r && !existingRequested.has(r) && !alreadyReviewed.has(r)
+  );
   if (toAdd.length === 0) return { ok: true, added: [] };
 
   await githubApi({
@@ -840,6 +873,21 @@ async function listPullRequestCommits({ owner, repo, pullNumber, env }) {
   return commits;
 }
 
+async function listPullRequestReviews({ owner, repo, pullNumber, env }) {
+  const perPage = 100;
+  const reviews = [];
+  for (let page = 1; page <= 10; page++) {
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/pulls/${pullNumber}/reviews?per_page=${perPage}&page=${page}`,
+    });
+    reviews.push(...data);
+    if (!Array.isArray(data) || data.length < perPage) break;
+  }
+  return reviews;
+}
+
 async function checkDcoForPullRequest({ owner, repo, pullNumber, env }) {
   const commits = await listPullRequestCommits({ owner, repo, pullNumber, env });
   const missing = [];
@@ -947,6 +995,115 @@ function buildCiSummaryBody({ run, jobs }) {
     "|-----|--------|",
     ...rows,
   ].join("\n");
+}
+
+async function buildStatusPage({ env }) {
+  const owner = env.GITHUB_OWNER;
+  const repo = env.GITHUB_REPO;
+  const workflows = CONFIG.statusPage.workflows;
+  const results = [];
+
+  for (const wf of workflows) {
+    const wfFile = wf.file;
+    try {
+      const run = await getLatestWorkflowRun({ owner, repo, workflowFile: wfFile, env });
+      results.push({
+        file: wfFile,
+        label: wf.label ?? wfFile,
+        run,
+      });
+    } catch (error) {
+      results.push({
+        file: wfFile,
+        label: wf.label ?? wfFile,
+        error: String(error?.message ?? error),
+      });
+    }
+  }
+
+  return {
+    ok: true,
+    workflows: results,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function getLatestWorkflowRun({ owner, repo, workflowFile, env }) {
+  const { data } = await githubApi({
+    env,
+    method: "GET",
+    path: `/repos/${owner}/${repo}/actions/workflows/${workflowFile}/runs?per_page=1`,
+  });
+  const run = Array.isArray(data?.workflow_runs) ? data.workflow_runs[0] : null;
+  if (!run) return null;
+
+  const jobs = await listJobsForRun({ owner, repo, runId: run.id, env });
+  return {
+    id: run.id,
+    name: run.name,
+    status: run.status,
+    conclusion: run.conclusion,
+    url: run.html_url,
+    event: run.event,
+    created_at: run.created_at,
+    updated_at: run.updated_at,
+    jobs: jobs.map((job) => ({
+      id: job.id,
+      name: job.name,
+      status: job.status,
+      conclusion: job.conclusion,
+      url: job.html_url,
+    })),
+  };
+}
+
+function renderStatusPage(data) {
+  const rows = data.workflows
+    .map((wf) => {
+      if (wf.error) {
+        return `<tr><td>${escapeHtml(wf.label)}</td><td>❓</td><td class="error">${escapeHtml(wf.error)}</td></tr>`;
+      }
+      if (!wf.run) {
+        return `<tr><td>${escapeHtml(wf.label)}</td><td>❓</td><td>No runs</td></tr>`;
+      }
+      const badge = badgeForJob({ status: wf.run.status, conclusion: wf.run.conclusion });
+      return `<tr><td>${escapeHtml(wf.label)}</td><td>${escapeHtml(badge)}</td><td><a href="${wf.run.url}">${wf.run.event ?? ""}</a></td></tr>`;
+    })
+    .join("");
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>ProjT Bot Status</title>
+  <style>
+    body { font-family: sans-serif; background: #0d1117; color: #e6edf3; padding: 24px; }
+    h1 { margin-top: 0; }
+    table { border-collapse: collapse; width: 100%; max-width: 720px; }
+    th, td { padding: 8px 12px; border-bottom: 1px solid #30363d; }
+    a { color: #58a6ff; text-decoration: none; }
+    .error { color: #ff7b72; }
+    .meta { color: #8b949e; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <h1>ProjT Bot Status</h1>
+  <div class="meta">Updated: ${escapeHtml(data.updatedAt)}</div>
+  <table>
+    <thead><tr><th>Workflow</th><th>Status</th><th>Run</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+</body>
+</html>`;
+}
+
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 let labelerCache = null;
