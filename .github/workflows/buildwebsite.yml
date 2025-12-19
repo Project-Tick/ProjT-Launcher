@@ -40,7 +40,8 @@ jobs:
           path: ./_site
 
   deploy:
-    if: github.repository_owner == 'Project-Tick' && github.event_name == 'push'
+    # Only deploy on pushes to develop; skip PRs/merge_group explicitly
+    if: ${{ github.repository_owner == 'Project-Tick' && github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request_target' && github.event_name != 'merge_group' }}
     needs: build
     permissions:
       pages: write
