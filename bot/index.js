@@ -625,6 +625,12 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     method: "GET",
     path: `/repos/${owner}/${repo}/pulls/${pullNumber}`,
   });
+  const isBackport =
+    String(pullRequest?.head?.ref ?? "").startsWith("backport/") ||
+    (pullRequest?.labels ?? []).some((l) => {
+      const name = String(l?.name ?? "");
+      return name === "automated-backport" || name.startsWith("backport/");
+    });
 
   if (pullRequest.state !== "open") {
     return { ok: true, changed: false, added: [], skipped: "closed", dryRun };
@@ -760,30 +766,34 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
   }
 
   try {
-    await ensureReviewers({
-      owner,
-      repo,
-      pullNumber,
-      pullRequest,
-      maintainers,
-      env,
-    });
+    if (!isBackport) {
+      await ensureReviewers({
+        owner,
+        repo,
+        pullNumber,
+        pullRequest,
+        maintainers,
+        env,
+      });
+    }
   } catch (error) {
     console.warn("Reviewer assignment failed:", error?.message ?? error);
   }
 
   let autoMergeResult = null;
   try {
-    autoMergeResult = await maybeAutoMerge({
-      owner,
-      repo,
-      pullNumber,
-      pullRequest,
-      maintainers,
-      currentLabels,
-      ciSummary,
-      env,
-    });
+    autoMergeResult = isBackport
+      ? { ok: true, merged: false }
+      : await maybeAutoMerge({
+          owner,
+          repo,
+          pullNumber,
+          pullRequest,
+          maintainers,
+          currentLabels,
+          ciSummary,
+          env,
+        });
   } catch (error) {
     console.warn("Auto-merge failed:", error?.message ?? error);
     autoMergeResult = { ok: false, error: String(error?.message ?? error) };
