@@ -6,7 +6,13 @@ export default {
       return json({ ok: true, service: "projtlauncher-bot", ts: new Date().toISOString() });
     }
 
-    if (url.pathname === "/github/webhook" && request.method === "POST") {
+    if (url.pathname === "/github/webhook") {
+      if (request.method === "GET") {
+        return json({ ok: true, message: "GitHub webhook endpoint. Use POST with signature." });
+      }
+      if (request.method !== "POST") {
+        return json({ ok: true, message: "This method is allowed" });
+      }
       const rawBody = await request.text();
       const signature = request.headers.get("x-hub-signature-256") ?? "";
 
@@ -386,9 +392,23 @@ async function getRepositoryLabels({ owner, repo, env }) {
 
 async function getBotLogin(env) {
   if (botLoginCache) return botLoginCache;
-  const { data } = await githubApi({ env, method: "GET", path: "/user" });
-  botLoginCache = String(data?.login ?? "");
-  return botLoginCache;
+
+  // If user provided an explicit login (e.g., GitHub App slug), prefer it.
+  if (env.BOT_LOGIN) {
+    botLoginCache = String(env.BOT_LOGIN);
+    return botLoginCache;
+  }
+
+  try {
+    const { data } = await githubApi({ env, method: "GET", path: "/user" });
+    botLoginCache = String(data?.login ?? "");
+    return botLoginCache;
+  } catch (error) {
+    // GitHub App installation tokens cannot call /user; fall back to empty and rely on BOT_LOGIN.
+    console.warn("getBotLogin failed; set BOT_LOGIN to your app slug if you want comment matching. Reason:", error?.message ?? error);
+    botLoginCache = "";
+    return botLoginCache;
+  }
 }
 
 async function ensureLabelExists({ owner, repo, env, repoLabels, name, color, description }) {
@@ -706,8 +726,14 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
   const marker = CONFIG.ciSummary.marker;
   const existing = comments.find((comment) => String(comment.body ?? "").includes(marker));
   const botLogin = await getBotLogin(env);
+  const knownBotLogins = new Set(
+    [botLogin, env.BOT_LOGIN, "github-actions[bot]"]
+      .filter(Boolean)
+      .map((v) => String(v).toLowerCase())
+  );
+  const isFromBot = (comment) => knownBotLogins.has(String(comment?.user?.login ?? "").toLowerCase());
 
-  if (existing && existing.user?.login === botLogin) {
+  if (existing && isFromBot(existing)) {
     if (String(existing.body ?? "") === body) {
       return { ok: true, updated: false, commentId: existing.id };
     }
