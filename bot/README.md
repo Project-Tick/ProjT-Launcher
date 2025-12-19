@@ -22,6 +22,7 @@ GitHub App (recommended for non-personal auth):
 - `GITHUB_APP_ID`
 - `GITHUB_APP_INSTALLATION_ID`
 - `GITHUB_APP_PRIVATE_KEY` (PKCS#8 PEM; use `\n` for newlines when pasting)
+- `BOT_LOGIN` (optional): set to your app slug so the bot can recognize/update its own comments
 
 Common secrets:
 
