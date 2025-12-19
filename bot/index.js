@@ -3,9 +3,14 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === CONFIG.statusPage.path) {
+      const prParam = url.searchParams.get("pr");
+      const prNumber = prParam ? Number(prParam) : undefined;
+      if (prParam && !Number.isFinite(prNumber)) {
+        return json({ ok: false, error: "Invalid pr query param" }, 400);
+      }
       try {
-        const data = await buildStatusPage({ env });
-        return new Response(renderStatusPage(data), {
+        const data = await buildStatusPage({ env, prNumber });
+        return new Response(renderStatusPage({ data, prNumber }), {
           status: 200,
           headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
         });
@@ -997,7 +1002,7 @@ function buildCiSummaryBody({ run, jobs }) {
   ].join("\n");
 }
 
-async function buildStatusPage({ env }) {
+async function buildStatusPage({ env, prNumber }) {
   const owner = env.GITHUB_OWNER;
   const repo = env.GITHUB_REPO;
   const workflows = CONFIG.statusPage.workflows;
@@ -1006,7 +1011,7 @@ async function buildStatusPage({ env }) {
   for (const wf of workflows) {
     const wfFile = wf.file;
     try {
-      const run = await getLatestWorkflowRun({ owner, repo, workflowFile: wfFile, env });
+      const run = await getLatestWorkflowRun({ owner, repo, workflowFile: wfFile, prNumber, env });
       results.push({
         file: wfFile,
         label: wf.label ?? wfFile,
@@ -1028,13 +1033,16 @@ async function buildStatusPage({ env }) {
   };
 }
 
-async function getLatestWorkflowRun({ owner, repo, workflowFile, env }) {
+async function getLatestWorkflowRun({ owner, repo, workflowFile, prNumber, env }) {
   const { data } = await githubApi({
     env,
     method: "GET",
-    path: `/repos/${owner}/${repo}/actions/workflows/${workflowFile}/runs?per_page=1`,
+    path: `/repos/${owner}/${repo}/actions/workflows/${workflowFile}/runs?per_page=30`,
   });
-  const run = Array.isArray(data?.workflow_runs) ? data.workflow_runs[0] : null;
+  const runs = Array.isArray(data?.workflow_runs) ? data.workflow_runs : [];
+  const run = prNumber
+    ? runs.find((r) => Array.isArray(r.pull_requests) && r.pull_requests.some((pr) => pr.number === prNumber))
+    : runs[0];
   if (!run) return null;
 
   const jobs = await listJobsForRun({ owner, repo, runId: run.id, env });
@@ -1054,10 +1062,16 @@ async function getLatestWorkflowRun({ owner, repo, workflowFile, env }) {
       conclusion: job.conclusion,
       url: job.html_url,
     })),
+    prNumber: prNumber ?? null,
   };
 }
 
-function renderStatusPage(data) {
+function renderStatusPage({ data, prNumber }) {
+  const heading = prNumber ? `ProjT Bot Status – PR #${prNumber}` : "ProjT Bot Status";
+  const subhead = prNumber
+    ? `Latest runs for PR #${prNumber}`
+    : "Latest runs on default branches";
+
   const rows = data.workflows
     .map((wf) => {
       if (wf.error) {
@@ -1075,7 +1089,7 @@ function renderStatusPage(data) {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>ProjT Bot Status</title>
+  <title>${escapeHtml(heading)}</title>
   <style>
     body { font-family: sans-serif; background: #0d1117; color: #e6edf3; padding: 24px; }
     h1 { margin-top: 0; }
@@ -1087,8 +1101,8 @@ function renderStatusPage(data) {
   </style>
 </head>
 <body>
-  <h1>ProjT Bot Status</h1>
-  <div class="meta">Updated: ${escapeHtml(data.updatedAt)}</div>
+  <h1>${escapeHtml(heading)}</h1>
+  <div class="meta">${escapeHtml(subhead)} · Updated: ${escapeHtml(data.updatedAt)}</div>
   <table>
     <thead><tr><th>Workflow</th><th>Status</th><th>Run</th></tr></thead>
     <tbody>${rows}</tbody>
