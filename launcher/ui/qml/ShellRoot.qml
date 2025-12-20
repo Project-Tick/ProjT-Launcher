@@ -1,15 +1,22 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
  *  ProjT Launcher - Minecraft Launcher
  *  Copyright (C) 2025 Project Tick
  *
- *  This file is part of ProjT Launcher and is licensed under
- *  the GNU General Public License version 3 or later.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
  *
- *  If this file includes work from previous open-source projects,
- *  their original copyright and license notices are preserved below.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 import QtQuick 2.15
@@ -1600,6 +1607,11 @@ Rectangle {
         id: instanceSettingsWindowLoader
         active: false
         property string instanceId: ""
+        onInstanceIdChanged: {
+            if (instanceSettingsWindowLoader.item && instanceSettingsWindowLoader.item.syncSettingsVM) {
+                instanceSettingsWindowLoader.item.syncSettingsVM();
+            }
+        }
         sourceComponent: Window {
             id: instanceSettingsWindow
             title: qsTr("Instance Settings")
@@ -1616,10 +1628,20 @@ Rectangle {
             property int currentPageIndex: 0
             property var instanceVM: ProjT.instanceVM
 
+            function syncSettingsVM() {
+                if (!ProjT.settingsVM || !instanceSettingsWindowLoader.instanceId)
+                    return;
+                if (ProjT.settingsVM.instanceId !== instanceSettingsWindowLoader.instanceId) {
+                    ProjT.settingsVM.instanceId = instanceSettingsWindowLoader.instanceId;
+                }
+                ProjT.settingsVM.refresh();
+            }
+
             Component.onCompleted: {
                 if (instanceVM && instanceSettingsWindowLoader.instanceId) {
                     instanceVM.loadInstance(instanceSettingsWindowLoader.instanceId);
                 }
+                syncSettingsVM();
             }
 
             ColumnLayout {
@@ -1759,7 +1781,10 @@ Rectangle {
                         GameOptionsPage {}
 
                         // Instance Settings page
-                        InstanceSettingsPage {}
+                        SettingsPage {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                        }
 
                         // Notes page (from settings folder)
                         Loader {
