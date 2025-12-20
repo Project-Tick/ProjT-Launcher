@@ -305,6 +305,7 @@ class LauncherSettingsViewModel : public QObject {
     Q_INVOKABLE void applySettings();
     Q_INVOKABLE void resetToDefaults();
     Q_INVOKABLE void testJavaPath(const QString& path);
+    Q_INVOKABLE void checkTool(const QString& toolName, const QString& path);
     Q_INVOKABLE void autoDetectJava();
 
    signals:

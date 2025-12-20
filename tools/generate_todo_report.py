@@ -10,8 +10,9 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+TARGET = ROOT / "launcher"
 OUT = ROOT / "docs" / "TODO_FIXME_REPORT.md"
-PATTERN = re.compile(r"\b(TODO|FIXME)\b", re.IGNORECASE)
+PATTERN = re.compile(r"\b(TODO|FIXME|NOTE)\b", re.IGNORECASE)
 
 def is_text_file(path: Path) -> bool:
     try:
@@ -44,7 +45,7 @@ def scan(root: Path):
     results = []
     for p in root.rglob('*'):
         if p.is_dir():
-            if p.name in ('.git', 'build', 'node_modules', '.venv', 'venv'):
+            if p.name in ('.git', 'build'):
                 continue
         else:
             if not is_text_file(p):
@@ -65,7 +66,7 @@ def scan(root: Path):
                     tag = PATTERN.search(line).group(1)
                     cls = classify(line + ' ' + whole)
                     results.append({
-                        'path': str(p.relative_to(root)),
+                        'path': f"launcher/{p.relative_to(root)}",
                         'line': i,
                         'tag': tag,
                         'text': line.strip(),
@@ -106,7 +107,9 @@ def generate_md(results):
     print(f'Wrote report to {OUT}')
 
 def main():
-    results = scan(ROOT)
+    if not TARGET.exists():
+        raise SystemExit(f"Target path not found: {TARGET}")
+    results = scan(TARGET)
     generate_md(results)
 
 if __name__ == '__main__':

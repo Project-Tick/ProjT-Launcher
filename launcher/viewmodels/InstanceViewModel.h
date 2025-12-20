@@ -26,6 +26,7 @@
 #include <QString>
 #include <QStringList>
 #include <QVariantMap>
+#include <memory>
 
 #include "BaseInstance.h"
 
@@ -125,6 +126,14 @@ class InstanceViewModel : public QObject {
     // Texture packs
     Q_PROPERTY(QVariantList texturePacksModel READ texturePacksModel NOTIFY texturePacksModelChanged)
     Q_PROPERTY(int texturePacksCount READ texturePacksCount NOTIFY texturePacksModelChanged)
+
+    // Data packs
+    Q_PROPERTY(QVariantList dataPacksModel READ dataPacksModel NOTIFY dataPacksModelChanged)
+    Q_PROPERTY(int dataPacksCount READ dataPacksCount NOTIFY dataPacksModelChanged)
+
+    // Other logs
+    Q_PROPERTY(QStringList otherLogsList READ otherLogsList NOTIFY otherLogsListChanged)
+    Q_PROPERTY(QString otherLogContent READ otherLogContent NOTIFY otherLogContentChanged)
 
     // Logs
     Q_PROPERTY(QString instanceLog READ instanceLog NOTIFY instanceLogChanged)
@@ -231,7 +240,15 @@ class InstanceViewModel : public QObject {
     Q_INVOKABLE void addMod(const QString& filePath);
     Q_INVOKABLE void removeMod(int index);
     Q_INVOKABLE void enableMod(int index, bool enabled);
+    Q_INVOKABLE void browseForMods();
+    Q_INVOKABLE void filterMods(const QString& text);
+    Q_INVOKABLE void checkAllModUpdates();
+    Q_INVOKABLE void openModDownload();
+    Q_INVOKABLE void resetModMetadata(const QVariantList& indices);
+    Q_INVOKABLE void verifyDependencies();
+    Q_INVOKABLE void exportModList();
     Q_INVOKABLE void openModsFolder();
+    Q_INVOKABLE void openConfigsFolder();
 
     // Resource packs
     QVariantList resourcePacksModel() const;
@@ -240,6 +257,8 @@ class InstanceViewModel : public QObject {
     Q_INVOKABLE void addResourcePack(const QString& filePath);
     Q_INVOKABLE void removeResourcePack(int index);
     Q_INVOKABLE void enableResourcePack(int index, bool enabled);
+    Q_INVOKABLE void browseForResourcePacks();
+    Q_INVOKABLE void openResourcePackDownload();
 
     // Shader packs
     QVariantList shaderPacksModel() const;
@@ -248,6 +267,8 @@ class InstanceViewModel : public QObject {
     Q_INVOKABLE void addShaderPack(const QString& filePath);
     Q_INVOKABLE void removeShaderPack(int index);
     Q_INVOKABLE void enableShaderPack(int index, bool enabled);
+    Q_INVOKABLE void browseForShaderPacks();
+    Q_INVOKABLE void openShaderPackDownload();
 
     // Texture packs
     QVariantList texturePacksModel() const;
@@ -256,6 +277,28 @@ class InstanceViewModel : public QObject {
     Q_INVOKABLE void addTexturePack(const QString& filePath);
     Q_INVOKABLE void removeTexturePack(int index);
     Q_INVOKABLE void enableTexturePack(int index, bool enabled);
+    Q_INVOKABLE void browseForTexturePacks();
+
+    // Data packs
+    QVariantList dataPacksModel() const;
+    int dataPacksCount() const;
+    Q_INVOKABLE void refreshDataPacks();
+    Q_INVOKABLE void browseForDataPacks();
+    Q_INVOKABLE void openDataPackDownload();
+    Q_INVOKABLE void selectWorldForDataPacks(int index);
+    Q_INVOKABLE void setDataPackEnabled(int index, bool enabled);
+    Q_INVOKABLE void deleteDataPack(int index);
+
+    // Other logs
+    QStringList otherLogsList() const;
+    QString otherLogContent() const;
+    Q_INVOKABLE void loadOtherLog(int index);
+    Q_INVOKABLE void deleteSelectedLog(int index);
+    Q_INVOKABLE void deleteAllLogs();
+    Q_INVOKABLE void copyOtherLogToClipboard();
+    Q_INVOKABLE void uploadOtherLog();
+    Q_INVOKABLE void reloadOtherLog();
+    Q_INVOKABLE void findInOtherLog(const QString& text);
 
     // Logs
     QString instanceLog() const;
@@ -381,7 +424,10 @@ class InstanceViewModel : public QObject {
     void resourcePacksModelChanged();
     void shaderPacksModelChanged();
     void texturePacksModelChanged();
+    void dataPacksModelChanged();
     void instanceLogChanged();
+    void otherLogsListChanged();
+    void otherLogContentChanged();
 
     void launchRequested(const QString& instanceId);
     void launchOfflineRequested(const QString& instanceId);
@@ -408,6 +454,8 @@ class InstanceViewModel : public QObject {
     void scanResourcePacks();
     void scanShaderPacks();
     void scanTexturePacks();
+    void scanDataPacks();
+    void scanOtherLogs();
     void loadLatestLog();
 
     QString m_instanceId;
@@ -418,10 +466,18 @@ class InstanceViewModel : public QObject {
     QStringList m_worldNames;
     QStringList m_serverNames;
     QStringList m_serverAddresses;
+    std::shared_ptr<class DataPackFolderModel> m_dataPacksFolderModel;
     QVariantList m_modsModel;
     QVariantList m_resourcePacksModel;
     QVariantList m_shaderPacksModel;
     QVariantList m_texturePacksModel;
+    QVariantList m_dataPacksModel;
     QString m_instanceLog;
     QString m_currentLogPath;
+    QString m_modFilter;
+    QString m_selectedDataPacksPath;
+    QStringList m_otherLogsList;
+    QStringList m_otherLogPaths;
+    QString m_otherLogContent;
+    QString m_currentOtherLogPath;
 };

@@ -22,11 +22,14 @@
 #include "LauncherSettingsViewModel.h"
 
 #include <QFileDialog>
+#include <QFileInfo>
+#include <QMessageBox>
 #include <QProcess>
 #include <QStandardPaths>
 
 #include "Application.h"
 #include "settings/SettingsObject.h"
+#include "ui/dialogs/CustomMessageBox.h"
 
 LauncherSettingsViewModel::LauncherSettingsViewModel(QObject* parent) : QObject(parent)
 {
@@ -377,6 +380,48 @@ void LauncherSettingsViewModel::testJavaPath(const QString& path)
     } else {
         emit javaTestResult(false, tr("Invalid Java installation"));
     }
+}
+
+void LauncherSettingsViewModel::checkTool(const QString& toolName, const QString& path)
+{
+    QString displayName = toolName;
+    if (toolName == "mcedit")
+        displayName = tr("MCEdit");
+    else if (toolName == "jprofiler")
+        displayName = tr("JProfiler");
+    else if (toolName == "jvisualvm")
+        displayName = tr("VisualVM");
+    else if (displayName.isEmpty())
+        displayName = tr("Tool");
+
+    if (path.isEmpty()) {
+        CustomMessageBox::selectable(nullptr, tr("%1 Check").arg(displayName), tr("No path specified."), QMessageBox::Warning)->show();
+        return;
+    }
+
+    QFileInfo info(path);
+    if (!info.exists()) {
+        CustomMessageBox::selectable(nullptr, tr("%1 Check").arg(displayName), tr("File not found: %1").arg(path),
+                                     QMessageBox::Critical)
+            ->show();
+        return;
+    }
+    if (info.isDir()) {
+        CustomMessageBox::selectable(nullptr, tr("%1 Check").arg(displayName), tr("Expected a file, got a directory."),
+                                     QMessageBox::Critical)
+            ->show();
+        return;
+    }
+    if (!info.isExecutable()) {
+        CustomMessageBox::selectable(nullptr, tr("%1 Check").arg(displayName), tr("The selected file is not executable."),
+                                     QMessageBox::Warning)
+            ->show();
+        return;
+    }
+
+    CustomMessageBox::selectable(nullptr, tr("%1 Check").arg(displayName), tr("%1 path looks good.").arg(displayName),
+                                 QMessageBox::Information)
+        ->show();
 }
 
 void LauncherSettingsViewModel::autoDetectJava()

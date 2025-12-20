@@ -617,7 +617,7 @@ Rectangle {
         }
 
         onOpened: {
-            currentName = ProjT.instancesVM ? ProjT.instancesVM.selectedInstanceName : "";
+            currentName = ProjT.instancesVM ? ProjT.instancesVM.selectedInstanceName() : "";
             renameField.text = currentName;
             renameField.selectAll();
         }
@@ -659,7 +659,7 @@ Rectangle {
         }
 
         onOpened: {
-            currentName = ProjT.instancesVM ? ProjT.instancesVM.selectedInstanceName : "";
+            currentName = ProjT.instancesVM ? ProjT.instancesVM.selectedInstanceName() : "";
             duplicateNameField.text = currentName + qsTr(" Copy");
             duplicateNameField.selectAll();
         }
@@ -678,7 +678,7 @@ Rectangle {
         property string currentName: ""
 
         onOpened: {
-            currentName = ProjT.instancesVM ? ProjT.instancesVM.selectedInstanceName : "";
+            currentName = ProjT.instancesVM ? ProjT.instancesVM.selectedInstanceName() : "";
         }
 
         Label {
@@ -985,10 +985,12 @@ Rectangle {
     }
     function showExportDialog(instanceId) {
         exportDialogLoader.instanceId = instanceId || "";
+        exportDialogLoader.instanceName = ProjT.instancesVM ? ProjT.instancesVM.selectedInstanceName() : "";
         exportDialogLoader.active = true;
     }
     function showBackupDialog(instanceId) {
         backupDialogLoader.instanceId = instanceId || "";
+        backupDialogLoader.instanceName = ProjT.instancesVM ? ProjT.instancesVM.selectedInstanceName() : "";
         backupDialogLoader.active = true;
     }
     function showIconPickerDialog() {
@@ -1408,7 +1410,7 @@ Rectangle {
             visible: true
             onAccepted: setupWizardLoader.active = false
             onRejected: setupWizardLoader.active = false
-            onClosed: setupWizardLoader.active = false
+            onVisibleChanged: if (!visible) setupWizardLoader.active = false
         }
     }
 
@@ -1423,7 +1425,7 @@ Rectangle {
         sourceComponent: MSALoginDialog {
             id: msaLoginDialog
             visible: true
-            onClosed: msaLoginDialogLoader.active = false
+            onVisibleChanged: if (!visible) msaLoginDialogLoader.active = false
         }
     }
 
@@ -1434,7 +1436,7 @@ Rectangle {
         sourceComponent: OfflineLoginDialog {
             id: offlineLoginDialog
             visible: true
-            onClosed: offlineLoginDialogLoader.active = false
+            onVisibleChanged: if (!visible) offlineLoginDialogLoader.active = false
         }
     }
 
@@ -1449,7 +1451,7 @@ Rectangle {
             title: progressDialogLoader.dialogTitle
             globalStatus: progressDialogLoader.dialogMessage
             visible: true
-            onClosed: progressDialogLoader.active = false
+            onVisibleChanged: if (!visible) progressDialogLoader.active = false
         }
     }
 
@@ -1466,7 +1468,7 @@ Rectangle {
             newVersion: updateDialogLoader.newVersion
             releaseNotes: updateDialogLoader.releaseNotes
             visible: true
-            onClosed: updateDialogLoader.active = false
+            onVisibleChanged: if (!visible) updateDialogLoader.active = false
         }
     }
 
@@ -1475,10 +1477,13 @@ Rectangle {
         id: exportDialogLoader
         active: false
         property string instanceId: ""
+        property string instanceName: ""
         sourceComponent: ExportDialog {
             id: exportDialog
+            instanceId: exportDialogLoader.instanceId
+            instanceName: exportDialogLoader.instanceName
             visible: true
-            onClosed: exportDialogLoader.active = false
+            onVisibleChanged: if (!visible) exportDialogLoader.active = false
         }
     }
 
@@ -1487,10 +1492,13 @@ Rectangle {
         id: backupDialogLoader
         active: false
         property string instanceId: ""
+        property string instanceName: ""
         sourceComponent: BackupDialog {
             id: backupDialog
+            instanceId: backupDialogLoader.instanceId
+            instanceName: backupDialogLoader.instanceName
             visible: true
-            onClosed: backupDialogLoader.active = false
+            onVisibleChanged: if (!visible) backupDialogLoader.active = false
         }
     }
 
@@ -1501,7 +1509,7 @@ Rectangle {
         sourceComponent: IconPickerDialog {
             id: iconPickerDialog
             visible: true
-            onClosed: iconPickerDialogLoader.active = false
+            onVisibleChanged: if (!visible) iconPickerDialogLoader.active = false
             onIconSelected: function (iconKey) {
                 console.log("[ShellRoot] Icon selected:", iconKey);
             }
@@ -1517,7 +1525,7 @@ Rectangle {
             id: blockedModsDialog
             blockedMods: blockedModsDialogLoader.blockedMods
             visible: true
-            onClosed: blockedModsDialogLoader.active = false
+            onVisibleChanged: if (!visible) blockedModsDialogLoader.active = false
         }
     }
 
@@ -1529,12 +1537,12 @@ Rectangle {
             id: createShortcutDialog
             instance: ProjT.instancesVM ? {
                 id: ProjT.instancesVM.selectedInstanceId,
-                name: ProjT.instancesVM.selectedInstanceName,
-                iconPath: ProjT.instancesVM.selectedInstanceIcon,
-                version: ProjT.instancesVM.selectedInstanceVersion
+                name: ProjT.instancesVM.selectedInstanceName(),
+                iconPath: ProjT.instancesVM.selectedInstanceIcon(),
+                version: ProjT.instancesVM.selectedInstanceVersion()
             } : null
             visible: true
-            onClosed: createShortcutDialogLoader.active = false
+            onVisibleChanged: if (!visible) createShortcutDialogLoader.active = false
         }
     }
 
@@ -1546,12 +1554,12 @@ Rectangle {
             id: copyInstanceDialog
             sourceInstance: ProjT.instancesVM ? {
                 id: ProjT.instancesVM.selectedInstanceId,
-                name: ProjT.instancesVM.selectedInstanceName,
-                iconPath: ProjT.instancesVM.selectedInstanceIcon,
-                version: ProjT.instancesVM.selectedInstanceVersion
+                name: ProjT.instancesVM.selectedInstanceName(),
+                iconPath: ProjT.instancesVM.selectedInstanceIcon(),
+                version: ProjT.instancesVM.selectedInstanceVersion()
             } : null
             visible: true
-            onClosed: copyInstanceDialogLoader.active = false
+            onVisibleChanged: if (!visible) copyInstanceDialogLoader.active = false
         }
     }
 
@@ -1563,7 +1571,7 @@ Rectangle {
             id: versionSelectDialog
             vm: ProjT.instanceVM
             visible: true
-            onClosed: versionSelectDialogLoader.active = false
+            onVisibleChanged: if (!visible) versionSelectDialogLoader.active = false
         }
     }
 
@@ -1577,7 +1585,7 @@ Rectangle {
             vm: ProjT.instanceVM
             minecraftVersion: installLoaderDialogLoader.minecraftVersion
             visible: true
-            onClosed: installLoaderDialogLoader.active = false
+            onVisibleChanged: if (!visible) installLoaderDialogLoader.active = false
         }
     }
 
@@ -1591,7 +1599,7 @@ Rectangle {
             vm: ProjT.instanceVM
             resourceType: resourceDownloadDialogLoader.resourceType
             visible: true
-            onClosed: resourceDownloadDialogLoader.active = false
+            onVisibleChanged: if (!visible) resourceDownloadDialogLoader.active = false
         }
     }
 
@@ -1603,7 +1611,7 @@ Rectangle {
             id: resourceUpdateDialog
             vm: ProjT.instanceVM
             visible: true
-            onClosed: resourceUpdateDialogLoader.active = false
+            onVisibleChanged: if (!visible) resourceUpdateDialogLoader.active = false
         }
     }
 
@@ -1771,17 +1779,17 @@ Rectangle {
 
                         // Worlds page (from settings folder)
                         Loader {
-                            source: "qrc:/qml/settings/WorldsPage.qml"
+                            source: Qt.resolvedUrl("settings/WorldsPage.qml")
                         }
 
                         // Screenshots page (from settings folder)
                         Loader {
-                            source: "qrc:/qml/settings/ScreenshotsPage.qml"
+                            source: Qt.resolvedUrl("settings/ScreenshotsPage.qml")
                         }
 
                         // Servers page (from settings folder)
                         Loader {
-                            source: "qrc:/qml/settings/ServersPage.qml"
+                            source: Qt.resolvedUrl("settings/ServersPage.qml")
                         }
 
                         // Game Options page
@@ -1795,7 +1803,7 @@ Rectangle {
 
                         // Notes page (from settings folder)
                         Loader {
-                            source: "qrc:/qml/settings/NotesPage.qml"
+                            source: Qt.resolvedUrl("settings/NotesPage.qml")
                         }
 
                         // Log page

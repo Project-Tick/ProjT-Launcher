@@ -28,6 +28,7 @@
 #include <QString>
 #include <QStringList>
 #include <QVariant>
+#include <QVariantMap>
 
 #include "InstanceTask.h"
 #include "minecraft/BackupManager.h"
@@ -56,6 +57,7 @@ class InstanceListViewModel : public QObject {
     Q_PROPERTY(bool canBackupSelected READ canBackupSelected NOTIFY instanceStateChanged)
     Q_PROPERTY(QStringList availableVersions READ availableVersions NOTIFY availableVersionsChanged)
     Q_PROPERTY(QStringList groupList READ groupList NOTIFY groupListChanged)
+    Q_PROPERTY(QVariantList backupsList READ backupsList NOTIFY backupsListChanged)
 
    public:
     explicit InstanceListViewModel(QObject* parent = nullptr);
@@ -78,6 +80,7 @@ class InstanceListViewModel : public QObject {
     bool canBackupSelected() const;
     QStringList availableVersions() const;
     QStringList groupList() const;
+    QVariantList backupsList() const;
 
     void setTotalCount(int count);
     void setSelectedInstanceId(const QString& id);
@@ -105,8 +108,15 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE void createNewInstance(const QString& name, const QString& version, const QString& group);
     Q_INVOKABLE void importInstance(const QString& sourcePath, const QString& name);
     Q_INVOKABLE void updateInstanceNotes(const QString& id, const QString& notes);
+    Q_INVOKABLE void copyInstance(const QString& sourceId, const QString& newName, const QString& group,
+                                  const QVariantMap& options);
     Q_INVOKABLE void exportInstance(const QString& id, const QString& outputPath, const QFileInfoList& files);
+    Q_INVOKABLE void exportInstanceSimple(const QString& id, const QString& outputPath, const QString& format);
     Q_INVOKABLE void backupInstance(const QString& id, const QString& backupName, const BackupOptions& options);
+    Q_INVOKABLE void createBackup(const QString& id, const QString& backupName, const QVariantMap& options);
+    Q_INVOKABLE void loadBackupsList(const QString& id);
+    Q_INVOKABLE void restoreBackup(const QString& id, const QString& backupPath);
+    Q_INVOKABLE void deleteBackup(const QString& backupPath);
     Q_INVOKABLE void openInstanceFolder(const QString& id = QString());
     Q_INVOKABLE void updateInstanceIcon(const QString& id, const QString& iconKey);
     Q_INVOKABLE void refreshInstanceMetadata(const QString& id);
@@ -123,7 +133,13 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE void exportSelectedInstance();
     Q_INVOKABLE void manageSelectedBackups();
     Q_INVOKABLE void createSelectedShortcut();
+    Q_INVOKABLE void createShortcut(const QString& instanceId, const QString& name, const QString& location, bool launchDirectly);
     Q_INVOKABLE QString selectedInstanceName() const;
+    Q_INVOKABLE QString selectedInstanceIcon() const;
+    Q_INVOKABLE QString selectedInstanceVersion() const;
+    Q_INVOKABLE QVariantMap generateModList(const QString& instanceId, const QVariantMap& options);
+    Q_INVOKABLE void saveModList(const QString& instanceId, const QString& content, const QString& formatName);
+    Q_INVOKABLE void copyToClipboard(const QString& text);
 
     void addInstance(InstanceTask* task, const QString& busyReason = QString());
     void copyInstance(InstanceTask* task, const QString& busyReason = QString());
@@ -140,6 +156,7 @@ class InstanceListViewModel : public QObject {
     void instanceNamesChanged();
     void instanceListChanged();
     void instanceSelected(const QString& id);
+    void backupsListChanged();
     void renameRequested(const QString& id, const QString& newName);
     void duplicateRequested(const QString& id, const QString& targetIdOrName);
     void availableVersionsChanged();
@@ -157,6 +174,7 @@ class InstanceListViewModel : public QObject {
     void refreshInstanceState();
     void startTask(Task* task, const QString& busyReason);
     void startInstanceTask(InstanceTask* task, const QString& busyReason);
+    void ensureBackupManagerConnections();
 
     int m_totalCount = 0;
     QString m_selectedInstanceId;
@@ -176,5 +194,6 @@ class InstanceListViewModel : public QObject {
     QStringList m_instanceGroups;
     QStringList m_instanceLastPlayed;
     QStringList m_availableVersions;
+    QVariantList m_backupsList;
     std::unique_ptr<BackupManager> m_backupManager;
 };

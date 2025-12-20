@@ -156,8 +156,13 @@ WindowDialog {
             Button {
                 text: qsTr("Browse...")
                 onClicked: {
-                    if (vm)
-                        vm.browseExportLocation();
+                    if (ProjT && ProjT.launcherVM) {
+                        var filter = formatModList.checked ? qsTr("Text files (*.txt)") : qsTr("Zip files (*.zip)");
+                        var path = ProjT.launcherVM.browseForSave(qsTr("Select export location"), filter);
+                        if (path && path.length > 0) {
+                            outputPath.text = path;
+                        }
+                    }
                 }
             }
         }
@@ -173,14 +178,7 @@ WindowDialog {
             else if (formatModList.checked)
                 format = "modlist";
 
-            vm.exportInstance(instanceId, outputPath.text, format);
-        }
-    }
-
-    Connections {
-        target: vm
-        function onExportLocationSelected(path) {
-            outputPath.text = path;
+            vm.exportInstanceSimple(instanceId, outputPath.text, format);
         }
     }
 }

@@ -56,7 +56,7 @@ WindowDialog {
                 Image {
                     anchors.fill: parent
                     anchors.margins: 4
-                    source: instance ? instance.iconPath : ""
+                    source: instance && instance.iconPath ? instance.iconPath : ""
                     fillMode: Image.PreserveAspectFit
                 }
             }
@@ -66,13 +66,13 @@ WindowDialog {
                 spacing: 2
 
                 Label {
-                    text: instance ? instance.name : qsTr("No instance selected")
+                    text: instance && instance.name ? instance.name : qsTr("No instance selected")
                     color: ThemeColors.text
                     font.bold: true
                 }
 
                 Label {
-                    text: instance ? instance.version : ""
+                    text: instance && instance.version ? instance.version : ""
                     color: ThemeColors.textSecondary
                     font.pointSize: Theme.fontSizeSmall
                 }
@@ -99,7 +99,7 @@ WindowDialog {
                     TextField {
                         id: nameField
                         Layout.fillWidth: true
-                        text: shortcutName || (instance ? instance.name : "")
+                        text: shortcutName || (instance && instance.name ? instance.name : "")
                         placeholderText: qsTr("Shortcut name...")
                         onTextChanged: shortcutName = text
                     }

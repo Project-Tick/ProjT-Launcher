@@ -160,10 +160,12 @@ WindowDialog {
         }
     }
 
-    background: Rectangle {
+    Rectangle {
+        anchors.fill: parent
         color: ThemeColors.window
         border.color: ThemeColors.mid
         border.width: 1
         radius: 8
+        z: -1
     }
 }

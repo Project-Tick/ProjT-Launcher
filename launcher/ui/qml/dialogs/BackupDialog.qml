@@ -170,6 +170,8 @@ WindowDialog {
                 title: qsTr("Backup Details")
 
                 background: Rectangle {
+                    implicitWidth: 0
+                    implicitHeight: 0
                     y: parent.topPadding - parent.padding
                     width: parent.width
                     height: parent.height - parent.topPadding + parent.padding
@@ -209,6 +211,8 @@ WindowDialog {
                 title: qsTr("Backup Options")
 
                 background: Rectangle {
+                    implicitWidth: 0
+                    implicitHeight: 0
                     y: parent.topPadding - parent.padding
                     width: parent.width
                     height: parent.height - parent.topPadding + parent.padding
@@ -310,8 +314,14 @@ WindowDialog {
                             primary: true
                             size: "small"
                             onClicked: {
-                                if (vm)
-                                    vm.browseCustomBackupPath();
+                                if (ProjT && ProjT.launcherVM) {
+                                    var path = ProjT.launcherVM.browseForDirectory(qsTr("Select custom backup path"));
+                                    if (path && path.length > 0) {
+                                        var paths = customPathsList.model.slice();
+                                        paths.push(path);
+                                        customPathsList.model = paths;
+                                    }
+                                }
                             }
                         }
 

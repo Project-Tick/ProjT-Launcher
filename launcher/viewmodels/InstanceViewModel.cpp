@@ -21,16 +21,21 @@
 
 #include "InstanceViewModel.h"
 
+#include <algorithm>
 #include <QClipboard>
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QFileInfoList>
 #include <QGuiApplication>
 #include <QImage>
 #include <QMimeData>
+#include <QMessageBox>
 #include <QDebug>
+#include <QRegularExpression>
 #include <QUrl>
 
 #include "Application.h"
@@ -40,11 +45,21 @@
 #include "minecraft/Component.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
+#include "minecraft/mod/DataPackFolderModel.h"
+#include "minecraft/mod/Mod.h"
 #include "minecraft/mod/ModFolderModel.h"
 #include "minecraft/mod/Resource.h"
 #include "minecraft/mod/ResourcePackFolderModel.h"
 #include "minecraft/mod/ShaderPackFolderModel.h"
 #include "minecraft/mod/TexturePackFolderModel.h"
+#include "ui/dialogs/CustomMessageBox.h"
+#include "ui/dialogs/ExportToModListDialog.h"
+#include "ui/dialogs/ProgressDialog.h"
+#include "ui/dialogs/ResourceDownloadDialog.h"
+#include "ui/dialogs/ResourceUpdateDialog.h"
+
+#include "tasks/ConcurrentTask.h"
+#include "tasks/Task.h"
 
 // NBT library for servers.dat
 #include <io/stream_reader.h>
@@ -53,6 +68,41 @@
 #include <tag_primitive.h>
 #include <tag_string.h>
 #include <sstream>
+
+namespace {
+template <typename TaskPtr>
+void runDownloadTasks(QWidget* parent, const QList<TaskPtr>& tasks, const QString& title)
+{
+    if (tasks.isEmpty()) {
+        return;
+    }
+
+    auto concurrent = new ConcurrentTask(title, APPLICATION->settings()->get("NumberOfConcurrentDownloads").toInt());
+    QObject::connect(concurrent, &Task::failed, [parent, concurrent](const QString& reason) {
+        CustomMessageBox::selectable(parent, QObject::tr("Error"), reason, QMessageBox::Critical)->show();
+        concurrent->deleteLater();
+    });
+    QObject::connect(concurrent, &Task::aborted, [parent, concurrent]() {
+        CustomMessageBox::selectable(parent, QObject::tr("Aborted"), QObject::tr("Download stopped by user."), QMessageBox::Information)->show();
+        concurrent->deleteLater();
+    });
+    QObject::connect(concurrent, &Task::succeeded, [parent, concurrent]() {
+        QStringList warnings = concurrent->warnings();
+        if (!warnings.isEmpty()) {
+            CustomMessageBox::selectable(parent, QObject::tr("Warnings"), warnings.join('\n'), QMessageBox::Warning)->show();
+        }
+        concurrent->deleteLater();
+    });
+
+    for (const auto& task : tasks) {
+        concurrent->addTask(task);
+    }
+
+    ProgressDialog progress(parent);
+    progress.setSkipButton(true, QObject::tr("Abort"));
+    progress.execWithTask(concurrent);
+}
+}  // namespace
 
 InstanceViewModel::InstanceViewModel(QObject* parent) : QObject(parent) {}
 
@@ -83,6 +133,19 @@ void InstanceViewModel::setInstanceId(const QString& id)
 
         emit instanceIdChanged();
         emit hasInstanceChanged();
+        m_modFilter.clear();
+        m_selectedDataPacksPath.clear();
+        m_dataPacksFolderModel.reset();
+        m_dataPacksModel.clear();
+        emit dataPacksModelChanged();
+        scanScreenshots();
+        scanWorlds();
+        scanServers();
+        scanMods();
+        scanResourcePacks();
+        scanShaderPacks();
+        scanTexturePacks();
+        scanOtherLogs();
         emitAllChanged();
     }
 }
@@ -1015,6 +1078,23 @@ void InstanceViewModel::openModsFolder()
     }
 }
 
+void InstanceViewModel::openConfigsFolder()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    QString path = mcInstance->instanceConfigFolder();
+    QDir dir(path);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+    QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+}
+
 void InstanceViewModel::openResourcePacksFolder()
 {
     if (m_instance) {
@@ -1698,8 +1778,28 @@ void InstanceViewModel::addMod(const QString& filePath)
     auto modsModel = mcInstance->loaderModList();
     if (modsModel) {
         modsModel->installResource(filePath);
+        modsModel->update();
         scanMods();
     }
+}
+
+void InstanceViewModel::browseForMods()
+{
+    if (!m_instance)
+        return;
+
+    QString startDir = m_instance->modsRoot();
+    QStringList files =
+        QFileDialog::getOpenFileNames(nullptr, tr("Select Mod Files"), startDir, tr("Mod Files (*.jar *.zip);;All Files (*)"));
+    for (const auto& path : files) {
+        addMod(path);
+    }
+}
+
+void InstanceViewModel::filterMods(const QString& text)
+{
+    m_modFilter = text;
+    scanMods();
 }
 
 void InstanceViewModel::removeMod(int index)
@@ -1735,6 +1835,192 @@ void InstanceViewModel::enableMod(int index, bool enabled)
     }
 }
 
+void InstanceViewModel::checkAllModUpdates()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile || !profile->getModLoaders().has_value()) {
+        QMessageBox::critical(nullptr, tr("Error"), tr("Please install a mod loader first!"));
+        return;
+    }
+    if (APPLICATION->settings()->get("ModMetadataDisabled").toBool()) {
+        QMessageBox::critical(nullptr, tr("Error"), tr("Mod updates are unavailable when metadata is disabled!"));
+        return;
+    }
+    if (m_instance->isRunning()) {
+        auto response = CustomMessageBox::selectable(nullptr, tr("Confirm Update"),
+                                                     tr("Updating mods while the game is running may cause mod duplication and game crashes.\n"
+                                                        "The old files may not be deleted as they are in use.\n"
+                                                        "Are you sure you want to do this?"),
+                                                     QMessageBox::Warning, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+                            ->exec();
+        if (response != QMessageBox::Yes)
+            return;
+    }
+
+    auto modsModel = mcInstance->loaderModList();
+    if (!modsModel)
+        return;
+
+    auto modsList = modsModel->allResources();
+    if (modsList.isEmpty())
+        return;
+
+    ResourceUpdateDialog updateDialog(nullptr, m_instance.get(), modsModel, modsList, false, profile->getModLoadersList());
+    updateDialog.checkCandidates();
+
+    if (updateDialog.aborted()) {
+        CustomMessageBox::selectable(nullptr, tr("Aborted"), tr("The mod updater was aborted!"), QMessageBox::Warning)->show();
+        return;
+    }
+    if (updateDialog.noUpdates()) {
+        CustomMessageBox::selectable(nullptr, tr("Update checker"), tr("All mods are up-to-date! :)"))->exec();
+        return;
+    }
+
+    if (updateDialog.exec()) {
+        auto tasks = updateDialog.getTasks();
+        runDownloadTasks(nullptr, tasks, tr("Download Mods"));
+        modsModel->update();
+        scanMods();
+    }
+}
+
+void InstanceViewModel::openModDownload()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile || !profile->getModLoaders().has_value()) {
+        QMessageBox::critical(nullptr, tr("Error"), tr("Please install a mod loader first!"));
+        return;
+    }
+
+    auto modsModel = mcInstance->loaderModList();
+    if (!modsModel)
+        return;
+
+    ResourceDownload::ModDownloadDialog dialog(nullptr, modsModel, m_instance.get());
+    if (dialog.exec()) {
+        runDownloadTasks(nullptr, dialog.getTasks(), tr("Download Mods"));
+        modsModel->update();
+        scanMods();
+    }
+}
+
+void InstanceViewModel::resetModMetadata(const QVariantList& indices)
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto modsModel = mcInstance->loaderModList();
+    if (!modsModel)
+        return;
+
+    QModelIndexList indexList;
+    for (const auto& entry : indices) {
+        const int idx = entry.toInt();
+        if (idx >= 0 && idx < modsModel->rowCount()) {
+            indexList << modsModel->index(idx, 0);
+        }
+    }
+
+    if (!indexList.isEmpty()) {
+        modsModel->deleteMetadata(indexList);
+        modsModel->update();
+        scanMods();
+    }
+}
+
+void InstanceViewModel::verifyDependencies()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile || !profile->getModLoaders().has_value()) {
+        QMessageBox::critical(nullptr, tr("Error"), tr("Please install a mod loader first!"));
+        return;
+    }
+    if (APPLICATION->settings()->get("ModMetadataDisabled").toBool()) {
+        QMessageBox::critical(nullptr, tr("Error"), tr("Mod updates are unavailable when metadata is disabled!"));
+        return;
+    }
+    if (m_instance->isRunning()) {
+        auto response = CustomMessageBox::selectable(nullptr, tr("Confirm Update"),
+                                                     tr("Updating mods while the game is running may cause mod duplication and game crashes.\n"
+                                                        "The old files may not be deleted as they are in use.\n"
+                                                        "Are you sure you want to do this?"),
+                                                     QMessageBox::Warning, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+                            ->exec();
+        if (response != QMessageBox::Yes)
+            return;
+    }
+
+    auto modsModel = mcInstance->loaderModList();
+    if (!modsModel)
+        return;
+
+    auto modsList = modsModel->allResources();
+    if (modsList.isEmpty())
+        return;
+
+    ResourceUpdateDialog updateDialog(nullptr, m_instance.get(), modsModel, modsList, true, profile->getModLoadersList());
+    updateDialog.checkCandidates();
+
+    if (updateDialog.aborted()) {
+        CustomMessageBox::selectable(nullptr, tr("Aborted"), tr("The mod updater was aborted!"), QMessageBox::Warning)->show();
+        return;
+    }
+    if (updateDialog.noUpdates()) {
+        CustomMessageBox::selectable(nullptr, tr("Update checker"), tr("All mods are up-to-date! :)"))->exec();
+        return;
+    }
+
+    if (updateDialog.exec()) {
+        auto tasks = updateDialog.getTasks();
+        runDownloadTasks(nullptr, tasks, tr("Download Mods"));
+        modsModel->update();
+        scanMods();
+    }
+}
+
+void InstanceViewModel::exportModList()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto modsModel = mcInstance->loaderModList();
+    if (!modsModel)
+        return;
+
+    ExportToModListDialog dialog(m_instance->name(), modsModel->allMods());
+    dialog.exec();
+}
+
 void InstanceViewModel::scanMods()
 {
     m_modsModel.clear();
@@ -1756,15 +2042,29 @@ void InstanceViewModel::scanMods()
         return;
     }
 
+    QRegularExpression filter;
+    bool hasFilter = !m_modFilter.trimmed().isEmpty();
+    if (hasFilter) {
+        filter = QRegularExpression(m_modFilter, QRegularExpression::CaseInsensitiveOption);
+        if (!filter.isValid()) {
+            hasFilter = false;
+        }
+    }
+
     for (int i = 0; i < modsModel->rowCount(); i++) {
         auto& mod = modsModel->at(i);
+        if (hasFilter && !mod.applyFilter(filter))
+            continue;
+
         QVariantMap item;
         item["name"] = mod.name();
         item["version"] = mod.version();
         item["description"] = mod.description();
         item["enabled"] = mod.enabled();
+        item["fileName"] = mod.fileinfo().fileName();
         item["filename"] = mod.fileinfo().fileName();
         item["authors"] = mod.authors().join(", ");
+        item["iconPath"] = mod.iconPath();
 
         m_modsModel.append(item);
     }
@@ -1837,6 +2137,40 @@ void InstanceViewModel::enableResourcePack(int index, bool enabled)
     }
 }
 
+void InstanceViewModel::browseForResourcePacks()
+{
+    if (!m_instance)
+        return;
+
+    QString startDir = gameRoot() + "/resourcepacks";
+    QStringList files = QFileDialog::getOpenFileNames(nullptr, tr("Select Resource Packs"), startDir,
+                                                      tr("Resource Packs (*.zip *.mcpack);;All Files (*)"));
+    for (const auto& path : files) {
+        addResourcePack(path);
+    }
+}
+
+void InstanceViewModel::openResourcePackDownload()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto model = mcInstance->resourcePackList();
+    if (!model)
+        return;
+
+    ResourceDownload::ResourcePackDownloadDialog dialog(nullptr, model, m_instance.get());
+    if (dialog.exec()) {
+        runDownloadTasks(nullptr, dialog.getTasks(), tr("Download Resource Packs"));
+        model->update();
+        scanResourcePacks();
+    }
+}
+
 void InstanceViewModel::scanResourcePacks()
 {
     m_resourcePacksModel.clear();
@@ -1864,6 +2198,7 @@ void InstanceViewModel::scanResourcePacks()
         item["name"] = resource.name();
         item["description"] = resource.description();
         item["enabled"] = resource.enabled();
+        item["fileName"] = resource.fileinfo().fileName();
         item["filename"] = resource.fileinfo().fileName();
 
         m_resourcePacksModel.append(item);
@@ -1937,6 +2272,40 @@ void InstanceViewModel::enableShaderPack(int index, bool enabled)
     }
 }
 
+void InstanceViewModel::browseForShaderPacks()
+{
+    if (!m_instance)
+        return;
+
+    QString startDir = gameRoot() + "/shaderpacks";
+    QStringList files =
+        QFileDialog::getOpenFileNames(nullptr, tr("Select Shader Packs"), startDir, tr("Shader Packs (*.zip);;All Files (*)"));
+    for (const auto& path : files) {
+        addShaderPack(path);
+    }
+}
+
+void InstanceViewModel::openShaderPackDownload()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto model = mcInstance->shaderPackList();
+    if (!model)
+        return;
+
+    ResourceDownload::ShaderPackDownloadDialog dialog(nullptr, model, m_instance.get());
+    if (dialog.exec()) {
+        runDownloadTasks(nullptr, dialog.getTasks(), tr("Download Shader Packs"));
+        model->update();
+        scanShaderPacks();
+    }
+}
+
 void InstanceViewModel::scanShaderPacks()
 {
     m_shaderPacksModel.clear();
@@ -1963,6 +2332,7 @@ void InstanceViewModel::scanShaderPacks()
         QVariantMap item;
         item["name"] = resource.name();
         item["enabled"] = resource.enabled();
+        item["fileName"] = resource.fileinfo().fileName();
         item["filename"] = resource.fileinfo().fileName();
 
         m_shaderPacksModel.append(item);
@@ -2036,6 +2406,19 @@ void InstanceViewModel::enableTexturePack(int index, bool enabled)
     }
 }
 
+void InstanceViewModel::browseForTexturePacks()
+{
+    if (!m_instance)
+        return;
+
+    QString startDir = gameRoot() + "/texturepacks";
+    QStringList files = QFileDialog::getOpenFileNames(nullptr, tr("Select Texture Packs"), startDir,
+                                                      tr("Texture Packs (*.zip);;All Files (*)"));
+    for (const auto& path : files) {
+        addTexturePack(path);
+    }
+}
+
 void InstanceViewModel::scanTexturePacks()
 {
     m_texturePacksModel.clear();
@@ -2062,10 +2445,308 @@ void InstanceViewModel::scanTexturePacks()
         QVariantMap item;
         item["name"] = resource.name();
         item["enabled"] = resource.enabled();
+        item["fileName"] = resource.fileinfo().fileName();
         item["filename"] = resource.fileinfo().fileName();
 
         m_texturePacksModel.append(item);
     }
 
     emit texturePacksModelChanged();
+}
+
+// ============ Data Packs ============
+
+QVariantList InstanceViewModel::dataPacksModel() const
+{
+    return m_dataPacksModel;
+}
+
+int InstanceViewModel::dataPacksCount() const
+{
+    return m_dataPacksModel.size();
+}
+
+void InstanceViewModel::refreshDataPacks()
+{
+    if (m_dataPacksFolderModel) {
+        m_dataPacksFolderModel->update();
+    }
+    scanDataPacks();
+}
+
+void InstanceViewModel::browseForDataPacks()
+{
+    if (!m_instance || !m_dataPacksFolderModel) {
+        return;
+    }
+
+    QString startDir = m_selectedDataPacksPath;
+    QStringList files =
+        QFileDialog::getOpenFileNames(nullptr, tr("Select Data Packs"), startDir, tr("Data Packs (*.zip);;All Files (*)"));
+
+    if (files.isEmpty()) {
+        QString dir = QFileDialog::getExistingDirectory(nullptr, tr("Select Data Pack Folder"), startDir);
+        if (!dir.isEmpty()) {
+            files << dir;
+        }
+    }
+
+    for (const auto& path : files) {
+        m_dataPacksFolderModel->installResource(path);
+    }
+
+    if (!files.isEmpty()) {
+        m_dataPacksFolderModel->update();
+        scanDataPacks();
+    }
+}
+
+void InstanceViewModel::openDataPackDownload()
+{
+    if (!m_instance || !m_dataPacksFolderModel)
+        return;
+
+    ResourceDownload::DataPackDownloadDialog dialog(nullptr, m_dataPacksFolderModel, m_instance.get());
+    if (dialog.exec()) {
+        runDownloadTasks(nullptr, dialog.getTasks(), tr("Download Data Packs"));
+        m_dataPacksFolderModel->update();
+        scanDataPacks();
+    }
+}
+
+void InstanceViewModel::selectWorldForDataPacks(int index)
+{
+    m_selectedDataPacksPath.clear();
+    m_dataPacksFolderModel.reset();
+    m_dataPacksModel.clear();
+
+    if (!m_instance || index < 0 || index >= m_worldPaths.size()) {
+        emit dataPacksModelChanged();
+        return;
+    }
+
+    QString path = FS::PathCombine(m_worldPaths.at(index), "datapacks");
+    QDir dir(path);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+
+    bool isIndexed = !APPLICATION->settings()->get("ModMetadataDisabled").toBool();
+    m_dataPacksFolderModel = std::make_shared<DataPackFolderModel>(path, m_instance.get(), isIndexed, true);
+    connect(m_dataPacksFolderModel.get(), &ResourceFolderModel::updateFinished, this, &InstanceViewModel::scanDataPacks);
+    m_selectedDataPacksPath = path;
+
+    m_dataPacksFolderModel->update();
+    scanDataPacks();
+}
+
+void InstanceViewModel::setDataPackEnabled(int index, bool enabled)
+{
+    if (!m_dataPacksFolderModel || index < 0 || index >= m_dataPacksFolderModel->rowCount())
+        return;
+
+    m_dataPacksFolderModel->setResourceEnabled(QModelIndexList() << m_dataPacksFolderModel->index(index, 0),
+                                               enabled ? EnableAction::ENABLE : EnableAction::DISABLE);
+    scanDataPacks();
+}
+
+void InstanceViewModel::deleteDataPack(int index)
+{
+    if (!m_dataPacksFolderModel || index < 0 || index >= m_dataPacksFolderModel->rowCount())
+        return;
+
+    m_dataPacksFolderModel->deleteResources(QModelIndexList() << m_dataPacksFolderModel->index(index, 0));
+    scanDataPacks();
+}
+
+void InstanceViewModel::scanDataPacks()
+{
+    m_dataPacksModel.clear();
+
+    if (!m_dataPacksFolderModel) {
+        emit dataPacksModelChanged();
+        return;
+    }
+
+    for (int i = 0; i < m_dataPacksFolderModel->rowCount(); i++) {
+        auto& pack = m_dataPacksFolderModel->at(i);
+        QVariantMap item;
+        item["name"] = pack.name();
+        item["description"] = pack.description();
+        item["enabled"] = pack.enabled();
+        item["fileName"] = pack.fileinfo().fileName();
+        item["filename"] = pack.fileinfo().fileName();
+        item["iconPath"] = QString();
+
+        m_dataPacksModel.append(item);
+    }
+
+    emit dataPacksModelChanged();
+}
+
+// ============ Other Logs ============
+
+QStringList InstanceViewModel::otherLogsList() const
+{
+    return m_otherLogsList;
+}
+
+QString InstanceViewModel::otherLogContent() const
+{
+    return m_otherLogContent;
+}
+
+void InstanceViewModel::loadOtherLog(int index)
+{
+    QString content;
+    m_currentOtherLogPath.clear();
+
+    if (index < 0 || index >= m_otherLogPaths.size()) {
+        if (m_otherLogContent != content) {
+            m_otherLogContent = content;
+            emit otherLogContentChanged();
+        }
+        return;
+    }
+
+    QString path = m_otherLogPaths.at(index);
+    QFile file(path);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        constexpr qint64 kMaxBytes = 1024 * 1024;
+        if (file.size() > kMaxBytes) {
+            file.seek(file.size() - kMaxBytes);
+        }
+        content = QString::fromUtf8(file.readAll());
+        m_currentOtherLogPath = path;
+    }
+
+    if (m_otherLogContent != content) {
+        m_otherLogContent = content;
+        emit otherLogContentChanged();
+    }
+}
+
+void InstanceViewModel::deleteSelectedLog(int index)
+{
+    if (index < 0 || index >= m_otherLogPaths.size()) {
+        return;
+    }
+
+    QString path = m_otherLogPaths.at(index);
+    if (QFile::remove(path)) {
+        if (m_currentOtherLogPath == path) {
+            m_currentOtherLogPath.clear();
+            m_otherLogContent.clear();
+            emit otherLogContentChanged();
+        }
+        scanOtherLogs();
+    }
+}
+
+void InstanceViewModel::deleteAllLogs()
+{
+    for (const auto& path : m_otherLogPaths) {
+        QFile::remove(path);
+    }
+    m_currentOtherLogPath.clear();
+    m_otherLogContent.clear();
+    emit otherLogContentChanged();
+    scanOtherLogs();
+}
+
+void InstanceViewModel::copyOtherLogToClipboard()
+{
+    if (m_otherLogContent.isEmpty())
+        return;
+
+    if (auto clipboard = QGuiApplication::clipboard()) {
+        clipboard->setText(m_otherLogContent);
+    }
+}
+
+void InstanceViewModel::uploadOtherLog()
+{
+    copyOtherLogToClipboard();
+}
+
+void InstanceViewModel::reloadOtherLog()
+{
+    if (m_currentOtherLogPath.isEmpty()) {
+        loadOtherLog(0);
+        return;
+    }
+
+    int index = m_otherLogPaths.indexOf(m_currentOtherLogPath);
+    if (index >= 0) {
+        loadOtherLog(index);
+    }
+}
+
+void InstanceViewModel::findInOtherLog(const QString& text)
+{
+    if (text.isEmpty()) {
+        return;
+    }
+
+    const int index = m_otherLogContent.indexOf(text, 0, Qt::CaseInsensitive);
+    if (index >= 0) {
+        qDebug() << "[InstanceViewModel] Found text in other log at index" << index << "for instance" << m_instanceId;
+    } else {
+        qDebug() << "[InstanceViewModel] Text not found in other log for instance" << m_instanceId;
+    }
+}
+
+void InstanceViewModel::scanOtherLogs()
+{
+    m_otherLogsList.clear();
+    m_otherLogPaths.clear();
+
+    if (!m_instance) {
+        emit otherLogsListChanged();
+        return;
+    }
+
+    struct LogEntry {
+        QString display;
+        QString path;
+        QDateTime modified;
+    };
+
+    QList<LogEntry> entries;
+    QString root = gameRoot();
+    QStringList directories = { FS::PathCombine(root, "logs"), FS::PathCombine(root, "crash-reports") };
+    QStringList filters = { "*.log", "*.txt", "*.out" };
+
+    for (const auto& dirPath : directories) {
+        QDir dir(dirPath);
+        if (!dir.exists()) {
+            continue;
+        }
+
+        QFileInfoList files = dir.entryInfoList(filters, QDir::Files, QDir::Time);
+        for (const auto& file : files) {
+            LogEntry entry;
+            entry.path = file.absoluteFilePath();
+            entry.display = QDir(root).relativeFilePath(entry.path);
+            entry.modified = file.lastModified();
+            entries.append(entry);
+        }
+    }
+
+    std::sort(entries.begin(), entries.end(), [](const LogEntry& a, const LogEntry& b) {
+        return a.modified > b.modified;
+    });
+
+    for (const auto& entry : entries) {
+        m_otherLogsList.append(entry.display);
+        m_otherLogPaths.append(entry.path);
+    }
+
+    if (!m_currentOtherLogPath.isEmpty() && !m_otherLogPaths.contains(m_currentOtherLogPath)) {
+        m_currentOtherLogPath.clear();
+        m_otherLogContent.clear();
+        emit otherLogContentChanged();
+    }
+
+    emit otherLogsListChanged();
 }

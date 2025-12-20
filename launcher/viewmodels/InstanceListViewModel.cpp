@@ -21,9 +21,15 @@
 
 #include "InstanceListViewModel.h"
 
+#include <QClipboard>
+#include <QDir>
+#include <QFile>
+#include <QFileDialog>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QPixmap>
 #include <QUrl>
+#include <QVariantMap>
 #include "Application.h"
 #include "BaseInstance.h"
 #include "DesktopServices.h"
@@ -32,9 +38,13 @@
 #include "InstanceList.h"
 #include "MMCZip.h"
 #include "QObjectPtr.h"
+#include "InstanceCopyTask.h"
 #include "icons/IconList.h"
 #include "meta/Index.h"
+#include "minecraft/PackProfile.h"
+#include "minecraft/MinecraftInstance.h"
 #include "minecraft/VanillaInstanceCreationTask.h"
+#include "modplatform/helpers/ExportToModList.h"
 
 namespace {
 void saveInstanceIcon(const std::shared_ptr<BaseInstance>& instance)
@@ -140,6 +150,11 @@ QStringList InstanceListViewModel::groupList() const
         return QStringList();
     }
     return list->getGroups();
+}
+
+QVariantList InstanceListViewModel::backupsList() const
+{
+    return m_backupsList;
 }
 
 bool InstanceListViewModel::hasSelection() const
@@ -598,6 +613,42 @@ void InstanceListViewModel::updateInstanceNotes(const QString& id, const QString
     APPLICATION->instances()->saveNow();
 }
 
+void InstanceListViewModel::copyInstance(const QString& sourceId, const QString& newName, const QString& group,
+                                         const QVariantMap& options)
+{
+    if (sourceId.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+
+    auto instance = resolveInstance(sourceId);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        return;
+    }
+
+    InstanceCopyPrefs prefs;
+    prefs.enableKeepPlaytime(options.value("keepPlaytime", true).toBool());
+    prefs.enableCopySaves(options.value("worlds", true).toBool());
+    prefs.enableCopyMods(options.value("mods", true).toBool());
+    prefs.enableCopyResourcePacks(options.value("resourcePacks", true).toBool());
+    prefs.enableCopyShaderPacks(options.value("shaderPacks", true).toBool());
+    prefs.enableCopyServers(options.value("servers", true).toBool());
+    prefs.enableCopyScreenshots(options.value("screenshots", false).toBool());
+    prefs.enableCopyGameOptions(options.value("gameOptions", true).toBool());
+    prefs.enableUseSymLinks(options.value("useSymbolicLinks", false).toBool());
+    prefs.enableUseHardLinks(options.value("useHardLinks", false).toBool());
+    prefs.enableLinkRecursively(options.value("recursiveLinks", false).toBool());
+    prefs.enableDontLinkSaves(options.value("dontLinkSaves", false).toBool());
+    prefs.enableUseClone(options.value("useClone", false).toBool());
+
+    auto copyTask = new InstanceCopyTask(instance, prefs);
+    copyTask->setName(newName.isEmpty() ? instance->name() : newName);
+    copyTask->setGroup(group);
+    copyTask->setIcon(instance->iconKey());
+    copyInstance(copyTask, tr("Copying instance"));
+}
+
 void InstanceListViewModel::openInstanceFolder(const QString& id)
 {
     QString instanceId = id.isEmpty() ? m_selectedInstanceId : id;
@@ -675,31 +726,111 @@ void InstanceListViewModel::backupInstance(const QString& id, const QString& bac
         return;
     }
 
-    if (!m_backupManager) {
-        m_backupManager = std::make_unique<BackupManager>(this);
-        connect(m_backupManager.get(), &BackupManager::backupStarted, this, [this, id](const QString& instId, const QString&) {
-            if (instId == id) {
-                setBusy(true, tr("Creating backup"));
-                emit started();
-            }
-        });
-        connect(m_backupManager.get(), &BackupManager::backupCreated, this, [this, id](const QString& instId, const QString&) {
-            if (instId == id) {
-                setBusy(false);
-                refreshInstanceState();
-                emit finished();
-            }
-        });
-        connect(m_backupManager.get(), &BackupManager::backupFailed, this, [this, id](const QString& instId, const QString& error) {
-            if (instId == id) {
-                emit errorOccurred(error);
-                setBusy(false);
-                refreshInstanceState();
-            }
-        });
-    }
+    ensureBackupManagerConnections();
 
     m_backupManager->createBackupAsync(instance, backupName, options);
+}
+
+void InstanceListViewModel::createBackup(const QString& id, const QString& backupName, const QVariantMap& options)
+{
+    BackupOptions backupOptions;
+    backupOptions.includeSaves = options.value("includeSaves", true).toBool();
+    backupOptions.includeConfig = options.value("includeConfig", true).toBool();
+    backupOptions.includeMods = options.value("includeMods", false).toBool();
+    backupOptions.includeResourcePacks = options.value("includeResourcePacks", false).toBool();
+    backupOptions.includeShaderPacks = options.value("includeShaderPacks", false).toBool();
+    backupOptions.includeScreenshots = options.value("includeScreenshots", false).toBool();
+    backupOptions.includeOptions = options.value("includeOptions", true).toBool();
+    backupOptions.customPaths = options.value("customPaths").toStringList();
+
+    backupInstance(id, backupName, backupOptions);
+}
+
+void InstanceListViewModel::loadBackupsList(const QString& id)
+{
+    QString instanceId = id.isEmpty() ? m_selectedInstanceId : id;
+    if (instanceId.isEmpty()) {
+        m_backupsList.clear();
+        emit backupsListChanged();
+        return;
+    }
+
+    auto instance = resolveInstance(instanceId);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        m_backupsList.clear();
+        emit backupsListChanged();
+        return;
+    }
+
+    ensureBackupManagerConnections();
+    QList<InstanceBackup> backups = m_backupManager->listBackups(instance);
+    QVariantList result;
+    result.reserve(backups.size());
+    for (const auto& backup : backups) {
+        if (!backup.isValid()) {
+            continue;
+        }
+        QVariantMap entry;
+        entry.insert("name", backup.name());
+        entry.insert("date", backup.createdAt().toString(Qt::ISODate));
+        entry.insert("size", backup.displaySize());
+        entry.insert("path", backup.backupPath());
+        result.append(entry);
+    }
+
+    m_backupsList = result;
+    emit backupsListChanged();
+}
+
+void InstanceListViewModel::restoreBackup(const QString& id, const QString& backupPath)
+{
+    QString instanceId = id.isEmpty() ? m_selectedInstanceId : id;
+    if (instanceId.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+    if (backupPath.isEmpty()) {
+        emit errorOccurred(tr("No backup selected."));
+        return;
+    }
+
+    auto instance = resolveInstance(instanceId);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        return;
+    }
+
+    InstanceBackup backup(backupPath);
+    if (!backup.isValid()) {
+        emit errorOccurred(tr("The selected backup is invalid."));
+        return;
+    }
+
+    ensureBackupManagerConnections();
+    m_backupManager->restoreBackupAsync(instance, backup, true);
+}
+
+void InstanceListViewModel::deleteBackup(const QString& backupPath)
+{
+    if (backupPath.isEmpty()) {
+        emit errorOccurred(tr("No backup selected."));
+        return;
+    }
+
+    InstanceBackup backup(backupPath);
+    if (!backup.isValid()) {
+        emit errorOccurred(tr("The selected backup is invalid."));
+        return;
+    }
+
+    ensureBackupManagerConnections();
+    if (!m_backupManager->deleteBackup(backup)) {
+        emit errorOccurred(tr("Failed to delete the selected backup."));
+        return;
+    }
+
+    loadBackupsList(m_selectedInstanceId);
 }
 
 void InstanceListViewModel::createGroup(const QString& name)
@@ -829,6 +960,46 @@ void InstanceListViewModel::exportInstance(const QString& id, const QString& out
 
     saveInstanceIcon(instance);
     auto task = new MMCZip::ExportToZipTask(outputPath, instance->instanceRoot(), files, QString(), true, true);
+    startTask(task, tr("Exporting instance"));
+}
+
+void InstanceListViewModel::exportInstanceSimple(const QString& id, const QString& outputPath, const QString& format)
+{
+    QString instanceId = id.isEmpty() ? m_selectedInstanceId : id;
+    if (instanceId.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+    if (outputPath.isEmpty()) {
+        emit errorOccurred(tr("Export path is required."));
+        return;
+    }
+
+    auto instance = resolveInstance(instanceId);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        return;
+    }
+
+    QFileInfoList files;
+    if (!MMCZip::collectFileListRecursively(instance->instanceRoot(), nullptr, &files, nullptr)) {
+        emit errorOccurred(tr("Unable to collect files to export."));
+        return;
+    }
+
+    QString targetPath = outputPath;
+    if (!format.isEmpty() && QFileInfo(targetPath).suffix().isEmpty()) {
+        if (format == "modlist") {
+            targetPath += ".txt";
+        } else if (format == "modrinth") {
+            targetPath += ".mrpack";
+        } else {
+            targetPath += ".zip";
+        }
+    }
+
+    saveInstanceIcon(instance);
+    auto task = new MMCZip::ExportToZipTask(targetPath, instance->instanceRoot(), files, QString(), true, true);
     startTask(task, tr("Exporting instance"));
 }
 
@@ -965,6 +1136,47 @@ void InstanceListViewModel::startTask(Task* task, const QString& busyReason)
     task->start();
 }
 
+void InstanceListViewModel::ensureBackupManagerConnections()
+{
+    if (m_backupManager) {
+        return;
+    }
+
+    m_backupManager = std::make_unique<BackupManager>(this);
+    connect(m_backupManager.get(), &BackupManager::backupStarted, this, [this](const QString&, const QString&) {
+        setBusy(true, tr("Creating backup"));
+        emit started();
+    });
+    connect(m_backupManager.get(), &BackupManager::backupCreated, this, [this](const QString& instId, const QString&) {
+        setBusy(false);
+        refreshInstanceState();
+        loadBackupsList(instId);
+        emit finished();
+    });
+    connect(m_backupManager.get(), &BackupManager::backupFailed, this, [this](const QString& instId, const QString& error) {
+        Q_UNUSED(instId);
+        emit errorOccurred(error);
+        setBusy(false);
+        refreshInstanceState();
+    });
+    connect(m_backupManager.get(), &BackupManager::restoreStarted, this, [this](const QString&, const QString&) {
+        setBusy(true, tr("Restoring backup"));
+        emit started();
+    });
+    connect(m_backupManager.get(), &BackupManager::backupRestored, this, [this](const QString& instId, const QString&) {
+        setBusy(false);
+        refreshInstanceState();
+        loadBackupsList(instId);
+        emit finished();
+    });
+    connect(m_backupManager.get(), &BackupManager::restoreFailed, this, [this](const QString& instId, const QString& error) {
+        Q_UNUSED(instId);
+        emit errorOccurred(error);
+        setBusy(false);
+        refreshInstanceState();
+    });
+}
+
 void InstanceListViewModel::setSelectedGroup(const QString& groupName)
 {
     if (m_selectedInstanceId.isEmpty()) {
@@ -1034,6 +1246,39 @@ void InstanceListViewModel::createSelectedShortcut()
     }
 }
 
+void InstanceListViewModel::createShortcut(const QString& instanceId, const QString& name, const QString& location, bool launchDirectly)
+{
+    Q_UNUSED(launchDirectly);
+    if (instanceId.isEmpty()) {
+        emit errorOccurred(tr("No instance selected."));
+        return;
+    }
+
+    auto instance = resolveInstance(instanceId);
+    if (!instance) {
+        emit errorOccurred(tr("The selected instance could not be found."));
+        return;
+    }
+
+    ShortcutTarget target = ShortcutTarget::Desktop;
+    if (location == "applications") {
+        target = ShortcutTarget::Applications;
+    } else if (location == "startmenu") {
+        target = ShortcutTarget::Applications;
+    } else if (location == "other") {
+        target = ShortcutTarget::Other;
+    }
+
+    ShortcutUtils::Shortcut shortcut;
+    shortcut.instance = instance.get();
+    shortcut.name = name.isEmpty() ? instance->name() : name;
+    shortcut.targetString = tr("instance");
+    shortcut.iconKey = instance->iconKey();
+    shortcut.target = target;
+
+    createShortcut(shortcut);
+}
+
 QString InstanceListViewModel::selectedInstanceName() const
 {
     if (m_selectedInstanceId.isEmpty()) {
@@ -1045,4 +1290,181 @@ QString InstanceListViewModel::selectedInstanceName() const
         return m_instanceNames[idx];
     }
     return QString();
+}
+
+QString InstanceListViewModel::selectedInstanceIcon() const
+{
+    if (m_selectedInstanceId.isEmpty()) {
+        return QString();
+    }
+
+    auto instance = resolveInstance(m_selectedInstanceId);
+    if (!instance) {
+        return QString();
+    }
+
+    auto iconList = APPLICATION->icons();
+    if (!iconList) {
+        return QString();
+    }
+
+    auto mmcIcon = iconList->icon(instance->iconKey());
+    if (!mmcIcon) {
+        return QString();
+    }
+
+    auto path = mmcIcon->getFilePath();
+    if (!path.isEmpty()) {
+        return path;
+    }
+    return QString();
+}
+
+QString InstanceListViewModel::selectedInstanceVersion() const
+{
+    if (m_selectedInstanceId.isEmpty()) {
+        return QString();
+    }
+
+    auto instance = resolveInstance(m_selectedInstanceId);
+    if (!instance) {
+        return QString();
+    }
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(instance);
+    if (!mcInstance) {
+        return QString();
+    }
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile) {
+        return QString();
+    }
+
+    return profile->getComponentVersion("net.minecraft");
+}
+
+QVariantMap InstanceListViewModel::generateModList(const QString& instanceId, const QVariantMap& options)
+{
+    QVariantMap result;
+    if (instanceId.isEmpty()) {
+        return result;
+    }
+
+    auto instance = resolveInstance(instanceId);
+    if (!instance) {
+        return result;
+    }
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(instance);
+    if (!mcInstance) {
+        return result;
+    }
+
+    auto modsModel = mcInstance->loaderModList();
+    if (!modsModel) {
+        return result;
+    }
+
+    auto mods = modsModel->allMods();
+    int formatIndex = options.value("format").toInt();
+    ExportToModList::Formats format = ExportToModList::Formats::HTML;
+    switch (formatIndex) {
+    case 1:
+        format = ExportToModList::Formats::MARKDOWN;
+        break;
+    case 2:
+        format = ExportToModList::Formats::PLAINTXT;
+        break;
+    case 3:
+        format = ExportToModList::Formats::JSON;
+        break;
+    case 4:
+        format = ExportToModList::Formats::CSV;
+        break;
+    case 5:
+        format = ExportToModList::Formats::CUSTOM;
+        break;
+    default:
+        format = ExportToModList::Formats::HTML;
+        break;
+    }
+
+    QString output;
+    if (format == ExportToModList::Formats::CUSTOM) {
+        QString templateText = options.value("template").toString();
+        output = ExportToModList::exportToModList(mods, templateText);
+    } else {
+        int extra = 0;
+        if (options.value("includeAuthors").toBool())
+            extra |= ExportToModList::OptionalData::Authors;
+        if (options.value("includeUrl").toBool())
+            extra |= ExportToModList::OptionalData::Url;
+        if (options.value("includeVersion").toBool())
+            extra |= ExportToModList::OptionalData::Version;
+        if (options.value("includeFilename").toBool())
+            extra |= ExportToModList::OptionalData::FileName;
+
+        output = ExportToModList::exportToModList(mods, format, static_cast<ExportToModList::OptionalData>(extra));
+    }
+
+    result["plain"] = output;
+    if (format == ExportToModList::Formats::HTML) {
+        result["html"] = output;
+    }
+
+    return result;
+}
+
+void InstanceListViewModel::saveModList(const QString& instanceId, const QString& content, const QString& formatName)
+{
+    if (instanceId.isEmpty()) {
+        return;
+    }
+
+    auto instance = resolveInstance(instanceId);
+    QString baseName = instance ? instance->name() : QStringLiteral("modlist");
+    QString extension = "txt";
+
+    const QString formatLower = formatName.toLower();
+    if (formatLower == "html") {
+        extension = "html";
+    } else if (formatLower == "markdown") {
+        extension = "md";
+    } else if (formatLower == "plaintext") {
+        extension = "txt";
+    } else if (formatLower == "json") {
+        extension = "json";
+    } else if (formatLower == "csv") {
+        extension = "csv";
+    } else if (formatLower == "custom") {
+        extension = "txt";
+    }
+
+    QString suggested = QDir::homePath() + "/" + baseName + "." + extension;
+    QString fileName = QFileDialog::getSaveFileName(nullptr, tr("Save Mod List"), suggested,
+                                                    tr("%1 Files (*.%2);;All Files (*)").arg(formatName, extension));
+    if (fileName.isEmpty()) {
+        return;
+    }
+
+    if (!fileName.endsWith("." + extension, Qt::CaseInsensitive)) {
+        fileName += "." + extension;
+    }
+
+    QFile file(fileName);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        file.write(content.toUtf8());
+    }
+}
+
+void InstanceListViewModel::copyToClipboard(const QString& text)
+{
+    if (text.isEmpty()) {
+        return;
+    }
+
+    if (auto clipboard = QGuiApplication::clipboard()) {
+        clipboard->setText(text);
+    }
 }

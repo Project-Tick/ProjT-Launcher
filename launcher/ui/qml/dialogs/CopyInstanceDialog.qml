@@ -74,7 +74,7 @@ WindowDialog {
                     Image {
                         anchors.fill: parent
                         anchors.margins: 4
-                        source: sourceInstance ? sourceInstance.iconPath : "qrc:/icons/instances/grass"
+                        source: sourceInstance && sourceInstance.iconPath ? sourceInstance.iconPath : "qrc:/icons/instances/grass"
                         fillMode: Image.PreserveAspectFit
                     }
 
@@ -92,7 +92,7 @@ WindowDialog {
                 id: nameField
                 Layout.fillWidth: true
                 placeholderText: qsTr("Name")
-                text: newName || (sourceInstance ? sourceInstance.name + " (Copy)" : "")
+                text: newName || (sourceInstance && sourceInstance.name ? sourceInstance.name + " (Copy)" : "")
                 onTextChanged: newName = text
             }
 

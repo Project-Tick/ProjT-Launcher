@@ -33,51 +33,141 @@ Window {
     property bool modal: false
     property int standardButtons: Dialog.NoButton
     property int closePolicy: Popup.CloseOnEscape
+    property Item background: null
+    property Item header: null
+    property Item footer: null
+    readonly property real availableWidth: width
+    readonly property real availableHeight: height
     signal accepted()
     signal rejected()
     signal opened()
+    signal closed()
 
     default property alias data: body.data
 
+    property bool _wasVisible: false
+    property real _headerHeight: 0
+    property real _footerHeight: 0
+
     function open() { visible = true }
     function close() { visible = false }
+    function accept() {
+        accepted()
+        close()
+    }
+    function reject() {
+        rejected()
+        close()
+    }
+    function _attachItem(item, host, fill) {
+        if (!item || !host)
+            return;
+        item.parent = host;
+        if (fill) {
+            item.anchors.fill = host;
+        }
+    }
 
-    Keys.onEscapePressed: {
-        if (closePolicy & Popup.CloseOnEscape) {
-            root.close()
+    onBackgroundChanged: _attachItem(background, backgroundHost, true)
+    onHeaderChanged: {
+        if (header) {
+            _headerHeight = header.implicitHeight > 0 ? header.implicitHeight : header.height;
+            header.parent = headerHost;
+            header.anchors.left = headerHost.left;
+            header.anchors.right = headerHost.right;
+            header.anchors.top = headerHost.top;
+        } else {
+            _headerHeight = 0;
+        }
+    }
+    onFooterChanged: {
+        if (footer) {
+            _footerHeight = footer.implicitHeight > 0 ? footer.implicitHeight : footer.height;
+            footer.parent = footerHost;
+            footer.anchors.left = footerHost.left;
+            footer.anchors.right = footerHost.right;
+            footer.anchors.bottom = footerHost.bottom;
+        } else {
+            _footerHeight = 0;
         }
     }
 
     onVisibleChanged: {
-        if (visible) {
+        if (visible && !_wasVisible) {
             opened()
+        } else if (!visible && _wasVisible) {
+            closed()
+        }
+        _wasVisible = visible
+    }
+
+    Item {
+        id: backgroundHost
+        anchors.fill: parent
+        z: -1
+    }
+
+    FocusScope {
+        id: keyScope
+        anchors.fill: parent
+        Keys.onEscapePressed: {
+            if (closePolicy & Popup.CloseOnEscape) {
+                root.close()
+            }
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 8
+
+            Item {
+                id: headerHost
+                visible: header !== null
+                Layout.fillWidth: true
+                Layout.preferredHeight: _headerHeight
+            }
+
+            Item {
+                id: body
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+            }
+
+            Item {
+                id: footerHost
+                visible: footer !== null
+                Layout.fillWidth: true
+                Layout.preferredHeight: _footerHeight
+            }
+
+            DialogButtonBox {
+                id: buttonBox
+                visible: standardButtons !== Dialog.NoButton
+                standardButtons: root.standardButtons
+                Layout.fillWidth: true
+                onAccepted: {
+                    root.accepted()
+                    root.close()
+                }
+                onRejected: {
+                    root.rejected()
+                    root.close()
+                }
+            }
         }
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 12
-        spacing: 8
-
-        Item {
-            id: body
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+    Connections {
+        target: footer
+        ignoreUnknownSignals: true
+        function onAccepted() {
+            root.accepted();
+            root.close();
         }
-
-        DialogButtonBox {
-            id: buttonBox
-            visible: standardButtons !== Dialog.NoButton
-            standardButtons: root.standardButtons
-            Layout.fillWidth: true
-            onAccepted: {
-                root.accepted()
-                root.close()
-            }
-            onRejected: {
-                root.rejected()
-                root.close()
-            }
+        function onRejected() {
+            root.rejected();
+            root.close();
         }
     }
 }
