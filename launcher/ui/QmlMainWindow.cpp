@@ -22,6 +22,7 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQmlPropertyMap>
+#include <QQuickItem>
 #include <QQuickWidget>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -396,7 +397,7 @@ void QmlMainWindow::openNewInstanceDialog(const QString& groupName, const QStrin
     if (!m_quickWidget)
         return;
 
-    QObject* root = m_quickWidget->rootObject();
+    QQuickItem* root = m_quickWidget->rootObject();
     if (!root)
         return;
 
@@ -408,7 +409,7 @@ void QmlMainWindow::openSettingsPage(const QString& pageKey)
     if (!m_quickWidget)
         return;
 
-    QObject* root = m_quickWidget->rootObject();
+    QQuickItem* root = m_quickWidget->rootObject();
     if (!root)
         return;
 
@@ -420,7 +421,7 @@ void QmlMainWindow::openInstanceSettingsPage(const QString& instanceId, const QS
     if (!m_quickWidget)
         return;
 
-    QObject* root = m_quickWidget->rootObject();
+    QQuickItem* root = m_quickWidget->rootObject();
     if (!root)
         return;
 
