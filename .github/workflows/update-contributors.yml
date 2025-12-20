@@ -39,7 +39,7 @@ jobs:
         with:
           base: "develop"
           branch: "update-contributors"
-          delete-branch: true
+          delete-branch: false
           title: "chore: update contributors"
           body: "Automated pull request to update contributors"
 
