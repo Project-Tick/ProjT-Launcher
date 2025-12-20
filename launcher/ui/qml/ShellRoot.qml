@@ -1646,7 +1646,7 @@ Rectangle {
 
             Component.onCompleted: {
                 if (instanceVM && instanceSettingsWindowLoader.instanceId) {
-                    instanceVM.loadInstance(instanceSettingsWindowLoader.instanceId);
+                    instanceVM.instanceId = instanceSettingsWindowLoader.instanceId;
                 }
                 syncSettingsVM();
             }

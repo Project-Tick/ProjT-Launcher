@@ -35,8 +35,8 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingL
-        spacing: Theme.spacingM
+        anchors.margins: Theme.spacingM
+        spacing: Theme.spacingS
 
         // Description
         Label {

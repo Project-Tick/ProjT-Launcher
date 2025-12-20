@@ -126,6 +126,9 @@ class InstanceViewModel : public QObject {
     Q_PROPERTY(QVariantList texturePacksModel READ texturePacksModel NOTIFY texturePacksModelChanged)
     Q_PROPERTY(int texturePacksCount READ texturePacksCount NOTIFY texturePacksModelChanged)
 
+    // Logs
+    Q_PROPERTY(QString instanceLog READ instanceLog NOTIFY instanceLogChanged)
+
    public:
     explicit InstanceViewModel(QObject* parent = nullptr);
 
@@ -254,6 +257,14 @@ class InstanceViewModel : public QObject {
     Q_INVOKABLE void removeTexturePack(int index);
     Q_INVOKABLE void enableTexturePack(int index, bool enabled);
 
+    // Logs
+    QString instanceLog() const;
+    Q_INVOKABLE void refreshInstanceLog();
+    Q_INVOKABLE void copyLogToClipboard();
+    Q_INVOKABLE void uploadLog();
+    Q_INVOKABLE void clearLog();
+    Q_INVOKABLE void findInLog(const QString& text);
+
     // Java settings
     bool overrideJava() const;
     void setOverrideJava(bool override);
@@ -370,6 +381,7 @@ class InstanceViewModel : public QObject {
     void resourcePacksModelChanged();
     void shaderPacksModelChanged();
     void texturePacksModelChanged();
+    void instanceLogChanged();
 
     void launchRequested(const QString& instanceId);
     void launchOfflineRequested(const QString& instanceId);
@@ -396,6 +408,7 @@ class InstanceViewModel : public QObject {
     void scanResourcePacks();
     void scanShaderPacks();
     void scanTexturePacks();
+    void loadLatestLog();
 
     QString m_instanceId;
     InstancePtr m_instance;
@@ -409,4 +422,6 @@ class InstanceViewModel : public QObject {
     QVariantList m_resourcePacksModel;
     QVariantList m_shaderPacksModel;
     QVariantList m_texturePacksModel;
+    QString m_instanceLog;
+    QString m_currentLogPath;
 };

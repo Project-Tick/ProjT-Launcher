@@ -38,13 +38,13 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingL
-        spacing: Theme.spacingM
+        anchors.margins: Theme.spacingM
+        spacing: Theme.spacingS
 
         // Title
         Label {
             text: qsTr("Add Microsoft account")
-            font.pixelSize: Theme.fontHeader
+            font.pointSize: 14
             font.bold: true
             color: ThemeColors.text
         }
@@ -66,34 +66,13 @@ Rectangle {
         }
 
         // Login button
-        ThemedButton {
-            Layout.fillWidth: true
+        Button {
+            Layout.alignment: Qt.AlignLeft
             text: qsTr("Add Microsoft account")
-            primary: true
-            size: "large"
             onClicked: {
                 loginRequested();
                 if (vm)
                     vm.addMicrosoftAccount();
-            }
-        }
-
-        // Status
-        RowLayout {
-            Layout.fillWidth: true
-            visible: accountAdded
-            spacing: Theme.spacingS
-
-            Label {
-                text: "✓"
-                color: ThemeColors.success
-                font.bold: true
-                font.pixelSize: 16
-            }
-
-            Label {
-                text: qsTr("Account added successfully!")
-                color: ThemeColors.success
             }
         }
 

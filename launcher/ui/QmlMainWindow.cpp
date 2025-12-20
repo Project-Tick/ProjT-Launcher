@@ -28,7 +28,6 @@
 #include <QLibraryInfo>
 #include <QQmlContext>
 #include <QQmlEngine>
-#include <QQmlPropertyMap>
 #include <QQuickItem>
 #include <QQuickWidget>
 #include <QUrl>
@@ -37,6 +36,7 @@
 #include "Application.h"
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
+#include "ui/QmlContextBridge.h"
 #include "translations/TranslationsModel.h"
 #include "viewmodels/ATLauncherViewModel.h"
 #include "viewmodels/AccountsViewModel.h"
@@ -459,12 +459,16 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
     m_stateBridge = new ShellStateBridge(settings, this);
     ctx->setContextProperty(QStringLiteral("shellState"), m_stateBridge);
 
-    auto projt = new QQmlPropertyMap(this);
+    auto projt = new QmlContextBridge(this);
+    projt->setSettings(settings);
     projt->insert(QStringLiteral("launcherVM"), QVariant::fromValue(launcherViewModel));
     projt->insert(QStringLiteral("instancesVM"), QVariant::fromValue(instanceListViewModel));
     projt->insert(QStringLiteral("newsVM"), QVariant::fromValue(newsViewModel));
     projt->insert(QStringLiteral("settingsVM"), QVariant::fromValue(settingsViewModel));
     projt->insert(QStringLiteral("themeVM"), QVariant::fromValue(themeViewModel));
+    if (settings) {
+        projt->insert(QStringLiteral("settings"), QVariant::fromValue(settings.get()));
+    }
     ctx->setContextProperty(QStringLiteral("ProjT"), projt);
     ctx->setContextProperty(QStringLiteral("App"), APPLICATION);
 

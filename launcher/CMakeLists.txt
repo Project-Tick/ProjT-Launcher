@@ -873,6 +873,7 @@ SET(LAUNCHER_SOURCES
     ui/TestQmlPanel.cpp
     ui/QmlMainWindow.h
     ui/QmlMainWindow.cpp
+    ui/QmlContextBridge.h
 
     # FIXME: maybe find a better home for this.
     FileIgnoreProxy.cpp

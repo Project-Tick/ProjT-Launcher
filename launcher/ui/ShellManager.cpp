@@ -28,7 +28,6 @@
 #include <QLibraryInfo>
 #include <QQmlContext>
 #include <QQmlEngine>
-#include <QQmlPropertyMap>
 #include <QQuickWidget>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -36,6 +35,7 @@
 #include "Application.h"
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
+#include "ui/QmlContextBridge.h"
 #include "translations/TranslationsModel.h"
 #include "viewmodels/ATLauncherViewModel.h"
 #include "viewmodels/AccountsViewModel.h"
@@ -45,6 +45,7 @@
 #include "viewmodels/InstanceViewModel.h"
 #include "viewmodels/LauncherSettingsViewModel.h"
 #include "viewmodels/LauncherViewModel.h"
+#include "viewmodels/LogsViewModel.h"
 #include "viewmodels/ModrinthViewModel.h"
 #include "viewmodels/NewInstanceViewModel.h"
 #include "viewmodels/NewsViewModel.h"
@@ -388,12 +389,17 @@ void ShellManager::exposeContextProperties(LauncherViewModel* launcherViewModel,
     m_stateBridge = new ShellStateBridge(settings, this);
     ctx->setContextProperty(QStringLiteral("shellState"), m_stateBridge);
 
-    auto projt = new QQmlPropertyMap(this);
+    auto projt = new QmlContextBridge(this);
+    projt->setSettings(settings);
     projt->insert(QStringLiteral("launcherVM"), QVariant::fromValue(launcherViewModel));
     projt->insert(QStringLiteral("instancesVM"), QVariant::fromValue(instanceListViewModel));
     projt->insert(QStringLiteral("newsVM"), QVariant::fromValue(newsViewModel));
     projt->insert(QStringLiteral("settingsVM"), QVariant::fromValue(settingsViewModel));
+    if (settings) {
+        projt->insert(QStringLiteral("settings"), QVariant::fromValue(settings.get()));
+    }
     ctx->setContextProperty(QStringLiteral("ProjT"), projt);
+    ctx->setContextProperty(QStringLiteral("App"), APPLICATION);
 
     if (launcherViewModel) {
         ctx->setContextProperty(QStringLiteral("launcherVM"), launcherViewModel);
@@ -434,6 +440,12 @@ void ShellManager::exposeContextProperties(LauncherViewModel* launcherViewModel,
     ctx->setContextProperty(QStringLiteral("instanceVM"), instanceViewModel);
     ctx->setContextProperty(QStringLiteral("instanceViewModel"), instanceViewModel);
     projt->insert(QStringLiteral("instanceVM"), QVariant::fromValue(instanceViewModel));
+
+    // Create and expose LogsViewModel for logs page
+    auto logsViewModel = new LogsViewModel(this);
+    ctx->setContextProperty(QStringLiteral("logsVM"), logsViewModel);
+    ctx->setContextProperty(QStringLiteral("logsViewModel"), logsViewModel);
+    projt->insert(QStringLiteral("logsVM"), QVariant::fromValue(logsViewModel));
 
     // Create and expose modplatform ViewModels
     auto atlViewModel = new ATLauncherViewModel(this);

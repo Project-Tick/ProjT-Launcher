@@ -31,6 +31,22 @@ Rectangle {
 
     property var vm: ProjT.instanceVM
 
+    Component.onCompleted: {
+        if (vm) {
+            vm.refreshInstanceLog()
+        }
+    }
+
+    Connections {
+        target: vm
+        ignoreUnknownSignals: true
+        function onInstanceIdChanged() {
+            if (vm) {
+                vm.refreshInstanceLog()
+            }
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 0
@@ -91,6 +107,18 @@ Rectangle {
                 onClicked: {
                     if (vm)
                         vm.clearLog();
+                }
+            }
+        }
+
+        Timer {
+            id: logRefreshTimer
+            interval: 1000
+            running: trackLogCheckbox.checked
+            repeat: true
+            onTriggered: {
+                if (vm) {
+                    vm.refreshInstanceLog()
                 }
             }
         }

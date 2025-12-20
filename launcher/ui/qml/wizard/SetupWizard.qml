@@ -22,6 +22,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Window 2.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
@@ -31,8 +32,6 @@ Window {
     modality: Qt.ApplicationModal
     width: 620
     height: 660
-    implicitWidth: 620
-    implicitHeight: 660
     minimumWidth: 300
     minimumHeight: 400
     flags: Qt.Dialog
@@ -41,6 +40,7 @@ Window {
     property int currentPageIndex: 0
     property var pageIds: []
     property var pages: []
+    property var pageItems: []
     property string currentPageId: pages.length ? pages[currentPageIndex] : ""
 
     signal accepted
@@ -58,6 +58,7 @@ Window {
     function updatePages() {
         var all = ["language", "theme", "java", "autoJava", "paste", "login"]
         pages = (pageIds && pageIds.length > 0) ? pageIds : all
+        pageItems = []
         if (currentPageIndex >= pages.length)
             currentPageIndex = 0
     }
@@ -81,70 +82,6 @@ Window {
         }
     }
 
-    Rectangle {
-        id: footerBar
-        Layout.fillWidth: true
-        Layout.preferredHeight: 52
-        height: 52
-        color: ThemeColors.surface
-
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            color: ThemeColors.border
-        }
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: Theme.spacingM
-            spacing: Theme.spacingS
-
-            Button {
-                text: qsTr("Refresh")
-                visible: currentPageId === "language"
-                enabled: translationsModel && translationsModel.downloadIndex
-                onClicked: {
-                    if (translationsModel && translationsModel.downloadIndex) {
-                        translationsModel.downloadIndex();
-                    }
-                }
-            }
-
-            Item {
-                Layout.fillWidth: true
-            }
-
-            Button {
-                text: qsTr("Cancel")
-                onClicked: closeWizard(false)
-            }
-
-            Button {
-                text: qsTr("< Back")
-                enabled: currentPageIndex > 0
-                onClicked: {
-                    if (currentPageIndex > 0) {
-                        currentPageIndex--;
-                    }
-                }
-            }
-
-            Button {
-                text: currentPageIndex < pages.length - 1 ? qsTr("Next >") : qsTr("Finish")
-                highlighted: true
-                onClicked: {
-                    if (currentPageIndex < pages.length - 1) {
-                        currentPageIndex++;
-                    } else {
-                        finishSetup();
-                    }
-                }
-            }
-        }
-    }
-
     // Page container
     Item {
         anchors.fill: parent
@@ -162,17 +99,100 @@ Window {
                 Repeater {
                     model: pages.length
                     Loader {
+                        id: pageLoader
                         sourceComponent: pageComponent(pages[index])
+                        onLoaded: {
+                            setupWizard.pageItems[index] = item
+                        }
+                        onSourceComponentChanged: {
+                            setupWizard.pageItems[index] = null
+                        }
                     }
                 }
             }
 
-            footerBar
+            Rectangle {
+                id: footerBar
+                Layout.fillWidth: true
+                Layout.preferredHeight: 52
+                height: 52
+                color: ThemeColors.surface
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: ThemeColors.border
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: Theme.spacingM
+                    spacing: Theme.spacingS
+
+                    Button {
+                        text: qsTr("Refresh")
+                        visible: currentPageWantsRefresh()
+                        enabled: !!currentPageItem()
+                        onClicked: refreshCurrentPage()
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    Button {
+                        text: qsTr("< Back")
+                        enabled: currentPageIndex > 0
+                        onClicked: {
+                            if (currentPageIndex > 0) {
+                                currentPageIndex--;
+                            }
+                        }
+                    }
+
+                    Button {
+                        text: currentPageIndex < pages.length - 1 ? qsTr("Next >") : qsTr("Finish")
+                        onClicked: {
+                            if (currentPageIndex < pages.length - 1) {
+                                currentPageIndex++;
+                            } else {
+                                finishSetup();
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
     Component.onCompleted: updatePages()
     onPageIdsChanged: updatePages()
+
+    function currentPageItem() {
+        return pageItems && pageItems.length > currentPageIndex ? pageItems[currentPageIndex] : null
+    }
+
+    function currentPageWantsRefresh() {
+        var page = currentPageItem()
+        return page && page.wantsRefreshButton === true
+    }
+
+    function refreshCurrentPage() {
+        var page = currentPageItem()
+        if (page && page.refresh) {
+            page.refresh()
+        }
+    }
+
+    function handleLoginAccountAdded() {
+        if (currentPageIndex >= pages.length - 1) {
+            finishSetup()
+            return
+        }
+        currentPageIndex++
+    }
 
     function finishSetup() {
         if (App && App.applyWizardSettings) {
@@ -273,6 +293,8 @@ Window {
 
     Component {
         id: loginPageComponent
-        LoginWizardPage {}
+        LoginWizardPage {
+            onAccountAddedSignal: setupWizard.handleLoginAccountAdded()
+        }
     }
 }

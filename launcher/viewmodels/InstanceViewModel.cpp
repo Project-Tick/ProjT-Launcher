@@ -26,9 +26,11 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QFileInfoList>
 #include <QGuiApplication>
 #include <QImage>
 #include <QMimeData>
+#include <QDebug>
 #include <QUrl>
 
 #include "Application.h"
@@ -142,6 +144,11 @@ QString InstanceViewModel::instanceRoot() const
 QString InstanceViewModel::gameRoot() const
 {
     return m_instance ? m_instance->gameRoot() : QString();
+}
+
+QString InstanceViewModel::instanceLog() const
+{
+    return m_instanceLog;
 }
 
 bool InstanceViewModel::isRunning() const
@@ -942,6 +949,46 @@ void InstanceViewModel::kill()
     }
 }
 
+void InstanceViewModel::refreshInstanceLog()
+{
+    loadLatestLog();
+}
+
+void InstanceViewModel::copyLogToClipboard()
+{
+    if (auto clipboard = QGuiApplication::clipboard()) {
+        clipboard->setText(m_instanceLog);
+    }
+}
+
+void InstanceViewModel::uploadLog()
+{
+    // TODO: integrate with paste service. For now, copy to clipboard so the user can share manually.
+    copyLogToClipboard();
+}
+
+void InstanceViewModel::clearLog()
+{
+    if (!m_instanceLog.isEmpty()) {
+        m_instanceLog.clear();
+        emit instanceLogChanged();
+    }
+}
+
+void InstanceViewModel::findInLog(const QString& text)
+{
+    if (text.isEmpty()) {
+        return;
+    }
+
+    const int index = m_instanceLog.indexOf(text, 0, Qt::CaseInsensitive);
+    if (index >= 0) {
+        qDebug() << "[InstanceViewModel] Found text in log at index" << index << "for instance" << m_instanceId;
+    } else {
+        qDebug() << "[InstanceViewModel] Text not found in log for instance" << m_instanceId;
+    }
+}
+
 void InstanceViewModel::openFolder()
 {
     if (m_instance) {
@@ -1074,6 +1121,58 @@ void InstanceViewModel::onInstancePropertiesChanged(BaseInstance* inst)
     }
 }
 
+void InstanceViewModel::loadLatestLog()
+{
+    m_currentLogPath.clear();
+
+    QString content;
+    if (!m_instance) {
+        if (m_instanceLog != content) {
+            m_instanceLog = content;
+            emit instanceLogChanged();
+        }
+        return;
+    }
+
+    QFileInfo latestFile;
+    const QStringList searchPaths = m_instance->getLogFileSearchPaths();
+    for (const auto& dirPath : searchPaths) {
+        QDir dir(dirPath);
+        if (!dir.exists()) {
+            continue;
+        }
+
+        const QFileInfoList entries =
+            dir.entryInfoList(QStringList() << "*.log"
+                                            << "*.txt"
+                                            << "*.out",
+                              QDir::Files, QDir::Time);
+        if (!entries.isEmpty()) {
+            const QFileInfo& candidate = entries.first();
+            if (!latestFile.exists() || candidate.lastModified() > latestFile.lastModified()) {
+                latestFile = candidate;
+            }
+        }
+    }
+
+    if (latestFile.exists()) {
+        QFile file(latestFile.filePath());
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            constexpr qint64 kMaxBytes = 1024 * 1024;  // read last 1MB to avoid huge loads
+            if (file.size() > kMaxBytes) {
+                file.seek(file.size() - kMaxBytes);
+            }
+            content = QString::fromUtf8(file.readAll());
+            m_currentLogPath = latestFile.filePath();
+        }
+    }
+
+    if (m_instanceLog != content) {
+        m_instanceLog = content;
+        emit instanceLogChanged();
+    }
+}
+
 void InstanceViewModel::loadFromInstance()
 {
     emitAllChanged();
@@ -1081,6 +1180,7 @@ void InstanceViewModel::loadFromInstance()
 
 void InstanceViewModel::emitAllChanged()
 {
+    loadLatestLog();
     emit nameChanged();
     emit iconKeyChanged();
     emit notesChanged();

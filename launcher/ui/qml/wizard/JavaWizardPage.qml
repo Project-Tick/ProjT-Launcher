@@ -33,19 +33,28 @@ Rectangle {
     property var vm: ProjT.settingsVM
     property string javaPath: ""
     property bool autoDetect: true
+    property bool wantsRefreshButton: true
 
     signal javaPathEdited(string path)
     signal autoDetectToggled(bool enabled)
 
+    function refresh() {
+        if (vm && vm.refresh) {
+            vm.refresh();
+        } else if (vm && vm.detectJavaInstallations) {
+            vm.detectJavaInstallations();
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingL
-        spacing: Theme.spacingM
+        anchors.margins: Theme.spacingM
+        spacing: Theme.spacingS
 
         // Title
         Label {
             text: qsTr("Java Configuration")
-            font.pixelSize: Theme.fontHeader
+            font.pointSize: 14
             font.bold: true
             color: ThemeColors.text
         }

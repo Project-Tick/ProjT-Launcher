@@ -30,13 +30,20 @@ Rectangle {
     color: ThemeColors.background
 
     property string selectedLanguage: translationsModel ? translationsModel.selectedLanguage() : "en_US"
+    property bool wantsRefreshButton: true
 
     signal languageChanged(string langCode)
 
+    function refresh() {
+        if (translationsModel && translationsModel.downloadIndex) {
+            translationsModel.downloadIndex();
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingL
-        spacing: Theme.spacingM
+        anchors.margins: Theme.spacingM
+        spacing: Theme.spacingS
 
         // Title
         Label {

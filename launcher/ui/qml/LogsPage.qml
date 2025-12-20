@@ -33,25 +33,53 @@ Rectangle {
     height: parent ? parent.height : 480
     readonly property var vm: ProjT.logsVM
 
+    function findNext() {
+        if (!logViewer.text || !searchField.text)
+            return
+        var start = Math.max(0, logViewer.selectionStart + logViewer.selectedText.length)
+        var idx = logViewer.text.indexOf(searchField.text, start)
+        if (idx === -1) {
+            idx = logViewer.text.indexOf(searchField.text, 0)
+        }
+        if (idx >= 0) {
+            logViewer.select(idx, idx + searchField.text.length)
+            logViewer.cursorPosition = idx + searchField.text.length
+        }
+    }
+
+    function scrollToBottom() {
+        logViewer.cursorPosition = logViewer.length
+        logViewer.select(logViewer.length, logViewer.length)
+    }
+
+    function copyLog() {
+        if (!logViewer.text || logViewer.text.length === 0)
+            return
+        if (logViewer.selectedText && logViewer.selectedText.length > 0) {
+            logViewer.copy()
+        } else {
+            logViewer.select(0, logViewer.length)
+            logViewer.copy()
+            logViewer.select(0, 0)
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingM
+        anchors.margins: Theme.spacingS
         spacing: Theme.spacingS
         Component.onCompleted: {
             if (vm) {
+                if (vm.logList.length > 0 && vm.selectedLog === "") {
+                    vm.selectedLog = vm.logList[0];
+                }
                 vm.loadLogs(vm.selectedLog);
             }
         }
 
-        PageHeader {
-            Layout.fillWidth: true
-            title: qsTr("Logs")
-            subtitle: qsTr("View launcher and instance logs")
-        }
-
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Theme.spacingS
 
             ComboBox {
                 id: logSelector
@@ -61,11 +89,13 @@ Rectangle {
                 onActivated: {
                     if (vm && currentIndex >= 0 && currentIndex < model.length) {
                         vm.selectedLog = model[currentIndex];
+                        vm.loadLogs(vm.selectedLog);
                     }
                 }
                 Component.onCompleted: {
                     if (vm && vm.logList.length > 0 && vm.selectedLog === "") {
                         vm.selectedLog = vm.logList[0];
+                        vm.loadLogs(vm.selectedLog);
                     }
                 }
                 delegate: ItemDelegate {
@@ -80,20 +110,7 @@ Rectangle {
             }
 
             Button {
-                text: qsTr("Refresh")
-                implicitHeight: 34
-                implicitWidth: 90
-                enabled: vm ? !vm.busy : false
-                onClicked: {
-                    if (vm) {
-                        vm.loadLogs(vm.selectedLog);
-                    }
-                }
-            }
-            Button {
-                text: qsTr("Clear")
-                implicitHeight: 34
-                implicitWidth: 90
+                text: qsTr("Delete Selected")
                 enabled: vm ? !vm.busy : false
                 onClicked: {
                     if (vm) {
@@ -101,19 +118,40 @@ Rectangle {
                     }
                 }
             }
+            Button {
+                text: qsTr("Delete All")
+                enabled: vm ? !vm.busy : false
+                onClicked: {
+                    if (vm && vm.logList) {
+                        for (var i = 0; i < vm.logList.length; ++i) {
+                            vm.clearLogs(vm.logList[i]);
+                        }
+                    }
+                }
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacingS
+
             CheckBox {
-                text: qsTr("Tail")
-                checked: vm ? vm.isTailing : false
+                text: qsTr("Keep updating")
+                checked: vm ? vm.tailing : true
                 enabled: vm ? !vm.busy : false
                 onToggled: {
-                    if (vm) {
-                        vm.setTailing(checked);
+                    if (!vm)
+                        return;
+                    if (checked) {
+                        vm.tailLogs(vm.selectedLog);
+                    } else {
+                        vm.tailing = false;
                     }
                 }
             }
             CheckBox {
-                text: qsTr("Wrap")
-                checked: vm ? vm.wrapLines : false
+                text: qsTr("Wrap lines")
+                checked: vm ? vm.wrapLines : true
                 enabled: vm ? !vm.busy : false
                 onToggled: {
                     if (vm) {
@@ -122,12 +160,37 @@ Rectangle {
                 }
             }
             CheckBox {
-                text: qsTr("Color")
-                checked: vm ? vm.colorLines : false
+                text: qsTr("Color lines")
+                checked: vm ? vm.colorLines : true
                 enabled: vm ? !vm.busy : false
                 onToggled: {
                     if (vm) {
                         vm.setColorLines(checked);
+                    }
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            Button {
+                text: qsTr("Copy")
+                enabled: vm ? (vm.logText && vm.logText.length > 0 && !vm.busy) : false
+                onClicked: {
+                    copyLog()
+                }
+            }
+            Button {
+                text: qsTr("Upload")
+                enabled: false
+            }
+            Button {
+                text: qsTr("Reload")
+                enabled: vm ? !vm.busy : false
+                onClicked: {
+                    if (vm) {
+                        vm.loadLogs(vm.selectedLog);
                     }
                 }
             }
@@ -144,7 +207,7 @@ Rectangle {
                 TextArea {
                     id: logViewer
                     readOnly: true
-                    wrapMode: vm && vm.wrapLines ? TextEdit.WrapAnywhere : TextEdit.NoWrap
+                    wrapMode: vm ? (vm.wrapLines ? TextEdit.WrapAnywhere : TextEdit.NoWrap) : TextEdit.WrapAnywhere
                     textFormat: vm && vm.colorLines ? TextEdit.RichText : TextEdit.PlainText
                     text: vm ? vm.logText : ""
                     selectByMouse: true
@@ -172,6 +235,36 @@ Rectangle {
                 text: vm && vm.busy ? vm.busyReason : ""
                 color: ThemeColors.text
                 visible: vm ? (vm.busy && vm.busyReason.length > 0) : false
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacingS
+
+            TextField {
+                id: searchField
+                Layout.fillWidth: true
+                placeholderText: qsTr("Search")
+                onAccepted: findNext()
+            }
+
+            Button {
+                text: qsTr("Find")
+                enabled: logViewer.text.length > 0 && searchField.text.length > 0
+                onClicked: findNext()
+            }
+
+            Rectangle {
+                width: 1
+                height: parent.height
+                color: ThemeColors.border
+            }
+
+            Button {
+                text: qsTr("Bottom")
+                enabled: vm ? !vm.busy : true
+                onClicked: scrollToBottom()
             }
         }
     }
