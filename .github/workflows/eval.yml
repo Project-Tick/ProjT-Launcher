@@ -1,12 +1,7 @@
-# =============================================================================
-# ProjT Launcher - CI Evaluation Workflow
-# =============================================================================
-# Runs the Nix-based evaluation helpers in ci/eval to validate project structure.
-# =============================================================================
-
 name: Eval
 
 on:
+  merge_group:
   pull_request:
   workflow_dispatch:
 

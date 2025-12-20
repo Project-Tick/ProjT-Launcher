@@ -1,0 +1,66 @@
+name: Roadmap Item
+description: Propose or track a roadmap item.
+labels: [roadmap]
+body:
+- type: markdown
+  attributes:
+    value: |
+      ### Use this form to propose a roadmap item for ProjT Launcher.
+- type: input
+  attributes:
+    label: Target timeframe
+    description: When should this be delivered? (e.g., Q2 2025, v0.7.x)
+    placeholder: Q2 2025
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Goal
+    description: One or two sentences describing the outcome.
+    placeholder: Improve first-launch experience and reduce setup time.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Scope
+    description: What is in and out of scope?
+    placeholder: In scope: guided setup, auto-detect Java. Out of scope: redesign entire UI.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Milestones
+    description: List the major milestones or phases.
+    placeholder: 1) UX flow draft 2) Implementation 3) QA and release
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Dependencies
+    description: External libraries, upstream work, or blocking issues.
+    placeholder: Depends on Qt 6.10 migration and issue #1234.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Risks
+    description: Key risks or tradeoffs.
+    placeholder: Increased complexity in onboarding flow.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Success metrics
+    description: How will we know it was successful?
+    placeholder: Setup time reduced by 30%; support tickets drop.
+  validations:
+    required: false
+- type: checkboxes
+  attributes:
+    label: This roadmap item is not a duplicate
+    options:
+    - label: I searched the issue tracker and did not find an existing roadmap item covering this.
+      required: true
+- type: textarea
+  attributes:
+    label: Additional context

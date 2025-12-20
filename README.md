@@ -12,7 +12,11 @@
 <p align="center">
   <strong>ProjT Launcher</strong><br>
   Minecraft launcher plus website and automation tools in one monorepo.<br>
-  <em>A fork of Prism Launcher, evolving into an independent project.</em>
+  <em>A fork of Prism Launcher, intentionally diverging for long-term maintainability.</em>
+</p>
+
+<p align="center">
+  This fork exists to keep a stable, maintainable launcher with deliberate architecture and long-lived infrastructure.
 </p>
 
 <p align="center">
@@ -34,28 +38,40 @@ This repository is a monorepo that hosts the launcher and its supporting service
 - **Automation bot (Cloudflare Workers)**: `bot/`
 - **Metadata generator (Python/Poetry)**: `meta/`, `pyproject.toml`
 - **Docs/CI/Tools**: `docs/`, `ci/`, `.github/workflows/`, `scripts/`, `tools/`
-- **Metadata Generator**: `meta/`
 
 ## What is ProjT Launcher?
 
-ProjT Launcher is a powerful, user-friendly launcher for Minecraft that lets you manage multiple game instances effortlessly. Originally forked from Prism Launcher, it's now an independent project with its own vision and features.
+ProjT Launcher is a fork of Prism Launcher with a deliberate focus on long-term maintainability, structural clarity, and respect for upstream ecosystems. This is not a race for features or popularity. It is an engineering-first project that prioritizes clean architecture, reproducible builds, disciplined CI, and packaging correctness across Linux, Windows, macOS, Nix, and Flatpak. Sustained maintenance and understandable code take priority over feature velocity.
 
-### Key Features
+It intentionally diverges where the original architecture or maintenance model no longer supports sustainable growth. That divergence is a choice, not a statement about upstream quality.
 
-- **Backup System**: Granular backups for saves, configs, mods, and more.
-- **Performance Optimized**: Faster UI, quicker launches, lower memory usage.
-- **Apple Silicon Native**: ARM64 builds for macOS without Rosetta.
-- **Future-Ready**: Mod profiles, cloud sync, and performance profiling coming soon.
-- **Prism Compatible**: Import and use existing Prism instances seamlessly.
+### Project Philosophy
 
-### Goals
+- Stability, clarity, and auditability come before adding features.
+- Every change must be traceable and maintainable years later.
+- Infrastructure, tooling, CI, and refactoring are first-class contributions.
+- Packaging correctness and reproducible builds are non-negotiable work items.
+- Development decisions ignore popularity contests and vanity metrics.
 
-- Establish independent infrastructure and branding.
-- Migrate to QML-based UI for better performance and modern design.
-- Expand modding support and community features.
-- Ensure cross-platform compatibility and native builds.
+### Design Goals
 
-> **Note**: Infrastructure is still being built. Some links/assets may point to Prism Launcher temporarily.
+- Maintain a modular architecture with explicit boundaries and minimal hidden coupling.
+- Keep CI deterministic, with consistent tooling across platforms and ecosystems.
+- Prefer documented, repeatable solutions over clever but fragile shortcuts.
+- Keep build and packaging workflows aligned with downstream expectations and policies.
+
+### Who This Project Is For
+
+- Developers who value maintainable codebases and long-lived infrastructure.
+- Packagers and distro maintainers who need reproducible builds and clear conventions.
+- Contributors who are comfortable with quiet, incremental work: refactors, CI, build tooling.
+- Users who prefer stability and predictable behavior over rapid feature churn.
+
+### Who This Project Is Not For
+
+- Anyone prioritizing rapid feature churn over maintainability and clarity.
+- Contributors driven by hype, vanity metrics, or appearances of activity.
+- Those expecting this fork to track upstream decisions, timelines, or design shortcuts.
 
 ## Launcher Releases
 
@@ -206,4 +222,4 @@ Assets: CC BY-SA 4.0
 
 ---
 
-<p align="center">Made with love for the ProjT contributors.</p>
+<p align="center">Maintained by the <a href="https://github.com/Project-Tick">Project Tick</a> contributors.</p>

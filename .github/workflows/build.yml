@@ -26,7 +26,6 @@ on:
       - "nix/**"
       - "flatpak/**"
       - "debian/**"
-  merge_group:
   workflow_call:
     inputs:
       build-type:
@@ -535,56 +534,16 @@ jobs:
           ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
-      - name: Enter VS Developer shell
-        uses: ilammy/msvc-dev-cmd@v1
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
-          arch: ${{ matrix.vcvars-arch }}
-          vsversion: 2022
-
-      - name: Setup MSYS2 (MinGW)
-        uses: msys2/setup-msys2@v2
-        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
           msystem: ${{ matrix.msystem }}
-          update: true
-          install: >-
-            git
-          pacboy: >-
-            toolchain:p
-            ccache:p
-            cmake:p
-            extra-cmake-modules:p
-            ninja:p
-            qt6-base:p
-            qt6-svg:p
-            qt6-imageformats:p
-            qt6-5compat:p
-            qt6-networkauth:p
-            qt6-declarative:p
-            cmark:p
-            tomlplusplus:p
-            quazip-qt6:p
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+          qt-architecture: ${{ matrix.qt-architecture }}
 
-      - name: List pacman packages (MinGW)
-        shell: msys2 {0}
-        run: |
-          pacman -Qe
-
-      - name: Retrieve ccache cache (MinGW)
-        uses: actions/cache@v5.0.1
-        with:
-          path: '${{ github.workspace }}\.ccache'
-          key: ${{ runner.os }}-mingw-w64-ccache-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-mingw-w64-ccache
-
-      - name: Setup ccache (MinGW)
-        shell: msys2 {0}
-        run: |
-          ccache --set-config=cache_dir='${{ github.workspace }}\.ccache'
-          ccache --set-config=max_size='500M'
-          ccache --set-config=compression=true
-          ccache -p  # Show config
-  
       - name: Clean build directory for builds
         run: |
           rm -rf build
@@ -644,55 +603,15 @@ jobs:
           ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
-      - name: Enter VS Developer shell
-        uses: ilammy/msvc-dev-cmd@v1
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
-          arch: ${{ matrix.vcvars-arch }}
-          vsversion: 2022
-
-      - name: Setup MSYS2 (MinGW)
-        uses: msys2/setup-msys2@v2
-        with:
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
           msystem: ${{ matrix.msystem }}
-          update: true
-          install: >-
-            git
-          pacboy: >-
-            toolchain:p
-            ccache:p
-            cmake:p
-            extra-cmake-modules:p
-            ninja:p
-            qt6-base:p
-            qt6-svg:p
-            qt6-imageformats:p
-            qt6-5compat:p
-            qt6-networkauth:p
-            qt6-declarative:p
-            cmark:p
-            tomlplusplus:p
-            quazip-qt6:p
-
-      - name: List pacman packages (MinGW)
-        shell: msys2 {0}
-        run: |
-          pacman -Qe
-
-      - name: Retrieve ccache cache (MinGW)
-        uses: actions/cache@v5.0.1
-        with:
-          path: '${{ github.workspace }}\.ccache'
-          key: ${{ runner.os }}-mingw-w64-ccache-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-mingw-w64-ccache
-
-      - name: Setup ccache (MinGW)
-        shell: msys2 {0}
-        run: |
-          ccache --set-config=cache_dir='${{ github.workspace }}\.ccache'
-          ccache --set-config=max_size='500M'
-          ccache --set-config=compression=true
-          ccache -p  # Show config
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+          qt-architecture: ${{ matrix.qt-architecture }}
 
       - name: Clean build directory for builds
         run: |
@@ -1626,6 +1545,17 @@ jobs:
         shell: bash
         run: |
           echo "VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Free disk space
+        shell: bash
+        run: |
+          df -h
+          rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift || true
+          rm -rf /var/lib/apt/lists/* /var/cache/apt/* || true
+          if command -v apt-get >/dev/null 2>&1; then
+            apt-get clean || true
+          fi
+          df -h
 
       - name: Build Flatpak
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6

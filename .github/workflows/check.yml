@@ -1,13 +1,7 @@
-# =============================================================================
-# ProjT Launcher - PR Check Workflow
-# =============================================================================
-# Validates PR structure, commits, and code ownership.
-# Called by other workflows for PR validation.
-# =============================================================================
-
 name: Check
 
 on:
+  merge_group:
   workflow_call:
     inputs:
       baseBranch:
