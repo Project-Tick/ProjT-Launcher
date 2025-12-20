@@ -546,8 +546,13 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
                     FS::move(oldName, logBase.arg(i));
         }
 
-        for (auto i = 4; i > 0; i--)
-            FS::move(logBase.arg(i - 1), logBase.arg(i));
+        for (auto i = 4; i > 0; i--) {
+            auto from = logBase.arg(i - 1);
+            if (!QFile::exists(from)) {
+                continue;
+            }
+            FS::move(from, logBase.arg(i));
+        }
 
         logFile = std::unique_ptr<QFile>(new QFile(logBase.arg(0)));
         if (!logFile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
