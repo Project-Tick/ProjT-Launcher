@@ -24,6 +24,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "../components"
 
 WindowDialog {
     id: createShortcutDialog

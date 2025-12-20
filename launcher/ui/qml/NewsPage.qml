@@ -49,6 +49,12 @@ Rectangle {
         }
     }
 
+    Component.onCompleted: {
+        if (vm) {
+            vm.refresh();
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
@@ -187,31 +193,36 @@ Rectangle {
                         clip: true
                         spacing: 4
                         
+                        // Ensure model is bound correctly
                         model: vm ? vm.titles : []
                         currentIndex: vm ? vm.currentIndex : -1
 
                         delegate: ItemDelegate {
                             width: newsList.width
-                            height: contentItem.implicitHeight + 16
+                            height: 50 // Fixed height for consistency
                             
                             highlighted: ListView.isCurrentItem
                             
                             background: Rectangle {
                                 color: highlighted ? ThemeColors.highlight : (hovered ? ThemeColors.surface : "transparent")
                                 radius: Theme.radius
-                                opacity: highlighted ? 0.1 : 1
+                                opacity: highlighted ? 0.2 : 1 // Adjusted opacity for better visibility
                                 border.color: highlighted ? ThemeColors.accent : "transparent"
                                 border.width: 1
                             }
 
                             contentItem: ColumnLayout {
+                                anchors.centerIn: parent
                                 spacing: 2
+                                width: parent.width - 10
+                                
                                 Label {
                                     text: modelData
                                     color: highlighted ? ThemeColors.highlightedText : ThemeColors.text
                                     font.bold: highlighted
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
+                                    maximumLineCount: 2
                                     wrapMode: Text.WordWrap
                                 }
                             }

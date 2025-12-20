@@ -79,6 +79,9 @@ Button {
     // Size variants
     property string size: "medium" // "small", "medium", "large"
 
+    // Icon handling
+    property bool colorizeIcon: true
+
     implicitHeight: {
         switch (size) {
         case "small":
@@ -139,8 +142,9 @@ Button {
                 return _highlightColor;
             return _textColor;
         }
+        // For filled buttons, force white text for variants to ensure readability
         if (control.primary || control.danger || control.success || control.warning) {
-            return _highlightedTextColor;
+            return "#FFFFFF";
         }
         return _buttonTextColor;
     }
@@ -158,7 +162,7 @@ Button {
             anchors.verticalCenter: parent.verticalCenter
             
             // Re-colorize icon if needed
-            layer.enabled: true
+            layer.enabled: control.colorizeIcon
             layer.effect: ShaderEffect {
                 property color color: control.textColorComputed
                 fragmentShader: "
@@ -203,18 +207,31 @@ Button {
 
         gradient: (control.flatStyle || control.outline) ? null : baseGradient
 
-        border.width: control.visualFocus || control.hovered || control.pressed || control.outline ? 1 : 0
+        // Always show border for standard buttons, only show on interaction for flat/outline
+        border.width: (control.flatStyle || control.outline) ? (control.visualFocus || control.hovered || control.pressed ? 1 : 0) : 1
         
         border.color: {
             var _ = control._themeUpdateCount;
             if (control.visualFocus)
                 return control._highlightColor;
+            
+            // For standard buttons (not flat/outline), keep border always darker for definition
+            if (!control.flatStyle && !control.outline) {
+                if (control.pressed)
+                    return Qt.darker(control.baseColor, 1.6); // Deepest border on press
+                if (control.hovered)
+                    return Qt.darker(control.baseColor, 1.4); // Slightly lighter than normal state but still dark
+                return Qt.darker(control.baseColor, 1.5); // Standard defined border
+            }
+
+            // For flat/outline
             if (control.pressed)
-                 return Qt.darker(control.baseColor, 1.4);
+                return Qt.darker(control.baseColor, 1.4);
             if (control.hovered)
-                return Qt.lighter(control.baseColor, 1.3);
+                return control.outline ? control.baseColor : Qt.rgba(control.baseColor.r, control.baseColor.g, control.baseColor.b, 0.4);
             if (control.outline)
                 return control.baseColor;
+                
             return "transparent";
         }
 
