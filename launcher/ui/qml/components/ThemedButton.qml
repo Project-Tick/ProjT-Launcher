@@ -92,6 +92,9 @@ Button {
 
     implicitWidth: Math.max(implicitHeight, contentItem.implicitWidth + leftPadding + rightPadding)
 
+    scale: control.pressed ? 0.98 : 1.0
+    Behavior on scale { NumberAnimation { duration: 50 } }
+
     leftPadding: size === "small" ? 10 : 12
     rightPadding: leftPadding
 
@@ -153,10 +156,22 @@ Button {
             width: control.icon.width > 0 ? control.icon.width : 16
             height: control.icon.height > 0 ? control.icon.height : 16
             anchors.verticalCenter: parent.verticalCenter
-
-            // Color overlay for monochrome icons
+            
+            // Re-colorize icon if needed
             layer.enabled: true
-            layer.effect: Item {}
+            layer.effect: ShaderEffect {
+                property color color: control.textColorComputed
+                fragmentShader: "
+                    varying highp vec2 qt_TexCoord0;
+                    uniform highp float qt_Opacity;
+                    uniform lowp sampler2D source;
+                    uniform highp vec4 color;
+                    void main() {
+                        highp vec4 textureColor = texture2D(source, qt_TexCoord0);
+                        gl_FragColor = vec4(color.rgb, textureColor.a) * qt_Opacity;
+                    }
+                "
+            }
         }
 
         // Button text
@@ -188,15 +203,19 @@ Button {
 
         gradient: (control.flatStyle || control.outline) ? null : baseGradient
 
-        border.width: control.visualFocus ? 2 : 1
-
+        border.width: control.visualFocus || control.hovered || control.pressed || control.outline ? 1 : 0
+        
         border.color: {
             var _ = control._themeUpdateCount;
             if (control.visualFocus)
                 return control._highlightColor;
+            if (control.pressed)
+                 return Qt.darker(control.baseColor, 1.4);
+            if (control.hovered)
+                return Qt.lighter(control.baseColor, 1.3);
             if (control.outline)
                 return control.baseColor;
-            return Qt.darker(control.baseColor, 1.25);
+            return "transparent";
         }
 
         // Smooth color transitions

@@ -22,6 +22,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import "../components"
 
 Window {
     id: root
@@ -147,6 +148,22 @@ Window {
                 visible: standardButtons !== Dialog.NoButton
                 standardButtons: root.standardButtons
                 Layout.fillWidth: true
+                
+                delegate: ThemedButton {
+                    text: AbstractButton.text
+                    icon.name: AbstractButton.icon.name
+                    flatStyle: false
+                    
+                    property int role: DialogButtonBox.buttonRole
+                    primary: role === DialogButtonBox.AcceptRole || role === DialogButtonBox.YesRole
+                    danger: role === DialogButtonBox.DestructiveRole || role === DialogButtonBox.RejectRole && text.toLowerCase().indexOf("delete") !== -1
+                    
+                    onClicked: {
+                        // The DialogButtonBox handles the signals based on role, but we need to ensure propagation
+                        // Actually, standardButtons handling in ButtonBox usually emits accepted/rejected on the box
+                    }
+                }
+
                 onAccepted: {
                     root.accepted()
                     root.close()

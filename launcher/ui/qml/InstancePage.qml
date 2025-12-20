@@ -77,7 +77,15 @@ Rectangle {
                 implicitWidth: 60
                 flat: true
                 font.pointSize: 10
-                onClicked: importDialog.open()
+                onClicked: {
+                    var rootItem = instancePage;
+                    while (rootItem.parent) {
+                        rootItem = rootItem.parent;
+                    }
+                    if (rootItem.showImportInstanceDialog) {
+                        rootItem.showImportInstanceDialog();
+                    }
+                }
 
                 ToolTip.text: qsTr("Import an existing instance")
                 ToolTip.visible: hovered
@@ -273,7 +281,15 @@ Rectangle {
             }
         }
         onRename: renameDialog.open()
-        onDuplicate: duplicateDialog.open()
+        onDuplicate: {
+            var rootItem = instancePage;
+            while (rootItem.parent) {
+                rootItem = rootItem.parent;
+            }
+            if (rootItem.showCopyInstanceDialog) {
+                rootItem.showCopyInstanceDialog(vm.selectedInstanceId);
+            }
+        }
         onOpenFolder: {
             if (vm)
                 vm.openInstanceFolder();
@@ -306,7 +322,15 @@ Rectangle {
         onCreateNew: {
             instancePage.createNewInstance();
         }
-        onImportInstance: importDialog.open()
+        onImportInstance: {
+            var rootItem = instancePage;
+            while (rootItem.parent) {
+                rootItem = rootItem.parent;
+            }
+            if (rootItem.showImportInstanceDialog) {
+                rootItem.showImportInstanceDialog();
+            }
+        }
     }
 
     // === Dialogs (for context menu actions) ===
@@ -352,47 +376,6 @@ Rectangle {
         }
     }
 
-    // Duplicate Dialog
-    Dialog {
-        id: duplicateDialog
-        modal: true
-        title: qsTr("Duplicate Instance")
-        width: 360
-        x: (instancePage.width - width) / 2
-        y: (instancePage.height - height) / 2
-        standardButtons: Dialog.Ok | Dialog.Cancel
-
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: Theme.spacingM
-
-            Label {
-                text: qsTr("New instance name:")
-                color: ThemeColors.text
-            }
-
-            TextField {
-                id: duplicateField
-                Layout.fillWidth: true
-                placeholderText: qsTr("Instance Copy")
-                selectByMouse: true
-                Keys.onReturnPressed: duplicateDialog.accept()
-            }
-        }
-
-        onOpened: {
-            duplicateField.text = selectedInstanceName + qsTr(" Copy");
-            duplicateField.selectAll();
-            duplicateField.forceActiveFocus();
-        }
-
-        onAccepted: {
-            if (vm && duplicateField.text.length > 0) {
-                vm.duplicateSelectedInstance(duplicateField.text);
-            }
-        }
-    }
-
     // Delete Confirmation Dialog
     Dialog {
         id: deleteDialog
@@ -413,66 +396,6 @@ Rectangle {
         onAccepted: {
             if (vm)
                 vm.deleteSelectedInstance();
-        }
-    }
-
-    // Import Instance Dialog
-    Dialog {
-        id: importDialog
-        modal: true
-        title: qsTr("Import Instance")
-        width: 450
-        x: (instancePage.width - width) / 2
-        y: (instancePage.height - height) / 2
-        standardButtons: Dialog.Ok | Dialog.Cancel
-
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: Theme.spacingM
-
-            Label {
-                text: qsTr("Import from:")
-                color: ThemeColors.text
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                TextField {
-                    id: importPathField
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("/path/to/instance or instance.zip")
-                    selectByMouse: true
-                }
-                Button {
-                    text: qsTr("Browse...")
-                    onClicked: {
-                        var path = ProjT.launcherVM.browseForFile(qsTr("Import Instance"), qsTr("Archives (*.zip *.mrpack);;All files (*)"));
-                        if (path.length > 0) {
-                            importPathField.text = path;
-                        }
-                    }
-                }
-            }
-
-            Label {
-                text: qsTr("Instance name (optional):")
-                color: ThemeColors.text
-            }
-
-            TextField {
-                id: importNameField
-                Layout.fillWidth: true
-                placeholderText: qsTr("Leave empty to use archive name")
-                selectByMouse: true
-            }
-        }
-
-        onAccepted: {
-            if (vm && importPathField.text.length > 0) {
-                vm.importInstance(importPathField.text, importNameField.text);
-                importPathField.text = "";
-                importNameField.text = "";
-            }
         }
     }
 

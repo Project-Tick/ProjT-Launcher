@@ -87,7 +87,7 @@ Rectangle {
 
                         // Column 0: Language name
                         Label {
-                            text: model.display || ""
+                            text: (model.display !== undefined ? model.display : "") || (model.name !== undefined ? model.name : "") || ""
                             color: langDelegate.highlighted ? ThemeColors.accent : ThemeColors.text
                             font.bold: langDelegate.highlighted
                             Layout.fillWidth: true
@@ -110,7 +110,7 @@ Rectangle {
                     }
 
                     background: Rectangle {
-                        color: langDelegate.highlighted ? ThemeColors.highlight : (langDelegate.hovered ? Theme.hover : "transparent")
+                        color: langDelegate.highlighted ? ThemeColors.highlight : (langDelegate.hovered ? ThemeColors.hover : "transparent")
                     }
 
                     onClicked: {

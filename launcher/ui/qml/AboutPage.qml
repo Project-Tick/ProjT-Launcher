@@ -52,6 +52,7 @@ Rectangle {
                 textFormat: Text.RichText
                 color: ThemeColors.text
                 text: ProjT.launcherVM ? ProjT.launcherVM.aboutHtml : ""
+                onLinkActivated: Qt.openUrlExternally(link)
             }
         }
     }

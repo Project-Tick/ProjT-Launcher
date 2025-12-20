@@ -71,6 +71,9 @@ ToolButton {
     implicitHeight: 30
     implicitWidth: Math.max(implicitHeight, contentItem.implicitWidth + leftPadding + rightPadding)
 
+    scale: control.pressed ? 0.96 : 1.0
+    Behavior on scale { NumberAnimation { duration: 50 } }
+
     leftPadding: 8
     rightPadding: 8
 

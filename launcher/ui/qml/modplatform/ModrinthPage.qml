@@ -23,6 +23,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
+import "../components"
 import "../Theme.js" as Theme
 
 Rectangle {
@@ -46,7 +47,7 @@ Rectangle {
             Layout.fillWidth: true
             spacing: Theme.spacingS
 
-            Button {
+            ThemedButton {
                 text: qsTr("Filter options")
                 checkable: true
                 checked: filterPanel.visible
@@ -331,8 +332,9 @@ Rectangle {
                 }
             }
 
-            Button {
+            ThemedButton {
                 text: qsTr("Install")
+                primary: true
                 enabled: vm && vm.selectedPackVersions && vm.selectedPackVersions.length > 0
                 onClicked: {
                     if (vm) {

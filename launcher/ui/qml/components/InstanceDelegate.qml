@@ -156,29 +156,13 @@ Rectangle {
         }
 
         // === Launch Button ===
-        Button {
+        ThemedButton {
             id: playButton
             text: isRunning ? qsTr("Running...") : qsTr("Play")
-            implicitHeight: 36
-            implicitWidth: 56
+            size: "large"
+            success: true
             enabled: !isRunning
             Layout.alignment: Qt.AlignVCenter
-
-            background: Rectangle {
-                radius: Theme.radius
-                color: playButton.enabled ? (playButton.hovered ? Qt.lighter(ThemeColors.success, 1.1) : ThemeColors.success) : ThemeColors.disabled
-                border.color: Qt.darker(ThemeColors.success, 1.2)
-                border.width: 1
-            }
-
-            contentItem: Text {
-                text: playButton.text
-                color: playButton.enabled ? ThemeColors.highlightedText : ThemeColors.textSecondary
-                font.pointSize: 11
-                font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
 
             onClicked: delegate.doubleClicked(instanceId)
         }

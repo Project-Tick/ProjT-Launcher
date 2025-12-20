@@ -225,20 +225,20 @@ class SeparatorPrefixTree {
             remStatus = (*found).removeInternal(path.mid(sepIndex + 1));
         }
         switch (remStatus) {
-        case Failed:
-        case HasChildren: {
-            return remStatus;
-        }
-        case Succeeded: {
-            children.remove(childToRemove);
-            if (m_contained) {
-                return HasChildren;
+            case Failed:
+            case HasChildren: {
+                return remStatus;
             }
-            if (children.size()) {
-                return HasChildren;
+            case Succeeded: {
+                children.remove(childToRemove);
+                if (m_contained) {
+                    return HasChildren;
+                }
+                if (children.size()) {
+                    return HasChildren;
+                }
+                return Succeeded;
             }
-            return Succeeded;
-        }
         }
         return Failed;
     }

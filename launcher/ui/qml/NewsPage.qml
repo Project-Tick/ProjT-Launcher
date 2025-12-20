@@ -53,155 +53,206 @@ Rectangle {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
         spacing: Theme.spacingS
-        Component.onCompleted: {
-            if (vm) {
-                if (vm.titles.length === 0) {
-                    vm.refresh();
-                } else if (vm.currentIndex < 0 && vm.titles.length > 0) {
-                    vm.setCurrentIndex(0);
-                }
-            }
-        }
 
         PageHeader {
             Layout.fillWidth: true
             title: qsTr("News")
-            subtitle: vm ? vm.currentTitle : ""
+            subtitle: vm ? (vm.busy ? qsTr("Loading...") : qsTr("Keep up with the latest updates")) : ""
         }
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Theme.spacingS
+
             ThemedButton {
                 text: qsTr("Refresh")
+                icon.name: "view-refresh"
                 size: "small"
-                Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                 enabled: vm ? !vm.busy : false
-                onClicked: {
-                    if (vm) {
-                        vm.refresh();
-                    }
-                }
+                onClicked: vm ? vm.refresh() : undefined
             }
-            ThemedButton {
-                text: qsTr("Open in browser")
-                size: "small"
-                primary: true
-                Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                enabled: vm ? (vm.currentLink.length > 0) : false
-                onClicked: {
-                    if (vm) {
-                        vm.openCurrentLink();
-                    }
-                }
-            }
-            Item {
-                Layout.fillWidth: true
-            }
+            
+            Item { Layout.fillWidth: true }
         }
 
+        // Main Content Area
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 12
+            spacing: Theme.spacingM
 
-            ListView {
-                id: newsList
-                Layout.preferredWidth: 220
-                Layout.fillHeight: true
-                clip: true
-                model: vm ? vm.titles : []
-                currentIndex: vm ? vm.currentIndex : -1
-                delegate: Rectangle {
-                    width: newsList.width
-                    height: 48
-                    color: vm && index === vm.currentIndex ? Qt.rgba(ThemeColors.highlight.r, ThemeColors.highlight.g, ThemeColors.highlight.b, 0.2) : ThemeColors.surface
-                    border.color: vm && index === vm.currentIndex ? ThemeColors.highlight : ThemeColors.border
-                    border.width: vm && index === vm.currentIndex ? 2 : 1
-                    radius: Theme.radius
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 100
-                        }
-                    }
-                    Behavior on border.color {
-                        ColorAnimation {
-                            duration: 100
-                        }
-                    }
-
-                    Text {
-                        anchors.fill: parent
-                        anchors.margins: 8
-                        text: modelData
-                        color: ThemeColors.text
-                        wrapMode: Text.WordWrap
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            if (vm) {
-                                vm.selectByIndex(index);
-                            }
-                        }
-                    }
-                }
-            }
-
+            // Left Side: Latest News (Featured)
             Frame {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                
+                background: Rectangle {
+                    color: ThemeColors.surface
+                    radius: Theme.radius
+                    border.color: ThemeColors.border
+                    border.width: 1
+                }
+                
+                padding: Theme.spacingM
+
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
-                    RowLayout {
+                    spacing: Theme.spacingS
+
+                    Label {
+                        text: vm ? vm.currentTitle : ""
+                        color: ThemeColors.text
+                        font.pointSize: 16
+                        font.bold: true
                         Layout.fillWidth: true
-                        spacing: 8
-                        Text {
-                            Layout.fillWidth: true
-                            text: vm ? vm.currentTitle : ""
-                            color: ThemeColors.text
-                            font.pixelSize: 16
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            text: vm && vm.lastUpdated && vm.lastUpdated.toString().length > 0 ? qsTr("Updated: %1").arg(vm.lastUpdated.toString()) : ""
-                            color: ThemeColors.textSecondary
-                            font.pixelSize: 12
-                            horizontalAlignment: Text.AlignRight
-                        }
+                        wrapMode: Text.WordWrap
                     }
+
+                    Label {
+                        text: vm && vm.lastUpdated ? qsTr("Posted on %1").arg(vm.lastUpdated.toString()) : ""
+                        color: ThemeColors.textSecondary
+                        font.pointSize: 10
+                    }
+
+                    ToolSeparator {
+                        Layout.fillWidth: true
+                        orientation: Qt.Horizontal
+                    }
+
                     ScrollView {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
+                        clip: true
+                        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+
                         Text {
-                            width: parent ? parent.width : implicitWidth
-                            wrapMode: Text.WordWrap
-                            textFormat: Text.RichText
-                            color: ThemeColors.textSecondary
+                            width: parent.availableWidth
                             text: vm ? vm.currentArticleHtml : ""
+                            textFormat: Text.RichText
+                            wrapMode: Text.WordWrap
+                            color: ThemeColors.textSecondary
+                            font.pointSize: 11
+                            linkColor: ThemeColors.accent
+                            onLinkActivated: Qt.openUrlExternally(link)
                         }
+                    }
+                    
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.spacingS
+                        
+                        Item { Layout.fillWidth: true }
+                        
+                        ThemedButton {
+                            text: qsTr("Read in Browser")
+                            icon.name: "internet-web-browser"
+                            flatStyle: true
+                            enabled: vm && vm.currentLink.length > 0
+                            onClicked: vm ? vm.openCurrentLink() : undefined
+                        }
+                    }
+                }
+            }
+
+            // Right Side: More News (List)
+            Frame {
+                Layout.preferredWidth: 300
+                Layout.fillHeight: true
+                
+                background: Rectangle {
+                    color: ThemeColors.backgroundAlt
+                    radius: Theme.radius
+                    border.color: ThemeColors.border
+                    border.width: 1
+                }
+
+                padding: Theme.spacingS
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: Theme.spacingS
+                    
+                    Label {
+                        text: qsTr("More Updates")
+                        color: ThemeColors.text
+                        font.bold: true
+                        font.pointSize: 12
+                        Layout.leftMargin: 4
+                    }
+
+                    ListView {
+                        id: newsList
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        spacing: 4
+                        
+                        model: vm ? vm.titles : []
+                        currentIndex: vm ? vm.currentIndex : -1
+
+                        delegate: ItemDelegate {
+                            width: newsList.width
+                            height: contentItem.implicitHeight + 16
+                            
+                            highlighted: ListView.isCurrentItem
+                            
+                            background: Rectangle {
+                                color: highlighted ? ThemeColors.highlight : (hovered ? ThemeColors.surface : "transparent")
+                                radius: Theme.radius
+                                opacity: highlighted ? 0.1 : 1
+                                border.color: highlighted ? ThemeColors.accent : "transparent"
+                                border.width: 1
+                            }
+
+                            contentItem: ColumnLayout {
+                                spacing: 2
+                                Label {
+                                    text: modelData
+                                    color: highlighted ? ThemeColors.highlightedText : ThemeColors.text
+                                    font.bold: highlighted
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                }
+                            }
+
+                            onClicked: {
+                                if (vm) {
+                                    vm.selectByIndex(index);
+                                }
+                            }
+                        }
+                        
+                        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
                     }
                 }
             }
         }
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            color: ThemeColors.backgroundAlt
-            opacity: vm ? (vm.busy ? 0.25 : 0) : 0
-            visible: opacity > 0
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 150
-                }
-            }
+    }
+
+    // Loading Overlay
+    Rectangle {
+        anchors.fill: parent
+        color: ThemeColors.background
+        opacity: vm && vm.busy ? 0.7 : 0
+        visible: opacity > 0
+        z: 100
+        
+        Behavior on opacity { NumberAnimation { duration: 150 } }
+        
+        ColumnLayout {
+            anchors.centerIn: parent
+            spacing: Theme.spacingM
+            
             BusyIndicator {
-                anchors.centerIn: parent
+                Layout.alignment: Qt.AlignHCenter
                 running: vm ? vm.busy : false
-                visible: running
+            }
+            
+            Label {
+                text: qsTr("Fetching news...")
+                color: ThemeColors.text
+                font.pointSize: 12
             }
         }
     }

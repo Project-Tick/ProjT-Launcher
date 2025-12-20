@@ -1005,6 +1005,17 @@ Rectangle {
         instanceSettingsWindowLoader.active = true;
     }
 
+    function showCopyInstanceDialog(instanceId) {
+        if (instanceId && ProjT.instancesVM) {
+            ProjT.instancesVM.selectInstance(instanceId);
+        }
+        copyInstanceDialogLoader.active = true;
+    }
+
+    function showImportInstanceDialog() {
+        importInstanceWindowLoader.active = true;
+    }
+
     // === Settings Window (PageContainer style like Qt Widget) ===
     Loader {
         id: settingsWindowLoader
@@ -1603,6 +1614,19 @@ Rectangle {
         }
     }
 
+
+    // Import Instance Window
+    Loader {
+        id: importInstanceWindowLoader
+        active: false
+        sourceComponent: ImportInstanceWindow {
+            id: importInstanceWindow
+            vm: ProjT.instancesVM
+            visible: true
+            onVisibleChanged: if (!visible) importInstanceWindowLoader.active = false
+        }
+    }
+    
     // Resource Update Dialog
     Loader {
         id: resourceUpdateDialogLoader
@@ -1801,13 +1825,15 @@ Rectangle {
                             Layout.fillHeight: true
                         }
 
-                        // Notes page (from settings folder)
+                        // Notes page
                         Loader {
                             source: Qt.resolvedUrl("settings/NotesPage.qml")
                         }
 
                         // Log page
-                        LogPage {}
+                        Loader {
+                            source: Qt.resolvedUrl("instance/LogPage.qml")
+                        }
                     }
                 }
 
