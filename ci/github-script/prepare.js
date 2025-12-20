@@ -49,7 +49,16 @@ async function dismissSignoffReviews({ github, context, pull_number }) {
  * Validates that the PR targets the correct branch and can be merged
  */
 module.exports = async ({ github, context, core, dry }) => {
-  const pull_number = context.payload.pull_request.number
+  const payload = context.payload || {}
+  const pull_number =
+    payload?.pull_request?.number ??
+    (Array.isArray(payload?.merge_group?.pull_requests) &&
+      payload.merge_group.pull_requests[0]?.number)
+
+  if (typeof pull_number !== 'number') {
+    core.info('No pull request found on this event; skipping prepare step.')
+    return { ok: true, skipped: true, reason: 'no-pull-request' }
+  }
 
   // Wait for GitHub to compute merge status
   for (const retryInterval of [5, 10, 20, 40]) {

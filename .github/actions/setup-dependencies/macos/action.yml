@@ -22,26 +22,6 @@ runs:
         echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> "$GITHUB_ENV"
         echo "PATH=$JAVA_HOME/bin:$PATH" >> "$GITHUB_ENV"
 
-    - name: Setup vcpkg cache
-      if: ${{ inputs.build-type == 'Debug' }}
-      shell: bash
-      env:
-        USERNAME: ${{ github.repository_owner }}
-        GITHUB_TOKEN: ${{ github.token }}
-        FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
-      run: |
-        mono `vcpkg fetch nuget | tail -n 1` \
-          sources add \
-          -Source "$FEED_URL" \
-          -StorePasswordInClearText \
-          -Name GitHubPackages \
-          -UserName "$USERNAME" \
-          -Password "$GITHUB_TOKEN"
-        mono `vcpkg fetch nuget | tail -n 1` \
-          setapikey "$GITHUB_TOKEN" \
-          -Source "$FEED_URL"
-        echo "VCPKG_BINARY_SOURCES=clear;nuget,$FEED_URL,readwrite" >> "$GITHUB_ENV"
-
     - name: Setup vcpkg environment
       shell: bash
       run: |

@@ -1,4 +1,6 @@
-on: [push, pull_request]
+name: Lint Markdown Files
+
+on: [push, pull_request, merge_group]
 
 jobs:
   lint:

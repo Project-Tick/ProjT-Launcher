@@ -1,12 +1,7 @@
-# =============================================================================
-# ProjT Launcher - Pull Request Workflow
-# =============================================================================
-# Main workflow for PR validation, builds, and automation.
-# =============================================================================
-
 name: General Evaluation Process for Pull Requests
 
 on:
+  merge_group:
   pull_request_target:
     types: [opened, synchronize, reopened, edited]
   workflow_dispatch:

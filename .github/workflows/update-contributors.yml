@@ -2,8 +2,8 @@ name: Update contributors
 
 on:
   schedule:
-    - cron: "0 12 * * *"
-  workflow_dispatch: # allow manual trigger
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,23 +14,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         name: Install pnpm
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - uses: actions/cache@v4
-        name: Setup pnpm cache
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies & update contributors
         env:
@@ -48,9 +35,9 @@ jobs:
 
       - name: Create PR
         id: cpr
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
-          base: "main"
+          base: "develop"
           branch: "update-contributors"
           delete-branch: true
           title: "chore: update contributors"

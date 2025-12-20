@@ -11,13 +11,26 @@ This directory contains a Cloudflare Worker that can auto-label GitHub pull requ
 
 ## Required secrets (Cloudflare)
 
-Set these as Worker secrets:
+Set these as Worker secrets (choose ONE auth method):
+
+PAT (simple):
 
 - `GITHUB_TOKEN`: token with permission to add/create labels (repo access as needed)
+
+GitHub App (recommended for non-personal auth):
+
+- `GITHUB_APP_ID`
+- `GITHUB_APP_INSTALLATION_ID`
+- `GITHUB_APP_PRIVATE_KEY` (PKCS#8 PEM; use `\n` for newlines when pasting)
+- `BOT_LOGIN` (optional): set to your app slug so the bot can recognize/update its own comments
+
+Common secrets:
+
 - `GITHUB_WEBHOOK_SECRET`: the webhook secret configured in GitHub
 - `ADMIN_TOKEN`: (optional but recommended) protects `/run`
 - `BOT_COMMENT_ON_COMMAND`: (optional) `true` to comment after handling `issue_comment` commands
 - `BOT_ALLOWED_ASSOCIATIONS`: (optional) comma-separated GitHub author_association values allowed to run commands (default: `OWNER,MEMBER,COLLABORATOR`)
+- `BOT_ALWAYS_REVIEWERS`: (optional) comma-separated GitHub usernames to always request as reviewers (in addition to maintainers from `ci/eval/compare/maintainers.nix`)
 
 Example (local):
 
@@ -51,7 +64,7 @@ The bot validates that each non-bot commit in a PR includes `Signed-off-by:`. If
 
 ## Scope labels (PR template)
 
-If a PR checks any options in the **Scope** section of `.github/pull_request_template.md`, the bot adds corresponding `scope:*` labels (created automatically if needed).
+If a PR checks any options in the **Scope** section of `.github/pull_request_template.md`, the bot adds corresponding `31.scope:*` labels (created automatically if needed).
 
 ## CI summary comment
 
@@ -66,14 +79,6 @@ Create a GitHub webhook pointing to:
 - Secret: same as `GITHUB_WEBHOOK_SECRET`
 - Events: `Pull requests` (at minimum)
 
-## GitHub Actions deploy
+## Deploy
 
-Workflow: `.github/workflows/deploy-bot-worker.yml`
-
-Repository secrets expected:
-
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-- `PROJT_BOT_GITHUB_TOKEN` (mapped to Worker `GITHUB_TOKEN`)
-- `PROJT_BOT_WEBHOOK_SECRET` (mapped to Worker `GITHUB_WEBHOOK_SECRET`)
-- `PROJT_BOT_ADMIN_TOKEN` (mapped to Worker `ADMIN_TOKEN`)
+Cloudflare handles deploys via the existing webhook/automation pipeline, so no GitHub Actions workflow is required in this repo. Use `wrangler deploy` locally only for manual smoke tests.

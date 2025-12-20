@@ -4,9 +4,6 @@ on:
   merge_group:
   workflow_call:
     inputs:
-      artifact-prefix:
-        required: true
-        type: string
       mergedSha:
         required: true
         type: string
@@ -75,10 +72,7 @@ jobs:
       contents: read
       packages: write
     with:
-      artifact-prefix: ${{ inputs.artifact-prefix }}
-      baseBranch: ${{ needs.prepare.outputs.baseBranch }}
-      mergedSha: ${{ needs.prepare.outputs.mergedSha }}
-      targetSha: ${{ needs.prepare.outputs.targetSha }}
+      ref: ${{ needs.prepare.outputs.mergedSha }}
 
   # This job's only purpose is to create the target for the "Required Status Checks" branch ruleset.
   # It "needs" all the jobs that should block the Merge Queue.

@@ -1,9 +1,3 @@
-# =============================================================================
-# ProjT Launcher - Periodic Branch Merge (Daily)
-# =============================================================================
-# Periodically merges develop into release branches to keep them up to date.
-# =============================================================================
-
 name: "Periodic Merges (Daily)"
 
 on:
