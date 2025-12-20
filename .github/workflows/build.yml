@@ -706,7 +706,6 @@ jobs:
     timeout-minutes: 20
 
     permissions:
-      # Required for vcpkg binary cache
       packages: write
 
     strategy:
