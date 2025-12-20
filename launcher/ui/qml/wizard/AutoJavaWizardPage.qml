@@ -41,7 +41,7 @@ Rectangle {
         // Title
         Label {
             text: qsTr("New Feature Alert!")
-            font.pixelSize: 18
+            font.pixelSize: Theme.fontHeader
             font.bold: true
             color: ThemeColors.text
         }
@@ -52,6 +52,7 @@ Rectangle {
             text: qsTr("We've added a feature to automatically download the correct Java version for each version of Minecraft (this can be changed in the Java Settings). Would you like to enable or disable this feature?")
             color: ThemeColors.text
             wrapMode: Text.WordWrap
+            font.pixelSize: Theme.fontBody
         }
 
         // Separator

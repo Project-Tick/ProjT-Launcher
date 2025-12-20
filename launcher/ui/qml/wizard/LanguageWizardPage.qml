@@ -29,8 +29,7 @@ Rectangle {
     id: languagePage
     color: ThemeColors.background
 
-    property var vm: ProjT.settingsVM
-    property string selectedLanguage: "en_US"
+    property string selectedLanguage: translationsModel ? translationsModel.selectedLanguage() : "en_US"
 
     signal languageChanged(string langCode)
 
@@ -42,7 +41,7 @@ Rectangle {
         // Title
         Label {
             text: qsTr("Select Language")
-            font.pixelSize: 18
+            font.pixelSize: Theme.fontHeader
             font.bold: true
             color: ThemeColors.text
         }
@@ -53,20 +52,13 @@ Rectangle {
             text: qsTr("Choose your preferred language for the launcher interface.")
             color: ThemeColors.text
             wrapMode: Text.WordWrap
+            font.pixelSize: Theme.fontBody
         }
 
-        // Separator
-        Rectangle {
-            Layout.fillWidth: true
-            height: 1
-            color: ThemeColors.border
-        }
-
-        // Language list
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: ThemeColors.backgroundAlt
+            color: ThemeColors.surface
             border.color: ThemeColors.border
             radius: Theme.radiusS
 
@@ -75,97 +67,84 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: 1
                 clip: true
-                model: vm ? vm.languageList : [
-                    {
-                        code: "en_US",
-                        name: "English (US)"
-                    },
-                    {
-                        code: "en_GB",
-                        name: "English (UK)"
-                    },
-                    {
-                        code: "de_DE",
-                        name: "Deutsch"
-                    },
-                    {
-                        code: "es_ES",
-                        name: "Español"
-                    },
-                    {
-                        code: "fr_FR",
-                        name: "Français"
-                    },
-                    {
-                        code: "it_IT",
-                        name: "Italiano"
-                    },
-                    {
-                        code: "ja_JP",
-                        name: "日本語"
-                    },
-                    {
-                        code: "ko_KR",
-                        name: "한국어"
-                    },
-                    {
-                        code: "pt_BR",
-                        name: "Português (Brasil)"
-                    },
-                    {
-                        code: "ru_RU",
-                        name: "Русский"
-                    },
-                    {
-                        code: "tr_TR",
-                        name: "Türkçe"
-                    },
-                    {
-                        code: "zh_CN",
-                        name: "简体中文"
-                    },
-                    {
-                        code: "zh_TW",
-                        name: "繁體中文"
-                    }
-                ]
+                model: translationsModel
+                currentIndex: translationsModel ? translationsModel.selectedIndex().row : 0
 
                 delegate: ItemDelegate {
                     width: languageList.width
                     height: 40
-                    highlighted: modelData.code === selectedLanguage
+                    highlighted: ListView.isCurrentItem
 
                     contentItem: RowLayout {
                         spacing: Theme.spacingM
 
                         Label {
-                            text: modelData.name || modelData
+                            text: model.display || ""
                             color: ThemeColors.text
                             Layout.fillWidth: true
+                            elide: Text.ElideRight
                         }
 
                         Label {
-                            text: modelData.code || ""
+                            text: {
+                                if (translationsModel) {
+                                    var idx = translationsModel.index(index, 1);
+                                    return translationsModel.data(idx, Qt.DisplayRole) || "";
+                                }
+                                return "";
+                            }
                             color: ThemeColors.textSecondary
-                            font.pixelSize: 11
-                        }
-
-                        Label {
-                            text: "✓"
-                            color: ThemeColors.accent
-                            visible: modelData.code === selectedLanguage
-                            font.bold: true
+                            font.pixelSize: Theme.fontCaption
                         }
                     }
 
                     onClicked: {
-                        selectedLanguage = modelData.code;
-                        languageChanged(selectedLanguage);
+                        if (!translationsModel)
+                            return;
+                        languageList.currentIndex = index;
+                        var langKey = translationsModel.data(translationsModel.index(index, 0), Qt.UserRole);
+                        if (langKey) {
+                            translationsModel.selectLanguage(langKey);
+                            translationsModel.updateLanguage(langKey);
+                            selectedLanguage = langKey;
+                            languageChanged(langKey);
+                        }
                     }
                 }
 
                 ScrollBar.vertical: ScrollBar {}
             }
+        }
+
+        Label {
+            text: qsTr("Don't see your language or the quality is poor? Help us with translations!")
+            color: ThemeColors.textSecondary
+            font.pixelSize: Theme.fontCaption
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+        }
+
+        Button {
+            text: qsTr("Help translate on Weblate")
+            onClicked: {
+                Qt.openUrlExternally("https://hosted.weblate.org/engage/prismlauncher/");
+            }
+        }
+
+        CheckBox {
+            text: qsTr("Use system locales")
+            checked: false
+            onCheckedChanged: {
+                if (translationsModel && translationsModel.setUseSystemLocale) {
+                    translationsModel.setUseSystemLocale(checked);
+                }
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        if (translationsModel) {
+            selectedLanguage = translationsModel.selectedLanguage();
         }
     }
 }

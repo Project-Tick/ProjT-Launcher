@@ -44,6 +44,7 @@ Rectangle {
             text: qsTr("The default paste service has changed to mclo.gs, please choose what you want to do with your settings.")
             color: ThemeColors.text
             wrapMode: Text.WordWrap
+            font.pixelSize: Theme.fontBody
         }
 
         // Separator

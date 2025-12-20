@@ -45,7 +45,7 @@ Rectangle {
         // Title
         Label {
             text: qsTr("Java Configuration")
-            font.pixelSize: 18
+            font.pixelSize: Theme.fontHeader
             font.bold: true
             color: ThemeColors.text
         }
@@ -56,6 +56,7 @@ Rectangle {
             text: qsTr("Minecraft requires Java to run. You can let the launcher automatically detect and manage Java installations, or specify a custom Java path.")
             color: ThemeColors.text
             wrapMode: Text.WordWrap
+            font.pixelSize: Theme.fontBody
         }
 
         // Separator

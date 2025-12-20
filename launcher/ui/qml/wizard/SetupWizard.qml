@@ -27,14 +27,17 @@ import "../Theme.js" as Theme
 
 Dialog {
     id: setupWizard
-    title: qsTr("Welcome to ProjT Launcher")
+    title: qsTr("%1 Quick Setup").arg(ProjT.launcherVM ? ProjT.launcherVM.displayName : "ProjT Launcher")
     modal: true
-    width: 600
-    height: 500
+    width: 620
+    height: 660
+    minimumWidth: 300
+    minimumHeight: 400
 
     property int currentPageIndex: 0
     property var pageIds: []
     property var pages: []
+    property string currentPageId: pages.length ? pages[currentPageIndex] : ""
 
     // Collected settings
     property string selectedLanguage: "en_US"
@@ -49,25 +52,6 @@ Dialog {
         pages = (pageIds && pageIds.length > 0) ? pageIds : all
         if (currentPageIndex >= pages.length)
             currentPageIndex = 0
-    }
-
-    function pageTitle(pageId) {
-        switch (pageId) {
-        case "language":
-            return qsTr("Language")
-        case "theme":
-            return qsTr("Theme")
-        case "java":
-            return qsTr("Java")
-        case "autoJava":
-            return qsTr("Auto Java")
-        case "paste":
-            return qsTr("Paste Service")
-        case "login":
-            return qsTr("Account")
-        default:
-            return ""
-        }
     }
 
     function pageComponent(pageId) {
@@ -89,80 +73,64 @@ Dialog {
         }
     }
 
-    header: Rectangle {
-        height: 60
+    footer: Rectangle {
+        height: 52
         color: ThemeColors.surface
+
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: ThemeColors.border
+        }
 
         RowLayout {
             anchors.fill: parent
             anchors.margins: Theme.spacingM
             spacing: Theme.spacingS
 
-            Repeater {
-                model: pages.length
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 4
-                    radius: 2
-                    color: index <= currentPageIndex ? ThemeColors.accent : ThemeColors.border
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 200
-                        }
+            Button {
+                text: qsTr("Refresh")
+                visible: currentPageId === "language"
+                enabled: translationsModel && translationsModel.downloadIndex
+                onClicked: {
+                    if (translationsModel && translationsModel.downloadIndex) {
+                        translationsModel.downloadIndex();
                     }
                 }
             }
-        }
 
-        Label {
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: Theme.spacingS
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: pages.length ? pageTitle(pages[currentPageIndex]) : ""
-            font.bold: true
-            color: ThemeColors.text
-        }
-    }
+            Item {
+                Layout.fillWidth: true
+            }
 
-    footer: DialogButtonBox {
-        Button {
-            text: qsTr("Back")
-            enabled: currentPageIndex > 0
-            DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
-            onClicked: {
-                if (currentPageIndex > 0) {
-                    currentPageIndex--
+            Button {
+                text: qsTr("< Back")
+                enabled: currentPageIndex > 0
+                onClicked: {
+                    if (currentPageIndex > 0) {
+                        currentPageIndex--;
+                    }
                 }
             }
-        }
 
-        Button {
-            text: currentPageIndex < pages.length - 1 ? qsTr("Next") : qsTr("Finish")
-            highlighted: true
-            DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
-            onClicked: {
-                if (currentPageIndex < pages.length - 1) {
-                    currentPageIndex++
-                } else {
-                    finishSetup()
+            Button {
+                text: currentPageIndex < pages.length - 1 ? qsTr("Next >") : qsTr("Finish")
+                highlighted: true
+                onClicked: {
+                    if (currentPageIndex < pages.length - 1) {
+                        currentPageIndex++;
+                    } else {
+                        finishSetup();
+                    }
                 }
-            }
-        }
-
-        Button {
-            text: qsTr("Skip")
-            DialogButtonBox.buttonRole: DialogButtonBox.DestructiveRole
-            onClicked: {
-                setupWizard.close()
             }
         }
     }
 
     // Page container
-    StackLayout {
-        anchors.fill: parent
+    contentItem: StackLayout {
         currentIndex: currentPageIndex
 
         Repeater {

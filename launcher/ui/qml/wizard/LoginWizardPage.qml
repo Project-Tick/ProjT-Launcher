@@ -44,7 +44,7 @@ Rectangle {
         // Title
         Label {
             text: qsTr("Add Microsoft account")
-            font.pixelSize: 18
+            font.pixelSize: Theme.fontHeader
             font.bold: true
             color: ThemeColors.text
         }
@@ -55,6 +55,7 @@ Rectangle {
             text: qsTr("In order to play Minecraft, you must have at least one Microsoft account logged in. Do you want to log in now?")
             color: ThemeColors.text
             wrapMode: Text.WordWrap
+            font.pixelSize: Theme.fontBody
         }
 
         // Separator

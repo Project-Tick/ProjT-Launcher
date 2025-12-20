@@ -955,6 +955,11 @@ Rectangle {
     function openSetupWizard(pageIds) {
         setupWizardLoader.pageIds = pageIds || [];
         setupWizardLoader.active = true;
+        Qt.callLater(function () {
+            if (setupWizardLoader.item && setupWizardLoader.item.open) {
+                setupWizardLoader.item.open();
+            }
+        });
     }
 
     // New dialog helper functions
@@ -1400,8 +1405,10 @@ Rectangle {
         sourceComponent: SetupWizard {
             id: setupWizardDialog
             pageIds: setupWizardLoader.pageIds
+            visible: true
             onAccepted: setupWizardLoader.active = false
             onRejected: setupWizardLoader.active = false
+            onClosed: setupWizardLoader.active = false
         }
     }
 

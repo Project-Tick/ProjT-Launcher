@@ -42,7 +42,7 @@ Rectangle {
         // Title
         Label {
             text: qsTr("Choose Your Theme")
-            font.pixelSize: 18
+            font.pixelSize: Theme.fontHeader
             font.bold: true
             color: ThemeColors.text
         }
@@ -53,6 +53,7 @@ Rectangle {
             text: qsTr("Select a theme for the launcher. You can change this later in Settings.")
             color: ThemeColors.text
             wrapMode: Text.WordWrap
+            font.pixelSize: Theme.fontBody
         }
 
         // Separator
@@ -175,12 +176,13 @@ Rectangle {
                 text: themeName
                 font.bold: true
                 color: ThemeColors.text
+                font.pixelSize: Theme.fontBody
             }
 
             // Description
             Label {
                 text: themeDescription
-                font.pixelSize: 11
+                font.pixelSize: Theme.fontCaption
                 color: ThemeColors.textSecondary
             }
         }
