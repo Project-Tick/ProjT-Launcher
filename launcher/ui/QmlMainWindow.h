@@ -41,6 +41,7 @@ class QmlMainWindow : public QMainWindow {
     void openNewInstanceDialog(const QString& groupName, const QString& importUrl);
     void openSettingsPage(const QString& pageKey);
     void openInstanceSettingsPage(const QString& instanceId, const QString& pageKey);
+    void openSetupWizard(const QStringList& pageIds);
 
     // Process URLs for importing modpacks, instances, etc.
     void processURLs(const QList<QUrl>& urls);

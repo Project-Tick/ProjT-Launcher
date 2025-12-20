@@ -210,6 +210,8 @@ class Application : public QApplication {
 
     void ShowGlobalSettings(class QWidget* parent, QString open_page = QString());
     Q_INVOKABLE void notifyGlobalSettingsApplied();
+    Q_INVOKABLE void finishSetupWizard(int status);
+    Q_INVOKABLE void applyWizardSettings(const QVariantMap& values);
 
     bool updaterEnabled();
     QString updaterBinaryName();

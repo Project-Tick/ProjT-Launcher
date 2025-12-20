@@ -25,37 +25,9 @@ Dialog {
     width: 600
     height: 500
 
-    property var vm: ProjT.settingsVM
     property int currentPageIndex: 0
-
-    // Wizard pages
-    property var pages: [
-        {
-            id: "language",
-            title: qsTr("Language"),
-            component: languagePage
-        },
-        {
-            id: "theme",
-            title: qsTr("Theme"),
-            component: themePage
-        },
-        {
-            id: "java",
-            title: qsTr("Java"),
-            component: javaPage
-        },
-        {
-            id: "autoJava",
-            title: qsTr("Auto Java"),
-            component: autoJavaPage
-        },
-        {
-            id: "login",
-            title: qsTr("Account"),
-            component: loginPage
-        }
-    ]
+    property var pageIds: []
+    property var pages: []
 
     // Collected settings
     property string selectedLanguage: "en_US"
@@ -63,6 +35,52 @@ Dialog {
     property string javaPath: ""
     property bool autoDetectJava: true
     property bool autoDownloadJava: true
+    property bool pasteUseDefault: true
+
+    function updatePages() {
+        var all = ["language", "theme", "java", "autoJava", "paste", "login"]
+        pages = (pageIds && pageIds.length > 0) ? pageIds : all
+        if (currentPageIndex >= pages.length)
+            currentPageIndex = 0
+    }
+
+    function pageTitle(pageId) {
+        switch (pageId) {
+        case "language":
+            return qsTr("Language")
+        case "theme":
+            return qsTr("Theme")
+        case "java":
+            return qsTr("Java")
+        case "autoJava":
+            return qsTr("Auto Java")
+        case "paste":
+            return qsTr("Paste Service")
+        case "login":
+            return qsTr("Account")
+        default:
+            return ""
+        }
+    }
+
+    function pageComponent(pageId) {
+        switch (pageId) {
+        case "language":
+            return languagePageComponent
+        case "theme":
+            return themePageComponent
+        case "java":
+            return javaPageComponent
+        case "autoJava":
+            return autoJavaPageComponent
+        case "paste":
+            return pastePageComponent
+        case "login":
+            return loginPageComponent
+        default:
+            return null
+        }
+    }
 
     header: Rectangle {
         height: 60
@@ -74,7 +92,7 @@ Dialog {
             spacing: Theme.spacingS
 
             Repeater {
-                model: pages
+                model: pages.length
 
                 Rectangle {
                     Layout.fillWidth: true
@@ -95,7 +113,7 @@ Dialog {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: Theme.spacingS
             anchors.horizontalCenter: parent.horizontalCenter
-            text: pages[currentPageIndex].title
+            text: pages.length ? pageTitle(pages[currentPageIndex]) : ""
             font.bold: true
             color: ThemeColors.text
         }
@@ -108,7 +126,7 @@ Dialog {
             DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             onClicked: {
                 if (currentPageIndex > 0) {
-                    currentPageIndex--;
+                    currentPageIndex--
                 }
             }
         }
@@ -119,9 +137,9 @@ Dialog {
             DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             onClicked: {
                 if (currentPageIndex < pages.length - 1) {
-                    currentPageIndex++;
+                    currentPageIndex++
                 } else {
-                    finishSetup();
+                    finishSetup()
                 }
             }
         }
@@ -130,7 +148,7 @@ Dialog {
             text: qsTr("Skip")
             DialogButtonBox.buttonRole: DialogButtonBox.DestructiveRole
             onClicked: {
-                setupWizard.close();
+                setupWizard.close()
             }
         }
     }
@@ -140,62 +158,99 @@ Dialog {
         anchors.fill: parent
         currentIndex: currentPageIndex
 
-        // Language page
-        LanguageWizardPage {
-            id: languagePage
-            selectedLanguage: setupWizard.selectedLanguage
-            onLanguageChanged: function (code) {
-                setupWizard.selectedLanguage = code;
+        Repeater {
+            model: pages.length
+            Loader {
+                sourceComponent: pageComponent(pages[index])
             }
-        }
-
-        // Theme page
-        ThemeWizardPage {
-            id: themePage
-            selectedTheme: setupWizard.selectedTheme
-            onThemeChanged: function (themeId) {
-                setupWizard.selectedTheme = themeId;
-            }
-        }
-
-        // Java page
-        JavaWizardPage {
-            id: javaPage
-            javaPath: setupWizard.javaPath
-            autoDetect: setupWizard.autoDetectJava
-            onJavaPathChanged: function (path) {
-                setupWizard.javaPath = path;
-            }
-            onAutoDetectChanged: function (enabled) {
-                setupWizard.autoDetectJava = enabled;
-            }
-        }
-
-        // Auto Java page
-        AutoJavaWizardPage {
-            id: autoJavaPage
-            autoDownloadEnabled: setupWizard.autoDownloadJava
-            onSettingsChanged: {
-                setupWizard.autoDownloadJava = autoJavaPage.autoDownloadEnabled;
-            }
-        }
-
-        // Login page
-        LoginWizardPage {
-            id: loginPage
         }
     }
 
+    Component.onCompleted: updatePages()
+    onPageIdsChanged: updatePages()
+
     function finishSetup() {
-        if (vm) {
-            vm.applyWizardSettings({
+        if (App && App.applyWizardSettings) {
+            App.applyWizardSettings({
                 language: selectedLanguage,
                 theme: selectedTheme,
                 javaPath: javaPath,
                 autoDetectJava: autoDetectJava,
-                autoDownloadJava: autoDownloadJava
-            });
+                autoDownloadJava: autoDownloadJava,
+                pasteUseDefault: pasteUseDefault
+            })
         }
-        setupWizard.accept();
+        setupWizard.accept()
+    }
+
+    onAccepted: {
+        if (App && App.finishSetupWizard) {
+            App.finishSetupWizard(0)
+        }
+    }
+    onRejected: {
+        if (App && App.finishSetupWizard) {
+            App.finishSetupWizard(0)
+        }
+    }
+
+    Component {
+        id: languagePageComponent
+        LanguageWizardPage {
+            selectedLanguage: setupWizard.selectedLanguage
+            onLanguageChanged: function (code) {
+                setupWizard.selectedLanguage = code
+            }
+        }
+    }
+
+    Component {
+        id: themePageComponent
+        ThemeWizardPage {
+            selectedTheme: setupWizard.selectedTheme
+            onThemeChanged: function (themeId) {
+                setupWizard.selectedTheme = themeId
+            }
+        }
+    }
+
+    Component {
+        id: javaPageComponent
+        JavaWizardPage {
+            javaPath: setupWizard.javaPath
+            autoDetect: setupWizard.autoDetectJava
+            onJavaPathEdited: function (path) {
+                setupWizard.javaPath = path
+            }
+            onAutoDetectToggled: function (enabled) {
+                setupWizard.autoDetectJava = enabled
+            }
+        }
+    }
+
+    Component {
+        id: autoJavaPageComponent
+        AutoJavaWizardPage {
+            id: autoJavaPage
+            autoDownloadEnabled: setupWizard.autoDownloadJava
+            onSettingsChanged: {
+                setupWizard.autoDownloadJava = autoJavaPage.autoDownloadEnabled
+            }
+        }
+    }
+
+    Component {
+        id: pastePageComponent
+        PasteWizardPage {
+            useDefaultService: setupWizard.pasteUseDefault
+            onSettingsChanged: {
+                setupWizard.pasteUseDefault = useDefaultService
+            }
+        }
+    }
+
+    Component {
+        id: loginPageComponent
+        LoginWizardPage {}
     }
 }

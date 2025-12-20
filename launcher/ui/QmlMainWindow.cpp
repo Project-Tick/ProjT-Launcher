@@ -428,6 +428,18 @@ void QmlMainWindow::openInstanceSettingsPage(const QString& instanceId, const QS
     QMetaObject::invokeMethod(root, "openInstanceSettingsPage", Q_ARG(QVariant, instanceId), Q_ARG(QVariant, pageKey));
 }
 
+void QmlMainWindow::openSetupWizard(const QStringList& pageIds)
+{
+    if (!m_quickWidget)
+        return;
+
+    QQuickItem* root = m_quickWidget->rootObject();
+    if (!root)
+        return;
+
+    QMetaObject::invokeMethod(root, "openSetupWizard", Q_ARG(QVariant, pageIds));
+}
+
 void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel,
                                             InstanceListViewModel* instanceListViewModel,
                                             NewsViewModel* newsViewModel,

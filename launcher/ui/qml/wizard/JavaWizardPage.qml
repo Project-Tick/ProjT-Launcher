@@ -27,8 +27,8 @@ Rectangle {
     property string javaPath: ""
     property bool autoDetect: true
 
-    signal javaPathChanged(string path)
-    signal autoDetectChanged(bool enabled)
+    signal javaPathEdited(string path)
+    signal autoDetectToggled(bool enabled)
 
     ColumnLayout {
         anchors.fill: parent
@@ -65,7 +65,7 @@ Rectangle {
             checked: autoDetect
             onCheckedChanged: {
                 autoDetect = checked;
-                autoDetectChanged(checked);
+                autoDetectToggled(checked);
             }
         }
 
@@ -106,7 +106,7 @@ Rectangle {
                         placeholderText: qsTr("Path to Java executable...")
                         onTextChanged: {
                             javaPath = text;
-                            javaPathChanged(text);
+                            javaPathEdited(text);
                         }
                     }
 

@@ -482,7 +482,6 @@ Rectangle {
                     console.log("Login failed:", error)
                 }
             }
-            }
             
             // Theme Toggle
             Button {

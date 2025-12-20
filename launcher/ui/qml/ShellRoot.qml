@@ -21,6 +21,7 @@ import "components"
 import "dialogs"
 import "instance"
 import "modplatform"
+import "wizard"
 import "Theme.js" as Theme
 
 Rectangle {
@@ -754,28 +755,9 @@ Rectangle {
     }
 
     // === MAIN LAYOUT (matches Qt Widget MainWindow) ===
-    RowLayout {
+    ColumnLayout {
         anchors.fill: parent
         spacing: 0
-
-        Sidebar {
-            id: sidebar
-            Layout.preferredWidth: 190
-            Layout.fillHeight: true
-
-            onPageRequested: handlePageRequest(page)
-        }
-
-        Rectangle {
-            Layout.preferredWidth: 1
-            Layout.fillHeight: true
-            color: ThemeColors.border
-        }
-
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 0
 
         // ════════════════════════════════════════════════════════════
         // MAIN TOOLBAR (top horizontal toolbar)
@@ -924,11 +906,10 @@ Rectangle {
         // ════════════════════════════════════════════════════════════
         // STATUS BAR (bottom status bar)
         // ════════════════════════════════════════════════════════════
-            StatusBar {
-                id: statusBar
-                Layout.fillWidth: true
-                Layout.preferredHeight: 24
-            }
+        StatusBar {
+            id: statusBar
+            Layout.fillWidth: true
+            Layout.preferredHeight: 24
         }
     }
 
@@ -963,6 +944,10 @@ Rectangle {
     }
     function showAccountsWindow() {
         accountsWindowLoader.active = true;
+    }
+    function openSetupWizard(pageIds) {
+        setupWizardLoader.pageIds = pageIds || [];
+        setupWizardLoader.active = true;
     }
 
     // New dialog helper functions
@@ -1397,6 +1382,19 @@ Rectangle {
                     }
                 }
             }
+        }
+    }
+
+    // === Setup Wizard (first-run) ===
+    Loader {
+        id: setupWizardLoader
+        active: false
+        property var pageIds: []
+        sourceComponent: SetupWizard {
+            id: setupWizardDialog
+            pageIds: setupWizardLoader.pageIds
+            onAccepted: setupWizardLoader.active = false
+            onRejected: setupWizardLoader.active = false
         }
     }
 

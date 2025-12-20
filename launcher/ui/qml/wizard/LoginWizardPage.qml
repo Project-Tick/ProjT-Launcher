@@ -27,7 +27,7 @@ Rectangle {
     property bool accountAdded: false
 
     signal loginRequested
-    signal accountAddedChanged
+    signal accountAddedSignal
 
     ColumnLayout {
         anchors.fill: parent
@@ -99,7 +99,7 @@ Rectangle {
         ignoreUnknownSignals: true
         function onAccountAdded() {
             accountAdded = true;
-            accountAddedChanged();
+            accountAddedSignal();
         }
     }
 }
