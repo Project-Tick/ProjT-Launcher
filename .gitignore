@@ -67,3 +67,4 @@ memory-bank/
 tree.txt
 
 node_modules/
+.qtcreator/
