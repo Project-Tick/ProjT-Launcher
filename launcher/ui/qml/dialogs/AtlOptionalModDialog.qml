@@ -25,7 +25,7 @@ import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../../Theme.js" as Theme
 
-Dialog {
+WindowDialog {
     id: atlModDialog
     title: qsTr("Select Mods To Install")
     modal: true

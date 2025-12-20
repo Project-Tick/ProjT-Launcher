@@ -26,7 +26,7 @@ import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 import "../components"
 
-Dialog {
+WindowDialog {
     id: profileSetupDialog
     title: qsTr("Complete Profile Setup")
     modal: true

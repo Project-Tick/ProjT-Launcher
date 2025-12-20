@@ -26,7 +26,7 @@ import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 import "../components"
 
-Dialog {
+WindowDialog {
     id: versionSelectDialog
     title: qsTr("Select Version")
     modal: true

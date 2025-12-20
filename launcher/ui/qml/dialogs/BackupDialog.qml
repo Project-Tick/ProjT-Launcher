@@ -26,7 +26,7 @@ import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 import "../components"
 
-Dialog {
+WindowDialog {
     id: backupDialog
     title: qsTr("Manage Backups")
     modal: true

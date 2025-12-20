@@ -25,7 +25,7 @@ import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
-Dialog {
+WindowDialog {
     id: msaLoginDialog
     title: qsTr("Add Microsoft Account")
     modal: true

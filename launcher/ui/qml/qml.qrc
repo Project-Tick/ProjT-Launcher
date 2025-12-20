@@ -96,6 +96,7 @@
         <file>dialogs/ResourceDownloadDialog.qml</file>
         <file>dialogs/ResourceUpdateDialog.qml</file>
         <file>dialogs/NewComponentDialog.qml</file>
+        <file>dialogs/WindowDialog.qml</file>
         <file>dialogs/ReviewMessageBox.qml</file>
         <file>dialogs/ScrollMessageBox.qml</file>
         <file>dialogs/CustomMessageBox.qml</file>
