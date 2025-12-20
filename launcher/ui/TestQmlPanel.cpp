@@ -41,7 +41,7 @@ QUrl resolveQmlUrl(const QString& fileName)
     // Try going up multiple levels to find source tree
     for (int i = 0; i < 4; ++i) {
         QDir sourceDir(dir);
-        if (sourceDir.cd(QStringLiteral("launcher/qml"))) {
+        if (sourceDir.cd(QStringLiteral("launcher/ui/qml"))) {
             QFileInfo info(sourceDir.filePath(fileName));
             if (info.exists()) {
                 qDebug() << "[TestQmlPanel] Loading QML from source:" << info.absoluteFilePath();

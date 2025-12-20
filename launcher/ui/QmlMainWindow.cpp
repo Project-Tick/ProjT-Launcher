@@ -135,13 +135,13 @@ static QUrl resolveQmlUrl(const QString& fileName)
 
     // Try to find source directory for development builds
     // Build path is typically: <project>/build/Debug/projtlauncher.exe
-    // Source path is: <project>/launcher/qml/
+    // Source path is: <project>/launcher/ui/qml/
     QDir dir(QCoreApplication::applicationDirPath());
 
     // Try going up multiple levels to find source tree
     for (int i = 0; i < 4; ++i) {
         QDir sourceDir(dir);
-        if (sourceDir.cd(QStringLiteral("launcher/qml"))) {
+        if (sourceDir.cd(QStringLiteral("launcher/ui/qml"))) {
             QFileInfo info(sourceDir.filePath(fileName));
             if (info.exists()) {
                 qDebug() << "[QmlMainWindow] Loading QML from source:" << info.absoluteFilePath();
@@ -299,7 +299,7 @@ static void setupQmlImportPaths(QQmlEngine* engine)
     if (sourceDir.cdUp()) {
         for (int i = 0; i < 4; ++i) {
             QDir qmlSourceDir(sourceDir);
-            if (qmlSourceDir.cd(QStringLiteral("launcher/qml"))) {
+            if (qmlSourceDir.cd(QStringLiteral("launcher/ui/qml"))) {
                 engine->addImportPath(qmlSourceDir.absolutePath());
                 qDebug() << "[QmlMainWindow] Added source QML import path:" << qmlSourceDir.absolutePath();
                 break;
