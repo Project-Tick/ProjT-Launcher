@@ -98,128 +98,128 @@ QVariant ModFolderModel::data(const QModelIndex& index, int role) const
     int column = index.column();
 
     switch (role) {
-        case Qt::DisplayRole:
-            switch (column) {
-                case NameColumn:
-                    return m_resources[row]->name();
-                case VersionColumn: {
-                    switch (at(row).type()) {
-                        case ResourceType::FOLDER:
-                            return tr("Folder");
-                        case ResourceType::SINGLEFILE:
-                            return tr("File");
-                        default:
-                            break;
-                    }
-                    return at(row).version();
-                }
-                case DateColumn:
-                    return at(row).dateTimeChanged();
-                case ProviderColumn: {
-                    return at(row).provider();
-                }
-                case SideColumn: {
-                    return at(row).side();
-                }
-                case LoadersColumn: {
-                    return at(row).loaders();
-                }
-                case McVersionsColumn: {
-                    return at(row).mcVersions();
-                }
-                case ReleaseTypeColumn: {
-                    return at(row).releaseType();
-                }
-                case SizeColumn:
-                    return at(row).sizeStr();
-                default:
-                    return QVariant();
+    case Qt::DisplayRole:
+        switch (column) {
+        case NameColumn:
+            return m_resources[row]->name();
+        case VersionColumn: {
+            switch (at(row).type()) {
+            case ResourceType::FOLDER:
+                return tr("Folder");
+            case ResourceType::SINGLEFILE:
+                return tr("File");
+            default:
+                break;
             }
-
-        case Qt::ToolTipRole:
-            if (column == NameColumn) {
-                if (at(row).isSymLinkUnder(instDirPath())) {
-                    return m_resources[row]->internal_id() +
-                           tr("\nWarning: This resource is symbolically linked from elsewhere. Editing it will also change the original."
-                              "\nCanonical Path: %1")
-                               .arg(at(row).fileinfo().canonicalFilePath());
-                }
-                if (at(row).isMoreThanOneHardLink()) {
-                    return m_resources[row]->internal_id() +
-                           tr("\nWarning: This resource is hard linked elsewhere. Editing it will also change the original.");
-                }
-            }
-            return m_resources[row]->internal_id();
-        case Qt::DecorationRole: {
-            if (column == NameColumn && (at(row).isSymLinkUnder(instDirPath()) || at(row).isMoreThanOneHardLink()))
-                return QIcon::fromTheme("status-yellow");
-            if (column == ImageColumn) {
-                return at(row).icon({ 32, 32 }, Qt::AspectRatioMode::KeepAspectRatioByExpanding);
-            }
-            return {};
+            return at(row).version();
         }
-        case Qt::SizeHintRole:
-            if (column == ImageColumn) {
-                return QSize(32, 32);
-            }
-            return {};
-        case Qt::CheckStateRole:
-            if (column == ActiveColumn)
-                return at(row).enabled() ? Qt::Checked : Qt::Unchecked;
-            return QVariant();
+        case DateColumn:
+            return at(row).dateTimeChanged();
+        case ProviderColumn: {
+            return at(row).provider();
+        }
+        case SideColumn: {
+            return at(row).side();
+        }
+        case LoadersColumn: {
+            return at(row).loaders();
+        }
+        case McVersionsColumn: {
+            return at(row).mcVersions();
+        }
+        case ReleaseTypeColumn: {
+            return at(row).releaseType();
+        }
+        case SizeColumn:
+            return at(row).sizeStr();
         default:
             return QVariant();
+        }
+
+    case Qt::ToolTipRole:
+        if (column == NameColumn) {
+            if (at(row).isSymLinkUnder(instDirPath())) {
+                return m_resources[row]->internal_id() +
+                       tr("\nWarning: This resource is symbolically linked from elsewhere. Editing it will also change the original."
+                          "\nCanonical Path: %1")
+                           .arg(at(row).fileinfo().canonicalFilePath());
+            }
+            if (at(row).isMoreThanOneHardLink()) {
+                return m_resources[row]->internal_id() +
+                       tr("\nWarning: This resource is hard linked elsewhere. Editing it will also change the original.");
+            }
+        }
+        return m_resources[row]->internal_id();
+    case Qt::DecorationRole: {
+        if (column == NameColumn && (at(row).isSymLinkUnder(instDirPath()) || at(row).isMoreThanOneHardLink()))
+            return QIcon::fromTheme("status-yellow");
+        if (column == ImageColumn) {
+            return at(row).icon({ 32, 32 }, Qt::AspectRatioMode::KeepAspectRatioByExpanding);
+        }
+        return {};
+    }
+    case Qt::SizeHintRole:
+        if (column == ImageColumn) {
+            return QSize(32, 32);
+        }
+        return {};
+    case Qt::CheckStateRole:
+        if (column == ActiveColumn)
+            return at(row).enabled() ? Qt::Checked : Qt::Unchecked;
+        return QVariant();
+    default:
+        return QVariant();
     }
 }
 
 QVariant ModFolderModel::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, int role) const
 {
     switch (role) {
-        case Qt::DisplayRole:
-            switch (section) {
-                case ActiveColumn:
-                case NameColumn:
-                case VersionColumn:
-                case DateColumn:
-                case ProviderColumn:
-                case ImageColumn:
-                case SideColumn:
-                case LoadersColumn:
-                case McVersionsColumn:
-                case ReleaseTypeColumn:
-                case SizeColumn:
-                    return columnNames().at(section);
-                default:
-                    return QVariant();
-            }
-
-        case Qt::ToolTipRole:
-            switch (section) {
-                case ActiveColumn:
-                    return tr("Is the mod enabled?");
-                case NameColumn:
-                    return tr("The name of the mod.");
-                case VersionColumn:
-                    return tr("The version of the mod.");
-                case DateColumn:
-                    return tr("The date and time this mod was last changed (or added).");
-                case ProviderColumn:
-                    return tr("The source provider of the mod.");
-                case SideColumn:
-                    return tr("On what environment the mod is running.");
-                case LoadersColumn:
-                    return tr("The mod loader.");
-                case McVersionsColumn:
-                    return tr("The supported minecraft versions.");
-                case ReleaseTypeColumn:
-                    return tr("The release type.");
-                case SizeColumn:
-                    return tr("The size of the mod.");
-                default:
-                    return QVariant();
-            }
+    case Qt::DisplayRole:
+        switch (section) {
+        case ActiveColumn:
+        case NameColumn:
+        case VersionColumn:
+        case DateColumn:
+        case ProviderColumn:
+        case ImageColumn:
+        case SideColumn:
+        case LoadersColumn:
+        case McVersionsColumn:
+        case ReleaseTypeColumn:
+        case SizeColumn:
+            return columnNames().at(section);
         default:
             return QVariant();
+        }
+
+    case Qt::ToolTipRole:
+        switch (section) {
+        case ActiveColumn:
+            return tr("Is the mod enabled?");
+        case NameColumn:
+            return tr("The name of the mod.");
+        case VersionColumn:
+            return tr("The version of the mod.");
+        case DateColumn:
+            return tr("The date and time this mod was last changed (or added).");
+        case ProviderColumn:
+            return tr("The source provider of the mod.");
+        case SideColumn:
+            return tr("On what environment the mod is running.");
+        case LoadersColumn:
+            return tr("The mod loader.");
+        case McVersionsColumn:
+            return tr("The supported minecraft versions.");
+        case ReleaseTypeColumn:
+            return tr("The release type.");
+        case SizeColumn:
+            return tr("The size of the mod.");
+        default:
+            return QVariant();
+        }
+    default:
+        return QVariant();
     }
     return QVariant();
 }

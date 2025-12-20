@@ -5,29 +5,42 @@
  *  ProjT Launcher - Minecraft Launcher
  *  Copyright (C) 2025 Project Tick
  *
- *  This file is part of ProjT Launcher and is licensed under
- *  the GNU General Public License version 3 or later.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 #pragma once
 
 #include <QDialog>
-#include "minecraft/BackupManager.h"
 #include "BaseInstance.h"
+#include "minecraft/BackupManager.h"
 
 namespace Ui {
 class BackupDialog;
 }
 
-class BackupDialog : public QDialog
-{
+class BackupDialog : public QDialog {
     Q_OBJECT
 
-public:
+   public:
     explicit BackupDialog(InstancePtr instance, QWidget* parent = nullptr);
     ~BackupDialog();
 
-private slots:
+    QString backupName() const { return m_pendingBackupName; }
+    BackupOptions options() const { return m_pendingOptions; }
+    bool hasRequest() const { return !m_pendingBackupName.isEmpty(); }
+
+   private slots:
     void on_createButton_clicked();
     void on_restoreButton_clicked();
     void on_deleteButton_clicked();
@@ -38,7 +51,7 @@ private slots:
     void onBackupCreated(const QString& instanceId, const QString& backupName);
     void onBackupRestored(const QString& instanceId, const QString& backupName);
 
-private:
+   private:
     void refreshBackupList();
     void updateBackupDetails();
     void updateButtons();
@@ -49,4 +62,6 @@ private:
     BackupManager* m_backupManager;
     QList<InstanceBackup> m_backups;
     QStringList m_customPaths;
+    QString m_pendingBackupName;
+    BackupOptions m_pendingOptions;
 };

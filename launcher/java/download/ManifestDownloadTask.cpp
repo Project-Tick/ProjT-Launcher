@@ -114,12 +114,25 @@ void ManifestDownloadTask::downloadJava(const QJsonDocument& doc)
                 QFile::link(path, file);
             }
         } else if (type == "file") {
-            // TODO: Eğer varsa sıkıştırılmış versiyonu da indirilmeli. Şu anda sadece normal dosya indiriliyor.
-            auto raw = Json::ensureObject(Json::ensureObject(meta, "downloads"), "raw");
+            auto downloadsObj = Json::ensureObject(meta, "downloads");
+
+            // Prefer compressed version (lzma) if available for faster downloads
+            QJsonObject selectedDownload;
+            QString downloadType;
+
+            if (downloadsObj.contains("lzma")) {
+                selectedDownload = Json::ensureObject(downloadsObj, "lzma");
+                downloadType = "lzma";
+            } else {
+                selectedDownload = Json::ensureObject(downloadsObj, "raw");
+                downloadType = "raw";
+            }
+
             auto isExec = Json::ensureBoolean(meta, "executable", false);
-            auto url = Json::ensureString(raw, "url");
+            auto url = Json::ensureString(selectedDownload, "url");
+
             if (!url.isEmpty() && QUrl(url).isValid()) {
-                auto f = File{ file, url, QByteArray::fromHex(Json::ensureString(raw, "sha1").toLatin1()), isExec };
+                auto f = File{ file, url, QByteArray::fromHex(Json::ensureString(selectedDownload, "sha1").toLatin1()), isExec };
                 toDownload.push_back(f);
             }
         }

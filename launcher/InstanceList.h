@@ -208,6 +208,7 @@ class InstanceList : public QAbstractListModel {
 
     void increaseGroupCount(const QString& group);
     void decreaseGroupCount(const QString& group);
+    void removeInstances(QList<InstanceLocator> instances);
 
    private:
     int m_watchLevel = 0;

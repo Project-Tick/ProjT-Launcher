@@ -89,45 +89,45 @@ int Mod::compare(const Resource& other, SortType type) const
         return Resource::compare(other, type);
 
     switch (type) {
-        default:
-        case SortType::ENABLED:
-        case SortType::NAME:
-        case SortType::DATE:
-        case SortType::SIZE:
-            return Resource::compare(other, type);
-        case SortType::VERSION: {
-            auto this_ver = Version(version());
-            auto other_ver = Version(cast_other->version());
-            if (this_ver > other_ver)
-                return 1;
-            if (this_ver < other_ver)
-                return -1;
-            break;
-        }
-        case SortType::SIDE: {
-            auto compare_result = QString::compare(side(), cast_other->side(), Qt::CaseInsensitive);
-            if (compare_result != 0)
-                return compare_result;
-            break;
-        }
-        case SortType::MC_VERSIONS: {
-            auto compare_result = QString::compare(mcVersions(), cast_other->mcVersions(), Qt::CaseInsensitive);
-            if (compare_result != 0)
-                return compare_result;
-            break;
-        }
-        case SortType::LOADERS: {
-            auto compare_result = QString::compare(loaders(), cast_other->loaders(), Qt::CaseInsensitive);
-            if (compare_result != 0)
-                return compare_result;
-            break;
-        }
-        case SortType::RELEASE_TYPE: {
-            auto compare_result = QString::compare(releaseType(), cast_other->releaseType(), Qt::CaseInsensitive);
-            if (compare_result != 0)
-                return compare_result;
-            break;
-        }
+    default:
+    case SortType::ENABLED:
+    case SortType::NAME:
+    case SortType::DATE:
+    case SortType::SIZE:
+        return Resource::compare(other, type);
+    case SortType::VERSION: {
+        auto this_ver = Version(version());
+        auto other_ver = Version(cast_other->version());
+        if (this_ver > other_ver)
+            return 1;
+        if (this_ver < other_ver)
+            return -1;
+        break;
+    }
+    case SortType::SIDE: {
+        auto compare_result = QString::compare(side(), cast_other->side(), Qt::CaseInsensitive);
+        if (compare_result != 0)
+            return compare_result;
+        break;
+    }
+    case SortType::MC_VERSIONS: {
+        auto compare_result = QString::compare(mcVersions(), cast_other->mcVersions(), Qt::CaseInsensitive);
+        if (compare_result != 0)
+            return compare_result;
+        break;
+    }
+    case SortType::LOADERS: {
+        auto compare_result = QString::compare(loaders(), cast_other->loaders(), Qt::CaseInsensitive);
+        if (compare_result != 0)
+            return compare_result;
+        break;
+    }
+    case SortType::RELEASE_TYPE: {
+        auto compare_result = QString::compare(releaseType(), cast_other->releaseType(), Qt::CaseInsensitive);
+        if (compare_result != 0)
+            return compare_result;
+        break;
+    }
     }
     return 0;
 }

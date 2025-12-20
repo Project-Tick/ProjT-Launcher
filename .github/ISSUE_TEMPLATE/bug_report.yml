@@ -27,14 +27,14 @@ body:
   attributes:
     label: Version of ProjT Launcher
     description: The version of ProjT Launcher used in the bug report.
-    placeholder: ProjT Launcher 5.0
+    placeholder: ProjT Launcher 0.0.3
   validations:
     required: true
 - type: textarea
   attributes:
     label: Version of Qt
     description: The version of Qt used in the bug report. You can find it in Help -> About ProjT Launcher -> About Qt.
-    placeholder: Qt 6.3.0
+    placeholder: Qt 6.10.1
   validations:
     required: true
 - type: textarea

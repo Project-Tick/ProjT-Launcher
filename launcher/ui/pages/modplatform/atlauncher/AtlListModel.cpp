@@ -88,7 +88,8 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
 
             return icon;
         }
-        case Qt::UserRole: {
+        case Qt::UserRole:
+        case PackDataRole: {
             QVariant v;
             v.setValue(pack);
             return v;
@@ -97,7 +98,21 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
             return pack.name;
         case Qt::SizeHintRole:
             return QSize(0, 58);
-        // Custom data
+        // Custom data for QML
+        case NameRole:
+            return pack.name;
+        case DescriptionRole:
+            return pack.description;
+        case IconUrlRole: {
+            QString logoName = pack.safeName;
+            const QString lower = logoName.toLower();
+            const bool hasExt = lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".webp");
+            if (hasExt) {
+                return QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1").arg(logoName);
+            }
+            return QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1.png").arg(logoName);
+        }
+        // Legacy Widget roles
         case UserDataTypes::TITLE:
             return pack.name;
         case UserDataTypes::DESCRIPTION:
@@ -109,6 +124,12 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
     }
 
     return {};
+}
+
+QHash<int, QByteArray> ListModel::roleNames() const
+{
+    return { { NameRole, "name" },         { DescriptionRole, "description" }, { IconUrlRole, "iconUrl" },
+             { PackDataRole, "packData" }, { Qt::DisplayRole, "display" },     { Qt::ToolTipRole, "toolTip" } };
 }
 
 void ListModel::request()
@@ -136,6 +157,7 @@ void ListModel::requestFinished()
     if (parse_error.error != QJsonParseError::NoError) {
         qWarning() << "Error while parsing JSON response from ATL at " << parse_error.offset << " reason: " << parse_error.errorString();
         qWarning() << *response;
+        emit requestError(tr("Failed to parse ATLauncher pack list: %1").arg(parse_error.errorString()));
         return;
     }
 
@@ -171,11 +193,14 @@ void ListModel::requestFinished()
     beginInsertRows(QModelIndex(), modpacks.size(), modpacks.size() + newList.size() - 1);
     modpacks.append(newList);
     endInsertRows();
+
+    emit requestCompleted();
 }
 
 void ListModel::requestFailed(QString reason)
 {
     jobPtr.reset();
+    emit requestError(reason);
 }
 
 void ListModel::getLogo(const QString& logo, const QString& logoUrl, LogoCallback callback)

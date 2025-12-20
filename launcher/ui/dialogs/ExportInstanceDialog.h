@@ -59,6 +59,7 @@
 #pragma once
 
 #include <QDialog>
+#include <QFileInfoList>
 #include <QModelIndex>
 #include <memory>
 #include "FastFileIconProvider.h"
@@ -78,10 +79,14 @@ class ExportInstanceDialog : public QDialog {
     explicit ExportInstanceDialog(InstancePtr instance, QWidget* parent = 0);
     ~ExportInstanceDialog();
 
+    QString outputPath() const { return m_outputPath; }
+    QFileInfoList files() const { return m_files; }
+    bool hasRequest() const { return !m_outputPath.isEmpty() && !m_files.isEmpty(); }
+
     virtual void done(int result);
 
    private:
-    void doExport();
+    bool prepareExport();
     QString ignoreFileName();
 
    private:
@@ -89,6 +94,8 @@ class ExportInstanceDialog : public QDialog {
     InstancePtr m_instance;
     FileIgnoreProxy* m_proxyModel;
     FastFileIconProvider m_icons;
+    QString m_outputPath;
+    QFileInfoList m_files;
 
    private slots:
     void rowsInserted(QModelIndex parent, int top, int bottom);

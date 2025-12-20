@@ -53,13 +53,13 @@ class TranslationsModel : public QAbstractListModel {
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent) const override;
 
-    bool selectLanguage(QString key);
-    void updateLanguage(QString key);
-    QModelIndex selectedIndex();
-    QString selectedLanguage();
+    Q_INVOKABLE bool selectLanguage(QString key);
+    Q_INVOKABLE void updateLanguage(QString key);
+    Q_INVOKABLE QModelIndex selectedIndex();
+    Q_INVOKABLE QString selectedLanguage();
 
-    void downloadIndex();
-    void setUseSystemLocale(bool useSystemLocale);
+    Q_INVOKABLE void downloadIndex();
+    Q_INVOKABLE void setUseSystemLocale(bool useSystemLocale);
 
    private:
     QList<Language>::Iterator findLanguage(const QString& key);

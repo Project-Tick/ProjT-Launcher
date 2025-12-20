@@ -59,8 +59,10 @@
  ======================================================================== */
 
 #include "Application.h"
+#include <QFileDialog>
+#include <QMimeDatabase>
+#include <QStatusBar>
 #include "BuildConfig.h"
-
 #include "DataMigrationTask.h"
 #include "java/JavaInstallList.h"
 #include "minecraft/BackupManager.h"
@@ -68,13 +70,16 @@
 #include "tasks/Task.h"
 #include "tools/GenericProfiler.h"
 #include "ui/InstanceWindow.h"
-#include "ui/MainWindow.h"
+#include "ui/QmlMainWindow.h"
 #include "ui/ViewLogWindow.h"
-
+#include "ui/dialogs/NewInstanceDialog.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/instanceview/AccessibleInstanceView.h"
-
-#include <QStatusBar>
+#include "viewmodels/InstanceListViewModel.h"
+#include "viewmodels/LauncherViewModel.h"
+#include "viewmodels/NewsViewModel.h"
+#include "viewmodels/SettingsViewModel.h"
+#include "viewmodels/ThemeViewModel.h"
 
 #include "ui/pages/BasePageProvider.h"
 #include "ui/pages/global/APIPage.h"
@@ -87,6 +92,7 @@
 #include "ui/pages/global/MinecraftPage.h"
 #include "ui/pages/global/ProxyPage.h"
 
+#include "net/PasteUpload.h"
 #include "ui/setupwizard/AutoJavaWizardPage.h"
 #include "ui/setupwizard/JavaWizardPage.h"
 #include "ui/setupwizard/LanguageWizardPage.h"
@@ -122,7 +128,7 @@
 #include <QStyleFactory>
 #include <QTranslator>
 #include <QWindow>
-
+#include "InstanceImportTask.h"
 #include "InstanceList.h"
 #include "MTPixmapCache.h"
 
@@ -477,10 +483,10 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
      * If there is one, tell it what the user actually wanted to do and exit.
      * We want to initialize this before logging to avoid messing with the log of a potential already running copy.
      */
-    auto appID = ApplicationId::fromPathAndVersion(QDir::currentPath(), BuildConfig.printableVersionString());
+    // Include data path in ApplicationId to allow multiple instances with different data dirs
+    // running from the same binary path without update conflicts
+    auto appID = ApplicationId::fromPathAndVersion(QDir::currentPath() + ":" + dataPath, BuildConfig.printableVersionString());
     {
-        // TODO: Multiple instances with different data dirs can run from same binary path
-        // This can cause update conflicts - consider using data path in ApplicationId
         m_peerInstance = new LocalPeer(this, appID);
         connect(m_peerInstance, &LocalPeer::messageReceived, this, &Application::messageReceived);
         if (m_peerInstance->isClient()) {
@@ -541,8 +547,13 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
                     FS::move(oldName, logBase.arg(i));
         }
 
-        for (auto i = 4; i > 0; i--)
-            FS::move(logBase.arg(i - 1), logBase.arg(i));
+        for (auto i = 4; i > 0; i--) {
+            auto from = logBase.arg(i - 1);
+            if (!QFile::exists(from)) {
+                continue;
+            }
+            FS::move(from, logBase.arg(i));
+        }
 
         logFile = std::unique_ptr<QFile>(new QFile(logBase.arg(0)));
         if (!logFile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
@@ -1232,31 +1243,22 @@ bool Application::createSetupWizard()
         }
 
         m_themeManager->applyCurrentlySelectedTheme(true);
+        QStringList pageIds;
+        if (languageRequired)
+            pageIds.append("language");
+        if (javaRequired)
+            pageIds.append("java");
+        else if (askjava)
+            pageIds.append("autoJava");
+        if (pasteInterventionRequired)
+            pageIds.append("paste");
+        if (themeInterventionRequired)
+            pageIds.append("theme");
+        if (login)
+            pageIds.append("login");
 
-        m_setupWizard = new SetupWizard(nullptr);
-        if (languageRequired) {
-            m_setupWizard->addPage(new LanguageWizardPage(m_setupWizard));
-        }
-
-        if (javaRequired) {
-            m_setupWizard->addPage(new JavaWizardPage(m_setupWizard));
-        } else if (askjava) {
-            m_setupWizard->addPage(new AutoJavaWizardPage(m_setupWizard));
-        }
-
-        if (pasteInterventionRequired) {
-            m_setupWizard->addPage(new PasteWizardPage(m_setupWizard));
-        }
-
-        if (themeInterventionRequired) {
-            m_setupWizard->addPage(new ThemeWizardPage(m_setupWizard));
-        }
-
-        if (login) {
-            m_setupWizard->addPage(new LoginWizardPage(m_setupWizard));
-        }
-        connect(m_setupWizard, &QDialog::finished, this, &Application::setupWizardFinished);
-        m_setupWizard->show();
+        auto qmlWindow = showQmlMainWindow(true);
+        qmlWindow->openSetupWizard(pageIds);
     }
 
     return wizardRequired || login;
@@ -1296,11 +1298,11 @@ bool Application::event(QEvent* event)
 #endif
 
     if (event->type() == QEvent::FileOpen) {
-        if (!m_mainWindow) {
-            showMainWindow(false);
+        if (!m_qmlMainWindow) {
+            showQmlMainWindow(false);
         }
         auto ev = static_cast<QFileOpenEvent*>(event);
-        m_mainWindow->processURLs({ ev->url() });
+        m_qmlMainWindow->processURLs({ ev->url() });
     }
 
     return QApplication::event(event);
@@ -1355,10 +1357,10 @@ void Application::performMainStartupAction()
             return;
         }
     }
-    if (!m_mainWindow) {
-        // normal main window
-        showMainWindow(false);
-        qDebug() << "<> Main window shown.";
+    if (!m_qmlMainWindow) {
+        // normal main window - using QML
+        showQmlMainWindow(false);
+        qDebug() << "<> QML Main window shown.";
     }
 
     // initialize the updater
@@ -1369,7 +1371,7 @@ void Application::performMainStartupAction()
         m_updater.reset(new MacSparkleUpdater());
 #endif
 #else
-        m_updater.reset(new PrismExternalUpdater(m_mainWindow, m_rootPath, m_dataPath));
+        m_updater.reset(new PrismExternalUpdater(m_qmlMainWindow, m_rootPath, m_dataPath));
 #endif
         qDebug() << "<> Updater started.";
     }
@@ -1382,7 +1384,7 @@ void Application::performMainStartupAction()
 
     if (!m_urlsToImport.isEmpty()) {
         qDebug() << "<> Importing from url:" << m_urlsToImport;
-        m_mainWindow->processURLs(m_urlsToImport);
+        m_qmlMainWindow->processURLs(m_urlsToImport);
     }
 }
 
@@ -1436,10 +1438,10 @@ void Application::messageReceived(const QByteArray& message)
             qWarning() << "Received" << command << "message without a zip path/URL.";
             return;
         }
-        if (!m_mainWindow) {
-            showMainWindow(false);
+        if (!m_qmlMainWindow) {
+            showQmlMainWindow(false);
         }
-        m_mainWindow->processURLs({ normalizeImportUrl(url) });
+        m_qmlMainWindow->processURLs({ normalizeImportUrl(url) });
     } else if (command == "launch") {
         QString id = received.args["id"];
         QString server = received.args["server"];
@@ -1525,7 +1527,7 @@ bool Application::launch(InstancePtr instance,
         if (settings()->get("AutoBackupBeforeLaunch").toBool()) {
             qDebug() << "Creating auto-backup before launch...";
 
-            QProgressDialog* progress = new QProgressDialog("Creating backup before launch...", QString(), 0, 0, m_mainWindow);
+            QProgressDialog* progress = new QProgressDialog("Creating backup before launch...", QString(), 0, 0, m_qmlMainWindow);
             progress->setWindowModality(Qt::WindowModal);
             progress->setMinimumDuration(0);
             progress->setValue(0);
@@ -1594,8 +1596,8 @@ void Application::continueLaunchAfterBackup(QString instanceId, bool online, boo
     controller->setOfflineName(offlineName);
     if (window) {
         controller->setParentWidget(window);
-    } else if (m_mainWindow) {
-        controller->setParentWidget(m_mainWindow);
+    } else if (m_qmlMainWindow) {
+        controller->setParentWidget(m_qmlMainWindow);
     }
     connect(controller.get(), &LaunchController::succeeded, this, &Application::controllerSucceeded);
     connect(controller.get(), &LaunchController::failed, this, &Application::controllerFailed);
@@ -1710,6 +1712,11 @@ void Application::controllerFailed(const QString& error)
 
 void Application::ShowGlobalSettings(class QWidget* parent, QString open_page)
 {
+    if (auto qmlWindow = showQmlMainWindow(false)) {
+        emit globalSettingsAboutToOpen();
+        qmlWindow->openSettingsPage(open_page);
+        return;
+    }
     if (!m_globalSettingsProvider) {
         return;
     }
@@ -1722,29 +1729,92 @@ void Application::ShowGlobalSettings(class QWidget* parent, QString open_page)
     }
 }
 
+void Application::notifyGlobalSettingsApplied()
+{
+    emit globalSettingsApplied();
+}
+
+void Application::finishSetupWizard(int status)
+{
+    setupWizardFinished(status);
+}
+
+void Application::applyWizardSettings(const QVariantMap& values)
+{
+    auto s = settings();
+    if (!s) {
+        return;
+    }
+
+    if (values.contains("language")) {
+        s->set("Language", values.value("language").toString());
+    }
+    if (values.contains("theme")) {
+        s->set("ApplicationTheme", values.value("theme").toString());
+    }
+    if (values.contains("javaPath")) {
+        const auto javaPath = values.value("javaPath").toString();
+        if (!javaPath.isEmpty()) {
+            s->set("JavaPath", javaPath);
+        }
+    }
+    if (values.contains("autoDetectJava")) {
+        s->set("AutomaticJavaSwitch", values.value("autoDetectJava").toBool());
+        s->set("UserAskedAboutAutomaticJavaDownload", true);
+    }
+    if (values.contains("autoDownloadJava")) {
+        s->set("AutomaticJavaDownload", values.value("autoDownloadJava").toBool());
+        s->set("UserAskedAboutAutomaticJavaDownload", true);
+    }
+    if (values.contains("pasteUseDefault")) {
+        const bool useDefault = values.value("pasteUseDefault").toBool();
+        const QString prevPasteURL = s->get("PastebinURL").toString();
+        s->reset("PastebinURL");
+        if (!useDefault) {
+            bool usingDefaultBase = prevPasteURL == PasteUpload::PasteTypes.at(PasteUpload::PasteType::NullPointer).defaultBase;
+            s->set("PastebinType", PasteUpload::PasteType::NullPointer);
+            if (!usingDefaultBase)
+                s->set("PastebinCustomAPIBase", prevPasteURL);
+        }
+    }
+}
+
 MainWindow* Application::showMainWindow(bool minimized)
 {
-    if (m_mainWindow) {
-        m_mainWindow->setWindowState(m_mainWindow->windowState() & ~Qt::WindowMinimized);
-        m_mainWindow->raise();
-        m_mainWindow->activateWindow();
+    // Legacy Widgets window - redirect to QML
+    showQmlMainWindow(minimized);
+    return nullptr;  // Legacy method - QML window is now primary
+}
+
+QmlMainWindow* Application::showQmlMainWindow(bool minimized)
+{
+    if (m_qmlMainWindow) {
+        m_qmlMainWindow->setWindowState(m_qmlMainWindow->windowState() & ~Qt::WindowMinimized);
+        m_qmlMainWindow->raise();
+        m_qmlMainWindow->activateWindow();
     } else {
-        m_mainWindow = new MainWindow();
-        m_mainWindow->restoreState(QByteArray::fromBase64(APPLICATION->settings()->get("MainWindowState").toString().toUtf8()));
-        m_mainWindow->restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("MainWindowGeometry").toString().toUtf8()));
+        // Create ViewModels
+        auto launcherVM = new LauncherViewModel(this);
+        auto instancesVM = new InstanceListViewModel(this);
+        auto newsVM = new NewsViewModel(this);
+        auto settingsVM = new SettingsViewModel(this);
+        auto themeVM = new ThemeViewModel(this);
+
+        m_qmlMainWindow = new QmlMainWindow(launcherVM, instancesVM, newsVM, settingsVM, themeVM);
+        m_qmlMainWindow->restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("QmlMainWindowGeometry").toString().toUtf8()));
 
         if (minimized) {
-            m_mainWindow->showMinimized();
+            m_qmlMainWindow->showMinimized();
         } else {
-            m_mainWindow->show();
+            m_qmlMainWindow->show();
         }
 
-        m_mainWindow->checkInstancePathForProblems();
-        connect(this, &Application::updateAllowedChanged, m_mainWindow, &MainWindow::updatesAllowedChanged);
-        connect(m_mainWindow, &MainWindow::isClosing, this, &Application::on_windowClose);
+        connect(m_qmlMainWindow, &QMainWindow::destroyed, this, &Application::on_windowClose);
+        // Also connect to the close event if possible, or ensure destroyed is emitted on close
+        m_qmlMainWindow->setAttribute(Qt::WA_DeleteOnClose);
         m_openWindows++;
     }
-    return m_mainWindow;
+    return m_qmlMainWindow;
 }
 
 ViewLogWindow* Application::showLogWindow()
@@ -1765,6 +1835,15 @@ InstanceWindow* Application::showInstanceWindow(InstancePtr instance, QString pa
 {
     if (!instance)
         return nullptr;
+    if (auto qmlWindow = showQmlMainWindow(false)) {
+        qmlWindow->openInstanceSettingsPage(instance->id(), page);
+        QMutexLocker locker(&m_instanceExtrasMutex);
+        auto& extras = m_instanceExtras[instance->id()];
+        if (extras.controller) {
+            extras.controller->setParentWidget(m_qmlMainWindow);
+        }
+        return nullptr;
+    }
     auto id = instance->id();
     QMutexLocker locker(&m_instanceExtrasMutex);
     auto& extras = m_instanceExtras[id];
@@ -1808,12 +1887,14 @@ void Application::on_windowClose()
         auto& extras = m_instanceExtras[instWindow->instanceId()];
         extras.window = nullptr;
         if (extras.controller) {
-            extras.controller->setParentWidget(m_mainWindow);
+            extras.controller->setParentWidget(m_qmlMainWindow);
         }
     }
-    auto mainWindow = qobject_cast<MainWindow*>(sender());
-    if (mainWindow) {
-        m_mainWindow = nullptr;
+    // Handle QML main window: persist geometry and clear pointer
+    auto qmlMain = qobject_cast<QmlMainWindow*>(sender());
+    if (qmlMain) {
+        APPLICATION->settings()->set("QmlMainWindowGeometry", QString::fromUtf8(qmlMain->saveGeometry().toBase64()));
+        m_qmlMainWindow = nullptr;
     }
     auto logWindow = qobject_cast<ViewLogWindow*>(sender());
     if (logWindow) {

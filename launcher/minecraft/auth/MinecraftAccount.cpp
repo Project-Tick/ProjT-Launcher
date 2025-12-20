@@ -177,37 +177,37 @@ void MinecraftAccount::authSucceeded()
 void MinecraftAccount::authFailed(QString reason)
 {
     switch (m_currentTask->taskState()) {
-        case AccountTaskState::STATE_OFFLINE:
-        case AccountTaskState::STATE_DISABLED: {
-            // NOTE: user will need to fix this themselves.
-        }
-        case AccountTaskState::STATE_FAILED_SOFT: {
-            // NOTE: this doesn't do much. There was an error of some sort.
-        } break;
-        case AccountTaskState::STATE_FAILED_HARD: {
-            if (accountType() == AccountType::MSA) {
-                data.msaToken.token = QString();
-                data.msaToken.refresh_token = QString();
-                data.msaToken.validity = Validity::None;
-                data.validity_ = Validity::None;
-            } else {
-                data.yggdrasilToken.token = QString();
-                data.yggdrasilToken.validity = Validity::None;
-                data.validity_ = Validity::None;
-            }
-            emit changed();
-        } break;
-        case AccountTaskState::STATE_FAILED_GONE: {
+    case AccountTaskState::STATE_OFFLINE:
+    case AccountTaskState::STATE_DISABLED: {
+        // NOTE: user will need to fix this themselves.
+    }
+    case AccountTaskState::STATE_FAILED_SOFT: {
+        // NOTE: this doesn't do much. There was an error of some sort.
+    } break;
+    case AccountTaskState::STATE_FAILED_HARD: {
+        if (accountType() == AccountType::MSA) {
+            data.msaToken.token = QString();
+            data.msaToken.refresh_token = QString();
+            data.msaToken.validity = Validity::None;
             data.validity_ = Validity::None;
-            emit changed();
-        } break;
-        case AccountTaskState::STATE_WORKING: {
-            data.accountState = AccountState::Unchecked;
-        } break;
-        case AccountTaskState::STATE_CREATED:
-        case AccountTaskState::STATE_SUCCEEDED: {
-            // Not reachable here, as they are not failures.
+        } else {
+            data.yggdrasilToken.token = QString();
+            data.yggdrasilToken.validity = Validity::None;
+            data.validity_ = Validity::None;
         }
+        emit changed();
+    } break;
+    case AccountTaskState::STATE_FAILED_GONE: {
+        data.validity_ = Validity::None;
+        emit changed();
+    } break;
+    case AccountTaskState::STATE_WORKING: {
+        data.accountState = AccountState::Unchecked;
+    } break;
+    case AccountTaskState::STATE_CREATED:
+    case AccountTaskState::STATE_SUCCEEDED: {
+        // Not reachable here, as they are not failures.
+    }
     }
     m_currentTask.reset();
     emit activityChanged(false);
@@ -230,15 +230,15 @@ bool MinecraftAccount::shouldRefresh() const
         return false;
     }
     switch (data.validity_) {
-        case Validity::Certain: {
-            break;
-        }
-        case Validity::None: {
-            return false;
-        }
-        case Validity::Assumed: {
-            return true;
-        }
+    case Validity::Certain: {
+        break;
+    }
+    case Validity::None: {
+        return false;
+    }
+    case Validity::Assumed: {
+        return true;
+    }
     }
     auto now = QDateTime::currentDateTimeUtc();
     auto issuedTimestamp = data.yggdrasilToken.issueInstant;

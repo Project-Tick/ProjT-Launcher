@@ -103,6 +103,8 @@ class BaseVersionList : public QAbstractListModel {
     //! which roles are provided by this version list?
     virtual RoleList providesRoles() const;
 
+    virtual QString parentVersionHeader() const { return tr("Minecraft"); }
+
     /*!
      * \brief Finds a version by its descriptor.
      * \param descriptor The descriptor of the version to find.

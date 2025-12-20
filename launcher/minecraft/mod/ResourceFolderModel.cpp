@@ -138,47 +138,53 @@ bool ResourceFolderModel::installResource(QString original_path)
     };
 
     switch (resource.type()) {
-        case ResourceType::SINGLEFILE:
-        case ResourceType::ZIPFILE:
-        case ResourceType::LITEMOD: {
-            if (QFile::exists(new_path) || QFile::exists(new_path + QString(".disabled"))) {
-                if (!FS::deletePath(new_path)) {
-                    qCritical() << "Cleaning up new location (" << new_path << ") was unsuccessful!";
-                    return false;
-                }
-                qDebug() << new_path << "has been deleted.";
-            }
-
-            if (!QFile::copy(original_path, new_path)) {
-                qCritical() << "Copy from" << original_path << "to" << new_path << "has failed.";
+    case ResourceType::SINGLEFILE:
+    case ResourceType::ZIPFILE:
+    case ResourceType::LITEMOD: {
+        if (QFile::exists(new_path) || QFile::exists(new_path + QString(".disabled"))) {
+            if (!FS::deletePath(new_path)) {
+                qCritical() << "Cleaning up new location (" << new_path << ") was unsuccessful!";
                 return false;
             }
-
-            FS::updateTimestamp(new_path);
-
-            QFileInfo new_path_file_info(new_path);
-            resource.setFile(new_path_file_info);
-
-            return triggerUpdate();
+            qDebug() << new_path << "has been deleted.";
         }
-        case ResourceType::FOLDER: {
-            if (QFile::exists(new_path)) {
-                qDebug() << "Ignoring folder '" << original_path << "', it would merge with" << new_path;
-                return false;
-            }
 
-            if (!FS::copy(original_path, new_path)()) {
-                qWarning() << "Copy of folder from" << original_path << "to" << new_path << "has (potentially partially) failed.";
-                return false;
-            }
-
-            QFileInfo newpathInfo(new_path);
-            resource.setFile(newpathInfo);
-
-            return triggerUpdate();
+        if (!QFile::copy(original_path, new_path)) {
+            qCritical() << "Copy from" << original_path << "to" << new_path << "has failed.";
+            return false;
         }
-        default:
-            break;
+
+        FS::updateTimestamp(new_path);
+
+        QFileInfo new_path_file_info(new_path);
+        resource.setFile(new_path_file_info);
+
+        if (!m_is_watching)
+            return update();
+
+        return true;
+    }
+    case ResourceType::FOLDER: {
+        if (QFile::exists(new_path)) {
+            qDebug() << "Ignoring folder '" << original_path << "', it would merge with" << new_path;
+            return false;
+        }
+
+        if (!FS::copy(original_path, new_path)()) {
+            qWarning() << "Copy of folder from" << original_path << "to" << new_path << "has (potentially partially) failed.";
+            return false;
+        }
+
+        QFileInfo newpathInfo(new_path);
+        resource.setFile(newpathInfo);
+
+        if (!m_is_watching)
+            return update();
+
+        return true;
+    }
+    default:
+        break;
     }
     return false;
 }
@@ -504,47 +510,47 @@ QVariant ResourceFolderModel::data(const QModelIndex& index, int role) const
     int column = index.column();
 
     switch (role) {
-        case Qt::DisplayRole:
-            switch (column) {
-                case NameColumn:
-                    return m_resources[row]->name();
-                case DateColumn:
-                    return m_resources[row]->dateTimeChanged();
-                case ProviderColumn:
-                    return m_resources[row]->provider();
-                case SizeColumn:
-                    return m_resources[row]->sizeStr();
-                default:
-                    return {};
-            }
-        case Qt::ToolTipRole:
-            if (column == NameColumn) {
-                if (at(row).isSymLinkUnder(instDirPath())) {
-                    return m_resources[row]->internal_id() +
-                           tr("\nWarning: This resource is symbolically linked from elsewhere. Editing it will also change the original."
-                              "\nCanonical Path: %1")
-                               .arg(at(row).fileinfo().canonicalFilePath());
-                    ;
-                }
-                if (at(row).isMoreThanOneHardLink()) {
-                    return m_resources[row]->internal_id() +
-                           tr("\nWarning: This resource is hard linked elsewhere. Editing it will also change the original.");
-                }
-            }
-
-            return m_resources[row]->internal_id();
-        case Qt::DecorationRole: {
-            if (column == NameColumn && (at(row).isSymLinkUnder(instDirPath()) || at(row).isMoreThanOneHardLink()))
-                return QIcon::fromTheme("status-yellow");
-
-            return {};
-        }
-        case Qt::CheckStateRole:
-            if (column == ActiveColumn)
-                return m_resources[row]->enabled() ? Qt::Checked : Qt::Unchecked;
-            return {};
+    case Qt::DisplayRole:
+        switch (column) {
+        case NameColumn:
+            return m_resources[row]->name();
+        case DateColumn:
+            return m_resources[row]->dateTimeChanged();
+        case ProviderColumn:
+            return m_resources[row]->provider();
+        case SizeColumn:
+            return m_resources[row]->sizeStr();
         default:
             return {};
+        }
+    case Qt::ToolTipRole:
+        if (column == NameColumn) {
+            if (at(row).isSymLinkUnder(instDirPath())) {
+                return m_resources[row]->internal_id() +
+                       tr("\nWarning: This resource is symbolically linked from elsewhere. Editing it will also change the original."
+                          "\nCanonical Path: %1")
+                           .arg(at(row).fileinfo().canonicalFilePath());
+                ;
+            }
+            if (at(row).isMoreThanOneHardLink()) {
+                return m_resources[row]->internal_id() +
+                       tr("\nWarning: This resource is hard linked elsewhere. Editing it will also change the original.");
+            }
+        }
+
+        return m_resources[row]->internal_id();
+    case Qt::DecorationRole: {
+        if (column == NameColumn && (at(row).isSymLinkUnder(instDirPath()) || at(row).isMoreThanOneHardLink()))
+            return QIcon::fromTheme("status-yellow");
+
+        return {};
+    }
+    case Qt::CheckStateRole:
+        if (column == ActiveColumn)
+            return m_resources[row]->enabled() ? Qt::Checked : Qt::Unchecked;
+        return {};
+    default:
+        return {};
     }
 }
 
@@ -564,36 +570,36 @@ bool ResourceFolderModel::setData(const QModelIndex& index, [[maybe_unused]] con
 QVariant ResourceFolderModel::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, int role) const
 {
     switch (role) {
-        case Qt::DisplayRole:
-            switch (section) {
-                case ActiveColumn:
-                case NameColumn:
-                case DateColumn:
-                case ProviderColumn:
-                case SizeColumn:
-                    return columnNames().at(section);
-                default:
-                    return {};
-            }
-        case Qt::ToolTipRole: {
-            //: Here, resource is a generic term for external resources, like Mods, Resource Packs, Shader Packs, etc.
-            switch (section) {
-                case ActiveColumn:
-                    return tr("Is the resource enabled?");
-                case NameColumn:
-                    return tr("The name of the resource.");
-                case DateColumn:
-                    return tr("The date and time this resource was last changed (or added).");
-                case ProviderColumn:
-                    return tr("The source provider of the resource.");
-                case SizeColumn:
-                    return tr("The size of the resource.");
-                default:
-                    return {};
-            }
-        }
+    case Qt::DisplayRole:
+        switch (section) {
+        case ActiveColumn:
+        case NameColumn:
+        case DateColumn:
+        case ProviderColumn:
+        case SizeColumn:
+            return columnNames().at(section);
         default:
-            break;
+            return {};
+        }
+    case Qt::ToolTipRole: {
+        //: Here, resource is a generic term for external resources, like Mods, Resource Packs, Shader Packs, etc.
+        switch (section) {
+        case ActiveColumn:
+            return tr("Is the resource enabled?");
+        case NameColumn:
+            return tr("The name of the resource.");
+        case DateColumn:
+            return tr("The date and time this resource was last changed (or added).");
+        case ProviderColumn:
+            return tr("The source provider of the resource.");
+        case SizeColumn:
+            return tr("The size of the resource.");
+        default:
+            return {};
+        }
+    }
+    default:
+        break;
     }
 
     return {};
