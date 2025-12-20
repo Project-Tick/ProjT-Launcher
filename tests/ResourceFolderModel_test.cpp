@@ -163,24 +163,22 @@ class ResourceFolderModelTest : public QObject {
 
         QCOMPARE(model.size(), 0);
 
-        { EXEC_UPDATE_TASK(model.installResource(file_mod), QVERIFY) }
+        EXEC_UPDATE_TASK(model.installResource(file_mod), QVERIFY);
 
         QCOMPARE(model.size(), 1);
         qDebug() << "Added first mod.";
 
-        { EXEC_UPDATE_TASK(model.startWatching(), ) }
+        EXEC_UPDATE_TASK(model.startWatching(), );
 
         QCOMPARE(model.size(), 1);
         qDebug() << "Started watching the temp folder.";
 
-        { EXEC_UPDATE_TASK(model.installResource(folder_resource), QVERIFY) }
+        EXEC_UPDATE_TASK(model.installResource(folder_resource), QVERIFY);
 
         QCOMPARE(model.size(), 2);
         qDebug() << "Added second mod.";
 
-        {
-            EXEC_UPDATE_TASK(model.uninstallResource("supercoolmod.jar"), QVERIFY);
-        }
+        EXEC_UPDATE_TASK(model.uninstallResource("supercoolmod.jar"), QVERIFY);
 
         QCOMPARE(model.size(), 1);
         qDebug() << "Removed first mod.";
@@ -188,9 +186,7 @@ class ResourceFolderModelTest : public QObject {
         QString mod_file_name{ model.at(0).fileinfo().fileName() };
         QVERIFY(!mod_file_name.isEmpty());
 
-        {
-            EXEC_UPDATE_TASK(model.uninstallResource(mod_file_name), QVERIFY);
-        }
+        EXEC_UPDATE_TASK(model.uninstallResource(mod_file_name), QVERIFY);
 
         QCOMPARE(model.size(), 0);
         qDebug() << "Removed second mod.";
@@ -208,12 +204,8 @@ class ResourceFolderModelTest : public QObject {
 
         QCOMPARE(model.size(), 0);
 
-        {
-            EXEC_UPDATE_TASK(model.installResource(folder_resource), QVERIFY)
-        }
-        {
-            EXEC_UPDATE_TASK(model.installResource(file_mod), QVERIFY)
-        }
+        EXEC_UPDATE_TASK(model.installResource(folder_resource), QVERIFY);
+        EXEC_UPDATE_TASK(model.installResource(file_mod), QVERIFY);
 
         for (auto res : model.allResources())
             qDebug() << res->name();
