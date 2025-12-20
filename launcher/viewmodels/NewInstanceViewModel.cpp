@@ -24,12 +24,16 @@
 #include <QDir>
 
 #include "Application.h"
+#include "Filter.h"
 #include "InstanceList.h"
+#include "VersionProxyModel.h"
 #include "meta/Index.h"
 #include "meta/VersionList.h"
 
 NewInstanceViewModel::NewInstanceViewModel(QObject* parent) : QObject(parent)
 {
+    m_minecraftVersionsProxy = new VersionProxyModel(this);
+
     // Available mod loaders
     m_availableModLoaders = QStringList() << ""  // None
                                           << "fabric"
@@ -94,12 +98,12 @@ QStringList NewInstanceViewModel::availableModLoaders() const
     return m_availableModLoaders;
 }
 
-QAbstractListModel* NewInstanceViewModel::minecraftVersionsModel() const
+QAbstractItemModel* NewInstanceViewModel::minecraftVersionsModel() const
 {
-    return m_minecraftVersionsModel;
+    return m_minecraftVersionsProxy;
 }
 
-QAbstractListModel* NewInstanceViewModel::modLoaderVersionsModel() const
+QAbstractItemModel* NewInstanceViewModel::modLoaderVersionsModel() const
 {
     return m_modLoaderVersionsModel;
 }
@@ -170,6 +174,7 @@ void NewInstanceViewModel::setShowReleases(bool show)
     if (m_showReleases != show) {
         m_showReleases = show;
         emit showReleasesChanged();
+        filterVersions();
     }
 }
 
@@ -178,6 +183,7 @@ void NewInstanceViewModel::setShowSnapshots(bool show)
     if (m_showSnapshots != show) {
         m_showSnapshots = show;
         emit showSnapshotsChanged();
+        filterVersions();
     }
 }
 
@@ -186,6 +192,7 @@ void NewInstanceViewModel::setShowOldVersions(bool show)
     if (m_showOldVersions != show) {
         m_showOldVersions = show;
         emit showOldVersionsChanged();
+        filterVersions();
     }
 }
 
@@ -194,6 +201,7 @@ void NewInstanceViewModel::setShowExperiments(bool show)
     if (m_showExperiments != show) {
         m_showExperiments = show;
         emit showExperimentsChanged();
+        filterVersions();
     }
 }
 
@@ -232,7 +240,9 @@ void NewInstanceViewModel::loadMinecraftVersions()
     emit statusMessageChanged();
 
     auto versionList = APPLICATION->metadataIndex()->get("net.minecraft");
-    m_minecraftVersionsModel = versionList.get();
+    m_minecraftVersionsList = versionList.get();
+    m_minecraftVersionsProxy->setSourceModel(m_minecraftVersionsList);
+    filterVersions();
     emit minecraftVersionsModelChanged();
 
     if (!versionList->isLoaded()) {
@@ -303,19 +313,28 @@ void NewInstanceViewModel::refreshVersionLists()
 
 void NewInstanceViewModel::filterVersions()
 {
-    // The BaseVersionList model handles filtering through its own mechanism
-    // This function triggers re-evaluation of filter settings
-    // Since we use Qt's model directly, just emit a signal to notify QML
-    // that filter settings have changed
-
-    if (m_minecraftVersionsModel) {
-        // BaseVersionList uses its own filter mechanism
-        // For QML, we can emit a signal to trigger view update
-        emit minecraftVersionsModelChanged();
+    if (!m_minecraftVersionsProxy) {
+        return;
     }
 
-    qDebug() << "[NewInstanceViewModel] Filter versions called - Releases:" << m_showReleases << "Snapshots:" << m_showSnapshots
-             << "Old:" << m_showOldVersions;
+    QStringList types;
+    if (m_showReleases) {
+        types << "release";
+    }
+    if (m_showSnapshots) {
+        types << "snapshot";
+    }
+    if (m_showOldVersions) {
+        types << "old_beta" << "old_alpha";
+    }
+    if (m_showExperiments) {
+        types << "experiment";
+    }
+
+    Filter filter = [types = std::move(types)](const QString& value) {
+        return !types.isEmpty() && types.contains(value);
+    };
+    m_minecraftVersionsProxy->setFilter(BaseVersionList::TypeRole, std::move(filter));
 }
 
 void NewInstanceViewModel::createInstance()
@@ -379,6 +398,7 @@ void NewInstanceViewModel::reset()
     emit showOldVersionsChanged();
     emit showExperimentsChanged();
 
+    filterVersions();
     updateValidity();
 }
 
@@ -386,14 +406,15 @@ QVariantMap NewInstanceViewModel::getMinecraftVersionInfo(int index) const
 {
     QVariantMap info;
 
-    if (!m_minecraftVersionsModel || index < 0 || index >= m_minecraftVersionsModel->rowCount(QModelIndex())) {
+    auto model = minecraftVersionsModel();
+    if (!model || index < 0 || index >= model->rowCount(QModelIndex())) {
         return info;
     }
 
-    auto modelIndex = m_minecraftVersionsModel->index(index, 0);
-    info["version"] = m_minecraftVersionsModel->data(modelIndex, BaseVersionList::VersionRole);
-    info["type"] = m_minecraftVersionsModel->data(modelIndex, BaseVersionList::TypeRole);
-    info["recommended"] = m_minecraftVersionsModel->data(modelIndex, BaseVersionList::RecommendedRole);
+    auto modelIndex = model->index(index, 0);
+    info["version"] = model->data(modelIndex, BaseVersionList::VersionRole);
+    info["type"] = model->data(modelIndex, BaseVersionList::TypeRole);
+    info["recommended"] = model->data(modelIndex, BaseVersionList::RecommendedRole);
 
     return info;
 }
@@ -451,8 +472,8 @@ void NewInstanceViewModel::onMinecraftVersionsLoaded()
     emit statusMessageChanged();
 
     // Select recommended version if none selected
-    if (m_selectedMinecraftVersion.isEmpty() && m_minecraftVersionsModel) {
-        auto recommended = dynamic_cast<BaseVersionList*>(m_minecraftVersionsModel)->getRecommended();
+    if (m_selectedMinecraftVersion.isEmpty() && m_minecraftVersionsList) {
+        auto recommended = m_minecraftVersionsList->getRecommended();
         if (recommended) {
             setSelectedMinecraftVersion(recommended->descriptor());
         }

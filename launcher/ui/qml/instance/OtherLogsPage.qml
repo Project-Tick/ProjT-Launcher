@@ -31,6 +31,20 @@ Rectangle {
 
     property var vm: ProjT.instanceVM
 
+    function findNext() {
+        if (!logText.text || !searchBar.text)
+            return;
+        var start = Math.max(0, logText.selectionStart + logText.selectedText.length);
+        var idx = logText.text.indexOf(searchBar.text, start);
+        if (idx === -1) {
+            idx = logText.text.indexOf(searchBar.text, 0);
+        }
+        if (idx >= 0) {
+            logText.select(idx, idx + searchBar.text.length);
+            logText.cursorPosition = idx + searchBar.text.length;
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 0
@@ -170,16 +184,14 @@ Rectangle {
                 Layout.fillWidth: true
                 placeholderText: qsTr("Search")
                 onAccepted: {
-                    if (vm)
-                        vm.findInOtherLog(text);
+                    otherLogsPage.findNext();
                 }
             }
 
             Button {
                 text: qsTr("Find")
                 onClicked: {
-                    if (vm)
-                        vm.findInOtherLog(searchBar.text);
+                    otherLogsPage.findNext();
                 }
             }
 

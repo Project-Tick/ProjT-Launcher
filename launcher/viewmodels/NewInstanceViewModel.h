@@ -22,6 +22,7 @@
 #pragma once
 
 #include <QAbstractListModel>
+#include <QAbstractItemModel>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -34,6 +35,7 @@
 #include "tasks/Task.h"
 
 class BaseVersionList;
+class VersionProxyModel;
 
 class NewInstanceViewModel : public QObject {
     Q_OBJECT
@@ -58,8 +60,8 @@ class NewInstanceViewModel : public QObject {
     Q_PROPERTY(QStringList availableModLoaders READ availableModLoaders NOTIFY availableModLoadersChanged)
 
     // Models
-    Q_PROPERTY(QAbstractListModel* minecraftVersionsModel READ minecraftVersionsModel NOTIFY minecraftVersionsModelChanged)
-    Q_PROPERTY(QAbstractListModel* modLoaderVersionsModel READ modLoaderVersionsModel NOTIFY modLoaderVersionsModelChanged)
+    Q_PROPERTY(QAbstractItemModel* minecraftVersionsModel READ minecraftVersionsModel NOTIFY minecraftVersionsModelChanged)
+    Q_PROPERTY(QAbstractItemModel* modLoaderVersionsModel READ modLoaderVersionsModel NOTIFY modLoaderVersionsModelChanged)
     Q_PROPERTY(QStringList groupList READ groupList NOTIFY groupListChanged)
 
     // State
@@ -83,8 +85,8 @@ class NewInstanceViewModel : public QObject {
     QString selectedModLoader() const;
     QString selectedModLoaderVersion() const;
     QStringList availableModLoaders() const;
-    QAbstractListModel* minecraftVersionsModel() const;
-    QAbstractListModel* modLoaderVersionsModel() const;
+    QAbstractItemModel* minecraftVersionsModel() const;
+    QAbstractItemModel* modLoaderVersionsModel() const;
     QStringList groupList() const;
     bool isLoading() const;
     bool isValid() const;
@@ -170,8 +172,9 @@ class NewInstanceViewModel : public QObject {
     QStringList m_availableModLoaders;
 
     // Models
-    BaseVersionList* m_minecraftVersionsModel = nullptr;
-    BaseVersionList* m_modLoaderVersionsModel = nullptr;
+    BaseVersionList* m_minecraftVersionsList = nullptr;
+    VersionProxyModel* m_minecraftVersionsProxy = nullptr;
+    QAbstractItemModel* m_modLoaderVersionsModel = nullptr;
     QStringList m_groupList;
 
     // State

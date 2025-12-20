@@ -34,6 +34,7 @@ WindowDialog {
     standardButtons: Dialog.NoButton
 
     property var vm: ProjT ? ProjT.instancesVM : null
+    property var versionsVM: ProjT ? ProjT.newInstanceVM : null
     property string currentPage: "vanilla"
 
     // Theme binding for reactive updates
@@ -310,17 +311,31 @@ WindowDialog {
                     CheckBox {
                         id: showReleasesCheck
                         text: qsTr("Releases")
-                        checked: true
+                        checked: versionsVM ? versionsVM.showReleases : true
+                        onCheckedChanged: {
+                            if (versionsVM)
+                                versionsVM.showReleases = checked;
+                        }
                     }
 
                     CheckBox {
                         id: showSnapshotsCheck
                         text: qsTr("Snapshots")
+                        checked: versionsVM ? versionsVM.showSnapshots : false
+                        onCheckedChanged: {
+                            if (versionsVM)
+                                versionsVM.showSnapshots = checked;
+                        }
                     }
 
                     CheckBox {
                         id: showOldCheck
                         text: qsTr("Old Versions")
+                        checked: versionsVM ? versionsVM.showOldVersions : false
+                        onCheckedChanged: {
+                            if (versionsVM)
+                                versionsVM.showOldVersions = checked;
+                        }
                     }
 
                     Item {
@@ -332,8 +347,8 @@ WindowDialog {
                         icon.name: "view-refresh"
                         size: "small"
                         onClicked: {
-                            if (vm)
-                                vm.refreshVersions();
+                            if (versionsVM)
+                                versionsVM.loadMinecraftVersions();
                         }
                     }
                 }
@@ -352,19 +367,22 @@ WindowDialog {
                         id: versionList
                         anchors.fill: parent
                         clip: true
-                        model: vm ? vm.minecraftVersions : []
+                        model: versionsVM ? versionsVM.minecraftVersionsModel : []
 
                         property string selectedVersion: ""
 
                         delegate: ItemDelegate {
                             width: versionList.width
                             height: visible ? 36 : 0
-                            highlighted: modelData === versionList.selectedVersion
+                            highlighted: versionText === versionList.selectedVersion
+
+                            property string versionText: model.version || model.versionId || ""
+                            property string versionType: model.type || ""
 
                             visible: {
                                 // Filter by search
                                 if (versionSearchField.text.length > 0) {
-                                    if (!modelData.toLowerCase().includes(versionSearchField.text.toLowerCase())) {
+                                    if (!versionText.toLowerCase().includes(versionSearchField.text.toLowerCase())) {
                                         return false;
                                     }
                                 }
@@ -380,9 +398,9 @@ WindowDialog {
                                     Layout.preferredHeight: 20
                                     radius: 4
                                     color: {
-                                        if (modelData.includes("snapshot") || modelData.includes("pre") || modelData.includes("rc"))
+                                        if (versionType === "snapshot")
                                             return ThemeColors.warning;
-                                        if (modelData.startsWith("b") || modelData.startsWith("a"))
+                                        if (versionType === "old_beta" || versionType === "old_alpha")
                                             return "#8b5cf6";
                                         return ThemeColors.success;
                                     }
@@ -390,9 +408,9 @@ WindowDialog {
                                     Label {
                                         anchors.centerIn: parent
                                         text: {
-                                            if (modelData.includes("snapshot") || modelData.includes("pre") || modelData.includes("rc"))
+                                            if (versionType === "snapshot")
                                                 return "S";
-                                            if (modelData.startsWith("b") || modelData.startsWith("a"))
+                                            if (versionType === "old_beta" || versionType === "old_alpha")
                                                 return "O";
                                             return "R";
                                         }
@@ -403,13 +421,17 @@ WindowDialog {
                                 }
 
                                 Label {
-                                    text: modelData
+                                    text: versionText
                                     color: ThemeColors.text
                                     Layout.fillWidth: true
                                 }
                             }
 
-                            onClicked: versionList.selectedVersion = modelData
+                            onClicked: {
+                                versionList.selectedVersion = versionText;
+                                if (versionsVM)
+                                    versionsVM.selectedMinecraftVersion = versionText;
+                            }
                         }
 
                         ScrollBar.vertical: ScrollBar {}
