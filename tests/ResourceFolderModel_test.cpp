@@ -51,20 +51,23 @@ static constexpr int RESOURCE_MODEL_TIMEOUT_MS = 12000;
 static constexpr int RESOURCE_MODEL_FAST_TIMEOUT_MS = 4000;
 #endif
 
-#define EXEC_UPDATE_TASK(EXEC, VERIFY)                                                                                                     \
-    do {                                                                                                                                   \
-        QEventLoop loop;                                                                                                                   \
-        connect(&model, &ResourceFolderModel::updateFinished, &loop, &QEventLoop::quit);                                                   \
-        QTimer expire_timer;                                                                                                               \
-        expire_timer.callOnTimeout(&loop, &QEventLoop::quit);                                                                              \
-        expire_timer.setSingleShot(true);                                                                                                  \
-        expire_timer.start(RESOURCE_MODEL_TIMEOUT_MS);                                                                                     \
-        VERIFY(EXEC);                                                                                                                      \
-        loop.exec();                                                                                                                       \
-        QVERIFY2(expire_timer.isActive(), "Timer has expired. The update never finished.");                                                \
-        expire_timer.stop();                                                                                                               \
-        disconnect(&model, nullptr, &loop, nullptr);                                                                                       \
-    } while (0)
+#define EXEC_UPDATE_TASK(EXEC, VERIFY)                                                  \
+    QEventLoop loop;                                                                    \
+                                                                                        \
+    connect(&model, &ResourceFolderModel::updateFinished, &loop, &QEventLoop::quit);    \
+                                                                                        \
+    QTimer expire_timer;                                                                \
+    expire_timer.callOnTimeout(&loop, &QEventLoop::quit);                               \
+    expire_timer.setSingleShot(true);                                                   \
+    expire_timer.start(RESOURCE_MODEL_TIMEOUT_MS);                                      \
+                                                                                        \
+    VERIFY(EXEC);                                                                       \
+    loop.exec();                                                                        \
+                                                                                        \
+    QVERIFY2(expire_timer.isActive(), "Timer has expired. The update never finished."); \
+    expire_timer.stop();                                                                \
+                                                                                        \
+    disconnect(&model, nullptr, &loop, nullptr);
 
 class ResourceFolderModelTest : public QObject {
     Q_OBJECT
@@ -163,22 +166,24 @@ class ResourceFolderModelTest : public QObject {
 
         QCOMPARE(model.size(), 0);
 
-        EXEC_UPDATE_TASK(model.installResource(file_mod), QVERIFY);
+        { EXEC_UPDATE_TASK(model.installResource(file_mod), QVERIFY) }
 
         QCOMPARE(model.size(), 1);
         qDebug() << "Added first mod.";
 
-        EXEC_UPDATE_TASK(model.startWatching(), );
+        { EXEC_UPDATE_TASK(model.startWatching(), ) }
 
         QCOMPARE(model.size(), 1);
         qDebug() << "Started watching the temp folder.";
 
-        EXEC_UPDATE_TASK(model.installResource(folder_resource), QVERIFY);
+        { EXEC_UPDATE_TASK(model.installResource(folder_resource), QVERIFY) }
 
         QCOMPARE(model.size(), 2);
         qDebug() << "Added second mod.";
 
-        EXEC_UPDATE_TASK(model.uninstallResource("supercoolmod.jar"), QVERIFY);
+        {
+            EXEC_UPDATE_TASK(model.uninstallResource("supercoolmod.jar"), QVERIFY);
+        }
 
         QCOMPARE(model.size(), 1);
         qDebug() << "Removed first mod.";
@@ -186,7 +191,9 @@ class ResourceFolderModelTest : public QObject {
         QString mod_file_name{ model.at(0).fileinfo().fileName() };
         QVERIFY(!mod_file_name.isEmpty());
 
-        EXEC_UPDATE_TASK(model.uninstallResource(mod_file_name), QVERIFY);
+        {
+            EXEC_UPDATE_TASK(model.uninstallResource(mod_file_name), QVERIFY);
+        }
 
         QCOMPARE(model.size(), 0);
         qDebug() << "Removed second mod.";
@@ -204,8 +211,12 @@ class ResourceFolderModelTest : public QObject {
 
         QCOMPARE(model.size(), 0);
 
-        EXEC_UPDATE_TASK(model.installResource(folder_resource), QVERIFY);
-        EXEC_UPDATE_TASK(model.installResource(file_mod), QVERIFY);
+        {
+            EXEC_UPDATE_TASK(model.installResource(folder_resource), QVERIFY)
+        }
+        {
+            EXEC_UPDATE_TASK(model.installResource(file_mod), QVERIFY)
+        }
 
         for (auto res : model.allResources())
             qDebug() << res->name();
