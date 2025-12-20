@@ -107,14 +107,15 @@ Window {
         z: -1
     }
 
+    Shortcut {
+        sequence: StandardKey.Cancel
+        enabled: closePolicy & Popup.CloseOnEscape
+        onActivated: root.close()
+    }
+
     FocusScope {
         id: keyScope
         anchors.fill: parent
-        Keys.onEscapePressed: {
-            if (closePolicy & Popup.CloseOnEscape) {
-                root.close()
-            }
-        }
 
         ColumnLayout {
             anchors.fill: parent

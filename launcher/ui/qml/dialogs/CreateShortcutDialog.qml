@@ -80,9 +80,9 @@ WindowDialog {
         }
 
         // Shortcut name
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Shortcut Settings")
+    GroupBox {
+        Layout.fillWidth: true
+        title: qsTr("Shortcut Settings")
 
             ColumnLayout {
                 anchors.fill: parent
@@ -99,7 +99,7 @@ WindowDialog {
                     TextField {
                         id: nameField
                         Layout.fillWidth: true
-                        text: shortcutName || (instance && instance.name ? instance.name : "")
+                        text: shortcutName
                         placeholderText: qsTr("Shortcut name...")
                         onTextChanged: shortcutName = text
                     }
@@ -173,5 +173,22 @@ WindowDialog {
         if (instance && ProjT && ProjT.instancesVM) {
             ProjT.instancesVM.createShortcut(instance.id, nameField.text, locationCombo.currentValue, launchDirectly);
         }
+    }
+
+    onOpened: {
+        shortcutName = instance && instance.name ? instance.name : "";
+        if (!shortcutLocation) {
+            shortcutLocation = "desktop";
+        }
+
+        var idx = 0;
+        for (var i = 0; i < locationCombo.model.length; i++) {
+            if (locationCombo.model[i].value === shortcutLocation) {
+                idx = i;
+                break;
+            }
+        }
+        locationCombo.currentIndex = idx;
+        nameField.selectAll();
     }
 }

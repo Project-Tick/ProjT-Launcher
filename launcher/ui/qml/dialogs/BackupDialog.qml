@@ -170,11 +170,6 @@ WindowDialog {
                 title: qsTr("Backup Details")
 
                 background: Rectangle {
-                    implicitWidth: 0
-                    implicitHeight: 0
-                    y: parent.topPadding - parent.padding
-                    width: parent.width
-                    height: parent.height - parent.topPadding + parent.padding
                     color: "transparent"
                     border.color: ThemeColors.border
                     radius: Theme.radiusS

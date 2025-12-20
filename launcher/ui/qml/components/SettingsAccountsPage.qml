@@ -128,7 +128,7 @@ Rectangle {
                     property bool isDefault: accountsVM.isAccountDefault(index)
 
                     background: Rectangle {
-                        color: accountDelegate.hovered ? ThemeColors.surfaceHover : "transparent"
+                        color: accountDelegate.hovered ? ThemeColors.hover : "transparent"
                     }
 
                     contentItem: RowLayout {

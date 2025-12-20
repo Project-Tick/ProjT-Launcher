@@ -445,7 +445,7 @@ Rectangle {
                     onClicked: {
                         installLoaderDialog.close();
                         if (vm)
-                            vm.installModLoader(modelData.toLowerCase());
+                            vm.installModLoader(modelData.toLowerCase(), "");
                     }
                 }
             }

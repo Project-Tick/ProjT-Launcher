@@ -36,15 +36,19 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QRegularExpression>
+#include <QTextStream>
 #include <QUrl>
 
 #include "Application.h"
 #include "FileSystem.h"
 #include "InstanceList.h"
 #include "MMCZip.h"
+#include "meta/Index.h"
+#include "net/Mode.h"
 #include "minecraft/Component.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
+#include "minecraft/auth/AccountList.h"
 #include "minecraft/mod/DataPackFolderModel.h"
 #include "minecraft/mod/Mod.h"
 #include "minecraft/mod/ModFolderModel.h"
@@ -52,13 +56,16 @@
 #include "minecraft/mod/ResourcePackFolderModel.h"
 #include "minecraft/mod/ShaderPackFolderModel.h"
 #include "minecraft/mod/TexturePackFolderModel.h"
+#include "ui/GuiUtil.h"
 #include "ui/dialogs/CustomMessageBox.h"
+#include "ui/dialogs/NewComponentDialog.h"
 #include "ui/dialogs/ExportToModListDialog.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/dialogs/ResourceDownloadDialog.h"
 #include "ui/dialogs/ResourceUpdateDialog.h"
 
 #include "tasks/ConcurrentTask.h"
+#include "tasks/SequentialTask.h"
 #include "tasks/Task.h"
 
 // NBT library for servers.dat
@@ -102,6 +109,61 @@ void runDownloadTasks(QWidget* parent, const QList<TaskPtr>& tasks, const QStrin
     progress.setSkipButton(true, QObject::tr("Abort"));
     progress.execWithTask(concurrent);
 }
+
+QStringList detectJavaPaths()
+{
+    QStringList javaRoots;
+#ifdef Q_OS_WIN
+    javaRoots << "C:/Program Files/Java"
+              << "C:/Program Files (x86)/Java"
+              << "C:/Program Files/Eclipse Adoptium"
+              << "C:/Program Files/AdoptOpenJDK" << QDir::homePath() + "/.jdks";
+#elif defined(Q_OS_MAC)
+    javaRoots << "/Library/Java/JavaVirtualMachines"
+              << "/System/Library/Frameworks/JavaVM.framework/Versions" << QDir::homePath() + "/Library/Java/JavaVirtualMachines";
+#else
+    javaRoots << "/usr/lib/jvm"
+              << "/usr/lib64/jvm"
+              << "/usr/local/lib/jvm" << QDir::homePath() + "/.jdks" << QDir::homePath() + "/.sdkman/candidates/java";
+#endif
+
+    QStringList foundJavas;
+    for (const QString& basePath : javaRoots) {
+        QDir dir(basePath);
+        if (!dir.exists())
+            continue;
+
+        QStringList jdkDirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString& jdkDir : jdkDirs) {
+            QString javaExe = basePath + "/" + jdkDir + "/bin/java";
+#ifdef Q_OS_WIN
+            javaExe += ".exe";
+#endif
+            if (QFile::exists(javaExe)) {
+                foundJavas << javaExe;
+            }
+        }
+    }
+
+    // Also check PATH
+    QString pathEnv = qgetenv("PATH");
+#ifdef Q_OS_WIN
+    QStringList pathDirs = pathEnv.split(';');
+#else
+    QStringList pathDirs = pathEnv.split(':');
+#endif
+    for (const QString& pathDir : pathDirs) {
+        QString javaExe = pathDir + "/java";
+#ifdef Q_OS_WIN
+        javaExe += ".exe";
+#endif
+        if (QFile::exists(javaExe) && !foundJavas.contains(javaExe)) {
+            foundJavas.prepend(javaExe);
+        }
+    }
+
+    return foundJavas;
+}
 }  // namespace
 
 InstanceViewModel::InstanceViewModel(QObject* parent) : QObject(parent) {}
@@ -134,10 +196,15 @@ void InstanceViewModel::setInstanceId(const QString& id)
         emit instanceIdChanged();
         emit hasInstanceChanged();
         m_modFilter.clear();
+        m_componentsFilter.clear();
+        m_gameOptionsFilter.clear();
+        m_gameOptionsAll.clear();
+        m_gameOptionsModel.clear();
         m_selectedDataPacksPath.clear();
         m_dataPacksFolderModel.reset();
         m_dataPacksModel.clear();
         emit dataPacksModelChanged();
+        emit gameOptionsModelChanged();
         scanScreenshots();
         scanWorlds();
         scanServers();
@@ -146,6 +213,8 @@ void InstanceViewModel::setInstanceId(const QString& id)
         scanShaderPacks();
         scanTexturePacks();
         scanOtherLogs();
+        refreshAvailableMinecraftVersions();
+        refreshGameOptions();
         emitAllChanged();
     }
 }
@@ -679,59 +748,35 @@ void InstanceViewModel::setJvmArgs(const QString& args)
 void InstanceViewModel::autoDetectJava(const QString& instanceId)
 {
     Q_UNUSED(instanceId)
-    // Search for Java installations in common paths
-    QStringList javaPaths;
+    emit javaAutoDetected(detectJavaPaths());
+}
 
-#ifdef Q_OS_WIN
-    javaPaths << "C:/Program Files/Java"
-              << "C:/Program Files (x86)/Java"
-              << "C:/Program Files/Eclipse Adoptium"
-              << "C:/Program Files/AdoptOpenJDK" << QDir::homePath() + "/.jdks";
-#elif defined(Q_OS_MAC)
-    javaPaths << "/Library/Java/JavaVirtualMachines"
-              << "/System/Library/Frameworks/JavaVM.framework/Versions" << QDir::homePath() + "/Library/Java/JavaVirtualMachines";
-#else
-    javaPaths << "/usr/lib/jvm"
-              << "/usr/lib64/jvm"
-              << "/usr/local/lib/jvm" << QDir::homePath() + "/.jdks" << QDir::homePath() + "/.sdkman/candidates/java";
-#endif
-
-    QStringList foundJavas;
-    for (const QString& basePath : javaPaths) {
-        QDir dir(basePath);
-        if (!dir.exists())
-            continue;
-
-        QStringList jdkDirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-        for (const QString& jdkDir : jdkDirs) {
-            QString javaExe = basePath + "/" + jdkDir + "/bin/java";
-#ifdef Q_OS_WIN
-            javaExe += ".exe";
-#endif
-            if (QFile::exists(javaExe)) {
-                foundJavas << javaExe;
-            }
-        }
-    }
-
-    // Also check PATH
-    QString pathEnv = qgetenv("PATH");
-#ifdef Q_OS_WIN
-    QStringList pathDirs = pathEnv.split(';');
-#else
-    QStringList pathDirs = pathEnv.split(':');
-#endif
-    for (const QString& pathDir : pathDirs) {
-        QString javaExe = pathDir + "/java";
-#ifdef Q_OS_WIN
-        javaExe += ".exe";
-#endif
-        if (QFile::exists(javaExe) && !foundJavas.contains(javaExe)) {
-            foundJavas.prepend(javaExe);
-        }
-    }
-
+void InstanceViewModel::autoDetectJava()
+{
+    auto foundJavas = detectJavaPaths();
     emit javaAutoDetected(foundJavas);
+    if (!foundJavas.isEmpty()) {
+        setJavaPath(foundJavas.first());
+    }
+}
+
+void InstanceViewModel::browseJavaPath()
+{
+    const QString currentPath = javaPath();
+    QString startDir = QFileInfo(currentPath).absolutePath();
+    if (startDir.isEmpty())
+        startDir = QDir::homePath();
+
+#ifdef Q_OS_WIN
+    const QString filter = tr("Java Executable (java.exe)");
+#else
+    const QString filter = tr("Java Executable (java)");
+#endif
+
+    const QString path = QFileDialog::getOpenFileName(nullptr, tr("Select Java executable"), startDir, filter);
+    if (!path.isEmpty()) {
+        setJavaPath(path);
+    }
 }
 
 bool InstanceViewModel::overrideMemory() const
@@ -941,6 +986,172 @@ void InstanceViewModel::setQuitAfterGame(bool quit)
         settings->set("QuitAfterGameStop", quit);
         emit quitAfterGameChanged();
     }
+}
+
+QVariantList InstanceViewModel::gameOptionsModel() const
+{
+    return m_gameOptionsModel;
+}
+
+int InstanceViewModel::gameOptionsCount() const
+{
+    return m_gameOptionsModel.size();
+}
+
+void InstanceViewModel::refreshGameOptions()
+{
+    m_gameOptionsAll.clear();
+
+    if (!m_instance) {
+        rebuildGameOptionsModel();
+        return;
+    }
+
+    const QString optionsPath = gameRoot() + "/options.txt";
+    QFile file(optionsPath);
+    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+            const QString line = in.readLine();
+            if (line.trimmed().isEmpty() || line.startsWith('#'))
+                continue;
+
+            const int splitIndex = line.indexOf(':');
+            if (splitIndex <= 0)
+                continue;
+
+            GameOptionEntry entry;
+            entry.key = line.left(splitIndex);
+            entry.value = line.mid(splitIndex + 1);
+            m_gameOptionsAll.append(entry);
+        }
+    }
+
+    rebuildGameOptionsModel();
+}
+
+void InstanceViewModel::filterGameOptions(const QString& text)
+{
+    m_gameOptionsFilter = text;
+    rebuildGameOptionsModel();
+}
+
+void InstanceViewModel::setGameOption(const QString& key, const QString& value)
+{
+    if (key.isEmpty())
+        return;
+
+    bool found = false;
+    for (auto& entry : m_gameOptionsAll) {
+        if (entry.key == key) {
+            entry.value = value;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        m_gameOptionsAll.append({ key, value });
+    }
+
+    if (writeGameOptionsFile()) {
+        rebuildGameOptionsModel();
+    }
+}
+
+void InstanceViewModel::resetGameOption(const QString& key)
+{
+    if (key.isEmpty())
+        return;
+
+    auto it = std::remove_if(m_gameOptionsAll.begin(), m_gameOptionsAll.end(),
+                             [key](const GameOptionEntry& entry) { return entry.key == key; });
+    if (it != m_gameOptionsAll.end()) {
+        m_gameOptionsAll.erase(it, m_gameOptionsAll.end());
+        if (writeGameOptionsFile()) {
+            rebuildGameOptionsModel();
+        }
+    }
+}
+
+void InstanceViewModel::resetAllGameOptions()
+{
+    if (!m_instance) {
+        m_gameOptionsAll.clear();
+        rebuildGameOptionsModel();
+        return;
+    }
+
+    const QString optionsPath = gameRoot() + "/options.txt";
+    QFile::remove(optionsPath);
+    m_gameOptionsAll.clear();
+    rebuildGameOptionsModel();
+}
+
+void InstanceViewModel::openOptionsFile()
+{
+    if (!m_instance)
+        return;
+
+    const QString optionsPath = gameRoot() + "/options.txt";
+    if (QFileInfo::exists(optionsPath)) {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(optionsPath));
+    }
+}
+
+void InstanceViewModel::rebuildGameOptionsModel()
+{
+    QVariantList nextModel;
+    nextModel.reserve(m_gameOptionsAll.size());
+
+    const QString filter = m_gameOptionsFilter.trimmed();
+    for (const auto& entry : m_gameOptionsAll) {
+        if (!filter.isEmpty()) {
+            const QString haystack = entry.key + " " + entry.value;
+            if (!haystack.contains(filter, Qt::CaseInsensitive)) {
+                continue;
+            }
+        }
+
+        QVariantMap item;
+        item["key"] = entry.key;
+        item["value"] = entry.value;
+        nextModel.append(item);
+    }
+
+    m_gameOptionsModel = std::move(nextModel);
+    emit gameOptionsModelChanged();
+}
+
+bool InstanceViewModel::writeGameOptionsFile()
+{
+    if (!m_instance)
+        return false;
+
+    const QString rootPath = gameRoot();
+    if (rootPath.isEmpty())
+        return false;
+
+    QDir rootDir(rootPath);
+    if (!rootDir.exists()) {
+        rootDir.mkpath(".");
+    }
+
+    const QString optionsPath = rootPath + "/options.txt";
+    QFile file(optionsPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qWarning() << "[InstanceViewModel] Failed to write options file:" << optionsPath;
+        return false;
+    }
+
+    QTextStream out(&file);
+    for (const auto& entry : m_gameOptionsAll) {
+        if (entry.key.isEmpty())
+            continue;
+        out << entry.key << ":" << entry.value << "\n";
+    }
+
+    return true;
 }
 
 QString InstanceViewModel::preLaunchCommand() const
@@ -1599,6 +1810,14 @@ QVariantList InstanceViewModel::componentsModel() const
         if (!component)
             continue;
 
+        if (!m_componentsFilter.isEmpty()) {
+            const QString haystack =
+                component->getName() + " " + component->getID() + " " + component->getVersion();
+            if (!haystack.contains(m_componentsFilter, Qt::CaseInsensitive)) {
+                continue;
+            }
+        }
+
         QVariantMap item;
         item["name"] = component->getName();
         item["version"] = component->getVersion();
@@ -1616,10 +1835,71 @@ QVariantList InstanceViewModel::componentsModel() const
     return result;
 }
 
+QStringList InstanceViewModel::availableMinecraftVersions() const
+{
+    return m_availableMinecraftVersions;
+}
+
+void InstanceViewModel::refreshAvailableMinecraftVersions()
+{
+    m_availableMinecraftVersions.clear();
+
+    auto metadataIndex = APPLICATION->metadataIndex();
+    if (!metadataIndex) {
+        emit availableMinecraftVersionsChanged();
+        return;
+    }
+
+    auto versionList = metadataIndex->get("net.minecraft");
+    if (!versionList) {
+        emit availableMinecraftVersionsChanged();
+        return;
+    }
+
+    auto rebuildVersions = [this, versionList]() {
+        QStringList versions;
+        versions.reserve(versionList->versions().size());
+        for (const auto& version : versionList->versions()) {
+            if (!version)
+                continue;
+            versions.append(version->version());
+        }
+        m_availableMinecraftVersions = std::move(versions);
+        emit availableMinecraftVersionsChanged();
+    };
+
+    if (!versionList->isLoaded()) {
+        if (m_versionsLoadTask && !m_versionsLoadTask->isFinished()) {
+            return;
+        }
+
+        m_versionsLoadTask = versionList->getLoadTask();
+        connect(m_versionsLoadTask.get(), &Task::succeeded, this, [this, rebuildVersions]() {
+            m_versionsLoadTask.reset();
+            rebuildVersions();
+        });
+        connect(m_versionsLoadTask.get(), &Task::failed, this, [this](const QString& reason) {
+            m_versionsLoadTask.reset();
+            qWarning() << "[InstanceViewModel] Failed to load Minecraft versions:" << reason;
+            emit availableMinecraftVersionsChanged();
+        });
+        m_versionsLoadTask->start();
+        return;
+    }
+
+    rebuildVersions();
+}
+
 void InstanceViewModel::refreshVersionComponents()
 {
     emit componentsModelChanged();
     emit versionChanged();
+}
+
+void InstanceViewModel::filterComponents(const QString& text)
+{
+    m_componentsFilter = text;
+    emit componentsModelChanged();
 }
 
 void InstanceViewModel::setComponentEnabled(int index, bool enabled)
@@ -1697,6 +1977,319 @@ void InstanceViewModel::removeComponent(int index)
     }
 }
 
+void InstanceViewModel::customizeComponent(int index)
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile || index < 0 || index >= profile->rowCount())
+        return;
+
+    auto component = profile->getComponent(index);
+    if (!component)
+        return;
+
+    if (!component->getVersionFile()) {
+        QMessageBox::information(nullptr, tr("Version Update"),
+                                 tr("Please wait for the version file to load before customizing."));
+        return;
+    }
+
+    if (!profile->customize(index)) {
+        QMessageBox::critical(nullptr, tr("Error"),
+                              tr("Failed to customize version. The version file may be read-only."));
+        return;
+    }
+
+    emit componentsModelChanged();
+    emit versionChanged();
+}
+
+void InstanceViewModel::editComponent(int index)
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile || index < 0 || index >= profile->rowCount())
+        return;
+
+    auto component = profile->getComponent(index);
+    if (!component)
+        return;
+
+    const QString filename = component->getFilename();
+    if (!QFileInfo::exists(filename)) {
+        qWarning() << "[InstanceViewModel] Component file missing:" << filename;
+        return;
+    }
+
+    APPLICATION->openJsonEditor(filename);
+}
+
+void InstanceViewModel::revertComponent(int index)
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile || index < 0 || index >= profile->rowCount())
+        return;
+
+    auto component = profile->getComponent(index);
+    if (!component)
+        return;
+
+    auto response =
+        CustomMessageBox::selectable(
+            nullptr, tr("Confirm Reversion"),
+            tr("You are about to revert \"%1\".\n"
+               "This is permanent and will completely revert your customizations.\n\n"
+               "Are you sure?")
+                .arg(component->getName()),
+            QMessageBox::Warning, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+            ->exec();
+
+    if (response != QMessageBox::Yes)
+        return;
+
+    if (!profile->revertToBase(index)) {
+        QMessageBox::critical(nullptr, tr("Error"),
+                              tr("Failed to revert version. The version may not have any customizations."));
+        return;
+    }
+
+    emit componentsModelChanged();
+    emit versionChanged();
+}
+
+void InstanceViewModel::addToMinecraftJar()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return;
+
+    const auto list = GuiUtil::BrowseForFiles("jarmod", tr("Select jar mods"),
+                                              tr("Minecraft.jar mods") + " (*.zip *.jar)",
+                                              APPLICATION->settings()->get("CentralModsDir").toString(), nullptr);
+    if (!list.isEmpty()) {
+        profile->installJarMods(list);
+        emit componentsModelChanged();
+        emit versionChanged();
+    }
+}
+
+void InstanceViewModel::replaceMinecraftJar()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return;
+
+    const auto jarPath = GuiUtil::BrowseForFile("jar", tr("Select jar"),
+                                                tr("Minecraft.jar replacement") + " (*.jar)",
+                                                APPLICATION->settings()->get("CentralModsDir").toString(), nullptr);
+    if (!jarPath.isEmpty()) {
+        profile->installCustomJar(jarPath);
+        emit componentsModelChanged();
+        emit versionChanged();
+    }
+}
+
+void InstanceViewModel::addAgents()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return;
+
+    const auto list = GuiUtil::BrowseForFiles("agent", tr("Select agents"),
+                                              tr("Java agents") + " (*.jar)",
+                                              APPLICATION->settings()->get("CentralModsDir").toString(), nullptr);
+    if (!list.isEmpty()) {
+        profile->installAgents(list);
+        emit componentsModelChanged();
+        emit versionChanged();
+    }
+}
+
+void InstanceViewModel::addEmptyComponent()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return;
+
+    NewComponentDialog compdialog(QString(), QString(), nullptr);
+    QStringList blacklist;
+    for (int i = 0; i < profile->rowCount(); i++) {
+        auto comp = profile->getComponent(i);
+        if (comp) {
+            blacklist.push_back(comp->getID());
+        }
+    }
+    compdialog.setBlacklist(blacklist);
+
+    if (compdialog.exec()) {
+        profile->installEmpty(compdialog.uid(), compdialog.name());
+        emit componentsModelChanged();
+        emit versionChanged();
+    }
+}
+
+void InstanceViewModel::importComponents()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return;
+
+    const auto list = GuiUtil::BrowseForFiles("component", tr("Select components"),
+                                              tr("Components") + " (*.json)",
+                                              APPLICATION->settings()->get("CentralModsDir").toString(), nullptr);
+    if (!list.isEmpty()) {
+        if (!profile->installComponents(list)) {
+            QMessageBox::warning(nullptr, tr("Failed to import components"),
+                                 tr("Some components could not be imported. Check logs for details"));
+        }
+        emit componentsModelChanged();
+        emit versionChanged();
+    }
+}
+
+void InstanceViewModel::openMinecraftFolder()
+{
+    openGameFolder();
+}
+
+void InstanceViewModel::openLibrariesFolder()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    const QString libPath = mcInstance->getLocalLibraryPath();
+    if (libPath.isEmpty())
+        return;
+
+    QDir dir(libPath);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+    QDesktopServices::openUrl(QUrl::fromLocalFile(libPath));
+}
+
+void InstanceViewModel::reloadComponents()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto profile = mcInstance->getPackProfile();
+    if (!profile)
+        return;
+
+    auto result = profile->reload(Net::Mode::Online);
+    if (!result) {
+        CustomMessageBox::selectable(nullptr, tr("Error"), result.error, QMessageBox::Warning)->show();
+    }
+
+    emit componentsModelChanged();
+    emit versionChanged();
+}
+
+void InstanceViewModel::downloadAll()
+{
+    if (!m_instance)
+        return;
+
+    auto mcInstance = std::dynamic_pointer_cast<MinecraftInstance>(m_instance);
+    if (!mcInstance)
+        return;
+
+    auto accounts = APPLICATION->accounts();
+    if (!accounts || !accounts->anyAccountIsValid()) {
+        CustomMessageBox::selectable(nullptr, tr("Error"),
+                                     tr("Cannot download Minecraft or update instances unless you have at least "
+                                        "one account added.\nPlease add a Microsoft account."),
+                                     QMessageBox::Warning)
+            ->show();
+        return;
+    }
+
+    auto updateTasks = mcInstance->createUpdateTask();
+    if (updateTasks.isEmpty()) {
+        return;
+    }
+
+    auto task = makeShared<SequentialTask>();
+    for (const auto& t : updateTasks) {
+        task->addTask(t);
+    }
+
+    ProgressDialog tDialog(nullptr);
+    connect(task.get(), &Task::failed, this, [](const QString& error) {
+        CustomMessageBox::selectable(nullptr, tr("Error updating instance"), error, QMessageBox::Warning)->show();
+    });
+    int result = tDialog.execWithTask(task.get());
+    if (result == QDialog::Rejected) {
+        qDebug() << "[InstanceViewModel] Update task was cancelled by user";
+    }
+
+    emit componentsModelChanged();
+    emit versionChanged();
+}
+
 void InstanceViewModel::changeMinecraftVersion(const QString& version)
 {
     if (!m_instance || version.isEmpty())
@@ -1747,6 +2340,11 @@ void InstanceViewModel::installModLoader(const QString& loaderType, const QStrin
         emit versionChanged();
         emit componentsModelChanged();
     }
+}
+
+void InstanceViewModel::installModLoader(const QString& loaderType)
+{
+    installModLoader(loaderType, QString());
 }
 
 // ============ Mods ============

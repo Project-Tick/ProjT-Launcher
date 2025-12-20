@@ -26,9 +26,11 @@
 #include <QString>
 #include <QStringList>
 #include <QVariantMap>
+#include <QVector>
 #include <memory>
 
 #include "BaseInstance.h"
+#include "tasks/Task.h"
 
 class InstanceViewModel : public QObject {
     Q_OBJECT
@@ -87,6 +89,8 @@ class InstanceViewModel : public QObject {
     Q_PROPERTY(bool showConsole READ showConsole WRITE setShowConsole NOTIFY showConsoleChanged)
     Q_PROPERTY(bool closeOnLaunch READ closeOnLaunch WRITE setCloseOnLaunch NOTIFY closeOnLaunchChanged)
     Q_PROPERTY(bool quitAfterGame READ quitAfterGame WRITE setQuitAfterGame NOTIFY quitAfterGameChanged)
+    Q_PROPERTY(QVariantList gameOptionsModel READ gameOptionsModel NOTIFY gameOptionsModelChanged)
+    Q_PROPERTY(int gameOptionsCount READ gameOptionsCount NOTIFY gameOptionsModelChanged)
 
     // Commands
     Q_PROPERTY(QString preLaunchCommand READ preLaunchCommand WRITE setPreLaunchCommand NOTIFY preLaunchCommandChanged)
@@ -110,6 +114,7 @@ class InstanceViewModel : public QObject {
     Q_PROPERTY(QString modLoaderName READ modLoaderName NOTIFY versionChanged)
     Q_PROPERTY(QString modLoaderVersion READ modLoaderVersion NOTIFY versionChanged)
     Q_PROPERTY(QVariantList componentsModel READ componentsModel NOTIFY componentsModelChanged)
+    Q_PROPERTY(QStringList availableMinecraftVersions READ availableMinecraftVersions NOTIFY availableMinecraftVersionsChanged)
 
     // Mods
     Q_PROPERTY(QVariantList modsModel READ modsModel NOTIFY modsModelChanged)
@@ -223,15 +228,30 @@ class InstanceViewModel : public QObject {
     QString modLoaderName() const;
     QString modLoaderVersion() const;
     QVariantList componentsModel() const;
+    QStringList availableMinecraftVersions() const;
 
     // Version actions
     Q_INVOKABLE void refreshVersionComponents();
+    Q_INVOKABLE void filterComponents(const QString& text);
     Q_INVOKABLE void setComponentEnabled(int index, bool enabled);
     Q_INVOKABLE void moveComponentUp(int index);
     Q_INVOKABLE void moveComponentDown(int index);
     Q_INVOKABLE void removeComponent(int index);
+    Q_INVOKABLE void customizeComponent(int index);
+    Q_INVOKABLE void editComponent(int index);
+    Q_INVOKABLE void revertComponent(int index);
+    Q_INVOKABLE void addToMinecraftJar();
+    Q_INVOKABLE void replaceMinecraftJar();
+    Q_INVOKABLE void addAgents();
+    Q_INVOKABLE void addEmptyComponent();
+    Q_INVOKABLE void importComponents();
+    Q_INVOKABLE void openMinecraftFolder();
+    Q_INVOKABLE void openLibrariesFolder();
+    Q_INVOKABLE void reloadComponents();
+    Q_INVOKABLE void downloadAll();
     Q_INVOKABLE void changeMinecraftVersion(const QString& version);
     Q_INVOKABLE void installModLoader(const QString& loaderType, const QString& version);
+    Q_INVOKABLE void installModLoader(const QString& loaderType);
 
     // Mods
     QVariantList modsModel() const;
@@ -316,6 +336,8 @@ class InstanceViewModel : public QObject {
     QString jvmArgs() const;
     void setJvmArgs(const QString& args);
     Q_INVOKABLE void autoDetectJava(const QString& instanceId);
+    Q_INVOKABLE void autoDetectJava();
+    Q_INVOKABLE void browseJavaPath();
 
     // Memory settings
     bool overrideMemory() const;
@@ -344,6 +366,14 @@ class InstanceViewModel : public QObject {
     void setCloseOnLaunch(bool close);
     bool quitAfterGame() const;
     void setQuitAfterGame(bool quit);
+    QVariantList gameOptionsModel() const;
+    int gameOptionsCount() const;
+    Q_INVOKABLE void refreshGameOptions();
+    Q_INVOKABLE void filterGameOptions(const QString& text);
+    Q_INVOKABLE void setGameOption(const QString& key, const QString& value);
+    Q_INVOKABLE void resetGameOption(const QString& key);
+    Q_INVOKABLE void resetAllGameOptions();
+    Q_INVOKABLE void openOptionsFile();
 
     // Commands
     QString preLaunchCommand() const;
@@ -418,6 +448,8 @@ class InstanceViewModel : public QObject {
     // Version signals
     void versionChanged();
     void componentsModelChanged();
+    void availableMinecraftVersionsChanged();
+    void gameOptionsModelChanged();
 
     // Content model signals
     void modsModelChanged();
@@ -457,6 +489,14 @@ class InstanceViewModel : public QObject {
     void scanDataPacks();
     void scanOtherLogs();
     void loadLatestLog();
+    void refreshAvailableMinecraftVersions();
+    void rebuildGameOptionsModel();
+    bool writeGameOptionsFile();
+
+    struct GameOptionEntry {
+        QString key;
+        QString value;
+    };
 
     QString m_instanceId;
     InstancePtr m_instance;
@@ -480,4 +520,10 @@ class InstanceViewModel : public QObject {
     QStringList m_otherLogPaths;
     QString m_otherLogContent;
     QString m_currentOtherLogPath;
+    QString m_componentsFilter;
+    QStringList m_availableMinecraftVersions;
+    Task::Ptr m_versionsLoadTask;
+    QVector<GameOptionEntry> m_gameOptionsAll;
+    QVariantList m_gameOptionsModel;
+    QString m_gameOptionsFilter;
 };

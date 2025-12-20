@@ -44,6 +44,7 @@
 #include "minecraft/PackProfile.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/VanillaInstanceCreationTask.h"
+#include "minecraft/mod/ModFolderModel.h"
 #include "modplatform/helpers/ExportToModList.h"
 
 namespace {

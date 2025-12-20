@@ -66,7 +66,7 @@ WindowDialog {
                     height: 52
 
                     background: Rectangle {
-                        color: selectedIcon === modelData ? ThemeColors.accent : (parent.hovered ? ThemeColors.surfaceHover : "transparent")
+                        color: selectedIcon === modelData ? ThemeColors.accent : (parent.hovered ? ThemeColors.hover : "transparent")
                         radius: Theme.radius
                         border.color: selectedIcon === modelData ? ThemeColors.accent : "transparent"
                         border.width: 2
@@ -106,7 +106,7 @@ WindowDialog {
                     height: 52
 
                     background: Rectangle {
-                        color: selectedIcon === modelData ? ThemeColors.accent : (parent.hovered ? ThemeColors.surfaceHover : "transparent")
+                        color: selectedIcon === modelData ? ThemeColors.accent : (parent.hovered ? ThemeColors.hover : "transparent")
                         radius: Theme.radius
                         border.color: selectedIcon === modelData ? ThemeColors.accent : "transparent"
                         border.width: 2
