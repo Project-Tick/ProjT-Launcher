@@ -136,28 +136,28 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
 
     auto pack = m_modpacks.at(pos);
     switch (role) {
-    case Qt::ToolTipRole:
-        return tr("Minecraft %1").arg(pack.mcVersion);
-    case Qt::DecorationRole:
-        return pack.icon;
-    case Qt::UserRole: {
-        QVariant v;
-        v.setValue(pack);
-        return v;
-    }
-    case Qt::DisplayRole:
-        return pack.name;
-    case Qt::SizeHintRole:
-        return QSize(0, 58);
-    // Custom data
-    case UserDataTypes::TITLE:
-        return pack.name;
-    case UserDataTypes::DESCRIPTION:
-        return tr("Minecraft %1").arg(pack.mcVersion);
-    case UserDataTypes::INSTALLED:
-        return false;
-    default:
-        break;
+        case Qt::ToolTipRole:
+            return tr("Minecraft %1").arg(pack.mcVersion);
+        case Qt::DecorationRole:
+            return pack.icon;
+        case Qt::UserRole: {
+            QVariant v;
+            v.setValue(pack);
+            return v;
+        }
+        case Qt::DisplayRole:
+            return pack.name;
+        case Qt::SizeHintRole:
+            return QSize(0, 58);
+        // Custom data
+        case UserDataTypes::TITLE:
+            return pack.name;
+        case UserDataTypes::DESCRIPTION:
+            return tr("Minecraft %1").arg(pack.mcVersion);
+        case UserDataTypes::INSTALLED:
+            return false;
+        default:
+            break;
     }
 
     return {};

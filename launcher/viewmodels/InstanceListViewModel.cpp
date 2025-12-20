@@ -34,15 +34,15 @@
 #include "BaseInstance.h"
 #include "DesktopServices.h"
 #include "FileSystem.h"
+#include "InstanceCopyTask.h"
 #include "InstanceImportTask.h"
 #include "InstanceList.h"
 #include "MMCZip.h"
 #include "QObjectPtr.h"
-#include "InstanceCopyTask.h"
 #include "icons/IconList.h"
 #include "meta/Index.h"
-#include "minecraft/PackProfile.h"
 #include "minecraft/MinecraftInstance.h"
+#include "minecraft/PackProfile.h"
 #include "minecraft/VanillaInstanceCreationTask.h"
 #include "minecraft/mod/ModFolderModel.h"
 #include "modplatform/helpers/ExportToModList.h"
@@ -614,8 +614,7 @@ void InstanceListViewModel::updateInstanceNotes(const QString& id, const QString
     APPLICATION->instances()->saveNow();
 }
 
-void InstanceListViewModel::copyInstance(const QString& sourceId, const QString& newName, const QString& group,
-                                         const QVariantMap& options)
+void InstanceListViewModel::copyInstance(const QString& sourceId, const QString& newName, const QString& group, const QVariantMap& options)
 {
     if (sourceId.isEmpty()) {
         emit errorOccurred(tr("No instance selected."));
@@ -1018,16 +1017,16 @@ void InstanceListViewModel::createShortcut(const ShortcutUtils::Shortcut& shortc
 {
     setBusy(true, tr("Creating shortcut"));
     switch (shortcut.target) {
-    case ShortcutTarget::Desktop:
-        ShortcutUtils::createInstanceShortcutOnDesktop(shortcut);
-        break;
-    case ShortcutTarget::Applications:
-        ShortcutUtils::createInstanceShortcutInApplications(shortcut);
-        break;
-    case ShortcutTarget::Other:
-    default:
-        ShortcutUtils::createInstanceShortcutInOther(shortcut);
-        break;
+        case ShortcutTarget::Desktop:
+            ShortcutUtils::createInstanceShortcutOnDesktop(shortcut);
+            break;
+        case ShortcutTarget::Applications:
+            ShortcutUtils::createInstanceShortcutInApplications(shortcut);
+            break;
+        case ShortcutTarget::Other:
+        default:
+            ShortcutUtils::createInstanceShortcutInOther(shortcut);
+            break;
     }
     setBusy(false);
 }
@@ -1371,24 +1370,24 @@ QVariantMap InstanceListViewModel::generateModList(const QString& instanceId, co
     int formatIndex = options.value("format").toInt();
     ExportToModList::Formats format = ExportToModList::Formats::HTML;
     switch (formatIndex) {
-    case 1:
-        format = ExportToModList::Formats::MARKDOWN;
-        break;
-    case 2:
-        format = ExportToModList::Formats::PLAINTXT;
-        break;
-    case 3:
-        format = ExportToModList::Formats::JSON;
-        break;
-    case 4:
-        format = ExportToModList::Formats::CSV;
-        break;
-    case 5:
-        format = ExportToModList::Formats::CUSTOM;
-        break;
-    default:
-        format = ExportToModList::Formats::HTML;
-        break;
+        case 1:
+            format = ExportToModList::Formats::MARKDOWN;
+            break;
+        case 2:
+            format = ExportToModList::Formats::PLAINTXT;
+            break;
+        case 3:
+            format = ExportToModList::Formats::JSON;
+            break;
+        case 4:
+            format = ExportToModList::Formats::CSV;
+            break;
+        case 5:
+            format = ExportToModList::Formats::CUSTOM;
+            break;
+        default:
+            format = ExportToModList::Formats::HTML;
+            break;
     }
 
     QString output;

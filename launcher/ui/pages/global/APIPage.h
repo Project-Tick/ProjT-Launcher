@@ -67,9 +67,7 @@ namespace Ui {
 class APIPage;
 }
 
-class APIPage
-    : public QWidget
-    , public BasePage {
+class APIPage : public QWidget, public BasePage {
     Q_OBJECT
 
    public:

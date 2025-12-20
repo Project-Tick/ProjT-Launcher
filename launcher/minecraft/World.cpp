@@ -89,36 +89,36 @@ GameType::GameType(std::optional<int> original) : original(original)
         return;
     }
     switch (*original) {
-    case 0:
-        type = GameType::Survival;
-        break;
-    case 1:
-        type = GameType::Creative;
-        break;
-    case 2:
-        type = GameType::Adventure;
-        break;
-    case 3:
-        type = GameType::Spectator;
-        break;
-    default:
-        break;
+        case 0:
+            type = GameType::Survival;
+            break;
+        case 1:
+            type = GameType::Creative;
+            break;
+        case 2:
+            type = GameType::Adventure;
+            break;
+        case 3:
+            type = GameType::Spectator;
+            break;
+        default:
+            break;
     }
 }
 
 QString GameType::toTranslatedString() const
 {
     switch (type) {
-    case GameType::Survival:
-        return QCoreApplication::translate("GameType", "Survival");
-    case GameType::Creative:
-        return QCoreApplication::translate("GameType", "Creative");
-    case GameType::Adventure:
-        return QCoreApplication::translate("GameType", "Adventure");
-    case GameType::Spectator:
-        return QCoreApplication::translate("GameType", "Spectator");
-    default:
-        break;
+        case GameType::Survival:
+            return QCoreApplication::translate("GameType", "Survival");
+        case GameType::Creative:
+            return QCoreApplication::translate("GameType", "Creative");
+        case GameType::Adventure:
+            return QCoreApplication::translate("GameType", "Adventure");
+        case GameType::Spectator:
+            return QCoreApplication::translate("GameType", "Spectator");
+        default:
+            break;
     }
     if (original) {
         return QCoreApplication::translate("GameType", "Unknown (%1)").arg(*original);
@@ -129,16 +129,16 @@ QString GameType::toTranslatedString() const
 QString GameType::toLogString() const
 {
     switch (type) {
-    case GameType::Survival:
-        return "Survival";
-    case GameType::Creative:
-        return "Creative";
-    case GameType::Adventure:
-        return "Adventure";
-    case GameType::Spectator:
-        return "Spectator";
-    default:
-        break;
+        case GameType::Survival:
+            return "Survival";
+        case GameType::Creative:
+            return "Creative";
+        case GameType::Adventure:
+            return "Adventure";
+        case GameType::Spectator:
+            return "Spectator";
+        default:
+            break;
     }
     if (original) {
         return QString("Unknown (%1)").arg(*original);

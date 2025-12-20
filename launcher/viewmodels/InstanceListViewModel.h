@@ -108,8 +108,7 @@ class InstanceListViewModel : public QObject {
     Q_INVOKABLE void createNewInstance(const QString& name, const QString& version, const QString& group);
     Q_INVOKABLE void importInstance(const QString& sourcePath, const QString& name);
     Q_INVOKABLE void updateInstanceNotes(const QString& id, const QString& notes);
-    Q_INVOKABLE void copyInstance(const QString& sourceId, const QString& newName, const QString& group,
-                                  const QVariantMap& options);
+    Q_INVOKABLE void copyInstance(const QString& sourceId, const QString& newName, const QString& group, const QVariantMap& options);
     Q_INVOKABLE void exportInstance(const QString& id, const QString& outputPath, const QFileInfoList& files);
     Q_INVOKABLE void exportInstanceSimple(const QString& id, const QString& outputPath, const QString& format);
     Q_INVOKABLE void backupInstance(const QString& id, const QString& backupName, const BackupOptions& options);

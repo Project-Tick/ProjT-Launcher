@@ -47,18 +47,18 @@ MessageLevel::Enum MessageLevel::getLevel(const QString& levelName)
 MessageLevel::Enum MessageLevel::getLevel(QtMsgType type)
 {
     switch (type) {
-    case QtDebugMsg:
-        return MessageLevel::Debug;
-    case QtInfoMsg:
-        return MessageLevel::Info;
-    case QtWarningMsg:
-        return MessageLevel::Warning;
-    case QtCriticalMsg:
-        return MessageLevel::Error;
-    case QtFatalMsg:
-        return MessageLevel::Fatal;
-    default:
-        return MessageLevel::Unknown;
+        case QtDebugMsg:
+            return MessageLevel::Debug;
+        case QtInfoMsg:
+            return MessageLevel::Info;
+        case QtWarningMsg:
+            return MessageLevel::Warning;
+        case QtCriticalMsg:
+            return MessageLevel::Error;
+        case QtFatalMsg:
+            return MessageLevel::Fatal;
+        default:
+            return MessageLevel::Unknown;
     }
 }
 

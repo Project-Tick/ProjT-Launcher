@@ -331,9 +331,7 @@ void NewInstanceViewModel::filterVersions()
         types << "experiment";
     }
 
-    Filter filter = [types = std::move(types)](const QString& value) {
-        return !types.isEmpty() && types.contains(value);
-    };
+    Filter filter = [types = std::move(types)](const QString& value) { return !types.isEmpty() && types.contains(value); };
     m_minecraftVersionsProxy->setFilter(BaseVersionList::TypeRole, std::move(filter));
 }
 

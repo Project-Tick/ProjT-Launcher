@@ -23,10 +23,10 @@
 
 #include <QApplication>
 #include <QClipboard>
-#include <QQmlPropertyMap>
-#include <QVariantMap>
 #include <QDir>
 #include <QFile>
+#include <QQmlPropertyMap>
+#include <QVariantMap>
 
 #include "BuildConfig.h"
 #include "FileSystem.h"

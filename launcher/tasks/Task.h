@@ -106,9 +106,7 @@ using TaskStepProgressList = QList<std::shared_ptr<TaskStepProgress>>;
  * emitSucceeded() or emitFailed() when the task is done.
  * the caller needs to call start() to start the task.
  */
-class Task
-    : public QObject
-    , public QRunnable {
+class Task : public QObject, public QRunnable {
     Q_OBJECT
    public:
     using Ptr = shared_qobject_ptr<Task>;

@@ -50,23 +50,23 @@ QVariant CurseForgePackListModel::data(const QModelIndex& index, int role) const
     auto pack = m_packs.at(index.row());
 
     switch (role) {
-    case NameRole:
-    case Qt::DisplayRole:
-        return pack->name;
-    case DescriptionRole:
-        return pack->description;
-    case AuthorRole:
-        if (!pack->authors.isEmpty())
-            return pack->authors.first().name;
-        return QString();
-    case IconUrlRole:
-        return pack->logoUrl;
-    case DownloadsRole:
-        return QString();  // Not available in IndexedPack
-    case PackDataRole:
-        return QVariant::fromValue(pack);
-    default:
-        return {};
+        case NameRole:
+        case Qt::DisplayRole:
+            return pack->name;
+        case DescriptionRole:
+            return pack->description;
+        case AuthorRole:
+            if (!pack->authors.isEmpty())
+                return pack->authors.first().name;
+            return QString();
+        case IconUrlRole:
+            return pack->logoUrl;
+        case DownloadsRole:
+            return QString();  // Not available in IndexedPack
+        case PackDataRole:
+            return QVariant::fromValue(pack);
+        default:
+            return {};
     }
 }
 

@@ -15,3 +15,16 @@ BraceWrapping:
 BreakBeforeBraces: Custom
 BreakConstructorInitializers: BeforeComma
 Cpp11BracedListStyle: false
+---
+Language: JavaScript
+BasedOnStyle: Chromium
+IndentWidth: 4
+ColumnLimit: 140
+JavaScriptQuotes: Double
+AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: false
+SpacesInContainerLiterals: true
+---
+Language: Json
+DisableFormat: true

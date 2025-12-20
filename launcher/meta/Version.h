@@ -52,10 +52,7 @@
 
 namespace Meta {
 
-class Version
-    : public QObject
-    , public BaseVersion
-    , public BaseEntity {
+class Version : public QObject, public BaseVersion, public BaseEntity {
     Q_OBJECT
 
    public:

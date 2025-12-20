@@ -78,9 +78,7 @@ namespace Modrinth {
 class ModpackListModel;
 }
 
-class ModrinthPage
-    : public QWidget
-    , public ModpackProviderBasePage {
+class ModrinthPage : public QWidget, public ModpackProviderBasePage {
     Q_OBJECT
 
    public:

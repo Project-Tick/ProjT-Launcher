@@ -47,9 +47,7 @@ class ManagedPackPage;
 class InstanceTask;
 class InstanceWindow;
 
-class ManagedPackPage
-    : public QWidget
-    , public BasePage {
+class ManagedPackPage : public QWidget, public BasePage {
     Q_OBJECT
 
    public:

@@ -53,13 +53,13 @@ namespace TexturePackUtils {
 bool process(TexturePack& pack, ProcessingLevel level)
 {
     switch (pack.type()) {
-    case ResourceType::FOLDER:
-        return TexturePackUtils::processFolder(pack, level);
-    case ResourceType::ZIPFILE:
-        return TexturePackUtils::processZIP(pack, level);
-    default:
-        qWarning() << "Invalid type for resource pack parse task!";
-        return false;
+        case ResourceType::FOLDER:
+            return TexturePackUtils::processFolder(pack, level);
+        case ResourceType::ZIPFILE:
+            return TexturePackUtils::processZIP(pack, level);
+        default:
+            qWarning() << "Invalid type for resource pack parse task!";
+            return false;
     }
 }
 
@@ -190,57 +190,57 @@ bool processPackPNG(const TexturePack& pack)
     };
 
     switch (pack.type()) {
-    case ResourceType::FOLDER: {
-        QFileInfo image_file_info(FS::PathCombine(pack.fileinfo().filePath(), "pack.png"));
-        if (image_file_info.exists() && image_file_info.isFile()) {
-            QFile pack_png_file(image_file_info.filePath());
-            if (!pack_png_file.open(QIODevice::ReadOnly))
-                return png_invalid();  // can't open pack.png file
+        case ResourceType::FOLDER: {
+            QFileInfo image_file_info(FS::PathCombine(pack.fileinfo().filePath(), "pack.png"));
+            if (image_file_info.exists() && image_file_info.isFile()) {
+                QFile pack_png_file(image_file_info.filePath());
+                if (!pack_png_file.open(QIODevice::ReadOnly))
+                    return png_invalid();  // can't open pack.png file
 
-            auto data = pack_png_file.readAll();
+                auto data = pack_png_file.readAll();
 
-            bool pack_png_result = TexturePackUtils::processPackPNG(pack, std::move(data));
+                bool pack_png_result = TexturePackUtils::processPackPNG(pack, std::move(data));
 
-            pack_png_file.close();
-            if (!pack_png_result) {
-                return png_invalid();  // pack.png invalid
+                pack_png_file.close();
+                if (!pack_png_result) {
+                    return png_invalid();  // pack.png invalid
+                }
+            } else {
+                return png_invalid();  // pack.png does not exists or is not a valid file.
             }
-        } else {
-            return png_invalid();  // pack.png does not exists or is not a valid file.
+            return false;
         }
-        return false;
-    }
-    case ResourceType::ZIPFILE: {
-        QuaZip zip(pack.fileinfo().filePath());
-        if (!zip.open(QuaZip::mdUnzip))
-            return false;  // can't open zip file
+        case ResourceType::ZIPFILE: {
+            QuaZip zip(pack.fileinfo().filePath());
+            if (!zip.open(QuaZip::mdUnzip))
+                return false;  // can't open zip file
 
-        QuaZipFile file(&zip);
-        if (zip.setCurrentFile("pack.png")) {
-            if (!file.open(QIODevice::ReadOnly)) {
-                qCritical() << "Failed to open file in zip.";
+            QuaZipFile file(&zip);
+            if (zip.setCurrentFile("pack.png")) {
+                if (!file.open(QIODevice::ReadOnly)) {
+                    qCritical() << "Failed to open file in zip.";
+                    zip.close();
+                    return png_invalid();
+                }
+
+                auto data = file.readAll();
+
+                bool pack_png_result = TexturePackUtils::processPackPNG(pack, std::move(data));
+
+                file.close();
+                if (!pack_png_result) {
+                    zip.close();
+                    return png_invalid();  // pack.png invalid
+                }
+            } else {
                 zip.close();
-                return png_invalid();
+                return png_invalid();  // could not set pack.mcmeta as current file.
             }
-
-            auto data = file.readAll();
-
-            bool pack_png_result = TexturePackUtils::processPackPNG(pack, std::move(data));
-
-            file.close();
-            if (!pack_png_result) {
-                zip.close();
-                return png_invalid();  // pack.png invalid
-            }
-        } else {
-            zip.close();
-            return png_invalid();  // could not set pack.mcmeta as current file.
+            return false;
         }
-        return false;
-    }
-    default:
-        qWarning() << "Invalid type for resource pack parse task!";
-        return false;
+        default:
+            qWarning() << "Invalid type for resource pack parse task!";
+            return false;
     }
 }
 

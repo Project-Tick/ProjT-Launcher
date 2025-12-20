@@ -71,9 +71,7 @@ namespace Ui {
 class LauncherPage;
 }
 
-class LauncherPage
-    : public QWidget
-    , public BasePage {
+class LauncherPage : public QWidget, public BasePage {
     Q_OBJECT
 
    public:

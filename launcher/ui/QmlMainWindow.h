@@ -21,8 +21,8 @@
 
 #pragma once
 
-#include <QMainWindow>
 #include <QCloseEvent>
+#include <QMainWindow>
 
 #include "settings/SettingsObject.h"
 

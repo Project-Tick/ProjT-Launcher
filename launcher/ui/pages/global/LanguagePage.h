@@ -63,9 +63,7 @@
 
 class LanguageSelectionWidget;
 
-class LanguagePage
-    : public QWidget
-    , public BasePage {
+class LanguagePage : public QWidget, public BasePage {
     Q_OBJECT
 
    public:

@@ -49,9 +49,7 @@ namespace ResourceDownload {
 class ResourceDownloadDialog;
 class ResourceModel;
 
-class ResourcePage
-    : public QWidget
-    , public BasePage {
+class ResourcePage : public QWidget, public BasePage {
     Q_OBJECT
    public:
     using DownloadTaskPtr = shared_qobject_ptr<ResourceDownloadTask>;

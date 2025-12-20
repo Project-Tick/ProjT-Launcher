@@ -56,9 +56,7 @@ class SkinProvider {
     virtual SkinModel* getSelectedSkin() = 0;
     virtual QHash<QString, QImage> capes() = 0;
 };
-class SkinOpenGLWindow
-    : public QOpenGLWindow
-    , protected QOpenGLFunctions {
+class SkinOpenGLWindow : public QOpenGLWindow, protected QOpenGLFunctions {
     Q_OBJECT
 
    public:

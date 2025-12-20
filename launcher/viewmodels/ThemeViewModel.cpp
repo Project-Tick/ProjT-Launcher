@@ -23,9 +23,9 @@
 
 #include "Application.h"
 #include "DesktopServices.h"
+#include "ui/themes/CatPack.h"
 #include "ui/themes/ITheme.h"
 #include "ui/themes/IconTheme.h"
-#include "ui/themes/CatPack.h"
 #include "ui/themes/ThemeManager.h"
 
 // Theme List Model
@@ -48,15 +48,15 @@ class ThemeViewModel::ThemeListModel : public QAbstractListModel {
 
         auto* theme = m_themes[index.row()];
         switch (role) {
-        case IdRole:
-            return theme->id();
-        case NameRole:
-        case Qt::DisplayRole:
-            return theme->name();
-        case TooltipRole:
-            return theme->tooltip();
-        default:
-            return QVariant();
+            case IdRole:
+                return theme->id();
+            case NameRole:
+            case Qt::DisplayRole:
+                return theme->name();
+            case TooltipRole:
+                return theme->tooltip();
+            default:
+                return QVariant();
         }
     }
 
@@ -96,15 +96,15 @@ class ThemeViewModel::IconThemeListModel : public QAbstractListModel {
 
         auto* iconTheme = m_iconThemes[index.row()];
         switch (role) {
-        case IdRole:
-            return iconTheme->id();
-        case NameRole:
-        case Qt::DisplayRole:
-            return iconTheme->name();
-        case PathRole:
-            return iconTheme->path();
-        default:
-            return QVariant();
+            case IdRole:
+                return iconTheme->id();
+            case NameRole:
+            case Qt::DisplayRole:
+                return iconTheme->name();
+            case PathRole:
+                return iconTheme->path();
+            default:
+                return QVariant();
         }
     }
 
@@ -141,22 +141,19 @@ class ThemeViewModel::CatPackListModel : public QAbstractListModel {
 
         auto* cat = m_catPacks[index.row()];
         switch (role) {
-        case IdRole:
-            return cat->id();
-        case NameRole:
-        case Qt::DisplayRole:
-            return cat->name();
-        case PathRole:
-            return cat->path();
-        default:
-            return QVariant();
+            case IdRole:
+                return cat->id();
+            case NameRole:
+            case Qt::DisplayRole:
+                return cat->name();
+            case PathRole:
+                return cat->path();
+            default:
+                return QVariant();
         }
     }
 
-    QHash<int, QByteArray> roleNames() const override
-    {
-        return { { IdRole, "catId" }, { NameRole, "name" }, { PathRole, "path" } };
-    }
+    QHash<int, QByteArray> roleNames() const override { return { { IdRole, "catId" }, { NameRole, "name" }, { PathRole, "path" } }; }
 
     void refresh()
     {
@@ -171,10 +168,10 @@ class ThemeViewModel::CatPackListModel : public QAbstractListModel {
 
 // ThemeViewModel Implementation
 ThemeViewModel::ThemeViewModel(QObject* parent)
-    : QObject(parent),
-      m_themeListModel(new ThemeListModel(this)),
-      m_iconThemeListModel(new IconThemeListModel(this)),
-      m_catPackListModel(new CatPackListModel(this))
+    : QObject(parent)
+    , m_themeListModel(new ThemeListModel(this))
+    , m_iconThemeListModel(new IconThemeListModel(this))
+    , m_catPackListModel(new CatPackListModel(this))
 {}
 
 QString ThemeViewModel::currentTheme() const

@@ -29,25 +29,11 @@ import "Theme.js" as Theme
 Rectangle {
     id: newsPage
     objectName: "news"
+    color: ThemeColors.background
     width: parent ? parent.width : 640
     height: parent ? parent.height : 480
+
     readonly property var vm: ProjT.newsVM
-
-    // Theme binding for reactive updates
-    property var themeVM: ProjT.themeVM
-    property int _themeUpdateCount: 0
-
-    color: {
-        var _ = _themeUpdateCount;
-        return themeVM ? themeVM.windowColor : ThemeColors.background;
-    }
-
-    Connections {
-        target: themeVM
-        function onThemeColorsChanged() {
-            newsPage._themeUpdateCount++;
-        }
-    }
 
     Component.onCompleted: {
         if (vm) {
@@ -57,40 +43,27 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingM
+        anchors.margins: Theme.spacingS
         spacing: Theme.spacingS
 
+        // === Header ===
         PageHeader {
             Layout.fillWidth: true
             title: qsTr("News")
             subtitle: vm ? (vm.busy ? qsTr("Loading...") : qsTr("Keep up with the latest updates")) : ""
         }
 
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingS
-
-            ThemedButton {
-                text: qsTr("Refresh")
-                icon.name: "view-refresh"
-                size: "small"
-                enabled: vm ? !vm.busy : false
-                onClicked: vm ? vm.refresh() : undefined
-            }
-            
-            Item { Layout.fillWidth: true }
-        }
-
-        // Main Content Area
+        // === Main Layout ===
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: Theme.spacingM
+            spacing: Theme.spacingS
 
-            // Left Side: Latest News (Featured)
+            // --- Left Section: Article Viewer ---
             Frame {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                padding: Theme.spacingM
                 
                 background: Rectangle {
                     color: ThemeColors.surface
@@ -98,26 +71,46 @@ Rectangle {
                     border.color: ThemeColors.border
                     border.width: 1
                 }
-                
-                padding: Theme.spacingM
 
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: Theme.spacingS
 
-                    Label {
-                        text: vm ? vm.currentTitle : ""
-                        color: ThemeColors.text
-                        font.pointSize: 16
-                        font.bold: true
+                    // Article Title & Meta
+                    RowLayout {
                         Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                    }
+                        spacing: Theme.spacingS
+                        
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            
+                            Label {
+                                text: vm ? vm.currentTitle : ""
+                                color: ThemeColors.text
+                                font.pointSize: 16
+                                font.bold: true
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                            }
 
-                    Label {
-                        text: vm && vm.lastUpdated ? qsTr("Posted on %1").arg(vm.lastUpdated.toString()) : ""
-                        color: ThemeColors.textSecondary
-                        font.pointSize: 10
+                            Label {
+                                text: vm && vm.lastUpdated ? qsTr("Posted on %1").arg(vm.lastUpdated.toString()) : ""
+                                color: ThemeColors.textSecondary
+                                font.pointSize: 10
+                            }
+                        }
+
+                        // Top actions
+                        ThemedButton {
+                            icon.name: "view-refresh"
+                            size: "small"
+                            flatStyle: true
+                            enabled: vm ? !vm.busy : false
+                            onClicked: vm ? vm.refresh() : undefined
+                            ToolTip.text: qsTr("Refresh Feed")
+                            ToolTip.visible: hovered
+                        }
                     }
 
                     ToolSeparator {
@@ -125,34 +118,38 @@ Rectangle {
                         orientation: Qt.Horizontal
                     }
 
+                    // Content Scroll Area
                     ScrollView {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
-                        ScrollBar.vertical.policy: ScrollBar.AsNeeded
-
-                        Text {
-                            width: parent.availableWidth
+                        
+                        TextArea {
+                            readOnly: true
+                            selectByMouse: true
                             text: vm ? vm.currentArticleHtml : ""
                             textFormat: Text.RichText
                             wrapMode: Text.WordWrap
-                            color: ThemeColors.textSecondary
+                            color: ThemeColors.text
                             font.pointSize: 11
-                            linkColor: ThemeColors.accent
-                            onLinkActivated: Qt.openUrlExternally(link)
+                            background: null
+                            padding: 0
+                            
+                            onLinkActivated: (link) => Qt.openUrlExternally(link)
                         }
                     }
                     
+                    // Footer Actions
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: Theme.spacingS
                         
                         Item { Layout.fillWidth: true }
                         
                         ThemedButton {
-                            text: qsTr("Read in Browser")
+                            text: qsTr("Open in Browser")
                             icon.name: "internet-web-browser"
-                            flatStyle: true
+                            size: "small"
+                            outline: true
                             enabled: vm && vm.currentLink.length > 0
                             onClicked: vm ? vm.openCurrentLink() : undefined
                         }
@@ -160,10 +157,11 @@ Rectangle {
                 }
             }
 
-            // Right Side: More News (List)
+            // --- Right Section: News List ---
             Frame {
-                Layout.preferredWidth: 300
+                Layout.preferredWidth: 280
                 Layout.fillHeight: true
+                padding: 0 // We'll use list margins
                 
                 background: Rectangle {
                     color: ThemeColors.backgroundAlt
@@ -172,18 +170,16 @@ Rectangle {
                     border.width: 1
                 }
 
-                padding: Theme.spacingS
-
                 ColumnLayout {
                     anchors.fill: parent
-                    spacing: Theme.spacingS
+                    spacing: 0
                     
                     Label {
-                        text: qsTr("More Updates")
-                        color: ThemeColors.text
+                        text: qsTr("ALL UPDATES")
+                        color: ThemeColors.textSecondary
                         font.bold: true
-                        font.pointSize: 12
-                        Layout.leftMargin: 4
+                        font.pointSize: 9
+                        Layout.margins: Theme.spacingS
                     }
 
                     ListView {
@@ -191,30 +187,34 @@ Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
-                        spacing: 4
+                        spacing: 1
                         
-                        // Ensure model is bound correctly
                         model: vm ? vm.titles : []
                         currentIndex: vm ? vm.currentIndex : -1
 
                         delegate: ItemDelegate {
                             width: newsList.width
-                            height: 50 // Fixed height for consistency
+                            height: 54
                             
                             highlighted: ListView.isCurrentItem
                             
                             background: Rectangle {
                                 color: highlighted ? ThemeColors.highlight : (hovered ? ThemeColors.surface : "transparent")
-                                radius: Theme.radius
-                                opacity: highlighted ? 0.2 : 1 // Adjusted opacity for better visibility
-                                border.color: highlighted ? ThemeColors.accent : "transparent"
-                                border.width: 1
+                                opacity: highlighted ? 0.15 : 1
+                                
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 3
+                                    height: parent.height * 0.6
+                                    color: ThemeColors.accent
+                                    visible: highlighted
+                                }
                             }
 
                             contentItem: ColumnLayout {
-                                anchors.centerIn: parent
                                 spacing: 2
-                                width: parent.width - 10
+                                anchors.leftMargin: highlighted ? 12 : 8
                                 
                                 Label {
                                     text: modelData
@@ -222,8 +222,13 @@ Rectangle {
                                     font.bold: highlighted
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
-                                    maximumLineCount: 2
-                                    wrapMode: Text.WordWrap
+                                }
+                                
+                                Label {
+                                    text: qsTr("Click to read")
+                                    color: ThemeColors.textSecondary
+                                    font.pointSize: 9
+                                    visible: !highlighted && hovered
                                 }
                             }
 
@@ -234,22 +239,24 @@ Rectangle {
                             }
                         }
                         
-                        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                        ScrollBar.vertical: ScrollBar { 
+                            active: true
+                        }
                     }
                 }
             }
         }
     }
 
-    // Loading Overlay
+    // === Loading State ===
     Rectangle {
         anchors.fill: parent
         color: ThemeColors.background
-        opacity: vm && vm.busy ? 0.7 : 0
+        opacity: vm && vm.busy ? 0.6 : 0
         visible: opacity > 0
         z: 100
         
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+        Behavior on opacity { NumberAnimation { duration: 200 } }
         
         ColumnLayout {
             anchors.centerIn: parent
@@ -261,9 +268,9 @@ Rectangle {
             }
             
             Label {
-                text: qsTr("Fetching news...")
+                text: qsTr("Fetching news content...")
                 color: ThemeColors.text
-                font.pointSize: 12
+                font.pointSize: 11
             }
         }
     }

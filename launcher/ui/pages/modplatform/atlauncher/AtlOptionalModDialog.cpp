@@ -156,12 +156,12 @@ QVariant AtlOptionalModListModel::headerData(int section, Qt::Orientation orient
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
         switch (section) {
-        case EnabledColumn:
-            return QString();
-        case NameColumn:
-            return QString("Name");
-        case DescriptionColumn:
-            return QString("Description");
+            case EnabledColumn:
+                return QString();
+            case NameColumn:
+                return QString("Name");
+            case DescriptionColumn:
+                return QString("Description");
         }
     }
 

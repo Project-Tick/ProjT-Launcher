@@ -56,9 +56,7 @@ namespace Ui {
 class ImportFTBPage;
 }
 
-class ImportFTBPage
-    : public QWidget
-    , public ModpackProviderBasePage {
+class ImportFTBPage : public QWidget, public ModpackProviderBasePage {
     Q_OBJECT
 
    public:

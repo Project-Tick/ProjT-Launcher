@@ -26,37 +26,37 @@
 #include <QTime>
 #include <limits>
 
-#define GET_TYPE()                                                                                                                         \
-    Qt::ConnectionType type;                                                                                                               \
-    if (QThread::currentThread() != QCoreApplication::instance()->thread())                                                                \
-        type = Qt::BlockingQueuedConnection;                                                                                               \
-    else                                                                                                                                   \
+#define GET_TYPE()                                                          \
+    Qt::ConnectionType type;                                                \
+    if (QThread::currentThread() != QCoreApplication::instance()->thread()) \
+        type = Qt::BlockingQueuedConnection;                                \
+    else                                                                    \
         type = Qt::DirectConnection;
 
-#define DEFINE_FUNC_NO_PARAM(NAME, RET_TYPE)                                                                                               \
-    static RET_TYPE NAME()                                                                                                                 \
-    {                                                                                                                                      \
-        RET_TYPE ret;                                                                                                                      \
-        GET_TYPE()                                                                                                                         \
-        QMetaObject::invokeMethod(s_instance, "_" #NAME, type, Q_RETURN_ARG(RET_TYPE, ret));                                               \
-        return ret;                                                                                                                        \
+#define DEFINE_FUNC_NO_PARAM(NAME, RET_TYPE)                                                 \
+    static RET_TYPE NAME()                                                                   \
+    {                                                                                        \
+        RET_TYPE ret;                                                                        \
+        GET_TYPE()                                                                           \
+        QMetaObject::invokeMethod(s_instance, "_" #NAME, type, Q_RETURN_ARG(RET_TYPE, ret)); \
+        return ret;                                                                          \
     }
-#define DEFINE_FUNC_ONE_PARAM(NAME, RET_TYPE, PARAM_1_TYPE)                                                                                \
-    static RET_TYPE NAME(PARAM_1_TYPE p1)                                                                                                  \
-    {                                                                                                                                      \
-        RET_TYPE ret;                                                                                                                      \
-        GET_TYPE()                                                                                                                         \
-        QMetaObject::invokeMethod(s_instance, "_" #NAME, type, Q_RETURN_ARG(RET_TYPE, ret), Q_ARG(PARAM_1_TYPE, p1));                      \
-        return ret;                                                                                                                        \
+#define DEFINE_FUNC_ONE_PARAM(NAME, RET_TYPE, PARAM_1_TYPE)                                                           \
+    static RET_TYPE NAME(PARAM_1_TYPE p1)                                                                             \
+    {                                                                                                                 \
+        RET_TYPE ret;                                                                                                 \
+        GET_TYPE()                                                                                                    \
+        QMetaObject::invokeMethod(s_instance, "_" #NAME, type, Q_RETURN_ARG(RET_TYPE, ret), Q_ARG(PARAM_1_TYPE, p1)); \
+        return ret;                                                                                                   \
     }
-#define DEFINE_FUNC_TWO_PARAM(NAME, RET_TYPE, PARAM_1_TYPE, PARAM_2_TYPE)                                                                  \
-    static RET_TYPE NAME(PARAM_1_TYPE p1, PARAM_2_TYPE p2)                                                                                 \
-    {                                                                                                                                      \
-        RET_TYPE ret;                                                                                                                      \
-        GET_TYPE()                                                                                                                         \
-        QMetaObject::invokeMethod(s_instance, "_" #NAME, type, Q_RETURN_ARG(RET_TYPE, ret), Q_ARG(PARAM_1_TYPE, p1),                       \
-                                  Q_ARG(PARAM_2_TYPE, p2));                                                                                \
-        return ret;                                                                                                                        \
+#define DEFINE_FUNC_TWO_PARAM(NAME, RET_TYPE, PARAM_1_TYPE, PARAM_2_TYPE)                                            \
+    static RET_TYPE NAME(PARAM_1_TYPE p1, PARAM_2_TYPE p2)                                                           \
+    {                                                                                                                \
+        RET_TYPE ret;                                                                                                \
+        GET_TYPE()                                                                                                   \
+        QMetaObject::invokeMethod(s_instance, "_" #NAME, type, Q_RETURN_ARG(RET_TYPE, ret), Q_ARG(PARAM_1_TYPE, p1), \
+                                  Q_ARG(PARAM_2_TYPE, p2));                                                          \
+        return ret;                                                                                                  \
     }
 
 /** A wrapper around QPixmapCache with thread affinity with the main thread.

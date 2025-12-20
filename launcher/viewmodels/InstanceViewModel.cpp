@@ -21,9 +21,9 @@
 
 #include "InstanceViewModel.h"
 
-#include <algorithm>
 #include <QClipboard>
 #include <QDateTime>
+#include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
@@ -32,19 +32,18 @@
 #include <QFileInfoList>
 #include <QGuiApplication>
 #include <QImage>
-#include <QMimeData>
 #include <QMessageBox>
-#include <QDebug>
+#include <QMimeData>
 #include <QRegularExpression>
 #include <QTextStream>
 #include <QUrl>
+#include <algorithm>
 
 #include "Application.h"
 #include "FileSystem.h"
 #include "InstanceList.h"
 #include "MMCZip.h"
 #include "meta/Index.h"
-#include "net/Mode.h"
 #include "minecraft/Component.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
@@ -56,10 +55,11 @@
 #include "minecraft/mod/ResourcePackFolderModel.h"
 #include "minecraft/mod/ShaderPackFolderModel.h"
 #include "minecraft/mod/TexturePackFolderModel.h"
+#include "net/Mode.h"
 #include "ui/GuiUtil.h"
 #include "ui/dialogs/CustomMessageBox.h"
-#include "ui/dialogs/NewComponentDialog.h"
 #include "ui/dialogs/ExportToModListDialog.h"
+#include "ui/dialogs/NewComponentDialog.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/dialogs/ResourceDownloadDialog.h"
 #include "ui/dialogs/ResourceUpdateDialog.h"
@@ -90,7 +90,8 @@ void runDownloadTasks(QWidget* parent, const QList<TaskPtr>& tasks, const QStrin
         concurrent->deleteLater();
     });
     QObject::connect(concurrent, &Task::aborted, [parent, concurrent]() {
-        CustomMessageBox::selectable(parent, QObject::tr("Aborted"), QObject::tr("Download stopped by user."), QMessageBox::Information)->show();
+        CustomMessageBox::selectable(parent, QObject::tr("Aborted"), QObject::tr("Download stopped by user."), QMessageBox::Information)
+            ->show();
         concurrent->deleteLater();
     });
     QObject::connect(concurrent, &Task::succeeded, [parent, concurrent]() {
@@ -1064,8 +1065,8 @@ void InstanceViewModel::resetGameOption(const QString& key)
     if (key.isEmpty())
         return;
 
-    auto it = std::remove_if(m_gameOptionsAll.begin(), m_gameOptionsAll.end(),
-                             [key](const GameOptionEntry& entry) { return entry.key == key; });
+    auto it =
+        std::remove_if(m_gameOptionsAll.begin(), m_gameOptionsAll.end(), [key](const GameOptionEntry& entry) { return entry.key == key; });
     if (it != m_gameOptionsAll.end()) {
         m_gameOptionsAll.erase(it, m_gameOptionsAll.end());
         if (writeGameOptionsFile()) {
@@ -1433,11 +1434,10 @@ void InstanceViewModel::loadLatestLog()
             continue;
         }
 
-        const QFileInfoList entries =
-            dir.entryInfoList(QStringList() << "*.log"
-                                            << "*.txt"
-                                            << "*.out",
-                              QDir::Files, QDir::Time);
+        const QFileInfoList entries = dir.entryInfoList(QStringList() << "*.log"
+                                                                      << "*.txt"
+                                                                      << "*.out",
+                                                        QDir::Files, QDir::Time);
         if (!entries.isEmpty()) {
             const QFileInfo& candidate = entries.first();
             if (!latestFile.exists() || candidate.lastModified() > latestFile.lastModified()) {
@@ -1811,8 +1811,7 @@ QVariantList InstanceViewModel::componentsModel() const
             continue;
 
         if (!m_componentsFilter.isEmpty()) {
-            const QString haystack =
-                component->getName() + " " + component->getID() + " " + component->getVersion();
+            const QString haystack = component->getName() + " " + component->getID() + " " + component->getVersion();
             if (!haystack.contains(m_componentsFilter, Qt::CaseInsensitive)) {
                 continue;
             }
@@ -1995,14 +1994,12 @@ void InstanceViewModel::customizeComponent(int index)
         return;
 
     if (!component->getVersionFile()) {
-        QMessageBox::information(nullptr, tr("Version Update"),
-                                 tr("Please wait for the version file to load before customizing."));
+        QMessageBox::information(nullptr, tr("Version Update"), tr("Please wait for the version file to load before customizing."));
         return;
     }
 
     if (!profile->customize(index)) {
-        QMessageBox::critical(nullptr, tr("Error"),
-                              tr("Failed to customize version. The version file may be read-only."));
+        QMessageBox::critical(nullptr, tr("Error"), tr("Failed to customize version. The version file may be read-only."));
         return;
     }
 
@@ -2053,22 +2050,19 @@ void InstanceViewModel::revertComponent(int index)
     if (!component)
         return;
 
-    auto response =
-        CustomMessageBox::selectable(
-            nullptr, tr("Confirm Reversion"),
-            tr("You are about to revert \"%1\".\n"
-               "This is permanent and will completely revert your customizations.\n\n"
-               "Are you sure?")
-                .arg(component->getName()),
-            QMessageBox::Warning, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
-            ->exec();
+    auto response = CustomMessageBox::selectable(nullptr, tr("Confirm Reversion"),
+                                                 tr("You are about to revert \"%1\".\n"
+                                                    "This is permanent and will completely revert your customizations.\n\n"
+                                                    "Are you sure?")
+                                                     .arg(component->getName()),
+                                                 QMessageBox::Warning, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+                        ->exec();
 
     if (response != QMessageBox::Yes)
         return;
 
     if (!profile->revertToBase(index)) {
-        QMessageBox::critical(nullptr, tr("Error"),
-                              tr("Failed to revert version. The version may not have any customizations."));
+        QMessageBox::critical(nullptr, tr("Error"), tr("Failed to revert version. The version may not have any customizations."));
         return;
     }
 
@@ -2089,8 +2083,7 @@ void InstanceViewModel::addToMinecraftJar()
     if (!profile)
         return;
 
-    const auto list = GuiUtil::BrowseForFiles("jarmod", tr("Select jar mods"),
-                                              tr("Minecraft.jar mods") + " (*.zip *.jar)",
+    const auto list = GuiUtil::BrowseForFiles("jarmod", tr("Select jar mods"), tr("Minecraft.jar mods") + " (*.zip *.jar)",
                                               APPLICATION->settings()->get("CentralModsDir").toString(), nullptr);
     if (!list.isEmpty()) {
         profile->installJarMods(list);
@@ -2112,8 +2105,7 @@ void InstanceViewModel::replaceMinecraftJar()
     if (!profile)
         return;
 
-    const auto jarPath = GuiUtil::BrowseForFile("jar", tr("Select jar"),
-                                                tr("Minecraft.jar replacement") + " (*.jar)",
+    const auto jarPath = GuiUtil::BrowseForFile("jar", tr("Select jar"), tr("Minecraft.jar replacement") + " (*.jar)",
                                                 APPLICATION->settings()->get("CentralModsDir").toString(), nullptr);
     if (!jarPath.isEmpty()) {
         profile->installCustomJar(jarPath);
@@ -2135,8 +2127,7 @@ void InstanceViewModel::addAgents()
     if (!profile)
         return;
 
-    const auto list = GuiUtil::BrowseForFiles("agent", tr("Select agents"),
-                                              tr("Java agents") + " (*.jar)",
+    const auto list = GuiUtil::BrowseForFiles("agent", tr("Select agents"), tr("Java agents") + " (*.jar)",
                                               APPLICATION->settings()->get("CentralModsDir").toString(), nullptr);
     if (!list.isEmpty()) {
         profile->installAgents(list);
@@ -2188,8 +2179,7 @@ void InstanceViewModel::importComponents()
     if (!profile)
         return;
 
-    const auto list = GuiUtil::BrowseForFiles("component", tr("Select components"),
-                                              tr("Components") + " (*.json)",
+    const auto list = GuiUtil::BrowseForFiles("component", tr("Select components"), tr("Components") + " (*.json)",
                                               APPLICATION->settings()->get("CentralModsDir").toString(), nullptr);
     if (!list.isEmpty()) {
         if (!profile->installComponents(list)) {
@@ -2452,12 +2442,13 @@ void InstanceViewModel::checkAllModUpdates()
         return;
     }
     if (m_instance->isRunning()) {
-        auto response = CustomMessageBox::selectable(nullptr, tr("Confirm Update"),
-                                                     tr("Updating mods while the game is running may cause mod duplication and game crashes.\n"
-                                                        "The old files may not be deleted as they are in use.\n"
-                                                        "Are you sure you want to do this?"),
-                                                     QMessageBox::Warning, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
-                            ->exec();
+        auto response =
+            CustomMessageBox::selectable(nullptr, tr("Confirm Update"),
+                                         tr("Updating mods while the game is running may cause mod duplication and game crashes.\n"
+                                            "The old files may not be deleted as they are in use.\n"
+                                            "Are you sure you want to do this?"),
+                                         QMessageBox::Warning, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+                ->exec();
         if (response != QMessageBox::Yes)
             return;
     }
@@ -2564,12 +2555,13 @@ void InstanceViewModel::verifyDependencies()
         return;
     }
     if (m_instance->isRunning()) {
-        auto response = CustomMessageBox::selectable(nullptr, tr("Confirm Update"),
-                                                     tr("Updating mods while the game is running may cause mod duplication and game crashes.\n"
-                                                        "The old files may not be deleted as they are in use.\n"
-                                                        "Are you sure you want to do this?"),
-                                                     QMessageBox::Warning, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
-                            ->exec();
+        auto response =
+            CustomMessageBox::selectable(nullptr, tr("Confirm Update"),
+                                         tr("Updating mods while the game is running may cause mod duplication and game crashes.\n"
+                                            "The old files may not be deleted as they are in use.\n"
+                                            "Are you sure you want to do this?"),
+                                         QMessageBox::Warning, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+                ->exec();
         if (response != QMessageBox::Yes)
             return;
     }
@@ -2741,8 +2733,8 @@ void InstanceViewModel::browseForResourcePacks()
         return;
 
     QString startDir = gameRoot() + "/resourcepacks";
-    QStringList files = QFileDialog::getOpenFileNames(nullptr, tr("Select Resource Packs"), startDir,
-                                                      tr("Resource Packs (*.zip *.mcpack);;All Files (*)"));
+    QStringList files =
+        QFileDialog::getOpenFileNames(nullptr, tr("Select Resource Packs"), startDir, tr("Resource Packs (*.zip *.mcpack);;All Files (*)"));
     for (const auto& path : files) {
         addResourcePack(path);
     }
@@ -3010,8 +3002,8 @@ void InstanceViewModel::browseForTexturePacks()
         return;
 
     QString startDir = gameRoot() + "/texturepacks";
-    QStringList files = QFileDialog::getOpenFileNames(nullptr, tr("Select Texture Packs"), startDir,
-                                                      tr("Texture Packs (*.zip);;All Files (*)"));
+    QStringList files =
+        QFileDialog::getOpenFileNames(nullptr, tr("Select Texture Packs"), startDir, tr("Texture Packs (*.zip);;All Files (*)"));
     for (const auto& path : files) {
         addTexturePack(path);
     }
@@ -3079,8 +3071,7 @@ void InstanceViewModel::browseForDataPacks()
     }
 
     QString startDir = m_selectedDataPacksPath;
-    QStringList files =
-        QFileDialog::getOpenFileNames(nullptr, tr("Select Data Packs"), startDir, tr("Data Packs (*.zip);;All Files (*)"));
+    QStringList files = QFileDialog::getOpenFileNames(nullptr, tr("Select Data Packs"), startDir, tr("Data Packs (*.zip);;All Files (*)"));
 
     if (files.isEmpty()) {
         QString dir = QFileDialog::getExistingDirectory(nullptr, tr("Select Data Pack Folder"), startDir);
@@ -3331,9 +3322,7 @@ void InstanceViewModel::scanOtherLogs()
         }
     }
 
-    std::sort(entries.begin(), entries.end(), [](const LogEntry& a, const LogEntry& b) {
-        return a.modified > b.modified;
-    });
+    std::sort(entries.begin(), entries.end(), [](const LogEntry& a, const LogEntry& b) { return a.modified > b.modified; });
 
     for (const auto& entry : entries) {
         m_otherLogsList.append(entry.display);

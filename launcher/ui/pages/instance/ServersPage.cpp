@@ -307,12 +307,12 @@ class ServersModel : public QAbstractListModel {
 
         if (role == Qt::DisplayRole) {
             switch (section) {
-            case 0:
-                return tr("Name");
-            case 1:
-                return tr("Address");
-            case 2:
-                return tr("Online");
+                case 0:
+                    return tr("Name");
+                case 1:
+                    return tr("Address");
+                case 2:
+                    return tr("Online");
             }
         }
 
@@ -333,45 +333,45 @@ class ServersModel : public QAbstractListModel {
             return QVariant();
 
         switch (role) {
-        case Qt::DecorationRole: {
-            switch (column) {
-            case 0: {
-                auto& bytes = m_servers[row].m_icon;
-                if (bytes.size()) {
-                    QPixmap px;
-                    if (px.loadFromData(bytes))
-                        return QIcon(px);
+            case Qt::DecorationRole: {
+                switch (column) {
+                    case 0: {
+                        auto& bytes = m_servers[row].m_icon;
+                        if (bytes.size()) {
+                            QPixmap px;
+                            if (px.loadFromData(bytes))
+                                return QIcon(px);
+                        }
+                        return QIcon::fromTheme("unknown_server");
+                    }
+                    case 1:
+                        return m_servers[row].m_address;
+                    default:
+                        return QVariant();
                 }
-                return QIcon::fromTheme("unknown_server");
+                case 2:
+                    if (role == Qt::DisplayRole) {
+                        if (m_servers[row].m_currentPlayers) {
+                            return *m_servers[row].m_currentPlayers;
+                        } else {
+                            return "...";
+                        }
+                    } else {
+                        return QVariant();
+                    }
             }
-            case 1:
-                return m_servers[row].m_address;
+            case Qt::DisplayRole:
+                if (column == 0)
+                    return m_servers[row].m_name;
+                else
+                    return QVariant();
+            case ServerPtrRole:
+                if (column == 0)
+                    return QVariant::fromValue<void*>((void*)&m_servers[row]);
+                else
+                    return QVariant();
             default:
                 return QVariant();
-            }
-        case 2:
-            if (role == Qt::DisplayRole) {
-                if (m_servers[row].m_currentPlayers) {
-                    return *m_servers[row].m_currentPlayers;
-                } else {
-                    return "...";
-                }
-            } else {
-                return QVariant();
-            }
-        }
-        case Qt::DisplayRole:
-            if (column == 0)
-                return m_servers[row].m_name;
-            else
-                return QVariant();
-        case ServerPtrRole:
-            if (column == 0)
-                return QVariant::fromValue<void*>((void*)&m_servers[row]);
-            else
-                return QVariant();
-        default:
-            return QVariant();
         }
     }
 

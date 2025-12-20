@@ -75,9 +75,7 @@ namespace Technic {
 class ListModel;
 }
 
-class TechnicPage
-    : public QWidget
-    , public ModpackProviderBasePage {
+class TechnicPage : public QWidget, public ModpackProviderBasePage {
     Q_OBJECT
 
    public:

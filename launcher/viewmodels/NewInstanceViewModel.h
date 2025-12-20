@@ -21,8 +21,8 @@
 
 #pragma once
 
-#include <QAbstractListModel>
 #include <QAbstractItemModel>
+#include <QAbstractListModel>
 #include <QObject>
 #include <QString>
 #include <QStringList>

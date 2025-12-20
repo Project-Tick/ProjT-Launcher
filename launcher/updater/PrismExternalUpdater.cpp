@@ -186,57 +186,58 @@ void PrismExternalUpdater::checkForUpdates(bool triggeredByUser)
     QCoreApplication::processEvents();
 
     switch (exit_code) {
-    case 0:
-        // no update available
-        if (triggeredByUser) {
-            qDebug() << "No update available";
-            auto msgBox = QMessageBox(QMessageBox::Information, tr("No Update Available"), tr("You are running the latest version."),
-                                      QMessageBox::Ok, priv->parent);
-            msgBox.setMinimumWidth(460);
-            msgBox.adjustSize();
-            msgBox.exec();
-        }
-        break;
-    case 1:
-        // there was an error
-        {
-            qDebug() << "Updater subprocess error" << qPrintable(std_error);
-            auto msgBox = QMessageBox(QMessageBox::Warning, tr("Update Check Error"), tr("There was an error running the update check."),
-                                      QMessageBox::Ok, priv->parent);
-            msgBox.setDetailedText(QString(std_error));
-            msgBox.setMinimumWidth(460);
-            msgBox.adjustSize();
-            msgBox.exec();
-        }
-        break;
-    case 100:
-        // update available
-        {
-            auto [first_line, remainder1] = StringUtils::splitFirst(std_output, '\n');
-            auto [second_line, remainder2] = StringUtils::splitFirst(remainder1, '\n');
-            auto [third_line, release_notes] = StringUtils::splitFirst(remainder2, '\n');
-            auto version_name = StringUtils::splitFirst(first_line, ": ").second.trimmed();
-            auto version_tag = StringUtils::splitFirst(second_line, ": ").second.trimmed();
-            auto release_timestamp = QDateTime::fromString(StringUtils::splitFirst(third_line, ": ").second.trimmed(), Qt::ISODate);
-            qDebug() << "Update available:" << version_name << version_tag << release_timestamp;
-            qDebug() << "Update release notes:" << release_notes;
+        case 0:
+            // no update available
+            if (triggeredByUser) {
+                qDebug() << "No update available";
+                auto msgBox = QMessageBox(QMessageBox::Information, tr("No Update Available"), tr("You are running the latest version."),
+                                          QMessageBox::Ok, priv->parent);
+                msgBox.setMinimumWidth(460);
+                msgBox.adjustSize();
+                msgBox.exec();
+            }
+            break;
+        case 1:
+            // there was an error
+            {
+                qDebug() << "Updater subprocess error" << qPrintable(std_error);
+                auto msgBox = QMessageBox(QMessageBox::Warning, tr("Update Check Error"),
+                                          tr("There was an error running the update check."), QMessageBox::Ok, priv->parent);
+                msgBox.setDetailedText(QString(std_error));
+                msgBox.setMinimumWidth(460);
+                msgBox.adjustSize();
+                msgBox.exec();
+            }
+            break;
+        case 100:
+            // update available
+            {
+                auto [first_line, remainder1] = StringUtils::splitFirst(std_output, '\n');
+                auto [second_line, remainder2] = StringUtils::splitFirst(remainder1, '\n');
+                auto [third_line, release_notes] = StringUtils::splitFirst(remainder2, '\n');
+                auto version_name = StringUtils::splitFirst(first_line, ": ").second.trimmed();
+                auto version_tag = StringUtils::splitFirst(second_line, ": ").second.trimmed();
+                auto release_timestamp = QDateTime::fromString(StringUtils::splitFirst(third_line, ": ").second.trimmed(), Qt::ISODate);
+                qDebug() << "Update available:" << version_name << version_tag << release_timestamp;
+                qDebug() << "Update release notes:" << release_notes;
 
-            offerUpdate(version_name, version_tag, release_notes);
-        }
-        break;
-    default:
-        // unknown error code
-        {
-            qDebug() << "Updater exited with unknown code" << exit_code;
-            auto msgBox = QMessageBox(QMessageBox::Information, tr("Unknown Update Error"),
-                                      tr("The updater exited with an unknown condition.\nExit Code: %1").arg(QString::number(exit_code)),
-                                      QMessageBox::Ok, priv->parent);
-            auto detail_txt = tr("StdOut: %1\nStdErr: %2").arg(QString(std_output)).arg(QString(std_error));
-            msgBox.setDetailedText(detail_txt);
-            msgBox.setMinimumWidth(460);
-            msgBox.adjustSize();
-            msgBox.exec();
-        }
+                offerUpdate(version_name, version_tag, release_notes);
+            }
+            break;
+        default:
+            // unknown error code
+            {
+                qDebug() << "Updater exited with unknown code" << exit_code;
+                auto msgBox =
+                    QMessageBox(QMessageBox::Information, tr("Unknown Update Error"),
+                                tr("The updater exited with an unknown condition.\nExit Code: %1").arg(QString::number(exit_code)),
+                                QMessageBox::Ok, priv->parent);
+                auto detail_txt = tr("StdOut: %1\nStdErr: %2").arg(QString(std_output)).arg(QString(std_error));
+                msgBox.setDetailedText(detail_txt);
+                msgBox.setMinimumWidth(460);
+                msgBox.adjustSize();
+                msgBox.exec();
+            }
     }
     priv->lastCheck = QDateTime::currentDateTime();
     priv->settings->setValue("last_check", priv->lastCheck.toString(Qt::ISODate));
@@ -338,20 +339,20 @@ void PrismExternalUpdater::offerUpdate(const QString& version_name, const QStrin
     auto result = dlg.exec();
     qDebug() << "offer dlg result" << result;
     switch (result) {
-    case UpdateAvailableDialog::Install: {
-        performUpdate(version_tag);
-        return;
-    }
-    case UpdateAvailableDialog::Skip: {
-        priv->settings->beginGroup("skip");
-        priv->settings->setValue(version_tag, true);
-        priv->settings->endGroup();
-        priv->settings->sync();
-        return;
-    }
-    case UpdateAvailableDialog::DontInstall: {
-        return;
-    }
+        case UpdateAvailableDialog::Install: {
+            performUpdate(version_tag);
+            return;
+        }
+        case UpdateAvailableDialog::Skip: {
+            priv->settings->beginGroup("skip");
+            priv->settings->setValue(version_tag, true);
+            priv->settings->endGroup();
+            priv->settings->sync();
+            return;
+        }
+        case UpdateAvailableDialog::DontInstall: {
+            return;
+        }
     }
 }
 

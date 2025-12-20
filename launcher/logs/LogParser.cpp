@@ -143,18 +143,18 @@ std::optional<LogParser::ParsedItem> LogParser::parseNext()
             while (depth > 0 && !eod) {
                 auto tok = m_parser.readNext();
                 switch (tok) {
-                case QXmlStreamReader::TokenType::StartElement: {
-                    depth += 1;
-                } break;
-                case QXmlStreamReader::TokenType::EndElement: {
-                    depth -= 1;
-                } break;
-                case QXmlStreamReader::TokenType::EndDocument: {
-                    eod = true;  // break outer while loop
-                } break;
-                default: {
-                    // no op
-                }
+                    case QXmlStreamReader::TokenType::StartElement: {
+                        depth += 1;
+                    } break;
+                    case QXmlStreamReader::TokenType::EndElement: {
+                        depth -= 1;
+                    } break;
+                    case QXmlStreamReader::TokenType::EndDocument: {
+                        eod = true;  // break outer while loop
+                    } break;
+                    default: {
+                        // no op
+                    }
                 }
                 if (m_parser.hasError()) {
                     break;
@@ -256,20 +256,20 @@ std::optional<LogParser::ParsedItem> LogParser::parseLog4J()
                     auto tok = m_parser.readNext();
 
                     switch (tok) {
-                    case QXmlStreamReader::TokenType::Characters: {
-                        message.append(m_parser.text());
-                    } break;
-                    case QXmlStreamReader::TokenType::EndElement: {
-                        if (m_parser.qualifiedName().compare("log4j:Message"_L1, Qt::CaseInsensitive) == 0) {
-                            messageComplete = true;
+                        case QXmlStreamReader::TokenType::Characters: {
+                            message.append(m_parser.text());
+                        } break;
+                        case QXmlStreamReader::TokenType::EndElement: {
+                            if (m_parser.qualifiedName().compare("log4j:Message"_L1, Qt::CaseInsensitive) == 0) {
+                                messageComplete = true;
+                            }
+                        } break;
+                        case QXmlStreamReader::TokenType::EndDocument: {
+                            return parseError;  // parse fail
+                        } break;
+                        default: {
+                            // no op
                         }
-                    } break;
-                    case QXmlStreamReader::TokenType::EndDocument: {
-                        return parseError;  // parse fail
-                    } break;
-                    default: {
-                        // no op
-                    }
                     }
 
                     if (m_parser.hasError()) {
@@ -307,29 +307,29 @@ std::optional<LogParser::ParsedItem> LogParser::parseLog4J()
             auto tok = m_parser.readNext();
             parseOp op = noOp;
             switch (tok) {
-            case QXmlStreamReader::TokenType::StartElement: {
-                op = foundStart();
-            } break;
-            case QXmlStreamReader::TokenType::EndElement: {
-                op = foundEnd();
-            } break;
-            case QXmlStreamReader::TokenType::EndDocument: {
-                return {};
-            } break;
-            default: {
-                // no op
-            }
+                case QXmlStreamReader::TokenType::StartElement: {
+                    op = foundStart();
+                } break;
+                case QXmlStreamReader::TokenType::EndElement: {
+                    op = foundEnd();
+                } break;
+                case QXmlStreamReader::TokenType::EndDocument: {
+                    return {};
+                } break;
+                default: {
+                    // no op
+                }
             }
 
             switch (op) {
-            case parseError:
-                return {};  // parse fail or error
-            case entryReady:
-                return entry;
-            case noOp:
-            default: {
-                // no op
-            }
+                case parseError:
+                    return {};  // parse fail or error
+                case entryReady:
+                    return entry;
+                case noOp:
+                default: {
+                    // no op
+                }
             }
 
             if (m_parser.hasError()) {

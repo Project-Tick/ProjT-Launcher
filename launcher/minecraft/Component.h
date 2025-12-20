@@ -68,9 +68,7 @@ struct ModloaderMapEntry {
     QStringList knownConflictingComponents;
 };
 
-class Component
-    : public QObject
-    , public ProblemProvider {
+class Component : public QObject, public ProblemProvider {
     Q_OBJECT
    public:
     Component(PackProfile* parent, const QString& uid);

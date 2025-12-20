@@ -223,16 +223,16 @@ void VersionPage::packageCurrent(const QModelIndex& current, [[maybe_unused]] co
     auto patch = m_profile->getComponent(row);
     auto severity = patch->getProblemSeverity();
     switch (severity) {
-    case ProblemSeverity::Warning:
-        ui->frame->setName(tr("%1 possibly has issues.").arg(patch->getName()));
-        break;
-    case ProblemSeverity::Error:
-        ui->frame->setName(tr("%1 has issues!").arg(patch->getName()));
-        break;
-    default:
-    case ProblemSeverity::None:
-        ui->frame->clear();
-        return;
+        case ProblemSeverity::Warning:
+            ui->frame->setName(tr("%1 possibly has issues.").arg(patch->getName()));
+            break;
+        case ProblemSeverity::Error:
+            ui->frame->setName(tr("%1 has issues!").arg(patch->getName()));
+            break;
+        default:
+        case ProblemSeverity::None:
+            ui->frame->clear();
+            return;
     }
 
     auto& problems = patch->getProblems();

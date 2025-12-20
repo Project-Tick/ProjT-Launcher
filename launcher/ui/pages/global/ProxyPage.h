@@ -68,9 +68,7 @@ namespace Ui {
 class ProxyPage;
 }
 
-class ProxyPage
-    : public QWidget
-    , public BasePage {
+class ProxyPage : public QWidget, public BasePage {
     Q_OBJECT
 
    public:

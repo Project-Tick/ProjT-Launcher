@@ -67,9 +67,7 @@
 class QTextCharFormat;
 class SettingsObject;
 
-class AppearancePage
-    : public AppearanceWidget
-    , public BasePage {
+class AppearancePage : public AppearanceWidget, public BasePage {
     Q_OBJECT
 
    public:

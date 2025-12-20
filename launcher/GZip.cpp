@@ -191,12 +191,12 @@ int inf(QFile* source, std::function<bool(const QByteArray&)> handleBlock)
             ret = inflate(&strm, Z_NO_FLUSH);
             assert(ret != Z_STREAM_ERROR); /* state not clobbered */
             switch (ret) {
-            case Z_NEED_DICT:
-                ret = Z_DATA_ERROR; /* and fall through */
-            case Z_DATA_ERROR:
-            case Z_MEM_ERROR:
-                (void)inflateEnd(&strm);
-                return ret;
+                case Z_NEED_DICT:
+                    ret = Z_DATA_ERROR; /* and fall through */
+                case Z_DATA_ERROR:
+                case Z_MEM_ERROR:
+                    (void)inflateEnd(&strm);
+                    return ret;
             }
             have = CHUNK - strm.avail_out;
             if (!handleBlock(QByteArray(reinterpret_cast<const char*>(out), have))) {
@@ -217,16 +217,16 @@ int inf(QFile* source, std::function<bool(const QByteArray&)> handleBlock)
 QString zerr(int ret)
 {
     switch (ret) {
-    case Z_ERRNO:
-        return QObject::tr("error handling file");
-    case Z_STREAM_ERROR:
-        return QObject::tr("invalid compression level");
-    case Z_DATA_ERROR:
-        return QObject::tr("invalid or incomplete deflate data");
-    case Z_MEM_ERROR:
-        return QObject::tr("out of memory");
-    case Z_VERSION_ERROR:
-        return QObject::tr("zlib version mismatch!");
+        case Z_ERRNO:
+            return QObject::tr("error handling file");
+        case Z_STREAM_ERROR:
+            return QObject::tr("invalid compression level");
+        case Z_DATA_ERROR:
+            return QObject::tr("invalid or incomplete deflate data");
+        case Z_MEM_ERROR:
+            return QObject::tr("out of memory");
+        case Z_VERSION_ERROR:
+            return QObject::tr("zlib version mismatch!");
     }
     return {};
 }

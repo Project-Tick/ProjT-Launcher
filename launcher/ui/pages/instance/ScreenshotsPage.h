@@ -74,9 +74,7 @@ struct ScreenShot;
 class ScreenshotList;
 class ImgurAlbumCreation;
 
-class ScreenshotsPage
-    : public QMainWindow
-    , public BasePage {
+class ScreenshotsPage : public QMainWindow, public BasePage {
     Q_OBJECT
 
    public:

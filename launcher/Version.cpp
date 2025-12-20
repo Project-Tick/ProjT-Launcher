@@ -28,36 +28,36 @@ Version::Version(QString str) : m_string(std::move(str))
     parse();
 }
 
-#define VERSION_OPERATOR(return_on_different)                                                                                              \
-    bool exclude_our_sections = false;                                                                                                     \
-    bool exclude_their_sections = false;                                                                                                   \
-                                                                                                                                           \
-    const auto size = qMax(m_sections.size(), other.m_sections.size());                                                                    \
-    for (int i = 0; i < size; ++i) {                                                                                                       \
-        Section sec1 = (i >= m_sections.size()) ? Section() : m_sections.at(i);                                                            \
-        Section sec2 = (i >= other.m_sections.size()) ? Section() : other.m_sections.at(i);                                                \
-                                                                                                                                           \
-        { /* Don't include appendixes in the comparison */                                                                                 \
-            if (sec1.isAppendix())                                                                                                         \
-                exclude_our_sections = true;                                                                                               \
-            if (sec2.isAppendix())                                                                                                         \
-                exclude_their_sections = true;                                                                                             \
-                                                                                                                                           \
-            if (exclude_our_sections) {                                                                                                    \
-                sec1 = Section();                                                                                                          \
-                if (sec2.m_isNull)                                                                                                         \
-                    break;                                                                                                                 \
-            }                                                                                                                              \
-                                                                                                                                           \
-            if (exclude_their_sections) {                                                                                                  \
-                sec2 = Section();                                                                                                          \
-                if (sec1.m_isNull)                                                                                                         \
-                    break;                                                                                                                 \
-            }                                                                                                                              \
-        }                                                                                                                                  \
-                                                                                                                                           \
-        if (sec1 != sec2)                                                                                                                  \
-            return return_on_different;                                                                                                    \
+#define VERSION_OPERATOR(return_on_different)                                               \
+    bool exclude_our_sections = false;                                                      \
+    bool exclude_their_sections = false;                                                    \
+                                                                                            \
+    const auto size = qMax(m_sections.size(), other.m_sections.size());                     \
+    for (int i = 0; i < size; ++i) {                                                        \
+        Section sec1 = (i >= m_sections.size()) ? Section() : m_sections.at(i);             \
+        Section sec2 = (i >= other.m_sections.size()) ? Section() : other.m_sections.at(i); \
+                                                                                            \
+        { /* Don't include appendixes in the comparison */                                  \
+            if (sec1.isAppendix())                                                          \
+                exclude_our_sections = true;                                                \
+            if (sec2.isAppendix())                                                          \
+                exclude_their_sections = true;                                              \
+                                                                                            \
+            if (exclude_our_sections) {                                                     \
+                sec1 = Section();                                                           \
+                if (sec2.m_isNull)                                                          \
+                    break;                                                                  \
+            }                                                                               \
+                                                                                            \
+            if (exclude_their_sections) {                                                   \
+                sec2 = Section();                                                           \
+                if (sec1.m_isNull)                                                          \
+                    break;                                                                  \
+            }                                                                               \
+        }                                                                                   \
+                                                                                            \
+        if (sec1 != sec2)                                                                   \
+            return return_on_different;                                                     \
     }
 
 bool Version::operator<(const Version& other) const

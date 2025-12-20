@@ -78,9 +78,7 @@ class ListModel;
 class FilterModel;
 class PrivatePackManager;
 
-class Page
-    : public QWidget
-    , public ModpackProviderBasePage {
+class Page : public QWidget, public ModpackProviderBasePage {
     Q_OBJECT
 
    public:

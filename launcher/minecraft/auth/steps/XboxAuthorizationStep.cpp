@@ -132,57 +132,57 @@ bool XboxAuthorizationStep::processSTSError()
             return true;
         }
         switch (errorCode) {
-        case 2148916233: {
-            emit finished(AccountTaskState::STATE_FAILED_SOFT,
-                          tr("This Microsoft account does not have an XBox Live profile. Buy the game on %1 first.")
-                              .arg("<a href=\"https://www.minecraft.net/en-us/store/minecraft-java-edition\">minecraft.net</a>"));
-            return true;
-        }
-        case 2148916235: {
-            // NOTE: this is the Grulovia error
-            emit finished(AccountTaskState::STATE_FAILED_SOFT, tr("XBox Live is not available in your country. You've been blocked."));
-            return true;
-        }
-        case 2148916238: {
-            emit finished(
-                AccountTaskState::STATE_FAILED_SOFT,
-                tr("This Microsoft account is underaged and is not linked to a family.\n\nPlease set up your account according to %1.")
-                    .arg("<a href=\"https://help.minecraft.net/hc/en-us/articles/4408968616077\">help.minecraft.net</a>"));
-            return true;
-        }
-        // the following codes where copied from: https://github.com/PrismarineJS/prismarine-auth/pull/44
-        case 2148916236: {
-            emit finished(AccountTaskState::STATE_FAILED_SOFT,
-                          tr("This Microsoft account requires proof of age to play. Please login to %1 to provide proof of age.")
-                              .arg("<a href=\"https://login.live.com/login.srf\">login.live.com</a>"));
-            return true;
-        }
-        case 2148916237:
-            emit finished(AccountTaskState::STATE_FAILED_SOFT, tr("This Microsoft account has reached its limit for playtime. This "
-                                                                  "Microsoft account has been blocked from logging in."));
-            return true;
-        case 2148916227: {
-            emit finished(AccountTaskState::STATE_FAILED_SOFT, tr("This Microsoft account was banned by Xbox for violating one or more "
-                                                                  "Community Standards for Xbox and is unable to be used."));
-            return true;
-        }
-        case 2148916229: {
-            emit finished(AccountTaskState::STATE_FAILED_SOFT,
-                          tr("This Microsoft account is currently restricted and your guardian has not given you permission to play "
-                             "online. Login to %1 and have your guardian change your permissions.")
-                              .arg("<a href=\"https://account.microsoft.com/family/\">account.microsoft.com</a>"));
-            return true;
-        }
-        case 2148916234: {
-            emit finished(AccountTaskState::STATE_FAILED_SOFT,
-                          tr("This Microsoft account has not accepted Xbox's Terms of Service. Please login and accept them."));
-            return true;
-        }
-        default: {
-            emit finished(AccountTaskState::STATE_FAILED_SOFT,
-                          tr("XSTS authentication ended with unrecognized error(s):\n\n%1").arg(errorCode));
-            return true;
-        }
+            case 2148916233: {
+                emit finished(AccountTaskState::STATE_FAILED_SOFT,
+                              tr("This Microsoft account does not have an XBox Live profile. Buy the game on %1 first.")
+                                  .arg("<a href=\"https://www.minecraft.net/en-us/store/minecraft-java-edition\">minecraft.net</a>"));
+                return true;
+            }
+            case 2148916235: {
+                // NOTE: this is the Grulovia error
+                emit finished(AccountTaskState::STATE_FAILED_SOFT, tr("XBox Live is not available in your country. You've been blocked."));
+                return true;
+            }
+            case 2148916238: {
+                emit finished(
+                    AccountTaskState::STATE_FAILED_SOFT,
+                    tr("This Microsoft account is underaged and is not linked to a family.\n\nPlease set up your account according to %1.")
+                        .arg("<a href=\"https://help.minecraft.net/hc/en-us/articles/4408968616077\">help.minecraft.net</a>"));
+                return true;
+            }
+            // the following codes where copied from: https://github.com/PrismarineJS/prismarine-auth/pull/44
+            case 2148916236: {
+                emit finished(AccountTaskState::STATE_FAILED_SOFT,
+                              tr("This Microsoft account requires proof of age to play. Please login to %1 to provide proof of age.")
+                                  .arg("<a href=\"https://login.live.com/login.srf\">login.live.com</a>"));
+                return true;
+            }
+            case 2148916237:
+                emit finished(AccountTaskState::STATE_FAILED_SOFT, tr("This Microsoft account has reached its limit for playtime. This "
+                                                                      "Microsoft account has been blocked from logging in."));
+                return true;
+            case 2148916227: {
+                emit finished(AccountTaskState::STATE_FAILED_SOFT, tr("This Microsoft account was banned by Xbox for violating one or more "
+                                                                      "Community Standards for Xbox and is unable to be used."));
+                return true;
+            }
+            case 2148916229: {
+                emit finished(AccountTaskState::STATE_FAILED_SOFT,
+                              tr("This Microsoft account is currently restricted and your guardian has not given you permission to play "
+                                 "online. Login to %1 and have your guardian change your permissions.")
+                                  .arg("<a href=\"https://account.microsoft.com/family/\">account.microsoft.com</a>"));
+                return true;
+            }
+            case 2148916234: {
+                emit finished(AccountTaskState::STATE_FAILED_SOFT,
+                              tr("This Microsoft account has not accepted Xbox's Terms of Service. Please login and accept them."));
+                return true;
+            }
+            default: {
+                emit finished(AccountTaskState::STATE_FAILED_SOFT,
+                              tr("XSTS authentication ended with unrecognized error(s):\n\n%1").arg(errorCode));
+                return true;
+            }
         }
     }
     return false;

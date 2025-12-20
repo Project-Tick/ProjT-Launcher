@@ -73,44 +73,44 @@ auto ResourceModel::data(const QModelIndex& index, int role) const -> QVariant
 
     auto pack = m_packs.at(pos);
     switch (role) {
-    case Qt::ToolTipRole: {
-        if (pack->description.length() > 100) {
-            // some magic to prevent to long tooltips and replace html linebreaks
-            QString edit = pack->description.left(97);
-            edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
-            return edit;
+        case Qt::ToolTipRole: {
+            if (pack->description.length() > 100) {
+                // some magic to prevent to long tooltips and replace html linebreaks
+                QString edit = pack->description.left(97);
+                edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
+                return edit;
+            }
+            return pack->description;
         }
-        return pack->description;
-    }
-    case Qt::DecorationRole: {
-        if (APPLICATION_DYN) {
-            if (auto icon_or_none = const_cast<ResourceModel*>(this)->getIcon(const_cast<QModelIndex&>(index), pack->logoUrl);
-                icon_or_none.has_value())
-                return icon_or_none.value();
+        case Qt::DecorationRole: {
+            if (APPLICATION_DYN) {
+                if (auto icon_or_none = const_cast<ResourceModel*>(this)->getIcon(const_cast<QModelIndex&>(index), pack->logoUrl);
+                    icon_or_none.has_value())
+                    return icon_or_none.value();
 
-            return QIcon::fromTheme("screenshot-placeholder");
-        } else {
-            return {};
+                return QIcon::fromTheme("screenshot-placeholder");
+            } else {
+                return {};
+            }
         }
-    }
-    case Qt::SizeHintRole:
-        return QSize(0, 58);
-    case Qt::UserRole: {
-        QVariant v;
-        v.setValue(pack);
-        return v;
-    }
-        // Custom data
-    case UserDataTypes::TITLE:
-        return pack->name;
-    case UserDataTypes::DESCRIPTION:
-        return pack->description;
-    case Qt::CheckStateRole:
-        return pack->isAnyVersionSelected() ? Qt::Checked : Qt::Unchecked;
-    case UserDataTypes::INSTALLED:
-        return this->isPackInstalled(pack);
-    default:
-        break;
+        case Qt::SizeHintRole:
+            return QSize(0, 58);
+        case Qt::UserRole: {
+            QVariant v;
+            v.setValue(pack);
+            return v;
+        }
+            // Custom data
+        case UserDataTypes::TITLE:
+            return pack->name;
+        case UserDataTypes::DESCRIPTION:
+            return pack->description;
+        case Qt::CheckStateRole:
+            return pack->isAnyVersionSelected() ? Qt::Checked : Qt::Unchecked;
+        case UserDataTypes::INSTALLED:
+            return this->isPackInstalled(pack);
+        default:
+            break;
     }
 
     return {};
@@ -425,15 +425,15 @@ void ResourceModel::searchRequestForOneSucceeded(ModPlatform::IndexedPack::Ptr p
 void ResourceModel::searchRequestFailed([[maybe_unused]] QString reason, int network_error_code)
 {
     switch (network_error_code) {
-    default:
-        // Network error
-        QMessageBox::critical(nullptr, tr("Error"), tr("A network error occurred. Could not load mods."));
-        break;
-    case 409:
-        // 409 Gone, notify user to update
-        QMessageBox::critical(nullptr, tr("Error"),
-                              QString("%1").arg(tr("API version too old!\nPlease update %1!").arg(BuildConfig.LAUNCHER_DISPLAYNAME)));
-        break;
+        default:
+            // Network error
+            QMessageBox::critical(nullptr, tr("Error"), tr("A network error occurred. Could not load mods."));
+            break;
+        case 409:
+            // 409 Gone, notify user to update
+            QMessageBox::critical(nullptr, tr("Error"),
+                                  QString("%1").arg(tr("API version too old!\nPlease update %1!").arg(BuildConfig.LAUNCHER_DISPLAYNAME)));
+            break;
     }
 
     m_search_state = SearchState::Finished;
