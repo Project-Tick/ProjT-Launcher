@@ -75,6 +75,108 @@ Rectangle {
     function showNewInstanceWindow() {
         newInstanceWindowLoader.active = true;
     }
+    function openNewInstanceDialog(initialGroup, importUrl) {
+        newInstanceWindowLoader.active = true;
+        Qt.callLater(function () {
+            if (newInstanceWindowLoader.item && newInstanceWindowLoader.item.openWithParams) {
+                newInstanceWindowLoader.item.openWithParams(initialGroup || "", importUrl || "");
+            }
+        });
+    }
+    function openSettingsPage(pageKey) {
+        settingsWindowLoader.active = true;
+        Qt.callLater(function () {
+            if (!settingsWindowLoader.item)
+                return;
+            var index = 0;
+            switch (pageKey) {
+            case "global-settings":
+                index = 0;
+                break;
+            case "appearance":
+                index = 1;
+                break;
+            case "minecraft-settings":
+                index = 2;
+                break;
+            case "java-settings":
+                index = 3;
+                break;
+            case "language":
+                index = 4;
+                break;
+            case "external-tools":
+                index = 5;
+                break;
+            case "accounts":
+                index = 6;
+                break;
+            case "api":
+                index = 7;
+                break;
+            case "proxy":
+                index = 8;
+                break;
+            }
+            settingsWindowLoader.item.currentPageIndex = index;
+        });
+    }
+    function openInstanceSettingsPage(instanceId, pageKey) {
+        if (pageKey === "backups") {
+            showBackupDialog(instanceId);
+            return;
+        }
+        if (pageKey === "export") {
+            showExportDialog(instanceId);
+            return;
+        }
+        instanceSettingsWindowLoader.instanceId = instanceId || "";
+        instanceSettingsWindowLoader.active = true;
+        Qt.callLater(function () {
+            if (!instanceSettingsWindowLoader.item)
+                return;
+            var index = 0;
+            switch (pageKey) {
+            case "version":
+                index = 0;
+                break;
+            case "mods":
+                index = 1;
+                break;
+            case "resourcepacks":
+                index = 2;
+                break;
+            case "shaderpacks":
+                index = 3;
+                break;
+            case "texturepacks":
+                index = 4;
+                break;
+            case "worlds":
+                index = 5;
+                break;
+            case "screenshots":
+                index = 6;
+                break;
+            case "servers":
+                index = 7;
+                break;
+            case "gameoptions":
+                index = 8;
+                break;
+            case "settings":
+                index = 9;
+                break;
+            case "notes":
+                index = 10;
+                break;
+            case "console":
+                index = 11;
+                break;
+            }
+            instanceSettingsWindowLoader.item.currentPageIndex = index;
+        });
+    }
 
     Loader {
         id: newInstanceWindowLoader
@@ -94,6 +196,18 @@ Rectangle {
 
             property string selectedIconKey: "default"
             property int currentPageIndex: 0
+            function openWithParams(initialGroup, importUrl) {
+                if (initialGroup && groupCombo) {
+                    groupCombo.editText = initialGroup;
+                }
+                if (importUrl && importPage) {
+                    importPage.importUrl = importUrl;
+                    newInstanceWindow.currentPageIndex = 1;
+                    if (pageList) {
+                        pageList.currentIndex = 1;
+                    }
+                }
+            }
 
             ColumnLayout {
                 anchors.fill: parent
@@ -611,10 +725,57 @@ Rectangle {
         }
     }
 
+    function handlePageRequest(page) {
+        switch (page) {
+        case LauncherViewModelEnums.Page.Instances:
+            break;
+        case LauncherViewModelEnums.Page.News:
+            showNewsWindow();
+            break;
+        case LauncherViewModelEnums.Page.Settings:
+            showSettingsWindow();
+            break;
+        case LauncherViewModelEnums.Page.About:
+            showAboutWindow();
+            break;
+        case LauncherViewModelEnums.Page.Logs:
+            showLogsWindow();
+            break;
+        }
+    }
+
+    Connections {
+        target: ProjT.launcherVM
+        function onCurrentPageChanged() {
+            if (ProjT.launcherVM) {
+                handlePageRequest(ProjT.launcherVM.currentPage);
+            }
+        }
+    }
+
     // === MAIN LAYOUT (matches Qt Widget MainWindow) ===
-    ColumnLayout {
+    RowLayout {
         anchors.fill: parent
         spacing: 0
+
+        Sidebar {
+            id: sidebar
+            Layout.preferredWidth: 190
+            Layout.fillHeight: true
+
+            onPageRequested: handlePageRequest(page)
+        }
+
+        Rectangle {
+            Layout.preferredWidth: 1
+            Layout.fillHeight: true
+            color: ThemeColors.border
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
 
         // ════════════════════════════════════════════════════════════
         // MAIN TOOLBAR (top horizontal toolbar)
@@ -763,10 +924,11 @@ Rectangle {
         // ════════════════════════════════════════════════════════════
         // STATUS BAR (bottom status bar)
         // ════════════════════════════════════════════════════════════
-        StatusBar {
-            id: statusBar
-            Layout.fillWidth: true
-            Layout.preferredHeight: 24
+            StatusBar {
+                id: statusBar
+                Layout.fillWidth: true
+                Layout.preferredHeight: 24
+            }
         }
     }
 
@@ -1061,6 +1223,9 @@ Rectangle {
                                 // Apply settings and close
                                 if (ProjT.settingsVM) {
                                     ProjT.settingsVM.applyChanges();
+                                }
+                                if (App && App.notifyGlobalSettingsApplied) {
+                                    App.notifyGlobalSettingsApplied();
                                 }
                                 settingsWindow.close();
                             }

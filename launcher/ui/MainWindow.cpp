@@ -990,6 +990,11 @@ void MainWindow::addInstance(const QString& url, const QMap<QString, QString>& e
         groupName = APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString();
     }
 
+    if (auto qmlWindow = APPLICATION->showQmlMainWindow(false)) {
+        qmlWindow->openNewInstanceDialog(groupName, url);
+        return;
+    }
+
     NewInstanceDialog newInstDlg(groupName, url, extra_info, this);
     if (!newInstDlg.exec())
         return;

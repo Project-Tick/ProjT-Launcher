@@ -209,6 +209,7 @@ class Application : public QApplication {
     bool updatesAreAllowed();
 
     void ShowGlobalSettings(class QWidget* parent, QString open_page = QString());
+    Q_INVOKABLE void notifyGlobalSettingsApplied();
 
     bool updaterEnabled();
     QString updaterBinaryName();

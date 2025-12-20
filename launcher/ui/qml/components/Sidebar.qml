@@ -67,34 +67,34 @@ Rectangle {
     
     // Navigation entries - keep in sync with ShellRoot navEntries
     property var navEntries: [
-        { 
-            title: qsTr("Instances"), 
+        {
+            title: qsTr("Instances"),
             page: LauncherViewModelEnums.Page.Instances,
-            icon: ":/icons/instances.png",
+            iconName: "minecraft",
             tooltip: qsTr("Manage your Minecraft instances")
         },
-        { 
-            title: qsTr("News"), 
+        {
+            title: qsTr("News"),
             page: LauncherViewModelEnums.Page.News,
-            icon: ":/icons/news.png",
+            iconName: "news",
             tooltip: qsTr("View latest launcher news")
         },
-        { 
-            title: qsTr("Settings"), 
+        {
+            title: qsTr("Settings"),
             page: LauncherViewModelEnums.Page.Settings,
-            icon: ":/icons/settings.png",
+            iconName: "settings",
             tooltip: qsTr("Launcher and instance settings")
         },
-        { 
-            title: qsTr("Logs"), 
+        {
+            title: qsTr("Logs"),
             page: LauncherViewModelEnums.Page.Logs,
-            icon: ":/icons/logs.png",
+            iconName: "log",
             tooltip: qsTr("View application and instance logs")
         },
-        { 
-            title: qsTr("About"), 
+        {
+            title: qsTr("About"),
             page: LauncherViewModelEnums.Page.About,
-            icon: ":/icons/about.png",
+            iconName: "about",
             tooltip: qsTr("About ProjT Launcher")
         }
     ]
@@ -140,7 +140,6 @@ Rectangle {
                 model: navEntries
                 delegate: Button {
                     id: navButton
-                    text: modelData.title
                     checkable: true
                     
                     // Get current page from ViewModel
@@ -170,14 +169,32 @@ Rectangle {
                     }
                     
                     // Content styling
-                    contentItem: Text {
-                        text: navButton.text
-                        anchors.centerIn: parent
-                        color: navButton.checked ? ThemeColors.highlightedText : ThemeColors.text
-                        font.pointSize: 12
-                        
-                        Behavior on color {
-                            ColorAnimation { duration: 150 }
+                    contentItem: RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: Theme.spacingS
+                        spacing: Theme.spacingS
+
+                        Image {
+                            source: Theme.icon(modelData.iconName || "settings")
+                            width: 18
+                            height: 18
+                            fillMode: Image.PreserveAspectFit
+                            sourceSize.width: 18
+                            sourceSize.height: 18
+                            visible: source !== ""
+                        }
+
+                        Text {
+                            text: modelData.title
+                            color: navButton.checked ? ThemeColors.highlightedText : ThemeColors.text
+                            font.pointSize: 12
+                            horizontalAlignment: Text.AlignLeft
+                            verticalAlignment: Text.AlignVCenter
+                            Layout.fillWidth: true
+
+                            Behavior on color {
+                                ColorAnimation { duration: 150 }
+                            }
                         }
                     }
                     

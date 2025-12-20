@@ -1720,6 +1720,11 @@ void Application::controllerFailed(const QString& error)
 
 void Application::ShowGlobalSettings(class QWidget* parent, QString open_page)
 {
+    if (auto qmlWindow = showQmlMainWindow(false)) {
+        emit globalSettingsAboutToOpen();
+        qmlWindow->openSettingsPage(open_page);
+        return;
+    }
     if (!m_globalSettingsProvider) {
         return;
     }
@@ -1730,6 +1735,11 @@ void Application::ShowGlobalSettings(class QWidget* parent, QString open_page)
         connect(&dlg, &PageDialog::applied, this, &Application::globalSettingsApplied);
         dlg.exec();
     }
+}
+
+void Application::notifyGlobalSettingsApplied()
+{
+    emit globalSettingsApplied();
 }
 
 MainWindow* Application::showMainWindow(bool minimized)
@@ -1788,6 +1798,15 @@ InstanceWindow* Application::showInstanceWindow(InstancePtr instance, QString pa
 {
     if (!instance)
         return nullptr;
+    if (auto qmlWindow = showQmlMainWindow(false)) {
+        qmlWindow->openInstanceSettingsPage(instance->id(), page);
+        QMutexLocker locker(&m_instanceExtrasMutex);
+        auto& extras = m_instanceExtras[instance->id()];
+        if (extras.controller) {
+            extras.controller->setParentWidget(m_qmlMainWindow);
+        }
+        return nullptr;
+    }
     auto id = instance->id();
     QMutexLocker locker(&m_instanceExtrasMutex);
     auto& extras = m_instanceExtras[id];

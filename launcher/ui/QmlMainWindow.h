@@ -38,6 +38,10 @@ class QmlMainWindow : public QMainWindow {
                   ThemeViewModel* themeViewModel,
                   QWidget* parent = nullptr);
 
+    void openNewInstanceDialog(const QString& groupName, const QString& importUrl);
+    void openSettingsPage(const QString& pageKey);
+    void openInstanceSettingsPage(const QString& instanceId, const QString& pageKey);
+
     // Process URLs for importing modpacks, instances, etc.
     void processURLs(const QList<QUrl>& urls);
 

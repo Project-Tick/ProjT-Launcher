@@ -391,6 +391,42 @@ QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel,
     m_stateBridge = new ShellStateBridge(APPLICATION->settings(), this);
 }
 
+void QmlMainWindow::openNewInstanceDialog(const QString& groupName, const QString& importUrl)
+{
+    if (!m_quickWidget)
+        return;
+
+    QObject* root = m_quickWidget->rootObject();
+    if (!root)
+        return;
+
+    QMetaObject::invokeMethod(root, "openNewInstanceDialog", Q_ARG(QVariant, groupName), Q_ARG(QVariant, importUrl));
+}
+
+void QmlMainWindow::openSettingsPage(const QString& pageKey)
+{
+    if (!m_quickWidget)
+        return;
+
+    QObject* root = m_quickWidget->rootObject();
+    if (!root)
+        return;
+
+    QMetaObject::invokeMethod(root, "openSettingsPage", Q_ARG(QVariant, pageKey));
+}
+
+void QmlMainWindow::openInstanceSettingsPage(const QString& instanceId, const QString& pageKey)
+{
+    if (!m_quickWidget)
+        return;
+
+    QObject* root = m_quickWidget->rootObject();
+    if (!root)
+        return;
+
+    QMetaObject::invokeMethod(root, "openInstanceSettingsPage", Q_ARG(QVariant, instanceId), Q_ARG(QVariant, pageKey));
+}
+
 void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel,
                                             InstanceListViewModel* instanceListViewModel,
                                             NewsViewModel* newsViewModel,
@@ -410,6 +446,7 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
     projt->insert(QStringLiteral("settingsVM"), QVariant::fromValue(settingsViewModel));
     projt->insert(QStringLiteral("themeVM"), QVariant::fromValue(themeViewModel));
     ctx->setContextProperty(QStringLiteral("ProjT"), projt);
+    ctx->setContextProperty(QStringLiteral("App"), APPLICATION);
 
     if (launcherViewModel) {
         ctx->setContextProperty(QStringLiteral("launcherVM"), launcherViewModel);
@@ -504,13 +541,20 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
 
 void QmlMainWindow::processURLs(const QList<QUrl>& urls)
 {
-    // TODO: Implement URL processing for importing modpacks
-    // This will involve:
-    // 1. Parsing URLs to determine type (CurseForge, Modrinth, ATLauncher, etc.)
-    // 2. Creating appropriate InstanceImportTask
-    // 3. Showing progress dialog
-    // 4. Refreshing instance list on completion
-    qWarning() << "QmlMainWindow::processURLs() not yet implemented. URLs:" << urls;
+    if (urls.isEmpty())
+        return;
+
+    const auto url = urls.first();
+    QString importUrl = url.toString();
+    if (url.isLocalFile()) {
+        importUrl = url.toString();
+    } else if (url.scheme().isEmpty()) {
+        QUrl fixed = url;
+        fixed.setScheme("file");
+        importUrl = fixed.toString();
+    }
+
+    openNewInstanceDialog(QString(), importUrl);
 }
 
 void QmlMainWindow::closeEvent(QCloseEvent* event)
