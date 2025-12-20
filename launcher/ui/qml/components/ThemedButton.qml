@@ -82,17 +82,17 @@ Button {
     implicitHeight: {
         switch (size) {
         case "small":
-            return 28;
+            return 26;
         case "large":
-            return 40;
+            return 36;
         default:
-            return 34;
+            return 30;
         }
     }
 
     implicitWidth: Math.max(implicitHeight, contentItem.implicitWidth + leftPadding + rightPadding)
 
-    leftPadding: size === "small" ? 10 : 14
+    leftPadding: size === "small" ? 10 : 12
     rightPadding: leftPadding
 
     font.pixelSize: {
@@ -105,7 +105,7 @@ Button {
             return 13;
         }
     }
-    font.weight: Font.Medium
+    font.weight: Font.Normal
 
     // Determine button color based on variant
     readonly property color baseColor: {
@@ -178,66 +178,56 @@ Button {
         radius: control.rounded ? height / 2 : ThemeColors.radiusS
         opacity: enabled ? 1.0 : 0.5
 
-        // Background color with gradient effect
         color: {
             var _ = control._themeUpdateCount;
-            if (control.flatStyle)
-                return control.hovered ? Qt.rgba(control.baseColor.r, control.baseColor.g, control.baseColor.b, 0.1) : "transparent";
-            if (control.outline)
-                return control.hovered ? Qt.rgba(control.baseColor.r, control.baseColor.g, control.baseColor.b, 0.1) : "transparent";
-
-            var c = control.baseColor;
-            if (control.pressed)
-                return Qt.darker(c, 1.2);
-            if (control.hovered)
-                return Qt.lighter(c, 1.1);
-            return c;
+            if (control.flatStyle || control.outline) {
+                return control.hovered ? Qt.rgba(control.baseColor.r, control.baseColor.g, control.baseColor.b, 0.12) : "transparent";
+            }
+            return control.baseColor;
         }
 
-        border.width: {
-            if (control.outline)
-                return 1.5;
-            if (control.visualFocus)
-                return 2;
-            if (control.flatStyle)
-                return 0;
-            return 1;
-        }
+        gradient: (control.flatStyle || control.outline) ? null : baseGradient
+
+        border.width: control.visualFocus ? 2 : 1
 
         border.color: {
             var _ = control._themeUpdateCount;
             if (control.visualFocus)
                 return control._highlightColor;
-            if (control.outline) {
-                if (control.hovered)
-                    return Qt.lighter(control.baseColor, 1.2);
+            if (control.outline)
                 return control.baseColor;
-            }
-            if (control.flatStyle)
-                return "transparent";
-            return Qt.darker(control.baseColor, 1.2);
+            return Qt.darker(control.baseColor, 1.25);
         }
 
         // Smooth color transitions
         Behavior on color {
             ColorAnimation {
-                duration: 150
+                duration: 120
                 easing.type: Easing.OutQuad
             }
         }
         Behavior on border.color {
             ColorAnimation {
-                duration: 150
+                duration: 120
             }
         }
     }
 
-    // Subtle scale animation on press
-    scale: control.pressed ? 0.97 : 1.0
-    Behavior on scale {
-        NumberAnimation {
-            duration: 80
-            easing.type: Easing.OutQuad
+    Gradient {
+        id: baseGradient
+        GradientStop {
+            position: 0.0
+            color: {
+                var c = control.baseColor;
+                return control.pressed ? Qt.darker(c, 1.06) : Qt.lighter(c, control.hovered ? 1.08 : 1.03);
+            }
+        }
+        GradientStop {
+            position: 1.0
+            color: {
+                var c = control.baseColor;
+                return control.pressed ? Qt.darker(c, 1.16) : Qt.darker(c, control.hovered ? 1.03 : 1.1);
+            }
         }
     }
 

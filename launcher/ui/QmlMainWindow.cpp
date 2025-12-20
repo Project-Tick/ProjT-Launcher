@@ -359,6 +359,7 @@ QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel,
     setObjectName(QStringLiteral("QmlMainWindow"));
     setWindowTitle(tr("ProjT Launcher"));
     resize(1000, 700);
+    setMinimumSize(QSize(960, 640));
 
     // Ensure the window is deleted when closed so destroyed() is emitted
     // and Application can track open windows correctly.

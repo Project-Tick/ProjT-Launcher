@@ -183,10 +183,10 @@ QtObject {
     }
 
     // Layout constants (not theme-dependent)
-    readonly property int radius: 8
-    readonly property int radiusS: 4
-    readonly property int radiusM: 8
-    readonly property int radiusL: 12
+    readonly property int radius: 6
+    readonly property int radiusS: 3
+    readonly property int radiusM: 6
+    readonly property int radiusL: 10
     readonly property int spacingXS: 4
     readonly property int spacingS: 8
     readonly property int spacingM: 12

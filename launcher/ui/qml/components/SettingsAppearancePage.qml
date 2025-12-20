@@ -35,8 +35,16 @@ ScrollView {
 
     property var buttonStyleOptions: ["Icon only", "Text only", "Text beside icon", "Text under icon"]
 
+    contentWidth: appearancePage.availableWidth
+    contentHeight: contentLayout.implicitHeight + Theme.spacingM * 2
+
     ColumnLayout {
-        width: appearancePage.width - Theme.spacingL
+        id: contentLayout
+        width: appearancePage.availableWidth - Theme.spacingM * 2
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: Theme.spacingM
+        anchors.topMargin: Theme.spacingM
         spacing: Theme.spacingM
 
         // Theme Selection Mode Toggle
@@ -50,38 +58,10 @@ ScrollView {
                 font.bold: true
             }
 
-            Button {
+            ThemedButton {
                 text: showThemeGallery ? qsTr("Show Dropdown") : qsTr("Show Gallery")
-                flat: false
+                size: "small"
                 onClicked: showThemeGallery = !showThemeGallery
-
-                background: Rectangle {
-                    implicitHeight: 32
-                    color: {
-                        if (parent.down)
-                            return Qt.darker(ThemeColors.button, 1.2);
-                        if (parent.hovered)
-                            return Qt.lighter(ThemeColors.button, 1.1);
-                        return ThemeColors.button;
-                    }
-                    radius: 4
-                    border.width: parent.visualFocus ? 2 : 0
-                    border.color: ThemeColors.highlight
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 100
-                        }
-                    }
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: ThemeColors.buttonText
-                    font.pixelSize: 13
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
             }
 
             Item {
@@ -92,7 +72,6 @@ ScrollView {
         // Platform Theme Information
         PlatformThemeInfo {
             Layout.fillWidth: true
-            Layout.preferredHeight: 400
             themeVM: appearancePage.themeVM
         }
 
@@ -199,39 +178,11 @@ ScrollView {
                     }
                 }
 
-                Button {
+                ThemedButton {
                     text: qsTr("Refresh themes")
-                    flat: false
+                    size: "small"
                     onClicked: if (themeVM)
                         themeVM.refreshThemes()
-
-                    background: Rectangle {
-                        implicitHeight: 32
-                        color: {
-                            if (parent.down)
-                                return Qt.darker(ThemeColors.button, 1.2);
-                            if (parent.hovered)
-                                return Qt.lighter(ThemeColors.button, 1.1);
-                            return ThemeColors.button;
-                        }
-                        radius: 4
-                        border.width: parent.visualFocus ? 2 : 0
-                        border.color: ThemeColors.highlight
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 100
-                            }
-                        }
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: ThemeColors.buttonText
-                        font.pixelSize: 13
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
                 }
 
                 // Current Theme Info

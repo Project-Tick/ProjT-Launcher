@@ -68,14 +68,14 @@ ToolButton {
 
     display: AbstractButton.TextBesideIcon
 
-    implicitHeight: 32
+    implicitHeight: 30
     implicitWidth: Math.max(implicitHeight, contentItem.implicitWidth + leftPadding + rightPadding)
 
     leftPadding: 8
     rightPadding: 8
 
     font.pixelSize: 12
-    font.weight: Font.Medium
+    font.weight: Font.Normal
 
     readonly property color effectiveTextColor: {
         var _ = _themeUpdateCount;
@@ -120,7 +120,7 @@ ToolButton {
 
     background: Rectangle {
         implicitWidth: 32
-        implicitHeight: 32
+        implicitHeight: 30
         radius: ThemeColors.radiusS
         opacity: enabled ? 1.0 : 0.5
 
@@ -128,15 +128,15 @@ ToolButton {
             var _ = control._themeUpdateCount;
             var highlightColor = control._highlightColor;
             var buttonColor = control._buttonColor;
-            var hoverColor = Qt.lighter(buttonColor, 1.1);
-            var pressedColor = Qt.darker(buttonColor, 1.1);
+            var hoverColor = Qt.lighter(buttonColor, 1.06);
+            var pressedColor = Qt.darker(buttonColor, 1.12);
 
             if (control.checked || control.active) {
                 if (control.pressed)
-                    return Qt.darker(highlightColor, 1.2);
+                    return Qt.darker(highlightColor, 1.18);
                 if (control.hovered)
-                    return Qt.lighter(highlightColor, 1.1);
-                return Qt.rgba(highlightColor.r, highlightColor.g, highlightColor.b, 0.2);
+                    return Qt.lighter(highlightColor, 1.06);
+                return Qt.rgba(highlightColor.r, highlightColor.g, highlightColor.b, 0.18);
             }
             if (control.pressed)
                 return pressedColor;
@@ -145,12 +145,12 @@ ToolButton {
             return "transparent";
         }
 
-        border.width: (control.checked || control.active) ? 1 : 0
-        border.color: control._highlightColor
+        border.width: control.visualFocus || control.checked || control.active ? 1 : 0
+        border.color: control.visualFocus ? control._highlightColor : control._highlightColor
 
         Behavior on color {
             ColorAnimation {
-                duration: 100
+                duration: 120
             }
         }
     }
