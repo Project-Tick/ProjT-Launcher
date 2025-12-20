@@ -104,7 +104,15 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
     case DescriptionRole:
         return pack.description;
     case IconUrlRole:
-        return QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1.png").arg(pack.safeName);
+    {
+        QString logoName = pack.safeName;
+        const QString lower = logoName.toLower();
+        const bool hasExt = lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".webp");
+        if (hasExt) {
+            return QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1").arg(logoName);
+        }
+        return QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1.png").arg(logoName);
+    }
     // Legacy Widget roles
     case UserDataTypes::TITLE:
         return pack.name;

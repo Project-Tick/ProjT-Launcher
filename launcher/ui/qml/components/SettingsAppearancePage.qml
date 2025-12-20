@@ -28,273 +28,193 @@ import "../Theme.js" as Theme
 ScrollView {
     id: appearancePage
     clip: true
+    Layout.fillWidth: true
+    Layout.fillHeight: true
 
     property var vm: ProjT.launcherSettingsVM
     property var themeVM: ProjT.themeVM
-    property bool showThemeGallery: true
-
     property var buttonStyleOptions: ["Icon only", "Text only", "Text beside icon", "Text under icon"]
 
-    contentWidth: appearancePage.availableWidth
+    contentWidth: Math.max(appearancePage.availableWidth, contentLayout.implicitWidth + Theme.spacingM * 2)
     contentHeight: contentLayout.implicitHeight + Theme.spacingM * 2
+
+    Component.onCompleted: {
+        if (themeVM && themeVM.currentIconTheme) {
+            Theme.iconTheme = themeVM.currentIconTheme;
+        }
+    }
+
+    Connections {
+        target: themeVM
+        function onCurrentIconThemeChanged() {
+            if (themeVM && themeVM.currentIconTheme) {
+                Theme.iconTheme = themeVM.currentIconTheme;
+            }
+        }
+    }
 
     ColumnLayout {
         id: contentLayout
-        width: appearancePage.availableWidth - Theme.spacingM * 2
         anchors.left: parent.left
         anchors.top: parent.top
+        anchors.right: parent.right
         anchors.leftMargin: Theme.spacingM
+        anchors.rightMargin: Theme.spacingM
         anchors.topMargin: Theme.spacingM
         spacing: Theme.spacingM
 
-        // Theme Selection Mode Toggle
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingM
-
-            Label {
-                text: qsTr("Theme Selection:")
-                color: ThemeColors.text
-                font.bold: true
-            }
-
-            ThemedButton {
-                text: showThemeGallery ? qsTr("Show Dropdown") : qsTr("Show Gallery")
-                size: "small"
-                onClicked: showThemeGallery = !showThemeGallery
-            }
-
-            Item {
-                Layout.fillWidth: true
-            }
-        }
-
-        // Platform Theme Information
-        PlatformThemeInfo {
-            Layout.fillWidth: true
-            themeVM: appearancePage.themeVM
-        }
-
-        // Theme Gallery (Visual Selection)
+        // Theming (old UI style)
         GroupBox {
             Layout.fillWidth: true
-            title: qsTr("Available Themes")
-            visible: showThemeGallery
+            title: ""
 
-            ColumnLayout {
+            GridLayout {
+                columns: 4
+                columnSpacing: Theme.spacingM
+                rowSpacing: Theme.spacingS
                 anchors.fill: parent
-                spacing: Theme.spacingS
+                anchors.margins: Theme.spacingS
 
-                ThemeGallery {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 400
-                    themeVM: appearancePage.themeVM
-                }
-            }
-        }
-
-        // Theme Dropdown (Classic Selection)
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Theme")
-            visible: !showThemeGallery
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Theme.spacingM
-
-                    Label {
-                        text: qsTr("Application theme:")
-                        color: ThemeColors.text
-                    }
-
-                    ComboBox {
-                        id: themeCombo
-                        Layout.fillWidth: true
-                        model: themeVM ? themeVM.availableThemes : null
-                        textRole: "name"
-                        valueRole: "id"
-                        currentIndex: {
-                            if (!themeVM || !themeVM.availableThemes || !themeVM.currentTheme)
-                                return 0;
-                            for (var i = 0; i < themeVM.availableThemes.rowCount(); i++) {
-                                var idx = themeVM.availableThemes.index(i, 0);
-                                if (themeVM.availableThemes.data(idx, Qt.UserRole + 1) === themeVM.currentTheme) {
-                                    return i;
-                                }
-                            }
-                            return 0;
-                        }
-                        onActivated: {
-                            if (themeVM && themeVM.availableThemes) {
-                                var idx = themeVM.availableThemes.index(currentIndex, 0);
-                                var themeId = themeVM.availableThemes.data(idx, Qt.UserRole + 1);
-                                themeVM.setCurrentTheme(themeId);
-                                themeVM.applyTheme();
-                            }
-                        }
-                        displayText: themeVM && themeVM.currentTheme ? themeVM.currentTheme : qsTr("Default")
-                    }
+                Label {
+                    text: qsTr("Theme:")
                 }
 
-                RowLayout {
+                ComboBox {
+                    id: themeCombo
                     Layout.fillWidth: true
-                    spacing: Theme.spacingM
-
-                    Label {
-                        text: qsTr("Icon theme:")
-                        color: ThemeColors.text
-                    }
-
-                    ComboBox {
-                        id: iconThemeCombo
-                        Layout.fillWidth: true
-                        model: themeVM ? themeVM.availableIconThemes : null
-                        textRole: "name"
-                        valueRole: "id"
-                        currentIndex: {
-                            if (!themeVM || !themeVM.availableIconThemes || !themeVM.currentIconTheme)
-                                return 0;
-                            for (var i = 0; i < themeVM.availableIconThemes.rowCount(); i++) {
-                                var idx = themeVM.availableIconThemes.index(i, 0);
-                                if (themeVM.availableIconThemes.data(idx, Qt.UserRole + 1) === themeVM.currentIconTheme) {
-                                    return i;
-                                }
-                            }
+                    model: themeVM ? themeVM.availableThemes : null
+                    textRole: "name"
+                    valueRole: "themeId"
+                    currentIndex: {
+                        if (!themeVM || !themeVM.availableThemes || !themeVM.currentTheme)
                             return 0;
-                        }
-                        onActivated: {
-                            if (themeVM && themeVM.availableIconThemes) {
-                                var idx = themeVM.availableIconThemes.index(currentIndex, 0);
-                                var iconThemeId = themeVM.availableIconThemes.data(idx, Qt.UserRole + 1);
-                                themeVM.setCurrentIconTheme(iconThemeId);
+                        for (var i = 0; i < themeVM.availableThemes.rowCount(); i++) {
+                            var idx = themeVM.availableThemes.index(i, 0);
+                            if (themeVM.availableThemes.data(idx, Qt.UserRole + 1) === themeVM.currentTheme) {
+                                return i;
                             }
                         }
-                        displayText: themeVM && themeVM.currentIconTheme ? themeVM.currentIconTheme : qsTr("Default")
+                        return 0;
+                    }
+                    onActivated: {
+                        if (themeVM && themeVM.availableThemes) {
+                            var idx = themeVM.availableThemes.index(currentIndex, 0);
+                            var themeId = themeVM.availableThemes.data(idx, Qt.UserRole + 1);
+                            themeVM.setCurrentTheme(themeId);
+                            themeVM.applyTheme();
+                        }
                     }
                 }
 
                 ThemedButton {
-                    text: qsTr("Refresh themes")
+                    text: qsTr("Open Folder")
+                    size: "small"
+                    onClicked: if (themeVM)
+                        themeVM.openWidgetThemesFolder()
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Label {
+                    text: qsTr("&Icons:")
+                }
+
+                ComboBox {
+                    id: iconThemeCombo
+                    Layout.fillWidth: true
+                    model: themeVM ? themeVM.availableIconThemes : null
+                    textRole: "name"
+                    valueRole: "themeId"
+                    currentIndex: {
+                        if (!themeVM || !themeVM.availableIconThemes || !themeVM.currentIconTheme)
+                            return 0;
+                        for (var i = 0; i < themeVM.availableIconThemes.rowCount(); i++) {
+                            var idx = themeVM.availableIconThemes.index(i, 0);
+                            if (themeVM.availableIconThemes.data(idx, Qt.UserRole + 1) === themeVM.currentIconTheme) {
+                                return i;
+                            }
+                        }
+                        return 0;
+                    }
+                    onActivated: {
+                        if (themeVM && themeVM.availableIconThemes) {
+                            var idx = themeVM.availableIconThemes.index(currentIndex, 0);
+                            var iconThemeId = themeVM.availableIconThemes.data(idx, Qt.UserRole + 1);
+                            themeVM.setCurrentIconTheme(iconThemeId);
+                        }
+                    }
+                }
+
+                ThemedButton {
+                    text: qsTr("Open Folder")
+                    size: "small"
+                    onClicked: if (themeVM)
+                        themeVM.openIconThemesFolder()
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Label {
+                    text: qsTr("&Cat Pack:")
+                    visible: themeVM && themeVM.availableCatPacks && themeVM.availableCatPacks.rowCount() > 0
+                }
+
+                ComboBox {
+                    id: catPackCombo
+                    Layout.fillWidth: true
+                    visible: themeVM && themeVM.availableCatPacks && themeVM.availableCatPacks.rowCount() > 0
+                    model: themeVM ? themeVM.availableCatPacks : null
+                    textRole: "name"
+                    valueRole: "catId"
+                    currentIndex: {
+                        if (!themeVM || !themeVM.availableCatPacks || !themeVM.currentCatPack)
+                            return 0;
+                        for (var i = 0; i < themeVM.availableCatPacks.rowCount(); i++) {
+                            var idx = themeVM.availableCatPacks.index(i, 0);
+                            if (themeVM.availableCatPacks.data(idx, Qt.UserRole + 1) === themeVM.currentCatPack) {
+                                return i;
+                            }
+                        }
+                        return 0;
+                    }
+                    onActivated: {
+                        if (themeVM && themeVM.availableCatPacks) {
+                            var idx = themeVM.availableCatPacks.index(currentIndex, 0);
+                            var catId = themeVM.availableCatPacks.data(idx, Qt.UserRole + 1);
+                            themeVM.setCurrentCatPack(catId);
+                        }
+                    }
+                }
+
+                ThemedButton {
+                    text: qsTr("Open Folder")
+                    size: "small"
+                    visible: themeVM && themeVM.availableCatPacks && themeVM.availableCatPacks.rowCount() > 0
+                    onClicked: if (themeVM)
+                        themeVM.openCatPacksFolder()
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                ThemedButton {
+                    text: qsTr("Reload All")
                     size: "small"
                     onClicked: if (themeVM)
                         themeVM.refreshThemes()
                 }
 
-                // Current Theme Info
-                Rectangle {
+                Item {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: themeInfoLayout.implicitHeight + Theme.spacingM * 2
-                    color: ThemeColors.surface
-                    border.color: ThemeColors.border
-                    radius: Theme.radiusS
-
-                    ColumnLayout {
-                        id: themeInfoLayout
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingM
-                        spacing: Theme.spacingXS
-
-                        Label {
-                            text: qsTr("Current Theme: %1").arg(themeVM ? themeVM.currentThemeName : "")
-                            color: ThemeColors.text
-                            font.bold: true
-                        }
-
-                        Label {
-                            text: themeVM ? themeVM.currentThemeTooltip : ""
-                            color: ThemeColors.textSecondary
-                            font.pointSize: Theme.fontCaption
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                            visible: text.length > 0
-                        }
-
-                        RowLayout {
-                            spacing: Theme.spacingM
-
-                            Label {
-                                text: qsTr("Has Custom Stylesheet:")
-                                color: ThemeColors.textSecondary
-                                font.pointSize: Theme.fontCaption
-                            }
-
-                            Label {
-                                text: themeVM && themeVM.hasStyleSheet ? qsTr("Yes") : qsTr("No")
-                                color: themeVM && themeVM.hasStyleSheet ? ThemeColors.success : ThemeColors.textSecondary
-                                font.pointSize: Theme.fontCaption
-                            }
-                        }
-
-                        RowLayout {
-                            spacing: Theme.spacingM
-                            visible: themeVM && themeVM.qtTheme.length > 0
-
-                            Label {
-                                text: qsTr("Qt Style:")
-                                color: ThemeColors.textSecondary
-                                font.pointSize: Theme.fontCaption
-                            }
-
-                            Label {
-                                text: themeVM ? themeVM.qtTheme : ""
-                                color: ThemeColors.text
-                                font.pointSize: Theme.fontCaption
-                            }
-                        }
-
-                        // Platform info
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: ThemeColors.border
-                            Layout.topMargin: Theme.spacingXS
-                            Layout.bottomMargin: Theme.spacingXS
-                        }
-
-                        Label {
-                            text: {
-                                if (Qt.platform.os === "windows")
-                                    return qsTr("Platform: Windows");
-                                if (Qt.platform.os === "osx")
-                                    return qsTr("Platform: macOS");
-                                if (Qt.platform.os === "linux")
-                                    return qsTr("Platform: Linux");
-                                return qsTr("Platform: %1").arg(Qt.platform.os);
-                            }
-                            color: ThemeColors.textSecondary
-                            font.pointSize: Theme.fontCaption
-                            font.italic: true
-                        }
-                    }
-                }
-
-                // Theme Preview
-                ThemePreview {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 200
-                }
-            }
-        }
-
-        // Icon Theme Gallery
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Icon Themes")
-            visible: showThemeGallery
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                IconThemeGallery {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 300
-                    themeVM: appearancePage.themeVM
                 }
             }
         }

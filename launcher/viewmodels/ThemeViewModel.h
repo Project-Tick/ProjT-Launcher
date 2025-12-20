@@ -31,8 +31,10 @@ class ThemeViewModel : public QObject {
 
     Q_PROPERTY(QString currentTheme READ currentTheme WRITE setCurrentTheme NOTIFY currentThemeChanged)
     Q_PROPERTY(QString currentIconTheme READ currentIconTheme WRITE setCurrentIconTheme NOTIFY currentIconThemeChanged)
+    Q_PROPERTY(QString currentCatPack READ currentCatPack WRITE setCurrentCatPack NOTIFY currentCatPackChanged)
     Q_PROPERTY(QAbstractListModel* availableThemes READ availableThemes CONSTANT)
     Q_PROPERTY(QAbstractListModel* availableIconThemes READ availableIconThemes CONSTANT)
+    Q_PROPERTY(QAbstractListModel* availableCatPacks READ availableCatPacks CONSTANT)
 
     // Theme color properties for QML
     Q_PROPERTY(QColor windowColor READ windowColor NOTIFY themeColorsChanged)
@@ -60,9 +62,11 @@ class ThemeViewModel : public QObject {
     QString currentTheme() const;
 
     QString currentIconTheme() const;
+    QString currentCatPack() const;
 
     QAbstractListModel* availableThemes() const;
     QAbstractListModel* availableIconThemes() const;
+    QAbstractListModel* availableCatPacks() const;
 
     // Theme color getters
     QColor windowColor() const;
@@ -88,16 +92,23 @@ class ThemeViewModel : public QObject {
     Q_INVOKABLE void refreshThemes();
     Q_INVOKABLE void setCurrentTheme(const QString& themeId);
     Q_INVOKABLE void setCurrentIconTheme(const QString& themeId);
+    Q_INVOKABLE void setCurrentCatPack(const QString& catId);
+    Q_INVOKABLE void openWidgetThemesFolder() const;
+    Q_INVOKABLE void openIconThemesFolder() const;
+    Q_INVOKABLE void openCatPacksFolder() const;
 
    signals:
     void currentThemeChanged();
     void currentIconThemeChanged();
+    void currentCatPackChanged();
     void themeColorsChanged();
 
    private:
     class ThemeListModel;
     class IconThemeListModel;
+    class CatPackListModel;
 
     ThemeListModel* m_themeListModel;
     IconThemeListModel* m_iconThemeListModel;
+    CatPackListModel* m_catPackListModel;
 };

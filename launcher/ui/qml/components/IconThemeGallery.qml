@@ -30,9 +30,23 @@ ScrollView {
     clip: true
 
     property var themeVM: ProjT.themeVM
+    contentWidth: Math.max(0, grid.width + Theme.spacingM * 2)
+    contentHeight: grid.implicitHeight + Theme.spacingM * 2
+
+    function iconSource(themeId, name) {
+        if (!themeId) {
+            return Theme.icon(name);
+        }
+        return "qrc:/icons/" + themeId + "/scalable/" + name + ".svg";
+    }
 
     GridLayout {
-        width: iconThemeGallery.width - Theme.spacingL
+        id: grid
+        width: Math.max(0, iconThemeGallery.availableWidth - Theme.spacingM * 2)
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: Theme.spacingM
+        anchors.topMargin: Theme.spacingM
         columns: Math.max(1, Math.floor(width / 220))
         columnSpacing: Theme.spacingM
         rowSpacing: Theme.spacingM
@@ -48,6 +62,7 @@ ScrollView {
                 border.width: isCurrentTheme ? 2 : 1
                 radius: Theme.radiusM
 
+                property string themeId: model.themeId
                 property bool isCurrentTheme: themeVM && model.themeId === themeVM.currentIconTheme
 
                 ColumnLayout {
@@ -70,66 +85,39 @@ ScrollView {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
 
-                        Label {
+                        RowLayout {
                             anchors.centerIn: parent
-                            text: qsTr("Icon Theme")
-                            color: ThemeColors.textSecondary
-                            font.pixelSize: Theme.fontCaption
-                            font.italic: true
+                            spacing: Theme.spacingS
+
+                            Repeater {
+                                model: ["settings", "accounts", "news", "minecraft"]
+                                delegate: Image {
+                                    width: 20
+                                    height: 20
+                                    fillMode: Image.PreserveAspectFit
+                                    source: iconThemeGallery.iconSource(themeId, modelData)
+                                    onStatusChanged: {
+                                        if (status === Image.Error) {
+                                            source = Theme.icon(modelData);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
                     // Apply Button
-                    Button {
+                    ThemedButton {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 32
                         text: isCurrentTheme ? qsTr("Current") : qsTr("Apply")
                         enabled: !isCurrentTheme
-                        flat: false
+                        size: "small"
+                        primary: !isCurrentTheme
 
                         onClicked: {
                             if (themeVM) {
                                 themeVM.setCurrentIconTheme(model.themeId);
                             }
-                        }
-
-                        background: Rectangle {
-                            implicitHeight: 32
-                            color: {
-                                if (!parent.enabled) {
-                                    return Qt.rgba(ThemeColors.button.r, ThemeColors.button.g, ThemeColors.button.b, 0.5);
-                                }
-                                if (parent.down) {
-                                    return Qt.darker(isCurrentTheme ? ThemeColors.highlight : ThemeColors.button, 1.2);
-                                }
-                                if (parent.hovered) {
-                                    return Qt.lighter(isCurrentTheme ? ThemeColors.highlight : ThemeColors.button, 1.1);
-                                }
-                                return isCurrentTheme ? ThemeColors.highlight : ThemeColors.button;
-                            }
-                            radius: 4
-                            border.width: parent.visualFocus ? 2 : 0
-                            border.color: ThemeColors.highlight
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 100
-                                }
-                            }
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: {
-                                if (!parent.enabled) {
-                                    return Qt.rgba(ThemeColors.buttonText.r, ThemeColors.buttonText.g, ThemeColors.buttonText.b, 0.5);
-                                }
-                                return isCurrentTheme ? ThemeColors.highlightedText : ThemeColors.buttonText;
-                            }
-                            font.pixelSize: 13
-                            font.bold: isCurrentTheme
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
                         }
                     }
                 }

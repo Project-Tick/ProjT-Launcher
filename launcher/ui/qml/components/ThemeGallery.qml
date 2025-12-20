@@ -30,9 +30,16 @@ ScrollView {
     clip: true
 
     property var themeVM: ProjT.themeVM
+    contentWidth: Math.max(0, grid.width + Theme.spacingM * 2)
+    contentHeight: grid.implicitHeight + Theme.spacingM * 2
 
     GridLayout {
-        width: themeGallery.width - Theme.spacingL
+        id: grid
+        width: Math.max(0, themeGallery.availableWidth - Theme.spacingM * 2)
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: Theme.spacingM
+        anchors.topMargin: Theme.spacingM
         columns: Math.max(1, Math.floor(width / 280))
         columnSpacing: Theme.spacingM
         rowSpacing: Theme.spacingM
@@ -143,56 +150,17 @@ ScrollView {
                     }
 
                     // Apply Button
-                    Button {
+                    ThemedButton {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 32
                         text: isCurrentTheme ? qsTr("Current") : qsTr("Apply")
                         enabled: !isCurrentTheme
-                        flat: false
+                        size: "small"
+                        primary: !isCurrentTheme
 
                         onClicked: {
                             if (themeVM) {
                                 themeVM.setCurrentTheme(model.themeId);
                             }
-                        }
-
-                        background: Rectangle {
-                            implicitHeight: 32
-                            color: {
-                                if (!parent.enabled) {
-                                    return Qt.rgba(ThemeColors.button.r, ThemeColors.button.g, ThemeColors.button.b, 0.5);
-                                }
-                                if (parent.down) {
-                                    return Qt.darker(isCurrentTheme ? ThemeColors.highlight : ThemeColors.button, 1.2);
-                                }
-                                if (parent.hovered) {
-                                    return Qt.lighter(isCurrentTheme ? ThemeColors.highlight : ThemeColors.button, 1.1);
-                                }
-                                return isCurrentTheme ? ThemeColors.highlight : ThemeColors.button;
-                            }
-                            radius: 4
-                            border.width: parent.visualFocus ? 2 : 0
-                            border.color: ThemeColors.highlight
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 100
-                                }
-                            }
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: {
-                                if (!parent.enabled) {
-                                    return Qt.rgba(ThemeColors.buttonText.r, ThemeColors.buttonText.g, ThemeColors.buttonText.b, 0.5);
-                                }
-                                return isCurrentTheme ? ThemeColors.highlightedText : ThemeColors.buttonText;
-                            }
-                            font.pixelSize: 13
-                            font.bold: isCurrentTheme
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
                         }
                     }
                 }
