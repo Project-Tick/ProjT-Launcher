@@ -956,8 +956,8 @@ Rectangle {
         setupWizardLoader.pageIds = pageIds || [];
         setupWizardLoader.active = true;
         Qt.callLater(function () {
-            if (setupWizardLoader.item && setupWizardLoader.item.open) {
-                setupWizardLoader.item.open();
+            if (setupWizardLoader.item && setupWizardLoader.item.show) {
+                setupWizardLoader.item.show();
             }
         });
     }

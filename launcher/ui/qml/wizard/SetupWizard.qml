@@ -25,19 +25,27 @@ import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
-Dialog {
+Window {
     id: setupWizard
     title: qsTr("%1 Quick Setup").arg(ProjT.launcherVM ? ProjT.launcherVM.displayName : "ProjT Launcher")
-    modal: true
+    modality: Qt.ApplicationModal
     width: 620
     height: 660
+    implicitWidth: 620
+    implicitHeight: 660
     minimumWidth: 300
     minimumHeight: 400
+    flags: Qt.Dialog
+    visible: true
 
     property int currentPageIndex: 0
     property var pageIds: []
     property var pages: []
     property string currentPageId: pages.length ? pages[currentPageIndex] : ""
+
+    signal accepted
+    signal rejected
+    signal closed
 
     // Collected settings
     property string selectedLanguage: "en_US"
@@ -73,7 +81,10 @@ Dialog {
         }
     }
 
-    footer: Rectangle {
+    Rectangle {
+        id: footerBar
+        Layout.fillWidth: true
+        Layout.preferredHeight: 52
         height: 52
         color: ThemeColors.surface
 
@@ -106,6 +117,11 @@ Dialog {
             }
 
             Button {
+                text: qsTr("Cancel")
+                onClicked: closeWizard(false)
+            }
+
+            Button {
                 text: qsTr("< Back")
                 enabled: currentPageIndex > 0
                 onClicked: {
@@ -130,14 +146,28 @@ Dialog {
     }
 
     // Page container
-    contentItem: StackLayout {
-        currentIndex: currentPageIndex
+    Item {
+        anchors.fill: parent
+        anchors.margins: 0
 
-        Repeater {
-            model: pages.length
-            Loader {
-                sourceComponent: pageComponent(pages[index])
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 0
+
+            StackLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                currentIndex: currentPageIndex
+
+                Repeater {
+                    model: pages.length
+                    Loader {
+                        sourceComponent: pageComponent(pages[index])
+                    }
+                }
             }
+
+            footerBar
         }
     }
 
@@ -155,7 +185,20 @@ Dialog {
                 pasteUseDefault: pasteUseDefault
             })
         }
-        setupWizard.accept()
+        closeWizard(true)
+    }
+
+    function skipSetup() {
+        closeWizard(false)
+    }
+
+    function closeWizard(isAccepted) {
+        if (isAccepted) {
+            accepted()
+        } else {
+            rejected()
+        }
+        close()
     }
 
     onAccepted: {
@@ -167,6 +210,10 @@ Dialog {
         if (App && App.finishSetupWizard) {
             App.finishSetupWizard(0)
         }
+    }
+
+    onClosing: {
+        closed()
     }
 
     Component {
