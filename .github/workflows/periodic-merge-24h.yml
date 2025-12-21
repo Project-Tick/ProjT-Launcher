@@ -1,9 +1,9 @@
-name: "Periodic Merges (Daily)"
+name: "Periodic Merges (Daily) (not needed anymore)"
 
 on:
-  schedule:
-    # Run daily at midnight UTC
-    - cron: '0 0 * * *'
+  # schedule:
+  #   # Run daily at midnight UTC
+  #   - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
       from:
