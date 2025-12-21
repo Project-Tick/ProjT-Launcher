@@ -56,10 +56,19 @@
 
 #include "Application.h"
 
+#include <QByteArray>
+#include <QDebug>
 #include <QQuickStyle>
 
 int main(int argc, char* argv[])
 {
+    // Prefer software renderer when no backend is forced; avoids QRhiGles2 failures on headless/driverless setups.
+    // Qt6 software path uses QT_QUICK_BACKEND=software; QSG_RHI_BACKEND does not accept "software".
+    if (qEnvironmentVariableIsEmpty("QSG_RHI_BACKEND") && qEnvironmentVariableIsEmpty("QT_QUICK_BACKEND")) {
+        qputenv("QT_QUICK_BACKEND", QByteArray("software"));
+        qDebug() << "QT_QUICK_BACKEND not set, falling back to software renderer.";
+    }
+
     // Force Basic style for QML to allow customization
     QQuickStyle::setStyle("Basic");
 

@@ -86,34 +86,41 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
         auto url = QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1").arg(pack.safeName);
         ((ListModel*)this)->requestLogo(pack.safeName, url);
 
-        return icon;
-    }
-    case Qt::UserRole:
-    case PackDataRole: {
-        QVariant v;
-        v.setValue(pack);
-        return v;
-    }
-    case Qt::DisplayRole:
-        return pack.name;
-    case Qt::SizeHintRole:
-        return QSize(0, 58);
-    // Custom data for QML
-    case NameRole:
-        return pack.name;
-    case DescriptionRole:
-        return pack.description;
-    case IconUrlRole:
-        return QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1.png").arg(pack.safeName);
-    // Legacy Widget roles
-    case UserDataTypes::TITLE:
-        return pack.name;
-    case UserDataTypes::DESCRIPTION:
-        return pack.description;
-    case UserDataTypes::INSTALLED:
-        return false;
-    default:
-        break;
+            return icon;
+        }
+        case Qt::UserRole:
+        case PackDataRole: {
+            QVariant v;
+            v.setValue(pack);
+            return v;
+        }
+        case Qt::DisplayRole:
+            return pack.name;
+        case Qt::SizeHintRole:
+            return QSize(0, 58);
+        // Custom data for QML
+        case NameRole:
+            return pack.name;
+        case DescriptionRole:
+            return pack.description;
+        case IconUrlRole: {
+            QString logoName = pack.safeName;
+            const QString lower = logoName.toLower();
+            const bool hasExt = lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".webp");
+            if (hasExt) {
+                return QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1").arg(logoName);
+            }
+            return QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1.png").arg(logoName);
+        }
+        // Legacy Widget roles
+        case UserDataTypes::TITLE:
+            return pack.name;
+        case UserDataTypes::DESCRIPTION:
+            return pack.description;
+        case UserDataTypes::INSTALLED:
+            return false;
+        default:
+            break;
     }
 
     return {};

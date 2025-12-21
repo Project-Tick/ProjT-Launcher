@@ -9,6 +9,7 @@ updates:
       cronjob: "0 3 * * *"
       timezone: "UTC"
     labels: ["11.dependencies", "1.main-ci-changes"]
+    open-pull-requests-limit: 10
     rebase-strategy: "disabled"
     commit-message:
       prefix: "deps"
@@ -26,7 +27,7 @@ updates:
       cronjob: "0 3 * * *"
       timezone: "UTC"
     labels: ["11.dependencies", "1.main-ci-changes", "12.npm"]
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     rebase-strategy: "disabled"
     versioning-strategy: increase
     commit-message:
@@ -45,6 +46,7 @@ updates:
       cronjob: "0 3 * * *"
       timezone: "UTC"
     labels: ["11.dependencies", "15.vcpkg"]
+    open-pull-requests-limit: 10
     rebase-strategy: "disabled"
     commit-message:
       prefix: "deps"
@@ -60,6 +62,7 @@ updates:
     ignore:
       - dependency-name: libraries/zlib
     labels: ["11.dependencies", "16.submodules"]
+    open-pull-requests-limit: 10
     rebase-strategy: "disabled"
     commit-message:
       prefix: "deps"

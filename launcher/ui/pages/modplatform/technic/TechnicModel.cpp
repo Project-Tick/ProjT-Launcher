@@ -93,37 +93,33 @@ QVariant Technic::ListModel::data(const QModelIndex& index, int role) const
         if (m_logoMap.contains(pack.logoName)) {
             return (m_logoMap.value(pack.logoName));
         }
-        QIcon icon = QIcon::fromTheme("screenshot-placeholder");
-        ((ListModel*)this)->requestLogo(pack.logoName, pack.logoUrl);
-        return icon;
-    }
-    case Qt::UserRole: {
-        QVariant v;
-        v.setValue(pack);
-        return v;
-    }
-    case Qt::DisplayRole:
-        return pack.name;
-    case Qt::SizeHintRole:
-        return QSize(0, 58);
-    // Custom data for QML
-    case NameRole:
-    case UserDataTypes::TITLE:
-        return pack.name;
-    case DescriptionRole:
-    case UserDataTypes::DESCRIPTION:
-        return pack.description;
-    case IconUrlRole:
-        return pack.logoUrl;
-    case PackDataRole: {
-        QVariant v;
-        v.setValue(pack);
-        return v;
-    }
-    case UserDataTypes::INSTALLED:
-        return false;
-    default:
-        break;
+        case Qt::UserRole: {
+            QVariant v;
+            v.setValue(pack);
+            return v;
+        }
+        case Qt::DisplayRole:
+            return pack.name;
+        case Qt::SizeHintRole:
+            return QSize(0, 58);
+        // Custom data for QML
+        case NameRole:
+        case UserDataTypes::TITLE:
+            return pack.name;
+        case DescriptionRole:
+        case UserDataTypes::DESCRIPTION:
+            return pack.description;
+        case IconUrlRole:
+            return pack.logoUrl;
+        case PackDataRole: {
+            QVariant v;
+            v.setValue(pack);
+            return v;
+        }
+        case UserDataTypes::INSTALLED:
+            return false;
+        default:
+            break;
     }
 
     return {};

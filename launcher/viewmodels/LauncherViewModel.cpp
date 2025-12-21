@@ -16,6 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 #include "LauncherViewModel.h"
@@ -156,17 +157,17 @@ void LauncherViewModel::setCurrentPage(Page page)
 QString LauncherViewModel::pageToString(Page page)
 {
     switch (page) {
-    case Page::News:
-        return QStringLiteral("news");
-    case Page::Settings:
-        return QStringLiteral("settings");
-    case Page::About:
-        return QStringLiteral("about");
-    case Page::Logs:
-        return QStringLiteral("logs");
-    case Page::Instances:
-    default:
-        return QStringLiteral("instances");
+        case Page::News:
+            return QStringLiteral("news");
+        case Page::Settings:
+            return QStringLiteral("settings");
+        case Page::About:
+            return QStringLiteral("about");
+        case Page::Logs:
+            return QStringLiteral("logs");
+        case Page::Instances:
+        default:
+            return QStringLiteral("instances");
     }
 }
 
@@ -261,6 +262,15 @@ QString LauncherViewModel::browseForFile(const QString& title, const QString& fi
     return QFileDialog::getOpenFileName(parent, title, QString(), filter);
 }
 
+QStringList LauncherViewModel::browseForFiles(const QString& title, const QString& filter)
+{
+    QWidget* parent = nullptr;
+    if (QApplication::activeWindow()) {
+        parent = QApplication::activeWindow();
+    }
+    return QFileDialog::getOpenFileNames(parent, title, QString(), filter);
+}
+
 QString LauncherViewModel::browseForDirectory(const QString& title)
 {
     QWidget* parent = nullptr;
@@ -268,6 +278,11 @@ QString LauncherViewModel::browseForDirectory(const QString& title)
         parent = QApplication::activeWindow();
     }
     return QFileDialog::getExistingDirectory(parent, title);
+}
+
+QString LauncherViewModel::browseForFolder(const QString& title)
+{
+    return browseForDirectory(title);
 }
 
 QString LauncherViewModel::browseForSave(const QString& title, const QString& filter)

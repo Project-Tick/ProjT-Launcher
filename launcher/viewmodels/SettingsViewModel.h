@@ -16,6 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 #pragma once
@@ -30,7 +31,7 @@
 class QWidget;
 class SettingsViewModel : public QObject {
     Q_OBJECT
-    Q_PROPERTY(QString instanceId READ instanceId NOTIFY instanceIdChanged)
+    Q_PROPERTY(QString instanceId READ instanceId WRITE setInstanceId NOTIFY instanceIdChanged)
     Q_PROPERTY(QString currentCategory READ currentCategory WRITE setCurrentCategory NOTIFY currentCategoryChanged)
     Q_PROPERTY(QStringList categoryList READ categoryList NOTIFY categoryListChanged)
     Q_PROPERTY(bool busy READ isBusy WRITE setBusy NOTIFY busyChanged)
@@ -95,7 +96,7 @@ class SettingsViewModel : public QObject {
     QStringList availableIcons() const { return m_availableIcons; }
     QString busyReason() const { return m_busyReason; }
 
-    void setInstanceId(const QString& id);
+    Q_INVOKABLE void setInstanceId(const QString& id);
     void setCurrentCategory(const QString& category);
     void setCategoryList(const QStringList& categories);
     void setBusy(bool busy);

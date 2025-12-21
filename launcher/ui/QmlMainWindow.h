@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -16,12 +16,13 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 #pragma once
 
-#include <QMainWindow>
 #include <QCloseEvent>
+#include <QMainWindow>
 
 #include "settings/SettingsObject.h"
 
@@ -43,6 +44,11 @@ class QmlMainWindow : public QMainWindow {
                   SettingsViewModel* settingsViewModel,
                   ThemeViewModel* themeViewModel,
                   QWidget* parent = nullptr);
+
+    void openNewInstanceDialog(const QString& groupName, const QString& importUrl);
+    void openSettingsPage(const QString& pageKey);
+    void openInstanceSettingsPage(const QString& instanceId, const QString& pageKey);
+    void openSetupWizard(const QStringList& pageIds);
 
     // Process URLs for importing modpacks, instances, etc.
     void processURLs(const QList<QUrl>& urls);

@@ -146,24 +146,12 @@ bool ResourceFolderModel::installResource(QString original_path)
                 qCritical() << "Cleaning up new location (" << new_path << ") was unsuccessful!";
                 return false;
             }
-
-            FS::updateTimestamp(new_path);
-
-            QFileInfo new_path_file_info(new_path);
-            resource.setFile(new_path_file_info);
-
-            return triggerUpdate();
+            qDebug() << new_path << "has been deleted.";
         }
 
-            if (!FS::copy(original_path, new_path)()) {
-                qWarning() << "Copy of folder from" << original_path << "to" << new_path << "has (potentially partially) failed.";
-                return false;
-            }
-
-            QFileInfo newpathInfo(new_path);
-            resource.setFile(newpathInfo);
-
-            return triggerUpdate();
+        if (!QFile::copy(original_path, new_path)) {
+            qCritical() << "Copy from" << original_path << "to" << new_path << "has failed.";
+            return false;
         }
 
         FS::updateTimestamp(new_path);

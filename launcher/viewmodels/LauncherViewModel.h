@@ -16,6 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 #pragma once
@@ -77,7 +78,9 @@ class LauncherViewModel : public QObject {
     Q_INVOKABLE void openAccountsManager();
 
     Q_INVOKABLE QString browseForFile(const QString& title, const QString& filter);
+    Q_INVOKABLE QStringList browseForFiles(const QString& title, const QString& filter);
     Q_INVOKABLE QString browseForDirectory(const QString& title);
+    Q_INVOKABLE QString browseForFolder(const QString& title);
     Q_INVOKABLE QString browseForSave(const QString& title, const QString& filter);
 
     // Application control

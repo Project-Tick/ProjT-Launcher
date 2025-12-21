@@ -58,8 +58,8 @@ class TranslationsModel : public QAbstractListModel {
     Q_INVOKABLE QModelIndex selectedIndex();
     Q_INVOKABLE QString selectedLanguage();
 
-    void downloadIndex();
-    void setUseSystemLocale(bool useSystemLocale);
+    Q_INVOKABLE void downloadIndex();
+    Q_INVOKABLE void setUseSystemLocale(bool useSystemLocale);
 
    private:
     QList<Language>::Iterator findLanguage(const QString& key);

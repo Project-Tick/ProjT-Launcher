@@ -92,6 +92,7 @@
 #include "ui/pages/global/MinecraftPage.h"
 #include "ui/pages/global/ProxyPage.h"
 
+#include "net/PasteUpload.h"
 #include "ui/setupwizard/AutoJavaWizardPage.h"
 #include "ui/setupwizard/JavaWizardPage.h"
 #include "ui/setupwizard/LanguageWizardPage.h"
@@ -546,8 +547,13 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
                     FS::move(oldName, logBase.arg(i));
         }
 
-        for (auto i = 4; i > 0; i--)
-            FS::move(logBase.arg(i - 1), logBase.arg(i));
+        for (auto i = 4; i > 0; i--) {
+            auto from = logBase.arg(i - 1);
+            if (!QFile::exists(from)) {
+                continue;
+            }
+            FS::move(from, logBase.arg(i));
+        }
 
         logFile = std::unique_ptr<QFile>(new QFile(logBase.arg(0)));
         if (!logFile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
@@ -1237,31 +1243,22 @@ bool Application::createSetupWizard()
         }
 
         m_themeManager->applyCurrentlySelectedTheme(true);
+        QStringList pageIds;
+        if (languageRequired)
+            pageIds.append("language");
+        if (javaRequired)
+            pageIds.append("java");
+        else if (askjava)
+            pageIds.append("autoJava");
+        if (pasteInterventionRequired)
+            pageIds.append("paste");
+        if (themeInterventionRequired)
+            pageIds.append("theme");
+        if (login)
+            pageIds.append("login");
 
-        m_setupWizard = new SetupWizard(nullptr);
-        if (languageRequired) {
-            m_setupWizard->addPage(new LanguageWizardPage(m_setupWizard));
-        }
-
-        if (javaRequired) {
-            m_setupWizard->addPage(new JavaWizardPage(m_setupWizard));
-        } else if (askjava) {
-            m_setupWizard->addPage(new AutoJavaWizardPage(m_setupWizard));
-        }
-
-        if (pasteInterventionRequired) {
-            m_setupWizard->addPage(new PasteWizardPage(m_setupWizard));
-        }
-
-        if (themeInterventionRequired) {
-            m_setupWizard->addPage(new ThemeWizardPage(m_setupWizard));
-        }
-
-        if (login) {
-            m_setupWizard->addPage(new LoginWizardPage(m_setupWizard));
-        }
-        connect(m_setupWizard, &QDialog::finished, this, &Application::setupWizardFinished);
-        m_setupWizard->show();
+        auto qmlWindow = showQmlMainWindow(true);
+        qmlWindow->openSetupWizard(pageIds);
     }
 
     return wizardRequired || login;
@@ -1715,6 +1712,11 @@ void Application::controllerFailed(const QString& error)
 
 void Application::ShowGlobalSettings(class QWidget* parent, QString open_page)
 {
+    if (auto qmlWindow = showQmlMainWindow(false)) {
+        emit globalSettingsAboutToOpen();
+        qmlWindow->openSettingsPage(open_page);
+        return;
+    }
     if (!m_globalSettingsProvider) {
         return;
     }
@@ -1724,6 +1726,56 @@ void Application::ShowGlobalSettings(class QWidget* parent, QString open_page)
         PageDialog dlg(m_globalSettingsProvider.get(), open_page, parent);
         connect(&dlg, &PageDialog::applied, this, &Application::globalSettingsApplied);
         dlg.exec();
+    }
+}
+
+void Application::notifyGlobalSettingsApplied()
+{
+    emit globalSettingsApplied();
+}
+
+void Application::finishSetupWizard(int status)
+{
+    setupWizardFinished(status);
+}
+
+void Application::applyWizardSettings(const QVariantMap& values)
+{
+    auto s = settings();
+    if (!s) {
+        return;
+    }
+
+    if (values.contains("language")) {
+        s->set("Language", values.value("language").toString());
+    }
+    if (values.contains("theme")) {
+        s->set("ApplicationTheme", values.value("theme").toString());
+    }
+    if (values.contains("javaPath")) {
+        const auto javaPath = values.value("javaPath").toString();
+        if (!javaPath.isEmpty()) {
+            s->set("JavaPath", javaPath);
+        }
+    }
+    if (values.contains("autoDetectJava")) {
+        s->set("AutomaticJavaSwitch", values.value("autoDetectJava").toBool());
+        s->set("UserAskedAboutAutomaticJavaDownload", true);
+    }
+    if (values.contains("autoDownloadJava")) {
+        s->set("AutomaticJavaDownload", values.value("autoDownloadJava").toBool());
+        s->set("UserAskedAboutAutomaticJavaDownload", true);
+    }
+    if (values.contains("pasteUseDefault")) {
+        const bool useDefault = values.value("pasteUseDefault").toBool();
+        const QString prevPasteURL = s->get("PastebinURL").toString();
+        s->reset("PastebinURL");
+        if (!useDefault) {
+            bool usingDefaultBase = prevPasteURL == PasteUpload::PasteTypes.at(PasteUpload::PasteType::NullPointer).defaultBase;
+            s->set("PastebinType", PasteUpload::PasteType::NullPointer);
+            if (!usingDefaultBase)
+                s->set("PastebinCustomAPIBase", prevPasteURL);
+        }
     }
 }
 
@@ -1783,6 +1835,15 @@ InstanceWindow* Application::showInstanceWindow(InstancePtr instance, QString pa
 {
     if (!instance)
         return nullptr;
+    if (auto qmlWindow = showQmlMainWindow(false)) {
+        qmlWindow->openInstanceSettingsPage(instance->id(), page);
+        QMutexLocker locker(&m_instanceExtrasMutex);
+        auto& extras = m_instanceExtras[instance->id()];
+        if (extras.controller) {
+            extras.controller->setParentWidget(m_qmlMainWindow);
+        }
+        return nullptr;
+    }
     auto id = instance->id();
     QMutexLocker locker(&m_instanceExtrasMutex);
     auto& extras = m_instanceExtras[id];

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -16,6 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 #include "ShellManager.h"
@@ -27,7 +28,6 @@
 #include <QLibraryInfo>
 #include <QQmlContext>
 #include <QQmlEngine>
-#include <QQmlPropertyMap>
 #include <QQuickWidget>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -36,6 +36,7 @@
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
 #include "translations/TranslationsModel.h"
+#include "ui/QmlContextBridge.h"
 #include "viewmodels/ATLauncherViewModel.h"
 #include "viewmodels/AccountsViewModel.h"
 #include "viewmodels/CurseForgeViewModel.h"
@@ -44,6 +45,7 @@
 #include "viewmodels/InstanceViewModel.h"
 #include "viewmodels/LauncherSettingsViewModel.h"
 #include "viewmodels/LauncherViewModel.h"
+#include "viewmodels/LogsViewModel.h"
 #include "viewmodels/ModrinthViewModel.h"
 #include "viewmodels/NewInstanceViewModel.h"
 #include "viewmodels/NewsViewModel.h"
@@ -139,13 +141,13 @@ static QUrl resolveQmlUrl(const QString& fileName)
 
     // Try to find source directory for development builds
     // Build path is typically: <project>/build/Debug/projtlauncher.exe
-    // Source path is: <project>/launcher/qml/
+    // Source path is: <project>/launcher/ui/qml/
     QDir dir(QCoreApplication::applicationDirPath());
 
     // Try going up multiple levels to find source tree
     for (int i = 0; i < 4; ++i) {
         QDir sourceDir(dir);
-        if (sourceDir.cd(QStringLiteral("launcher/qml"))) {
+        if (sourceDir.cd(QStringLiteral("launcher/ui/qml"))) {
             QFileInfo info(sourceDir.filePath(fileName));
             if (info.exists()) {
                 qDebug() << "[ShellManager] Loading QML from source:" << info.absoluteFilePath();
@@ -299,7 +301,7 @@ static void setupQmlImportPaths(QQmlEngine* engine)
     if (sourceDir.cdUp()) {
         for (int i = 0; i < 4; ++i) {
             QDir qmlSourceDir(sourceDir);
-            if (qmlSourceDir.cd(QStringLiteral("launcher/qml"))) {
+            if (qmlSourceDir.cd(QStringLiteral("launcher/ui/qml"))) {
                 engine->addImportPath(qmlSourceDir.absolutePath());
                 qDebug() << "[ShellManager] Added source QML import path:" << qmlSourceDir.absolutePath();
                 break;
@@ -387,12 +389,17 @@ void ShellManager::exposeContextProperties(LauncherViewModel* launcherViewModel,
     m_stateBridge = new ShellStateBridge(settings, this);
     ctx->setContextProperty(QStringLiteral("shellState"), m_stateBridge);
 
-    auto projt = new QQmlPropertyMap(this);
+    auto projt = new QmlContextBridge(this);
+    projt->setSettings(settings);
     projt->insert(QStringLiteral("launcherVM"), QVariant::fromValue(launcherViewModel));
     projt->insert(QStringLiteral("instancesVM"), QVariant::fromValue(instanceListViewModel));
     projt->insert(QStringLiteral("newsVM"), QVariant::fromValue(newsViewModel));
     projt->insert(QStringLiteral("settingsVM"), QVariant::fromValue(settingsViewModel));
+    if (settings) {
+        projt->insert(QStringLiteral("settings"), QVariant::fromValue(settings.get()));
+    }
     ctx->setContextProperty(QStringLiteral("ProjT"), projt);
+    ctx->setContextProperty(QStringLiteral("App"), APPLICATION);
 
     if (launcherViewModel) {
         ctx->setContextProperty(QStringLiteral("launcherVM"), launcherViewModel);
@@ -433,6 +440,12 @@ void ShellManager::exposeContextProperties(LauncherViewModel* launcherViewModel,
     ctx->setContextProperty(QStringLiteral("instanceVM"), instanceViewModel);
     ctx->setContextProperty(QStringLiteral("instanceViewModel"), instanceViewModel);
     projt->insert(QStringLiteral("instanceVM"), QVariant::fromValue(instanceViewModel));
+
+    // Create and expose LogsViewModel for logs page
+    auto logsViewModel = new LogsViewModel(this);
+    ctx->setContextProperty(QStringLiteral("logsVM"), logsViewModel);
+    ctx->setContextProperty(QStringLiteral("logsViewModel"), logsViewModel);
+    projt->insert(QStringLiteral("logsVM"), QVariant::fromValue(logsViewModel));
 
     // Create and expose modplatform ViewModels
     auto atlViewModel = new ATLauncherViewModel(this);

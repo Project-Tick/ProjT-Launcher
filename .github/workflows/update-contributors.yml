@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Use Node.js
         uses: actions/setup-node@v6
@@ -39,7 +39,7 @@ jobs:
         with:
           base: "develop"
           branch: "update-contributors"
-          delete-branch: true
+          delete-branch: false
           title: "chore: update contributors"
           body: "Automated pull request to update contributors"
 

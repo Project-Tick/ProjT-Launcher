@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -16,6 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 #include "TestQmlPanel.h"
@@ -47,7 +48,7 @@ QUrl resolveQmlUrl(const QString& fileName)
     // Try going up multiple levels to find source tree
     for (int i = 0; i < 4; ++i) {
         QDir sourceDir(dir);
-        if (sourceDir.cd(QStringLiteral("launcher/qml"))) {
+        if (sourceDir.cd(QStringLiteral("launcher/ui/qml"))) {
             QFileInfo info(sourceDir.filePath(fileName));
             if (info.exists()) {
                 qDebug() << "[TestQmlPanel] Loading QML from source:" << info.absoluteFilePath();

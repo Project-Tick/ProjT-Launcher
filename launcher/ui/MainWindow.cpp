@@ -853,23 +853,23 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
             secretEventFilter->input(ev);
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(ev);
             switch (keyEvent->key()) {
-                /*
-                case Qt::Key_Enter:
-                case Qt::Key_Return:
-                    activateInstance(m_selectedInstance);
+                    /*
+                    case Qt::Key_Enter:
+                    case Qt::Key_Return:
+                        activateInstance(m_selectedInstance);
+                        return true;
+                        */
+                case Qt::Key_Delete:
+                    on_actionDeleteInstance_triggered();
                     return true;
-                    */
-            case Qt::Key_Delete:
-                on_actionDeleteInstance_triggered();
-                return true;
-            case Qt::Key_F5:
-                refreshInstances();
-                return true;
-            case Qt::Key_F2:
-                on_actionRenameInstance_triggered();
-                return true;
-            default:
-                break;
+                case Qt::Key_F5:
+                    refreshInstances();
+                    return true;
+                case Qt::Key_F2:
+                    on_actionRenameInstance_triggered();
+                    return true;
+                default:
+                    break;
             }
         }
     }
@@ -988,6 +988,11 @@ void MainWindow::addInstance(const QString& url, const QMap<QString, QString>& e
 
     if (groupName.isEmpty()) {
         groupName = APPLICATION->settings()->get("LastUsedGroupForNewInstance").toString();
+    }
+
+    if (auto qmlWindow = APPLICATION->showQmlMainWindow(false)) {
+        qmlWindow->openNewInstanceDialog(groupName, url);
+        return;
     }
 
     NewInstanceDialog newInstDlg(groupName, url, extra_info, this);

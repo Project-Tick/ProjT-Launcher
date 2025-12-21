@@ -1,5 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2025 Project Tick
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
 
 #include "ModrinthViewModel.h"
 
@@ -32,25 +50,25 @@ QVariant ModrinthPackListModel::data(const QModelIndex& index, int role) const
     auto pack = m_packs.at(index.row());
 
     switch (role) {
-    case NameRole:
-    case Qt::DisplayRole:
-        return pack->name;
-    case DescriptionRole:
-        return pack->description;
-    case AuthorRole:
-        if (!pack->authors.isEmpty())
-            return pack->authors.first().name;
-        return QString();
-    case IconUrlRole:
-        return pack->logoUrl;
-    case DownloadsRole:
-        return QString();  // Not available in IndexedPack
-    case FollowsRole:
-        return QString();  // Not available in IndexedPack
-    case PackDataRole:
-        return QVariant::fromValue(pack);
-    default:
-        return {};
+        case NameRole:
+        case Qt::DisplayRole:
+            return pack->name;
+        case DescriptionRole:
+            return pack->description;
+        case AuthorRole:
+            if (!pack->authors.isEmpty())
+                return pack->authors.first().name;
+            return QString();
+        case IconUrlRole:
+            return pack->logoUrl;
+        case DownloadsRole:
+            return QString();  // Not available in IndexedPack
+        case FollowsRole:
+            return QString();  // Not available in IndexedPack
+        case PackDataRole:
+            return QVariant::fromValue(pack);
+        default:
+            return {};
     }
 }
 
@@ -109,17 +127,17 @@ void ModrinthPackListModel::clear()
 static auto sortFromIndex(int index) -> QString
 {
     switch (index) {
-    default:
-    case 0:
-        return "relevance";
-    case 1:
-        return "downloads";
-    case 2:
-        return "follows";
-    case 3:
-        return "newest";
-    case 4:
-        return "updated";
+        default:
+        case 0:
+            return "relevance";
+        case 1:
+            return "downloads";
+        case 2:
+            return "follows";
+        case 3:
+            return "newest";
+        case 4:
+            return "updated";
     }
 }
 

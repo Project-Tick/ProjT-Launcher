@@ -5,13 +5,25 @@
  *  ProjT Launcher - Minecraft Launcher
  *  Copyright (C) 2025 Project Tick
  *
- *  This file is part of ProjT Launcher and is licensed under
- *  the GNU General Public License version 3 or later.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 #include "ThemeViewModel.h"
 
 #include "Application.h"
+#include "DesktopServices.h"
+#include "ui/themes/CatPack.h"
 #include "ui/themes/ITheme.h"
 #include "ui/themes/IconTheme.h"
 #include "ui/themes/ThemeManager.h"
@@ -36,15 +48,15 @@ class ThemeViewModel::ThemeListModel : public QAbstractListModel {
 
         auto* theme = m_themes[index.row()];
         switch (role) {
-        case IdRole:
-            return theme->id();
-        case NameRole:
-        case Qt::DisplayRole:
-            return theme->name();
-        case TooltipRole:
-            return theme->tooltip();
-        default:
-            return QVariant();
+            case IdRole:
+                return theme->id();
+            case NameRole:
+            case Qt::DisplayRole:
+                return theme->name();
+            case TooltipRole:
+                return theme->tooltip();
+            default:
+                return QVariant();
         }
     }
 
@@ -84,15 +96,15 @@ class ThemeViewModel::IconThemeListModel : public QAbstractListModel {
 
         auto* iconTheme = m_iconThemes[index.row()];
         switch (role) {
-        case IdRole:
-            return iconTheme->id();
-        case NameRole:
-        case Qt::DisplayRole:
-            return iconTheme->name();
-        case PathRole:
-            return iconTheme->path();
-        default:
-            return QVariant();
+            case IdRole:
+                return iconTheme->id();
+            case NameRole:
+            case Qt::DisplayRole:
+                return iconTheme->name();
+            case PathRole:
+                return iconTheme->path();
+            default:
+                return QVariant();
         }
     }
 
@@ -109,9 +121,57 @@ class ThemeViewModel::IconThemeListModel : public QAbstractListModel {
     QList<IconTheme*> m_iconThemes;
 };
 
+// Cat Pack List Model
+class ThemeViewModel::CatPackListModel : public QAbstractListModel {
+   public:
+    enum Role { IdRole = Qt::UserRole + 1, NameRole, PathRole };
+
+    explicit CatPackListModel(QObject* parent = nullptr) : QAbstractListModel(parent) { refresh(); }
+
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override
+    {
+        Q_UNUSED(parent);
+        return m_catPacks.count();
+    }
+
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override
+    {
+        if (!index.isValid() || index.row() >= m_catPacks.count())
+            return QVariant();
+
+        auto* cat = m_catPacks[index.row()];
+        switch (role) {
+            case IdRole:
+                return cat->id();
+            case NameRole:
+            case Qt::DisplayRole:
+                return cat->name();
+            case PathRole:
+                return cat->path();
+            default:
+                return QVariant();
+        }
+    }
+
+    QHash<int, QByteArray> roleNames() const override { return { { IdRole, "catId" }, { NameRole, "name" }, { PathRole, "path" } }; }
+
+    void refresh()
+    {
+        beginResetModel();
+        m_catPacks = APPLICATION->themeManager()->getValidCatPacks();
+        endResetModel();
+    }
+
+   private:
+    QList<CatPack*> m_catPacks;
+};
+
 // ThemeViewModel Implementation
 ThemeViewModel::ThemeViewModel(QObject* parent)
-    : QObject(parent), m_themeListModel(new ThemeListModel(this)), m_iconThemeListModel(new IconThemeListModel(this))
+    : QObject(parent)
+    , m_themeListModel(new ThemeListModel(this))
+    , m_iconThemeListModel(new IconThemeListModel(this))
+    , m_catPackListModel(new CatPackListModel(this))
 {}
 
 QString ThemeViewModel::currentTheme() const
@@ -135,6 +195,11 @@ void ThemeViewModel::setCurrentTheme(const QString& themeId)
 QString ThemeViewModel::currentIconTheme() const
 {
     return APPLICATION->settings()->get("IconTheme").toString();
+}
+
+QString ThemeViewModel::currentCatPack() const
+{
+    return APPLICATION->settings()->get("BackgroundCat").toString();
 }
 
 void ThemeViewModel::setCurrentIconTheme(const QString& themeId)
@@ -161,6 +226,11 @@ QAbstractListModel* ThemeViewModel::availableIconThemes() const
     return m_iconThemeListModel;
 }
 
+QAbstractListModel* ThemeViewModel::availableCatPacks() const
+{
+    return m_catPackListModel;
+}
+
 void ThemeViewModel::applyTheme()
 {
     APPLICATION->themeManager()->applyCurrentlySelectedTheme();
@@ -172,7 +242,35 @@ void ThemeViewModel::refreshThemes()
     APPLICATION->themeManager()->refresh();
     m_themeListModel->refresh();
     m_iconThemeListModel->refresh();
+    m_catPackListModel->refresh();
     emit themeColorsChanged();
+}
+
+void ThemeViewModel::setCurrentCatPack(const QString& catId)
+{
+    if (currentCatPack() == catId)
+        return;
+
+    APPLICATION->settings()->set("BackgroundCat", catId);
+    emit currentCatPackChanged();
+
+    // Notify cat consumers to refresh
+    APPLICATION->currentCatChanged(0);
+}
+
+void ThemeViewModel::openWidgetThemesFolder() const
+{
+    DesktopServices::openPath(APPLICATION->themeManager()->getApplicationThemesFolder().path());
+}
+
+void ThemeViewModel::openIconThemesFolder() const
+{
+    DesktopServices::openPath(APPLICATION->themeManager()->getIconThemesFolder().path());
+}
+
+void ThemeViewModel::openCatPacksFolder() const
+{
+    DesktopServices::openPath(APPLICATION->themeManager()->getCatPacksFolder().path());
 }
 
 // Theme color getters

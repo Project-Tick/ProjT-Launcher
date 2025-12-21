@@ -54,47 +54,16 @@ BreakInheritanceList: BeforeComma
 
 # C++11
 Cpp11BracedListStyle: false
-
-# Indentation
-IndentCaseLabels: false
-IndentPPDirectives: None
+---
+Language: JavaScript
+BasedOnStyle: Chromium
 IndentWidth: 4
-IndentWrappedFunctionNames: false
-
-# Includes
-IncludeBlocks: Preserve
-SortIncludes: false
-
-# Namespaces
-CompactNamespaces: false
-FixNamespaceComments: true
-NamespaceIndentation: None
-
-# Pointers and references
-DerivePointerAlignment: false
-PointerAlignment: Left
-
-# Spacing
-SpaceAfterCStyleCast: false
-SpaceAfterLogicalNot: false
-SpaceAfterTemplateKeyword: true
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeCpp11BracedList: false
-SpaceBeforeCtorInitializerColon: true
-SpaceBeforeInheritanceColon: true
-SpaceBeforeParens: ControlStatements
-SpaceBeforeRangeBasedForLoopColon: true
-SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 2
-SpacesInAngles: false
-SpacesInCStyleCastParentheses: false
-SpacesInContainerLiterals: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-
-# Other
-KeepEmptyLinesAtTheStartOfBlocks: true
-MaxEmptyLinesToKeep: 1
-ReflowComments: false
-Standard: c++17
-UseTab: Never
+ColumnLimit: 140
+JavaScriptQuotes: Double
+AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: false
+SpacesInContainerLiterals: true
+---
+Language: Json
+DisableFormat: true

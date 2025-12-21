@@ -847,7 +847,7 @@ SET(LAUNCHER_SOURCES
     resources/flat_white/flat_white.qrc
     resources/documents/documents.qrc
     resources/shaders/shaders.qrc
-    qml/qml.qrc
+    ui/qml/qml.qrc
     "${CMAKE_CURRENT_BINARY_DIR}/../${Launcher_Branding_LogoQRC}"
 
     # Icons
@@ -873,6 +873,7 @@ SET(LAUNCHER_SOURCES
     ui/TestQmlPanel.cpp
     ui/QmlMainWindow.h
     ui/QmlMainWindow.cpp
+    ui/QmlContextBridge.h
 
     # FIXME: maybe find a better home for this.
     FileIgnoreProxy.cpp
@@ -1312,7 +1313,7 @@ qt_add_resources(LAUNCHER_RESOURCES
     resources/flat_white/flat_white.qrc
     resources/documents/documents.qrc
     resources/shaders/shaders.qrc
-    qml/qml.qrc
+    ui/qml/qml.qrc
     "${CMAKE_CURRENT_BINARY_DIR}/../${Launcher_Branding_LogoQRC}"
 )
 
