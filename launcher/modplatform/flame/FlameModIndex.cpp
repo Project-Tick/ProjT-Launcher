@@ -144,6 +144,14 @@ auto FlameMod::loadIndexedPackVersion(QJsonObject& obj, bool load_changelog) -> 
             file.loaders |= ModPlatform::LiteLoader;
         else if (loader == "fabric")
             file.loaders |= ModPlatform::Fabric;
+        else if (loader == "risugami")
+            file.loaders |= ModPlatform::Risugami;
+        else if (loader == "station-loader")
+            file.loaders |= ModPlatform::StationLoader;
+        else if (loader == "modloadermp")
+            file.loaders |= ModPlatform::ModLoaderMP;
+        else if (loader == "optifine")
+            file.loaders |= ModPlatform::Optifine;
         else if (loader == "quilt")
             file.loaders |= ModPlatform::Quilt;
         else if (loader == "server" || loader == "client") {

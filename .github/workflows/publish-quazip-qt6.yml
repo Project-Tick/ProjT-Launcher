@@ -1,0 +1,106 @@
+name: Publish quazip-qt6 NuGet package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "QuaZip version (e.g. 1.4.0). Use 'latest' for upstream latest release."
+        required: false
+        default: "latest"
+  schedule:
+    - cron: "0 7 * * 1"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve QuaZip version
+        shell: powershell
+        run: |
+          $input = "${{ inputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($input) -or $input -eq "latest") {
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/stachenov/quazip/releases/latest" -Headers @{
+              "User-Agent" = "ProjT-Launcher"
+            }
+            $tag = $release.tag_name
+            if (-not $tag) { throw "Failed to resolve latest QuaZip tag" }
+            $version = $tag.TrimStart("v")
+          } else {
+            if ($input.StartsWith("v")) {
+              $tag = $input
+              $version = $input.Substring(1)
+            } else {
+              $version = $input
+              $tag = "v$input"
+            }
+          }
+
+          "QUAZIP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "QUAZIP_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          aqtversion: "==3.1.*"
+          version: 6.10.0
+          arch: win64_msvc2022_64
+
+      - name: Install NuGet CLI
+        shell: powershell
+        run: |
+          dotnet tool install --global NuGet.CommandLine --version 6.*
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Fetch QuaZip
+        shell: powershell
+        run: |
+          git clone --depth 1 --branch "$env:QUAZIP_TAG" https://github.com/stachenov/quazip.git quazip
+
+      - name: Configure and install
+        shell: powershell
+        run: |
+          $prefix = "$env:GITHUB_WORKSPACE\stage\build\native"
+          cmake -S quazip -B quazip-build `
+            -DCMAKE_INSTALL_PREFIX="$prefix" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DQUAZIP_QT6=ON `
+            -DQUAZIP_ENABLE_TESTS=OFF `
+            -DQt6_DIR="$env:Qt6_DIR"
+          cmake --install quazip-build --config Release
+
+      - name: Stage license
+        shell: powershell
+        run: |
+          if (Test-Path "quazip/COPYING") {
+            Copy-Item -Path "quazip/COPYING" -Destination "$env:GITHUB_WORKSPACE\stage\LICENSE.txt"
+          } elseif (Test-Path "quazip/LICENSE") {
+            Copy-Item -Path "quazip/LICENSE" -Destination "$env:GITHUB_WORKSPACE\stage\LICENSE.txt"
+          } else {
+            throw "QuaZip license file not found"
+          }
+
+      - name: Pack NuGet
+        shell: powershell
+        run: |
+          nuget pack .github/nuget/quazip-qt6.nuspec `
+            -Version "$env:QUAZIP_VERSION" `
+            -BasePath "$env:GITHUB_WORKSPACE\stage" `
+            -OutputDirectory "$env:GITHUB_WORKSPACE\artifacts"
+
+      - name: Push NuGet (GitHub Packages)
+        shell: powershell
+        run: |
+          $package = "$env:GITHUB_WORKSPACE\artifacts\quazip-qt6.$env:QUAZIP_VERSION.nupkg"
+          nuget push $package `
+            -Source "https://nuget.pkg.github.com/Project-Tick/index.json" `
+            -ApiKey "${{ secrets.GITHUB_TOKEN }}" `
+            -SkipDuplicate `
+            -NonInteractive

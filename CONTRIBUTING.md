@@ -6,12 +6,17 @@
 
 ## 🧭 Project Areas
 
-- **Launcher app (C++/Qt)**: `launcher/`, `libraries/`, `CMakeLists.txt`
-- **Website (Eleventy)**: `src/`, `public/`, `package.json`
+- **Launcher app (C++/Qt)**: `launcher/`, `CMakeLists.txt`
+- **Website (Eleventy)**: `website/`, `public/`, `package.json`
 - **Automation bot (Cloudflare Workers)**: `bot/`
 - **Metadata generator (Python)**: `meta/`, `pyproject.toml`
 - **Documentation**: `docs/`
 - **CI/Tools**: `ci/`, `.github/`, `scripts/`, `tools/`
+
+## 🧩 Vendored Projects
+
+- **bzip2**: See `bzip2/README.md`, `bzip2/COMPILING.md`, `bzip2/NEWS.md`, `bzip2/code-of-conduct.md`.
+- **quazip**: See `quazip/README.md`, `quazip/CONTRIBUTING.md`, `quazip/SECURITY.md`, `quazip/QuaZip-1.x-migration.md`.
 
 ## 🛠 Engineering Standards
 
@@ -72,7 +77,7 @@ Please read the specific sections below before writing a single line of code (st
 ### Other Areas
 
 - **Bot**: `bot/README.md`
-- **Website**: `.eleventy.js`, `src/`, `package.json`
+- **Website**: `.eleventy.js`, `website/`, `package.json`
 - **Metadata generator**: `meta/`, `pyproject.toml`
 
 ---

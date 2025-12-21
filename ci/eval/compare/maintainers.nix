@@ -33,6 +33,18 @@ let
         "all"
       ];
     };
+    grxtor = {
+      github = "grxtor";
+      name = "GRXTOR";
+      areas = [
+        "core"
+        "ui"
+        "minecraft"
+        "build"
+        "ci"
+        "all"
+      ];
+    };
   };
 
   # =============================================================================
@@ -56,8 +68,6 @@ let
       "networking"
     else if lib.hasPrefix "launcher/" filePath then
       "core"
-    else if lib.hasPrefix "libraries/" filePath then
-      "libraries"
     else if lib.hasPrefix "cmake/" filePath then
       "build"
     else if lib.hasSuffix "CMakeLists.txt" filePath then

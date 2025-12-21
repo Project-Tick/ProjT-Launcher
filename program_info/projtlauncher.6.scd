@@ -79,4 +79,4 @@ Main website: https://projtlauncher.yongdohyun.org.tr
 
 # AUTHORS
 
-ProjT Launcher Contributors
+Project Tick Contributors

@@ -102,14 +102,14 @@ jobs:
             const labelsToRemove = [];
             
             if (hasApproval && !hasChangesRequested) {
-              labelsToAdd.push('approved');
-              labelsToRemove.push('needs-review', 'changes-requested');
+              labelsToAdd.push('40.approved');
+              labelsToRemove.push('40.needs-review', '40.changes-requested');
             } else if (hasChangesRequested) {
-              labelsToAdd.push('changes-requested');
-              labelsToRemove.push('approved', 'needs-review');
+              labelsToAdd.push('40.changes-requested');
+              labelsToRemove.push('40.approved', '40.needs-review');
             } else {
-              labelsToAdd.push('needs-review');
-              labelsToRemove.push('approved', 'changes-requested');
+              labelsToAdd.push('40.needs-review');
+              labelsToRemove.push('40.approved', '40.changes-requested');
             }
             
             // Apply label changes

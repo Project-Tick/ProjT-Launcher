@@ -1,11 +1,20 @@
 cmake_minimum_required(VERSION 3.22)  # minimum version required by Qt
 
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+if(POLICY CMP0177)
+    cmake_policy(SET CMP0177 NEW)
+endif()
+
 project(Launcher)
 
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BUILD_DIR}" IS_IN_SOURCE_BUILD)
 if(IS_IN_SOURCE_BUILD)
     message(FATAL_ERROR "You are building the Launcher in-source. Please separate the build tree from the source tree.")
 endif()
+
+
 
 ##################################### Set CMake options ####################################
 set(CMAKE_AUTOMOC ON)
@@ -182,21 +191,74 @@ if(ENABLE_LTO)
 endif()
 
 option(BUILD_TESTING "Build the testing tree." ON)
+option(Launcher_ALLOW_FETCHCONTENT "Allow FetchContent fallback for tomlplusplus" ON)
+option(Launcher_ALLOW_ECM_FETCHCONTENT "Allow FetchContent fallback for ECM" ON)
 
+include(cmake/versions.cmake)
+
+macro(launcher_fetchcontent_makeavailable content_name)
+    set(launcher_warn_deprecated_set FALSE)
+    if(DEFINED CMAKE_WARN_DEPRECATED)
+        set(launcher_warn_deprecated_value "${CMAKE_WARN_DEPRECATED}")
+        set(launcher_warn_deprecated_set TRUE)
+    endif()
+    set(launcher_suppress_dev_set FALSE)
+    if(DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
+        set(launcher_suppress_dev_value "${CMAKE_SUPPRESS_DEVELOPER_WARNINGS}")
+        set(launcher_suppress_dev_set TRUE)
+    endif()
+
+    set(CMAKE_WARN_DEPRECATED OFF)
+    set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
+    FetchContent_MakeAvailable(${content_name})
+
+    if(launcher_warn_deprecated_set)
+        set(CMAKE_WARN_DEPRECATED "${launcher_warn_deprecated_value}")
+    else()
+        unset(CMAKE_WARN_DEPRECATED)
+    endif()
+    if(launcher_suppress_dev_set)
+        set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS "${launcher_suppress_dev_value}")
+    else()
+        unset(CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
+    endif()
+    unset(launcher_warn_deprecated_set)
+    unset(launcher_warn_deprecated_value)
+    unset(launcher_suppress_dev_set)
+    unset(launcher_suppress_dev_value)
+endmacro()
+
+# NuGet ECM (MSVC)
+if(WIN32 AND NOT MINGW)
+    file(GLOB NUGET_ECM_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/extra-cmake-modules*")
+    if(NUGET_ECM_ROOTS)
+        list(GET NUGET_ECM_ROOTS 0 ECM_ROOT_DIR)
+        list(APPEND CMAKE_PREFIX_PATH "${ECM_ROOT_DIR}/build/native")
+    endif()
+endif()
+
+# extra-cmake-modules (ECM)
 find_package(ECM QUIET NO_MODULE)
 if(NOT ECM_FOUND)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libraries/extra-cmake-modules/CMakeLists.txt")
-        message(STATUS "Using bundled ECM")
-        set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libraries/extra-cmake-modules/modules;${CMAKE_MODULE_PATH}")
+    if(Launcher_ALLOW_ECM_FETCHCONTENT)
+        include(FetchContent)
+        FetchContent_Declare(ECM
+            URL https://github.com/KDE/extra-cmake-modules/archive/refs/tags/${ECM_VERSION}.zip
+        )
+        set(BUILD_HTML_DOCS OFF CACHE BOOL "" FORCE)
+        set(BUILD_MAN_DOCS OFF CACHE BOOL "" FORCE)
+        set(BUILD_QTHELP_DOCS OFF CACHE BOOL "" FORCE)
+        set(launcher_ecm_build_testing "${BUILD_TESTING}")
+        set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+        launcher_fetchcontent_makeavailable(ECM)
+        set(BUILD_TESTING "${launcher_ecm_build_testing}" CACHE BOOL "" FORCE)
+        unset(launcher_ecm_build_testing)
+        set(ECM_MODULE_PATH "${ecm_SOURCE_DIR}/modules")
     else()
-        message(FATAL_ERROR
-            " Could not find ECM\n \n"
-            " Either install ECM using the system package manager or clone submodules\n"
-            " Submodules can be cloned with 'git submodule update --init --recursive'")
+        message(FATAL_ERROR "ECM not found on system. Please install extra-cmake-modules.")
     endif()
-else()
-    set(CMAKE_MODULE_PATH "${ECM_MODULE_PATH};${CMAKE_MODULE_PATH}")
 endif()
+set(CMAKE_MODULE_PATH "${ECM_MODULE_PATH};${CMAKE_MODULE_PATH}")
 include(CTest)
 include(ECMAddTests)
 if(BUILD_TESTING)
@@ -253,7 +315,7 @@ set(Launcher_DISCORD_URL "https://projtlauncher.yongdohyun.org.tr/discord" CACHE
 set(Launcher_SUBREDDIT_URL "https://projtlauncher.yongdohyun.org.tr/reddit" CACHE STRING "URL for the subreddit.")
 
 # Builds
-set(Launcher_FORCE_BUNDLED_LIBS OFF CACHE BOOL "Prevent using system libraries, if they are available as submodules")
+# Builds
 set(Launcher_QT_VERSION_MAJOR "6" CACHE STRING "Major Qt version to build against")
 
 # Java downloader
@@ -318,59 +380,376 @@ set(Launcher_BUILD_TIMESTAMP "${TODAY}")
 
 ################################ 3rd Party Libs ################################
 
-# Successive configurations of cmake without cleaning the build dir will cause zlib fallback to fail due to cached values
-# Record when fallback triggered and skip this find_package
-if(NOT Launcher_FORCE_BUNDLED_LIBS AND NOT FORCE_BUNDLED_ZLIB)
-    find_package(ZLIB QUIET)
-endif()
-if(NOT ZLIB_FOUND)
-    set(FORCE_BUNDLED_ZLIB TRUE CACHE BOOL "")
-    mark_as_advanced(FORCE_BUNDLED_ZLIB)
-endif()
-
-# Find the required Qt parts
-include(QtVersionlessBackport)
-if(Launcher_QT_VERSION_MAJOR EQUAL 6)
-    set(QT_VERSION_MAJOR 6)
-    find_package(Qt6 REQUIRED COMPONENTS Core CoreTools Widgets Concurrent Network Test Xml Core5Compat NetworkAuth OpenGL Quick QuickWidgets Qml QuickControls2)
-    find_package(Qt6 COMPONENTS DBus)
-    list(APPEND Launcher_QT_DBUS Qt6::DBus)
-    list(APPEND Launcher_QT_LIBS Qt6::Core5Compat)
-
-    if(NOT Launcher_FORCE_BUNDLED_LIBS)
-        find_package(QuaZip-Qt6 1.3 QUIET)
+if(WIN32 AND NOT MINGW)
+    # Detect NuGet architecture
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|arm64")
+        set(NUGET_ARCH "arm64")
+        set(OSSL_ARCH "arm64")
+    else()
+        set(NUGET_ARCH "x64")
+        set(OSSL_ARCH "x64")
     endif()
-    if (NOT QuaZip-Qt6_FOUND)
-        set(QUAZIP_QT_MAJOR_VERSION ${QT_VERSION_MAJOR} CACHE STRING "Qt version to use (4, 5 or 6), defaults to ${QT_VERSION_MAJOR}" FORCE)
-        set(FORCE_BUNDLED_QUAZIP 1)
-    endif()
-else()
-    message(FATAL_ERROR "Qt version ${Launcher_QT_VERSION_MAJOR} is not supported")
-endif()
 
-if(Launcher_QT_VERSION_MAJOR EQUAL 6)
-    set(QT_PLUGINS_DIR  ${QT${QT_VERSION_MAJOR}_INSTALL_PREFIX}/${QT${QT_VERSION_MAJOR}_INSTALL_PLUGINS})
-    set(QT_LIBS_DIR     ${QT${QT_VERSION_MAJOR}_INSTALL_PREFIX}/${QT${QT_VERSION_MAJOR}_INSTALL_LIBS})
-    set(QT_LIBEXECS_DIR ${QT${QT_VERSION_MAJOR}_INSTALL_PREFIX}/${QT${QT_VERSION_MAJOR}_INSTALL_LIBEXECS})
-endif()
+    # Find ZLIB from NuGet
+    file(GLOB NUGET_ZLIB_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/zlib-msvc-${NUGET_ARCH}*")
+    if(NUGET_ZLIB_ROOTS)
+        list(GET NUGET_ZLIB_ROOTS 0 ZLIB_ROOT_DIR)
+        set(ZLIB_ROOT "${ZLIB_ROOT_DIR}/build/native" CACHE PATH "" FORCE)
+        
+        find_path(ZLIB_INC "${ZLIB_ROOT_DIR}/build/native/include/zlib.h" NO_DEFAULT_PATH)
+        find_library(ZLIB_LIBRARY
+            NAMES zlibstatic zlib zlib1
+            PATHS
+                "${ZLIB_ROOT_DIR}/build/native"
+                "${ZLIB_ROOT_DIR}"
+            PATH_SUFFIXES
+                lib
+                "lib/${NUGET_ARCH}"
+                "lib/${NUGET_ARCH}/native"
+                "lib/win-${NUGET_ARCH}"
+                "lib/win-${NUGET_ARCH}/native"
+                lib/native
+                lib/Release
+                "lib/${NUGET_ARCH}/Release"
+                "lib/win-${NUGET_ARCH}/Release"
+            NO_DEFAULT_PATH
+        )
 
-if(NOT Launcher_FORCE_BUNDLED_LIBS)
-    # Find toml++
-    find_package(tomlplusplus 3.2.0 QUIET)
-    # Fallback to pkg-config (if available) if CMake files aren't found
-    if(NOT tomlplusplus_FOUND)
-        find_package(PkgConfig)
-        if(PkgConfig_FOUND)
-            pkg_check_modules(tomlplusplus IMPORTED_TARGET tomlplusplus>=3.2.0)
+        if(NOT ZLIB_LIBRARY)
+            file(GLOB_RECURSE ZLIB_LIBS "${ZLIB_ROOT_DIR}/*.lib")
+            foreach(LIB_PATH ${ZLIB_LIBS})
+                if(LIB_PATH MATCHES "[Dd]ebug")
+                    continue()
+                endif()
+                if(LIB_PATH MATCHES "win-${NUGET_ARCH}/native" OR LIB_PATH MATCHES "/${NUGET_ARCH}/native" OR
+                   LIB_PATH MATCHES "win-${NUGET_ARCH}" OR LIB_PATH MATCHES "/${NUGET_ARCH}/")
+                    set(ZLIB_LIBRARY "${LIB_PATH}")
+                    break()
+                endif()
+                if(NOT ZLIB_LIBRARY)
+                    set(ZLIB_LIBRARY "${LIB_PATH}")
+                endif()
+            endforeach()
+        endif()
+
+        if(ZLIB_LIBRARY)
+            set(ZLIB_LIBRARIES "${ZLIB_LIBRARY}" CACHE STRING "" FORCE)
+            set(ZLIB_INCLUDE_DIR "${ZLIB_ROOT_DIR}/build/native/include" CACHE PATH "" FORCE)
+            set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
+            message(STATUS "Found ZLIB via NuGet: ${ZLIB_LIBRARY}")
+
+            if(NOT TARGET ZLIB::ZLIB)
+                add_library(ZLIB::ZLIB UNKNOWN IMPORTED)
+                set_target_properties(ZLIB::ZLIB PROPERTIES
+                    IMPORTED_LOCATION "${ZLIB_LIBRARY}"
+                    INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIR}")
+            endif()
         endif()
     endif()
 
+    # Find OpenSSL from NuGet
+    file(GLOB NUGET_OSSL_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/openssl-native*")
+    if(NUGET_OSSL_ROOTS)
+        list(GET NUGET_OSSL_ROOTS 0 OSSL_ROOT_DIR)
+        message(STATUS "Found OpenSSL NuGet: ${OSSL_ROOT_DIR}")
+        set(OPENSSL_ROOT_DIR "${OSSL_ROOT_DIR}/build/native" CACHE PATH "" FORCE)
+        set(OPENSSL_USE_STATIC_LIBS ON)
+        
+        file(GLOB_RECURSE OSSL_LIBS "${OSSL_ROOT_DIR}/*.lib")
+        foreach(LIB_PATH ${OSSL_LIBS})
+            # Strictly match architecture folder to avoid win-x86
+            if(LIB_PATH MATCHES "win-${OSSL_ARCH}" OR LIB_PATH MATCHES "/${OSSL_ARCH}/")
+                if(LIB_PATH MATCHES "libcrypto.lib$|crypto.lib$")
+                    if(NOT LIB_PATH MATCHES "[Dd]ebug" OR NOT OPENSSL_CRYPTO_LIBRARY)
+                        set(OPENSSL_CRYPTO_LIBRARY "${LIB_PATH}" CACHE FILEPATH "" FORCE)
+                    endif()
+                elseif(LIB_PATH MATCHES "libssl.lib$|ssl.lib$")
+                    if(NOT LIB_PATH MATCHES "[Dd]ebug" OR NOT OPENSSL_SSL_LIBRARY)
+                        set(OPENSSL_SSL_LIBRARY "${LIB_PATH}" CACHE FILEPATH "" FORCE)
+                    endif()
+                endif()
+            endif()
+        endforeach()
+        
+        if(OPENSSL_CRYPTO_LIBRARY AND OPENSSL_SSL_LIBRARY)
+            set(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include" CACHE PATH "" FORCE)
+            set(OPENSSL_LIBRARIES "${OPENSSL_SSL_LIBRARY}" "${OPENSSL_CRYPTO_LIBRARY}" CACHE STRING "" FORCE)
+            message(STATUS "Found OpenSSL via NuGet: ${OPENSSL_CRYPTO_LIBRARY}")
+            set(OpenSSL_FOUND TRUE CACHE BOOL "" FORCE)
+            set(OPENSSL_FOUND TRUE CACHE BOOL "" FORCE)
+        endif()
+    endif()
 
-    # Find cmark
-    find_package(cmark QUIET)
+    # Find tomlplusplus from NuGet (if present)
+    file(GLOB NUGET_TOML_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/tomlplusplus*")
+    if(NUGET_TOML_ROOTS)
+        list(GET NUGET_TOML_ROOTS 0 TOML_ROOT)
+        list(APPEND CMAKE_PREFIX_PATH "${TOML_ROOT}/build/native")
+    endif()
 
-    # Find qrcodegencpp-cmake
-    find_package(qrcodegencpp QUIET)
+    # Find QuaZip-Qt6 from NuGet (if present)
+    file(GLOB NUGET_QUAZIP_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/quazip-qt6*")
+    if(NUGET_QUAZIP_ROOTS)
+        list(GET NUGET_QUAZIP_ROOTS 0 QUAZIP_ROOT)
+        list(APPEND CMAKE_PREFIX_PATH "${QUAZIP_ROOT}/build/native")
+    endif()
+    
+    list(APPEND CMAKE_PREFIX_PATH "${ZLIB_ROOT}" "${OPENSSL_ROOT_DIR}")
+    list(APPEND CMAKE_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/dependencies")
+endif()
+
+# System Libraries
+if(NOT ZLIB_FOUND)
+
+    find_package(ZLIB QUIET)
+endif()
+
+if(NOT ZLIB_FOUND)
+    message(STATUS "ZLIB not found on system, using FetchContent fallback")
+    include(FetchContent)
+    FetchContent_Declare(
+        zlib
+        URL https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz
+    )
+    # ZLIB CMake options - don't install
+    set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
+    
+    launcher_fetchcontent_makeavailable(zlib)
+    
+    # Create the ZLIB::ZLIB target if it doesn't exist
+    if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
+        add_library(ZLIB::ZLIB ALIAS zlibstatic)
+    elseif(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
+        add_library(ZLIB::ZLIB ALIAS zlib)
+    endif()
+    
+    # Set variables for compatibility
+    set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}" CACHE PATH "ZLIB Include Dir" FORCE)
+    set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}" CACHE PATH "ZLIB Include Dirs" FORCE)
+    set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
+    # Ensure compatibility for projects that expect ZLIB_LIBRARY / ZLIB_LIBRARIES
+    # Force these to the target name so later find_package() calls do not reset them to NOTFOUND.
+    set(ZLIB_LIBRARY "ZLIB::ZLIB" CACHE STRING "Zlib library target" FORCE)
+    set(ZLIB_LIBRARIES "ZLIB::ZLIB" CACHE STRING "Zlib libraries" FORCE)
+    
+    # Create a custom FindZLIB.cmake that sub-projects will find first
+    # This prevents them from failing when they call find_package(ZLIB)
+    set(_custom_find_zlib_dir "${CMAKE_BINARY_DIR}/cmake-modules")
+    file(MAKE_DIRECTORY "${_custom_find_zlib_dir}")
+    file(WRITE "${_custom_find_zlib_dir}/FindZLIB.cmake" "
+# Custom FindZLIB.cmake - uses pre-built ZLIB from FetchContent
+if(TARGET ZLIB::ZLIB)
+    set(ZLIB_FOUND TRUE)
+    get_target_property(ZLIB_INCLUDE_DIRS ZLIB::ZLIB INTERFACE_INCLUDE_DIRECTORIES)
+    if(NOT ZLIB_INCLUDE_DIRS)
+        set(ZLIB_INCLUDE_DIRS \"${zlib_SOURCE_DIR};${zlib_BINARY_DIR}\")
+    endif()
+    set(ZLIB_INCLUDE_DIR \"\${ZLIB_INCLUDE_DIRS}\")
+    set(ZLIB_LIBRARIES ZLIB::ZLIB)
+    set(ZLIB_LIBRARY ZLIB::ZLIB)
+else()
+    set(ZLIB_FOUND FALSE)
+endif()
+")
+    # Prepend our custom module path so it's found first
+    list(INSERT CMAKE_MODULE_PATH 0 "${_custom_find_zlib_dir}")
+endif()
+
+if(NOT OpenSSL_FOUND)
+    find_package(OpenSSL REQUIRED)
+endif()
+find_package(Qt6 REQUIRED COMPONENTS Core CoreTools Widgets Concurrent Network Test Xml Core5Compat NetworkAuth OpenGL Quick QuickWidgets Qml QuickControls2)
+find_package(Qt6 COMPONENTS DBus)
+list(APPEND Launcher_QT_DBUS Qt6::DBus)
+list(APPEND Launcher_QT_LIBS Qt6::Core5Compat)
+
+# System / Package Manager Provided Libs
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/quazip/CMakeLists.txt")
+    message(STATUS "Using bundled QuaZip")
+    set(QUAZIP_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+    set(QUAZIP_INSTALL ON CACHE BOOL "" FORCE)
+    set(QUAZIP_BZIP2 ON CACHE BOOL "" FORCE)
+    set(QUAZIP_FETCH_LIBS OFF CACHE BOOL "" FORCE)
+    set(QUAZIP_FORCE_FETCH_LIBS OFF CACHE BOOL "" FORCE)
+
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/bzip2/CMakeLists.txt")
+        message(STATUS "Using bundled bzip2 for QuaZip")
+        set(ENABLE_LIB_ONLY ON CACHE BOOL "" FORCE)
+        set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+        set(ENABLE_DOCS OFF CACHE BOOL "" FORCE)
+        set(ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+        set(ENABLE_STATIC_LIB ON CACHE BOOL "" FORCE)
+        add_subdirectory(bzip2)
+        set(BZIP2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bzip2" CACHE PATH "" FORCE)
+    endif()
+
+    add_subdirectory(quazip)
+else()
+    find_package(QuaZip-Qt6 1.3 QUIET)
+    if(NOT QuaZip-Qt6_FOUND)
+        message(STATUS "QuaZip-Qt6 not found on system, using FetchContent fallback")
+        include(FetchContent)
+        FetchContent_Declare(quazip URL https://github.com/stachenov/quazip/archive/refs/tags/v1.5.zip)
+        set(QUAZIP_QT6 ON CACHE BOOL "" FORCE)
+        set(QUAZIP_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+        launcher_fetchcontent_makeavailable(quazip)
+    endif()
+endif()
+
+find_package(tomlplusplus 3.2.0 QUIET)
+if(NOT tomlplusplus_FOUND)
+    if(Launcher_ALLOW_FETCHCONTENT)
+        include(FetchContent)
+        FetchContent_Declare(tomlplusplus URL https://github.com/marzer/tomlplusplus/archive/refs/tags/v3.4.0.zip)
+        launcher_fetchcontent_makeavailable(tomlplusplus)
+    else()
+        message(FATAL_ERROR "tomlplusplus not found on system. Please install tomlplusplus.")
+    endif()
+endif()
+
+# cmark - System library
+find_library(CMARK_LIB NAMES cmark)
+find_path(CMARK_INC NAMES cmark.h)
+if(CMARK_LIB AND CMARK_INC)
+    if(NOT TARGET cmark::cmark)
+        add_library(cmark::cmark UNKNOWN IMPORTED)
+        set_target_properties(cmark::cmark PROPERTIES 
+            IMPORTED_LOCATION "${CMARK_LIB}"
+            INTERFACE_INCLUDE_DIRECTORIES "${CMARK_INC}")
+    endif()
+else()
+    message(STATUS "cmark not found on system, using FetchContent fallback")
+    include(FetchContent)
+    FetchContent_Declare(cmark URL https://github.com/commonmark/cmark/archive/refs/tags/0.31.1.zip)
+    set(CMARK_TESTS OFF CACHE BOOL "" FORCE)
+    set(CMARK_SHARED ON CACHE BOOL "" FORCE)
+    launcher_fetchcontent_makeavailable(cmark)
+    if(TARGET cmark AND NOT TARGET cmark::cmark)
+        add_library(cmark::cmark ALIAS cmark)
+    endif()
+endif()
+
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(QRENCODE IMPORTED_TARGET libqrencode)
+endif()
+
+if(TARGET PkgConfig::QRENCODE)
+    add_library(qrcodegenerator ALIAS PkgConfig::QRENCODE)
+else()
+    find_library(QRENCODE_LIB NAMES qrencode libqrencode)
+    find_path(QRENCODE_INC NAMES qrencode.h)
+    if(QRENCODE_LIB AND QRENCODE_INC)
+        add_library(qrcodegenerator UNKNOWN IMPORTED)
+        set_target_properties(qrcodegenerator PROPERTIES
+            IMPORTED_LOCATION "${QRENCODE_LIB}"
+            INTERFACE_INCLUDE_DIRECTORIES "${QRENCODE_INC}")
+    else()
+        message(STATUS "qrencode not found on system, using FetchContent fallback")
+        include(FetchContent)
+        FetchContent_Declare(qrencode_repo URL https://github.com/fukuchi/libqrencode/archive/refs/tags/v4.1.1.zip)
+        # Avoid optional tools/tests that require getopt/PNG on Windows.
+        set(WITH_TOOLS OFF CACHE BOOL "" FORCE)
+        set(WITH_PNG OFF CACHE BOOL "" FORCE)
+        set(_launcher_prev_build_testing "${BUILD_TESTING}")
+        set(_launcher_prev_with_tests "")
+        set(_launcher_with_tests_set FALSE)
+        if(DEFINED WITH_TESTS)
+            set(_launcher_prev_with_tests "${WITH_TESTS}")
+            set(_launcher_with_tests_set TRUE)
+        endif()
+        set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+        set(WITH_TESTS OFF CACHE BOOL "" FORCE)
+        launcher_fetchcontent_makeavailable(qrencode_repo)
+        set(BUILD_TESTING "${_launcher_prev_build_testing}" CACHE BOOL "" FORCE)
+        if(_launcher_with_tests_set)
+            set(WITH_TESTS "${_launcher_prev_with_tests}" CACHE BOOL "" FORCE)
+        else()
+            unset(WITH_TESTS CACHE)
+        endif()
+        unset(_launcher_prev_build_testing)
+        unset(_launcher_prev_with_tests)
+        unset(_launcher_with_tests_set)
+        add_library(qrcodegenerator ALIAS qrencode)
+        # Ensure the qrencode target exposes include directories so consumers can find qrencode.h
+        if(TARGET qrencode)
+            get_target_property(_qr_inc qrencode INTERFACE_INCLUDE_DIRECTORIES)
+            if(NOT _qr_inc)
+                target_include_directories(qrencode PUBLIC
+                    "${qrencode_repo_SOURCE_DIR}"
+                    "${qrencode_repo_SOURCE_DIR}/src"
+                    "${qrencode_repo_SOURCE_DIR}/lib"
+                    "${qrencode_repo_SOURCE_DIR}/include")
+            endif()
+        endif()
+        if(NOT DEFINED QRENCODE_INC OR QRENCODE_INC STREQUAL "")
+            set(QRENCODE_INC "${qrencode_repo_SOURCE_DIR};${qrencode_repo_SOURCE_DIR}/include;${qrencode_repo_SOURCE_DIR}/lib" CACHE PATH "QRENCODE include dir" FORCE)
+        endif()
+        set(qrencode_assert_source "")
+        if(EXISTS "${qrencode_repo_SOURCE_DIR}/tests/assert.c")
+            set(qrencode_assert_source "${qrencode_repo_SOURCE_DIR}/tests/assert.c")
+        elseif(EXISTS "${qrencode_repo_SOURCE_DIR}/assert.c")
+             set(qrencode_assert_source "${qrencode_repo_SOURCE_DIR}/assert.c")
+        elseif(EXISTS "${qrencode_repo_SOURCE_DIR}/tests/common.c")
+             set(qrencode_assert_source "${qrencode_repo_SOURCE_DIR}/tests/common.c")
+        endif()
+
+        if(EXISTS "${qrencode_assert_source}")
+            get_filename_component(qrencode_assert_fname "${qrencode_assert_source}" NAME)
+            set(qrencode_common_target "")
+            if(TARGET common)
+                set(qrencode_common_target common)
+            elseif(TARGET commond)
+                set(qrencode_common_target commond)
+            endif()
+
+            if(qrencode_common_target)
+                set_target_properties(${qrencode_common_target} PROPERTIES
+                    WINDOWS_EXPORT_ALL_SYMBOLS ON)
+                get_target_property(qrencode_common_sources ${qrencode_common_target} SOURCES)
+                set(qrencode_common_has_assert FALSE)
+                if(qrencode_common_sources)
+                    foreach(qrencode_common_item IN LISTS qrencode_common_sources)
+                        get_filename_component(qrencode_common_name "${qrencode_common_item}" NAME)
+                        if(qrencode_common_name STREQUAL "${qrencode_assert_fname}")
+                            set(qrencode_common_has_assert TRUE)
+                            break()
+                        endif()
+                    endforeach()
+                endif()
+                if(NOT qrencode_common_has_assert)
+                    target_sources(${qrencode_common_target} PRIVATE
+                        "${qrencode_assert_source}")
+                endif()
+            endif()
+            foreach(qrencode_test_target IN ITEMS
+                test_bitstream
+                test_basic
+                test_case
+                test_mask
+                test_qrencode
+                test_estimatebit
+                test_split)
+                if(TARGET ${qrencode_test_target})
+                    get_target_property(qrencode_test_sources ${qrencode_test_target} SOURCES)
+                    set(qrencode_test_has_assert FALSE)
+                    if(qrencode_test_sources)
+                        foreach(qrencode_test_item IN LISTS qrencode_test_sources)
+                            get_filename_component(qrencode_test_name "${qrencode_test_item}" NAME)
+                            if(qrencode_test_name STREQUAL "${qrencode_assert_fname}")
+                                set(qrencode_test_has_assert TRUE)
+                                break()
+                            endif()
+                        endforeach()
+                    endif()
+                    if(NOT qrencode_test_has_assert)
+                        target_sources(${qrencode_test_target} PRIVATE
+                            "${qrencode_assert_source}")
+                    endif()
+                endif()
+            endforeach()
+        endif()
+    endif()
 endif()
 
 include(ECMQtDeclareLoggingCategory)
@@ -471,86 +850,25 @@ endif()
 include(ExternalProject)
 set_directory_properties(PROPERTIES EP_BASE External)
 
-option(NBT_BUILD_SHARED "Build NBT shared library" OFF)
-option(NBT_USE_ZLIB "Build NBT library with zlib support" OFF)
-option(NBT_BUILD_TESTS "Build NBT library tests" OFF) #FIXME: fix unit tests.
-add_subdirectory(libraries/libnbtplusplus)
+# libnbtplusplus - Using submodule/bundled as it's not in package managers
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libnbtplusplus/CMakeLists.txt")
+    message(STATUS "Using bundled libnbtplusplus")
+    option(NBT_BUILD_SHARED "Build NBT shared library" OFF)
+    option(NBT_USE_ZLIB "Build NBT library with zlib support" ON)
+    option(NBT_BUILD_TESTS "Build NBT library tests" OFF)
+    add_subdirectory(./libnbtplusplus)
+else()
+    find_package(libnbt++ REQUIRED)
+endif()
 
-add_subdirectory(libraries/systeminfo) # system information library
-add_subdirectory(libraries/launcher) # java based launcher part for Minecraft
-add_subdirectory(libraries/javacheck) # java compatibility checker
-if(FORCE_BUNDLED_ZLIB)
-    message(STATUS "Using bundled zlib")
-
-    set(CMAKE_POLICY_DEFAULT_CMP0069 NEW) # Suppress cmake warnings and allow INTERPROCEDURAL_OPTIMIZATION for zlib
-    set(SKIP_INSTALL_ALL ON)
-    add_subdirectory(libraries/zlib EXCLUDE_FROM_ALL)
-
-    # On OS where unistd.h exists, zlib's generated header defines `Z_HAVE_UNISTD_H`, while the included header does not.
-    # We cannot safely undo the rename on those systems, and they generally have packages for zlib anyway.
-    check_include_file(unistd.h NEED_GENERATED_ZCONF)
-    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libraries/zlib/zconf.h.included" AND NOT NEED_GENERATED_ZCONF)
-        # zlib's cmake script renames a file, dirtying the submodule, see https://github.com/madler/zlib/issues/162
-        message(STATUS "Undoing Rename")
-        message(STATUS "    ${CMAKE_CURRENT_SOURCE_DIR}/libraries/zlib/zconf.h")
-        file(RENAME "${CMAKE_CURRENT_SOURCE_DIR}/libraries/zlib/zconf.h.included" "${CMAKE_CURRENT_SOURCE_DIR}/libraries/zlib/zconf.h")
-    endif()
-    
-    set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libraries/zlib" "${CMAKE_CURRENT_SOURCE_DIR}/libraries/zlib" CACHE STRING "" FORCE)
-    set_target_properties(zlibstatic PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIR}")
-    if(WIN32)
-        add_library(ZLIB::ZLIB ALIAS zlib)        # Windows’ta DLL/import lib
-    else()
-        add_library(ZLIB::ZLIB ALIAS zlibstatic)  # Diğer platformlarda statik
-    endif()
-    set(ZLIB_LIBRARY ZLIB::ZLIB CACHE STRING "zlib library name")
-
-    find_package(ZLIB REQUIRED)
-else()
-    message(STATUS "Using system zlib")
-endif()
-if (FORCE_BUNDLED_QUAZIP)
-    message(STATUS "Using bundled QuaZip")
-    set(BUILD_SHARED_LIBS 0)  # link statically to avoid conflicts.
-    set(QUAZIP_INSTALL 0)
-    add_subdirectory(libraries/quazip) # zip manipulation library
-else()
-    message(STATUS "Using system QuaZip")
-endif()
-add_subdirectory(libraries/rainbow) # Qt extension for colors
-add_subdirectory(libraries/LocalPeer) # fork of a library from Qt solutions
-if(NOT tomlplusplus_FOUND)
-    message(STATUS "Using bundled tomlplusplus")
-    add_subdirectory(libraries/tomlplusplus) # toml parser
-else()
-    message(STATUS "Using system tomlplusplus")
-endif()
-if(NOT cmark_FOUND)
-    message(STATUS "Using bundled cmark")
-    set(ORIGINAL_BUILD_TESTING ${BUILD_TESTING})
-    set(BUILD_TESTING 0)
-    set(BUILD_SHARED_LIBS 0)
-    add_subdirectory(libraries/cmark EXCLUDE_FROM_ALL) # Markdown parser
-    add_library(cmark::cmark ALIAS cmark)
-    set(BUILD_TESTING ${ORIGINAL_BUILD_TESTING})
-else()
-    message(STATUS "Using system cmark")
-endif()
-if(NOT qrcodegencpp_FOUND)
-    set(QRCODE_SOURCES
-        libraries/qrcodegenerator/cpp/qrcodegen.cpp
-        libraries/qrcodegenerator/cpp/qrcodegen.hpp
-    )
-    add_library(qrcodegenerator STATIC ${QRCODE_SOURCES})
-    target_include_directories(qrcodegenerator PUBLIC "libraries/qrcodegenerator/cpp/" )
-    generate_export_header(qrcodegenerator)
-else()
-    add_library(qrcodegenerator ALIAS qrcodegencpp::qrcodegencpp)
-    message(STATUS "Using system qrcodegencpp-cmake")
-endif()
-add_subdirectory(libraries/gamemode)
-add_subdirectory(libraries/murmur2) # Hash for usage with the CurseForge API
-add_subdirectory(libraries/qdcss) # css parser
+add_subdirectory(./systeminfo) # system information library
+add_subdirectory(./launcherjava) # java based launcher part for Minecraft
+add_subdirectory(./javacheck) # java compatibility checker
+add_subdirectory(./rainbow) # Qt extension for colors
+add_subdirectory(./LocalPeer) # fork of a library from Qt solutions
+add_subdirectory(./gamemode)
+add_subdirectory(./murmur2) # Hash for usage with the CurseForge API
+add_subdirectory(./qdcss) # css parser
 
 ############################### Built Artifacts ###############################
 

@@ -2,6 +2,7 @@ name: CodeQL
 
 on:
   merge_group:
+  pull_request_target:
   push:
     branches:
       - "develop"

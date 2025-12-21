@@ -1,14 +1,9 @@
 name: General Evaluation Process for Pull Requests
 
 on:
-  merge_group:
   pull_request_target:
     types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
-
-concurrency:
-  group: pr-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -27,6 +22,7 @@ jobs:
       mergedSha: ${{ steps.prepare.outputs.mergedSha }}
       targetSha: ${{ steps.prepare.outputs.targetSha }}
       mergeable: ${{ steps.prepare.outputs.mergeable }}
+      headSha: ${{ steps.prepare.outputs.headSha }}
     
     steps:
       - uses: actions/checkout@v6
@@ -68,6 +64,7 @@ jobs:
               core.setOutput('mergedSha', result.mergedSha);
               core.setOutput('targetSha', result.targetSha);
               core.setOutput('mergeable', result.mergeable);
+              core.setOutput('headSha', result.headSha);
             }
 
   # Validate commits
@@ -81,7 +78,7 @@ jobs:
     with:
       baseBranch: ${{ needs.prepare.outputs.baseBranch }}
       headBranch: ${{ needs.prepare.outputs.headBranch }}
-      mergedSha: ${{ needs.prepare.outputs.mergedSha }}
+      mergedSha: ${{ needs.prepare.outputs.headSha }}
       targetSha: ${{ needs.prepare.outputs.targetSha }}
 
   # Code formatting check
@@ -95,7 +92,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.prepare.outputs.headSha }}
 
       - name: Check C++ formatting
         run: |
@@ -116,7 +113,19 @@ jobs:
       contents: read
       packages: write
     with:
-      ref: ${{ needs.prepare.outputs.mergedSha }}
+      ref: ${{ needs.prepare.outputs.headSha }}
+
+  build-bzip2:
+    name: Build bzip2
+    uses: ./.github/workflows/build-bzip2.yml
+    with:
+      ref: ${{ needs.prepare.outputs.headSha }}
+
+  build-quazip:
+    name: Build quazip
+    uses: ./.github/workflows/build-quazip.yml
+    with:
+      ref: ${{ needs.prepare.outputs.headSha }}
 
   # PR summary
   summary:
@@ -137,3 +146,34 @@ jobs:
           echo "| Check | ${{ needs.check.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+
+  unlock:
+    if: github.event_name != 'pull_request' && always()
+    # Modify this list to add or remove jobs from required status checks.
+    needs:
+      - check
+      - build
+      - build-bzip2
+      - build-quazip
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - uses: actions/github-script@v8
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        with:
+          script: |
+            const { serverUrl, repo, runId, payload } = context
+            const target_url =
+              `${serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${runId}`
+            await github.rest.repos.createCommitStatus({
+              ...repo,
+              sha: payload.merge_group.head_sha,
+              // WARNING:
+              // Do NOT change the name of this, otherwise the rule will not catch it anymore.
+              // This would prevent all PRs from merging.
+              context: 'no PR failures',
+              state: JSON.parse(process.env.RESULTS).every(result => result == 'success') ? 'success' : 'error',
+              target_url,
+            })

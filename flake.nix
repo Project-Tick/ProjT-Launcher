@@ -3,33 +3,12 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    libnbtplusplus = {
-      url = "github:Project-Tick/libnbtplusplus";
-      flake = false;
-    };
-    qrcodegenerator = {
-      url = "github:nayuki/QR-Code-generator";
-      flake = false;
-    };
-    javacheck = {
-      url = "github:Project-Tick/javacheck";
-      flake = false;
-    };
-    launcher = {
-      url = "github:Project-Tick/PTLLauncherSM";
-      flake = false;
-    };
   };
 
   outputs =
     {
       self,
       nixpkgs,
-      libnbtplusplus,
-      qrcodegenerator,
-      javacheck,
-      launcher,
     }:
 
     let
@@ -177,14 +156,12 @@
       formatter = forAllSystems (system: nixpkgsFor.${system}.nixfmt-rfc-style);
 
       overlays.default = final: prev: {
-        projtlauncher-unwrapped = prev.callPackage ./nix/unwrapped.nix {
-          inherit
-            libnbtplusplus
-            qrcodegenerator
-            javacheck
-            launcher
-            self
-            ;
+        lib = prev.lib // {
+          maintainers = prev.lib.maintainers // (import ./nix/maintainers.nix);
+        };
+
+        projtlauncher-unwrapped = final.callPackage ./nix/unwrapped.nix {
+          inherit self;
         };
 
         projtlauncher = final.callPackage ./nix/wrapper.nix { };

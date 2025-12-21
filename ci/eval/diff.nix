@@ -40,8 +40,6 @@ let
     source = [
       "launcher/**/*.cpp"
       "launcher/**/*.h"
-      "libraries/**/*.cpp"
-      "libraries/**/*.h"
     ];
 
     # Build configuration

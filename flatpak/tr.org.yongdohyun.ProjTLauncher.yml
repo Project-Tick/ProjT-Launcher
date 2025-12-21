@@ -87,6 +87,43 @@ modules:
       - /lib/pkgconfig
       - '*.a'
 
+  - name: cmark
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMARK_TESTS=OFF
+      - -DCMARK_SHARED=ON
+    sources:
+      - type: git
+        url: https://github.com/commonmark/cmark.git
+        tag: 0.31.1
+
+  - name: quazip
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DQUAZIP_QT6=ON
+      - -DQUAZIP_ENABLE_TESTS=OFF
+    sources:
+      - type: git
+        url: https://github.com/stachenov/quazip.git
+        tag: v1.4
+
+  - name: tomlplusplus
+    buildsystem: cmake-ninja
+    builddir: true
+    sources:
+      - type: git
+        url: https://github.com/marzer/tomlplusplus.git
+        tag: v3.4.0
+
+  - name: qrencode
+    buildsystem: autotools
+    sources:
+      - type: git
+        url: https://github.com/fukuchi/libqrencode.git
+        tag: v4.1.1
+
   - name: projtlauncher
     buildsystem: cmake-ninja
     builddir: true

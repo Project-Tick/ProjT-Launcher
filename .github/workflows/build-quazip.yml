@@ -1,0 +1,229 @@
+name: Build quazip
+permissions: read-all
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+  workflow_dispatch: {}
+
+jobs:
+  ubuntu:
+    if: true
+    name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [22.04, 24.04]
+        qt_version: [5.15.2, 6.8.2]
+        shared: [ON, OFF]
+    uses: ./.github/workflows/reusable.yml
+    with:
+        runs_on: ubuntu-${{ matrix.os_version }}
+        os_version: ${{ matrix.os_version }}
+        qt_version: ${{ matrix.qt_version }}
+        shared: ${{ matrix.shared }}
+        ref: ${{ inputs.ref }}
+        working_directory: quazip
+
+  ubuntu-zlibconst:
+    if: true
+    name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-zlibconst
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [ 24.04 ]
+        qt_version: [ 6.8.2 ]
+    uses: ./.github/workflows/reusable.yml
+    with:
+      runs_on: ubuntu-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: "ON"
+      zlib_const: "ON"
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  ubuntu-no-qtextcodec:
+    if: true
+    name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-no-qtextcodec
+    strategy:
+      fail-fast: true
+      matrix:
+        os_version: [ 24.04 ]
+        qt_version: [ 6.8.2 ]
+    uses: ./.github/workflows/reusable.yml
+    with:
+      runs_on: ubuntu-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: "ON"
+      qtextcodec: 'OFF'
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  macos:
+    if: true
+    name: macos-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [15, 14, 15-intel]
+        qt_version: [6.8.2, 5.15.2]
+        shared: [ON, OFF]
+        exclude:
+          - os_version: 14
+            qt_version: 5.15.2 #Not available due to ARM arch
+          - os_version: 15
+            qt_version: 5.15.2 #Not available due to ARM arch
+    uses: ./.github/workflows/reusable.yml
+    with:
+      runs_on: macos-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: ${{ matrix.shared }}
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  alpine:
+    if: true
+    name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
+    runs-on: "ubuntu-22.04"
+    container:
+      image: "${{ matrix.runner }}"
+    strategy:
+      matrix:
+        runner:
+          - "alpine:3.21"
+        qt_version:
+          - "qt5"
+          - "qt6"
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      TEST_ZIP_UNZIP_LARGE: true
+    steps:
+      - name: Show OS info
+        run: cat /etc/os-release
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Install build tools
+        working-directory: quazip
+        run: apk add --update g++ make cmake ${{ matrix.qt_version }}-qtbase-dev
+      - name: Install compat
+        if: ${{ matrix.qt_version == 'qt6' }}
+        working-directory: quazip
+        run: apk add qt6-qt5compat-dev
+      - name: Show cmake version
+        working-directory: quazip
+        run: cmake --version
+      - name: Run cmake
+        working-directory: quazip
+        run: cmake -B build -DQUAZIP_ENABLE_TESTS=ON
+      - name: Build quazip
+        working-directory: quazip
+        run: cd build && VERBOSE=1 make -j8
+      - name: Build tests
+        working-directory: quazip
+        run: cd build/qztest && VERBOSE=1 make -j8
+      - name: Run tests
+        working-directory: quazip
+        run: build/qztest/qztest
+
+  windows-x64:
+    if: true
+    name: Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ conan, vcpkg ]
+        qt_version: [ 5.15.2, 6.8.2 ]
+    uses: ./.github/workflows/reusable-win.yml
+    with:
+      runs_on: "win-x64"
+      arch: x64
+      qt_version: ${{ matrix.qt_version }}
+      preset: ${{ matrix.preset }}
+      pe_str: "x86-64"
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  windows-x86:
+    if: true
+    name: Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ conan_x86, vcpkg_x86 ]
+        qt_version: [ 5.15.2 ]
+    uses: ./.github/workflows/reusable-win.yml
+    with:
+      runs_on: "win-x86"
+      arch: x86
+      qt_version: ${{ matrix.qt_version }}
+      preset: ${{ matrix.preset }}
+      pe_str: "i386"
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  ubuntu-ci-extract:
+    if: true
+    name: extract-Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [ 24.04 ]
+        qt_version: [ 6.8.2 ]
+        shared: [ ON ]
+    uses: ./.github/workflows/reusable.yml
+    needs: [ ubuntu, macos, windows-x64, windows-x86 ]
+    with:
+      runs_on: ubuntu-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: ${{ matrix.shared }}
+      cross_extract: true
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  macos-ci-extract:
+    if: true
+    name: extract-macos-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [ 15 ]
+        qt_version: [ 6.8.2 ]
+        shared: [ ON ]
+    uses: ./.github/workflows/reusable.yml
+    needs: [ ubuntu, macos, windows-x64, windows-x86 ]
+    with:
+      runs_on: macos-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: ${{ matrix.shared }}
+      cross_extract: true
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  windows-x64-ci-extract:
+    if: true
+    name: extract-Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ vcpkg ]
+        qt_version: [ 6.8.2 ]
+    uses: ./.github/workflows/reusable-win.yml
+    needs: [ ubuntu, macos, windows-x64, windows-x86 ]
+    with:
+      runs_on: "win-x64"
+      arch: x64
+      qt_version: ${{ matrix.qt_version }}
+      preset: ${{ matrix.preset }}
+      pe_str: "x86-64"
+      cross_extract: true
+      ref: ${{ inputs.ref }}
+      working_directory: quazip

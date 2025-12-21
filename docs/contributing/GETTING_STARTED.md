@@ -50,6 +50,7 @@ We use specific tools to build the launcher. You **must** install the exact vers
 | **Ninja** | 1.10+ | The "Worker". It executes the build instructions from CMake very fast. | It's much faster than Make or MSBuild. |
 | **Git** | 2.30+ | The "Time Machine". Tracks changes and versions. | Required for version control. |
 | **Java JDK** | 8, 17, 21 | The "Engine". Required to actually run Minecraft. | Minecraft requires specific Java versions. |
+| **Libraries** | Latest | cmark, zlib, quazip, tomlplusplus, qrcodegencpp | These must be installed on your system. |
 
 ## 🖥️ OS-Specific Setup
 
@@ -65,8 +66,11 @@ We recommend using **Visual Studio 2022** or **VS Code** with the MSVC compiler.
   - Select `Qt 6.10.1` -> `MSVC 2022 64-bit`.
   - Select `All additional libraries`.
   - Select `Qt Shader Tools`.
-- Install Vcpkg (Dependency Manager):
-  - Please run vcpkg install in the project directory.
+- Install NuGet (Dependency Manager):
+  - Add the GitHub Packages source for ProjT dependencies:
+    - `nuget sources add -Name project-tick -Source https://nuget.pkg.github.com/Project-Tick/index.json -UserName <github-username> -Password <PAT> -StorePasswordInClearText`
+  - Restore binary dependencies into `dependencies/`:
+    - `nuget install ./packages.config -OutputDirectory dependencies -ConfigFile nuget.config`
 
 ### Linux
 

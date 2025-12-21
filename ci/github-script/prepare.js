@@ -238,8 +238,7 @@ module.exports = async ({ github, context, core, dry }) => {
     // Categorize changes
     const categories = {
       source: files.filter(f => 
-        f.filename.startsWith('launcher/') || 
-        f.filename.startsWith('libraries/')
+        f.filename.startsWith('launcher/')
       ).length,
       ui: files.filter(f => 
         f.filename.includes('/ui/') || 

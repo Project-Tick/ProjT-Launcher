@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>tomlplusplus</id>
+    <version>0.0.0</version>
+    <authors>Mark Gillard</authors>
+    <owners>Project-Tick</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/marzer/tomlplusplus</projectUrl>
+    <description>C++ TOML parser (header-only) packaged for ProjT Launcher.</description>
+    <tags>toml cpp header-only</tags>
+  </metadata>
+  <files>
+    <file src="build\**" target="build" />
+    <file src="LICENSE.txt" target="" />
+  </files>
+</package>

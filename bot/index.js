@@ -141,8 +141,16 @@ export default {
     return json({ ok: false, error: "Not found" }, 404);
   },
 
-  async scheduled(_event, env, ctx) {
-    ctx.waitUntil(processOpenPullRequests(env));
+  async scheduled(event, env, ctx) {
+    const cron = event?.cron ?? "unknown";
+    const limit = parsePositiveInt(env.BOT_CRON_MAX_PRS);
+    const light = String(env.BOT_CRON_LIGHT ?? "false").toLowerCase() === "true";
+    const run = processOpenPullRequests(env, { source: "cron", cron, limit, light });
+    ctx.waitUntil(
+      run
+        .then((result) => console.log(`[cron:${cron}] processed`, result?.stats))
+        .catch((error) => console.error(`[cron:${cron}] failed`, error?.message ?? error))
+    );
   },
 };
 
@@ -170,14 +178,14 @@ const CONFIG = {
     windows: "13.platform:windows",
   },
   templateTypeLabels: [
-    { option: "Bug fix", candidates: ["21.type:bugfix", "bug", "Bug"] },
-    { option: "Feature", candidates: ["21.type:feature", "enhancement", "Feature"] },
-    { option: "Documentation", candidates: ["21.type:docs", "documentation", "docs"] },
-    { option: "Refactor", candidates: ["21.type:refactor", "refactor"] },
-    { option: "Test", candidates: ["21.type:test", "tests", "test"] },
-    { option: "Build / CI", candidates: ["21.type:build", "ci", "build"] },
-    { option: "Chore", candidates: ["21.type:chore", "21.type:other", "chore"] },
-    { option: "Other", candidates: ["21.type:other", "other"] },
+    { option: "Bug fix", candidates: ["21.type:bugfix"] },
+    { option: "Feature", candidates: ["21.type:feature"] },
+    { option: "Documentation", candidates: ["21.type:docs"] },
+    { option: "Refactor", candidates: ["21.type:refactor"] },
+    { option: "Test", candidates: ["21.type:test"] },
+    { option: "Build / CI", candidates: ["21.type:build"] },
+    { option: "Chore", candidates: ["21.type:chore", "21.type:other"] },
+    { option: "Other", candidates: ["21.type:other"] },
   ],
   templateScopeLabels: [
     {
@@ -239,8 +247,10 @@ const CONFIG = {
   commentCommands: [
     "bot rerun",
     "bot labels",
+    "bot merge",
     "/bot rerun",
     "/bot labels",
+    "/bot merge",
   ],
   statusPage: {
     path: "/status",
@@ -358,7 +368,6 @@ function getAreaFromPath(filePath) {
   if (filePath.startsWith("launcher/minecraft/")) return "minecraft";
   if (filePath.startsWith("launcher/modplatform/")) return "modplatform";
   if (filePath.startsWith("launcher/")) return "core";
-  if (filePath.startsWith("libraries/")) return "core";
   if (filePath.startsWith("cmake/") || filePath.endsWith("CMakeLists.txt")) return "build";
   if (filePath.startsWith(".github/") || filePath.startsWith("ci/")) return "ci";
   if (filePath.startsWith("docs/") || filePath.endsWith(".md")) return "documentation";
@@ -508,6 +517,16 @@ async function getMaintainers({ owner, repo, ref, env }) {
 
 async function ensureReviewers({ owner, repo, pullNumber, pullRequest, maintainers, env }) {
   const desired = new Set(getAlwaysRequestReviewers(env).map((r) => String(r).toLowerCase()));
+  // Optionally request the bot itself as a reviewer (set BOT_SELF_REVIEWER=true)
+  try {
+    const wantSelf = String(env.BOT_SELF_REVIEWER ?? "false").toLowerCase() === "true";
+    if (wantSelf) {
+      const botLogin = String(await getBotLogin(env) ?? "");
+      if (botLogin) desired.add(botLogin.toLowerCase());
+    }
+  } catch (e) {
+    console.warn("Failed to add bot self-reviewer:", e?.message ?? e);
+  }
   for (const m of maintainers) desired.add(m);
 
   const author = String(pullRequest?.user?.login ?? "").toLowerCase();
@@ -552,12 +571,19 @@ function parseListEnv(value) {
     .filter(Boolean);
 }
 
+function parsePositiveInt(value) {
+  const num = Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
 async function maybeAutoMerge({ owner, repo, pullNumber, pullRequest, maintainers, currentLabels, ciSummary, env }) {
   if (!CONFIG.autoMerge?.enabled) return { ok: true, skipped: "disabled" };
 
   const author = String(pullRequest?.user?.login ?? "").toLowerCase();
   const isMaintainer = maintainers.has(author) || currentLabels.has(CONFIG.maintainerLabel);
-  if (!isMaintainer) return { ok: true, skipped: "not-maintainer" };
+  // Allow auto-approve on green when explicitly enabled via env var
+  const allowApproveOnGreen = String(env.BOT_APPROVE_ON_GREEN ?? "false").toLowerCase() === "true";
+  if (!isMaintainer && !allowApproveOnGreen) return { ok: true, skipped: "not-maintainer" };
 
   if (pullRequest.state !== "open" || pullRequest.draft) return { ok: true, skipped: "not-open-or-draft" };
   if (pullRequest.mergeable === false) return { ok: true, skipped: "merge-conflict" };
@@ -589,19 +615,25 @@ async function maybeAutoMerge({ owner, repo, pullNumber, pullRequest, maintainer
   return { ok: true, merged: true, method: CONFIG.autoMerge.mergeMethod || "squash" };
 }
 
-async function processOpenPullRequests(env) {
+async function processOpenPullRequests(env, options = {}) {
   const owner = env.GITHUB_OWNER;
   const repo = env.GITHUB_REPO;
   if (!owner || !repo) throw new Error("Missing GITHUB_OWNER/GITHUB_REPO");
 
-  const pullRequests = await listOpenPullRequests({ owner, repo, env });
+  const limit = Number.isFinite(options.limit) ? options.limit : null;
+  let pullRequests = await listOpenPullRequests({ owner, repo, env });
+  if (limit && limit > 0 && pullRequests.length > limit) {
+    const tag = options.source ? `[${options.source}]` : "[run]";
+    console.warn(`${tag} Limiting PR scan to ${limit}/${pullRequests.length}`);
+    pullRequests = pullRequests.slice(0, limit);
+  }
   const stats = { total: pullRequests.length, processed: 0, errors: 0 };
   const results = [];
 
   for (const pr of pullRequests) {
     const pullNumber = pr.number;
     try {
-      const result = await handlePullRequest({ owner, repo, pullNumber, env });
+      const result = await handlePullRequest({ owner, repo, pullNumber, env, options });
       results.push({ number: pullNumber, ...result });
       stats.processed++;
     } catch (error) {
@@ -614,11 +646,12 @@ async function processOpenPullRequests(env) {
   return { stats, results };
 }
 
-async function handlePullRequest({ owner, repo, pullNumber, env }) {
+async function handlePullRequest({ owner, repo, pullNumber, env, options = {} }) {
   if (!owner || !repo) throw new Error("Missing owner/repo");
   if (!hasGitHubAuth(env)) throw new Error("Missing GitHub auth (GITHUB_TOKEN or GitHub App creds)");
 
   const dryRun = String(env.BOT_DRY_RUN ?? "false").toLowerCase() === "true";
+  const light = Boolean(options.light);
 
   const { data: pullRequest } = await githubApi({
     env,
@@ -644,7 +677,7 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
   const labelsToRemove = new Set();
   const currentLabels = new Set((pullRequest.labels ?? []).map((l) => l.name));
   const baseRef = pullRequest?.base?.sha ?? pullRequest?.base?.ref ?? null;
-  const maintainers = await getMaintainers({ owner, repo, ref: baseRef, env });
+  const maintainers = light ? new Set() : await getMaintainers({ owner, repo, ref: baseRef, env });
   const author = String(pullRequest?.user?.login ?? "").toLowerCase();
 
   for (const file of files) {
@@ -730,43 +763,49 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     labelsToRemove.add(CONFIG.statusLabels.mergeConflict.name);
   }
 
-  const dcoResult = await checkDcoForPullRequest({ owner, repo, pullNumber, env });
-  if (!dcoResult.ok) {
-    const dcoLabel = CONFIG.statusLabels.dcoMissing.name;
-    const ready = await ensureLabelExists({
-      owner,
-      repo,
-      env,
-      repoLabels,
-      name: dcoLabel,
-      color: CONFIG.statusLabels.dcoMissing.color,
-      description: CONFIG.statusLabels.dcoMissing.description,
-    });
-    if (ready) labelsToAdd.add(dcoLabel);
-  } else {
-    labelsToRemove.add(CONFIG.statusLabels.dcoMissing.name);
+  if (!light) {
+    const dcoResult = await checkDcoForPullRequest({ owner, repo, pullNumber, env });
+    if (!dcoResult.ok) {
+      const dcoLabel = CONFIG.statusLabels.dcoMissing.name;
+      const ready = await ensureLabelExists({
+        owner,
+        repo,
+        env,
+        repoLabels,
+        name: dcoLabel,
+        color: CONFIG.statusLabels.dcoMissing.color,
+        description: CONFIG.statusLabels.dcoMissing.description,
+      });
+      if (ready) labelsToAdd.add(dcoLabel);
+    } else {
+      labelsToRemove.add(CONFIG.statusLabels.dcoMissing.name);
+    }
   }
 
   const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
   const labelsToDelete = [...labelsToRemove].filter((l) => currentLabels.has(l));
 
   let ciSummary = null;
-  try {
-    ciSummary = await updateCiSummaryComment({
-      owner,
-      repo,
-      pullNumber,
-      pullRequest,
-      env,
-      dryRun,
-    });
-  } catch (error) {
-    console.warn("CI summary update failed:", error?.message ?? error);
-    ciSummary = { ok: false, error: String(error?.message ?? error) };
+  if (!light) {
+    try {
+      ciSummary = await updateCiSummaryComment({
+        owner,
+        repo,
+        pullNumber,
+        pullRequest,
+        env,
+        dryRun,
+      });
+    } catch (error) {
+      console.warn("CI summary update failed:", error?.message ?? error);
+      ciSummary = { ok: false, error: String(error?.message ?? error) };
+    }
+  } else {
+    ciSummary = { ok: false, skipped: "cron-light" };
   }
 
   try {
-    if (!isBackport) {
+    if (!light && !isBackport) {
       await ensureReviewers({
         owner,
         repo,
@@ -782,18 +821,19 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
 
   let autoMergeResult = null;
   try {
-    autoMergeResult = isBackport
-      ? { ok: true, merged: false }
-      : await maybeAutoMerge({
-          owner,
-          repo,
-          pullNumber,
-          pullRequest,
-          maintainers,
-          currentLabels,
-          ciSummary,
-          env,
-        });
+    autoMergeResult =
+      light || isBackport
+        ? { ok: true, merged: false }
+        : await maybeAutoMerge({
+            owner,
+            repo,
+            pullNumber,
+            pullRequest,
+            maintainers,
+            currentLabels,
+            ciSummary,
+            env,
+          });
   } catch (error) {
     console.warn("Auto-merge failed:", error?.message ?? error);
     autoMergeResult = { ok: false, error: String(error?.message ?? error) };
@@ -1276,6 +1316,61 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
   return { ok: true, created: false, dryRun: true, ...summaryMeta };
 }
 
+async function performMergeCommand({ owner, repo, issueNumber, env, commentAuthor }) {
+  if (!hasGitHubAuth(env)) throw new Error("Missing GitHub auth (GITHUB_TOKEN or GitHub App creds)");
+
+  const { data: pr } = await githubApi({ env, method: "GET", path: `/repos/${owner}/${repo}/pulls/${issueNumber}` });
+  if (!pr) return { ok: false, error: "pull-not-found" };
+  if (pr.state !== "open") return { ok: false, skipped: true, reason: "not-open" };
+  if (pr.draft) return { ok: false, skipped: true, reason: "draft" };
+
+  // Only allow merge command from users listed in the maintainers file
+  try {
+    const ref = pr?.base?.sha ?? pr?.base?.ref ?? null;
+    const maintainers = await getMaintainers({ owner, repo, ref, env });
+    const who = String(commentAuthor ?? "").toLowerCase();
+    if (!who || !maintainers.has(who)) {
+      return { ok: false, skipped: true, reason: "not-maintainer", allowedBy: "maintainers.nix" };
+    }
+  } catch (e) {
+    console.warn("Failed to verify maintainers for merge command:", e?.message ?? e);
+    return { ok: false, error: `maintainers-check-failed: ${String(e?.message ?? e)}` };
+  }
+
+  // Check CI runs
+  let ciSummary = null;
+  try {
+    ciSummary = await updateCiSummaryComment({ owner, repo, pullNumber: issueNumber, pullRequest: pr, env, dryRun: false });
+  } catch (e) {
+    ciSummary = { ok: false, error: String(e?.message ?? e) };
+  }
+
+  const allowSkipCi = String(env.BOT_ALLOW_MERGE_COMMAND_SKIP_CI ?? "false").toLowerCase() === "true";
+
+  const jobs = ciSummary?.jobs ?? [];
+  const runConclusion = ciSummary?.runConclusion;
+  const jobsOk = jobs.length === 0 || jobs.every((j) => (j.conclusion ?? j.status) === "success");
+  const runOk = runConclusion ? runConclusion === "success" : jobsOk;
+  if (!runOk && !jobsOk && !allowSkipCi) {
+    return { ok: false, skipped: true, reason: "ci-not-green" };
+  }
+
+  // Approve
+  try {
+    await githubApi({ env, method: "POST", path: `/repos/${owner}/${repo}/pulls/${issueNumber}/reviews`, body: { event: "APPROVE", body: "Approved by bot on user request." } });
+  } catch (e) {
+    return { ok: false, error: `approve-failed: ${String(e?.message ?? e)}` };
+  }
+
+  // Merge
+  try {
+    const { data } = await githubApi({ env, method: "PUT", path: `/repos/${owner}/${repo}/pulls/${issueNumber}/merge`, body: { merge_method: CONFIG.autoMerge.mergeMethod || "squash" } });
+    return { ok: true, merged: Boolean(data?.merged ?? true), data };
+  } catch (e) {
+    return { ok: false, error: `merge-failed: ${String(e?.message ?? e)}` };
+  }
+}
+
 async function handleIssueComment({ payload, env }) {
   const issue = payload?.issue;
   const commentBody = String(payload?.comment?.body ?? "");
@@ -1299,6 +1394,23 @@ async function handleIssueComment({ payload, env }) {
   const owner = env.GITHUB_OWNER;
   const repo = env.GITHUB_REPO;
   const result = await handlePullRequest({ owner, repo, pullNumber: issueNumber, env });
+
+  // If the commenter requested a merge via command, attempt to approve+merge
+  if (containsCommand(commentBody, ["bot merge", "/bot merge"])) {
+    try {
+      const commentAuthor = String(payload?.comment?.user?.login ?? "").toLowerCase();
+      const mergeResult = await performMergeCommand({ owner, repo, issueNumber, env, commentAuthor });
+      if (shouldComment) {
+        const text = mergeResult?.ok ? `Merge attempted: ${mergeResult.merged ? "merged" : "not merged"}.` : `Merge failed: ${mergeResult?.error ?? "unknown"}`;
+        await githubApi({ env, method: "POST", path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments`, body: { body: text } });
+      }
+    } catch (err) {
+      console.warn("Merge command failed:", err?.message ?? err);
+      if (shouldComment) {
+        await githubApi({ env, method: "POST", path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments`, body: { body: `Merge command failed: ${String(err?.message ?? err)}` } });
+      }
+    }
+  }
 
   const shouldComment = String(env.BOT_COMMENT_ON_COMMAND ?? "false").toLowerCase() === "true";
   if (shouldComment) {

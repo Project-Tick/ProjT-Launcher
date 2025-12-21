@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>quazip-qt6</id>
+    <version>0.0.0</version>
+    <authors>stachenov</authors>
+    <owners>Project-Tick</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">LGPL-2.1-only</license>
+    <projectUrl>https://github.com/stachenov/quazip</projectUrl>
+    <description>QuaZip Qt6 library packaged for ProjT Launcher.</description>
+    <tags>quazip qt6 zip</tags>
+  </metadata>
+  <files>
+    <file src="build\**" target="build" />
+    <file src="LICENSE.txt" target="" />
+  </files>
+</package>

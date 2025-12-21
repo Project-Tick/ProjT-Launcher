@@ -1,65 +1,54 @@
 project(tests)
 
-ecm_add_test(FileSystem_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME FileSystem)
+set(LAUNCHER_TESTS "")
 
-ecm_add_test(GZip_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME GZip)
+function(launcher_add_test source name)
+    ecm_add_test(${source} LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
+        TEST_NAME ${name})
+    list(APPEND LAUNCHER_TESTS ${name})
+    set(LAUNCHER_TESTS "${LAUNCHER_TESTS}" PARENT_SCOPE)
+endfunction()
 
-ecm_add_test(GradleSpecifier_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME GradleSpecifier)
+launcher_add_test(FileSystem_test.cpp FileSystem)
+launcher_add_test(GZip_test.cpp GZip)
+launcher_add_test(GradleSpecifier_test.cpp GradleSpecifier)
+launcher_add_test(MojangVersionFormat_test.cpp MojangVersionFormat)
+launcher_add_test(Library_test.cpp Library)
+launcher_add_test(ResourceFolderModel_test.cpp ResourceFolderModel)
+launcher_add_test(ResourcePackParse_test.cpp ResourcePackParse)
+launcher_add_test(TexturePackParse_test.cpp TexturePackParse)
+launcher_add_test(DataPackParse_test.cpp DataPackParse)
+launcher_add_test(ShaderPackParse_test.cpp ShaderPackParse)
+launcher_add_test(WorldSaveParse_test.cpp WorldSaveParse)
+launcher_add_test(ParseUtils_test.cpp ParseUtils)
+launcher_add_test(Task_test.cpp Task)
+launcher_add_test(INIFile_test.cpp INIFile)
+launcher_add_test(JavaVersion_test.cpp JavaVersion)
+launcher_add_test(Packwiz_test.cpp Packwiz)
+launcher_add_test(Index_test.cpp Index)
+launcher_add_test(Version_test.cpp Version)
+launcher_add_test(MetaComponentParse_test.cpp MetaComponentParse)
+launcher_add_test(CatPack_test.cpp CatPack)
+launcher_add_test(XmlLogs_test.cpp XmlLogs)
 
-ecm_add_test(MojangVersionFormat_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME MojangVersionFormat)
+if(WIN32)
+    set(_qt_cmake_dir "")
+    if(DEFINED Qt6_DIR)
+        set(_qt_cmake_dir "${Qt6_DIR}")
+    elseif(DEFINED Qt5_DIR)
+        set(_qt_cmake_dir "${Qt5_DIR}")
+    endif()
 
-ecm_add_test(Library_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME Library)
+    if(_qt_cmake_dir)
+        get_filename_component(_qt_prefix "${_qt_cmake_dir}" DIRECTORY)
+        get_filename_component(_qt_prefix "${_qt_prefix}" DIRECTORY)
+        get_filename_component(_qt_prefix "${_qt_prefix}" DIRECTORY)
+        set(_qt_bin_dir "${_qt_prefix}/bin")
+    endif()
 
-ecm_add_test(ResourceFolderModel_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME ResourceFolderModel)
-
-ecm_add_test(ResourcePackParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME ResourcePackParse)
-
-ecm_add_test(TexturePackParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME TexturePackParse)
-
-ecm_add_test(DataPackParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME DataPackParse)
-
-ecm_add_test(ShaderPackParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME ShaderPackParse)
-
-ecm_add_test(WorldSaveParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME WorldSaveParse)
-
-ecm_add_test(ParseUtils_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME ParseUtils)
-
-ecm_add_test(Task_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME Task)
-
-ecm_add_test(INIFile_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME INIFile)
-
-ecm_add_test(JavaVersion_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME JavaVersion)
-
-ecm_add_test(Packwiz_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME Packwiz)
-
-ecm_add_test(Index_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME Index)
-
-ecm_add_test(Version_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME Version)
-
-ecm_add_test(MetaComponentParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME MetaComponentParse)
-
-ecm_add_test(CatPack_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME CatPack)
-
-
-ecm_add_test(XmlLogs_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME XmlLogs)
+    if(EXISTS "${_qt_bin_dir}")
+        set(_launcher_test_env "PATH=${_qt_bin_dir};$ENV{PATH}")
+        string(REPLACE ";" "\\;" _launcher_test_env "${_launcher_test_env}")
+        set_property(TEST ${LAUNCHER_TESTS} PROPERTY ENVIRONMENT "${_launcher_test_env}")
+    endif()
+endif()

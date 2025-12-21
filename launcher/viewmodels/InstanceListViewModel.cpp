@@ -554,8 +554,16 @@ void InstanceListViewModel::createNewInstance(const QString& name, const QString
         return;
     }
 
-    // Use the latest available version
-    BaseVersion::Ptr selectedVersion = mcVersions->versions().first();
+    BaseVersion::Ptr selectedVersion;
+    if (!version.isEmpty()) {
+        selectedVersion = mcVersions->findVersion(version);
+        if (!selectedVersion) {
+            emit errorOccurred(tr("Requested Minecraft version not available: %1").arg(version));
+            return;
+        }
+    } else {
+        selectedVersion = mcVersions->versions().first();
+    }
 
     if (!selectedVersion) {
         emit errorOccurred(tr("Failed to select a Minecraft version."));

@@ -4,7 +4,7 @@ This document contains the background, technical rationale, and alternatives rel
 
 ## Summary
 
-As of v0.0.3 the project targets Apple Silicon (ARM64) for official builds and day-to-day testing. Intel macOS (x86_64) compatibility still exists in some artifacts (for example older releases or universal `.app` bundles built via CMake), but active Intel-specific testing and certain Intel build pipelines (notably the Nix flake builds) are deprecated.
+As of 0.0.3 the project targets Apple Silicon (ARM64) for official builds and day-to-day testing. Intel macOS (x86_64) compatibility still exists in some artifacts (for example older releases or universal `.app` bundles built via CMake), but active Intel-specific testing and certain Intel build pipelines (notably the Nix flake builds) are deprecated.
 
 This decision is driven by several practical factors affecting build reproducibility, CI availability, and long-term maintenance costs for a small and shrinking user base. It does not mean that universally packaged `.app` bundles cannot run on Intel macOS; it means we do not guarantee or actively test Intel-specific fixes across our primary build and CI workflows.
 

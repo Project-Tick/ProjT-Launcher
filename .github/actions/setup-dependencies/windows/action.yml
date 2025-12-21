@@ -33,12 +33,34 @@ runs:
         distribution: zulu
         java-version: 17
 
-    - name: Setup vcpkg environment (MSVC)
+    - name: Configure NuGet sources (MSVC)
       if: ${{ inputs.msystem == '' }}
-      shell: bash
+      shell: powershell
       run: |
-        echo "CMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" >> "$GITHUB_ENV"
+        $nugetConfig = "$env:GITHUB_WORKSPACE/nuget.config"
+        if (-not (Test-Path $nugetConfig)) {
+          throw "nuget.config not found at $nugetConfig"
+        }
 
+        # Inject GitHub Packages credentials for the tomlplusplus feed.
+        nuget sources Remove -Name "project-tick" -ConfigFile $nugetConfig -NonInteractive | Out-Null
+        nuget sources Add `
+          -Name "project-tick" `
+          -Source "https://nuget.pkg.github.com/Project-Tick/index.json" `
+          -UserName "${{ github.actor }}" `
+          -Password "${{ github.token }}" `
+          -StorePasswordInClearText `
+          -ConfigFile $nugetConfig `
+          -NonInteractive | Out-Null
+
+    - name: Pre-install binary dependencies (NuGet Manifest)
+      if: ${{ inputs.msystem == '' }}
+      shell: powershell
+      run: |
+        # Using NuGet manifest - Dependabot will track ./packages.config
+        nuget install ./packages.config -OutputDirectory dependencies -ConfigFile "$env:GITHUB_WORKSPACE/nuget.config"
+
+        
     - name: Setup MSYS2 (MinGW)
       if: ${{ inputs.msystem != '' }}
       uses: msys2/setup-msys2@v2
@@ -62,6 +84,8 @@ runs:
           cmark:p
           tomlplusplus:p
           quazip-qt6:p
+          zlib:p
+          qrencode:p
 
     - name: Install NSIS (MSVC)
       if: ${{ runner.os == 'Windows' && inputs.msystem == '' }}

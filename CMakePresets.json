@@ -49,10 +49,7 @@
 			"inherits": [
 				"macos"
 			],
-			"cacheVariables": {
-				"CMAKE_OSX_ARCHITECTURES": "x86_64;arm64",
-				"VCPKG_TARGET_TRIPLET": "universal-osx"
-			}
+			"cacheVariables": {}
 		},
 		{
 			"name": "windows_mingw",

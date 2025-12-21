@@ -73,6 +73,10 @@ const FALLBACK_MAINTAINERS = [
     handle: 'YongDo-Hyun',
     areas: ['all'],
   },
+  {
+    handle: 'grxtor',
+    areas: ['all'],
+  },
 ]
 
 const MAINTAINERS = (() => {
@@ -83,7 +87,7 @@ const MAINTAINERS = (() => {
 // File patterns to components mapping
 const FILE_PATTERNS = [
   { pattern: /^launcher\/ui\//, component: 'ui' },
-  { pattern: /^launcher\/qml\//, component: 'ui' },
+  { pattern: /^launcher\/ui\/qml\//, component: 'ui' },
   { pattern: /^launcher\/minecraft\//, component: 'minecraft' },
   { pattern: /^launcher\/modplatform\//, component: 'modplatform' },
   { pattern: /^launcher\//, component: 'core' },

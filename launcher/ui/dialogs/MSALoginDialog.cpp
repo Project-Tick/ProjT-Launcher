@@ -72,7 +72,7 @@
 #include <QUrl>
 #include <QtWidgets/QPushButton>
 
-#include "qrcodegen.hpp"
+#include <qrencode.h>
 
 MSALoginDialog::MSALoginDialog(QWidget* parent) : QDialog(parent), ui(new Ui::MSALoginDialog)
 {
@@ -171,28 +171,31 @@ void MSALoginDialog::authorizeWithBrowser(const QUrl& url)
 // https://stackoverflow.com/questions/21400254/how-to-draw-a-qr-code-with-qt-in-native-c-c
 void paintQR(QPainter& painter, const QSize sz, const QString& data, QColor fg)
 {
-    // NOTE: At this point you will use the API to get the encoding and format you want, instead of my hardcoded stuff:
-    qrcodegen::QrCode qr = qrcodegen::QrCode::encodeText(data.toUtf8().constData(), qrcodegen::QrCode::Ecc::LOW);
-    const int s = qr.getSize() > 0 ? qr.getSize() : 1;
+    QRcode* qr = QRcode_encodeString(data.toUtf8().constData(), 0, QR_ECLEVEL_L, QR_MODE_8, 1);
+    if (!qr) {
+        return;
+    }
+
+    const int s = qr->width > 0 ? qr->width : 1;
     const double w = sz.width();
     const double h = sz.height();
     const double aspect = w / h;
     const double size = ((aspect > 1.0) ? h : w);
     const double scale = size / (s + 2);
-    // NOTE: For performance reasons my implementation only draws the foreground parts in supplied color.
-    // It expects background to be prepared already (in white or whatever is preferred).
+
     painter.setPen(Qt::NoPen);
     painter.setBrush(fg);
     for (int y = 0; y < s; y++) {
         for (int x = 0; x < s; x++) {
-            const int color = qr.getModule(x, y);  // 0 for white, 1 for black
+            const int color = qr->data[y * s + x] & 1;  // LSB is 1 for black, 0 for white
             if (0 != color) {
                 const double rx1 = (x + 1) * scale, ry1 = (y + 1) * scale;
                 QRectF r(rx1, ry1, scale, scale);
-                painter.drawRects(&r, 1);
+                painter.drawRect(r);
             }
         }
     }
+    QRcode_free(qr);
 }
 
 void MSALoginDialog::authorizeWithBrowserWithExtra(QString url, QString code, [[maybe_unused]] int expiresIn)
