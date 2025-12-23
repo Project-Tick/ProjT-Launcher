@@ -53,9 +53,6 @@
   <url type="bugtracker">https://github.com/Project-Tick/ProjT-Launcher/issues</url>
   <url type="faq">https://projtlauncher.yongdohyun.org.tr/wiki/overview/faq/</url>
   <url type="help">https://projtlauncher.yongdohyun.org.tr/wiki/</url>
-  <url type="donation">https://opencollective.com/projtlauncher</url>
-  <url type="translate">https://hosted.weblate.org/projects/projtlauncher/launcher</url>
-  <url type="contact">https://projtlauncher.yongdohyun.org.tr/discord</url>
   <url type="vcs-browser">https://github.com/Project-Tick/ProjT-Launcher</url>
   <url type="contribute">https://github.com/Project-Tick/ProjT-Launcher/blob/develop/CONTRIBUTING.md</url>
   <content_rating type="oars-1.1">
