@@ -35,11 +35,11 @@
     "libnbtplusplus": {
       "flake": false,
       "locked": {
-        "lastModified": 1764177458,
-        "narHash": "sha256-EKhBU8O4q565VMae2Wf0WPQaYtGIIh3Qzv1q1X/OjC0=",
+        "lastModified": 1766770920,
+        "narHash": "sha256-01hzqjuq2LgJERTMKk7th3nQinQNw9d8gdti8C2k2Fs=",
         "owner": "Project-Tick",
         "repo": "libnbtplusplus",
-        "rev": "c982ae30fc72447033700dce361d3426a0a8fb74",
+        "rev": "a3fd2cf6a0931746f98ccda873195efa92dbf421",
         "type": "github"
       },
       "original": {
@@ -50,11 +50,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1766309749,
-        "narHash": "sha256-3xY8CZ4rSnQ0NqGhMKAy5vgC+2IVK0NoVEzDoOh4DA4=",
+        "lastModified": 1766651565,
+        "narHash": "sha256-QEhk0eXgyIqTpJ/ehZKg9IKS7EtlWxF3N7DXy42zPfU=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "a6531044f6d0bef691ea18d4d4ce44d0daa6e816",
+        "rev": "3e2499d5539c16d0d173ba53552a4ff8547f4539",
         "type": "github"
       },
       "original": {
