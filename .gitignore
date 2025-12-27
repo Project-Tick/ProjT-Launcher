@@ -68,3 +68,4 @@ tree.txt
 mb_*
 node_modules/
 .qtcreator/
+.wiki-local/

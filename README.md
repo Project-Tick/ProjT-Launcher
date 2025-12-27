@@ -184,6 +184,7 @@ Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) for engineering standards and wo
 
 - **Launcher**: `docs/contributing/` and `CMakeLists.txt`
 - **Website**: `.eleventy.js`, `src/`, `package.json`
+  - To sync the website wiki to GitHub Wiki, use: `./scripts/sync-wiki.sh`
 - **Bot**: `bot/README.md`
 - **Metadata generator**: `meta/`, `pyproject.toml`
 
