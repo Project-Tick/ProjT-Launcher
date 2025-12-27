@@ -1,60 +1,81 @@
+/* Modern Team Member Cards */
 .user-list {
-    display: flex;
-    flex-wrap: wrap;
-    align-content: space-around;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 24px;
     list-style: none;
     padding: 0;
+    margin: 40px 0;
 }
 
 .user-info {
-    position: relative; 
-    margin: 0.5em;
-    width: 10em;
-    border-radius: 1em;
+    position: relative;
+    border-radius: 12px;
     overflow: hidden;
-    background-color:var(--background);
-    text-decoration: none;
-    color: var(--primary-text);
-    max-height: 10em;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    aspect-ratio: 1;
 }
 
-.user-contrib {
-    width: 3em;
-    background-color: var(--accent);
-}
-
-.user-contrib:hover {
-    border: 0.2em solid var(--primary);
-
+.user-info:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.5);
 }
 
 .user-info img {
     display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
 }
 
-.user-name {
-    color: white;
-    font-size: 1.2em;
-    overflow-wrap: break-word;
-    text-align: center;
+.user-info:hover img {
+    transform: scale(1.05);
 }
 
 .user-info-overlay {
     position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    padding: 20px;
     opacity: 0;
-    transition: .3s ease;
-    background-color: var(--primary);
+    transition: opacity 0.3s ease;
 }
 
 .user-info:hover .user-info-overlay {
     opacity: 1;
+}
+
+.user-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1em;
+    text-align: center;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Contributors (smaller circles/cards) */
+.user-contrib {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin: 8px;
+    background: none;
+    border: none;
+}
+
+.user-contrib img {
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-contrib:hover img {
+    border-color: #fff;
+    transform: scale(1.1);
 }

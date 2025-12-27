@@ -1,69 +1,151 @@
-.download-tab-list {
-    list-style: none;
+/* Vercel-Inspired Download Page Styles */
+
+.download-hero {
+    text-align: center;
+    padding: 80px 24px 60px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.download-hero h1 {
+    font-size: clamp(40px, 6vw, 64px);
+    margin-bottom: 24px;
+    background: linear-gradient(180deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.download-hero p {
+    font-size: 1.25em;
+    color: #888;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.download-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 32px;
+    max-width: 1200px;
+    margin: 0 auto 80px;
+    padding: 0 24px;
+}
+
+.os-card {
+    background: rgba(17, 17, 17, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    padding: 40px;
     display: flex;
-    justify-content: flex-start;
-    list-style: none;
-    padding: 0;
-    margin-bottom: 0;
-    border-radius: 1em 1em 0 0;
-    background-color: var(--accent);
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
     overflow: hidden;
 }
 
-.download-tab-list li {
+.os-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+.os-icon {
+    font-size: 48px;
+    margin-bottom: 24px;
+    color: #fff;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.os-title {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #fff;
+}
+
+.os-desc {
+    color: #888;
+    margin-bottom: 32px;
+    font-size: 0.95em;
     flex-grow: 1;
-    display: block;
 }
 
-.download-tab-list a {
-    color: var(--primary-text);
-    font-size: 1.2em;
-    text-decoration: none;
-    display: flex;
-    justify-content: center;
-    padding: 0.75em 0.5em;
-}
-
-.download-tab-list a:hover {
-    background-color: var(--accent-light);
-}
-
-.download-tab-list i {
-    color: var(--primary-text);
-    font-size: 1.2em;
-    text-decoration: none;
-    display: flex;
-    justify-content: center;
-    margin-right: 0.25em;
-}
-
-.download-tab-active a {
-    background-color: var(--background);
-}
-
-.download-content {
-    background-color: var(--background);
-    padding: 1em;
-    border-radius: 0 0 1em 1em;
-}
-
-.download-content .column div {
+.download-btn {
     width: 100%;
+    padding: 16px 24px;
+    background: #fff;
+    color: #000;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 1.1em;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
-.download-content .button {
-    width: 100%;
-    display: block;
-    margin-bottom: 1em;
-    margin-left: 0;
+.download-btn:hover {
+    background: #e5e5e5;
+    transform: translateY(-2px);
 }
 
-@media (min-width: 64em) {
-    .download-tab-list a {
-        border-radius: 1rem 1rem 0 0;
-    }
-    .download-content .column div {
-        width: 80%;
+.download-btn i {
+    font-size: 1.2em;
+}
+
+.other-downloads {
+    text-align: center;
+    margin-top: 60px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.other-downloads h3 {
+    margin-bottom: 24px;
+    font-size: 1.5em;
+}
+
+.other-links {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.other-link {
+    color: #888;
+    text-decoration: none;
+    font-size: 0.95em;
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.other-link:hover {
+    color: #fff;
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 768px) {
+    .download-grid {
+        grid-template-columns: 1fr;
+        padding: 0 24px;
     }
 }

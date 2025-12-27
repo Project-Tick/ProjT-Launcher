@@ -3,221 +3,115 @@ layout: layouts/main.njk
 title: Home
 hero:
   title: 'ProjT Launcher'
-  description: 'An open source Minecraft launcher with the ability to manage multiple instances, accounts and
-  mods. Focused on user freedom and free redistributability.'
+  description: 'An open source Minecraft launcher with the ability to manage multiple instances, accounts and mods. Focused on user freedom and free redistributability.'
   image:
-    light: '/img/screenshots/projtlauncher_windows_dark_main_window.png'
-    dark: '/img/screenshots/projtlauncher_windows_dark_main_window.png'
+    light: '/img/screenshots/projtlauncher_dark_main_window.png'
+    dark: '/img/screenshots/projtlauncher_dark_main_window.png'
   button:
     url: /download?from=button
-    content: 'Download Now'
+    content: 'Download'
 ---
 
-<div class="home-sections">
-  <section class="section feature-section">
-    <div class="section-heading">
-      <p class="eyebrow">Built for control</p>
-      <h2>Stay in charge of every Minecraft instance</h2>
-      <p>ProjT Launcher keeps your modded adventures isolated, reproducible, and easy to maintain. Install, update, and launch everything from lightweight vanilla installs to massive modpacks with a single tool.</p>
+<section class="features-section">
+  <div class="features-header">
+    <h2>Everything you need.<br><span class="gradient-text">Nothing you don't.</span></h2>
+  </div>
+  
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa fa-cubes"></i></div>
+      <h3>Modpack Comfort</h3>
+      <p>Easily install and update modpacks from Modrinth, CurseForge, ATLauncher, Technic, and FTB. Import from zip files or creating one from scratch.</p>
     </div>
-    <div class="feature-grid">
-      <article class="feature-card">
-        <div class="feature-icon">01</div>
-        <h3>Modpack comfort</h3>
-        <p>Install curated modpacks from Modrinth or CurseForge in seconds, keep them clean, and roll back when the pack maintainer ships a surprise update.</p>
-      </article>
-      <article class="feature-card">
-        <div class="feature-icon">02</div>
-        <h3>Smart updates</h3>
-        <p>Track individual mods, version changes, and dependencies so you always know what changed before clicking download.</p>
-      </article>
-      <article class="feature-card">
-        <div class="feature-icon">03</div>
-        <h3>Isolated instances</h3>
-        <p>Each instance has its own folder, assets, and configuration. Jump back in time without overwriting worlds or losing settings.</p>
-      </article>
-      <article class="feature-card">
-        <div class="feature-icon">04</div>
-        <h3>Themeable &amp; lightweight</h3>
-        <p>ProjT Launcher uses the Qt toolkit and supports custom themes, so it stays snappy on low-spec machines and still feels personal.</p>
-      </article>
-    </div>
-  </section>
 
-  <section class="section spotlight-section">
-    <div class="spotlight-grid">
-      <article class="spotlight-card">
-        <h3>Modpack management without the mess</h3>
-        <p>Switch modloaders, tweak JVM arguments, or fork configuration profiles for friends. Everything lives inside a portable folder that you can back up or sync.</p>
-        <ul>
-          <li>Automatic downloads from Modrinth &amp; CurseForge</li>
-          <li>Version pinning and downgrade support</li>
-          <li>Log console with real-time progress</li>
-        </ul>
-        <img src="/img/screenshots/projtlauncher_windows_dark_install_modpacks_modrinth.png" alt="ProjT Launcher installing a Modrinth pack">
-      </article>
-      <article class="spotlight-card">
-        <h3>Granular control over every mod</h3>
-        <p>Missing a single client mod? Search, download, and update it inside the launcher. No more digging through folders or re-downloading entire packs.</p>
-        <ul>
-          <li>Curated discovery surface for the mods you need</li>
-          <li>Per-instance overrides keep experiments contained</li>
-          <li>Update previews show what will change before you apply</li>
-        </ul>
-        <img src="/img/screenshots/projtlauncher_windows_dark_install_mods.png" alt="Managing mods directly in ProjT Launcher">
-      </article>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa fa-refresh"></i></div>
+      <h3>Smart Updates</h3>
+      <p>ProjT Launcher will check for updates every time you launch it. No need to manually download anything.</p>
     </div>
-  </section>
+    
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa fa-hdd-o"></i></div>
+      <h3>Isolated Instances</h3>
+      <p>Each instance is stored in its own folder. This means you can have different mods, resource packs, and saves for each instance.</p>
+    </div>
 
-  <section class="section workflow-section">
-    <div class="section-heading">
-      <p class="eyebrow">Launcher workflow</p>
-      <h2>From download to launch in four calm steps</h2>
-      <p>You shouldn't have to fight your launcher. ProjT keeps each phase focused and predictable so you can move from idea to gameplay without fires to put out.</p>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa fa-paint-brush"></i></div>
+      <h3>Themeable</h3>
+      <p>Customize the launcher look and feel with Qt themes and CSS. Make it truly yours.</p>
     </div>
-    <div class="workflow-grid">
-      <article class="workflow-step">
-        <div class="workflow-index">01</div>
-        <h3>Pick a platform</h3>
-        <p>Grab the installer that fits your OS. All binaries are signed and mirrored, so getting started is as easy on Linux as it is on Windows.</p>
-      </article>
-      <article class="workflow-step">
-        <div class="workflow-index">02</div>
-        <h3>Create instances</h3>
-        <p>Spin up lightweight vanilla profiles or giant modded setups. Each instance remembers its mods, saves, and JVM state independently.</p>
-      </article>
-      <article class="workflow-step">
-        <div class="workflow-index">03</div>
-        <h3>Sync &amp; customize</h3>
-        <p>Connect Modrinth and CurseForge accounts, apply your favorite theme, and wire up automatic backups before you hop in.</p>
-      </article>
-      <article class="workflow-step">
-        <div class="workflow-index">04</div>
-        <h3>Launch with confidence</h3>
-        <p>Per-instance logs, resource tracking, and built-in updates mean you always know what changed before you smash play.</p>
-      </article>
-    </div>
-  </section>
 
-  <section class="section ecosystem-section">
-    <div class="section-heading">
-      <p class="eyebrow">Ecosystem ready</p>
-      <h2>Bring your favorite services with you</h2>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa fa-bolt"></i></div>
+      <h3>Lightweight</h3>
+      <p>Built with C++ and Qt for maximum performance and minimum resource usage. Fast startup, low memory footprint.</p>
     </div>
-    <div class="integration-grid">
-      <article class="integration-card">
-        <div class="integration-icon"><i class="fa fa-cubes" aria-hidden="true"></i></div>
-        <h3>Modrinth &amp; CurseForge</h3>
-        <p>Browse, install, and update packs from both modding giants without opening a browser.</p>
-        <ul>
-          <li>Side-by-side changelog previews</li>
-          <li>Optional dependency suggestions</li>
-          <li>Fast mirror-aware downloads</li>
-        </ul>
-      </article>
-      <article class="integration-card">
-        <div class="integration-icon"><i class="fa fa-cloud" aria-hidden="true"></i></div>
-        <h3>Catpacks &amp; community repos</h3>
-        <p>Ship your own curated experiences with Catpacks or point instances at any open repository.</p>
-        <ul>
-          <li>Deterministic manifests per pack</li>
-          <li>Shareable URLs for your community</li>
-          <li>Override support for power users</li>
-        </ul>
-      </article>
-      <article class="integration-card">
-        <div class="integration-icon"><i class="fa fa-comments" aria-hidden="true"></i></div>
-        <h3>Matrix-powered support</h3>
-        <p>Matrix rooms stay close to the launcher so you can get help, contribute, or celebrate a release in one tap.</p>
-        <ul>
-          <li>Directly linked knowledge base</li>
-          <li>Friendly moderation team</li>
-          <li>Office-hours for contributors</li>
-        </ul>
-      </article>
+    
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa fa-github"></i></div>
+      <h3>Open Source</h3>
+      <p>Licensed under GPL-3.0. You can inspect the code, modify it, and redistribute it freely.</p>
     </div>
-  </section>
 
-  <section class="section stats-section">
-    <div class="section-heading">
-      <p class="eyebrow">Why players switch</p>
-      <h2>Freedom-focused from the first line of code</h2>
-      <p>ProjT Launcher is made by and for the community. Every feature we ship is reviewed in the open, and you can remix or redistribute it with zero lock-in.</p>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa fa-infinity"></i></div>
+      <h3>Unlimited</h3>
+      <p>Instances with isolated resource packs, mods, and saves.</p>
     </div>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3>Open</h3>
-        <p>GPL-3 licensed launcher &amp; AGPL-3 website</p>
+  </div>
+</section>
+
+<section class="showcase-section">
+  <div class="showcase-header">
+    <span class="eyebrow">Ecosystem</span>
+    <h2>Integrated with the best</h2>
+  </div>
+  
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa fa-search"></i></div>
+      <h3>Modrinth & CurseForge</h3>
+      <p>Direct download and update support for mods and modpacks from the largest community repositories.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa fa-paw"></i></div>
+      <h3>Catpacks</h3>
+      <p>First-class support for Catpacks, a new modpack format focused on distribution and ease of use.</p>
+    </div>
+    
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa fa-comments"></i></div>
+      <h3>Community Support</h3>
+      <p>Join our Matrix community for help, discussions, and development updates.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="cta-content">
+    <h2>Why players switch?</h2>
+    <div class="features-grid" style="margin-top: 40px; margin-bottom: 40px;">
+      <div class="feature-card">
+        <h3>01. Speed</h3>
+        <p>Native C++ application means instant startup and minimal background usage.</p>
       </div>
-      <div class="stat-card">
-        <h3>3</h3>
-        <p>Platforms: Windows, macOS &amp; Linux</p>
+      <div class="feature-card">
+        <h3>02. Privacy</h3>
+        <p>No telemetry, no tracking, no account requirements for basic usage.</p>
       </div>
-      <div class="stat-card">
-        <h3>Unlimited</h3>
-        <p>Instances with isolated resource packs, mods, and saves</p>
-      </div>
-      <div class="stat-card">
-        <h3>0</h3>
-        <p>Advertising, trackers, or paywalls</p>
+      <div class="feature-card">
+        <h3>03. Control</h3>
+        <p>Full control over Java versions, memory allocation, and JVM arguments.</p>
       </div>
     </div>
-  </section>
 
-  <section class="section community-section" id="get-involved">
-    <div class="section-heading">
-      <p class="eyebrow">Community first</p>
-      <h2>Get involved &amp; stay up to date</h2>
+    <h2>Ready to play?</h2>
+    <p>Download ProjT Launcher and take control of your Minecraft experience.</p>
+    <div class="cta-actions">
+      <a href="{{ '/download?from=button' | url }}" class="btn btn-white btn-lg"><i class="fa fa-download"></i> Download Now</a>
+      <a href="{{ '/wiki/' | url }}" class="btn btn-outline btn-lg">Read the Docs</a>
     </div>
-    <div class="community-grid">
-      <article class="community-card">
-        <h3>Matrix Space</h3>
-        <p>Prefer open chat instead of another Discord server? Join the Matrix Space to talk features, get help, or share your modpack.</p>
-        <a class="button type-link size-small" href="https://matrix.to/#/#projtlauncher:matrix.org" target="_blank">Join on Matrix</a>
-      </article>
-      <article class="community-card">
-        <h3>Source code</h3>
-        <p>ProjT Launcher is GPL-3 and accepts contributions from anyone who cares about user freedom. Fork it, remix it, or ship your own build.</p>
-        <a class="button ghost-button size-small" href="https://github.com/Project-Tick/ProjT-Launcher" target="_blank">Explore on GitHub</a>
-        <p class="eyebrow">Website: <a href="https://github.com/Project-Tick/ProjT-Launcher/src">AGPL-3</a></p>
-      </article>
-      <article class="community-card">
-        <h3>Docs &amp; Wiki</h3>
-        <p>New to ProjT Launcher? The wiki covers everything from first launch to changing themes or building your own mod catalog.</p>
-        <a class="button type-info size-small" href="{{ '/wiki/' | url }}">Browse the wiki</a>
-      </article>
-    </div>
-  </section>
-
-  <section class="section faq-section" id="faq">
-    <div class="section-heading">
-      <p class="eyebrow">FAQ</p>
-      <h2>Questions from fellow modded players</h2>
-    </div>
-    <div class="faq-list">
-      <details class="faq-item" open>
-        <summary>Does ProjT Launcher support official Microsoft accounts?</summary>
-        <p>Yes. You can authenticate multiple Microsoft accounts side by side while keeping Mojang accounts available for legacy instances.</p>
-      </details>
-      <details class="faq-item">
-        <summary>How does telemetry work?</summary>
-        <p>It doesn't. We never ship tracking or ads, and we keep the source open so you can verify that promise.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Can I move my Prism Launcher instances over?</summary>
-        <p>Absolutely. The wiki has a full migration guide, and ProjT can import worlds, mod lists, and even screenshots from existing folders.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Is there a CLI?</summary>
-        <p>Yes. The launcher exposes a command-line interface for automating downloads, managing Catpacks, or scripting testing flows.</p>
-      </details>
-    </div>
-  </section>
-
-  <section class="section cta-panel">
-    <p class="eyebrow">Ready when you are</p>
-    <h2>Download ProjT Launcher and reclaim your modded workflow</h2>
-    <p>One launcher, every platform, and a community that cares about software freedom. No telemetry, no ads—just Minecraft the way you want it.</p>
-    <a class="button size-large" href="{{ '/download?from=button' | url }}">Download now</a>
-  </section>
-</div>
+  </div>
+</section>

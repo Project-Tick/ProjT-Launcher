@@ -1,6 +1,6 @@
 ---
 title: Download ProjT Launcher for Linux
-permalink: /download/
+permalink: /download/linux/
 eleventyNavigation:
   key: <i class="fa fa-linux" aria-hidden="true"></i>Linux
   order: 1

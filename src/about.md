@@ -75,3 +75,15 @@ ProjT Launcher is a custom launcher for Minecraft that was forked from MultiMC. 
   {% endfor %}
 </ul>
 </div>
+
+<div class="content top" id="license">
+
+# License
+
+The **ProjT Launcher** core application is licensed under the **GNU General Public License v3.0** (GPL-3.0).
+
+The **ProjT Launcher Website** (this repository) and related web assets are licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0).
+
+As a monorepo, this repository includes multiple projects and libraries which may be licensed differently. Please refer to the specific `LICENSE` files in the respective directories or the [repository root](https://github.com/Project-Tick/ProjT-Launcher) for full details.
+
+</div>
