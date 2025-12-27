@@ -35,11 +35,11 @@
     "libnbtplusplus": {
       "flake": false,
       "locked": {
-        "lastModified": 1766770920,
-        "narHash": "sha256-01hzqjuq2LgJERTMKk7th3nQinQNw9d8gdti8C2k2Fs=",
+        "lastModified": 1766841843,
+        "narHash": "sha256-ousPp2LrK1jvf17eiJZhYsR/okNReIsyvGfF7UAmC2Q=",
         "owner": "Project-Tick",
         "repo": "libnbtplusplus",
-        "rev": "a3fd2cf6a0931746f98ccda873195efa92dbf421",
+        "rev": "286d3ee6052f1e5d243f6adc7cdbc3099df20b9b",
         "type": "github"
       },
       "original": {
