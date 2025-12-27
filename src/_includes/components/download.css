@@ -2,14 +2,14 @@
 
 .download-hero {
     text-align: center;
-    padding: 80px 24px 60px;
+    padding: 60px 24px 40px;
     max-width: 800px;
     margin: 0 auto;
 }
 
 .download-hero h1 {
-    font-size: clamp(40px, 6vw, 64px);
-    margin-bottom: 24px;
+    font-size: clamp(32px, 5vw, 56px);
+    margin-bottom: 16px;
     background: linear-gradient(180deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -17,7 +17,7 @@
 }
 
 .download-hero p {
-    font-size: 1.25em;
+    font-size: 1.15em;
     color: #888;
     max-width: 600px;
     margin: 0 auto;
@@ -26,9 +26,9 @@
 .download-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 32px;
+    gap: 24px;
     max-width: 1200px;
-    margin: 0 auto 80px;
+    margin: 0 auto 60px;
     padding: 0 24px;
 }
 
@@ -148,4 +148,190 @@
         grid-template-columns: 1fr;
         padding: 0 24px;
     }
+}
+
+/* Legacy Download Page Support (Modernized) */
+
+.download-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px 24px;
+}
+
+.download-content .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+    margin-bottom: 60px;
+}
+
+.download-content .column {
+    flex: 1;
+    min-width: 300px;
+    max-width: 800px;
+}
+
+.download-content h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    color: #fff;
+    text-align: center;
+}
+
+.download-content p {
+    color: #e5e5e5;
+    text-align: center;
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+
+/* Modernized Buttons */
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 16px 24px;
+    margin-bottom: 12px;
+    background: #fff;
+    color: #000;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.button:hover {
+    background: #e5e5e5;
+    transform: translateY(-2px);
+}
+
+.button.type-link {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.button.type-link:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #fff;
+}
+
+/* Infoboxes / Content Sections */
+.infobox {
+    background: rgba(17, 17, 17, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 32px auto;
+    max-width: 800px;
+}
+
+.infobox h2 {
+    font-size: 1.8em;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.infobox h3 {
+    font-size: 1.3em;
+    margin: 24px 0 16px;
+    color: #fff;
+}
+
+.infobox img {
+    vertical-align: middle;
+}
+
+/* Code Blocks in Infobox */
+.infobox pre {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 16px 0;
+}
+
+.infobox code {
+    font-family: monospace;
+    color: #e5e5e5;
+}
+
+/* Notifications / Alerts */
+.notification {
+    padding: 16px;
+    border-radius: 8px;
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95em;
+}
+
+.notification.type-info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+.notification.type-warn {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+/* Navigation Tabs */
+.download-tab-list {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 0;
+    margin: 40px 0;
+    list-style: none;
+    flex-wrap: wrap;
+}
+
+.download-tab-list li {
+    margin: 0;
+}
+
+.download-tab-list a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    color: #888;
+    text-decoration: none;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s;
+    font-size: 0.95em;
+}
+
+.download-tab-list a:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.download-tab-active a {
+    color: #000;
+    background: #fff;
+    border-color: #fff;
+    font-weight: 600;
+}
+
+.download-tab-active a:hover {
+    background: #e5e5e5;
+    color: #000;
 }

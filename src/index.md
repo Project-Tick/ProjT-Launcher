@@ -55,7 +55,7 @@ hero:
     </div>
 
     <div class="feature-card">
-      <div class="feature-icon"><i class="fa fa-infinity"></i></div>
+      <div class="feature-icon"><i class="fa fa-th-large"></i></div>
       <h3>Unlimited</h3>
       <p>Instances with isolated resource packs, mods, and saves.</p>
     </div>

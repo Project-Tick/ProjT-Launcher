@@ -5,6 +5,10 @@ templateClass: tmpl-post
 tags: nav
 hero:
   title: About ProjT Launcher
+  description: "The custom launcher for Minecraft, built for the community."
+  button:
+    content: "Download"
+    url: "/download/"
 eleventyNavigation:
   key: About
   order: 3
@@ -65,7 +69,7 @@ ProjT Launcher is a custom launcher for Minecraft that was forked from MultiMC. 
 
 # Contributors
 
-<ul class="user-list">
+<ul class="user-list contrib-list">
   {% for user in contributors.users %}
   <li class="user-info user-contrib">
     <a href="{{user[1]}}">
