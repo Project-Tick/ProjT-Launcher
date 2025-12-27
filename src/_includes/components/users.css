@@ -1,11 +1,11 @@
 /* Modern Team Member Cards */
 .user-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
     list-style: none;
     padding: 0;
-    margin: 40px 0;
+    margin: 32px 0;
 }
 
 .user-info {
@@ -43,7 +43,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    padding: 20px;
+    padding: 16px;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -55,24 +55,40 @@
 .user-name {
     color: #fff;
     font-weight: 600;
-    font-size: 1.1em;
+    font-size: 0.95em;
     text-align: center;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Contributors (smaller circles/cards) */
+/* Contributors (compact list) */
+.user-list:has(.user-contrib) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
 .user-contrib {
-    width: 64px;
-    height: 64px;
+    width: 48px;
+    height: 48px;
+    min-height: 48px;
+    /* Override grid aspect-ratio if mixed */
     border-radius: 50%;
-    margin: 8px;
+    margin: 0;
     background: none;
     border: none;
+    aspect-ratio: auto;
 }
 
 .user-contrib img {
     border-radius: 50%;
     border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-contrib:hover {
+    transform: translateY(-2px);
+    box-shadow: none;
+    border: none;
 }
 
 .user-contrib:hover img {

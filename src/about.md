@@ -5,6 +5,10 @@ templateClass: tmpl-post
 tags: nav
 hero:
   title: About ProjT Launcher
+  description: "The custom launcher for Minecraft, built for the community."
+  button:
+    content: "Download"
+    url: "/download/"
 eleventyNavigation:
   key: About
   order: 3
