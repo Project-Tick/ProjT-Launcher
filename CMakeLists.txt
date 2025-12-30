@@ -388,6 +388,13 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
     set(ZLIB_INSTALL OFF CACHE BOOL "" FORCE)
     add_subdirectory(zlib)
 
+    if(TARGET zlibstatic)
+        set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif()
+    if(TARGET zlib)
+        set_target_properties(zlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif()
+
     if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
         add_library(ZLIB::ZLIB ALIAS zlibstatic)
     elseif(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
@@ -561,6 +568,13 @@ if(NOT ZLIB_FOUND)
     
     launcher_fetchcontent_makeavailable(zlib)
     
+    if(TARGET zlibstatic)
+        set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif()
+    if(TARGET zlib)
+        set_target_properties(zlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif()
+
     # Create the ZLIB::ZLIB target if it doesn't exist
     if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
         add_library(ZLIB::ZLIB ALIAS zlibstatic)
