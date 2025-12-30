@@ -222,6 +222,14 @@ const CONFIG = {
       label: { name: "31.scope:metadata", color: "0E8A16", description: "Metadata generator changes" },
     },
     {
+      option: "Quazip",
+      label: { name: "31.scope:quazip", color: "0E8A16", description: "QuaZip changes" },
+    },
+    {
+      option: "bzip2",
+      label: { name: "31.scope:bzip2", color: "0E8A16", description: "bzip2 changes" },
+    },
+    {
       option: "Docs",
       label: { name: "31.scope:docs", color: "0E8A16", description: "Docs changes" },
     },

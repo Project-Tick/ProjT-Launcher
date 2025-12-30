@@ -38,7 +38,7 @@ jobs:
         with:
           config-file: ./.github/codeql/codeql-config.yml
           queries: security-and-quality
-          languages: cpp, java
+          languages: c, cpp, java
 
       - name: Setup dependencies
         uses: ./.github/actions/setup-dependencies
