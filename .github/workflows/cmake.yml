@@ -137,7 +137,7 @@ jobs:
 
     - name: Run test cases
       run: ctest -C Release --output-on-failure --max-width 120
-      working-directory: zlib/build
+      working-directory: ${{ github.workspace }}/zlib/build
 
     - name: create packages
       run: cmake --build build --config ${{ matrix.build-config || 'Release' }} -t ${{ matrix.pkgtgt }}
