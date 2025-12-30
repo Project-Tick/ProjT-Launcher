@@ -43,17 +43,3 @@ updates:
       npm-major:
         patterns: ["*"]
         update-types: ["major"]
-
-  # Keep vcpkg manifest in sync
-  - package-ecosystem: vcpkg
-    directory: "/"
-    schedule:
-      interval: cron
-      cronjob: "0 3 * * *"
-      timezone: "UTC"
-    labels: ["11.dependencies", "15.vcpkg"]
-    open-pull-requests-limit: 10
-    rebase-strategy: "disabled"
-    commit-message:
-      prefix: "deps"
-      include: scope
