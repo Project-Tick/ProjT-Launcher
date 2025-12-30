@@ -1,0 +1,12 @@
+*.cbp
+*.depend
+*.layout
+*.cbtemp
+*.bak
+*.swp
+/bin
+/lib
+/obj
+/build
+/doxygen
+.vscode/

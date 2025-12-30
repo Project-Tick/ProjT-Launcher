@@ -8,12 +8,9 @@
   gamemode,
   jdk17,
   kdePackages,
-  libnbtplusplus,
-  qrcodegenerator,
+  qrencode,
   ninja,
   self,
-  launcher,
-  javacheck,
   stripJavaArchivesHook,
   tomlplusplus,
   zlib,
@@ -52,29 +49,22 @@ stdenv.mkDerivation {
     fileset = lib.fileset.unions [
       ../CMakeLists.txt
       ../COPYING.md
-
+      ../libnbtplusplus
       ../buildconfig
       ../cmake
+      ../javacheck
+      ../LocalPeer
+      ../gamemode
       ../launcher
-      ../libraries
+      ../launcherjava
+      ../murmur2
       ../program_info
+      ../qdcss
+      ../rainbow
+      ../systeminfo
       ../tests
     ];
   };
-
-  postUnpack = ''
-    rm -rf source/libraries/libnbtplusplus
-    ln -s ${libnbtplusplus} source/libraries/libnbtplusplus
-
-    rm -rf source/libraries/qrcodegenerator
-    ln -s ${qrcodegenerator} source/libraries/qrcodegenerator
-
-    rm -rf source/libraries/javacheck
-    ln -s ${javacheck} source/libraries/javacheck
-
-    rm -rf source/libraries/launcher
-    ln -s ${launcher} source/libraries/launcher
-  '';
 
   nativeBuildInputs = [
     cmake
@@ -91,6 +81,7 @@ stdenv.mkDerivation {
     kdePackages.quazip
     tomlplusplus
     zlib
+    qrencode
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_14 ]
   ++ lib.optional gamemodeSupport gamemode;
@@ -127,8 +118,8 @@ stdenv.mkDerivation {
     homepage = "https://projtlauncher.yongdohyun.org.tr/";
     license = lib.licenses.gpl3Only;
     maintainers = with lib.maintainers; [
-      Scrumplex
-      getchoo
+      yongdohyun
+      grxtor
     ];
     mainProgram = "projtlauncher";
     platforms = lib.platforms.linux ++ lib.platforms.darwin;

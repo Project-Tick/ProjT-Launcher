@@ -47,7 +47,6 @@ ProjT-Launcher/
 │   ├── icons/                   # App icons
 │   └── translations/            # Language files (.ts)
 ├── tests/                       # Unit Tests (Must mirror source structure)
-├── libraries/                   # Third-party code (Don't touch this)
 ├── cmake/                       # Build scripts
 └── docs/                        # You are here
 ```
@@ -97,7 +96,7 @@ Use this table if you are unsure where a specific piece of code belongs.
 | A new **Dialog** (e.g., "Are you sure?") | `launcher/ui/dialogs/` | `ConfirmDialog.ui` |
 | Code to unzip a file | `launcher/tasks/` | `UnzipTask.cpp` |
 | Code to talk to a new API | `launcher/net/` | `CurseForgeAPI.cpp` |
-| A new library (e.g., `jsoncpp`) | `libraries/` | `libraries/jsoncpp/` |
+| A new library (e.g., `jsoncpp`) | `./` | `jsoncpp/` |
 
 ## File Naming Conventions (Strict)
 
@@ -118,7 +117,7 @@ Use this table if you are unsure where a specific piece of code belongs.
 
 ## Third-Party Libraries
 
-* **Location**: `libraries/`
+* **Location**: `./`
 * **Policy**: Do not modify third-party code directly. Use patches in `cmake/patches/` if absolutely necessary.
 * **Adding Libraries**: Prefer `vcpkg` or `FetchContent` over vendoring code.
 

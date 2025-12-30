@@ -206,6 +206,7 @@ class Versioned(MetaBase):
 
 class MojangArtifactBase(MetaBase):
     sha1: Optional[str]
+    sha256: Optional[str]
     size: Optional[int]
     url: str
 

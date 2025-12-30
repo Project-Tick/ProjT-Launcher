@@ -84,12 +84,33 @@ AutoInstallJava::AutoInstallJava(LaunchTask* parent)
 void AutoInstallJava::executeTask()
 {
     auto settings = m_instance->settings();
-    if (!APPLICATION->settings()->get("AutomaticJavaSwitch").toBool() ||
-        (settings->get("OverrideJavaLocation").toBool() && QFileInfo::exists(settings->get("JavaPath").toString()))) {
+    if (!APPLICATION->settings()->get("AutomaticJavaSwitch").toBool()) {
+        emitSucceeded();
+        return;
+    }
+    if (!settings->get("OverrideJavaLocation").toBool()) {
         emitSucceeded();
         return;
     }
     auto packProfile = m_instance->getPackProfile();
+    const auto configuredJavaPath = settings->get("JavaPath").toString();
+    const bool hasValidJava = !FS::ResolveExecutable(configuredJavaPath).isEmpty();
+    const bool ignoreCompatibility = settings->get("IgnoreJavaCompatibility").toBool();
+    const auto compatibleMajors = packProfile->getProfile()->getCompatibleJavaMajors();
+    bool compatibleJava = true;
+    if (!ignoreCompatibility && !compatibleMajors.isEmpty()) {
+        auto storedVersion = settings->get("JavaVersion").toString();
+        if (storedVersion.isEmpty()) {
+            compatibleJava = false;
+        } else {
+            JavaVersion javaVersion(storedVersion);
+            compatibleJava = compatibleMajors.contains(javaVersion.major());
+        }
+    }
+    if (hasValidJava && compatibleJava) {
+        emitSucceeded();
+        return;
+    }
     if (!APPLICATION->settings()->get("AutomaticJavaDownload").toBool()) {
         auto javas = APPLICATION->javalist();
         m_current_task = javas->getLoadTask();

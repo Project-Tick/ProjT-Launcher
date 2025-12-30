@@ -1,65 +1,132 @@
 project(tests)
 
-ecm_add_test(FileSystem_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME FileSystem)
+set(LAUNCHER_TESTS "")
 
-ecm_add_test(GZip_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME GZip)
+function(launcher_add_test source name)
+    ecm_add_test(${source} LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
+        TEST_NAME ${name})
+    list(APPEND LAUNCHER_TESTS ${name})
+    set(LAUNCHER_TESTS "${LAUNCHER_TESTS}" PARENT_SCOPE)
+endfunction()
 
-ecm_add_test(GradleSpecifier_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME GradleSpecifier)
+launcher_add_test(FileSystem_test.cpp FileSystem)
+launcher_add_test(GZip_test.cpp GZip)
+launcher_add_test(GradleSpecifier_test.cpp GradleSpecifier)
+launcher_add_test(MojangVersionFormat_test.cpp MojangVersionFormat)
+launcher_add_test(Library_test.cpp Library)
+launcher_add_test(ResourceFolderModel_test.cpp ResourceFolderModel)
+launcher_add_test(ResourcePackParse_test.cpp ResourcePackParse)
+launcher_add_test(TexturePackParse_test.cpp TexturePackParse)
+launcher_add_test(DataPackParse_test.cpp DataPackParse)
+launcher_add_test(ShaderPackParse_test.cpp ShaderPackParse)
+launcher_add_test(WorldSaveParse_test.cpp WorldSaveParse)
+launcher_add_test(ParseUtils_test.cpp ParseUtils)
+launcher_add_test(Task_test.cpp Task)
+launcher_add_test(INIFile_test.cpp INIFile)
+launcher_add_test(JavaVersion_test.cpp JavaVersion)
+launcher_add_test(Packwiz_test.cpp Packwiz)
+launcher_add_test(Index_test.cpp Index)
+launcher_add_test(Version_test.cpp Version)
+launcher_add_test(MetaComponentParse_test.cpp MetaComponentParse)
+launcher_add_test(CatPack_test.cpp CatPack)
+launcher_add_test(XmlLogs_test.cpp XmlLogs)
 
-ecm_add_test(MojangVersionFormat_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME MojangVersionFormat)
+if(WIN32)
+    set(_qt_cmake_dir "")
+    if(DEFINED Qt6_DIR)
+        set(_qt_cmake_dir "${Qt6_DIR}")
+    elseif(DEFINED Qt5_DIR)
+        set(_qt_cmake_dir "${Qt5_DIR}")
+    endif()
 
-ecm_add_test(Library_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME Library)
+    if(_qt_cmake_dir)
+        get_filename_component(_qt_prefix "${_qt_cmake_dir}" DIRECTORY)
+        get_filename_component(_qt_prefix "${_qt_prefix}" DIRECTORY)
+        get_filename_component(_qt_prefix "${_qt_prefix}" DIRECTORY)
+        set(_qt_bin_dir "${_qt_prefix}/bin")
+    else()
+        set(_qt_core_target "")
+        if(TARGET Qt6::Core)
+            set(_qt_core_target Qt6::Core)
+        elseif(TARGET Qt5::Core)
+            set(_qt_core_target Qt5::Core)
+        endif()
+        if(_qt_core_target)
+            get_target_property(_qt_core_location ${_qt_core_target} IMPORTED_LOCATION_RELEASE)
+            if(NOT _qt_core_location)
+                get_target_property(_qt_core_location ${_qt_core_target} IMPORTED_LOCATION_DEBUG)
+            endif()
+            if(NOT _qt_core_location)
+                get_target_property(_qt_core_location ${_qt_core_target} IMPORTED_LOCATION)
+            endif()
+            if(_qt_core_location)
+                get_filename_component(_qt_lib_dir "${_qt_core_location}" DIRECTORY)
+                get_filename_component(_qt_prefix "${_qt_lib_dir}" DIRECTORY)
+                set(_qt_bin_dir "${_qt_prefix}/bin")
+            endif()
+        endif()
+    endif()
 
-ecm_add_test(ResourceFolderModel_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME ResourceFolderModel)
-
-ecm_add_test(ResourcePackParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME ResourcePackParse)
-
-ecm_add_test(TexturePackParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME TexturePackParse)
-
-ecm_add_test(DataPackParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME DataPackParse)
-
-ecm_add_test(ShaderPackParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME ShaderPackParse)
-
-ecm_add_test(WorldSaveParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME WorldSaveParse)
-
-ecm_add_test(ParseUtils_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME ParseUtils)
-
-ecm_add_test(Task_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME Task)
-
-ecm_add_test(INIFile_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME INIFile)
-
-ecm_add_test(JavaVersion_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME JavaVersion)
-
-ecm_add_test(Packwiz_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME Packwiz)
-
-ecm_add_test(Index_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME Index)
-
-ecm_add_test(Version_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME Version)
-
-ecm_add_test(MetaComponentParse_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME MetaComponentParse)
-
-ecm_add_test(CatPack_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME CatPack)
-
-
-ecm_add_test(XmlLogs_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
-    TEST_NAME XmlLogs)
+    if(EXISTS "${_qt_bin_dir}")
+        set(_launcher_test_env_list "")
+        set(_launcher_test_paths "${_qt_bin_dir}" "${CMAKE_BINARY_DIR}" "${CMAKE_BINARY_DIR}/$<CONFIG>")
+        set(_qt_core_target "Qt${QT_VERSION_MAJOR}::Core")
+        if(TARGET ${_qt_core_target})
+            list(APPEND _launcher_test_paths "$<TARGET_FILE_DIR:${_qt_core_target}>")
+        endif()
+        if(TARGET QuaZip)
+            list(APPEND _launcher_test_paths "$<TARGET_FILE_DIR:QuaZip>")
+        elseif(TARGET QuaZip::QuaZip)
+            list(APPEND _launcher_test_paths "$<TARGET_FILE_DIR:QuaZip::QuaZip>")
+        endif()
+        if(TARGET cmark)
+            list(APPEND _launcher_test_paths "$<TARGET_FILE_DIR:cmark>")
+        elseif(TARGET cmark::cmark)
+            list(APPEND _launcher_test_paths "$<TARGET_FILE_DIR:cmark::cmark>")
+        endif()
+        if(TARGET ZLIB::ZLIB)
+            list(APPEND _launcher_test_paths "$<TARGET_FILE_DIR:ZLIB::ZLIB>")
+        endif()
+        if(TARGET OpenSSL::SSL)
+            list(APPEND _launcher_test_paths "$<TARGET_FILE_DIR:OpenSSL::SSL>")
+        endif()
+        if(TARGET OpenSSL::Crypto)
+            list(APPEND _launcher_test_paths "$<TARGET_FILE_DIR:OpenSSL::Crypto>")
+        endif()
+        if(DEFINED OPENSSL_ROOT_DIR AND EXISTS "${OPENSSL_ROOT_DIR}/bin")
+            list(APPEND _launcher_test_paths "${OPENSSL_ROOT_DIR}/bin")
+        endif()
+        if(DEFINED OPENSSL_ROOT_DIR AND EXISTS "${OPENSSL_ROOT_DIR}")
+            list(APPEND _launcher_test_paths "${OPENSSL_ROOT_DIR}")
+        endif()
+        if(DEFINED OPENSSL_CRYPTO_LIBRARY AND EXISTS "${OPENSSL_CRYPTO_LIBRARY}")
+            get_filename_component(_launcher_openssl_lib_dir "${OPENSSL_CRYPTO_LIBRARY}" DIRECTORY)
+            list(APPEND _launcher_test_paths "${_launcher_openssl_lib_dir}")
+        endif()
+        if(DEFINED OPENSSL_SSL_LIBRARY AND EXISTS "${OPENSSL_SSL_LIBRARY}")
+            get_filename_component(_launcher_openssl_ssl_dir "${OPENSSL_SSL_LIBRARY}" DIRECTORY)
+            list(APPEND _launcher_test_paths "${_launcher_openssl_ssl_dir}")
+        endif()
+        if(DEFINED ZLIB_ROOT AND EXISTS "${ZLIB_ROOT}/bin")
+            list(APPEND _launcher_test_paths "${ZLIB_ROOT}/bin")
+        endif()
+        if(DEFINED ZLIB_ROOT_DIR AND EXISTS "${ZLIB_ROOT_DIR}/build/native/bin")
+            list(APPEND _launcher_test_paths "${ZLIB_ROOT_DIR}/build/native/bin")
+        endif()
+        if(DEFINED ZLIB_LIBRARY AND EXISTS "${ZLIB_LIBRARY}")
+            get_filename_component(_launcher_zlib_lib_dir "${ZLIB_LIBRARY}" DIRECTORY)
+            list(APPEND _launcher_test_paths "${_launcher_zlib_lib_dir}")
+        endif()
+        set(_launcher_test_path "PATH=${_launcher_test_paths};$ENV{PATH}")
+        string(REPLACE ";" "\\;" _launcher_test_path "${_launcher_test_path}")
+        list(APPEND _launcher_test_env_list "${_launcher_test_path}")
+        if(EXISTS "${_qt_prefix}/plugins")
+            list(APPEND _launcher_test_env_list "QT_PLUGIN_PATH=${_qt_prefix}/plugins")
+            if(EXISTS "${_qt_prefix}/plugins/platforms")
+                list(APPEND _launcher_test_env_list "QT_QPA_PLATFORM_PLUGIN_PATH=${_qt_prefix}/plugins/platforms")
+            endif()
+        endif()
+        list(APPEND _launcher_test_env_list "QT_QPA_PLATFORM=windows")
+        set_property(TEST ${LAUNCHER_TESTS} PROPERTY ENVIRONMENT "${_launcher_test_env_list}")
+    endif()
+endif()

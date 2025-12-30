@@ -8,6 +8,10 @@ on:
       - "release-*"
       - "qml_migration"
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ref (branch, tag, or SHA) to check out"
+        required: false
 
 permissions:
   contents: read
@@ -31,13 +35,14 @@ jobs:
         uses: actions/checkout@v6
         with:
           submodules: "true"
+          ref: ${{ inputs.ref || github.ref }}
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           config-file: ./.github/codeql/codeql-config.yml
           queries: security-and-quality
-          languages: cpp, java
+          languages: c, cpp, java
 
       - name: Setup dependencies
         uses: ./.github/actions/setup-dependencies
@@ -49,6 +54,25 @@ jobs:
         run: |
           cmake --preset linux
           cmake --build --preset linux --config Debug
+
+      - name: Build bundled libraries (standalone)
+        run: |
+          set -euo pipefail
+
+          if [ -f "zlib/CMakeLists.txt" ]; then
+            cmake -S zlib -B build-codeql/zlib -DCMAKE_BUILD_TYPE=Debug -DZLIB_BUILD_TESTING=OFF
+            cmake --build build-codeql/zlib --config Debug
+          fi
+
+          if [ -f "bzip2/CMakeLists.txt" ]; then
+            cmake -S bzip2 -B build-codeql/bzip2 -DCMAKE_BUILD_TYPE=Debug -DENABLE_LIB_ONLY=ON -DENABLE_TESTS=OFF -DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF
+            cmake --build build-codeql/bzip2 --config Debug
+          fi
+
+          if [ -f "quazip/CMakeLists.txt" ]; then
+            cmake -S quazip -B build-codeql/quazip -DCMAKE_BUILD_TYPE=Debug -DQUAZIP_QT_MAJOR_VERSION=6 -DQUAZIP_ENABLE_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
+            cmake --build build-codeql/quazip --config Debug
+          fi
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4

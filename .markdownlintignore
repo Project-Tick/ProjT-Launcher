@@ -1,8 +1,8 @@
-libraries/nbtplusplus
-libraries/quazip
+nbtplusplus
+quazip
 _site
 node_modules
 LICENSE
-src/LICENSE
-src/_redirects
-src/favicon.ico
+website/LICENSE
+website/_redirects
+website/favicon.ico

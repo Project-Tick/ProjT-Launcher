@@ -83,6 +83,23 @@ export default {
         return json({ ok: true, accepted: true, event: eventName, pr: prNumber }, 202);
       }
 
+      if (eventName === "workflow_run") {
+        const runId = payload?.workflow_run?.id;
+        if (typeof runId !== "number") {
+          return json({ ok: false, error: "Missing workflow_run.id" }, 400);
+        }
+
+        ctx.waitUntil(
+          handleWorkflowRun({
+            owner: env.GITHUB_OWNER,
+            repo: env.GITHUB_REPO,
+            payload,
+            env,
+          })
+        );
+        return json({ ok: true, accepted: true, event: eventName, runId }, 202);
+      }
+
       if (eventName === "issue_comment") {
         const result = await handleIssueComment({
           payload,
@@ -141,8 +158,16 @@ export default {
     return json({ ok: false, error: "Not found" }, 404);
   },
 
-  async scheduled(_event, env, ctx) {
-    ctx.waitUntil(processOpenPullRequests(env));
+  async scheduled(event, env, ctx) {
+    const cron = event?.cron ?? "unknown";
+    const limit = parsePositiveInt(env.BOT_CRON_MAX_PRS);
+    const light = String(env.BOT_CRON_LIGHT ?? "false").toLowerCase() === "true";
+    const run = processOpenPullRequests(env, { source: "cron", cron, limit, light });
+    ctx.waitUntil(
+      run
+        .then((result) => console.log(`[cron:${cron}] processed`, result?.stats))
+        .catch((error) => console.error(`[cron:${cron}] failed`, error?.message ?? error))
+    );
   },
 };
 
@@ -170,14 +195,14 @@ const CONFIG = {
     windows: "13.platform:windows",
   },
   templateTypeLabels: [
-    { option: "Bug fix", candidates: ["21.type:bugfix", "bug", "Bug"] },
-    { option: "Feature", candidates: ["21.type:feature", "enhancement", "Feature"] },
-    { option: "Documentation", candidates: ["21.type:docs", "documentation", "docs"] },
-    { option: "Refactor", candidates: ["21.type:refactor", "refactor"] },
-    { option: "Test", candidates: ["21.type:test", "tests", "test"] },
-    { option: "Build / CI", candidates: ["21.type:build", "ci", "build"] },
-    { option: "Chore", candidates: ["21.type:chore", "21.type:other", "chore"] },
-    { option: "Other", candidates: ["21.type:other", "other"] },
+    { option: "Bug fix", candidates: ["21.type:bugfix"] },
+    { option: "Feature", candidates: ["21.type:feature"] },
+    { option: "Documentation", candidates: ["21.type:docs"] },
+    { option: "Refactor", candidates: ["21.type:refactor"] },
+    { option: "Test", candidates: ["21.type:test"] },
+    { option: "Build / CI", candidates: ["21.type:build"] },
+    { option: "Chore", candidates: ["21.type:chore", "21.type:other"] },
+    { option: "Other", candidates: ["21.type:other"] },
   ],
   templateScopeLabels: [
     {
@@ -197,12 +222,70 @@ const CONFIG = {
       label: { name: "31.scope:metadata", color: "0E8A16", description: "Metadata generator changes" },
     },
     {
-      option: "Docs/CI/Tools",
-      label: { name: "31.scope:docs-ci-tools", color: "0E8A16", description: "Docs/CI/tools changes" },
+      option: "Quazip",
+      label: { name: "31.scope:quazip", color: "0E8A16", description: "QuaZip changes" },
+    },
+    {
+      option: "bzip2",
+      label: { name: "31.scope:bzip2", color: "0E8A16", description: "bzip2 changes" },
+    },
+    {
+      option: "Docs",
+      label: { name: "31.scope:docs", color: "0E8A16", description: "Docs changes" },
+    },
+    {
+      option: "CI",
+      label: { name: "31.scope:ci", color: "0E8A16", description: "CI changes" },
+    },
+    {
+      option: "Tools",
+      label: { name: "31.scope:tools", color: "0E8A16", description: "Tools changes" },
+    },
+    {
+      option: "Branding",
+      label: { name: "31.scope:branding", color: "0E8A16", description: "Branding changes" },
+    },
+    {
+      option: "Launcher Java System",
+      label: { name: "31.scope:launcher-java-system", color: "0E8A16", description: "Launcher Java System changes" },
+    },
+    {
+      option: "JavaCheck",
+      label: { name: "31.scope:javacheck", color: "0E8A16", description: "JavaCheck changes" },
+    },
+    {
+      option: "libnbtplusplus",
+      label: { name: "31.scope:libnbtplusplus", color: "0E8A16", description: "libnbtplusplus changes" },
+    },
+    {
+      option: "Zlib",
+      label: { name: "31.scope:zlib", color: "0E8A16", description: "Zlib changes" },
+    },
+    {
+      option: "Packages",
+      label: { name: "31.scope:packages", color: "0E8A16", description: "Packages changes" },
     },
     {
       option: "Other (describe):",
       label: { name: "31.scope:other", color: "6A737D", description: "Other changes" },
+    },
+  ],
+  templatePackageLabels: [
+    {
+      option: "NixOS",
+      label: { name: "33.packages:nixos", color: "0E8A16", description: "NixOS packaging changes" },
+    },
+    {
+      option: "Flatpak",
+      label: { name: "33.packages:flatpak", color: "0E8A16", description: "Flatpak packaging changes" },
+    },
+    {
+      option: "AUR",
+      label: { name: "33.packages:aur", color: "0E8A16", description: "AUR packaging changes" },
+    },
+    {
+      option: "Add a new package manifest",
+      label: { name: "33.packages:new-manifest", color: "0E8A16", description: "New package manifest" },
     },
   ],
   maintainersFile: "ci/eval/compare/maintainers.nix",
@@ -225,6 +308,92 @@ const CONFIG = {
     enabled: true,
     mergeMethod: "squash",
   },
+  ciApproval: {
+    enabledEnv: "BOT_CI_APPROVALS",
+    rules: [
+      {
+        id: "forked-zlib",
+        mode: "require-any",
+        scopes: ["Zlib"],
+        workflows: ["c-std.yml", "cmake.yml", "configure.yml", "fuzz.yml", "msys-cygwin.yml"],
+      },
+      {
+        id: "forked-qt-zlib",
+        mode: "require-any",
+        scopes: ["Zlib", "Quazip", "bzip2"],
+        workflows: ["qt-zlib.yml"],
+      },
+      {
+        id: "core-heavy",
+        mode: "require-any",
+        scopes: [
+          "Launcher (C++/Qt)",
+          "Metadata Generator (Python)",
+          "Launcher Java System",
+          "JavaCheck",
+          "libnbtplusplus",
+          "Packages",
+          "Quazip",
+          "bzip2",
+          "Zlib",
+        ],
+        workflows: ["build.yml", "eval.yml", "codeql.yml", "pull-request-target.yml"],
+      },
+      {
+        id: "core-light",
+        mode: "always",
+        workflows: ["check.yml", "lint.yml"],
+      },
+      {
+        id: "meta-automation",
+        mode: "always",
+        workflows: [
+          "backport.yml",
+          "comment.yml",
+          "edited.yml",
+          "merge-blocking-pr.yml",
+          "merge-group.yml",
+          "review.yml",
+          "reviewed.yml",
+        ],
+      },
+    ],
+    defaultMode: "skip",
+  },
+  ciDispatch: {
+    enabledEnv: "BOT_CI_DISPATCH",
+    rules: [
+      {
+        id: "forked-zlib",
+        mode: "require-any",
+        scopes: ["Zlib"],
+        workflows: ["c-std.yml", "cmake.yml", "configure.yml", "msys-cygwin.yml"],
+      },
+      {
+        id: "forked-qt-zlib",
+        mode: "require-any",
+        scopes: ["Zlib", "Quazip", "bzip2"],
+        workflows: ["qt-zlib.yml"],
+      },
+      {
+        id: "core-heavy",
+        mode: "require-any",
+        scopes: [
+          "Launcher (C++/Qt)",
+          "Metadata Generator (Python)",
+          "Launcher Java System",
+          "JavaCheck",
+          "libnbtplusplus",
+          "Packages",
+          "Quazip",
+          "bzip2",
+          "Zlib",
+        ],
+        workflows: ["build.yml", "eval.yml", "codeql.yml"],
+      },
+    ],
+    defaultMode: "skip",
+  },
   ciSummary: {
     marker: "<!-- projt-bot:pr-summary -->",
     workflowFile: "pull-request-target.yml",
@@ -239,8 +408,10 @@ const CONFIG = {
   commentCommands: [
     "bot rerun",
     "bot labels",
+    "bot merge",
     "/bot rerun",
     "/bot labels",
+    "/bot merge",
   ],
   statusPage: {
     path: "/status",
@@ -346,6 +517,156 @@ function getTemplateSelections(body = "", entries = []) {
   return selections;
 }
 
+function getSelectedScopeOptions(body = "") {
+  return new Set(getTemplateSelections(body, CONFIG.templateScopeLabels).map((entry) => entry.option));
+}
+
+function getScopeLabelName(scopeOption) {
+  const entry = CONFIG.templateScopeLabels.find((item) => item.option === scopeOption);
+  return entry?.label?.name ?? null;
+}
+
+function isScopeSelected(scopeOption, { selectedOptions, selectedLabels }) {
+  if (selectedOptions.has(scopeOption)) return true;
+  const labelName = getScopeLabelName(scopeOption);
+  return labelName ? selectedLabels.has(labelName) : false;
+}
+
+function getWorkflowKey(run) {
+  const path = String(run?.path ?? "");
+  if (path) return path.split("/").pop();
+  return String(run?.name ?? "");
+}
+
+function findCiApprovalRule(run) {
+  const key = getWorkflowKey(run);
+  if (!key) return null;
+  return CONFIG.ciApproval?.rules?.find((rule) => rule.workflows.includes(key)) ?? null;
+}
+
+function isCiApprovalEnabled(env) {
+  const flag = CONFIG.ciApproval?.enabledEnv;
+  const configured = flag ? env?.[flag] : undefined;
+  if (configured !== undefined) return String(configured).toLowerCase() === "true";
+  return String(env?.BOT_AUTO_APPROVE_RUNS ?? "false").toLowerCase() === "true";
+}
+
+function isCiDispatchEnabled(env) {
+  const flag = CONFIG.ciDispatch?.enabledEnv;
+  const configured = flag ? env?.[flag] : undefined;
+  if (configured !== undefined) return String(configured).toLowerCase() === "true";
+  return String(env?.BOT_CI_APPROVALS ?? "false").toLowerCase() === "true";
+}
+
+function evaluateCiApproval({ rule, selectedOptions, selectedLabels, hasPr }) {
+  const mode = rule?.mode ?? CONFIG.ciApproval?.defaultMode ?? "skip";
+  if (!hasPr) {
+    return mode === "skip" ? { approve: false, reason: "no-pr" } : { approve: true, reason: "no-pr" };
+  }
+  if (mode === "always") return { approve: true, reason: "always" };
+  if (mode === "skip") return { approve: false, reason: "mode-skip" };
+
+  const scopes = Array.isArray(rule?.scopes) ? rule.scopes : [];
+  if (scopes.length === 0) return { approve: true, reason: "no-scopes" };
+
+  const matches = scopes.map((scope) => isScopeSelected(scope, { selectedOptions, selectedLabels }));
+  if (mode === "require-all") {
+    return matches.every(Boolean) ? { approve: true, reason: "scopes-all" } : { approve: false, reason: "scopes-missing" };
+  }
+  if (mode === "require-any") {
+    return matches.some(Boolean) ? { approve: true, reason: "scopes-any" } : { approve: false, reason: "scopes-missing" };
+  }
+
+  return { approve: false, reason: "unknown-mode" };
+}
+
+function buildDispatchRef({ pullRequest, owner, repo }) {
+  const baseRef = pullRequest?.base?.ref ?? "develop";
+  const headRepo = String(pullRequest?.head?.repo?.full_name ?? "").toLowerCase();
+  const baseRepo = `${owner}/${repo}`.toLowerCase();
+  if (headRepo && headRepo === baseRepo) {
+    return pullRequest?.head?.ref ?? baseRef;
+  }
+  return baseRef;
+}
+
+function buildCheckoutRef({ pullRequest }) {
+  if (typeof pullRequest?.number === "number") {
+    return `refs/pull/${pullRequest.number}/head`;
+  }
+  return pullRequest?.head?.sha ?? pullRequest?.head?.ref ?? pullRequest?.base?.ref ?? "develop";
+}
+
+async function listWorkflowRuns({ owner, repo, workflow, env }) {
+  const { data } = await githubApi({
+    env,
+    method: "GET",
+    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30`,
+  });
+  return Array.isArray(data?.workflow_runs) ? data.workflow_runs : [];
+}
+
+async function hasWorkflowRunForSha({ owner, repo, workflow, sha, env }) {
+  if (!sha) return false;
+  const runs = await listWorkflowRuns({ owner, repo, workflow, env });
+  return runs.some((run) => run?.event === "workflow_dispatch" && run?.head_sha === sha);
+}
+
+async function dispatchWorkflow({ owner, repo, workflow, ref, inputs, env, dryRun }) {
+  if (dryRun) {
+    console.log("DRY_RUN: would dispatch workflow", { workflow, ref, inputs });
+    return { ok: true, skipped: true, reason: "dry-run" };
+  }
+  await githubApi({
+    env,
+    method: "POST",
+    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/dispatches`,
+    body: { ref, inputs },
+  });
+  return { ok: true, dispatched: true };
+}
+
+async function dispatchWorkflowsForPR({ owner, repo, pullRequest, selectedOptions, selectedLabels, env, dryRun }) {
+  if (!isCiDispatchEnabled(env)) return { ok: true, skipped: "dispatch-disabled" };
+  if (!pullRequest?.number) return { ok: false, error: "missing-pull-number" };
+
+  const results = [];
+  const rules = Array.isArray(CONFIG.ciDispatch?.rules) ? CONFIG.ciDispatch.rules : [];
+  const ref = buildDispatchRef({ pullRequest, owner, repo });
+  const inputs = { ref: buildCheckoutRef({ pullRequest }) };
+
+  for (const rule of rules) {
+    const decision = evaluateCiApproval({
+      rule,
+      selectedOptions,
+      selectedLabels,
+      hasPr: true,
+    });
+    if (!decision.approve) {
+      results.push({ rule: rule.id, skipped: true, reason: decision.reason });
+      continue;
+    }
+
+    for (const workflow of rule.workflows ?? []) {
+      const already = await hasWorkflowRunForSha({
+        owner,
+        repo,
+        workflow,
+        sha: pullRequest.head?.sha ?? "",
+        env,
+      });
+      if (already) {
+        results.push({ workflow, skipped: true, reason: "already-dispatched" });
+        continue;
+      }
+      const result = await dispatchWorkflow({ owner, repo, workflow, ref, inputs, env, dryRun });
+      results.push({ workflow, ...result });
+    }
+  }
+
+  return { ok: true, results };
+}
+
 function resolveTemplateLabel(selection, repoLabels) {
   for (const candidate of selection.candidates) {
     if (repoLabels.has(candidate)) return candidate;
@@ -358,7 +679,6 @@ function getAreaFromPath(filePath) {
   if (filePath.startsWith("launcher/minecraft/")) return "minecraft";
   if (filePath.startsWith("launcher/modplatform/")) return "modplatform";
   if (filePath.startsWith("launcher/")) return "core";
-  if (filePath.startsWith("libraries/")) return "core";
   if (filePath.startsWith("cmake/") || filePath.endsWith("CMakeLists.txt")) return "build";
   if (filePath.startsWith(".github/") || filePath.startsWith("ci/")) return "ci";
   if (filePath.startsWith("docs/") || filePath.endsWith(".md")) return "documentation";
@@ -508,6 +828,16 @@ async function getMaintainers({ owner, repo, ref, env }) {
 
 async function ensureReviewers({ owner, repo, pullNumber, pullRequest, maintainers, env }) {
   const desired = new Set(getAlwaysRequestReviewers(env).map((r) => String(r).toLowerCase()));
+  // Optionally request the bot itself as a reviewer (set BOT_SELF_REVIEWER=true)
+  try {
+    const wantSelf = String(env.BOT_SELF_REVIEWER ?? "false").toLowerCase() === "true";
+    if (wantSelf) {
+      const botLogin = String(await getBotLogin(env) ?? "");
+      if (botLogin) desired.add(botLogin.toLowerCase());
+    }
+  } catch (e) {
+    console.warn("Failed to add bot self-reviewer:", e?.message ?? e);
+  }
   for (const m of maintainers) desired.add(m);
 
   const author = String(pullRequest?.user?.login ?? "").toLowerCase();
@@ -552,12 +882,19 @@ function parseListEnv(value) {
     .filter(Boolean);
 }
 
+function parsePositiveInt(value) {
+  const num = Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
 async function maybeAutoMerge({ owner, repo, pullNumber, pullRequest, maintainers, currentLabels, ciSummary, env }) {
   if (!CONFIG.autoMerge?.enabled) return { ok: true, skipped: "disabled" };
 
   const author = String(pullRequest?.user?.login ?? "").toLowerCase();
   const isMaintainer = maintainers.has(author) || currentLabels.has(CONFIG.maintainerLabel);
-  if (!isMaintainer) return { ok: true, skipped: "not-maintainer" };
+  // Allow auto-approve on green when explicitly enabled via env var
+  const allowApproveOnGreen = String(env.BOT_APPROVE_ON_GREEN ?? "false").toLowerCase() === "true";
+  if (!isMaintainer && !allowApproveOnGreen) return { ok: true, skipped: "not-maintainer" };
 
   if (pullRequest.state !== "open" || pullRequest.draft) return { ok: true, skipped: "not-open-or-draft" };
   if (pullRequest.mergeable === false) return { ok: true, skipped: "merge-conflict" };
@@ -589,19 +926,25 @@ async function maybeAutoMerge({ owner, repo, pullNumber, pullRequest, maintainer
   return { ok: true, merged: true, method: CONFIG.autoMerge.mergeMethod || "squash" };
 }
 
-async function processOpenPullRequests(env) {
+async function processOpenPullRequests(env, options = {}) {
   const owner = env.GITHUB_OWNER;
   const repo = env.GITHUB_REPO;
   if (!owner || !repo) throw new Error("Missing GITHUB_OWNER/GITHUB_REPO");
 
-  const pullRequests = await listOpenPullRequests({ owner, repo, env });
+  const limit = Number.isFinite(options.limit) ? options.limit : null;
+  let pullRequests = await listOpenPullRequests({ owner, repo, env });
+  if (limit && limit > 0 && pullRequests.length > limit) {
+    const tag = options.source ? `[${options.source}]` : "[run]";
+    console.warn(`${tag} Limiting PR scan to ${limit}/${pullRequests.length}`);
+    pullRequests = pullRequests.slice(0, limit);
+  }
   const stats = { total: pullRequests.length, processed: 0, errors: 0 };
   const results = [];
 
   for (const pr of pullRequests) {
     const pullNumber = pr.number;
     try {
-      const result = await handlePullRequest({ owner, repo, pullNumber, env });
+      const result = await handlePullRequest({ owner, repo, pullNumber, env, options });
       results.push({ number: pullNumber, ...result });
       stats.processed++;
     } catch (error) {
@@ -614,11 +957,12 @@ async function processOpenPullRequests(env) {
   return { stats, results };
 }
 
-async function handlePullRequest({ owner, repo, pullNumber, env }) {
+async function handlePullRequest({ owner, repo, pullNumber, env, options = {} }) {
   if (!owner || !repo) throw new Error("Missing owner/repo");
   if (!hasGitHubAuth(env)) throw new Error("Missing GitHub auth (GITHUB_TOKEN or GitHub App creds)");
 
   const dryRun = String(env.BOT_DRY_RUN ?? "false").toLowerCase() === "true";
+  const light = Boolean(options.light);
 
   const { data: pullRequest } = await githubApi({
     env,
@@ -644,7 +988,7 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
   const labelsToRemove = new Set();
   const currentLabels = new Set((pullRequest.labels ?? []).map((l) => l.name));
   const baseRef = pullRequest?.base?.sha ?? pullRequest?.base?.ref ?? null;
-  const maintainers = await getMaintainers({ owner, repo, ref: baseRef, env });
+  const maintainers = light ? new Set() : await getMaintainers({ owner, repo, ref: baseRef, env });
   const author = String(pullRequest?.user?.login ?? "").toLowerCase();
 
   for (const file of files) {
@@ -714,6 +1058,22 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     if (ready) labelsToAdd.add(label.name);
   }
 
+  const packageSelections = getTemplateSelections(pullRequest.body ?? "", CONFIG.templatePackageLabels);
+  for (const selection of packageSelections) {
+    const label = selection.label;
+    if (!label?.name) continue;
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name: label.name,
+      color: label.color,
+      description: label.description,
+    });
+    if (ready) labelsToAdd.add(label.name);
+  }
+
   if (pullRequest.mergeable === false) {
     const statusLabel = CONFIG.statusLabels.mergeConflict;
     const ready = await ensureLabelExists({
@@ -730,43 +1090,70 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     labelsToRemove.add(CONFIG.statusLabels.mergeConflict.name);
   }
 
-  const dcoResult = await checkDcoForPullRequest({ owner, repo, pullNumber, env });
-  if (!dcoResult.ok) {
-    const dcoLabel = CONFIG.statusLabels.dcoMissing.name;
-    const ready = await ensureLabelExists({
-      owner,
-      repo,
-      env,
-      repoLabels,
-      name: dcoLabel,
-      color: CONFIG.statusLabels.dcoMissing.color,
-      description: CONFIG.statusLabels.dcoMissing.description,
-    });
-    if (ready) labelsToAdd.add(dcoLabel);
-  } else {
-    labelsToRemove.add(CONFIG.statusLabels.dcoMissing.name);
+  if (!light) {
+    const dcoResult = await checkDcoForPullRequest({ owner, repo, pullNumber, env });
+    if (!dcoResult.ok) {
+      const dcoLabel = CONFIG.statusLabels.dcoMissing.name;
+      const ready = await ensureLabelExists({
+        owner,
+        repo,
+        env,
+        repoLabels,
+        name: dcoLabel,
+        color: CONFIG.statusLabels.dcoMissing.color,
+        description: CONFIG.statusLabels.dcoMissing.description,
+      });
+      if (ready) labelsToAdd.add(dcoLabel);
+    } else {
+      labelsToRemove.add(CONFIG.statusLabels.dcoMissing.name);
+    }
   }
 
   const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
   const labelsToDelete = [...labelsToRemove].filter((l) => currentLabels.has(l));
 
+  const selectedOptions = getSelectedScopeOptions(pullRequest.body ?? "");
+  const selectedLabels = new Set([...currentLabels, ...labelsToAdd]);
+
+  let ciDispatch = null;
+  if (!light) {
+    try {
+      ciDispatch = await dispatchWorkflowsForPR({
+        owner,
+        repo,
+        pullRequest,
+        selectedOptions,
+        selectedLabels,
+        env,
+        dryRun,
+      });
+    } catch (error) {
+      console.warn("CI dispatch failed:", error?.message ?? error);
+      ciDispatch = { ok: false, error: String(error?.message ?? error) };
+    }
+  }
+
   let ciSummary = null;
-  try {
-    ciSummary = await updateCiSummaryComment({
-      owner,
-      repo,
-      pullNumber,
-      pullRequest,
-      env,
-      dryRun,
-    });
-  } catch (error) {
-    console.warn("CI summary update failed:", error?.message ?? error);
-    ciSummary = { ok: false, error: String(error?.message ?? error) };
+  if (!light) {
+    try {
+      ciSummary = await updateCiSummaryComment({
+        owner,
+        repo,
+        pullNumber,
+        pullRequest,
+        env,
+        dryRun,
+      });
+    } catch (error) {
+      console.warn("CI summary update failed:", error?.message ?? error);
+      ciSummary = { ok: false, error: String(error?.message ?? error) };
+    }
+  } else {
+    ciSummary = { ok: false, skipped: "cron-light" };
   }
 
   try {
-    if (!isBackport) {
+    if (!light && !isBackport) {
       await ensureReviewers({
         owner,
         repo,
@@ -782,25 +1169,26 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
 
   let autoMergeResult = null;
   try {
-    autoMergeResult = isBackport
-      ? { ok: true, merged: false }
-      : await maybeAutoMerge({
-          owner,
-          repo,
-          pullNumber,
-          pullRequest,
-          maintainers,
-          currentLabels,
-          ciSummary,
-          env,
-        });
+    autoMergeResult =
+      light || isBackport
+        ? { ok: true, merged: false }
+        : await maybeAutoMerge({
+            owner,
+            repo,
+            pullNumber,
+            pullRequest,
+            maintainers,
+            currentLabels,
+            ciSummary,
+            env,
+          });
   } catch (error) {
     console.warn("Auto-merge failed:", error?.message ?? error);
     autoMergeResult = { ok: false, error: String(error?.message ?? error) };
   }
 
   if (newLabels.length === 0 && labelsToDelete.length === 0) {
-    return { ok: true, changed: false, added: [], removed: [], dryRun, ciSummary, autoMerge: autoMergeResult };
+    return { ok: true, changed: false, added: [], removed: [], dryRun, ciDispatch, ciSummary, autoMerge: autoMergeResult };
   }
 
   if (!dryRun) {
@@ -827,7 +1215,7 @@ async function handlePullRequest({ owner, repo, pullNumber, env }) {
     }
   }
 
-  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciSummary, autoMerge: autoMergeResult };
+  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciDispatch, ciSummary, autoMerge: autoMergeResult };
 }
 
 async function listOpenPullRequests({ owner, repo, env }) {
@@ -925,7 +1313,7 @@ async function findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env }) {
   const { data } = await githubApi({
     env,
     method: "GET",
-    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30&event=pull_request_target`,
+    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30&event=pull_request`,
   });
   const runs = Array.isArray(data?.workflow_runs) ? data.workflow_runs : [];
   return (
@@ -1276,6 +1664,61 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
   return { ok: true, created: false, dryRun: true, ...summaryMeta };
 }
 
+async function performMergeCommand({ owner, repo, issueNumber, env, commentAuthor }) {
+  if (!hasGitHubAuth(env)) throw new Error("Missing GitHub auth (GITHUB_TOKEN or GitHub App creds)");
+
+  const { data: pr } = await githubApi({ env, method: "GET", path: `/repos/${owner}/${repo}/pulls/${issueNumber}` });
+  if (!pr) return { ok: false, error: "pull-not-found" };
+  if (pr.state !== "open") return { ok: false, skipped: true, reason: "not-open" };
+  if (pr.draft) return { ok: false, skipped: true, reason: "draft" };
+
+  // Only allow merge command from users listed in the maintainers file
+  try {
+    const ref = pr?.base?.sha ?? pr?.base?.ref ?? null;
+    const maintainers = await getMaintainers({ owner, repo, ref, env });
+    const who = String(commentAuthor ?? "").toLowerCase();
+    if (!who || !maintainers.has(who)) {
+      return { ok: false, skipped: true, reason: "not-maintainer", allowedBy: "maintainers.nix" };
+    }
+  } catch (e) {
+    console.warn("Failed to verify maintainers for merge command:", e?.message ?? e);
+    return { ok: false, error: `maintainers-check-failed: ${String(e?.message ?? e)}` };
+  }
+
+  // Check CI runs
+  let ciSummary = null;
+  try {
+    ciSummary = await updateCiSummaryComment({ owner, repo, pullNumber: issueNumber, pullRequest: pr, env, dryRun: false });
+  } catch (e) {
+    ciSummary = { ok: false, error: String(e?.message ?? e) };
+  }
+
+  const allowSkipCi = String(env.BOT_ALLOW_MERGE_COMMAND_SKIP_CI ?? "false").toLowerCase() === "true";
+
+  const jobs = ciSummary?.jobs ?? [];
+  const runConclusion = ciSummary?.runConclusion;
+  const jobsOk = jobs.length === 0 || jobs.every((j) => (j.conclusion ?? j.status) === "success");
+  const runOk = runConclusion ? runConclusion === "success" : jobsOk;
+  if (!runOk && !jobsOk && !allowSkipCi) {
+    return { ok: false, skipped: true, reason: "ci-not-green" };
+  }
+
+  // Approve
+  try {
+    await githubApi({ env, method: "POST", path: `/repos/${owner}/${repo}/pulls/${issueNumber}/reviews`, body: { event: "APPROVE", body: "Approved by bot on user request." } });
+  } catch (e) {
+    return { ok: false, error: `approve-failed: ${String(e?.message ?? e)}` };
+  }
+
+  // Merge
+  try {
+    const { data } = await githubApi({ env, method: "PUT", path: `/repos/${owner}/${repo}/pulls/${issueNumber}/merge`, body: { merge_method: CONFIG.autoMerge.mergeMethod || "squash" } });
+    return { ok: true, merged: Boolean(data?.merged ?? true), data };
+  } catch (e) {
+    return { ok: false, error: `merge-failed: ${String(e?.message ?? e)}` };
+  }
+}
+
 async function handleIssueComment({ payload, env }) {
   const issue = payload?.issue;
   const commentBody = String(payload?.comment?.body ?? "");
@@ -1300,6 +1743,23 @@ async function handleIssueComment({ payload, env }) {
   const repo = env.GITHUB_REPO;
   const result = await handlePullRequest({ owner, repo, pullNumber: issueNumber, env });
 
+  // If the commenter requested a merge via command, attempt to approve+merge
+  if (containsCommand(commentBody, ["bot merge", "/bot merge"])) {
+    try {
+      const commentAuthor = String(payload?.comment?.user?.login ?? "").toLowerCase();
+      const mergeResult = await performMergeCommand({ owner, repo, issueNumber, env, commentAuthor });
+      if (shouldComment) {
+        const text = mergeResult?.ok ? `Merge attempted: ${mergeResult.merged ? "merged" : "not merged"}.` : `Merge failed: ${mergeResult?.error ?? "unknown"}`;
+        await githubApi({ env, method: "POST", path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments`, body: { body: text } });
+      }
+    } catch (err) {
+      console.warn("Merge command failed:", err?.message ?? err);
+      if (shouldComment) {
+        await githubApi({ env, method: "POST", path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments`, body: { body: `Merge command failed: ${String(err?.message ?? err)}` } });
+      }
+    }
+  }
+
   const shouldComment = String(env.BOT_COMMENT_ON_COMMAND ?? "false").toLowerCase() === "true";
   if (shouldComment) {
     const summary = formatResultComment({ result, pr: issueNumber });
@@ -1312,6 +1772,44 @@ async function handleIssueComment({ payload, env }) {
   }
 
   return { ok: true, handled: true, result };
+}
+
+async function handleWorkflowRun({ owner, repo, payload, env }) {
+  if (!isCiApprovalEnabled(env)) return { ok: true, skipped: "disabled" };
+
+  const run = payload?.workflow_run;
+  if (!run) return { ok: false, error: "missing-workflow-run" };
+  if (run.status !== "waiting") return { ok: true, skipped: "not-waiting" };
+
+  const rule = findCiApprovalRule(run);
+  if (!rule) return { ok: true, skipped: "no-rule" };
+
+  const prNumber = Number(run.pull_requests?.[0]?.number);
+  const hasPr = Number.isFinite(prNumber);
+  let selectedOptions = new Set();
+  let selectedLabels = new Set();
+
+  if (hasPr) {
+    const { data: pr } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/pulls/${prNumber}`,
+    });
+    const body = String(pr?.body ?? "");
+    selectedOptions = getSelectedScopeOptions(body);
+    selectedLabels = new Set((pr.labels ?? []).map((label) => label.name));
+  }
+
+  const decision = evaluateCiApproval({ rule, selectedOptions, selectedLabels, hasPr });
+  if (!decision.approve) return { ok: true, skipped: decision.reason };
+
+  await githubApi({
+    env,
+    method: "POST",
+    path: `/repos/${owner}/${repo}/actions/runs/${run.id}/approve`,
+  });
+
+  return { ok: true, approved: true, reason: decision.reason };
 }
 
 async function githubApi({ env, method, path, body }) {

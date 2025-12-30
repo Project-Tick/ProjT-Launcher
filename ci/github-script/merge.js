@@ -7,9 +7,9 @@ const { classify } = require('../supportedBranches.js')
 
 // Component definitions for ProjT Launcher
 const COMPONENTS = {
-  core: ['launcher/', 'libraries/systeminfo/', 'libraries/katabasis/', 'libraries/libnbtplusplus/'],
+  core: ['launcher/', 'systeminfo/', 'katabasis/', 'libnbtplusplus/', 'launcherjava/'],
   ui: ['launcher/ui/', 'launcher/resources/', 'launcher/ui/qml/'],
-  minecraft: ['launcher/minecraft/', 'libraries/tomlplusplus/', 'libraries/qdcss/'],
+  minecraft: ['launcher/minecraft/', 'tomlplusplus/', 'qdcss/'],
   modplatform: ['launcher/modplatform/'],
   build: ['CMakeLists.txt', 'cmake/', 'vcpkg.json', 'CMakePresets.json'],
   docs: ['docs/', 'README.md', 'CONTRIBUTING.md'],

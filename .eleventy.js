@@ -1,22 +1,32 @@
 const { DateTime } = require("luxon");
 const fs = require("fs");
+const path = require("path");
 const markdownIt = require("markdown-it");
 const markdownItAnchor = require("markdown-it-anchor");
 const markdownItTableOfContents = require("markdown-it-table-of-contents");
 const cleanCSS = require("clean-css");
 const Image = require("@11ty/eleventy-img");
 
+const DIRS = {
+  input: "website",
+  output: "_site",
+  imagesBuilt: "img/built",
+};
+
+const IMAGE_OUTPUT_DIR = path.join(DIRS.output, DIRS.imagesBuilt);
+const IMAGE_URL_PATH = `/${DIRS.imagesBuilt}/`;
+
 async function image(alt, filepath, darkpath, classes, lossless = true, sizes = "100vw") {
   if (alt === undefined) {
     // You bet we throw an error on missing alt (alt="" works okay)
-    throw new Error(`Missing \`alt\` on responsiveimage from: ${src}`);
+    throw new Error(`Missing \`alt\` on responsiveimage from: ${filepath}`);
   }
 
   let options = {
     widths: [null],
     formats: lossless ? ["webp", "png"] : ["webp", "jpeg"],
-    urlPath: "/img/built/",
-    outputDir: "_site/img/built/",
+    urlPath: IMAGE_URL_PATH,
+    outputDir: IMAGE_OUTPUT_DIR,
     sharpWebpOptions: {
       quality: 70,
       lossless: lossless,
@@ -39,31 +49,31 @@ async function image(alt, filepath, darkpath, classes, lossless = true, sizes = 
 
   let metadata = await Image(filepath, options);
 
-  let lowsrc = lossless ? metadata.png[0] : metadata.jpeg[0];
-  let highsrc = lossless ? metadata.png[metadata.png.length - 1] : metadata.jpeg[metadata.jpeg.length - 1];
+  let lowwebsite = lossless ? metadata.png[0] : metadata.jpeg[0];
+  let highwebsite = lossless ? metadata.png[metadata.png.length - 1] : metadata.jpeg[metadata.jpeg.length - 1];
 
   return `<picture>
     ${Object.values(metadata_dark)
       .map((imageFormat) => {
         return `  <source type="${imageFormat[0].sourceType
-          }" srcset="${imageFormat
-            .map((entry) => entry.srcset)
+          }" websiteset="${imageFormat
+            .map((entry) => entry.websiteset)
             .join(", ")}" sizes="${sizes}" media="(prefers-color-scheme: dark)">`;
       })
       .join("\n")}
     ${Object.values(metadata)
       .map((imageFormat) => {
         return `  <source type="${imageFormat[0].sourceType
-          }" srcset="${imageFormat
-            .map((entry) => entry.srcset)
+          }" websiteset="${imageFormat
+            .map((entry) => entry.websiteset)
             .join(", ")}" sizes="${sizes}">`;
       })
       .join("\n")}
       <img
         class="${classes}"
-        src="${lowsrc.url}"
-        width="${highsrc.width}"
-        height="${highsrc.height}"
+        website="${lowwebsite.url}"
+        width="${highwebsite.width}"
+        height="${highwebsite.height}"
         alt="${alt}"
         loading="lazy"
         decoding="async">
@@ -76,17 +86,17 @@ module.exports = async function (eleventyConfig) {
   const pluginSyntaxHighlight = await import("@11ty/eleventy-plugin-syntaxhighlight");
   const pluginNavigation = await import("@11ty/eleventy-navigation");
 
-  eleventyConfig.addPassthroughCopy("src/img");
-  eleventyConfig.addPassthroughCopy("src/admin");
-  eleventyConfig.addPassthroughCopy("src/welcome-channel.yaml");
-  eleventyConfig.addPassthroughCopy("src/favicon.ico");
-  eleventyConfig.addPassthroughCopy("src/.well-known");
-  eleventyConfig.addPassthroughCopy("src/_redirects"); // Netlify redirects
+  eleventyConfig.addPassthroughCopy("website/img");
+  eleventyConfig.addPassthroughCopy("website/admin");
+  eleventyConfig.addPassthroughCopy("website/welcome-channel.yaml");
+  eleventyConfig.addPassthroughCopy("website/favicon.ico");
+  eleventyConfig.addPassthroughCopy("website/.well-known");
+  eleventyConfig.addPassthroughCopy("website/_redirects"); // Netlify redirects
   eleventyConfig.addPassthroughCopy({
     "node_modules/@fontsource/inter": "assets/fonts/inter",
   });
   eleventyConfig.addPassthroughCopy({
-    "src/_includes/components/forkawesome": "assets/forkawesome",
+    "website/_includes/components/forkawesome": "assets/forkawesome",
   });
   
 
@@ -185,10 +195,10 @@ module.exports = async function (eleventyConfig) {
     htmlTemplateEngine: "njk",
 
     dir: {
-      input: "src",
+      input: DIRS.input,
       includes: "_includes",
       data: "_data",
-      output: "_site",
+      output: DIRS.output,
     },
   };
 };

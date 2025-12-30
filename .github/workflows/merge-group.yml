@@ -52,18 +52,6 @@ jobs:
             core.info(`targetSha: ${context.payload.merge_group?.base_sha ?? process.env.TARGET_SHA}`)
             core.setOutput('systems', require('./ci/supportedSystems.json'))
 
-  check:
-    name: Check
-    needs: [prepare]
-    uses: ./.github/workflows/check.yml
-    permissions:
-      # cherry-picks; formality right now, but unused
-      contents: read
-      pull-requests: write
-    with:
-      mergedSha: ${{ needs.prepare.outputs.mergedSha }}
-      targetSha: ${{ needs.prepare.outputs.targetSha }}
-
   build:
     name: Build
     needs: [prepare]
@@ -71,16 +59,17 @@ jobs:
     permissions:
       contents: read
       packages: write
+      pages: write
+      id-token: write
     with:
       ref: ${{ needs.prepare.outputs.mergedSha }}
 
   # This job's only purpose is to create the target for the "Required Status Checks" branch ruleset.
   # It "needs" all the jobs that should block the Merge Queue.
   unlock:
-    if: github.event_name != 'pull_request' && always()
+    if: github.event_name == 'merge_group' && always()
     # Modify this list to add or remove jobs from required status checks.
     needs:
-      - check
       - build
     runs-on: ubuntu-latest
     permissions:

@@ -101,18 +101,6 @@
 /launcher/settings/                     @YongDo-Hyun
 
 # =============================================================================
-# LIBRARIES
-# =============================================================================
-/libraries/                             @YongDo-Hyun
-/libraries/rainbow/                     @YongDo-Hyun
-/libraries/tomlplusplus/                @YongDo-Hyun
-/libraries/libnbtplusplus/              @YongDo-Hyun
-/libraries/LocalPeer/                   @YongDo-Hyun
-/libraries/qdcss/                       @YongDo-Hyun
-/libraries/katabasis/                   @YongDo-Hyun
-/libraries/launcher/                    @YongDo-Hyun
-
-# =============================================================================
 # TOOLS & SCRIPTS
 # =============================================================================
 /tools/                                 @YongDo-Hyun

@@ -373,7 +373,12 @@ void SettingsViewModel::setJavaPath(const QString& instanceId, const QString& pa
         return;
     }
     SettingsObject::Lock lock(settings);
-    settings->set("OverrideJavaLocation", true);
+    if (!instanceId.isEmpty() && !settings->get("OverrideJavaLocation").toBool()) {
+        return;
+    }
+    if (!instanceId.isEmpty()) {
+        settings->set("AutomaticJava", false);
+    }
     settings->set("JavaPath", path);
 }
 
@@ -386,6 +391,11 @@ void SettingsViewModel::setOverrideJavaLocation(const QString& instanceId, bool 
     }
     SettingsObject::Lock lock(settings);
     settings->set("OverrideJavaLocation", value);
+    if (!value && !instanceId.isEmpty()) {
+        settings->reset("JavaPath");
+        settings->reset("IgnoreJavaCompatibility");
+    }
+    setJavaPath(settings->get("JavaPath").toString());
 }
 
 void SettingsViewModel::setJavaArgs(const QString& instanceId, const QString& args)

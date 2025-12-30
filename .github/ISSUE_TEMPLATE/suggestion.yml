@@ -1,6 +1,6 @@
 name: Suggestion
 description: Make a suggestion
-labels: [enhancement]
+labels: [21.type:feature]
 body:
 - type: markdown
   attributes:

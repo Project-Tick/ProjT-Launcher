@@ -1,6 +1,9 @@
 name: Lint Markdown Files
 
 on: [push, pull_request, merge_group]
+concurrency:
+  group: lint-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   lint:

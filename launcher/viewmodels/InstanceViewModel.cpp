@@ -722,6 +722,7 @@ void InstanceViewModel::setJavaPath(const QString& path)
         return;
     auto settings = m_instance->settings();
     if (settings) {
+        settings->set("AutomaticJava", false);
         settings->set("JavaPath", path);
         emit javaPathChanged();
     }

@@ -179,9 +179,9 @@ set(MAC_UPDATE_SOURCES
     updater/MacSparkleUpdater.mm
 )
 
-set(PRISM_UPDATE_SOURCES
-    updater/PrismExternalUpdater.h
-    updater/PrismExternalUpdater.cpp
+set(PROJT_UPDATE_SOURCES
+    updater/ProjTExternalUpdater.h
+    updater/ProjTExternalUpdater.cpp
 )
 
 # Backend for the news bar... there's usually no news.
@@ -595,13 +595,13 @@ set(LINKEXE_SOURCES
     DesktopServices.cpp
 )
 
-set(PRISMUPDATER_SOURCES
-    updater/prismupdater/PrismUpdater.h
-    updater/prismupdater/PrismUpdater.cpp
-    updater/prismupdater/UpdaterDialogs.h
-    updater/prismupdater/UpdaterDialogs.cpp
-    updater/prismupdater/GitHubRelease.h
-    updater/prismupdater/GitHubRelease.cpp
+set(PROJTUPDATER_SOURCES
+    updater/projtupdater/ProjTUpdater.h
+    updater/projtupdater/ProjTUpdater.cpp
+    updater/projtupdater/UpdaterDialogs.h
+    updater/projtupdater/UpdaterDialogs.cpp
+    updater/projtupdater/GitHubRelease.h
+    updater/projtupdater/GitHubRelease.cpp
 
     Json.h
     Json.cpp
@@ -652,10 +652,10 @@ set(PRISMUPDATER_SOURCES
 )
 
 if(WIN32)
-    set(PRISMUPDATER_SOURCES
+    set(PROJTUPDATER_SOURCES
         console/WindowsConsole.h
         console/WindowsConsole.cpp
-        ${PRISMUPDATER_SOURCES}
+        ${PROJTUPDATER_SOURCES}
     )
 endif()
 
@@ -771,7 +771,7 @@ set(LOGIC_SOURCES
 if(APPLE AND Launcher_ENABLE_UPDATER)
     set (LOGIC_SOURCES ${LOGIC_SOURCES} ${MAC_UPDATE_SOURCES})
 else()
-    set (LOGIC_SOURCES ${LOGIC_SOURCES} ${PRISM_UPDATE_SOURCES})
+    set (LOGIC_SOURCES ${LOGIC_SOURCES} ${PROJT_UPDATE_SOURCES})
 endif()
 
 SET(LAUNCHER_SOURCES
@@ -1290,12 +1290,12 @@ qt_wrap_ui(LAUNCHER_UI
     ui/dialogs/skins/SkinManageDialog.ui
 )
 
-qt_wrap_ui(PRISM_UPDATE_UI
+qt_wrap_ui(PROJT_UPDATE_UI
     ui/dialogs/UpdateAvailableDialog.ui
 )
 
 if (NOT Apple)
-    set (LAUNCHER_UI ${LAUNCHER_UI} ${PRISM_UPDATE_UI})
+    set (LAUNCHER_UI ${LAUNCHER_UI} ${PROJT_UPDATE_UI})
 endif()
 
 qt_add_resources(LAUNCHER_RESOURCES
@@ -1317,8 +1317,8 @@ qt_add_resources(LAUNCHER_RESOURCES
     "${CMAKE_CURRENT_BINARY_DIR}/../${Launcher_Branding_LogoQRC}"
 )
 
-qt_wrap_ui(PRISMUPDATER_UI
-    updater/prismupdater/SelectReleaseDialog.ui
+qt_wrap_ui(PROJTUPDATER_UI
+    updater/projtupdater/SelectReleaseDialog.ui
     ui/widgets/SubTaskProgressBar.ui
     ui/dialogs/ProgressDialog.ui
 )
@@ -1342,12 +1342,11 @@ target_link_libraries(Launcher_logic
     systeminfo
     Launcher_murmur2
     nbt++
-    ${ZLIB_LIBRARIES}
+    ZLIB::ZLIB
     qdcss
     BuildConfig
     Qt${QT_VERSION_MAJOR}::Widgets
     qrcodegenerator
-    ZLIB::ZLIB
 )
 if(TARGET PkgConfig::tomlplusplus)
     target_link_libraries(Launcher_logic PkgConfig::tomlplusplus)
@@ -1382,7 +1381,7 @@ target_link_libraries(Launcher_logic
     LocalPeer
     Launcher_rainbow
 )
-if (TARGET ${Launcher_QT_DBUS})
+if (Launcher_QT_DBUS AND TARGET Qt6::DBus)
     add_compile_definitions(WITH_QTDBUS)
 endif()
 
@@ -1444,11 +1443,11 @@ endif()
 
 if(Launcher_BUILD_UPDATER)
     # Updater
-    add_library(prism_updater_logic STATIC ${PRISMUPDATER_SOURCES} ${TASKS_SOURCES} ${PRISMUPDATER_UI})
-    target_include_directories(prism_updater_logic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(prism_updater_logic
+    add_library(projt_updater_logic STATIC ${PROJTUPDATER_SOURCES} ${TASKS_SOURCES} ${PROJTUPDATER_UI})
+    target_include_directories(projt_updater_logic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(projt_updater_logic
         QuaZip::QuaZip
-        ${ZLIB_LIBRARIES}
+        ZLIB::ZLIB
         systeminfo
         BuildConfig
         Qt${QT_VERSION_MAJOR}::Widgets
@@ -1458,9 +1457,9 @@ if(Launcher_BUILD_UPDATER)
         cmark::cmark
     )
 
-    add_executable("${Launcher_Name}_updater" WIN32 updater/prismupdater/updater_main.cpp)
-    target_sources("${Launcher_Name}_updater" PRIVATE updater/prismupdater/updater.exe.manifest)
-    target_link_libraries("${Launcher_Name}_updater" prism_updater_logic)
+    add_executable("${Launcher_Name}_updater" WIN32 updater/projtupdater/updater_main.cpp)
+    target_sources("${Launcher_Name}_updater" PRIVATE updater/projtupdater/updater.exe.manifest)
+    target_link_libraries("${Launcher_Name}_updater" projt_updater_logic)
 
     if(DEFINED Launcher_APP_BINARY_NAME)
         set_target_properties("${Launcher_Name}_updater" PROPERTIES OUTPUT_NAME "${Launcher_APP_BINARY_NAME}_updater")
@@ -1546,12 +1545,48 @@ endif()
 if(WIN32 OR (UNIX AND APPLE))
     if(WIN32)
         set(QT_DEPLOY_TOOL_OPTIONS "--no-opengl-sw --no-quick-import --no-system-d3d-compiler --no-system-dxc-compiler --skip-plugin-types generic,networkinformation")
+        set(QT_RUNTIME_DIRS "")
+        set(_qt_target "Qt${QT_VERSION_MAJOR}::Core")
+        if(TARGET ${_qt_target})
+            get_target_property(_qt_debug "${_qt_target}" IMPORTED_LOCATION_DEBUG)
+            get_target_property(_qt_release "${_qt_target}" IMPORTED_LOCATION_RELEASE)
+            if(_qt_debug)
+                get_filename_component(_qt_debug_dir "${_qt_debug}" DIRECTORY)
+                list(APPEND QT_RUNTIME_DIRS "${_qt_debug_dir}")
+            endif()
+            if(_qt_release)
+                get_filename_component(_qt_release_dir "${_qt_release}" DIRECTORY)
+                list(APPEND QT_RUNTIME_DIRS "${_qt_release_dir}")
+            endif()
+        endif()
+        if(DEFINED Qt6_DIR)
+            get_filename_component(_qt6_prefix "${Qt6_DIR}/../../.." ABSOLUTE)
+            list(APPEND QT_RUNTIME_DIRS "${_qt6_prefix}/bin")
+        endif()
+        if(DEFINED Qt5_DIR)
+            get_filename_component(_qt5_prefix "${Qt5_DIR}/../../.." ABSOLUTE)
+            list(APPEND QT_RUNTIME_DIRS "${_qt5_prefix}/bin")
+        endif()
+        if(DEFINED ENV{QT_ROOT_DIR})
+            file(TO_CMAKE_PATH "$ENV{QT_ROOT_DIR}" _qt_root_dir)
+            if(_qt_root_dir)
+                list(APPEND QT_RUNTIME_DIRS "${_qt_root_dir}/bin")
+            endif()
+        endif()
+        if(DEFINED ENV{QT_PLUGIN_PATH})
+            file(TO_CMAKE_PATH "$ENV{QT_PLUGIN_PATH}" _qt_plugin_path)
+            if(_qt_plugin_path)
+                get_filename_component(_qt_plugin_bin "${_qt_plugin_path}/.." ABSOLUTE)
+                list(APPEND QT_RUNTIME_DIRS "${_qt_plugin_bin}/bin")
+            endif()
+        endif()
+        list(REMOVE_DUPLICATES QT_RUNTIME_DIRS)
     endif()
 
     qt_generate_deploy_script(
         TARGET ${Launcher_Name}
         OUTPUT_SCRIPT QT_DEPLOY_SCRIPT
-        CONTENT "
+        CONTENT [=[
         qt_deploy_runtime_dependencies(
             EXECUTABLE ${BINARY_DEST_DIR}/$<TARGET_FILE_NAME:${Launcher_Name}>
             BIN_DIR ${BINARY_DEST_DIR}
@@ -1562,7 +1597,9 @@ if(WIN32 OR (UNIX AND APPLE))
             NO_TRANSLATIONS
             NO_COMPILER_RUNTIME
             DEPLOY_TOOL_OPTIONS ${QT_DEPLOY_TOOL_OPTIONS}
-        )"
+            POST_EXCLUDE_REGEXES "^/opt/homebrew/.*" "^/usr/lib/.*"
+        )
+        ]=]
     )
 
     # Bundle our linked dependencies
@@ -1571,15 +1608,27 @@ if(WIN32 OR (UNIX AND APPLE))
         COMPONENT bundle
         DIRECTORIES
             ${CMAKE_SYSTEM_LIBRARY_PATH}
+            ${QT_RUNTIME_DIRS}
             ${QT_LIBS_DIR}
             ${QT_LIBEXECS_DIR}
+            ${CMAKE_BINARY_DIR}
+            ${CMAKE_BINARY_DIR}/$<CONFIG>
+            ${OPENSSL_ROOT_DIR}
+            ${OPENSSL_ROOT_DIR}/bin
+            ${ZLIB_ROOT}
+            ${ZLIB_ROOT}/bin
+            ${ZLIB_ROOT_DIR}
+            ${ZLIB_ROOT_DIR}/build/native
+            ${ZLIB_ROOT_DIR}/build/native/bin
         PRE_EXCLUDE_REGEXES
             "^(api-ms-win|ext-ms)-.*\\.dll$"
-            # FIXME: Why aren't these caught by the below regex???
             "^azure.*\\.dll$"
             "^vcruntime.*\\.dll$"
+            ".*Qt.*\\.dll$" # Exclude Qt from this set, handled by qt_deploy_runtime_dependencies
         POST_EXCLUDE_REGEXES
             "system32"
+            "^/opt/homebrew/.*" # Exclude Homebrew paths on macOS
+            "^/usr/lib/.*"      # Exclude system paths
         LIBRARY DESTINATION ${LIBRARY_DEST_DIR}
         RUNTIME DESTINATION ${BINARY_DEST_DIR}
         FRAMEWORK DESTINATION ${FRAMEWORK_DEST_DIR}

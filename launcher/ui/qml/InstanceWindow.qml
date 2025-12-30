@@ -252,8 +252,9 @@ Item {
                     Layout.fillWidth: true
                     placeholderText: qsTr("Java path")
                     text: vm ? vm.javaPath : ""
+                    enabled: vm ? vm.overrideJavaLocation : false
                     onEditingFinished: {
-                        if (vm) {
+                        if (vm && vm.overrideJavaLocation) {
                             vm.setJavaPath(vm.instanceId, text);
                         }
                     }

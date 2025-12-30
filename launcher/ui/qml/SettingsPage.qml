@@ -227,21 +227,25 @@ Rectangle {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
+                    enabled: vm ? vm.overrideJavaLocation : false
                     TextField {
                         id: javaPathField
                         Layout.fillWidth: true
                         placeholderText: qsTr("Java path")
                         text: vm ? vm.javaPath : ""
-                        onEditingFinished: vm ? vm.setJavaPath(vm.instanceId, text) : undefined
+                        onEditingFinished: {
+                            if (vm && vm.overrideJavaLocation) {
+                                vm.setJavaPath(vm.instanceId, text);
+                            }
+                        }
                     }
                     Button {
                         text: qsTr("Browse")
                         onClicked: {
-                            if (ProjT.launcherVM) {
+                            if (ProjT.launcherVM && vm && vm.overrideJavaLocation) {
                                 var path = ProjT.launcherVM.browseForFile(qsTr("Select Java Executable"), qsTr("Java Executable (*.exe *java*);;All Files (*)"));
                                 if (path.length > 0) {
-                                    if (vm)
-                                        vm.setJavaPath(vm.instanceId, path);
+                                    vm.setJavaPath(vm.instanceId, path);
                                 }
                             }
                         }
@@ -249,7 +253,7 @@ Rectangle {
                     Button {
                         text: qsTr("Auto-detect")
                         onClicked: {
-                            if (vm && vm.autoDetectJava) {
+                            if (vm && vm.overrideJavaLocation && vm.autoDetectJava) {
                                 vm.autoDetectJava(vm.instanceId);
                             }
                         }

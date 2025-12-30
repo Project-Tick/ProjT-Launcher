@@ -113,27 +113,21 @@ let
       "net"
     ]
     [
-      "libraries"
       "rainbow"
     ]
     [
-      "libraries"
       "tomlplusplus"
     ]
     [
-      "libraries"
       "libnbtplusplus"
     ]
     [
-      "libraries"
       "LocalPeer"
     ]
     [
-      "libraries"
       "qdcss"
     ]
     [
-      "libraries"
       "katabasis"
     ]
   ];

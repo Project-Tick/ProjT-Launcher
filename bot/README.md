@@ -31,6 +31,8 @@ Common secrets:
 - `BOT_COMMENT_ON_COMMAND`: (optional) `true` to comment after handling `issue_comment` commands
 - `BOT_ALLOWED_ASSOCIATIONS`: (optional) comma-separated GitHub author_association values allowed to run commands (default: `OWNER,MEMBER,COLLABORATOR`)
 - `BOT_ALWAYS_REVIEWERS`: (optional) comma-separated GitHub usernames to always request as reviewers (in addition to maintainers from `ci/eval/compare/maintainers.nix`)
+- `BOT_CRON_MAX_PRS`: (optional) max PRs to scan per cron run (useful on tight CPU plans)
+- `BOT_CRON_LIGHT`: (optional) `true` to skip DCO checks, CI summaries, reviewer requests, and auto-merge during cron runs
 
 Example (local):
 
@@ -57,6 +59,8 @@ Defined in `bot/wrangler.json`:
 - `GITHUB_OWNER` (default: `Project-Tick`)
 - `GITHUB_REPO` (default: `ProjT-Launcher`)
 - `BOT_DRY_RUN` (`true`/`false`)
+- `BOT_CRON_MAX_PRS` (optional, numeric limit for scheduled runs)
+- `BOT_CRON_LIGHT` (optional, reduce work in scheduled runs)
 
 ## DCO check
 

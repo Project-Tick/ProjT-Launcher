@@ -1,0 +1,92 @@
+name: Publish tomlplusplus NuGet package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "tomlplusplus version (e.g. 3.4.0). Use 'latest' for upstream latest release."
+        required: false
+        default: "latest"
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve tomlplusplus version
+        shell: powershell
+        run: |
+          $input = "${{ inputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($input) -or $input -eq "latest") {
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/marzer/tomlplusplus/releases/latest" -Headers @{
+              "User-Agent" = "ProjT-Launcher"
+            }
+            $tag = $release.tag_name
+            if (-not $tag) { throw "Failed to resolve latest tomlplusplus tag" }
+            $version = $tag.TrimStart("v")
+          } else {
+            if ($input.StartsWith("v")) {
+              $tag = $input
+              $version = $input.Substring(1)
+            } else {
+              $version = $input
+              $tag = "v$input"
+            }
+          }
+
+          "TOMLPLUSPLUS_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "TOMLPLUSPLUS_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install NuGet CLI
+        shell: powershell
+        run: |
+          dotnet tool install --global NuGet.CommandLine --version 6.*
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Fetch tomlplusplus
+        shell: powershell
+        run: |
+          git clone --depth 1 --branch "$env:TOMLPLUSPLUS_TAG" https://github.com/marzer/tomlplusplus.git tomlplusplus
+
+      - name: Configure and install
+        shell: powershell
+        run: |
+          $prefix = "$env:GITHUB_WORKSPACE\stage\build\native"
+          cmake -S tomlplusplus -B tomlplusplus-build `
+            -DCMAKE_INSTALL_PREFIX="$prefix" `
+            -DTOMLPLUSPLUS_BUILD_TESTS=OFF `
+            -DTOMLPLUSPLUS_BUILD_EXAMPLES=OFF `
+            -DTOMLPLUSPLUS_INSTALL=ON
+          cmake --install tomlplusplus-build --config Release
+
+      - name: Stage license
+        shell: powershell
+        run: |
+          Copy-Item -Path "tomlplusplus/LICENSE" -Destination "$env:GITHUB_WORKSPACE\stage\LICENSE.txt"
+
+      - name: Pack NuGet
+        shell: powershell
+        run: |
+          nuget pack .github/nuget/tomlplusplus.nuspec `
+            -Version "$env:TOMLPLUSPLUS_VERSION" `
+            -BasePath "$env:GITHUB_WORKSPACE\stage" `
+            -OutputDirectory "$env:GITHUB_WORKSPACE\artifacts"
+
+      - name: Push NuGet (GitHub Packages)
+        shell: powershell
+        run: |
+          $package = "$env:GITHUB_WORKSPACE\artifacts\tomlplusplus.$env:TOMLPLUSPLUS_VERSION.nupkg"
+          nuget push $package `
+            -Source "https://nuget.pkg.github.com/Project-Tick/index.json" `
+            -ApiKey "${{ secrets.GITHUB_TOKEN }}" `
+            -SkipDuplicate `
+            -NonInteractive

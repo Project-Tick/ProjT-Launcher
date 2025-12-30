@@ -164,6 +164,14 @@ ModPlatform::IndexedVersion Modrinth::loadIndexedPackVersion(QJsonObject& obj, Q
             file.loaders |= ModPlatform::Fabric;
         else if (loader == "quilt")
             file.loaders |= ModPlatform::Quilt;
+        else if (loader == "risugami")
+            file.loaders |= ModPlatform::Risugami;
+        else if (loader == "station-loader")
+            file.loaders |= ModPlatform::StationLoader;
+        else if (loader == "modloadermp")
+            file.loaders |= ModPlatform::ModLoaderMP;
+        else if (loader == "optifine")
+            file.loaders |= ModPlatform::Optifine;
     }
     file.version = Json::requireString(obj, "name");
     file.version_number = Json::requireString(obj, "version_number");

@@ -1,6 +1,6 @@
 {
   "name": "projtlauncher",
-  "version": "1.0.0",
+  "version": "0.0.3-4",
   "description": "Official ProjT Launcher website",
   "scripts": {
     "build": "eleventy",
@@ -17,7 +17,7 @@
     "url": "git://github.com/Project-Tick/ProjT-Launcher.git"
   },
   "author": {
-    "name": "Do-Hyun YONG",
+    "name": "YongDo-Hyun",
     "email": "froster12@naver.com",
     "url": "https://github.com/YongDo-Hyun"
   },

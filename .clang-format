@@ -1,8 +1,12 @@
----
+# This file applies repository-wide.
 BasedOnStyle: Chromium
 IndentWidth: 4
-AllowShortIfStatementsOnASingleLine: false
+UseTab: Never
 ColumnLimit: 140
+AllowShortIfStatementsOnASingleLine: false
+PointerAlignment: Left
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
 ---
 Language: Cpp
 AlignConsecutiveMacros: None

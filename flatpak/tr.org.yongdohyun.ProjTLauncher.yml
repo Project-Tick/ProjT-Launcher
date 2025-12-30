@@ -43,9 +43,7 @@ modules:
       - type: git
         url: https://github.com/glfw/glfw.git
         tag: '3.4'
-        commit: 7b6aead9fb88b3623e3b3725ebb42670cbe4c579 # 3.4
-      - type: patch
-        path: patches/0009-Defer-setting-cursor-position-until-the-cursor-is-lo.patch
+        commit: 7b6aead9fb88b3623e3b3725ebb42670cbe4c579
 
   - name: xrandr
     buildsystem: autotools
@@ -86,6 +84,43 @@ modules:
       - /include
       - /lib/pkgconfig
       - '*.a'
+
+  - name: cmark
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMARK_TESTS=OFF
+      - -DCMARK_SHARED=ON
+    sources:
+      - type: git
+        url: https://github.com/commonmark/cmark.git
+        tag: 0.31.1
+
+  - name: quazip
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DQUAZIP_QT6=ON
+      - -DQUAZIP_ENABLE_TESTS=OFF
+    sources:
+      - type: git
+        url: https://github.com/stachenov/quazip.git
+        tag: v1.4
+
+  - name: tomlplusplus
+    buildsystem: cmake-ninja
+    builddir: true
+    sources:
+      - type: git
+        url: https://github.com/marzer/tomlplusplus.git
+        tag: v3.4.0
+
+  - name: qrencode
+    buildsystem: autotools
+    sources:
+      - type: git
+        url: https://github.com/fukuchi/libqrencode.git
+        tag: v4.1.1
 
   - name: projtlauncher
     buildsystem: cmake-ninja

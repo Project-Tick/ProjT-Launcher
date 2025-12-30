@@ -1,31 +1,6 @@
 name: General Evaluation Process
 
 on:
-  push:
-    branches:
-      - "develop"
-      - "release-*"
-      - "qml_migration"
-    paths:
-      # Core build and source paths
-      - "launcher/**"
-      - "libraries/**"
-      - "tests/**"
-      - "buildconfig/**"
-      - "cmake/**"
-      - "program_info/**"
-      - "CMakeLists.txt"
-      - "CMakePresets.json"
-      - "vcpkg.json"
-      - "vcpkg-configuration.json"
-      - "ci/**"
-      - ".github/**"
-      - "flake.nix"
-      - "shell.nix"
-      - "default.nix"
-      - "nix/**"
-      - "flatpak/**"
-      - "debian/**"
   workflow_call:
     inputs:
       build-type:
@@ -130,6 +105,7 @@ permissions:
 
 env:
   CHECKOUT_REF: ${{ inputs.ref || github.event.inputs.ref || github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha || github.sha }}
+  CMAKE_CONFIGURE_ARGS: -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING
 
 jobs:
   prepare:
@@ -196,96 +172,6 @@ jobs:
           git diff --name-only "$base_ref"...HEAD > changed.txt || true
           changed_files=$(cat changed.txt | tr '\n' ',' | sed 's/,$//')
           echo "changed-files=$changed_files" >> $GITHUB_OUTPUT
-
-  verify-vcpkg:
-    name: Verify vcpkg Configuration
-    needs: [prepare]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          ref: ${{ env.CHECKOUT_REF }}
-
-      - name: Validate JSON files
-        run: |
-          echo "=== Validating JSON configuration files ==="
-          
-          # Check vcpkg.json
-          if [ -f "vcpkg.json" ]; then
-            if python3 -m json.tool vcpkg.json >/dev/null 2>&1; then
-              echo "vcpkg.json is valid JSON"
-            else
-              echo "ERROR: vcpkg.json is invalid JSON"
-              exit 1
-            fi
-          fi
-          
-          # Check vcpkg-configuration.json
-          if [ -f "vcpkg-configuration.json" ]; then
-            if python3 -m json.tool vcpkg-configuration.json >/dev/null 2>&1; then
-              echo "vcpkg-configuration.json is valid JSON"
-            else
-              echo "ERROR: vcpkg-configuration.json is invalid JSON"
-              exit 1
-            fi
-          fi
-          
-          # Check CMakePresets.json
-          if [ -f "CMakePresets.json" ]; then
-            if python3 -m json.tool CMakePresets.json >/dev/null 2>&1; then
-              echo "CMakePresets.json is valid JSON"
-            else
-              echo "ERROR: CMakePresets.json is invalid JSON"
-              exit 1
-            fi
-          fi
-
-      - name: Check CMakeLists.txt for required dependencies
-        run: |
-          echo "=== Checking CMakeLists.txt dependencies ==="
-          
-          # Check for Qt6
-          if grep -q "find_package(Qt6" CMakeLists.txt; then
-            echo "Qt6 dependency declared"
-          else
-            echo "WARNING: Qt6 dependency not found (may be in subdirectory)"
-          fi
-          
-          # Check for minimum CMake version
-          if grep -q "cmake_minimum_required" CMakeLists.txt; then
-            version=$(grep "cmake_minimum_required" CMakeLists.txt | head -1)
-            echo "CMake minimum version: $version"
-          fi
-          
-          # Check for project declaration
-          if grep -q "project(" CMakeLists.txt; then
-            project=$(grep "project(" CMakeLists.txt | head -1)
-            echo "Project declaration: $project"
-          fi
-
-      - name: List declared vcpkg dependencies
-        if: hashFiles('vcpkg.json') != ''
-        run: |
-          echo "=== vcpkg Dependencies ==="
-          python3 -c "
-          import json
-          with open('vcpkg.json') as f:
-              data = json.load(f)
-          deps = data.get('dependencies', [])
-          for dep in deps:
-              if isinstance(dep, str):
-                  print(f'  - {dep}')
-              else:
-                  name = dep.get('name', 'unknown')
-                  features = dep.get('features', [])
-                  if features:
-                      print(f'  - {name} [{', '.join(features)}]')
-                  else:
-                      print(f'  - {name}')
-          "
 
   flake-check:
     name: Flake Check
@@ -392,7 +278,6 @@ jobs:
       BUILD_PLATFORM: official
       BUILD_TYPE: Debug
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
       - name: Checkout
@@ -408,16 +293,14 @@ jobs:
         with:
           build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
-          vcvars-arch: ${{ matrix.vcvars-arch }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure CMake
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
         continue-on-error: false
 
       - name: Report configuration status
@@ -457,7 +340,6 @@ jobs:
       BUILD_PLATFORM: official
       BUILD_TYPE: Debug
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
       - name: Checkout
@@ -473,16 +355,14 @@ jobs:
         with:
           build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
-          vcvars-arch: ${{ matrix.vcvars-arch }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure CMake
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
         continue-on-error: false
 
       - name: Report configuration status
@@ -497,7 +377,7 @@ jobs:
 
   cmake-windows-mingw-preset-config:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
-    needs: [verify-vcpkg, project-checkout]
+    needs: [project-checkout]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
 
@@ -524,7 +404,6 @@ jobs:
       BUILD_PLATFORM: official
       BUILD_TYPE: Debug
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
       - name: Checkout
@@ -542,16 +421,14 @@ jobs:
           artifact-name: ${{ matrix.artifact-name }}
           msystem: ${{ matrix.msystem }}
           vcvars-arch: ${{ matrix.vcvars-arch }}
-          qt-architecture: ${{ matrix.qt-architecture }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure CMake
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
         continue-on-error: false
 
       - name: Report configuration status
@@ -566,7 +443,7 @@ jobs:
 
   cmake-windows-mingw-arm64-preset-config:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
-    needs: [verify-vcpkg, project-checkout]
+    needs: [project-checkout]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
 
@@ -593,7 +470,6 @@ jobs:
       BUILD_PLATFORM: official
       BUILD_TYPE: Debug
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
       - name: Checkout
@@ -611,16 +487,14 @@ jobs:
           artifact-name: ${{ matrix.artifact-name }}
           msystem: ${{ matrix.msystem }}
           vcvars-arch: ${{ matrix.vcvars-arch }}
-          qt-architecture: ${{ matrix.qt-architecture }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure CMake
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
         continue-on-error: false
 
       - name: Report configuration status
@@ -635,7 +509,7 @@ jobs:
 
   cmake-windows-msvc-preset-config:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
-    needs: [verify-vcpkg, project-checkout]
+    needs: [project-checkout]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
 
@@ -661,7 +535,6 @@ jobs:
       BUILD_PLATFORM: official
       BUILD_TYPE: Debug
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
       - name: Checkout
@@ -682,11 +555,10 @@ jobs:
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure CMake
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
         continue-on-error: false
 
       - name: Report configuration status
@@ -701,7 +573,7 @@ jobs:
 
   cmake-windows-msvc-arm64-preset-config:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
-    needs: [verify-vcpkg, project-checkout]
+    needs: [project-checkout]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
 
@@ -726,7 +598,6 @@ jobs:
       BUILD_PLATFORM: official
       BUILD_TYPE: Debug
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
       - name: Checkout
@@ -747,11 +618,10 @@ jobs:
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure CMake
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
         continue-on-error: false
 
       - name: Report configuration status
@@ -778,7 +648,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-26
+          - os: macos-14
             artifact-name: macOS
             cmake-preset: macos_universal
             macosx-deployment-target: 12.0
@@ -808,16 +678,14 @@ jobs:
         with:
           build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
-          vcvars-arch: ${{ matrix.vcvars-arch }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure CMake
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
         continue-on-error: false
 
       - name: Report configuration status
@@ -833,7 +701,6 @@ jobs:
   build-linux:
     name: Build (${{ matrix.artifact-name }})
     needs: [cmake-linux-preset-config]
-    if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
 
@@ -867,18 +734,15 @@ jobs:
         id: setup-dependencies
         uses: ./.github/actions/setup-dependencies
         with:
-          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
-          vcvars-arch: ${{ matrix.vcvars-arch }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure Preset
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
 
       - name: Run Build
         run: |
@@ -926,7 +790,6 @@ jobs:
   build-linux-arm64:
     name: Build (${{ matrix.artifact-name }})
     needs: [cmake-linux-arm64-preset-config]
-    if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
 
@@ -960,18 +823,15 @@ jobs:
         id: setup-dependencies
         uses: ./.github/actions/setup-dependencies
         with:
-          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
-          vcvars-arch: ${{ matrix.vcvars-arch }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure Preset
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
 
       - name: Run Build
         run: |
@@ -1019,7 +879,6 @@ jobs:
   build-windows-msvc:
     name: Build (${{ matrix.artifact-name }})
     needs: [cmake-windows-msvc-preset-config]
-    if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
 
@@ -1042,7 +901,6 @@ jobs:
       ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
       BUILD_PLATFORM: official
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
 
@@ -1059,20 +917,16 @@ jobs:
         id: setup-dependencies
         uses: ./.github/actions/setup-dependencies
         with:
-          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
-          msystem: ${{ matrix.msystem }}
           vcvars-arch: ${{ matrix.vcvars-arch }}
-          qt-architecture: ${{ matrix.qt-architecture }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure Preset
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
 
       - name: Run Build
         run: |
@@ -1109,15 +963,12 @@ jobs:
           version: ${{ steps.short-version.outputs.version }}
           build-type: ${{ steps.setup-dependencies.outputs.build-type }}
           artifact-name: ${{ matrix.artifact-name }}
-          msystem: ${{ matrix.msystem }}
-
           windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
           windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
 
   build-windows-msvc-arm64:
     name: Build (${{ matrix.artifact-name }})
     needs: [cmake-windows-msvc-arm64-preset-config]
-    if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
 
@@ -1140,7 +991,6 @@ jobs:
       ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
       BUILD_PLATFORM: official
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
 
@@ -1157,20 +1007,16 @@ jobs:
         id: setup-dependencies
         uses: ./.github/actions/setup-dependencies
         with:
-          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
-          msystem: ${{ matrix.msystem }}
           vcvars-arch: ${{ matrix.vcvars-arch }}
-          qt-architecture: ${{ matrix.qt-architecture }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure Preset
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
 
       - name: Run Build
         run: |
@@ -1207,7 +1053,6 @@ jobs:
           version: ${{ steps.short-version.outputs.version }}
           build-type: ${{ steps.setup-dependencies.outputs.build-type }}
           artifact-name: ${{ matrix.artifact-name }}
-          msystem: ${{ matrix.msystem }}
 
           windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
           windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
@@ -1215,7 +1060,6 @@ jobs:
   build-windows-mingw:
     name: Build (${{ matrix.artifact-name }})
     needs: [cmake-windows-mingw-preset-config]
-    if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
 
@@ -1239,7 +1083,6 @@ jobs:
       ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
       BUILD_PLATFORM: official
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
 
@@ -1257,20 +1100,17 @@ jobs:
         id: setup-dependencies
         uses: ./.github/actions/setup-dependencies
         with:
-          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
           msystem: ${{ matrix.msystem }}
           vcvars-arch: ${{ matrix.vcvars-arch }}
-          qt-architecture: ${{ matrix.qt-architecture }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure Preset
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
 
       - name: Run Build
         run: |
@@ -1315,7 +1155,6 @@ jobs:
   build-windows-mingw-arm64:
     name: Build (${{ matrix.artifact-name }})
     needs: [cmake-windows-mingw-arm64-preset-config]
-    if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
 
@@ -1339,7 +1178,6 @@ jobs:
       ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
       BUILD_PLATFORM: official
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
 
@@ -1357,20 +1195,17 @@ jobs:
         id: setup-dependencies
         uses: ./.github/actions/setup-dependencies
         with:
-          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
           msystem: ${{ matrix.msystem }}
           vcvars-arch: ${{ matrix.vcvars-arch }}
-          qt-architecture: ${{ matrix.qt-architecture }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure Preset
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
 
       - name: Run Build
         run: |
@@ -1415,7 +1250,6 @@ jobs:
   build-macos:
     name: Build (${{ matrix.artifact-name }})
     needs: [cmake-macos-preset-config]
-    if: needs.prepare.outputs.should-test == 'true'
     permissions:
       packages: write
 
@@ -1423,7 +1257,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-26
+          - os: macos-14
             artifact-name: macOS
             cmake-preset: macos_universal
             macosx-deployment-target: 12.0
@@ -1451,20 +1285,15 @@ jobs:
         id: setup-dependencies
         uses: ./.github/actions/setup-dependencies
         with:
-          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
-          msystem: ${{ matrix.msystem }}
-          vcvars-arch: ${{ matrix.vcvars-arch }}
-          qt-architecture: ${{ matrix.qt-architecture }}
 
       - name: Clean build directory for builds
         run: |
           rm -rf build
-          git clean -fdx libraries/zlib/
 
       - name: Configure Preset
         run: |
-          cmake --preset "$CMAKE_PRESET"
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
 
       - name: Run Build
         run: |
@@ -1541,8 +1370,10 @@ jobs:
           submodules: true
 
       - name: Set short version
+        id: short-version
         shell: bash
         run: |
+          echo "version=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           echo "VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
       - name: Free disk space
@@ -1559,7 +1390,7 @@ jobs:
       - name: Build Flatpak
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
-          bundle: ProjTLauncher-${{ runner.os }}-${{ env.VERSION }}-Flatpak.flatpak
+          bundle: ProjTLauncher-${{ runner.os }}-${{ steps.short-version.outputs.version }}-Flatpak.flatpak
           manifest-path: flatpak/tr.org.yongdohyun.ProjTLauncher.yml
           arch: ${{ matrix.arch }}
 
@@ -1645,10 +1476,928 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+  bzip2-debian-testing-meson:
+    name: Debian (testing) - Meson
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: debian:testing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install deps
+        run: |
+          apt-get update -y
+          apt-get install -y gcc meson python3-setuptools python3-pytest valgrind
+
+      - name: Build (meson)
+        run: |
+          meson builddir
+          ninja -C builddir
+          meson test -C builddir --print-errorlogs || true
+
+      - name: Collect meson log
+        run: |
+          cp builddir/meson-logs/meson-log.txt . || true
+
+      - name: Upload meson log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meson-log
+          path: meson-log.txt
+
+  bzip2-debian-testing-cmake-debug:
+    name: Debian (testing) - CMake Debug
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: debian:testing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install deps
+        run: |
+          apt-get update -y
+          apt-get install -y gcc make python3-pytest cmake valgrind build-essential libssl-dev qt6-base-dev qt6-base-dev-tools qt6-5compat-dev qt6-networkauth-dev
+
+      - name: Build (cmake debug)
+        run: |
+          mkdir builddir && cd builddir
+          cmake .. -DCMAKE_BUILD_TYPE="Debug" -D ENABLE_SHARED_LIB=ON -D ENABLE_STATIC_LIB=OFF
+          cmake --build .
+          make check || true
+
+      - name: Collect CMakeOutput.log
+        run: |
+          cp builddir/CMakeFiles/CMakeOutput.log . || true
+
+      - name: Upload CMakeOutput.log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMakeOutput.log
+          path: CMakeOutput.log
+
+  bzip2-debian-testing-cmake:
+    name: Debian (testing) - CMake
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: debian:testing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install deps
+        run: |
+          apt-get update -y
+          apt-get install -y gcc make python3-pytest cmake valgrind build-essential libssl-dev qt6-base-dev qt6-base-dev-tools qt6-5compat-dev qt6-networkauth-dev
+
+      - name: Build (cmake)
+        run: |
+          mkdir builddir && cd builddir
+          cmake .. -DCMAKE_BUILD_TYPE="Release" -D ENABLE_SHARED_LIB=ON -D ENABLE_STATIC_LIB=OFF
+          cmake --build .
+          make check || true
+
+      - name: Collect CMakeOutput.log
+        run: |
+          cp builddir/CMakeFiles/CMakeOutput.log . || true
+
+      - name: Upload CMakeOutput.log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMakeOutput.log
+          path: CMakeOutput.log
+
+  bzip2-debian-testing-cmake-shared-static:
+    name: Debian (testing) - CMake shared+static
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: debian:testing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install deps
+        run: |
+          apt-get update -y
+          apt-get install -y gcc make python3-pytest cmake valgrind build-essential
+
+      - name: Build (cmake shared+static)
+        run: |
+          mkdir builddir && cd builddir
+          cmake .. -DCMAKE_BUILD_TYPE="Release" -D ENABLE_SHARED_LIB=ON -D ENABLE_STATIC_LIB=ON
+          cmake --build .
+          make check || true
+
+      - name: Collect CMakeOutput.log
+        run: |
+          cp builddir/CMakeFiles/CMakeOutput.log . || true
+
+      - name: Upload CMakeOutput.log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMakeOutput.log
+          path: CMakeOutput.log
+
+  bzip2-debian-testing-cmake-static-only:
+    name: Debian (testing) - CMake static only
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: debian:testing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install deps
+        run: |
+          apt-get update -y
+          apt-get install -y gcc make python3-pytest cmake valgrind libssl-dev
+
+      - name: Build (cmake static)
+        run: |
+          mkdir builddir && cd builddir
+          cmake .. -DCMAKE_BUILD_TYPE="Release" -D ENABLE_SHARED_LIB=OFF -D ENABLE_STATIC_LIB=ON
+          cmake --build .
+          make check || true
+
+      - name: Collect CMakeOutput.log
+        run: |
+          cp builddir/CMakeFiles/CMakeOutput.log . || true
+
+      - name: Upload CMakeOutput.log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMakeOutput.log
+          path: CMakeOutput.log
+
+  bzip2-ubuntu-jammy-meson:
+    name: Ubuntu Jammy - Meson
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: ubuntu:jammy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install deps
+        run: |
+          apt-get update -y
+          apt-get install -y gcc python3-pip ninja-build valgrind
+          pip3 install meson pytest
+
+      - name: Build (meson)
+        run: |
+          meson builddir
+          ninja -C builddir
+          meson test -C builddir --print-errorlogs || true
+
+      - name: Collect meson log
+        run: |
+          cp builddir/meson-logs/meson-log.txt . || true
+
+      - name: Upload meson log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meson-log
+          path: meson-log.txt
+
+  bzip2-ubuntu-jammy-cmake:
+    name: Ubuntu Jammy - CMake
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: ubuntu:jammy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          apt-get update -y
+          apt-get install -y gcc make python3-pip valgrind
+          pip3 install --upgrade pip
+          pip3 install pytest cmake
+
+      - name: Build (cmake)
+        run: |
+          mkdir builddir && cd builddir
+          cmake .. -DCMAKE_BUILD_TYPE="Release" -D ENABLE_SHARED_LIB=ON -D ENABLE_STATIC_LIB=OFF
+          cmake --build .
+          make check || true
+
+      - name: Collect CMakeOutput.log
+        run: |
+          cp builddir/CMakeFiles/CMakeOutput.log . || true
+
+      - name: Upload CMakeOutput.log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMakeOutput.log
+          path: CMakeOutput.log
+
+  bzip2-fedora-meson:
+    name: Fedora - Meson
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: registry.fedoraproject.org/fedora:35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          dnf install -y gcc meson python3-pytest valgrind
+
+      - name: Build (meson)
+        run: |
+          meson builddir
+          ninja -C builddir
+          meson test -C builddir --print-errorlogs || true
+
+      - name: Collect meson log
+        run: |
+          cp builddir/meson-logs/meson-log.txt . || true
+
+      - name: Upload meson log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meson-log
+          path: meson-log.txt
+
+  bzip2-fedora-cmake:
+    name: Fedora - CMake
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: registry.fedoraproject.org/fedora:35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          dnf install -y gcc cmake python3-pytest valgrind
+
+      - name: Build (cmake)
+        run: |
+          mkdir builddir && cd builddir
+          cmake .. -DCMAKE_BUILD_TYPE="Release" -D ENABLE_SHARED_LIB=ON -D ENABLE_STATIC_LIB=OFF
+          cmake --build .
+          make check || true
+
+      - name: Collect CMakeOutput.log
+        run: |
+          cp builddir/CMakeFiles/CMakeOutput.log . || true
+
+      - name: Upload CMakeOutput.log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMakeOutput.log
+          path: CMakeOutput.log
+
+  bzip2-fedora-rawhide-meson:
+    name: Fedora Rawhide - Meson
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: registry.fedoraproject.org/fedora:rawhide
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          dnf install -y gcc meson python3-pytest valgrind
+
+      - name: Build (meson)
+        run: |
+          meson builddir
+          ninja -C builddir
+          meson test -C builddir --print-errorlogs || true
+
+      - name: Collect meson log
+        run: |
+          cp builddir/meson-logs/meson-log.txt . || true
+
+      - name: Upload meson log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meson-log
+          path: meson-log.txt
+
+  bzip2-fedora-rawhide-cmake:
+    name: Fedora Rawhide - CMake
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: registry.fedoraproject.org/fedora:rawhide
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          dnf install -y gcc cmake python3-pytest valgrind
+
+      - name: Build (cmake)
+        run: |
+          mkdir builddir && cd builddir
+          cmake .. -DCMAKE_BUILD_TYPE="Release" -D ENABLE_SHARED_LIB=ON -D ENABLE_STATIC_LIB=OFF
+          cmake --build .
+          make check || true
+
+      - name: Collect CMakeOutput.log
+        run: |
+          cp builddir/CMakeFiles/CMakeOutput.log . || true
+
+      - name: Upload CMakeOutput.log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMakeOutput.log
+          path: CMakeOutput.log
+
+  bzip2-opensuse-leap-meson:
+    name: openSUSE Leap - Meson
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: opensuse/leap
+    steps:
+      - name: Install deps
+        working-directory: /
+        run: |
+          zypper install -y git \
+             tar \
+             gzip \
+             ca-certificates \
+             gcc \
+             gcc-c++ \
+             make \
+             cmake \
+             libopenssl-devel \
+             zlib-devel \
+             libX11-devel \
+             libXcursor-devel \
+             libXrandr-devel \
+             libXinerama-devel \
+             libxkbcommon-devel \
+             wayland-devel \
+             libdrm-devel \
+             Mesa-libEGL-devel \
+             Mesa-libGL-devel
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install deps
+        run: |
+          zypper install -y gcc meson ninja python3-pytest valgrind tar
+
+      - name: Build (meson)
+        run: |
+          meson builddir
+          ninja -C builddir
+          meson test -C builddir --print-errorlogs || true
+
+      - name: Collect meson log
+        run: |
+          cp builddir/meson-logs/meson-log.txt . || true
+
+      - name: Upload meson log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meson-log
+          path: meson-log.txt
+
+  bzip2-opensuse-leap-cmake:
+    name: openSUSE Leap - CMake
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: opensuse/leap
+    steps:
+      - name: Install deps
+        working-directory: /
+        run: |
+          zypper install -y git \
+             tar \
+             gzip \
+             ca-certificates \
+             gcc \
+             gcc-c++ \
+             make \
+             cmake \
+             libopenssl-devel \
+             zlib-devel \
+             libX11-devel \
+             libXcursor-devel \
+             libXrandr-devel \
+             libXinerama-devel \
+             libxkbcommon-devel \
+             wayland-devel \
+             libdrm-devel \
+             Mesa-libEGL-devel \
+             Mesa-libGL-devel
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install deps
+        run: |
+          zypper install -y gcc cmake python3-pytest valgrind
+
+      - name: Build (cmake)
+        run: |
+          mkdir builddir && cd builddir
+          cmake .. -DCMAKE_BUILD_TYPE="Release" -D ENABLE_SHARED_LIB=ON -D ENABLE_STATIC_LIB=OFF
+          cmake --build .
+          make check || true
+
+      - name: Collect CMakeOutput.log
+        run: |
+          cp builddir/CMakeFiles/CMakeOutput.log . || true
+
+      - name: Upload CMakeOutput.log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMakeOutput.log
+          path: CMakeOutput.log
+
+  bzip2-opensuse-tumbleweed-meson:
+    name: openSUSE Tumbleweed - Meson
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: opensuse/tumbleweed
+    steps:
+      - name: Install deps
+        working-directory: /
+        run: |
+          zypper install -y git \
+             tar \
+             gzip \
+             ca-certificates \
+             gcc \
+             gcc-c++ \
+             make \
+             cmake \
+             libopenssl-devel \
+             zlib-devel \
+             libX11-devel \
+             libXcursor-devel \
+             libXrandr-devel \
+             libXinerama-devel \
+             libxkbcommon-devel \
+             wayland-devel \
+             libdrm-devel \
+             Mesa-libEGL-devel \
+             Mesa-libGL-devel
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install deps
+        run: |
+          zypper install -y gcc cmake meson python3-pytest valgrind tar
+
+      - name: Build (meson)
+        run: |
+          meson builddir
+          ninja -C builddir
+          meson test -C builddir --print-errorlogs || true
+
+      - name: Collect meson log
+        run: |
+          cp builddir/meson-logs/meson-log.txt . || true
+
+      - name: Upload meson log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meson-log
+          path: meson-log.txt
+
+  bzip2-opensuse-tumbleweed-cmake:
+    name: openSUSE Tumbleweed - CMake
+    needs: [project-checkout]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bzip2
+    container:
+      image: opensuse/tumbleweed
+    steps:
+      - name: Install deps
+        working-directory: /
+        run: |
+          zypper install -y git \
+             tar \
+             gzip \
+             ca-certificates \
+             gcc \
+             gcc-c++ \
+             make \
+             cmake \
+             libopenssl-devel \
+             zlib-devel \
+             libX11-devel \
+             libXcursor-devel \
+             libXrandr-devel \
+             libXinerama-devel \
+             libxkbcommon-devel \
+             wayland-devel \
+             libdrm-devel \
+             Mesa-libEGL-devel \
+             Mesa-libGL-devel
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install deps
+        run: |
+          zypper install -y gcc cmake python3-pytest valgrind tar
+
+      - name: Build (cmake)
+        run: |
+          mkdir builddir && cd builddir
+          cmake .. -DCMAKE_BUILD_TYPE="Release" -D ENABLE_SHARED_LIB=ON -D ENABLE_STATIC_LIB=OFF
+          cmake --build .
+          make check || true
+
+      - name: Collect CMakeOutput.log
+        run: |
+          cp builddir/CMakeFiles/CMakeOutput.log . || true
+
+      - name: Upload CMakeOutput.log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMakeOutput.log
+          path: CMakeOutput.log
+
+  quazip-ubuntu:
+    if: true
+    needs: [project-checkout]
+    name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [22.04, 24.04]
+        qt_version: [5.15.2, 6.8.2]
+        shared: [ON, OFF]
+    uses: ./.github/workflows/reusable.yml
+    with:
+        runs_on: ubuntu-${{ matrix.os_version }}
+        os_version: ${{ matrix.os_version }}
+        qt_version: ${{ matrix.qt_version }}
+        shared: ${{ matrix.shared }}
+        ref: ${{ inputs.ref }}
+        working_directory: quazip
+
+  quazip-ubuntu-zlibconst:
+    if: true
+    needs: [project-checkout]
+    name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-zlibconst
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [ 24.04 ]
+        qt_version: [ 6.8.2 ]
+    uses: ./.github/workflows/reusable.yml
+    with:
+      runs_on: ubuntu-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: "ON"
+      zlib_const: "ON"
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  quazip-ubuntu-no-qtextcodec:
+    if: true
+    needs: [project-checkout]
+    name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-no-qtextcodec
+    strategy:
+      fail-fast: true
+      matrix:
+        os_version: [ 24.04 ]
+        qt_version: [ 6.8.2 ]
+    uses: ./.github/workflows/reusable.yml
+    with:
+      runs_on: ubuntu-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: "ON"
+      qtextcodec: 'OFF'
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  quazip-macos:
+    if: true
+    needs: [project-checkout]
+    name: macos-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [15, 14, 15-intel]
+        qt_version: [6.8.2, 5.15.2]
+        shared: [ON, OFF]
+        exclude:
+          - os_version: 14
+            qt_version: 5.15.2 #Not available due to ARM arch
+          - os_version: 15
+            qt_version: 5.15.2 #Not available due to ARM arch
+    uses: ./.github/workflows/reusable.yml
+    with:
+      runs_on: macos-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: ${{ matrix.shared }}
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  quazip-alpine:
+    if: true
+    needs: [project-checkout]
+    name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
+    runs-on: "ubuntu-22.04"
+    container:
+      image: "${{ matrix.runner }}"
+    strategy:
+      matrix:
+        runner:
+          - "alpine:3.21"
+        qt_version:
+          - "qt5"
+          - "qt6"
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      TEST_ZIP_UNZIP_LARGE: true
+    steps:
+      - name: Show OS info
+        run: cat /etc/os-release
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Install build tools
+        working-directory: quazip
+        run: apk add --update g++ make cmake ${{ matrix.qt_version }}-qtbase-dev
+      - name: Install compat
+        if: ${{ matrix.qt_version == 'qt6' }}
+        working-directory: quazip
+        run: apk add qt6-qt5compat-dev
+      - name: Show cmake version
+        working-directory: quazip
+        run: cmake --version
+      - name: Run cmake
+        working-directory: quazip
+        run: cmake -B build -DQUAZIP_ENABLE_TESTS=ON
+      - name: Build quazip
+        working-directory: quazip
+        run: cd build && VERBOSE=1 make -j8
+      - name: Build tests
+        working-directory: quazip
+        run: cd build/qztest && VERBOSE=1 make -j8
+      - name: Run tests
+        working-directory: quazip
+        run: build/qztest/qztest
+
+  quazip-windows-x64:
+    if: true
+    needs: [project-checkout]
+    name: Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ conan, vcpkg ]
+        qt_version: [ 5.15.2, 6.8.2 ]
+    uses: ./.github/workflows/reusable-win.yml
+    with:
+      runs_on: "win-x64"
+      arch: x64
+      qt_version: ${{ matrix.qt_version }}
+      preset: ${{ matrix.preset }}
+      pe_str: "x86-64"
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  quazip-windows-x86:
+    if: true
+    needs: [project-checkout]
+    name: Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ conan_x86, vcpkg_x86 ]
+        qt_version: [ 5.15.2 ]
+    uses: ./.github/workflows/reusable-win.yml
+    with:
+      runs_on: "win-x86"
+      arch: x86
+      qt_version: ${{ matrix.qt_version }}
+      preset: ${{ matrix.preset }}
+      pe_str: "i386"
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  quazip-ubuntu-ci-extract:
+    if: true
+    name: extract-Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [ 24.04 ]
+        qt_version: [ 6.8.2 ]
+        shared: [ ON ]
+    uses: ./.github/workflows/reusable.yml
+    needs: [ quazip-ubuntu, quazip-macos, quazip-windows-x64, quazip-windows-x86 ]
+    with:
+      runs_on: ubuntu-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: ${{ matrix.shared }}
+      cross_extract: true
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  quazip-macos-ci-extract:
+    if: true
+    name: extract-macos-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [ 15 ]
+        qt_version: [ 6.8.2 ]
+        shared: [ ON ]
+    uses: ./.github/workflows/reusable.yml
+    needs: [ quazip-ubuntu, quazip-macos, quazip-windows-x64, quazip-windows-x86 ]
+    with:
+      runs_on: macos-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: ${{ matrix.shared }}
+      cross_extract: true
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  quazip-windows-x64-ci-extract:
+    if: true
+    name: extract-Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ vcpkg ]
+        qt_version: [ 6.8.2 ]
+    uses: ./.github/workflows/reusable-win.yml
+    needs: [ quazip-ubuntu, quazip-macos, quazip-windows-x64, quazip-windows-x86 ]
+    with:
+      runs_on: "win-x64"
+      arch: x64
+      qt_version: ${{ matrix.qt_version }}
+      preset: ${{ matrix.preset }}
+      pe_str: "x86-64"
+      cross_extract: true
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  website-build:
+    if: github.repository_owner == 'Project-Tick'
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install dependencies & build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./_site
+
+  website-deploy:
+    # Only deploy on pushes to develop; skip PRs/merge_group explicitly
+    if: ${{ github.repository_owner == 'Project-Tick' && github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request' && github.event_name != 'merge_group' }}
+    needs: website-build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  quazip-fedora:
+    if: true
+    name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
+    runs-on: "ubuntu-22.04"
+    defaults:
+      run:
+        working-directory: quazip
+    container:
+      image: "${{ matrix.runner }}"
+    strategy:
+      matrix:
+        runner:
+          - "fedora:42"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: dnf -y install g++ make cmake qt6-qtbase-devel qt6-qt5compat-devel zlib-ng-devel zlib-ng-compat-devel
+      - name: Run cmake
+        run: cmake -B build -DQUAZIP_ENABLE_TESTS=ON
+      - name: Build quazip
+        run: cd build && VERBOSE=1 make -j8
+      - name: Run tests
+        run: build/qztest/qztest
+
   eval-status:
     name: Dependency Check Status Report
     runs-on: ubuntu-latest
-    needs: [verify-vcpkg, cmake-windows-mingw-preset-config, cmake-windows-msvc-preset-config, cmake-windows-mingw-arm64-preset-config, cmake-windows-msvc-arm64-preset-config, cmake-linux-preset-config, cmake-macos-preset-config]
+    needs: [cmake-windows-mingw-preset-config, cmake-windows-msvc-preset-config, cmake-windows-mingw-arm64-preset-config, cmake-windows-msvc-arm64-preset-config, cmake-linux-preset-config, cmake-macos-preset-config]
     if: always()
 
     steps:
@@ -1662,7 +2411,6 @@ jobs:
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          deps_result='${{ needs.verify-vcpkg.result }}'
           cmake_results=(
             '${{ needs.cmake-windows-mingw-preset-config.result }}'
             '${{ needs.cmake-windows-msvc-preset-config.result }}'
@@ -1684,34 +2432,18 @@ jobs:
             cmake_status="skipped"
           fi
 
-          echo "**Dependencies Check:** \`$deps_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**CMake Config:** \`$cmake_status\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [[ "$deps_result" == "failure" || "$cmake_status" == "failure" ]]; then
-            status="failure"; exit_code=1
-            echo "**Status:** Dependency Check Failed" >> $GITHUB_STEP_SUMMARY
-          elif [[ "$deps_result" == "cancelled" || "$cmake_status" == "cancelled" ]]; then
-            status="cancelled"; exit_code=1
-            echo "**Status:** Dependency Check Cancelled" >> $GITHUB_STEP_SUMMARY
-          elif [[ "$deps_result" == "success" && ( "$cmake_status" == "success" || "$cmake_status" == "skipped" ) ]]; then
-            status="success"; exit_code=0
-            echo "**Status:** Dependency Check Successful" >> $GITHUB_STEP_SUMMARY
-          else
-            status="unknown"; exit_code=1
-            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-          fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
 
           echo "status=$status" >> $GITHUB_OUTPUT
-          exit $exit_code
 
   build-status:
     name: Build Status Report
     runs-on: ubuntu-latest
-    needs: [build-linux, build-windows-msvc, build-windows-msvc-arm64, build-windows-mingw, build-windows-mingw-arm64, build-macos]
+    needs: [build-linux, build-linux-arm64, build-windows-msvc, build-windows-msvc-arm64, build-windows-mingw, build-windows-mingw-arm64, build-macos]
     if: always()
     
     steps:
@@ -1749,19 +2481,15 @@ jobs:
           if [[ "$build_linux_result" == "failure" ]] || [[ "$build_windows_msvc_result" == "failure" ]] || [[ "$build_windows_msvc_arm64_result" == "failure" ]] || [[ "$build_windows_mingw_result" == "failure" ]] || [[ "$build_windows_mingw_arm64_result" == "failure" ]] || [[ "$build_macos_result" == "failure" ]]; then
             status="failure"
             echo "**Status:** Build Failed" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$build_linux_result" == "cancelled" ]] || [[ "$build_windows_msvc_result" == "cancelled" ]] || [[ "$build_windows_msvc_arm64_result" == "cancelled" ]] || [[ "$build_windows_mingw_result" == "cancelled" ]] || [[ "$build_windows_mingw_arm64_result" == "cancelled" ]] || [[ "$build_macos_result" == "cancelled" ]]; then
             status="cancelled"
             echo "**Status:** Build Cancelled" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$build_linux_result" == "success" ]] && [[ "$build_windows_msvc_result" == "success" ]] && [[ "$build_windows_msvc_arm64_result" == "success" ]] && [[ "$build_windows_mingw_result" == "success" ]] && [[ "$build_windows_mingw_arm64_result" == "success" ]] && [[ "$build_macos_result" == "success" ]]; then
             status="success"
             echo "**Status:** Build Successful" >> $GITHUB_STEP_SUMMARY
-            exit_code=0
           else
             status="unknown"
             echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -1773,7 +2501,6 @@ jobs:
           echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           
           echo "status=$status" >> $GITHUB_OUTPUT
-          exit $exit_code
       
       - name: Report final status
         if: always()
@@ -1782,7 +2509,7 @@ jobs:
 
   test-status:
     name: Test Status Report
-    needs: [build-linux, build-windows-msvc, build-windows-msvc-arm64, build-windows-mingw, build-windows-mingw-arm64, build-macos]
+    needs: [build-linux, build-linux-arm64, build-windows-msvc, build-windows-msvc-arm64, build-windows-mingw, build-windows-mingw-arm64, build-macos]
     if: always()
     runs-on: ubuntu-latest
     
@@ -1807,7 +2534,7 @@ jobs:
 
           echo "**macOS Unit Tests:** \`$macos_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Linux Unit Tests:** \`$linux_tests_result\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Linux ARM64 Unit Tests:** \`$linux_tests_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Linux ARM64 Unit Tests:** \`$linux_arm64_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Windows MSVC Unit Tests:** \`$windows_msvc_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Windows MSVC ARM64 Unit Tests:** \`$windows_msvc_arm64_tests_result\`" >> $GITHUB_STEP_SUMMARY
           echo "**Windows MinGW Unit Tests:** \`$windows_mingw_tests_result\`" >> $GITHUB_STEP_SUMMARY
@@ -1817,113 +2544,88 @@ jobs:
           if [[ "$macos_tests_result" == "failure" ]]; then
             status="failure"
             echo "**macOS Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$macos_tests_result" == "cancelled" ]]; then
             status="cancelled"
             echo "**macOS Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$macos_tests_result" == "success" ]]; then
             status="success"
             echo "**macOS Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
-            exit_code=0
           else
             status="unknown"
             echo "**macOS Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           fi
 
           if [[ "$linux_tests_result" == "failure" ]]; then
             status="failure"
             echo "**Linux Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$linux_tests_result" == "cancelled" ]]; then
             status="cancelled"
             echo "**Linux Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$linux_tests_result" == "success" ]]; then
             status="success"
             echo "**Linux Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
-            exit_code=0
           else
             status="unknown"
             echo "**Linux Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           fi
           
           if [[ "$windows_msvc_tests_result" == "failure" ]]; then
             status="failure"
             echo "**Windows MSVC Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$windows_msvc_tests_result" == "cancelled" ]]; then
             status="cancelled"
             echo "**Windows MSVC Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$windows_msvc_tests_result" == "success" ]]; then
             status="success"
             echo "**Windows MSVC Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
-            exit_code=0
           else
             status="unknown"
             echo "**Windows MSVC Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           fi
 
           if [[ "$windows_mingw_tests_result" == "failure" ]]; then
             status="failure"
             echo "**Windows MINGW Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$windows_mingw_tests_result" == "cancelled" ]]; then
             status="cancelled"
             echo "**Windows MINGW Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$windows_mingw_tests_result" == "success" ]]; then
             status="success"
             echo "**Windows MINGW Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
-            exit_code=0
           else
             status="unknown"
             echo "**Windows MINGW Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           fi
 
           if [[ "$windows_msvc_arm64_tests_result" == "failure" ]]; then
             status="failure"
             echo "**Windows MSVC ARM64 Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$windows_msvc_arm64_tests_result" == "cancelled" ]]; then
             status="cancelled"
             echo "**Windows MSVC ARM64 Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$windows_msvc_arm64_tests_result" == "success" ]]; then
             status="success"
             echo "**Windows MSVC ARM64 Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
-            exit_code=0
           else
             status="unknown"
             echo "**Windows MSVC ARM64 Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           fi
 
           if [[ "$windows_mingw_arm64_tests_result" == "failure" ]]; then
             status="failure"
             echo "**Windows MINGW ARM64 Status:** Tests Failed" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$windows_mingw_arm64_tests_result" == "cancelled" ]]; then
             status="cancelled"
             echo "**Windows MINGW ARM64 Status:** Tests Cancelled" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$windows_mingw_arm64_tests_result" == "success" ]]; then
             status="success"
             echo "**Windows MINGW ARM64 Status:** Tests Successful" >> $GITHUB_STEP_SUMMARY
-            exit_code=0
           else
             status="unknown"
             echo "**Windows MINGW ARM64 Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           
           echo "status=$status" >> $GITHUB_OUTPUT
-          exit $exit_code

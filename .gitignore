@@ -1,4 +1,55 @@
-Thumbs.db
+# bzip2 subproject ignores (root-relative)
+bzip2/CMakeCache.txt
+bzip2/CMakeFiles/
+bzip2/cmake_install.cmake
+bzip2/install_manifest.txt
+bzip2/CTestTestfile.cmake
+bzip2/build.ninja
+bzip2/rules.ninja
+bzip2/.ninja_deps
+bzip2/.ninja_log
+bzip2/lib*.dylib
+bzip2/lib*.so
+bzip2/lib*.so.*
+bzip2/lib*.a
+
+# example build directories
+bzip2/build
+bzip2/builddir
+
+# vscode config directory
+bzip2/.vscode
+
+# Windows build outputs
+bzip2/*.dll
+bzip2/*.exe
+bzip2/*.exp
+bzip2/*.lib
+bzip2/*.obj
+bzip2/*.res
+
+# python unit tests
+bzip2/__pycache__
+
+# quazip subproject ignores (root-relative)
+quazip/doc/
+quazip/build/
+quazip/build_release/
+quazip/build_debug/
+quazip/lib/
+quazip/*.tags
+quazip/*.user
+quazip/*.swp
+quazip/.idea/
+quazip/cmake-*
+quazip/CMakeUserPresets.json
+quazip/vcpkg_installed/
+quazip/Testing/
+quazip/minizip/
+quazip/CMakeFiles/
+quazip/CMakeCache.txt
+
+# Keep repository-level ignores intact (don't duplicate other project ignores)Thumbs.db
 *.kdev4
 .user
 .directory
@@ -69,3 +120,56 @@ mb_*
 node_modules/
 .qtcreator/
 .wiki-local/
+__pycache__/
+.venv/
+
+zlib/*.diff
+zlib/*.patch
+zlib/*.orig
+zlib/*.rej
+
+zlib/*~
+zlib/*.a
+zlib/*.lo
+zlib/*.o
+zlib/*.dylib
+zlib/*.gcda
+zlib/*.gcno
+zlib/*.gcov
+
+zlib/example
+zlib/example64
+zlib/examplesh
+**zlib/libz.so*
+zlib/minigzip
+zlib/minigzip64
+zlib/minigzipsh
+zlib.pc
+zlib/configure.log
+zlib/build
+
+zlib/.DS_Store
+zlib/.vs
+zlib/*.user
+zlib/*.nupkg
+zlib/contrib/vstudio/vc143/x86
+zlib/contrib/vstudio/vc143/x64
+zlib/contrib/vstudio/vc143/arm
+zlib/contrib/vstudio/vc143/arm64
+zlib/contrib/nuget/bin
+zlib/contrib/nuget/obj
+zlib/*.included
+
+# Bazel directories
+zlib/bazel-*
+zlib/bazel-bin
+zlib/bazel-genfiles
+zlib/bazel-out
+zlib/bazel-testlogs
+zlib/user.bazelrc
+
+# MODULE.bazel.lock is ignored for now as per this recommendation:
+# https://github.com/bazelbuild/bazel/issues/20369
+zlib/MODULE.bazel.lock
+
+.wrangler/

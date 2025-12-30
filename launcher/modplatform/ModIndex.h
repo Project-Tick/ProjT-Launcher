@@ -63,7 +63,11 @@ enum ModLoaderType {
     BTA = 1 << 8,
     LegacyFabric = 1 << 9,
     Ornithe = 1 << 10,
-    Rift = 1 << 11
+    Rift = 1 << 11,
+    Risugami = 1 << 12,
+    StationLoader = 1 << 13,
+    ModLoaderMP = 1 << 14,
+    Optifine = 1 << 15
 };
 Q_DECLARE_FLAGS(ModLoaderTypes, ModLoaderType)
 QList<ModLoaderType> modLoaderTypesToList(ModLoaderTypes flags);

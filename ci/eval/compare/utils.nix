@@ -31,8 +31,6 @@ rec {
       "networking"
     else if lib.hasPrefix "launcher/" filePath then
       "core"
-    else if lib.hasPrefix "libraries/" filePath then
-      "libraries"
     else if lib.hasPrefix "cmake/" filePath then
       "build"
     else if lib.hasSuffix "CMakeLists.txt" filePath then

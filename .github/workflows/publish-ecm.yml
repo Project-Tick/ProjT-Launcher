@@ -1,0 +1,92 @@
+name: Publish extra-cmake-modules NuGet package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "ECM version (e.g. 6.0.0). Use 'latest' for upstream latest release."
+        required: false
+        default: "latest"
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve ECM version
+        shell: powershell
+        run: |
+          $input = "${{ inputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($input) -or $input -eq "latest") {
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/KDE/extra-cmake-modules/releases/latest" -Headers @{
+              "User-Agent" = "ProjT-Launcher"
+            }
+            $tag = $release.tag_name
+            if (-not $tag) { throw "Failed to resolve latest ECM tag" }
+            $version = $tag.TrimStart("v")
+          } else {
+            if ($input.StartsWith("v")) {
+              $tag = $input
+              $version = $input.Substring(1)
+            } else {
+              $version = $input
+              $tag = "v$input"
+            }
+          }
+
+          "ECM_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ECM_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install NuGet CLI
+        shell: powershell
+        run: |
+          dotnet tool install --global NuGet.CommandLine --version 6.*
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Fetch ECM
+        shell: powershell
+        run: |
+          git clone --depth 1 --branch "$env:ECM_TAG" https://github.com/KDE/extra-cmake-modules.git ecm
+
+      - name: Configure and install
+        shell: powershell
+        run: |
+          $prefix = "$env:GITHUB_WORKSPACE\stage\build\native"
+          cmake -S ecm -B ecm-build `
+            -DCMAKE_INSTALL_PREFIX="$prefix" `
+            -DBUILD_QTHELP_DOCS=OFF `
+            -DBUILD_MAN_DOCS=OFF `
+            -DBUILD_HTML_DOCS=OFF
+          cmake --install ecm-build --config Release
+
+      - name: Stage license
+        shell: powershell
+        run: |
+          Copy-Item -Path "ecm/COPYING-CMAKE-SCRIPTS" -Destination "$env:GITHUB_WORKSPACE\stage\LICENSE.txt"
+
+      - name: Pack NuGet
+        shell: powershell
+        run: |
+          nuget pack .github/nuget/extra-cmake-modules.nuspec `
+            -Version "$env:ECM_VERSION" `
+            -BasePath "$env:GITHUB_WORKSPACE\stage" `
+            -OutputDirectory "$env:GITHUB_WORKSPACE\artifacts"
+
+      - name: Push NuGet (GitHub Packages)
+        shell: powershell
+        run: |
+          $package = "$env:GITHUB_WORKSPACE\artifacts\extra-cmake-modules.$env:ECM_VERSION.nupkg"
+          nuget push $package `
+            -Source "https://nuget.pkg.github.com/Project-Tick/index.json" `
+            -ApiKey "${{ secrets.GITHUB_TOKEN }}" `
+            -SkipDuplicate `
+            -NonInteractive

@@ -83,10 +83,6 @@ let
       appimage = "ProjT-Launcher-aarch64.AppImage";
       deb = "projt-launcher_VERSION_arm64.deb";
     };
-    "x86_64-darwin" = {
-      dmg = "ProjT-Launcher-macOS-Intel.dmg";
-      app = "ProjT Launcher.app";
-    };
     "aarch64-darwin" = {
       dmg = "ProjT-Launcher-macOS-AppleSilicon.dmg";
       app = "ProjT Launcher.app";

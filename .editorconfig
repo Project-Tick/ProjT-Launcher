@@ -1,3 +1,15 @@
+root = true
+
+[quazip/**]
+end_of_line = lf
+indent_style = space
+indent_size = 4
+
+[quazip/**/*.yml]
+indent_size = 2
+
+[quazip/**/*.yaml]
+indent_size = 2
 # EditorConfig specs and documentation: https://EditorConfig.org
 
 # top-most EditorConfig file

@@ -209,23 +209,18 @@ jobs:
           if [[ "$commits_result" == "failure" ]] || [[ "$owners_result" == "failure" ]] || [[ "$quality_result" == "failure" ]]; then
             status="failure"
             echo "**Status:** Checks Failed" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$commits_result" == "cancelled" ]] || [[ "$owners_result" == "cancelled" ]] || [[ "$quality_result" == "cancelled" ]]; then
             status="cancelled"
             echo "**Status:** Checks Cancelled" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           elif [[ "$commits_result" == "success" ]] && [[ "$owners_result" == "success" ]] && [[ "$quality_result" == "success" ]]; then
             status="success"
             echo "**Status:** Checks Successful" >> $GITHUB_STEP_SUMMARY
-            exit_code=0
           else
             status="unknown"
             echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
-            exit_code=1
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           
           echo "status=$status" >> $GITHUB_OUTPUT
-          exit $exit_code

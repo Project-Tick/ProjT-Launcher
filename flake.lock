@@ -1,53 +1,5 @@
 {
   "nodes": {
-    "javacheck": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1764083590,
-        "narHash": "sha256-pHYcb2aZArXMKvQRfCBJVkyPfuvRpbvBNzWu3EL4JGE=",
-        "owner": "Project-Tick",
-        "repo": "javacheck",
-        "rev": "1d7242060d28631d85be6bcf9fca0b55b2cb1c67",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Project-Tick",
-        "repo": "javacheck",
-        "type": "github"
-      }
-    },
-    "launcher": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1766167746,
-        "narHash": "sha256-fznMakaKbTIFmgbHlgKjfBQNf/PQ7QpXBa3R24yoITI=",
-        "owner": "Project-Tick",
-        "repo": "PTLLauncherSM",
-        "rev": "88c617349d6263c65fd8d7dc529309f1df2e6733",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Project-Tick",
-        "repo": "PTLLauncherSM",
-        "type": "github"
-      }
-    },
-    "libnbtplusplus": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1766841843,
-        "narHash": "sha256-ousPp2LrK1jvf17eiJZhYsR/okNReIsyvGfF7UAmC2Q=",
-        "owner": "Project-Tick",
-        "repo": "libnbtplusplus",
-        "rev": "286d3ee6052f1e5d243f6adc7cdbc3099df20b9b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Project-Tick",
-        "repo": "libnbtplusplus",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1766651565,
@@ -64,29 +16,9 @@
         "type": "github"
       }
     },
-    "qrcodegenerator": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1737616857,
-        "narHash": "sha256-6SugPt0lp1Gz7nV23FLmsmpfzgFItkSw7jpGftsDPWc=",
-        "owner": "nayuki",
-        "repo": "QR-Code-generator",
-        "rev": "2c9044de6b049ca25cb3cd1649ed7e27aa055138",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nayuki",
-        "repo": "QR-Code-generator",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
-        "javacheck": "javacheck",
-        "launcher": "launcher",
-        "libnbtplusplus": "libnbtplusplus",
-        "nixpkgs": "nixpkgs",
-        "qrcodegenerator": "qrcodegenerator"
+        "nixpkgs": "nixpkgs"
       }
     }
   },

@@ -14,7 +14,9 @@ runs:
       shell: bash
       run: |
         brew update
-        brew install mono ninja extra-cmake-modules temurin@17
+        brew install mono ninja extra-cmake-modules temurin@17 \
+          zlib quazip cmark tomlplusplus qrencode
+        brew unlink qt || true # Avoid conflicts with the Qt we actually want to use
 
     - name: Set JAVA_HOME
       shell: bash
@@ -22,7 +24,4 @@ runs:
         echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> "$GITHUB_ENV"
         echo "PATH=$JAVA_HOME/bin:$PATH" >> "$GITHUB_ENV"
 
-    - name: Setup vcpkg environment
-      shell: bash
-      run: |
-        echo "CMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" >> "$GITHUB_ENV"
+

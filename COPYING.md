@@ -1,7 +1,7 @@
 ## ProjT Launcher
 
      ProjT Launcher - Minecraft Launcher
-     Copyright (C) 2025 ProjT Launcher Contributors
+     Copyright (C) 2025 Project Tick
 
      This program is free software: you can redistribute it and/or modify
      it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 
         Modified version:
         ProjT Launcher Logo
-        © 2025 ProjT Launcher Contributors
+        © 2025 Project Tick
         Licensed under CC BY-SA 4.0
 
         Prism Launcher - Minecraft Launcher
@@ -117,7 +117,7 @@
 ## ProjT Launcher Website
 
      ProjT Launcher Website
-     Copyright (C) 2025 ProjT Launcher Contributors
+     Copyright (C) 2025 Project Tick
 
      This program is free software: you can redistribute it and/or modify
      it under the terms of the GNU Affero General Public License as published by
@@ -369,7 +369,32 @@
 
     See COPYING file for the full LGPL text.
 
-## launcher (`libraries/launcher`)
+## zlib
+
+    Copyright notice:
+
+     (C) 1995-2025 Jean-loup Gailly and Mark Adler
+
+     This software is provided 'as-is', without any express or implied
+     warranty. In no event will the authors be held liable for any damages
+     arising from the use of this software.
+
+     Permission is granted to anyone to use this software for any purpose,
+     including commercial applications, and to alter it and redistribute it
+     freely, subject to the following restrictions:
+
+     1. The origin of this software must not be misrepresented; you must not
+        claim that you wrote the original software. If you use this software
+        in a product, an acknowledgment in the product documentation would be
+        appreciated but is not required.
+     2. Altered source versions must be plainly marked as such, and must not be
+        misrepresented as being the original software.
+     3. This notice may not be removed or altered from any source distribution.
+
+     Jean-loup Gailly        Mark Adler
+     jloup@gzip.org          madler@alumni.caltech.edu
+
+## launcher (`launcherjava`)
 
      PolyMC - Minecraft Launcher
      Copyright (C) 2021-2022 PolyMC Contributors
@@ -537,15 +562,6 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
-## QR-Code-generator (`libraries/qrcodegenerator`)
-
-    Copyright © 2024 Project Nayuki. (MIT License)
-    https://www.nayuki.io/page/qr-code-generator-library
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-        - The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-        - The Software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the Software or the use or other dealings in the Software.
-
 ## vcpkg (`cmake/vcpkg-ports`)
 
     MIT License
@@ -571,6 +587,6 @@
 
 ## Inspiration Acknowledgment
 
-Some CI concepts and general workflow ideas were inspired by the Nixpkgs project,  
-but all related files in this repository have been rewritten for ProjT Launcher's architecture  
-and are not derivative works.
+    Some CI concepts and general workflow ideas were inspired by the Nixpkgs project,  
+    but all related files in this repository have been rewritten for ProjT Launcher's architecture  
+    and are not derivative works.
