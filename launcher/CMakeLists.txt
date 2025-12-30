@@ -1545,6 +1545,17 @@ endif()
 if(WIN32 OR (UNIX AND APPLE))
     if(WIN32)
         set(QT_DEPLOY_TOOL_OPTIONS "--no-opengl-sw --no-quick-import --no-system-d3d-compiler --no-system-dxc-compiler --skip-plugin-types generic,networkinformation")
+        set(QT_RUNTIME_DIRS "")
+        if(QT_VERSION_MAJOR EQUAL 6 AND DEFINED Qt6_DIR)
+            set(_qt_cmake_dir "${Qt6_DIR}")
+        elseif(QT_VERSION_MAJOR EQUAL 5 AND DEFINED Qt5_DIR)
+            set(_qt_cmake_dir "${Qt5_DIR}")
+        endif()
+        if(DEFINED _qt_cmake_dir)
+            get_filename_component(_qt_prefix "${_qt_cmake_dir}/../../.." ABSOLUTE)
+            list(APPEND QT_RUNTIME_DIRS "${_qt_prefix}/bin")
+            list(REMOVE_DUPLICATES QT_RUNTIME_DIRS)
+        endif()
     endif()
 
     qt_generate_deploy_script(
@@ -1572,6 +1583,7 @@ if(WIN32 OR (UNIX AND APPLE))
         COMPONENT bundle
         DIRECTORIES
             ${CMAKE_SYSTEM_LIBRARY_PATH}
+            ${QT_RUNTIME_DIRS}
             ${QT_LIBS_DIR}
             ${QT_LIBEXECS_DIR}
             ${CMAKE_BINARY_DIR}
