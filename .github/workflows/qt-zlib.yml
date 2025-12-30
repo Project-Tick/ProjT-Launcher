@@ -96,7 +96,8 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
         run: |
-          unzip -q qt-everywhere-src-${{ matrix.qt_version }}.zip
+          rm -rf qt-everywhere-src-${{ matrix.qt_version }}
+          unzip -oq qt-everywhere-src-${{ matrix.qt_version }}.zip
           ls -la
 
       - name: Configure Qt
@@ -247,7 +248,8 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
         run: |
-          unzip -q qt-everywhere-src-${{ matrix.qt_version }}.zip
+          rm -rf qt-everywhere-src-${{ matrix.qt_version }}
+          unzip -oq qt-everywhere-src-${{ matrix.qt_version }}.zip
           ls -la
 
       - name: Normalize Qt source dir

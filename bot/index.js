@@ -205,12 +205,58 @@ const CONFIG = {
       label: { name: "31.scope:metadata", color: "0E8A16", description: "Metadata generator changes" },
     },
     {
-      option: "Docs/CI/Tools",
-      label: { name: "31.scope:docs-ci-tools", color: "0E8A16", description: "Docs/CI/tools changes" },
+      option: "Docs",
+      label: { name: "31.scope:docs", color: "0E8A16", description: "Docs changes" },
+    },
+    {
+      option: "CI",
+      label: { name: "31.scope:ci", color: "0E8A16", description: "CI changes" },
+    },
+    {
+      option: "Tools",
+      label: { name: "31.scope:tools", color: "0E8A16", description: "Tools changes" },
+    },
+    {
+      option: "Branding",
+      label: { name: "31.scope:branding", color: "0E8A16", description: "Branding changes" },
+    },
+    {
+      option: "Launcher Java System",
+      label: { name: "31.scope:launcher-java-system", color: "0E8A16", description: "Launcher Java System changes" },
+    },
+    {
+      option: "JavaCheck",
+      label: { name: "31.scope:javacheck", color: "0E8A16", description: "JavaCheck changes" },
+    },
+    {
+      option: "libnbtplusplus",
+      label: { name: "31.scope:libnbtplusplus", color: "0E8A16", description: "libnbtplusplus changes" },
+    },
+    {
+      option: "Packages",
+      label: { name: "31.scope:packages", color: "0E8A16", description: "Packages changes" },
     },
     {
       option: "Other (describe):",
       label: { name: "31.scope:other", color: "6A737D", description: "Other changes" },
+    },
+  ],
+  templatePackageLabels: [
+    {
+      option: "NixOS",
+      label: { name: "33.packages:nixos", color: "0E8A16", description: "NixOS packaging changes" },
+    },
+    {
+      option: "Flatpak",
+      label: { name: "33.packages:flatpak", color: "0E8A16", description: "Flatpak packaging changes" },
+    },
+    {
+      option: "AUR",
+      label: { name: "33.packages:aur", color: "0E8A16", description: "AUR packaging changes" },
+    },
+    {
+      option: "Add a new package manifest",
+      label: { name: "33.packages:new-manifest", color: "0E8A16", description: "New package manifest" },
     },
   ],
   maintainersFile: "ci/eval/compare/maintainers.nix",
@@ -733,6 +779,22 @@ async function handlePullRequest({ owner, repo, pullNumber, env, options = {} })
 
   const scopeSelections = getTemplateSelections(pullRequest.body ?? "", CONFIG.templateScopeLabels);
   for (const selection of scopeSelections) {
+    const label = selection.label;
+    if (!label?.name) continue;
+    const ready = await ensureLabelExists({
+      owner,
+      repo,
+      env,
+      repoLabels,
+      name: label.name,
+      color: label.color,
+      description: label.description,
+    });
+    if (ready) labelsToAdd.add(label.name);
+  }
+
+  const packageSelections = getTemplateSelections(pullRequest.body ?? "", CONFIG.templatePackageLabels);
+  for (const selection of packageSelections) {
     const label = selection.label;
     if (!label?.name) continue;
     const ready = await ensureLabelExists({

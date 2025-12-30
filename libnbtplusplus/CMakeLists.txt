@@ -40,10 +40,18 @@ if(NBT_USE_ZLIB)
     find_package(ZLIB REQUIRED)
     list(APPEND NBT_SOURCES ${NBT_SOURCES_Z})
     add_definitions("-DNBT_HAVE_ZLIB")
+    if(DEFINED ZLIB_INCLUDE_DIRS AND NOT ZLIB_INCLUDE_DIRS STREQUAL "")
+        set(NBT_ZLIB_INCLUDES ${ZLIB_INCLUDE_DIRS})
+    elseif(DEFINED ZLIB_INCLUDE_DIR AND NOT ZLIB_INCLUDE_DIR STREQUAL "")
+        set(NBT_ZLIB_INCLUDES ${ZLIB_INCLUDE_DIR})
+    endif()
 endif()
 
 add_library(${NBT_NAME} ${NBT_SOURCES})
 target_include_directories(${NBT_NAME} PUBLIC include ${CMAKE_CURRENT_BINARY_DIR})
+if(NBT_USE_ZLIB AND NBT_ZLIB_INCLUDES)
+    target_include_directories(${NBT_NAME} PUBLIC ${NBT_ZLIB_INCLUDES})
+endif()
 
 # Local developer tests are built in the test subdirectory now
 

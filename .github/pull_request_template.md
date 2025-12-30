@@ -9,7 +9,16 @@
 - [ ] Website (Eleventy)
 - [ ] Bot (Cloudflare Workers)
 - [ ] Metadata Generator (Python)
-- [ ] Docs/CI/Tools
+- [ ] Quazip
+- [ ] bzip2
+- [ ] Docs
+- [ ] CI
+- [ ] Tools
+- [ ] Branding
+- [ ] Launcher Java System
+- [ ] JavaCheck
+- [ ] libnbtplusplus
+- [ ] Packages
 - [ ] Other (describe):
 
 ## Type of Change
@@ -21,6 +30,13 @@
 - [ ] Test
 - [ ] Build / CI
 - [ ] Chore
+
+## If you are selected packages scope, please select Package Types
+
+- [ ] NixOS
+- [ ] Flatpak
+- [ ] AUR
+- [ ] Add a new package manifest
 
 ## Checklist
 

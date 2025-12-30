@@ -285,6 +285,9 @@ target_sources(bz2_ObjLib
     PRIVATE   ${BZ2_SOURCES}
     PUBLIC    ${CMAKE_CURRENT_SOURCE_DIR}/bzlib_private.h
     INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/bzlib.h)
+target_include_directories(bz2_ObjLib PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Windows resource file
 set(BZ2_RES "")
@@ -305,6 +308,9 @@ if(ENABLE_SHARED_LIB)
                   ${CMAKE_CURRENT_SOURCE_DIR}/libbz2.def
         PUBLIC    ${CMAKE_CURRENT_SOURCE_DIR}/bzlib_private.h
         INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/bzlib.h)
+    target_include_directories(bz2 PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}")
 
     # Always use '-fPIC'/'-fPIE' option for shared libraries.
     set_property(TARGET bz2 PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -344,6 +350,9 @@ if(ENABLE_STATIC_LIB)
         PRIVATE     ${BZ2_SOURCES}
         PUBLIC      ${CMAKE_CURRENT_SOURCE_DIR}/bzlib_private.h
         INTERFACE   ${CMAKE_CURRENT_SOURCE_DIR}/bzlib.h)
+    target_include_directories(bz2_static PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}")
 
     # Use '-fPIC'/'-fPIE' option for static libraries by default.
     # You may build with ENABLE_STATIC_LIB_IS_PIC=OFF to disable PIC for the static library.
