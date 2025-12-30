@@ -137,7 +137,7 @@ jobs:
 
     - name: Run test cases
       run: ctest -C Release --output-on-failure --max-width 120
-      working-directory: build
+      working-directory: zlib/build
 
     - name: create packages
       run: cmake --build build --config ${{ matrix.build-config || 'Release' }} -t ${{ matrix.pkgtgt }}
@@ -148,6 +148,6 @@ jobs:
       with:
         name: ${{ matrix.name }} (cmake)
         path: |
-          ../build/CMakeFiles/CMakeOutput.log
-          ../build/CMakeFiles/CMakeError.log
+          zlib/build/CMakeFiles/CMakeOutput.log
+          zlib/build/CMakeFiles/CMakeError.log
         retention-days: 7

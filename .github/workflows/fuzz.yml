@@ -27,16 +27,21 @@ jobs:
     needs: scope
     if: needs.scope.outputs.run == 'true'
     steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
     - name: Build Fuzzers
       uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
       with:
         oss-fuzz-project-name: 'zlib'
+        project-src-path: .
         dry-run: false
 
     - name: Run Fuzzers
       uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
       with:
         oss-fuzz-project-name: 'zlib'
+        project-src-path: .
         fuzz-seconds: 300
         dry-run: false
 
