@@ -33,7 +33,7 @@ jobs:
       uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
       with:
         oss-fuzz-project-name: 'zlib'
-        project-src-path: zlib
+        project-src-path: .
         bad-build-check: false
         dry-run: false
 
@@ -41,7 +41,7 @@ jobs:
       uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
       with:
         oss-fuzz-project-name: 'zlib'
-        project-src-path: zlib
+        project-src-path: .
         bad-build-check: false
         fuzz-seconds: 300
         dry-run: false
