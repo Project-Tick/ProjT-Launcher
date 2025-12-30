@@ -62,18 +62,6 @@ jobs:
     with:
       ref: ${{ needs.prepare.outputs.mergedSha }}
 
-  build-bzip2:
-    name: Build bzip2
-    uses: ./.github/workflows/build-bzip2.yml
-    with:
-      ref: ${{ needs.prepare.outputs.mergedSha }}
-
-  build-quazip:
-    name: Build quazip
-    uses: ./.github/workflows/build-quazip.yml
-    with:
-      ref: ${{ needs.prepare.outputs.mergedSha }}
-
   # This job's only purpose is to create the target for the "Required Status Checks" branch ruleset.
   # It "needs" all the jobs that should block the Merge Queue.
   unlock:
@@ -81,8 +69,6 @@ jobs:
     # Modify this list to add or remove jobs from required status checks.
     needs:
       - build
-      - build-bzip2
-      - build-quazip
     runs-on: ubuntu-latest
     permissions:
       statuses: write

@@ -115,18 +115,6 @@ jobs:
     with:
       ref: ${{ needs.prepare.outputs.headSha }}
 
-  build-bzip2:
-    name: Build bzip2
-    uses: ./.github/workflows/build-bzip2.yml
-    with:
-      ref: ${{ needs.prepare.outputs.headSha }}
-
-  build-quazip:
-    name: Build quazip
-    uses: ./.github/workflows/build-quazip.yml
-    with:
-      ref: ${{ needs.prepare.outputs.headSha }}
-
   # PR summary
   summary:
     name: Summary
@@ -153,8 +141,6 @@ jobs:
     needs:
       - check
       - build
-      - build-bzip2
-      - build-quazip
     runs-on: ubuntu-latest
     permissions:
       statuses: write
