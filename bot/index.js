@@ -394,6 +394,10 @@ const CONFIG = {
     ],
     defaultMode: "skip",
   },
+  ciDispatchStatus: {
+    enabledEnv: "BOT_CI_STATUS",
+    context: "no PR failures",
+  },
   ciSummary: {
     marker: "<!-- projt-bot:pr-summary -->",
     workflowFile: "pull-request-target.yml",
@@ -558,6 +562,33 @@ function isCiDispatchEnabled(env) {
   return String(env?.BOT_CI_APPROVALS ?? "false").toLowerCase() === "true";
 }
 
+function isCiDispatchStatusEnabled(env) {
+  const flag = CONFIG.ciDispatchStatus?.enabledEnv;
+  const configured = flag ? env?.[flag] : undefined;
+  if (configured !== undefined) return String(configured).toLowerCase() === "true";
+  return isCiDispatchEnabled(env);
+}
+
+function buildDispatchPlan({ selectedOptions, selectedLabels }) {
+  const rules = Array.isArray(CONFIG.ciDispatch?.rules) ? CONFIG.ciDispatch.rules : [];
+  const workflows = new Set();
+  const decisions = [];
+
+  for (const rule of rules) {
+    const decision = evaluateCiApproval({
+      rule,
+      selectedOptions,
+      selectedLabels,
+      hasPr: true,
+    });
+    decisions.push({ rule: rule.id, approve: decision.approve, reason: decision.reason, workflows: rule.workflows ?? [] });
+    if (!decision.approve) continue;
+    for (const workflow of rule.workflows ?? []) workflows.add(workflow);
+  }
+
+  return { workflows: [...workflows], decisions };
+}
+
 function evaluateCiApproval({ rule, selectedOptions, selectedLabels, hasPr }) {
   const mode = rule?.mode ?? CONFIG.ciApproval?.defaultMode ?? "skip";
   if (!hasPr) {
@@ -597,6 +628,22 @@ function buildCheckoutRef({ pullRequest }) {
   return pullRequest?.head?.sha ?? pullRequest?.head?.ref ?? pullRequest?.base?.ref ?? "develop";
 }
 
+function buildWorkflowInputs({ workflow, pullRequest, env }) {
+  const checkoutRef = buildCheckoutRef({ pullRequest });
+  const inputs = { ref: checkoutRef };
+  if (workflow === "build.yml") {
+    const prNumber = pullRequest?.number ?? "unknown";
+    const sha = String(pullRequest?.head?.sha ?? "");
+    const shortSha = sha ? sha.slice(0, 7) : "unknown";
+    inputs.version = `pr-${prNumber}-${shortSha}`;
+    inputs["vcvars-arch"] = "amd64";
+    inputs.app_id = String(env?.GITHUB_APP_ID ?? "");
+    if (!inputs.app_id) inputs.app_id = "0";
+    inputs.git_ref = pullRequest?.head?.sha ?? checkoutRef;
+  }
+  return inputs;
+}
+
 async function listWorkflowRuns({ owner, repo, workflow, env }) {
   const { data } = await githubApi({
     env,
@@ -610,6 +657,63 @@ async function hasWorkflowRunForSha({ owner, repo, workflow, sha, env }) {
   if (!sha) return false;
   const runs = await listWorkflowRuns({ owner, repo, workflow, env });
   return runs.some((run) => run?.event === "workflow_dispatch" && run?.head_sha === sha);
+}
+
+async function getLatestWorkflowRunForSha({ owner, repo, workflow, sha, env }) {
+  if (!sha) return null;
+  const runs = await listWorkflowRuns({ owner, repo, workflow, env });
+  return runs.find((run) => run?.event === "workflow_dispatch" && run?.head_sha === sha) ?? null;
+}
+
+async function evaluateDispatchRuns({ owner, repo, workflows, sha, env }) {
+  const results = [];
+  let missing = false;
+  let inProgress = false;
+  let failed = false;
+
+  for (const workflow of workflows) {
+    const run = await getLatestWorkflowRunForSha({ owner, repo, workflow, sha, env });
+    if (!run) {
+      missing = true;
+      results.push({ workflow, status: "missing" });
+      continue;
+    }
+    if (run.status !== "completed") {
+      inProgress = true;
+      results.push({ workflow, status: run.status });
+      continue;
+    }
+    if (run.conclusion !== "success") {
+      failed = true;
+      results.push({ workflow, status: run.conclusion ?? "failed" });
+      continue;
+    }
+    results.push({ workflow, status: "success" });
+  }
+
+  if (failed) return { state: "failure", results };
+  if (missing || inProgress) return { state: "pending", results };
+  return { state: "success", results };
+}
+
+async function setCommitStatus({ owner, repo, sha, state, description, targetUrl, env, dryRun }) {
+  if (!sha) return { ok: false, error: "missing-sha" };
+  if (dryRun) {
+    console.log("DRY_RUN: would set commit status", { sha, state, description, targetUrl });
+    return { ok: true, skipped: "dry-run" };
+  }
+  await githubApi({
+    env,
+    method: "POST",
+    path: `/repos/${owner}/${repo}/statuses/${sha}`,
+    body: {
+      state,
+      context: CONFIG.ciDispatchStatus?.context ?? "no PR failures",
+      description,
+      target_url: targetUrl,
+    },
+  });
+  return { ok: true, state };
 }
 
 async function dispatchWorkflow({ owner, repo, workflow, ref, inputs, env, dryRun }) {
@@ -631,23 +735,14 @@ async function dispatchWorkflowsForPR({ owner, repo, pullRequest, selectedOption
   if (!pullRequest?.number) return { ok: false, error: "missing-pull-number" };
 
   const results = [];
-  const rules = Array.isArray(CONFIG.ciDispatch?.rules) ? CONFIG.ciDispatch.rules : [];
+  const plan = buildDispatchPlan({ selectedOptions, selectedLabels });
   const ref = buildDispatchRef({ pullRequest, owner, repo });
-  const inputs = { ref: buildCheckoutRef({ pullRequest }) };
-
-  for (const rule of rules) {
-    const decision = evaluateCiApproval({
-      rule,
-      selectedOptions,
-      selectedLabels,
-      hasPr: true,
-    });
+  for (const decision of plan.decisions) {
     if (!decision.approve) {
-      results.push({ rule: rule.id, skipped: true, reason: decision.reason });
+      results.push({ rule: decision.rule, skipped: true, reason: decision.reason });
       continue;
     }
-
-    for (const workflow of rule.workflows ?? []) {
+    for (const workflow of decision.workflows ?? []) {
       const already = await hasWorkflowRunForSha({
         owner,
         repo,
@@ -659,12 +754,13 @@ async function dispatchWorkflowsForPR({ owner, repo, pullRequest, selectedOption
         results.push({ workflow, skipped: true, reason: "already-dispatched" });
         continue;
       }
+      const inputs = buildWorkflowInputs({ workflow, pullRequest, env });
       const result = await dispatchWorkflow({ owner, repo, workflow, ref, inputs, env, dryRun });
       results.push({ workflow, ...result });
     }
   }
 
-  return { ok: true, results };
+  return { ok: true, results, workflows: plan.workflows };
 }
 
 function resolveTemplateLabel(selection, repoLabels) {
@@ -1152,6 +1248,62 @@ async function handlePullRequest({ owner, repo, pullNumber, env, options = {} })
     ciSummary = { ok: false, skipped: "cron-light" };
   }
 
+  let dispatchStatus = null;
+  if (!light) {
+    try {
+      if (isCiDispatchStatusEnabled(env)) {
+        const plan = buildDispatchPlan({ selectedOptions, selectedLabels });
+        const required = plan.workflows;
+        if (required.length === 0) {
+          dispatchStatus = await setCommitStatus({
+            owner,
+            repo,
+            sha: pullRequest?.head?.sha ?? "",
+            state: "success",
+            description: "No workflows required",
+            targetUrl: pullRequest?.html_url ?? undefined,
+            env,
+            dryRun,
+          });
+        } else {
+          const evaluation = await evaluateDispatchRuns({
+            owner,
+            repo,
+            workflows: required,
+            sha: pullRequest?.head?.sha ?? "",
+            env,
+          });
+          const description =
+            evaluation.state === "success"
+              ? "All required workflows succeeded"
+              : evaluation.state === "failure"
+                ? "One or more workflows failed"
+                : "Waiting for workflows to finish";
+          dispatchStatus = {
+            ...(await setCommitStatus({
+              owner,
+              repo,
+              sha: pullRequest?.head?.sha ?? "",
+              state: evaluation.state,
+              description,
+              targetUrl: pullRequest?.html_url ?? undefined,
+              env,
+              dryRun,
+            })),
+            results: evaluation.results,
+          };
+        }
+      } else {
+        dispatchStatus = { ok: true, skipped: "status-disabled" };
+      }
+    } catch (error) {
+      console.warn("Dispatch status update failed:", error?.message ?? error);
+      dispatchStatus = { ok: false, error: String(error?.message ?? error) };
+    }
+  } else {
+    dispatchStatus = { ok: true, skipped: "cron-light" };
+  }
+
   try {
     if (!light && !isBackport) {
       await ensureReviewers({
@@ -1188,7 +1340,17 @@ async function handlePullRequest({ owner, repo, pullNumber, env, options = {} })
   }
 
   if (newLabels.length === 0 && labelsToDelete.length === 0) {
-    return { ok: true, changed: false, added: [], removed: [], dryRun, ciDispatch, ciSummary, autoMerge: autoMergeResult };
+    return {
+      ok: true,
+      changed: false,
+      added: [],
+      removed: [],
+      dryRun,
+      ciDispatch,
+      ciSummary,
+      dispatchStatus,
+      autoMerge: autoMergeResult,
+    };
   }
 
   if (!dryRun) {
@@ -1215,7 +1377,17 @@ async function handlePullRequest({ owner, repo, pullNumber, env, options = {} })
     }
   }
 
-  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciDispatch, ciSummary, autoMerge: autoMergeResult };
+  return {
+    ok: true,
+    changed: true,
+    added: newLabels,
+    removed: labelsToDelete,
+    dryRun,
+    ciDispatch,
+    ciSummary,
+    dispatchStatus,
+    autoMerge: autoMergeResult,
+  };
 }
 
 async function listOpenPullRequests({ owner, repo, env }) {
