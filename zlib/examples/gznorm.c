@@ -11,33 +11,34 @@
 // could be available across member boundaries.
 
 #if defined(_WIN32) && !defined(_CRT_NONSTDC_NO_DEPRECATE)
-#  define _CRT_NONSTDC_NO_DEPRECATE
+#define _CRT_NONSTDC_NO_DEPRECATE
 #endif
 
-#include <stdio.h>      // fread, fwrite, putc, fflush, ferror, fprintf,
-                        // vsnprintf, stdout, stderr, NULL, FILE
-#include <stdlib.h>     // malloc, free
-#include <string.h>     // strerror
-#include <errno.h>      // errno
-#include <stdarg.h>     // va_list, va_start, va_end
-#include "zlib.h"       // inflateInit2, inflate, inflateReset, inflateEnd,
-                        // z_stream, z_off_t, crc32_combine, Z_NULL, Z_BLOCK,
-                        // Z_OK, Z_STREAM_END, Z_BUF_ERROR, Z_DATA_ERROR,
-                        // Z_MEM_ERROR
+#include <stdio.h>   // fread, fwrite, putc, fflush, ferror, fprintf,
+                     // vsnprintf, stdout, stderr, NULL, FILE
+#include <errno.h>   // errno
+#include <stdarg.h>  // va_list, va_start, va_end
+#include <stdlib.h>  // malloc, free
+#include <string.h>  // strerror
+#include "zlib.h"    // inflateInit2, inflate, inflateReset, inflateEnd,
+                     // z_stream, z_off_t, crc32_combine, Z_NULL, Z_BLOCK,
+                     // Z_OK, Z_STREAM_END, Z_BUF_ERROR, Z_DATA_ERROR,
+                     // Z_MEM_ERROR
 
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
-#  include <fcntl.h>
-#  include <io.h>
-#  define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
+#include <fcntl.h>
+#include <io.h>
+#define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
 #else
-#  define SET_BINARY_MODE(file)
+#define SET_BINARY_MODE(file)
 #endif
 
 #define local static
 
 // printf to an allocated string. Return the string, or NULL if the printf or
 // allocation fails.
-local char *aprintf(char *fmt, ...) {
+local char* aprintf(char* fmt, ...)
+{
     // Get the length of the result of the printf.
     va_list args;
     va_start(args, fmt);
@@ -47,7 +48,7 @@ local char *aprintf(char *fmt, ...) {
         return NULL;
 
     // Allocate the required space and printf to it.
-    char *str = malloc(len + 1);
+    char* str = malloc(len + 1);
     if (str == NULL)
         return NULL;
     va_start(args, fmt);
@@ -59,11 +60,11 @@ local char *aprintf(char *fmt, ...) {
 // Return with an error, putting an allocated error message in *err. Doing an
 // inflateEnd() on an already ended state, or one with state set to Z_NULL, is
 // permitted.
-#define BYE(...) \
-    do { \
-        inflateEnd(&strm); \
+#define BYE(...)                     \
+    do {                             \
+        inflateEnd(&strm);           \
         *err = aprintf(__VA_ARGS__); \
-        return 1; \
+        return 1;                    \
     } while (0)
 
 // Chunk size for buffered reads and for decompression. Twice this many bytes
@@ -87,7 +88,8 @@ local char *aprintf(char *fmt, ...) {
 // and assures that gzip_normalize applied a second time will not change the
 // input. The pad bits after stored block headers and after the final deflate
 // block are all forced to zeros.
-local int gzip_normalize(FILE *in, FILE *out, char **err) {
+local int gzip_normalize(FILE* in, FILE* out, char** err)
+{
     // initialize the inflate engine to process a gzip member
     z_stream strm;
     strm.zalloc = Z_NULL;
@@ -99,16 +101,16 @@ local int gzip_normalize(FILE *in, FILE *out, char **err) {
         BYE("out of memory");
 
     // State while processing the input gzip stream.
-    enum {              // BETWEEN -> HEAD -> BLOCK -> TAIL -> BETWEEN -> ...
-        BETWEEN,        // between gzip members (must end in this state)
-        HEAD,           // reading a gzip header
-        BLOCK,          // reading deflate blocks
-        TAIL            // reading a gzip trailer
-    } state = BETWEEN;              // current component being processed
-    unsigned long crc = 0;          // accumulated CRC of uncompressed data
-    unsigned long len = 0;          // accumulated length of uncompressed data
-    unsigned long buf = 0;          // deflate stream bit buffer of num bits
-    int num = 0;                    // number of bits in buf (at bottom)
+    enum {                  // BETWEEN -> HEAD -> BLOCK -> TAIL -> BETWEEN -> ...
+        BETWEEN,            // between gzip members (must end in this state)
+        HEAD,               // reading a gzip header
+        BLOCK,              // reading deflate blocks
+        TAIL                // reading a gzip trailer
+    } state = BETWEEN;      // current component being processed
+    unsigned long crc = 0;  // accumulated CRC of uncompressed data
+    unsigned long len = 0;  // accumulated length of uncompressed data
+    unsigned long buf = 0;  // deflate stream bit buffer of num bits
+    int num = 0;            // number of bits in buf (at bottom)
 
     // Write a canonical gzip header (no mod time, file name, comment, extra
     // block, or extra flags, and OS is marked as unknown).
@@ -116,16 +118,16 @@ local int gzip_normalize(FILE *in, FILE *out, char **err) {
 
     // Process the gzip stream from in until reaching the end of the input,
     // encountering invalid input, or experiencing an i/o error.
-    int more;                       // true if not at the end of the input
+    int more;  // true if not at the end of the input
     do {
         // State inside this loop.
-        unsigned char *put;         // next input buffer location to process
-        int prev;                   // number of bits from previous block in
-                                    // the bit buffer, or -1 if not at the
-                                    // start of a block
-        unsigned long long memb;    // uncompressed length of member
-        size_t tail;                // number of trailer bytes read (0..8)
-        unsigned long part;         // accumulated trailer component
+        unsigned char* put;       // next input buffer location to process
+        int prev;                 // number of bits from previous block in
+                                  // the bit buffer, or -1 if not at the
+                                  // start of a block
+        unsigned long long memb;  // uncompressed length of member
+        size_t tail;              // number of trailer bytes read (0..8)
+        unsigned long part;       // accumulated trailer component
 
         // Get the next chunk of input from in.
         unsigned char dat[CHUNK];
@@ -225,7 +227,7 @@ local int gzip_normalize(FILE *in, FILE *out, char **err) {
                     // the next block, or the number of pad bits after the
                     // final block. In either of those cases, bits is in the
                     // range 0..7.
-                    ;                   // (required due to C syntax oddity)
+                    ;  // (required due to C syntax oddity)
                     int bits = strm.data_type & 0x1f;
 
                     if (prev != -1) {
@@ -265,14 +267,13 @@ local int gzip_normalize(FILE *in, FILE *out, char **err) {
                                 // to avoid adding an empty block every time a
                                 // gzip stream is normalized.
                                 num = prev;
-                                buf &= last - 1;    // zero the pad bits
+                                buf &= last - 1;  // zero the pad bits
                             }
-                        }
-                        else if (((buf >> prev) & 6) == 0) {
+                        } else if (((buf >> prev) & 6) == 0) {
                             // This is a stored block. Flush to the next
                             // byte boundary after the three-bit header.
                             num = (prev + 10) & ~7;
-                            buf &= last - 1;        // zero the pad bits
+                            buf &= last - 1;  // zero the pad bits
                         }
 
                         // Clear the last block bit.
@@ -310,7 +311,7 @@ local int gzip_normalize(FILE *in, FILE *out, char **err) {
                     // stream. Copy the data after shifting in num bits from
                     // buf in front of it, leaving num bits from the end of the
                     // compressed data in buf when done.
-                    unsigned char *end = strm.next_in - mix;
+                    unsigned char* end = strm.next_in - mix;
                     if (put < end) {
                         if (num)
                             // Insert num bits from buf before the data being
@@ -350,14 +351,13 @@ local int gzip_normalize(FILE *in, FILE *out, char **err) {
                             buf &= ((unsigned long)1 << num) - 1;
 
                             // Don't need to set prev here since going to TAIL.
-                        }
-                        else
+                        } else
                             // At the end of an internal deflate block. Leave
                             // the last byte in the bit buffer to examine on
                             // the next entry to BLOCK, when more bits from the
                             // next block will be available.
-                            prev = num - bits;      // number of bits in buffer
-                                                    // from current block
+                            prev = num - bits;  // number of bits in buffer
+                                                // from current block
                     }
 
                     // Don't have a byte left over, so we are in the middle of
@@ -398,8 +398,7 @@ local int gzip_normalize(FILE *in, FILE *out, char **err) {
                                 BYE("overflow error");
                             crc = crc ? crc32_combine(crc, part, len2) : part;
                             part = 0;
-                        }
-                        else if (tail == 8) {
+                        } else if (tail == 8) {
                             // Update the total uncompressed length. (It's ok
                             // if this sum is done modulo 2^32.)
                             len += part;
@@ -459,13 +458,14 @@ local int gzip_normalize(FILE *in, FILE *out, char **err) {
 }
 
 // Normalize the gzip stream on stdin, writing the result to stdout.
-int main(void) {
+int main(void)
+{
     // Avoid end-of-line conversions on evil operating systems.
     SET_BINARY_MODE(stdin);
     SET_BINARY_MODE(stdout);
 
     // Normalize from stdin to stdout, returning 1 on error, 0 if ok.
-    char *err;
+    char* err;
     int ret = gzip_normalize(stdin, stdout, &err);
     if (ret)
         fprintf(stderr, "gznorm error: %s\n", err);

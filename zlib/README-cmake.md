@@ -9,7 +9,7 @@ Every option is list below (excluding the cmake-standard options), they can be s
 
     -D<option>=ON/OFF
 
-## ZLIB-options with defaults ##
+## ZLIB-options with defaults
 
     ZLIB_BUILD_TESTING=ON -- Enable Zlib Examples as tests
 
@@ -30,7 +30,7 @@ If this option is turned on, additional options are available from minizip (see 
 This option is only on windows available and may/will be turned off and removed somewhen in the future.
 If you rely cmake for finding and using zlib, this can be turned off, as `zlib1.dll` will never be used.
 
-## minizip-options with defaults ##
+## minizip-options with defaults
 
     MINIZIP_BUILD_SHARED=ON -- Enable building minizip shared library
 
@@ -50,7 +50,7 @@ This option is only available on mingw as they tend to name this lib different. 
 removed in the future as. If you rely cmake for finding and using zlib, this can be turned off, as
 the other file will never be used.
 
-## Using the libs ##
+## Using the libs
 
 To pull in what you need it's enough to just write
 
@@ -75,7 +75,7 @@ want to link against are created.
 
 When you search for minizip, it will search zlib for you, so only one of both is needed.
 
-## Imported targets ##
+## Imported targets
 
 When found the following targets are created for you:
 
