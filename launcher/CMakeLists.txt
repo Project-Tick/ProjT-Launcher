@@ -1587,7 +1587,7 @@ if(WIN32 OR (UNIX AND APPLE))
             "^(api-ms-win|ext-ms)-.*\\.dll$"
             "^azure.*\\.dll$"
             "^vcruntime.*\\.dll$"
-            "^Qt.*" # Exclude Qt from this set, handled by qt_deploy_runtime_dependencies
+            ".*Qt.*\\.dll$" # Exclude Qt from this set, handled by qt_deploy_runtime_dependencies
         POST_EXCLUDE_REGEXES
             "system32"
             "^/opt/homebrew/.*" # Exclude Homebrew paths on macOS
