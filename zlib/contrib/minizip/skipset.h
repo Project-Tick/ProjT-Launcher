@@ -55,13 +55,13 @@
 #ifndef SKIPSET_H
 #define SKIPSET_H
 
-#include <stdlib.h>     /* realloc(), free(), NULL, size_t */
-#include <stddef.h>     /* ptrdiff_t */
-#include <setjmp.h>     /* jmp_buf, longjmp() */
-#include <errno.h>      /* ENOMEM */
-#include <time.h>       /* time(), clock() */
-#include <assert.h>     /* assert.h */
-#include "ints.h"       /* i16_t, ui32_t, ui64_t */
+#include <assert.h> /* assert.h */
+#include <errno.h>  /* ENOMEM */
+#include <setjmp.h> /* jmp_buf, longjmp() */
+#include <stddef.h> /* ptrdiff_t */
+#include <stdlib.h> /* realloc(), free(), NULL, size_t */
+#include <time.h>   /* time(), clock() */
+#include "ints.h"   /* i16_t, ui32_t, ui64_t */
 
 /* Structures and functions below noted as "--private--" should not be used by
 // the application. set_t is partially private and partially public -- see the
@@ -75,17 +75,19 @@
 // Licensed under Apache License 2.0 (NO WARRANTY, etc. see website)
 // --private-- Random number generator state. */
 typedef struct {
-    ui64_t state;       /* 64-bit generator state */
-    ui64_t inc;         /* 63-bit sequence id */
+    ui64_t state; /* 64-bit generator state */
+    ui64_t inc;   /* 63-bit sequence id */
 } set_rand_t;
 /* --private-- Initialize the state *gen using seed and seq. seed seeds the
 // advancing 64-bit state. seq is a sequence selection constant. */
-void set_seed(set_rand_t *gen, ui64_t seed, ui64_t seq) {
+void set_seed(set_rand_t* gen, ui64_t seed, ui64_t seq)
+{
     gen->inc = (seq << 1) | 1;
     gen->state = (seed + gen->inc) * 6364136223846793005ULL + gen->inc;
 }
 /* Return 32 random bits, advancing the state *gen. */
-ui32_t set_rand(set_rand_t *gen) {
+ui32_t set_rand(set_rand_t* gen)
+{
     ui64_t state = gen->state;
     gen->state = state * 6364136223846793005ULL + gen->inc;
     ui32_t mix = (ui32_t)(((state >> 18) ^ state) >> 27);
@@ -97,25 +99,25 @@ ui32_t set_rand(set_rand_t *gen) {
 /* --private-- Linked-list node. */
 typedef struct set_node_s set_node_t;
 struct set_node_s {
-    set_key_t key;          /* the key (not used for head or path) */
-    i16_t size;             /* number of allocated pointers in right[] */
-    i16_t fill;             /* number of pointers in right[] filled in */
-    set_node_t **right;     /* pointer for each level, each to the right */
+    set_key_t key;      /* the key (not used for head or path) */
+    i16_t size;         /* number of allocated pointers in right[] */
+    i16_t fill;         /* number of pointers in right[] filled in */
+    set_node_t** right; /* pointer for each level, each to the right */
 };
 
 /* A set. The application sets env, may use gen with set_rand(), and may read
 // allocs and memory. The remaining variables are --private-- . */
 typedef struct set_s {
-    set_node_t *head;       /* skiplist head -- no key, just links */
-    set_node_t *path;       /* right[] is path to key from set_found() */
-    set_node_t *node;       /* node under construction, in case of longjmp() */
-    i16_t depth;            /* maximum depth of the skiplist */
-    ui64_t ran;             /* a precious trove of random bits */
-    set_rand_t gen;         /* random number generator state */
-    jmp_buf env;            /* setjmp() environment for allocation errors */
+    set_node_t* head; /* skiplist head -- no key, just links */
+    set_node_t* path; /* right[] is path to key from set_found() */
+    set_node_t* node; /* node under construction, in case of longjmp() */
+    i16_t depth;      /* maximum depth of the skiplist */
+    ui64_t ran;       /* a precious trove of random bits */
+    set_rand_t gen;   /* random number generator state */
+    jmp_buf env;      /* setjmp() environment for allocation errors */
 #ifdef SET_TRACK
-    size_t allocs;          /* number of allocations */
-    size_t memory;          /* total amount of allocated memory (>= requests) */
+    size_t allocs; /* number of allocations */
+    size_t memory; /* total amount of allocated memory (>= requests) */
 #endif
 } set_t;
 
@@ -126,35 +128,37 @@ typedef struct set_s {
 // used by the application. e.g. if allocation tracking is desired. */
 #ifdef SET_TRACK
 /* Track the number of allocations and the total backing memory size. */
-#  if defined(_WIN32)
-#    include <malloc.h>
-#    define SET_ALLOC_SIZE(ptr) _msize(ptr)
-#  elif defined(__MACH__)
-#    include <malloc/malloc.h>
-#    define SET_ALLOC_SIZE(ptr) malloc_size(ptr)
-#  elif defined(__linux__)
-#    include <malloc.h>
-#    define SET_ALLOC_SIZE(ptr) malloc_usable_size(ptr)
-#  elif defined(__FreeBSD__)
-#    include <malloc_np.h>
-#    define SET_ALLOC_SIZE(ptr) malloc_usable_size(ptr)
-#  elif defined(__NetBSD__)
-#    include <jemalloc/jemalloc.h>
-#    define SET_ALLOC_SIZE(ptr) malloc_usable_size(ptr)
-#  else     // e.g. OpenBSD
-#    define SET_ALLOC_SIZE(ptr) 0
-#  endif
+#if defined(_WIN32)
+#include <malloc.h>
+#define SET_ALLOC_SIZE(ptr) _msize(ptr)
+#elif defined(__MACH__)
+#include <malloc/malloc.h>
+#define SET_ALLOC_SIZE(ptr) malloc_size(ptr)
+#elif defined(__linux__)
+#include <malloc.h>
+#define SET_ALLOC_SIZE(ptr) malloc_usable_size(ptr)
+#elif defined(__FreeBSD__)
+#include <malloc_np.h>
+#define SET_ALLOC_SIZE(ptr) malloc_usable_size(ptr)
+#elif defined(__NetBSD__)
+#include <jemalloc/jemalloc.h>
+#define SET_ALLOC_SIZE(ptr) malloc_usable_size(ptr)
+#else  // e.g. OpenBSD
+#define SET_ALLOC_SIZE(ptr) 0
+#endif
 // With tracking.
-void *set_alloc(set_t *set, void *ptr, size_t size) {
+void* set_alloc(set_t* set, void* ptr, size_t size)
+{
     size_t had = ptr == NULL ? 0 : SET_ALLOC_SIZE(ptr);
-    void *mem = realloc(ptr, size);
+    void* mem = realloc(ptr, size);
     if (mem == NULL)
         longjmp(set->env, ENOMEM);
     set->allocs += ptr == NULL;
     set->memory += SET_ALLOC_SIZE(mem) - had;
     return mem;
 }
-void set_free(set_t *set, void *ptr) {
+void set_free(set_t* set, void* ptr)
+{
     if (ptr != NULL) {
         set->allocs--;
         set->memory -= SET_ALLOC_SIZE(ptr);
@@ -163,13 +167,15 @@ void set_free(set_t *set, void *ptr) {
 }
 #else
 /* Without tracking. */
-void *set_alloc(set_t *set, void *ptr, size_t size) {
-    void *mem = realloc(ptr, size);
+void* set_alloc(set_t* set, void* ptr, size_t size)
+{
+    void* mem = realloc(ptr, size);
     if (mem == NULL)
         longjmp(set->env, ENOMEM);
     return mem;
 }
-void set_free(set_t *set, void *ptr) {
+void set_free(set_t* set, void* ptr)
+{
     (void)set;
     free(ptr);
 }
@@ -179,12 +185,13 @@ void set_free(set_t *set, void *ptr) {
 // want links. If fill is true, assure that the first want links are filled in,
 // setting them to set->head if not previously filled in. Otherwise it is
 // assumed that the first want links are about to be filled in. */
-void set_grow(set_t *set, set_node_t *node, int want, int fill) {
+void set_grow(set_t* set, set_node_t* node, int want, int fill)
+{
     if (node->size < want) {
         int more = node->size ? node->size : 1;
         while (more < want)
             more <<= 1;
-        node->right = set_alloc(set, node->right, more * sizeof(set_node_t *));
+        node->right = set_alloc(set, node->right, more * sizeof(set_node_t*));
         node->size = (i16_t)more;
     }
     int i;
@@ -195,8 +202,9 @@ void set_grow(set_t *set, set_node_t *node, int want, int fill) {
 }
 
 /* --private-- Return a new node. key is left uninitialized. */
-set_node_t *set_node(set_t *set) {
-    set_node_t *node = set_alloc(set, NULL, sizeof(set_node_t));
+set_node_t* set_node(set_t* set)
+{
+    set_node_t* node = set_alloc(set, NULL, sizeof(set_node_t));
     node->size = 0;
     node->fill = 0;
     node->right = NULL;
@@ -204,10 +212,11 @@ set_node_t *set_node(set_t *set) {
 }
 
 /* --private-- Free the list linked from head, along with the keys. */
-void set_sweep(set_t *set) {
-    set_node_t *step = set->head->right[0];
+void set_sweep(set_t* set)
+{
+    set_node_t* step = set->head->right[0];
     while (step != set->head) {
-        set_node_t *next = step->right[0];      /* save link to next node */
+        set_node_t* next = step->right[0]; /* save link to next node */
         set_drop(set, step->key);
         set_free(set, step->right);
         set_free(set, step);
@@ -221,33 +230,33 @@ void set_sweep(set_t *set) {
 // errno.h.) The set can still be used if this happens, assuming that it didn't
 // happen during set_start(). Whether set_start() completed or not, set_end()
 // can be used to free the set's memory after a longjmp(). */
-void set_start(set_t *set) {
+void set_start(set_t* set)
+{
 #ifdef SET_TRACK
     set->allocs = 0;
     set->memory = 0;
 #endif
-    set->head = set->path = set->node = NULL;   /* in case set_node() fails */
+    set->head = set->path = set->node = NULL; /* in case set_node() fails */
     set->path = set_node(set);
     set->head = set_node(set);
-    set_grow(set, set->head, 1, 1); /* one link back to head for an empty set */
-    *(unsigned char *)&set->head->key = 137;    /* set id */
+    set_grow(set, set->head, 1, 1);         /* one link back to head for an empty set */
+    *(unsigned char*)&set->head->key = 137; /* set id */
     set->depth = 0;
-    set_seed(&set->gen, ((ui64_t)(ptrdiff_t)set << 32) ^
-                        ((ui64_t)time(NULL) << 12) ^ clock(), 0);
+    set_seed(&set->gen, ((ui64_t)(ptrdiff_t)set << 32) ^ ((ui64_t)time(NULL) << 12) ^ clock(), 0);
     set->ran = 1;
 }
 
 /* Return true if *set appears to be in a usable state. If *set has been zeroed
 // out, then set_ok(set) will be false and set_end(set) will be safe. */
-int set_ok(set_t *set) {
-    return set->head != NULL &&
-           set->head->right != NULL &&
-           *(unsigned char *)&set->head->key == 137;
+int set_ok(set_t* set)
+{
+    return set->head != NULL && set->head->right != NULL && *(unsigned char*)&set->head->key == 137;
 }
 
 /* Empty the set. This frees the memory used for the previous set contents.
 // After set_clear(), *set is ready for use, as if after a set_start(). */
-void set_clear(set_t *set) {
+void set_clear(set_t* set)
+{
     assert(set_ok(set) && "improper use");
 
     /* Free all the keys and their nodes. */
@@ -265,7 +274,8 @@ void set_clear(set_t *set) {
 // permitted after this is set_start(). Though another set_end() would do no
 // harm. This can be done at any time after a set_start(), or after a longjmp()
 // on any allocation failure, including during a set_start(). */
-void set_end(set_t *set) {
+void set_end(set_t* set)
+{
     if (set->head != NULL) {
         /* Empty the set and free the head node. */
         if (set->head->right != NULL) {
@@ -292,7 +302,8 @@ void set_end(set_t *set) {
 
 /* Look for key. Return 1 if found or 0 if not. This also puts the path to get
 // there in set->path, for use by set_insert(). */
-int set_found(set_t *set, set_key_t key) {
+int set_found(set_t* set, set_key_t key)
+{
     assert(set_ok(set) && "improper use");
 
     /* Start at depth and work down and right as determined by key comparisons. */
@@ -300,8 +311,7 @@ int set_found(set_t *set, set_key_t key) {
     int i = set->depth;
     set_grow(set, set->path, i + 1, 0);
     do {
-        while (here->right[i] != head &&
-               set_cmp(here->right[i]->key, key) < 0)
+        while (here->right[i] != head && set_cmp(here->right[i]->key, key) < 0)
             here = here->right[i];
         set->path->right[i] = here;
     } while (i--);
@@ -312,7 +322,8 @@ int set_found(set_t *set, set_key_t key) {
 }
 
 /* Insert the key key. Return 0 on success, or 1 if key is already in the set. */
-int set_insert(set_t *set, set_key_t key) {
+int set_insert(set_t* set, set_key_t key)
+{
     assert(set_ok(set) && "improper use");
 
     if (set_found(set, key))
@@ -330,8 +341,7 @@ int set_insert(set_t *set, set_key_t key) {
         set->ran >>= 1;
         if (bit)
             break;
-        assert(level < 32767 &&
-               "Overhead, without any fuss, the stars were going out.");
+        assert(level < 32767 && "Overhead, without any fuss, the stars were going out.");
         level++;
     }
     if (level > set->depth) {
@@ -356,6 +366,6 @@ int set_insert(set_t *set, set_key_t key) {
 }
 
 #else
-#error ** another skiplist set already created here
+#error** another skiplist set already created here
 /* Would need to implement a prefix in order to support multiple sets. */
 #endif

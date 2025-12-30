@@ -17,7 +17,7 @@
    a write like -w, so -w is not required). */
 
 #if defined(_WIN32) && !defined(_CRT_NONSTDC_NO_DEPRECATE)
-#  define _CRT_NONSTDC_NO_DEPRECATE
+#define _CRT_NONSTDC_NO_DEPRECATE
 #endif
 
 #include <stdio.h>
@@ -25,11 +25,11 @@
 #include "puff.h"
 
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
-#  include <fcntl.h>
-#  include <io.h>
-#  define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
+#include <fcntl.h>
+#include <io.h>
+#define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
 #else
-#  define SET_BINARY_MODE(file)
+#define SET_BINARY_MODE(file)
 #endif
 
 #define local static
@@ -61,11 +61,11 @@ local size_t bythirds(size_t size)
    failure.  *len is the number of bytes of data read from the input file (even
    if load() returns NULL).  If the input file was empty or could not be opened
    or read, *len is zero. */
-local void *load(const char *name, size_t *len)
+local void* load(const char* name, size_t* len)
 {
     size_t size;
     void *buf, *swap;
-    FILE *in;
+    FILE* in;
 
     *len = 0;
     buf = malloc(size = 4096);
@@ -74,8 +74,9 @@ local void *load(const char *name, size_t *len)
     in = name == NULL ? stdin : fopen(name, "rb");
     if (in != NULL) {
         for (;;) {
-            *len += fread((char *)buf + *len, 1, size - *len, in);
-            if (*len < size) break;
+            *len += fread((char*)buf + *len, 1, size - *len, in);
+            if (*len < size)
+                break;
             size = bythirds(size);
             if (size == *len || (swap = realloc(buf, size)) == NULL) {
                 free(buf);
@@ -89,7 +90,7 @@ local void *load(const char *name, size_t *len)
     return buf;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     int ret, put = 0, fail = 0;
     unsigned skip = 0;
@@ -111,12 +112,10 @@ int main(int argc, char **argv)
                 fprintf(stderr, "invalid option %s\n", arg);
                 return 3;
             }
-        }
-        else if (name != NULL) {
+        } else if (name != NULL) {
             fprintf(stderr, "only one file name allowed\n");
             return 3;
-        }
-        else
+        } else
             name = arg;
     source = load(name, &len);
     if (source == NULL) {
@@ -124,8 +123,7 @@ int main(int argc, char **argv)
         return 4;
     }
     if (len == 0) {
-        fprintf(stderr, "could not read %s, or it was empty\n",
-                name == NULL ? "<stdin>" : name);
+        fprintf(stderr, "could not read %s, or it was empty\n", name == NULL ? "<stdin>" : name);
         free(source);
         return 3;
     }
@@ -143,8 +141,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "puff() failed with return code %d\n", ret);
     else {
         fprintf(stderr, "puff() succeeded uncompressing %lu bytes\n", destlen);
-        if (sourcelen < len) fprintf(stderr, "%lu compressed bytes unused\n",
-                                     len - sourcelen);
+        if (sourcelen < len)
+            fprintf(stderr, "%lu compressed bytes unused\n", len - sourcelen);
     }
 
     /* if requested, inflate again and write decompressed data to stdout */

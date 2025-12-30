@@ -63,58 +63,57 @@ extern "C" {
 #if defined(STRICTZIP) || defined(STRICTZIPUNZIP)
 /* like the STRICT of WIN32, we define a pointer that cannot be converted
     from (void*) without cast */
-typedef struct TagzipFile__ { int unused; } zipFile__;
-typedef zipFile__ *zipFile;
+typedef struct TagzipFile__ {
+    int unused;
+} zipFile__;
+typedef zipFile__* zipFile;
 #else
 typedef voidp zipFile;
 #endif
 
-#define ZIP_OK                          (0)
-#define ZIP_EOF                         (0)
-#define ZIP_ERRNO                       (Z_ERRNO)
-#define ZIP_PARAMERROR                  (-102)
-#define ZIP_BADZIPFILE                  (-103)
-#define ZIP_INTERNALERROR               (-104)
+#define ZIP_OK (0)
+#define ZIP_EOF (0)
+#define ZIP_ERRNO (Z_ERRNO)
+#define ZIP_PARAMERROR (-102)
+#define ZIP_BADZIPFILE (-103)
+#define ZIP_INTERNALERROR (-104)
 
 #ifndef DEF_MEM_LEVEL
-#  if MAX_MEM_LEVEL >= 8
-#    define DEF_MEM_LEVEL 8
-#  else
-#    define DEF_MEM_LEVEL  MAX_MEM_LEVEL
-#  endif
+#if MAX_MEM_LEVEL >= 8
+#define DEF_MEM_LEVEL 8
+#else
+#define DEF_MEM_LEVEL MAX_MEM_LEVEL
+#endif
 #endif
 /* default memLevel */
 
 /* tm_zip contain date/time info */
-typedef struct tm_zip_s
-{
-    int tm_sec;             /* seconds after the minute - [0,59] */
-    int tm_min;             /* minutes after the hour - [0,59] */
-    int tm_hour;            /* hours since midnight - [0,23] */
-    int tm_mday;            /* day of the month - [1,31] */
-    int tm_mon;             /* months since January - [0,11] */
-    int tm_year;            /* years - [1980..2044] */
+typedef struct tm_zip_s {
+    int tm_sec;  /* seconds after the minute - [0,59] */
+    int tm_min;  /* minutes after the hour - [0,59] */
+    int tm_hour; /* hours since midnight - [0,23] */
+    int tm_mday; /* day of the month - [1,31] */
+    int tm_mon;  /* months since January - [0,11] */
+    int tm_year; /* years - [1980..2044] */
 } tm_zip;
 
-typedef struct
-{
-    tm_zip      tmz_date;       /* date in understandable format           */
-    uLong       dosDate;       /* if dos_date == 0, tmu_date is used      */
-/*    uLong       flag;        */   /* general purpose bit flag        2 bytes */
+typedef struct {
+    tm_zip tmz_date;                  /* date in understandable format           */
+    uLong dosDate;                    /* if dos_date == 0, tmu_date is used      */
+    /*    uLong       flag;        */ /* general purpose bit flag        2 bytes */
 
-    uLong       internal_fa;    /* internal file attributes        2 bytes */
-    uLong       external_fa;    /* external file attributes        4 bytes */
+    uLong internal_fa; /* internal file attributes        2 bytes */
+    uLong external_fa; /* external file attributes        4 bytes */
 } zip_fileinfo;
 
 typedef const char* zipcharpc;
 
+#define APPEND_STATUS_CREATE (0)
+#define APPEND_STATUS_CREATEAFTER (1)
+#define APPEND_STATUS_ADDINZIP (2)
 
-#define APPEND_STATUS_CREATE        (0)
-#define APPEND_STATUS_CREATEAFTER   (1)
-#define APPEND_STATUS_ADDINZIP      (2)
-
-extern zipFile ZEXPORT zipOpen(const char *pathname, int append);
-extern zipFile ZEXPORT zipOpen64(const void *pathname, int append);
+extern zipFile ZEXPORT zipOpen(const char* pathname, int append);
+extern zipFile ZEXPORT zipOpen64(const void* pathname, int append);
 /*
   Create a zipfile.
      pathname contain on Windows XP a filename like "c:\\zlib\\zlib113.zip" or on
@@ -134,17 +133,11 @@ extern zipFile ZEXPORT zipOpen64(const void *pathname, int append);
    Of course, you can use RAW reading and writing to copy the file you did not want delete
  */
 
-extern zipFile ZEXPORT zipOpen2(const char *pathname,
-                                int append,
-                                zipcharpc* globalcomment,
-                                zlib_filefunc_def* pzlib_filefunc_def);
+extern zipFile ZEXPORT zipOpen2(const char* pathname, int append, zipcharpc* globalcomment, zlib_filefunc_def* pzlib_filefunc_def);
 
-extern zipFile ZEXPORT zipOpen2_64(const void *pathname,
-                                   int append,
-                                   zipcharpc* globalcomment,
-                                   zlib_filefunc64_def* pzlib_filefunc_def);
+extern zipFile ZEXPORT zipOpen2_64(const void* pathname, int append, zipcharpc* globalcomment, zlib_filefunc64_def* pzlib_filefunc_def);
 
-extern zipFile ZEXPORT zipOpen3(const void *pathname,
+extern zipFile ZEXPORT zipOpen3(const void* pathname,
                                 int append,
                                 zipcharpc* globalcomment,
                                 zlib_filefunc64_32_def* pzlib_filefunc64_32_def);
@@ -188,7 +181,6 @@ extern int ZEXPORT zipOpenNewFileInZip64(zipFile file,
 
  */
 
-
 extern int ZEXPORT zipOpenNewFileInZip2(zipFile file,
                                         const char* filename,
                                         const zip_fileinfo* zipfi,
@@ -200,7 +192,6 @@ extern int ZEXPORT zipOpenNewFileInZip2(zipFile file,
                                         int method,
                                         int level,
                                         int raw);
-
 
 extern int ZEXPORT zipOpenNewFileInZip2_64(zipFile file,
                                            const char* filename,
@@ -279,7 +270,6 @@ extern int ZEXPORT zipOpenNewFileInZip4(zipFile file,
                                         uLong versionMadeBy,
                                         uLong flagBase);
 
-
 extern int ZEXPORT zipOpenNewFileInZip4_64(zipFile file,
                                            const char* filename,
                                            const zip_fileinfo* zipfi,
@@ -305,10 +295,7 @@ extern int ZEXPORT zipOpenNewFileInZip4_64(zipFile file,
     flag : value for flag field (compression level info will be added)
  */
 
-
-extern int ZEXPORT zipWriteInFileInZip(zipFile file,
-                                       const void* buf,
-                                       unsigned len);
+extern int ZEXPORT zipWriteInFileInZip(zipFile file, const void* buf, unsigned len);
 /*
   Write data in the zipfile
  */
@@ -318,16 +305,11 @@ extern int ZEXPORT zipCloseFileInZip(zipFile file);
   Close the current file in the zipfile
  */
 
-extern int ZEXPORT zipCloseFileInZipRaw(zipFile file,
-                                        uLong uncompressed_size,
-                                        uLong crc32);
+extern int ZEXPORT zipCloseFileInZipRaw(zipFile file, uLong uncompressed_size, uLong crc32);
 
-extern int ZEXPORT zipCloseFileInZipRaw64(zipFile file,
-                                          ZPOS64_T uncompressed_size,
-                                          uLong crc32);
+extern int ZEXPORT zipCloseFileInZipRaw64(zipFile file, ZPOS64_T uncompressed_size, uLong crc32);
 
-extern int ZEXPORT zipAlreadyThere(zipFile file,
-                                   char const* name);
+extern int ZEXPORT zipAlreadyThere(zipFile file, char const* name);
 /*
   See if name is already in file's central directory.
  */
@@ -338,12 +320,10 @@ extern int ZEXPORT zipAlreadyThere(zipFile file,
   uncompressed_size and crc32 are value for the uncompressed size
  */
 
-extern int ZEXPORT zipClose(zipFile file,
-                            const char* global_comment);
+extern int ZEXPORT zipClose(zipFile file, const char* global_comment);
 /*
   Close the zipfile
  */
-
 
 extern int ZEXPORT zipRemoveExtraInfoBlock(char* pData, int* dataLen, short sHeader);
 /*
