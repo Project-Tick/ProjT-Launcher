@@ -1574,6 +1574,15 @@ if(WIN32 OR (UNIX AND APPLE))
             ${CMAKE_SYSTEM_LIBRARY_PATH}
             ${QT_LIBS_DIR}
             ${QT_LIBEXECS_DIR}
+            ${CMAKE_BINARY_DIR}
+            ${CMAKE_BINARY_DIR}/$<CONFIG>
+            ${OPENSSL_ROOT_DIR}
+            ${OPENSSL_ROOT_DIR}/bin
+            ${ZLIB_ROOT}
+            ${ZLIB_ROOT}/bin
+            ${ZLIB_ROOT_DIR}
+            ${ZLIB_ROOT_DIR}/build/native
+            ${ZLIB_ROOT_DIR}/build/native/bin
         PRE_EXCLUDE_REGEXES
             "^(api-ms-win|ext-ms)-.*\\.dll$"
             "^azure.*\\.dll$"
