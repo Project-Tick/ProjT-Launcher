@@ -1,11 +1,6 @@
 name: Review
 
-on:
-  workflow_run:
-    workflows:
-      - Reviewed
-    types: [completed]
-  
+on: 
   pull_request_review:
     types: [submitted]
 
