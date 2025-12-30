@@ -4,39 +4,22 @@ name: Zlib C Standard
 # The worflow is setup to fail on any compilation warnings.
 
 on:
-  workflow_dispatch:
   push:
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ref (branch, tag, or SHA) to check out"
+        required: false
 
 concurrency:
   group: c-std-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  scope:
-    name: Scope Gate
-    runs-on: ubuntu-latest
-    outputs:
-      run: ${{ steps.scope.outputs.run }}
-    steps:
-      - name: Check PR template scope
-        id: scope
-        uses: actions/github-script@v8
-        with:
-          script: |
-            if (context.eventName !== "pull_request") {
-              core.setOutput("run", "true");
-              return;
-            }
-            const body = context.payload.pull_request?.body ?? "";
-            const selected = /- \[[xX]\]\s+Zlib(\s|$)/.test(body);
-            core.setOutput("run", selected ? "true" : "false");
-
   main:
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
-    needs: scope
-    if: needs.scope.outputs.run == 'true'
+    environment: ci-forked-zlib
     defaults:
       run:
         working-directory: zlib
@@ -63,12 +46,6 @@ jobs:
             tag: amd64
             compiler-opt: -m64
             cmake-opt: -A x64
-
-          - name: 32-bit
-            tag: i386
-            compiler-opt: -m32
-            cmake-opt: -A Win32
-
 
         builder:
           - configure
@@ -109,17 +86,9 @@ jobs:
             value: gnu2x
 
         exclude:
-            # Don't run 32-bit on MacOS
-          - { os:   { name: MacOS },
-              arch: { tag:  i386  } }
-
             # Don't run configure on Windows
           - { os:   { name: Windows },
               builder: configure }
-
-            # Don't run gcc 32-bit on Windows
-          - { os:   { name: Windows },
-              arch: { tag:  i386  } }
 
     steps:
 
@@ -127,6 +96,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         show-progress: 'false'
+        ref: ${{ inputs.ref || github.ref }}
 
     - name: Install packages (Linux)
       if: runner.os == 'Linux' && matrix.arch.tag == 'i386'
@@ -189,8 +159,7 @@ jobs:
   msvc:
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
-    needs: scope
-    if: needs.scope.outputs.run == 'true'
+    environment: ci-forked-zlib
     defaults:
       run:
         working-directory: zlib

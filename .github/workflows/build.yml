@@ -111,6 +111,7 @@ jobs:
   prepare:
     name: Prepare Workflow
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     outputs:
       should-test: ${{ steps.check.outputs.should-test }}
       mergedSha: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -177,6 +178,7 @@ jobs:
     name: Flake Check
     needs: [prepare]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -202,6 +204,7 @@ jobs:
     needs: [prepare]
     name: Project Checkout Submodules
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
 
     steps:
       - name: Resolve inputs safely
@@ -255,6 +258,7 @@ jobs:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
     needs: [project-checkout]
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
     timeout-minutes: 20
 
     permissions:
@@ -317,6 +321,7 @@ jobs:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
     needs: [project-checkout]
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
     timeout-minutes: 20
 
     permissions:
@@ -379,6 +384,7 @@ jobs:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
     needs: [project-checkout]
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
     timeout-minutes: 20
 
     permissions:
@@ -445,6 +451,7 @@ jobs:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
     needs: [project-checkout]
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
     timeout-minutes: 20
 
     permissions:
@@ -511,6 +518,7 @@ jobs:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
     needs: [project-checkout]
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
     timeout-minutes: 20
 
     permissions:
@@ -575,6 +583,7 @@ jobs:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
     needs: [project-checkout]
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
     timeout-minutes: 20
 
     permissions:
@@ -638,6 +647,7 @@ jobs:
     name: Verify CMake Configuration (${{ matrix.artifact-name }})
     needs: [project-checkout]
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
     timeout-minutes: 20
 
     permissions:
@@ -713,6 +723,7 @@ jobs:
             cmake-preset: linux
 
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
 
     env:
       ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
@@ -802,6 +813,7 @@ jobs:
             cmake-preset: linux
 
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
 
     env:
       ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
@@ -892,6 +904,7 @@ jobs:
             vcvars-arch: amd64
 
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
 
     defaults:
       run:
@@ -982,6 +995,7 @@ jobs:
             vcvars-arch: arm64
 
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
 
     defaults:
       run:
@@ -1074,6 +1088,7 @@ jobs:
             vcvars-arch: amd64_x86
 
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
 
     defaults:
       run:
@@ -1169,6 +1184,7 @@ jobs:
             vcvars-arch: arm64
 
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
 
     defaults:
       run:
@@ -1263,6 +1279,7 @@ jobs:
             macosx-deployment-target: 12.0
 
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
 
     env:
       ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
@@ -1357,6 +1374,7 @@ jobs:
             arch: aarch64
 
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
 
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
@@ -1409,6 +1427,7 @@ jobs:
             system: aarch64-darwin
     
     runs-on: ${{ matrix.os }}
+    environment: ci-core-heavy
     timeout-minutes: 60
     
     steps:
@@ -1480,6 +1499,7 @@ jobs:
     name: Debian (testing) - Meson
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1516,6 +1536,7 @@ jobs:
     name: Debian (testing) - CMake Debug
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1553,6 +1574,7 @@ jobs:
     name: Debian (testing) - CMake
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1590,6 +1612,7 @@ jobs:
     name: Debian (testing) - CMake shared+static
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1627,6 +1650,7 @@ jobs:
     name: Debian (testing) - CMake static only
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1664,6 +1688,7 @@ jobs:
     name: Ubuntu Jammy - Meson
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1700,6 +1725,7 @@ jobs:
   bzip2-ubuntu-jammy-cmake:
     name: Ubuntu Jammy - CMake
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1737,6 +1763,7 @@ jobs:
     name: Fedora - Meson
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1770,6 +1797,7 @@ jobs:
     name: Fedora - CMake
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1804,6 +1832,7 @@ jobs:
     name: Fedora Rawhide - Meson
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1837,6 +1866,7 @@ jobs:
     name: Fedora Rawhide - CMake
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1871,6 +1901,7 @@ jobs:
     name: openSUSE Leap - Meson
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1929,6 +1960,7 @@ jobs:
     name: openSUSE Leap - CMake
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -1988,6 +2020,7 @@ jobs:
     name: openSUSE Tumbleweed - Meson
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -2046,6 +2079,7 @@ jobs:
     name: openSUSE Tumbleweed - CMake
     needs: [project-checkout]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: bzip2
@@ -2187,6 +2221,7 @@ jobs:
     needs: [project-checkout]
     name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
     runs-on: "ubuntu-22.04"
+    environment: ci-core-heavy
     container:
       image: "${{ matrix.runner }}"
     strategy:
@@ -2329,6 +2364,7 @@ jobs:
   website-build:
     if: github.repository_owner == 'Project-Tick'
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
 
     strategy:
       matrix:
@@ -2365,6 +2401,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
@@ -2374,6 +2411,7 @@ jobs:
     if: true
     name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
     runs-on: "ubuntu-22.04"
+    environment: ci-core-heavy
     defaults:
       run:
         working-directory: quazip
@@ -2397,6 +2435,7 @@ jobs:
   eval-status:
     name: Dependency Check Status Report
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     needs: [cmake-windows-mingw-preset-config, cmake-windows-msvc-preset-config, cmake-windows-mingw-arm64-preset-config, cmake-windows-msvc-arm64-preset-config, cmake-linux-preset-config, cmake-macos-preset-config]
     if: always()
 
@@ -2443,6 +2482,7 @@ jobs:
   build-status:
     name: Build Status Report
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     needs: [build-linux, build-linux-arm64, build-windows-msvc, build-windows-msvc-arm64, build-windows-mingw, build-windows-mingw-arm64, build-macos]
     if: always()
     
@@ -2512,6 +2552,7 @@ jobs:
     needs: [build-linux, build-linux-arm64, build-windows-msvc, build-windows-msvc-arm64, build-windows-mingw, build-windows-mingw-arm64, build-macos]
     if: always()
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     
     steps:
       - name: Check test results

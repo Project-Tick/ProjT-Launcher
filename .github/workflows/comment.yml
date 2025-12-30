@@ -16,6 +16,7 @@ jobs:
   react:
     name: React to commands
     runs-on: ubuntu-latest
+    environment: ci-meta-automation
     timeout-minutes: 2
     if: contains(github.event.comment.body, '@projt-launcher-bot merge')
     

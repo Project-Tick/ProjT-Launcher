@@ -33,6 +33,7 @@ jobs:
     name: Commit Validation
     if: inputs.baseBranch && inputs.headBranch
     runs-on: ubuntu-latest
+    environment: ci-core-light
     timeout-minutes: 5
     permissions:
       pull-requests: write
@@ -87,6 +88,7 @@ jobs:
   owners:
     name: CODEOWNERS Validation
     runs-on: ubuntu-latest
+    environment: ci-core-light
     timeout-minutes: 5
     
     steps:
@@ -121,6 +123,7 @@ jobs:
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
+    environment: ci-core-light
     timeout-minutes: 10
     
     steps:
@@ -183,6 +186,7 @@ jobs:
   check-status:
     name: Check Status Report
     runs-on: ubuntu-latest
+    environment: ci-core-light
     needs: [commits, owners, quality]
     if: always()
     

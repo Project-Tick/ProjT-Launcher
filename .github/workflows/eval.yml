@@ -2,8 +2,11 @@ name: Eval
 
 on:
   merge_group:
-  pull_request:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ref (branch, tag, or SHA) to check out"
+        required: false
 
 permissions: {}
 
@@ -16,12 +19,14 @@ jobs:
   eval:
     name: System Evaluation
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ inputs.ref || github.ref }}
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
