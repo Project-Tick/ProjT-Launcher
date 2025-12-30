@@ -1,4 +1,4 @@
-name: OSS-Fuzz
+name: Zlib OSS-Fuzz
 on: [pull_request]
 jobs:
   Fuzzing:

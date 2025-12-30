@@ -1,4 +1,4 @@
-name: mingw/cygwin
+name: Zlib mingw/cygwin
 
 on: [push, pull_request]
 
@@ -13,6 +13,7 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
+        working-directory: zlib
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -48,6 +49,7 @@ jobs:
     defaults:
       run:
         shell: C:\cygwin\bin\bash.exe --login -o igncr '{0}'
+        working-directory: zlib
     name: Cygwin
     steps:
     - name: Checkout
@@ -65,7 +67,7 @@ jobs:
           ninja
     - name: Configure
       run: |
-        cmake /cygdrive/d/a/zlib/zlib \
+        cmake -S . \
           -B build \
           -DCMAKE_BUILD_TYPE=Release \
           -DZLIB_BUILD_MINIZIP=ON \

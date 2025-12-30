@@ -1,4 +1,4 @@
-name: C Standard
+name: Zlib C Standard
 
 # Compile with as many C standards as possible.
 # The worflow is setup to fail on any compilation warnings.
@@ -13,6 +13,9 @@ jobs:
   main:
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
+    defaults:
+      run:
+        working-directory: zlib
     strategy:
       fail-fast: false
       matrix:
@@ -162,6 +165,9 @@ jobs:
   msvc:
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
+    defaults:
+      run:
+        working-directory: zlib
     strategy:
       fail-fast: false
       matrix:

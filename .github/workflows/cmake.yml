@@ -1,9 +1,12 @@
-name: CMake
+name: Zlib CMake
 on: [push, pull_request]
 jobs:
   ci-cmake:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: zlib
     strategy:
       fail-fast: false
       matrix:
@@ -100,20 +103,20 @@ jobs:
       run: |
         sudo apt install libbz2-dev
     - name: Generate project files
-      run: cmake -S . -B ../build ${{ matrix.cmake-args }} -D CMAKE_BUILD_TYPE=${{ matrix.build-config || 'Release' }} -DZLIB_BUILD_MINIZIP=ON
+      run: cmake -S . -B build ${{ matrix.cmake-args }} -D CMAKE_BUILD_TYPE=${{ matrix.build-config || 'Release' }} -DZLIB_BUILD_MINIZIP=ON
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: ${{ matrix.cflags }}
 
     - name: Compile source code
-      run: cmake --build ../build --config ${{ matrix.build-config || 'Release' }}
+      run: cmake --build build --config ${{ matrix.build-config || 'Release' }}
 
     - name: Run test cases
       run: ctest -C Release --output-on-failure --max-width 120
-      working-directory: ../build
+      working-directory: build
 
     - name: create packages
-      run: cmake --build ../build --config ${{ matrix.build-config || 'Release' }} -t ${{ matrix.pkgtgt }}
+      run: cmake --build build --config ${{ matrix.build-config || 'Release' }} -t ${{ matrix.pkgtgt }}
 
     - name: Upload build errors
       uses: actions/upload-artifact@v4
