@@ -14,8 +14,8 @@
 /* get definition of internal structure so we can mess with it (see pull()),
    and so we can call inflate_trees() (see cover5()) */
 #define ZLIB_INTERNAL
-#include "inflate.h"
 #include "inftrees.h"
+#include "inflate.h"
 
 #define local static
 
