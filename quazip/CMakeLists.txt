@@ -237,6 +237,25 @@ if(QUAZIP_BZIP2)
             ${BZIP2_SOURCE_DIR}/bzlib.h
             ${BZIP2_SOURCE_DIR}/bzlib_private.h)
 
+        set(BZIP2_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/bzip2")
+        if(EXISTS "${BZIP2_SOURCE_DIR}/bz_version.h.in")
+            if(EXISTS "${BZIP2_SOURCE_DIR}/CMakeLists.txt")
+                file(STRINGS "${BZIP2_SOURCE_DIR}/CMakeLists.txt" _bz_version_line
+                     REGEX "project\\(bzip2[[:space:]]+VERSION[[:space:]]+")
+                string(REGEX REPLACE ".*VERSION[[:space:]]+([0-9.]+).*" "\\1" BZ_VERSION "${_bz_version_line}")
+            endif()
+            if(NOT BZ_VERSION)
+                set(BZ_VERSION "0")
+            endif()
+            file(MAKE_DIRECTORY "${BZIP2_BINARY_DIR}")
+            configure_file(
+                "${BZIP2_SOURCE_DIR}/bz_version.h.in"
+                "${BZIP2_BINARY_DIR}/bz_version.h"
+                @ONLY
+            )
+            list(APPEND BZIP2_HDR "${BZIP2_BINARY_DIR}/bz_version.h")
+        endif()
+
         add_library(bzip2 STATIC ${BZIP2_SRC} ${BZIP2_HDR})
 
         set_target_properties(bzip2 PROPERTIES
@@ -244,6 +263,7 @@ if(QUAZIP_BZIP2)
         )
         target_include_directories(bzip2 PUBLIC
           $<BUILD_INTERFACE:${BZIP2_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${BZIP2_BINARY_DIR}>
           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
         )
 
@@ -253,7 +273,7 @@ if(QUAZIP_BZIP2)
 
         list(APPEND QUAZIP_DEP bzip2)
         list(APPEND QUAZIP_LIB bzip2)
-        list(APPEND QUAZIP_INC ${BZIP2_SOURCE_DIR})
+        list(APPEND QUAZIP_INC ${BZIP2_SOURCE_DIR} ${BZIP2_BINARY_DIR})
 
         set(QUAZIP_BZIP2_BUILD ON)
     else()
