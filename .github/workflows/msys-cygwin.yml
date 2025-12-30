@@ -1,7 +1,9 @@
 name: Zlib mingw/cygwin
 
 on: [push, pull_request]
-
+concurrency:
+  group: msys-cygwin-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 jobs:
   MSys:
     runs-on: windows-latest

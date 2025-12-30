@@ -1,5 +1,8 @@
 name: Zlib Configure
 on: [push, pull_request]
+concurrency:
+  group: configure-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 jobs:
   ci-configure:
     name: ${{ matrix.name }}
