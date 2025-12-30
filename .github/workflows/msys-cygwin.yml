@@ -55,15 +55,15 @@ jobs:
     - name: Configure
       run: |
         cmake -G"Unix Makefiles" \
-          -S . \
-          -B build \
+          -S "$(cygpath -u "$GITHUB_WORKSPACE")/zlib" \
+          -B "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" \
           -DCMAKE_VERBOSE_MAKEFILE=ON \
           -DCMAKE_BUILD_TYPE=Release \
           -DMINIZIP_ENABLE_BZIP2=ON
     - name: Build
-      run: cmake --build build --config Release
+      run: cmake --build "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" --config Release
     - name: Run tests
-      run: ctest --output-on-failure --test-dir build -C Release
+      run: ctest --output-on-failure --test-dir "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" -C Release
 
   cygwin:
     strategy:
@@ -92,13 +92,13 @@ jobs:
           ninja
     - name: Configure
       run: |
-        cmake -S . \
-          -B build \
+        cmake -S "$(cygpath -u "$GITHUB_WORKSPACE")/zlib" \
+          -B "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" \
           -DCMAKE_BUILD_TYPE=Release \
           -DZLIB_BUILD_MINIZIP=ON \
           -DMINIZIP_ENABLE_BZIP2=OFF \
           -G Ninja
     - name: Build
-      run: cmake --build build --config Release -v -j1
+      run: cmake --build "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" --config Release -v -j1
     - name: Run tests
-      run: ctest --output-on-failure --test-dir build -C Release
+      run: ctest --output-on-failure --test-dir "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" -C Release
