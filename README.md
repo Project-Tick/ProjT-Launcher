@@ -40,6 +40,7 @@ This repo is a monorepo with the launcher and the pieces that keep it running:
 - **Automation bot (Cloudflare Workers)**: `bot/`
 - **Metadata generator (Python/Poetry)**: `meta/`, `pyproject.toml`
 - **Docs/CI/Tools**: `docs/`, `ci/`, `.github/workflows/`, `scripts/`, `tools/`
+- **Bundled libraries**: `bzip2/`, `quazip/`, `zlib/`
 
 ## What is ProjT Launcher?
 
@@ -238,6 +239,15 @@ This repository contains a fork of the upstream project and it now advances in i
 License: LGPL-2.1 with static linking exception; minizip parts are zlib license. See `quazip/COPYING`.
 Source: [https://github.com/stachenov/quazip](https://github.com/stachenov/quazip)
 Local docs: `quazip/README.md`, `quazip/CONTRIBUTING.md`, `quazip/SECURITY.md`, `quazip/QuaZip-1.x-migration.md`
+
+### zlib
+
+General-purpose lossless data-compression library used by ZIP/GZip flows.
+This repository contains an integrated copy of the upstream project.
+License: zlib license. See `zlib/LICENSE`.
+Source: [https://zlib.net](https://zlib.net)
+Github Repository: [https://github.com/madler/zlib](https://github.com/madler/zlib)
+Local docs: `zlib/README`, `zlib/FAQ`, `zlib/ChangeLog`
 
 ### gamemode
 

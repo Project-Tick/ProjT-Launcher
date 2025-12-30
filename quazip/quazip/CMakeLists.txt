@@ -62,13 +62,22 @@ set_target_properties(${QUAZIP_LIB_TARGET_NAME} PROPERTIES
 	PUBLIC_HEADER "${QUAZIP_HEADERS}"
 )
 target_include_directories(${QUAZIP_LIB_TARGET_NAME} PRIVATE ${QUAZIP_INC})
+set(_quazip_public_includes
+	"$<BUILD_INTERFACE:${QUAZIP_SOURCE_DIR}>"
+	"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+)
+foreach(_quazip_inc IN LISTS QUAZIP_INC)
+	file(TO_CMAKE_PATH "${_quazip_inc}" _quazip_inc_norm)
+	list(APPEND _quazip_public_includes "$<BUILD_INTERFACE:${_quazip_inc_norm}>")
+endforeach()
 target_include_directories(${QUAZIP_LIB_TARGET_NAME} PUBLIC
-	$<BUILD_INTERFACE:${QUAZIP_SOURCE_DIR}>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-	$<BUILD_INTERFACE:${QUAZIP_INC}>
+	${_quazip_public_includes}
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${QUAZIP_DIR_NAME}>
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${QUAZIP_INCLUDE_PATH}>
 )
+unset(_quazip_public_includes)
+unset(_quazip_inc)
+unset(_quazip_inc_norm)
 target_link_libraries(${QUAZIP_LIB_TARGET_NAME} ${QUAZIP_LIB_LIBRARIES} ${QUAZIP_LIB})
 if(BUILD_SHARED_LIBS)
 	target_compile_definitions(${QUAZIP_LIB_TARGET_NAME} PRIVATE QUAZIP_BUILD) # dllexport

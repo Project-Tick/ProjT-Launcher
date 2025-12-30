@@ -18,6 +18,7 @@
 - [ ] Launcher Java System
 - [ ] JavaCheck
 - [ ] libnbtplusplus
+- [ ] Zlib
 - [ ] Packages
 - [ ] Other (describe):
 

@@ -380,6 +380,49 @@ set(Launcher_BUILD_TIMESTAMP "${TODAY}")
 
 ################################ 3rd Party Libs ################################
 
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
+    message(STATUS "Using bundled zlib")
+    set(ZLIB_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+    set(ZLIB_BUILD_STATIC ON CACHE BOOL "" FORCE)
+    set(ZLIB_INSTALL OFF CACHE BOOL "" FORCE)
+    add_subdirectory(zlib)
+
+    if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
+        add_library(ZLIB::ZLIB ALIAS zlibstatic)
+    elseif(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
+        add_library(ZLIB::ZLIB ALIAS zlib)
+    endif()
+
+    set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}" CACHE PATH "ZLIB Include Dir" FORCE)
+    set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}" CACHE PATH "ZLIB Include Dirs" FORCE)
+    set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
+    set(ZLIB_LIBRARY "ZLIB::ZLIB" CACHE STRING "Zlib library target" FORCE)
+    set(ZLIB_LIBRARIES "ZLIB::ZLIB" CACHE STRING "Zlib libraries" FORCE)
+    set(ZLIB_ROOT "${zlib_BINARY_DIR}" CACHE PATH "" FORCE)
+    set(ZLIB_ROOT_DIR "${zlib_SOURCE_DIR}" CACHE PATH "" FORCE)
+
+    # Ensure subprojects resolve ZLIB via a local FindZLIB.cmake.
+    set(_custom_find_zlib_dir "${CMAKE_BINARY_DIR}/cmake-modules")
+    file(MAKE_DIRECTORY "${_custom_find_zlib_dir}")
+    file(WRITE "${_custom_find_zlib_dir}/FindZLIB.cmake" "
+# Custom FindZLIB.cmake - uses bundled zlib
+if(TARGET ZLIB::ZLIB)
+    set(ZLIB_FOUND TRUE)
+    get_target_property(ZLIB_INCLUDE_DIRS ZLIB::ZLIB INTERFACE_INCLUDE_DIRECTORIES)
+    if(NOT ZLIB_INCLUDE_DIRS)
+        set(ZLIB_INCLUDE_DIRS \"${zlib_SOURCE_DIR};${zlib_BINARY_DIR}\")
+    endif()
+    set(ZLIB_INCLUDE_DIR \"\${ZLIB_INCLUDE_DIRS}\")
+    set(ZLIB_LIBRARIES ZLIB::ZLIB)
+    set(ZLIB_LIBRARY ZLIB::ZLIB)
+else()
+    set(ZLIB_FOUND FALSE)
+endif()
+")
+    list(INSERT CMAKE_MODULE_PATH 0 "${_custom_find_zlib_dir}")
+endif()
+
 if(WIN32 AND NOT MINGW)
     # Detect NuGet architecture
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|arm64")
@@ -390,59 +433,61 @@ if(WIN32 AND NOT MINGW)
         set(OSSL_ARCH "x64")
     endif()
 
-    # Find ZLIB from NuGet
-    file(GLOB NUGET_ZLIB_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/zlib-msvc-${NUGET_ARCH}*")
-    if(NUGET_ZLIB_ROOTS)
-        list(GET NUGET_ZLIB_ROOTS 0 ZLIB_ROOT_DIR)
-        set(ZLIB_ROOT "${ZLIB_ROOT_DIR}/build/native" CACHE PATH "" FORCE)
-        
-        find_path(ZLIB_INC "${ZLIB_ROOT_DIR}/build/native/include/zlib.h" NO_DEFAULT_PATH)
-        find_library(ZLIB_LIBRARY
-            NAMES zlibstatic zlib zlib1
-            PATHS
-                "${ZLIB_ROOT_DIR}/build/native"
-                "${ZLIB_ROOT_DIR}"
-            PATH_SUFFIXES
-                lib
-                "lib/${NUGET_ARCH}"
-                "lib/${NUGET_ARCH}/native"
-                "lib/win-${NUGET_ARCH}"
-                "lib/win-${NUGET_ARCH}/native"
-                lib/native
-                lib/Release
-                "lib/${NUGET_ARCH}/Release"
-                "lib/win-${NUGET_ARCH}/Release"
-            NO_DEFAULT_PATH
-        )
+    if(NOT ZLIB_FOUND)
+        # Find ZLIB from NuGet
+        file(GLOB NUGET_ZLIB_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/zlib-msvc-${NUGET_ARCH}*")
+        if(NUGET_ZLIB_ROOTS)
+            list(GET NUGET_ZLIB_ROOTS 0 ZLIB_ROOT_DIR)
+            set(ZLIB_ROOT "${ZLIB_ROOT_DIR}/build/native" CACHE PATH "" FORCE)
+            
+            find_path(ZLIB_INC "${ZLIB_ROOT_DIR}/build/native/include/zlib.h" NO_DEFAULT_PATH)
+            find_library(ZLIB_LIBRARY
+                NAMES zlibstatic zlib zlib1
+                PATHS
+                    "${ZLIB_ROOT_DIR}/build/native"
+                    "${ZLIB_ROOT_DIR}"
+                PATH_SUFFIXES
+                    lib
+                    "lib/${NUGET_ARCH}"
+                    "lib/${NUGET_ARCH}/native"
+                    "lib/win-${NUGET_ARCH}"
+                    "lib/win-${NUGET_ARCH}/native"
+                    lib/native
+                    lib/Release
+                    "lib/${NUGET_ARCH}/Release"
+                    "lib/win-${NUGET_ARCH}/Release"
+                NO_DEFAULT_PATH
+            )
 
-        if(NOT ZLIB_LIBRARY)
-            file(GLOB_RECURSE ZLIB_LIBS "${ZLIB_ROOT_DIR}/*.lib")
-            foreach(LIB_PATH ${ZLIB_LIBS})
-                if(LIB_PATH MATCHES "[Dd]ebug")
-                    continue()
-                endif()
-                if(LIB_PATH MATCHES "win-${NUGET_ARCH}/native" OR LIB_PATH MATCHES "/${NUGET_ARCH}/native" OR
-                   LIB_PATH MATCHES "win-${NUGET_ARCH}" OR LIB_PATH MATCHES "/${NUGET_ARCH}/")
-                    set(ZLIB_LIBRARY "${LIB_PATH}")
-                    break()
-                endif()
-                if(NOT ZLIB_LIBRARY)
-                    set(ZLIB_LIBRARY "${LIB_PATH}")
-                endif()
-            endforeach()
-        endif()
+            if(NOT ZLIB_LIBRARY)
+                file(GLOB_RECURSE ZLIB_LIBS "${ZLIB_ROOT_DIR}/*.lib")
+                foreach(LIB_PATH ${ZLIB_LIBS})
+                    if(LIB_PATH MATCHES "[Dd]ebug")
+                        continue()
+                    endif()
+                    if(LIB_PATH MATCHES "win-${NUGET_ARCH}/native" OR LIB_PATH MATCHES "/${NUGET_ARCH}/native" OR
+                       LIB_PATH MATCHES "win-${NUGET_ARCH}" OR LIB_PATH MATCHES "/${NUGET_ARCH}/")
+                        set(ZLIB_LIBRARY "${LIB_PATH}")
+                        break()
+                    endif()
+                    if(NOT ZLIB_LIBRARY)
+                        set(ZLIB_LIBRARY "${LIB_PATH}")
+                    endif()
+                endforeach()
+            endif()
 
-        if(ZLIB_LIBRARY)
-            set(ZLIB_LIBRARIES "${ZLIB_LIBRARY}" CACHE STRING "" FORCE)
-            set(ZLIB_INCLUDE_DIR "${ZLIB_ROOT_DIR}/build/native/include" CACHE PATH "" FORCE)
-            set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
-            message(STATUS "Found ZLIB via NuGet: ${ZLIB_LIBRARY}")
+            if(ZLIB_LIBRARY)
+                set(ZLIB_LIBRARIES "${ZLIB_LIBRARY}" CACHE STRING "" FORCE)
+                set(ZLIB_INCLUDE_DIR "${ZLIB_ROOT_DIR}/build/native/include" CACHE PATH "" FORCE)
+                set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
+                message(STATUS "Found ZLIB via NuGet: ${ZLIB_LIBRARY}")
 
-            if(NOT TARGET ZLIB::ZLIB)
-                add_library(ZLIB::ZLIB UNKNOWN IMPORTED)
-                set_target_properties(ZLIB::ZLIB PROPERTIES
-                    IMPORTED_LOCATION "${ZLIB_LIBRARY}"
-                    INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIR}")
+                if(NOT TARGET ZLIB::ZLIB)
+                    add_library(ZLIB::ZLIB UNKNOWN IMPORTED)
+                    set_target_properties(ZLIB::ZLIB PROPERTIES
+                        IMPORTED_LOCATION "${ZLIB_LIBRARY}"
+                        INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIR}")
+                endif()
             endif()
         endif()
     endif()

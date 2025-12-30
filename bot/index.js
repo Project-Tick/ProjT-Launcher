@@ -233,6 +233,10 @@ const CONFIG = {
       label: { name: "31.scope:libnbtplusplus", color: "0E8A16", description: "libnbtplusplus changes" },
     },
     {
+      option: "Zlib",
+      label: { name: "31.scope:zlib", color: "0E8A16", description: "Zlib changes" },
+    },
+    {
       option: "Packages",
       label: { name: "31.scope:packages", color: "0E8A16", description: "Packages changes" },
     },
