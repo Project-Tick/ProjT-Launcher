@@ -81,9 +81,11 @@
  */
 
 #include "zutil.h"
+
 #include "inftrees.h"
-#include "inflate.h"
+
 #include "inffast.h"
+#include "inflate.h"
 
 #ifdef MAKEFIXED
 #ifndef BUILDFIXED

@@ -4,9 +4,11 @@
  */
 
 #include "zutil.h"
+
 #include "inftrees.h"
-#include "inflate.h"
+
 #include "inffast.h"
+#include "inflate.h"
 
 #ifdef ASMINF
 #pragma message("Assembler code may have bugs -- use at your own risk")

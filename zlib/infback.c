@@ -11,9 +11,11 @@
  */
 
 #include "zutil.h"
+
 #include "inftrees.h"
-#include "inflate.h"
+
 #include "inffast.h"
+#include "inflate.h"
 
 /*
    strm provides memory allocation functions in zalloc and zfree, or
