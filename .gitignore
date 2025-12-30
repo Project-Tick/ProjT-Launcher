@@ -137,8 +137,6 @@ zlib/*.gcda
 zlib/*.gcno
 zlib/*.gcov
 
-zlib/zconf.h
-zlib/Makefile
 zlib/example
 zlib/example64
 zlib/examplesh
