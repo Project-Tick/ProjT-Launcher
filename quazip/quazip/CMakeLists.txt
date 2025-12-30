@@ -67,8 +67,12 @@ set(_quazip_public_includes
 	"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
 )
 foreach(_quazip_inc IN LISTS QUAZIP_INC)
-	file(TO_CMAKE_PATH "${_quazip_inc}" _quazip_inc_norm)
-	list(APPEND _quazip_public_includes "$<BUILD_INTERFACE:${_quazip_inc_norm}>")
+	if(_quazip_inc MATCHES "^\\$<.*>$")
+		list(APPEND _quazip_public_includes "${_quazip_inc}")
+	else()
+		file(TO_CMAKE_PATH "${_quazip_inc}" _quazip_inc_norm)
+		list(APPEND _quazip_public_includes "$<BUILD_INTERFACE:${_quazip_inc_norm}>")
+	endif()
 endforeach()
 target_include_directories(${QUAZIP_LIB_TARGET_NAME} PUBLIC
 	${_quazip_public_includes}
