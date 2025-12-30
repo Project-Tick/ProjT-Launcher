@@ -337,9 +337,10 @@ jobs:
         run: cmake -DCMAKE_BUILD_TYPE="${{env.BUILD_TYPE}}" -DQUAZIP_QT_MAJOR_VERSION=5 -DBUILD_SHARED_LIBS=OFF -DQUAZIP_ENABLE_TESTS=ON -DQUAZIP_USE_QT_ZLIB=ON -B build -DCMAKE_PREFIX_PATH="${{github.workspace}}\Qt"
 
       - name: Build
-        run: cmake --build build --config ${{env.BUILD_TYPE}}
+        shell: cmd
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
       - name: Run tests
         shell: cmd
-        working-directory: build
-        run: ctest --extra-verbose -C Release
+        working-directory: ${{github.workspace}}/build
+        run: ctest --verbose --output-on-failure -C Release
