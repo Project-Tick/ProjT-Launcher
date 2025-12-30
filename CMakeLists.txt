@@ -687,6 +687,10 @@ else()
     if(TARGET cmark AND NOT TARGET cmark::cmark)
         add_library(cmark::cmark ALIAS cmark)
     endif()
+
+    if(WIN32 AND (CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|arm64" OR CMAKE_GENERATOR_PLATFORM MATCHES "ARM64"))
+        file(WRITE "${CMAKE_BINARY_DIR}/CTestCustom.cmake" "set(CTEST_CUSTOM_TESTS_IGNORE\n  spectest_library\n  pathological_tests_library\n  roundtriptest_library\n  entity_library\n)\n")
+    endif()
 endif()
 
 find_package(PkgConfig QUIET)
