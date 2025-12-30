@@ -43,9 +43,7 @@ modules:
       - type: git
         url: https://github.com/glfw/glfw.git
         tag: '3.4'
-        commit: 7b6aead9fb88b3623e3b3725ebb42670cbe4c579 # 3.4
-      - type: patch
-        path: patches/0009-Defer-setting-cursor-position-until-the-cursor-is-lo.patch
+        commit: 7b6aead9fb88b3623e3b3725ebb42670cbe4c579
 
   - name: xrandr
     buildsystem: autotools
