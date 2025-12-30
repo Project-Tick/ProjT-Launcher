@@ -16,7 +16,6 @@ jobs:
   relabel:
     name: Re-apply labels on base change
     runs-on: ubuntu-latest
-    environment: ci-meta-automation
     if: github.event.changes.base.ref.from && github.event.changes.base.ref.from != github.event.pull_request.base.ref
     timeout-minutes: 2
 

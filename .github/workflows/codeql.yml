@@ -25,7 +25,6 @@ jobs:
   CodeQL:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
-    environment: ci-core-heavy
     timeout-minutes: 60
     if: github.repository_owner == 'Project-Tick'
     env:

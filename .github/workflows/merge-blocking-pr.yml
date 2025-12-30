@@ -15,7 +15,6 @@ jobs:
   update-blocked-status:
     name: Update Blocked Status
     runs-on: ubuntu-latest
-    environment: ci-meta-automation
 
     # a pr that was a `blocking:<id>` label was merged.
     # find the open pr's it was blocked by and trigger a refresh of their state

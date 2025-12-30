@@ -20,7 +20,6 @@ jobs:
   process:
     name: Process Review
     runs-on: ubuntu-latest
-    environment: ci-meta-automation
     timeout-minutes: 5
     
     steps:

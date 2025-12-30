@@ -19,7 +19,6 @@ jobs:
   main:
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
-    environment: ci-forked-zlib
     defaults:
       run:
         working-directory: zlib
@@ -159,7 +158,6 @@ jobs:
   msvc:
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
-    environment: ci-forked-zlib
     defaults:
       run:
         working-directory: zlib
