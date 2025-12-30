@@ -13,9 +13,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  scope:
+    name: Scope Gate
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.scope.outputs.run }}
+    steps:
+      - name: Check PR template scope
+        id: scope
+        uses: actions/github-script@v8
+        with:
+          script: |
+            if (context.eventName !== "pull_request") {
+              core.setOutput("run", "true");
+              return;
+            }
+            const body = context.payload.pull_request?.body ?? "";
+            const selected = /- \[[xX]\]\s+Zlib(\s|$)/.test(body);
+            core.setOutput("run", selected ? "true" : "false");
+
   main:
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
+    needs: scope
+    if: needs.scope.outputs.run == 'true'
     defaults:
       run:
         working-directory: zlib
@@ -168,6 +189,8 @@ jobs:
   msvc:
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
+    needs: scope
+    if: needs.scope.outputs.run == 'true'
     defaults:
       run:
         working-directory: zlib

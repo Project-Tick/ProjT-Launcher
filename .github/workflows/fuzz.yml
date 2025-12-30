@@ -4,8 +4,28 @@ concurrency:
   group: fuzz-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 jobs:
-  Fuzzing:
+  scope:
+    name: Scope Gate
     runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.scope.outputs.run }}
+    steps:
+      - name: Check PR template scope
+        id: scope
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const body = context.payload.pull_request?.body ?? "";
+            const selected = /- \[[xX]\]\s+Zlib(\s|$)/.test(body);
+            core.setOutput("run", selected ? "true" : "false");
+
+  Fuzzing:
+    defaults:
+      run:
+        working-directory: zlib
+    runs-on: ubuntu-latest
+    needs: scope
+    if: needs.scope.outputs.run == 'true'
     steps:
     - name: Build Fuzzers
       uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master

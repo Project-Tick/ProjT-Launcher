@@ -83,6 +83,23 @@ export default {
         return json({ ok: true, accepted: true, event: eventName, pr: prNumber }, 202);
       }
 
+      if (eventName === "workflow_run") {
+        const runId = payload?.workflow_run?.id;
+        if (typeof runId !== "number") {
+          return json({ ok: false, error: "Missing workflow_run.id" }, 400);
+        }
+
+        ctx.waitUntil(
+          handleWorkflowRun({
+            owner: env.GITHUB_OWNER,
+            repo: env.GITHUB_REPO,
+            payload,
+            env,
+          })
+        );
+        return json({ ok: true, accepted: true, event: eventName, runId }, 202);
+      }
+
       if (eventName === "issue_comment") {
         const result = await handleIssueComment({
           payload,
@@ -283,6 +300,15 @@ const CONFIG = {
     enabled: true,
     mergeMethod: "squash",
   },
+  autoApprove: {
+    enabledEnv: "BOT_AUTO_APPROVE_RUNS",
+    workflowRules: [
+      {
+        scopes: ["Zlib"],
+        workflows: ["c-std.yml", "cmake.yml", "configure.yml", "fuzz.yml", "msys-cygwin.yml"],
+      },
+    ],
+  },
   ciSummary: {
     marker: "<!-- projt-bot:pr-summary -->",
     workflowFile: "pull-request-target.yml",
@@ -404,6 +430,38 @@ function getTemplateSelections(body = "", entries = []) {
     }
   }
   return selections;
+}
+
+function getSelectedScopeOptions(body = "") {
+  return new Set(getTemplateSelections(body, CONFIG.templateScopeLabels).map((entry) => entry.option));
+}
+
+function getScopeLabelName(scopeOption) {
+  const entry = CONFIG.templateScopeLabels.find((item) => item.option === scopeOption);
+  return entry?.label?.name ?? null;
+}
+
+function isScopeSelected(scopeOption, { selectedOptions, selectedLabels }) {
+  if (selectedOptions.has(scopeOption)) return true;
+  const labelName = getScopeLabelName(scopeOption);
+  return labelName ? selectedLabels.has(labelName) : false;
+}
+
+function getWorkflowKey(run) {
+  const path = String(run?.path ?? "");
+  if (path) return path.split("/").pop();
+  return String(run?.name ?? "");
+}
+
+function findAutoApproveRule(run) {
+  const key = getWorkflowKey(run);
+  if (!key) return null;
+  return CONFIG.autoApprove?.workflowRules?.find((rule) => rule.workflows.includes(key)) ?? null;
+}
+
+function isAutoApproveEnabled(env) {
+  const flag = CONFIG.autoApprove?.enabledEnv;
+  return String(env?.[flag] ?? "false").toLowerCase() === "true";
 }
 
 function resolveTemplateLabel(selection, repoLabels) {
@@ -1490,6 +1548,44 @@ async function handleIssueComment({ payload, env }) {
   }
 
   return { ok: true, handled: true, result };
+}
+
+async function handleWorkflowRun({ owner, repo, payload, env }) {
+  if (!isAutoApproveEnabled(env)) return { ok: true, skipped: "disabled" };
+
+  const run = payload?.workflow_run;
+  if (!run) return { ok: false, error: "missing-workflow-run" };
+  if (run.event !== "pull_request") return { ok: true, skipped: "not-pr-event" };
+  if (run.status !== "waiting") return { ok: true, skipped: "not-waiting" };
+
+  const rule = findAutoApproveRule(run);
+  if (!rule) return { ok: true, skipped: "no-rule" };
+
+  const prNumber = Number(run.pull_requests?.[0]?.number);
+  if (!Number.isFinite(prNumber)) return { ok: true, skipped: "no-pr-number" };
+
+  const { data: pr } = await githubApi({
+    env,
+    method: "GET",
+    path: `/repos/${owner}/${repo}/pulls/${prNumber}`,
+  });
+
+  const body = String(pr?.body ?? "");
+  const selectedOptions = getSelectedScopeOptions(body);
+  const selectedLabels = new Set((pr.labels ?? []).map((label) => label.name));
+  const scopes = Array.isArray(rule.scopes) ? rule.scopes : [];
+  const allowed =
+    scopes.length === 0 || scopes.some((scope) => isScopeSelected(scope, { selectedOptions, selectedLabels }));
+
+  if (!allowed) return { ok: true, skipped: "scope-not-selected" };
+
+  await githubApi({
+    env,
+    method: "POST",
+    path: `/repos/${owner}/${repo}/actions/runs/${run.id}/approve`,
+  });
+
+  return { ok: true, approved: true };
 }
 
 async function githubApi({ env, method, path, body }) {
