@@ -1,0 +1,128 @@
+name: Reusable build workflow
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      os_version:
+        required: true
+        type: string
+      qt_version:
+        required: true
+        type: string
+      shared:
+        required: false
+        default: "ON"
+        type: string
+      zlib_const:
+        required: false
+        default: "OFF"
+        type: string
+      qtextcodec:
+        required: false
+        default: "ON"
+        type: string
+      runs_on:
+        required: true
+        type: string
+      run_tests:
+        required: false
+        default: true
+        type: boolean
+      cross_extract:
+        required: false
+        default: false
+        type: boolean
+      working_directory:
+        required: true
+        type: string
+        default: "quazip"
+      ref:
+        required: true
+        type: string
+    secrets:
+        GH_TOKEN:
+            required: false
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on:  ${{ inputs.runs_on }}
+    name: Build-quazip-${{ inputs.runs_on }}-Qt-${{ inputs.qt_version }}-shared-${{ inputs.shared }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Export Qt CMake path
+        run: |
+          echo "CMAKE_PREFIX_PATH=${{ github.workspace }}/Qt/${{ inputs.qt_version }}/${{ inputs.qt_architecture }}" >> $GITHUB_ENV
+
+      - name: Install Qt6
+        if: "startsWith(inputs.qt_version, '6.')"
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ inputs.qt_version }}
+          cache: 'true'
+          cache-key-prefix: ${{ runner.os }}-Qt-Cache-${{ inputs.qt_version }}
+          dir: ${{ github.workspace }}/Qt
+          modules: 'qt5compat'
+
+      - name: Install Qt5
+        if: "startsWith(inputs.qt_version, '5.')"
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ inputs.qt_version }}
+          cache: 'true'
+          cache-key-prefix: ${{ runner.os }}-Qt-Cache-${{ inputs.qt_version }}
+          dir: ${{ github.workspace }}/Qt
+
+      - name: Install libraries (Linux Only)
+        if: contains(inputs.runs_on, 'ubuntu')
+        run: |
+          sudo apt-get update &&
+          sudo apt-get install -y --no-install-recommends \
+          zlib1g-dev libbz2-dev
+
+      - name: Configure CMake
+        run: cmake -DCMAKE_BUILD_TYPE="${{env.BUILD_TYPE}}" -DBUILD_SHARED_LIBS=${{ inputs.shared }} -DQUAZIP_ENABLE_TESTS=ON -DZLIB_CONST=${{ inputs.zlib_const }} -DQUAZIP_ENABLE_QTEXTCODEC=${{ inputs.qtextcodec }} -B "${{github.workspace}}/build"
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Run tests
+        if: inputs.run_tests && !inputs.cross_extract
+        working-directory: ${{github.workspace}}/build
+        env:
+          TEST_CR_COMPRESS: "true"
+        run: ctest --verbose
+
+      - name: Upload cp.zip to GitHub Actions Storage
+        if: inputs.run_tests && !inputs.cross_extract
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: "${{ inputs.runs_on }}_qt${{ inputs.qt_version }}_shared${{ inputs.shared }}_cp"
+          path: build/quazip/cp.zip
+
+      - name: Download bundle containing cp.zip
+        if: inputs.cross_extract
+        uses: actions/download-artifact@v4
+        with:
+          path: build/quazip
+          merge-multiple: false
+
+      - name: Run extract tests
+        if: inputs.cross_extract
+        working-directory: ${{github.workspace}}/build
+        env:
+          TEST_CR_DECOMPRESS: "true"
+        run: ctest --verbose
