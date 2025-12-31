@@ -14,7 +14,7 @@ on:
   issue_comment:
     types: [created]
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened, edited, closed]
   release:
     types: [released]
   workflow_run:
@@ -26,8 +26,9 @@ on:
   branch_protection_rule:
 
 concurrency:
-  group: >
-    projt-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.event_name == 'schedule'
+    && format('projt-schedule-{0}', github.run_id)
+    || format('projt-{0}-{1}', github.workflow, github.event.pull_request.number || github.ref) }}
   cancel-in-progress: true
 
 jobs:
@@ -50,6 +51,7 @@ jobs:
       is-workflow-run: ${{ steps.trigger.outputs.is-workflow-run }}
       is-pr-review: ${{ steps.trigger.outputs.is-pr-review }}
       is-branch-protection: ${{ steps.trigger.outputs.is-branch-protection }}
+      is-pr-closed: ${{ steps.trigger.outputs.is-pr-closed }}
       ref-name: ${{ steps.trigger.outputs.ref-name }}
       ref-type: ${{ steps.trigger.outputs.ref-type }}
       build-type: ${{ steps.decide.outputs.build-type }}
@@ -94,11 +96,13 @@ jobs:
         id: trigger
         run: |
           event="${{ github.event_name }}"
+          action="${{ github.event.action || '' }}"
           ref="${{ github.ref }}"
           ref_name="${{ github.ref_name }}"
           ref_type="${{ github.ref_type }}"
 
           is_pr=false
+          is_pr_closed=false
           is_push=false
           is_tag_push=false
           is_branch_push=false
@@ -112,7 +116,10 @@ jobs:
           is_branch_protection=false
 
           case "$event" in
-            pull_request) is_pr=true ;;
+            pull_request)
+              is_pr=true
+              if [ "$action" = "closed" ]; then is_pr_closed=true; fi
+              ;;
             push)
               is_push=true
               if [ "$ref_type" = "tag" ]; then is_tag_push=true; else is_branch_push=true; fi
@@ -143,6 +150,7 @@ jobs:
             echo "is-workflow-run=$is_workflow_run"
             echo "is-pr-review=$is_pr_review"
             echo "is-branch-protection=$is_branch_protection"
+            echo "is-pr-closed=$is_pr_closed"
           } >> "$GITHUB_OUTPUT"
 
       - name: Parse PR scope checklist
@@ -185,6 +193,7 @@ jobs:
           IS_SCHEDULE: ${{ steps.trigger.outputs.is-schedule }}
           IS_TAG: ${{ steps.trigger.outputs.is-tag-push }}
           IS_RELEASE_EVENT: ${{ steps.trigger.outputs.is-release }}
+          IS_PR_CLOSED: ${{ steps.trigger.outputs.is-pr-closed }}
           SCOPE_LAUNCHER: ${{ steps.scope.outputs.launcher || 'false' }}
           SCOPE_WEBSITE: ${{ steps.scope.outputs.website || 'false' }}
           SCOPE_QUAZIP: ${{ steps.scope.outputs.quazip || 'false' }}
@@ -209,6 +218,9 @@ jobs:
           fi
 
           if [ "$IS_RELEASE_EVENT" = "true" ]; then
+            should_test=false
+            should_build=false
+          elif [ "$IS_PR_CLOSED" = "true" ]; then
             should_test=false
             should_build=false
           elif [ "$IS_SCHEDULE" = "true" ]; then
@@ -248,7 +260,7 @@ jobs:
             build_type="Release"
           fi
 
-          if [ "$IS_RELEASE_EVENT" = "true" ]; then
+          if [ "$IS_RELEASE_EVENT" = "true" ] || [ "$IS_PR_CLOSED" = "true" ]; then
             # release events are handled elsewhere; do not run component jobs
             :
           elif [ "$IS_PUSH" = "true" ] || [ "$IS_MERGE_GROUP" = "true" ]; then
@@ -301,7 +313,7 @@ jobs:
           echo "- Base ref: \`${{ steps.base.outputs.base }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Head ref: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Event: \`${{ steps.trigger.outputs.event-name }}\` (ref: `${{ steps.trigger.outputs.ref-name }}` type: `${{ steps.trigger.outputs.ref-type }}`)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Trigger flags: pr=${{ steps.trigger.outputs.is-pr }}, push=${{ steps.trigger.outputs.is-push }}, merge_group=${{ steps.trigger.outputs.is-merge-group }}, dispatch=${{ steps.trigger.outputs.is-dispatch }}, schedule=${{ steps.trigger.outputs.is-schedule }}, issue_comment=${{ steps.trigger.outputs.is-issue-comment }}, release=${{ steps.trigger.outputs.is-release }}, workflow_run=${{ steps.trigger.outputs.is-workflow-run }}, pr_review=${{ steps.trigger.outputs.is-pr-review }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Trigger flags: pr=${{ steps.trigger.outputs.is-pr }} (closed=${{ steps.trigger.outputs.is-pr-closed }}), push=${{ steps.trigger.outputs.is-push }}, merge_group=${{ steps.trigger.outputs.is-merge-group }}, dispatch=${{ steps.trigger.outputs.is-dispatch }}, schedule=${{ steps.trigger.outputs.is-schedule }}, issue_comment=${{ steps.trigger.outputs.is-issue-comment }}, release=${{ steps.trigger.outputs.is-release }}, workflow_run=${{ steps.trigger.outputs.is-workflow-run }}, pr_review=${{ steps.trigger.outputs.is-pr-review }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Should test: \`${{ steps.decide.outputs.should-test }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Should build: \`${{ steps.decide.outputs.should-build }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Build type: \`${{ steps.decide.outputs.build-type }}\` (Release if tag push, else Debug)" >> "$GITHUB_STEP_SUMMARY"
@@ -459,8 +471,7 @@ jobs:
       - name: Show OS info
         run: cat /etc/os-release
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
+
       - name: Install build tools
         working-directory: quazip
         run: apk add --update g++ make cmake ${{ matrix.qt_version }}-qtbase-dev
@@ -618,8 +629,7 @@ jobs:
       image: debian:testing
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
+
 
       - name: Install deps
         run: |
@@ -655,8 +665,7 @@ jobs:
       image: debian:testing
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
+
 
       - name: Install deps
         run: |
@@ -693,8 +702,7 @@ jobs:
       image: debian:testing
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
+
 
       - name: Install deps
         run: |
@@ -731,8 +739,7 @@ jobs:
       image: debian:testing
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
+
 
       - name: Install deps
         run: |
@@ -769,8 +776,7 @@ jobs:
       image: debian:testing
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
+
 
       - name: Install deps
         run: |
@@ -807,8 +813,7 @@ jobs:
       image: ubuntu:jammy
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
+
 
       - name: Install deps
         run: |
@@ -1043,8 +1048,7 @@ jobs:
              Mesa-libGL-devel
 
       - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref }}
+
 
       - name: Install deps
         run: |
@@ -1102,8 +1106,7 @@ jobs:
              Mesa-libGL-devel
 
       - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref }}
+
 
       - name: Install deps
         run: |
@@ -1162,8 +1165,7 @@ jobs:
              Mesa-libGL-devel
 
       - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref }}
+
 
       - name: Install deps
         run: |
@@ -1221,8 +1223,7 @@ jobs:
              Mesa-libGL-devel
 
       - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref }}
+
 
       - name: Install deps
         run: |
@@ -1247,7 +1248,7 @@ jobs:
           path: CMakeOutput.log
 
   build-website:
-    if: github.repository_owner == 'Project-Tick' && needs.prepare.outputs.run-website == 'true'
+    if: needs.prepare.outputs.run-website == 'true'
     runs-on: ubuntu-latest
 
     strategy:
@@ -1289,3 +1290,337 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  backport:
+    name: Backport to Release Branch
+    # Only run on closed/merged PRs with backport label
+    needs: [prepare]
+    if: needs.prepare.outputs.is-pr-closed == 'true' && github.event.pull_request.merged == true && contains(join(github.event.pull_request.labels.*.name, ','), 'backport/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract target branch from label
+        id: target
+        run: |
+          # Extract version from label like "backport/release-1.0" -> "release-1.0"
+          labels="${{ join(github.event.pull_request.labels.*.name, ' ') }}"
+          label=$(echo "$labels" | tr ' ' '\n' | grep -E "^backport/release-[0-9A-Za-z._-]+$" | head -1)
+          if [ -z "$label" ]; then
+            echo "No valid backport label found"
+            exit 0
+          fi
+          target_branch="${label#backport/}"
+          pr_number="${{ github.event.pull_request.number }}"
+          backport_branch="backport/${target_branch}/pr-${pr_number}"
+          echo "target_branch=$target_branch" >> "$GITHUB_OUTPUT"
+          echo "backport_branch=$backport_branch" >> "$GITHUB_OUTPUT"
+          echo "Creating backport to: $target_branch"
+
+      - name: Create backport branch
+        if: steps.target.outputs.target_branch != ''
+        run: |
+          TARGET_BRANCH="${{ steps.target.outputs.target_branch }}"
+          BACKPORT_BRANCH="${{ steps.target.outputs.backport_branch }}"
+          MERGE_SHA="${{ github.event.pull_request.merge_commit_sha }}"
+          
+          # Verify target branch exists
+          if ! git ls-remote --exit-code --heads origin "$TARGET_BRANCH" > /dev/null 2>&1; then
+            echo "Error: Target branch '$TARGET_BRANCH' does not exist"
+            exit 1
+          fi
+          
+          # Create backport branch from target branch
+          git fetch origin "$TARGET_BRANCH"
+          git checkout -b "$BACKPORT_BRANCH" "origin/$TARGET_BRANCH"
+          
+          # Cherry-pick the merge commit
+          if git cherry-pick -m 1 "$MERGE_SHA"; then
+            echo "Successfully cherry-picked $MERGE_SHA"
+          else
+            echo "Error: Cherry-pick failed with conflicts"
+            echo "The following files have conflicts:"
+            git diff --name-only --diff-filter=U
+            echo ""
+            echo "Manual backport required. Please:"
+            echo "1. Create a branch from $TARGET_BRANCH"
+            echo "2. Manually apply changes from PR #${{ github.event.pull_request.number }}"
+            echo "3. Create a pull request to $TARGET_BRANCH"
+            git cherry-pick --abort
+            exit 1
+          fi
+          
+          # Push the backport branch
+          git push origin "$BACKPORT_BRANCH"
+
+      - name: Create backport PR
+        if: steps.target.outputs.target_branch != ''
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const branch = '${{ steps.target.outputs.target_branch }}';
+            const backportBranch = '${{ steps.target.outputs.backport_branch }}';
+            const originalPR = context.payload.pull_request.number;
+            const originalTitle = context.payload.pull_request.title;
+            
+            try {
+              // Create backport PR
+              const response = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[Backport ${branch}] ${originalTitle}`,
+                body: `Automated backport of #${originalPR} to \`${branch}\`\n\n---\n\nOriginal PR: #${originalPR}`,
+                head: backportBranch,
+                base: branch
+              });
+              
+              console.log(`Created backport PR: #${response.data.number}`);
+              
+              // Add backport label to the new PR
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: response.data.number,
+                labels: ['automated-backport']
+              });
+            } catch (error) {
+              console.error(`Failed to create backport PR: ${error.message}`);
+              throw error;
+            }
+
+  build-zlib-main:
+    name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
+    runs-on: ${{ matrix.os.value }}
+    needs: prepare
+    if: needs.prepare.outputs.run-zlib == 'true'
+    defaults:
+      run:
+        working-directory: zlib
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - name: Linux
+            value: ubuntu-latest
+
+          - name: MacOS
+            value: macos-latest
+
+          - name: Windows
+            value: windows-latest
+            cmake-opt: -G Ninja
+
+        compiler:
+          - gcc
+          - clang
+
+        arch:
+          - name: 64-bit
+            tag: amd64
+            compiler-opt: -m64
+            cmake-opt: -A x64
+
+          - name: 32-bit
+            tag: i386
+            compiler-opt: -m32
+            cmake-opt: -A Win32
+
+
+        builder:
+          - configure
+          - cmake
+
+        std:
+          - name: c89
+            value: c89
+
+          - name: gnu89
+            value: gnu89
+
+          - name: c94
+            value: iso9899:199409
+
+          - name: c99
+            value: c99
+
+          - name: gnu99
+            value: gnu99
+
+          - name: c11
+            value: c11
+
+          - name: gnu11
+            value: gnu11
+
+          - name: c17
+            value: c17
+
+          - name: gnu17
+            value: gnu17
+
+          - name: c2x
+            value: c2x
+
+          - name: gnu2x
+            value: gnu2x
+
+        exclude:
+            # Don't run 32-bit on MacOS
+          - { os:   { name: MacOS },
+              arch: { tag:  i386  } }
+
+            # Don't run configure on Windows
+          - { os:   { name: Windows },
+              builder: configure }
+
+            # Don't run gcc 32-bit on Windows
+          - { os:   { name: Windows },
+              arch: { tag:  i386  } }
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+
+    - name: Install packages (Linux)
+      if: runner.os == 'Linux' && matrix.arch.tag == 'i386'
+      run: |
+        sudo apt-get update
+        sudo apt install gcc-multilib libc6-dev-i386-cross
+
+    - name: Install packages (Windows)
+      if: runner.os == 'Windows'
+      run: |
+          choco install --no-progress ninja
+
+    - name: Generate project files (configure)
+      if: matrix.builder == 'configure'
+      run: |
+        ./configure
+      env:
+        CC: ${{ matrix.compiler }}
+        CFLAGS: -std=${{ matrix.std.value }} ${{ matrix.arch.compiler-opt }} -Werror -Wall -Wextra
+
+    - name: Compile source code (configure)
+      if: matrix.builder == 'configure'
+      run: make -j2
+
+    - name: Run test cases (configure)
+      if: matrix.builder == 'configure'
+      run: |
+        make test
+        make cover
+
+    - name: Generate project files (cmake)
+      if: matrix.builder == 'cmake'
+      run: |
+        cmake -S . -B ./build1 -D CMAKE_BUILD_TYPE=Release ${{ matrix.os.cmake-opt }} -DZLIB_BUILD_TESTING=OFF
+      env:
+        CC: ${{ matrix.compiler }}
+        CFLAGS: -std=${{ matrix.std.value }} ${{ matrix.arch.compiler-opt }} -Werror -Wall -Wextra
+
+    - name: Generate project files with tests (cmake)
+      if: matrix.builder == 'cmake'
+      run: |
+        cmake -S . -B ./build2 -D CMAKE_BUILD_TYPE=Release ${{ matrix.os.cmake-opt }} -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=OFF
+      env:
+        CC: ${{ matrix.compiler }}
+        CFLAGS: -std=${{ matrix.std.value }} ${{ matrix.arch.compiler-opt }} -Wall -Wextra
+
+    - name: Compile source code (cmake)
+      if: matrix.builder == 'cmake'
+      run: cmake --build ./build1 --config Release
+
+    - name: Compile source code with tests (cmake)
+      if: matrix.builder == 'cmake'
+      run: cmake --build ./build2 --config Release
+
+    - name: Run test cases (cmake)
+      if: matrix.builder == 'cmake'
+      run: ctest ./build2 -C Release --output-on-failure --max-width 120
+
+
+  build-zlib-msvc:
+    name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
+    runs-on: ${{ matrix.os.value }}
+    needs: prepare
+    if: needs.prepare.outputs.run-zlib == 'true'
+    defaults:
+      run:
+        working-directory: zlib
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - name: Windows
+            value: windows-latest
+
+        compiler:
+          - cl
+
+        arch:
+          - name: 32-bit
+            value: -A Win32
+
+          - name: 64-bit
+            value: -A x64
+
+        builder:
+          - cmake
+
+        std:
+          - name: default
+            value: ""
+
+          - name: C11
+            value: /std:c11
+
+          - name: C17
+            value: /std:c17
+
+          # not available on the runner yet
+          # - name: C20
+          #   value: /std:c20
+
+          - name: latest
+            value: /std:clatest
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+
+    - name: Generate project files (cmake)
+      run: |
+        cmake -S . -B ./build1 ${{ matrix.arch.value }} -D CMAKE_BUILD_TYPE=Release -DZLIB_BUILD_TESTING=OFF
+      env:
+        CC: ${{ matrix.compiler }}
+        CFLAGS: /WX ${{ matrix.std.value }}
+
+    - name: Generate project files with tests (cmake)
+      run: |
+        cmake -S . -B ./build2 ${{ matrix.arch.value }} -D CMAKE_BUILD_TYPE=Release -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=OFF
+      env:
+        CC: ${{ matrix.compiler }}
+        CFLAGS: ${{ matrix.std.value }}
+
+    - name: Compile source code (cmake)
+      run: cmake --build ./build1 --config Release -v
+
+    - name: Compile source code with tests(cmake)
+      run: cmake --build ./build2 --config Release -v
+
+    - name: Run test cases (cmake)
+      run: ctest ./build2 -C Release --output-on-failure --max-width 120
+
