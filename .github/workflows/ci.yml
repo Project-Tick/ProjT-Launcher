@@ -11,6 +11,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 * * * *" # Every hour
+    - cron: "30 0 * * *" # Daily at 00:30 UTC
   issue_comment:
     types: [created]
   pull_request:
@@ -52,6 +53,7 @@ jobs:
       is-pr-review: ${{ steps.trigger.outputs.is-pr-review }}
       is-branch-protection: ${{ steps.trigger.outputs.is-branch-protection }}
       is-pr-closed: ${{ steps.trigger.outputs.is-pr-closed }}
+      schedule-cron: ${{ steps.trigger.outputs.schedule-cron }}
       ref-name: ${{ steps.trigger.outputs.ref-name }}
       ref-type: ${{ steps.trigger.outputs.ref-type }}
       build-type: ${{ steps.decide.outputs.build-type }}
@@ -100,6 +102,7 @@ jobs:
           ref="${{ github.ref }}"
           ref_name="${{ github.ref_name }}"
           ref_type="${{ github.ref_type }}"
+          schedule_cron="${{ github.event.schedule || '' }}"
 
           is_pr=false
           is_pr_closed=false
@@ -151,6 +154,7 @@ jobs:
             echo "is-pr-review=$is_pr_review"
             echo "is-branch-protection=$is_branch_protection"
             echo "is-pr-closed=$is_pr_closed"
+            echo "schedule-cron=$schedule_cron"
           } >> "$GITHUB_OUTPUT"
 
       - name: Parse PR scope checklist
@@ -313,6 +317,9 @@ jobs:
           echo "- Base ref: \`${{ steps.base.outputs.base }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Head ref: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Event: \`${{ steps.trigger.outputs.event-name }}\` (ref: `${{ steps.trigger.outputs.ref-name }}` type: `${{ steps.trigger.outputs.ref-type }}`)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.trigger.outputs.is-schedule }}" = "true" ]; then
+            echo "- Schedule cron: \`${{ steps.trigger.outputs.schedule-cron }}\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "- Trigger flags: pr=${{ steps.trigger.outputs.is-pr }} (closed=${{ steps.trigger.outputs.is-pr-closed }}), push=${{ steps.trigger.outputs.is-push }}, merge_group=${{ steps.trigger.outputs.is-merge-group }}, dispatch=${{ steps.trigger.outputs.is-dispatch }}, schedule=${{ steps.trigger.outputs.is-schedule }}, issue_comment=${{ steps.trigger.outputs.is-issue-comment }}, release=${{ steps.trigger.outputs.is-release }}, workflow_run=${{ steps.trigger.outputs.is-workflow-run }}, pr_review=${{ steps.trigger.outputs.is-pr-review }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Should test: \`${{ steps.decide.outputs.should-test }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Should build: \`${{ steps.decide.outputs.should-build }}\`" >> "$GITHUB_STEP_SUMMARY"
@@ -1751,4 +1758,328 @@ jobs:
         path: |
           zlib/build/CMakeFiles/CMakeOutput.log
           zlib/build/CMakeFiles/CMakeError.log
-        retention-days: 7
+
+  CodeQL:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    if: github.repository_owner == 'Project-Tick' && needs.prepare.outputs.should-test == 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
+    env:
+      SKIP_CODEQL_TOOLCACHE_CLEANUP: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: "true"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          config-file: ./.github/codeql/codeql-config.yml
+          queries: security-and-quality
+          languages: c, cpp, java
+
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: Debug
+          artifact-name: Linux
+
+      - name: Configure and Build
+        run: |
+          cmake --preset linux
+          cmake --build --preset linux --config Debug
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+
+  build-zlib-ci-configure:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    needs: prepare
+    if: needs.prepare.outputs.run-zlib == 'true'
+    defaults:
+      run:
+        working-directory: zlib
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu GCC
+            os: ubuntu-latest
+            compiler: gcc
+            configure-args: --warn
+
+          # Test out of source builds
+          - name: Ubuntu GCC OSB
+            os: ubuntu-latest
+            compiler: gcc
+            configure-args: --warn
+            build-dir: ../build
+            src-dir: ../zlib
+
+          - name: Ubuntu GCC ARM SF
+            os: ubuntu-latest
+            compiler: arm-linux-gnueabi-gcc
+            configure-args: --warn
+            chost: arm-linux-gnueabi
+            packages: qemu-system qemu-user gcc-arm-linux-gnueabi libc-dev-armel-cross
+            qemu-run: qemu-arm -L /usr/arm-linux-gnueabi
+
+          - name: Ubuntu GCC ARM HF
+            os: ubuntu-latest
+            compiler: arm-linux-gnueabihf-gcc
+            configure-args: --warn
+            chost: arm-linux-gnueabihf
+            packages: qemu-system qemu-user gcc-arm-linux-gnueabihf libc-dev-armhf-cross
+            qemu-run: qemu-arm -L /usr/arm-linux-gnueabihf
+
+          - name: Ubuntu GCC AARCH64
+            os: ubuntu-latest
+            compiler: aarch64-linux-gnu-gcc
+            configure-args: --warn
+            chost: aarch64-linux-gnu
+            packages: qemu-system qemu-user gcc-aarch64-linux-gnu libc-dev-arm64-cross
+            qemu-run: qemu-aarch64 -L /usr/aarch64-linux-gnu
+
+          - name: Ubuntu GCC PPC
+            os: ubuntu-latest
+            compiler: powerpc-linux-gnu-gcc
+            configure-args: --warn --static
+            chost: powerpc-linux-gnu
+            packages: qemu-system qemu-user gcc-powerpc-linux-gnu libc-dev-powerpc-cross
+            qemu-run: qemu-ppc -L /usr/powerpc-linux-gnu
+            cflags: -static
+            ldflags: -static
+
+          - name: Ubuntu GCC PPC64
+            os: ubuntu-latest
+            compiler: powerpc64-linux-gnu-gcc
+            configure-args: --warn --static
+            chost: powerpc-linux-gnu
+            packages: qemu-system qemu-user gcc-powerpc64-linux-gnu libc-dev-ppc64-cross
+            qemu-run: qemu-ppc64 -L /usr/powerpc64-linux-gnu
+            cflags: -static
+            ldflags: -static
+
+          - name: Ubuntu GCC PPC64LE
+            os: ubuntu-latest
+            compiler: powerpc64le-linux-gnu-gcc
+            configure-args: --warn
+            chost: powerpc64le-linux-gnu
+            packages: qemu-system qemu-user gcc-powerpc64le-linux-gnu libc-dev-ppc64el-cross
+            qemu-run: qemu-ppc64le -L /usr/powerpc64le-linux-gnu
+
+          - name: Ubuntu GCC S390X
+            os: ubuntu-latest
+            compiler: s390x-linux-gnu-gcc
+            configure-args: --warn --static
+            chost: s390x-linux-gnu
+            packages: qemu-system qemu-user gcc-s390x-linux-gnu libc-dev-s390x-cross
+            qemu-run: qemu-s390x -L /usr/s390x-linux-gnu
+            cflags: -static
+            ldflags: -static
+
+          - name: macOS GCC 13
+            os: macos-latest
+            compiler: gcc-13
+            configure-args: --warn
+
+          - name: macOS GCC 14
+            os: macos-latest
+            compiler: gcc-14
+            configure-args: --warn
+
+          - name: macOS GCC 15
+            os: macos-latest
+            compiler: gcc-15
+            configure-args: --warn
+
+          - name: macOS Clang
+            os: macos-latest
+            compiler: clang
+            configure-args: --warn
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install packages (Ubuntu)
+      if: runner.os == 'Linux' && matrix.packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.packages }}
+
+    - name: Generate project files
+      run: |
+        [ -d ${{ matrix.build-dir || '.' }} ] || mkdir ${{ matrix.build-dir || '.' }}
+        cd ${{ matrix.build-dir || '.' }}
+        ${{ matrix.src-dir || '.' }}/configure ${{ matrix.configure-args }}
+      env:
+        CC: ${{ matrix.compiler }}
+        CFLAGS: ${{ matrix.cflags }}
+        LDFLAGS: ${{ matrix.ldflags }}
+        CHOST: ${{ matrix.chost }}
+
+    - name: Compile source code
+      run: make -j2
+      working-directory: ${{ format('zlib/{0}', matrix.build-dir || '.') }}
+
+    - name: Run test cases
+      run: |
+        make test
+        make cover
+      working-directory: ${{ format('zlib/{0}', matrix.build-dir || '.') }}
+      env:
+        QEMU_RUN: ${{ matrix.qemu-run }}
+
+    - name: Upload build errors
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: ${{ matrix.name }} (configure)
+        path: |
+          ${{ matrix.build-dir || '.' }}/configure.log
+
+  relabel:
+    name: Re-apply labels on base change
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    if: >
+      (github.event.changes.base.ref.from
+        && github.event.changes.base.ref.from != github.event.pull_request.base.ref)
+      || contains(needs.prepare.outputs.changed-files, '.github/pull_request_template.md')
+    timeout-minutes: 2
+
+    steps:
+      - name: Sync labels
+        uses: actions/labeler@v6
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: .github/labeler.yml
+          sync-labels: false
+
+  eval:
+    name: System Evaluation
+    needs: prepare
+    runs-on: ubuntu-latest
+    if: needs.prepare.outputs.is-schedule != 'true'
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Run full evaluation
+        id: eval
+        env:
+          NIX_PATH: nixpkgs=channel:nixos-unstable
+        run: |
+          set -euo pipefail
+          result=$(nix-build --expr '
+            let
+              pkgs = import <nixpkgs> {};
+              evalModule = import ./ci/eval {
+                inherit (pkgs) lib runCommand cmake nix jq;
+              };
+              eval = evalModule {};
+            in eval.full
+          ')
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+
+      - name: Publish evaluation summary
+        if: steps.eval.outputs.result != ''
+        run: |
+          summary="${{ steps.eval.outputs.result }}/summary.md"
+          if [ -f "$summary" ]; then
+            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "CI evaluation succeeded (no summary file)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  build-zlib-MSys:
+    runs-on: windows-latest
+    needs: prepare
+    if: needs.prepare.outputs.run-zlib == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: [mingw32, mingw64, ucrt64, clang64]
+    name: MSys - ${{ matrix.sys }}
+    defaults:
+      run:
+        shell: msys2 {0}
+        working-directory: zlib
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.sys }}
+        update: true
+        install: >-
+          make
+        pacboy: >-
+          toolchain:p
+          cmake:p
+    - name: Configure
+      run: |
+        cmake -G"Unix Makefiles" \
+          -S "$(cygpath -u "$GITHUB_WORKSPACE")/zlib" \
+          -B "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" \
+          -DCMAKE_VERBOSE_MAKEFILE=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DMINIZIP_ENABLE_BZIP2=ON
+    - name: Build
+      run: cmake --build "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" --config Release
+    - name: Run tests
+      run: ctest --output-on-failure --test-dir "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" -C Release
+
+  build-zlib-cygwin:
+    strategy:
+      fail-fast: false
+    runs-on: windows-latest
+    needs: prepare
+    if: needs.prepare.outputs.run-zlib == 'true'
+    defaults:
+      run:
+        shell: C:\cygwin\bin\bash.exe --login -o igncr '{0}'
+        working-directory: zlib
+    name: Cygwin
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Setup cygwin
+      uses: cygwin/cygwin-install-action@master
+      with:
+        packages: >-
+          cmake
+          cygwin-devel
+          gcc-core
+          gcc-g++
+          ninja
+    - name: Configure
+      run: |
+        cmake -S "$(cygpath -u "$GITHUB_WORKSPACE")/zlib" \
+          -B "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DZLIB_BUILD_MINIZIP=ON \
+          -DMINIZIP_ENABLE_BZIP2=OFF \
+          -G Ninja
+    - name: Build
+      run: cmake --build "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" --config Release -v -j1
+    - name: Run tests
+      run: ctest --output-on-failure --test-dir "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" -C Release
