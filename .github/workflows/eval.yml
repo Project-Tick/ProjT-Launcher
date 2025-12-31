@@ -19,6 +19,7 @@ jobs:
   eval:
     name: System Evaluation
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     timeout-minutes: 20
     steps:
       - name: Checkout repository

@@ -13,6 +13,7 @@ jobs:
   ci-cmake:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    environment: ci-forked-zlib
     defaults:
       run:
         working-directory: zlib

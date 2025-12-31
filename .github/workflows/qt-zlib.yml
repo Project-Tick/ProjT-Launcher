@@ -20,6 +20,7 @@ jobs:
   use-qt6-zlib-windows:
     if: true
     runs-on: windows-latest
+    environment: ci-forked-qt-zlib
     defaults:
       run:
         working-directory: quazip

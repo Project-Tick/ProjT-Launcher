@@ -13,6 +13,7 @@ concurrency:
 jobs:
   MSys:
     runs-on: windows-latest
+    environment: ci-forked-zlib
     strategy:
       fail-fast: false
       matrix:
@@ -55,6 +56,7 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: windows-latest
+    environment: ci-forked-zlib
     defaults:
       run:
         shell: C:\cygwin\bin\bash.exe --login -o igncr '{0}'

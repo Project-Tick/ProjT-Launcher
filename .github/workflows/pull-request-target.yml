@@ -12,6 +12,7 @@ jobs:
     name: Prepare
     if: github.event.action != 'edited' || github.event.changes.base.ref.from != github.event.pull_request.base.ref
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     permissions:
       pull-requests: write
     outputs:
@@ -71,6 +72,7 @@ jobs:
     needs: [prepare]
     if: needs.prepare.outputs.baseBranch
     uses: ./.github/workflows/check.yml
+    environment: ci-core-heavy
     permissions:
       pull-requests: write
     with:
@@ -84,6 +86,7 @@ jobs:
     name: Lint
     needs: [prepare]
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     permissions:
       contents: read
     
@@ -107,6 +110,7 @@ jobs:
     name: Build
     needs: [prepare]
     uses: ./.github/workflows/build.yml
+    environment: ci-core-heavy
     permissions:
       contents: read
       packages: write
@@ -121,6 +125,7 @@ jobs:
     needs: [prepare, check, lint, build]
     if: always()
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     permissions: {}
     
     steps:
@@ -142,6 +147,7 @@ jobs:
       - check
       - build
     runs-on: ubuntu-latest
+    environment: ci-core-heavy
     permissions:
       statuses: write
     steps:

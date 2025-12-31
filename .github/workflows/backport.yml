@@ -18,6 +18,7 @@ jobs:
     # Only run if PR is merged and has backport label
     if: github.event.pull_request.merged == true && contains(join(github.event.pull_request.labels.*.name, ','), 'backport/')
     runs-on: ubuntu-latest
+    environment: ci-meta-automation
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
