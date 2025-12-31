@@ -187,7 +187,7 @@ jobs:
       - name: Build
         shell: cmd
         working-directory: ${{github.workspace}}\build
-        run: cmake --build build --config ${{env.BUILD_TYPE}}
+        run: cmake --build . --config ${{env.BUILD_TYPE}}
 
       - name: Run tests
         shell: cmd
