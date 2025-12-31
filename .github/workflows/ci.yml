@@ -58,6 +58,7 @@ jobs:
       run-quazip: ${{ steps.decide.outputs.run-quazip }}
       run-website: ${{ steps.decide.outputs.run-website }}
       run-nix: ${{ steps.decide.outputs.run-nix }}
+      run-schedule: ${{ steps.decide.outputs.run-schedule }}
       changed-files: ${{ steps.collect.outputs.changed-files }}
       base-ref: ${{ steps.base.outputs.base }}
       head-ref: ${{ github.sha }}
@@ -203,15 +204,18 @@ jobs:
             scope_selected=true
           fi
 
-          if $is_pr || [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$EVENT_NAME" = "merge_group" ] || [ "$EVENT_NAME" = "schedule" ]; then
+          if [ "$IS_SCHEDULE" = "true" ]; then
+            should_test=false
+            should_build=false
+          elif [ "$IS_PUSH" = "true" ] || [ "$IS_MERGE_GROUP" = "true" ]; then
+            should_test=true
+            should_build=true
+          elif $is_pr || [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             should_test=true
             should_build=true
           elif [ "$ACTOR" = "dependabot[bot]" ]; then
             should_test=true
             should_build=true
-          elif [ "$IS_SCHEDULE" = "true" ]; then
-            should_test=false
-            should_build=false
           elif match '^(launcher|libraries|tests|buildconfig|cmake|program_info|zlib|quazip|bzip2)/|CMakeLists.txt|\\.cpp$|\\.h$|\\.ui$'; then
             should_test=true
             should_build=true
@@ -228,6 +232,7 @@ jobs:
           run_quazip=false
           run_website=false
           run_nix=false
+          run_schedule=false
 
           if [ "$IS_PUSH" = "true" ] || [ "$IS_MERGE_GROUP" = "true" ]; then
             # On push/merge_group run everything
@@ -236,6 +241,8 @@ jobs:
             run_quazip=true
             run_website=true
             run_nix=true
+          elif [ "$IS_SCHEDULE" = "true" ]; then
+            run_schedule=true
           elif [ "$IS_SCHEDULE" != "true" ]; then
             match '^zlib/' && run_zlib=true
             match '^bzip2/' && run_bzip2=true
@@ -259,6 +266,7 @@ jobs:
           echo "run-quazip=$run_quazip" >> "$GITHUB_OUTPUT"
           echo "run-website=$run_website" >> "$GITHUB_OUTPUT"
           echo "run-nix=$run_nix" >> "$GITHUB_OUTPUT"
+          echo "run-schedule=$run_schedule" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         run: |
@@ -275,6 +283,7 @@ jobs:
           echo "- Run quazip: \`${{ steps.decide.outputs.run-quazip }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run website: \`${{ steps.decide.outputs.run-website }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run nix: \`${{ steps.decide.outputs.run-nix }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run schedule-specific: \`${{ steps.decide.outputs.run-schedule }}\`" >> "$GITHUB_STEP_SUMMARY"
           if [ "${{ steps.trigger.outputs.is-pr }}" = "true" ]; then
             echo "- Scope flags: launcher=${{ steps.scope.outputs.launcher || 'false' }}, website=${{ steps.scope.outputs.website || 'false' }}, quazip=${{ steps.scope.outputs.quazip || 'false' }}, bzip2=${{ steps.scope.outputs.bzip2 || 'false' }}, zlib=${{ steps.scope.outputs.zlib || 'false' }}, packages=${{ steps.scope.outputs.packages || 'false' }}" >> "$GITHUB_STEP_SUMMARY"
           else
