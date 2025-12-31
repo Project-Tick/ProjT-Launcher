@@ -17,7 +17,6 @@ permissions:
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    environment: ci-meta-automation
     outputs:
       baseBranch: ${{ steps.prepare.outputs.base }}
       mergedSha: ${{ steps.prepare.outputs.mergedSha }}
@@ -57,7 +56,6 @@ jobs:
     name: Build
     needs: [prepare]
     uses: ./.github/workflows/build.yml
-    environment: ci-meta-automation
     permissions:
       contents: read
       packages: write
@@ -74,7 +72,6 @@ jobs:
     needs:
       - build
     runs-on: ubuntu-latest
-    environment: ci-meta-automation
     permissions:
       statuses: write
     steps:

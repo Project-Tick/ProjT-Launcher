@@ -1,19 +1,33 @@
 name: Zlib CMake
-on:
-  push:
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: "Ref (branch, tag, or SHA) to check out"
-        required: false
+on: [push, pull_request]
 concurrency:
   group: cmake-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 jobs:
+  scope:
+    name: Scope Gate
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.scope.outputs.run }}
+    steps:
+      - name: Check PR template scope
+        id: scope
+        uses: actions/github-script@v8
+        with:
+          script: |
+            if (context.eventName !== "pull_request") {
+              core.setOutput("run", "true");
+              return;
+            }
+            const body = context.payload.pull_request?.body ?? "";
+            const selected = /- \[[xX]\]\s+Zlib(\s|$)/.test(body);
+            core.setOutput("run", selected ? "true" : "false");
+
   ci-cmake:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    environment: ci-forked-zlib
+    needs: scope
+    if: needs.scope.outputs.run == 'true'
     defaults:
       run:
         working-directory: zlib
@@ -49,6 +63,13 @@ jobs:
             build-config: Debug
             pkgtgt: package package_source
             cmake-args: -DMINIZIP_ENABLE_BZIP2=ON
+
+          - name: Windows MSVC Win32
+            os: windows-latest
+            compiler: cl
+            cflags: /W3
+            cmake-args: -A Win32
+            pkgtgt: PACKAGE
 
           - name: Windows MSVC Win64
             os: windows-latest
@@ -95,8 +116,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        ref: ${{ inputs.ref || github.ref }}
 
     - name: Install packages (Windows)
       if: runner.os == 'Windows'
