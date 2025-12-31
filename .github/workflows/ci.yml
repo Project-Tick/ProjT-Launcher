@@ -180,6 +180,12 @@ jobs:
             "bzip2": r"- \[[xX]\]\s+bzip2\b",
             "zlib": r"- \[[xX]\]\s+Zlib\b",
             "packages": r"- \[[xX]\]\s+Packages\b",
+            "docs": r"- \[[xX]\]\s+Docs\b",
+            "tools": r"- \[[xX]\]\s+Tools\b",
+            "ci": r"- \[[xX]\]\s+CI\b",
+            "launcherjava": r"- \[[xX]\]\s+Launcher Java System\b",
+            "javacheck": r"- \[[xX]\]\s+JavaCheck\b",
+            "libnbtplusplus": r"- \[[xX]\]\s+libnbtplusplus\b",
           }
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
@@ -206,6 +212,12 @@ jobs:
           SCOPE_BZIP2: ${{ steps.scope.outputs.bzip2 || 'false' }}
           SCOPE_ZLIB: ${{ steps.scope.outputs.zlib || 'false' }}
           SCOPE_PACKAGES: ${{ steps.scope.outputs.packages || 'false' }}
+          SCOPE_DOCS: ${{ steps.scope.outputs.docs || 'false' }}
+          SCOPE_TOOLS: ${{ steps.scope.outputs.tools || 'false' }}
+          SCOPE_CI: ${{ steps.scope.outputs.ci || 'false' }}
+          SCOPE_LAUNCHERJAVA: ${{ steps.scope.outputs.launcherjava || 'false' }}
+          SCOPE_JAVACHECK: ${{ steps.scope.outputs.javacheck || 'false' }}
+          SCOPE_LIBNBT: ${{ steps.scope.outputs.libnbtplusplus || 'false' }}
         run: |
           changed="$(cat changed.txt || true)"
 
@@ -219,7 +231,7 @@ jobs:
           }
 
           scope_selected=false
-          if [ "$IS_PR" = "true" ] && { [ "$SCOPE_LAUNCHER" = "true" ] || [ "$SCOPE_WEBSITE" = "true" ] || [ "$SCOPE_QUAZIP" = "true" ] || [ "$SCOPE_BZIP2" = "true" ] || [ "$SCOPE_ZLIB" = "true" ] || [ "$SCOPE_PACKAGES" = "true" ]; }; then
+          if [ "$IS_PR" = "true" ] && { [ "$SCOPE_LAUNCHER" = "true" ] || [ "$SCOPE_WEBSITE" = "true" ] || [ "$SCOPE_QUAZIP" = "true" ] || [ "$SCOPE_BZIP2" = "true" ] || [ "$SCOPE_ZLIB" = "true" ] || [ "$SCOPE_PACKAGES" = "true" ] || [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ] || [ "$SCOPE_CI" = "true" ]; }; then
             scope_selected=true
           fi
 
@@ -292,6 +304,28 @@ jobs:
             if [ "$SCOPE_QUAZIP" = "true" ]; then run_quazip=true; fi
             if [ "$SCOPE_WEBSITE" = "true" ]; then run_website=true; fi
             if [ "$SCOPE_PACKAGES" = "true" ]; then run_nix=true; fi
+            if [ "$SCOPE_CI" = "true" ]; then
+              run_zlib=true
+              run_bzip2=true
+              run_quazip=true
+              run_website=true
+              run_nix=true
+              should_test=true
+              should_build=true
+            fi
+            if [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ]; then
+              should_test=true
+              should_build=false
+              run_zlib=false
+              run_bzip2=false
+              run_quazip=false
+              run_website=false
+              run_nix=false
+            fi
+            if [ "$SCOPE_LAUNCHERJAVA" = "true" ] || [ "$SCOPE_JAVACHECK" = "true" ] || [ "$SCOPE_LIBNBT" = "true" ]; then
+              should_test=true
+              run_regular_build=true
+            fi
           fi
 
           if [ "$IS_TAG" = "true" ]; then
