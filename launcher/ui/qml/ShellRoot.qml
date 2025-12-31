@@ -41,7 +41,7 @@ Rectangle {
     property int _themeUpdateCount: 0
 
     // Root background color with direct theme binding
-    color: Qt.platform.os === "osx" ? "#01000000" : (themeVM ? themeVM.windowColor : ThemeColors.background)
+    color: Qt.platform.os === "osx" ? "transparent" : (themeVM ? themeVM.windowColor : ThemeColors.background)
 
     MacVisualEffectView {
         anchors.fill: parent
@@ -199,9 +199,9 @@ Rectangle {
             title: qsTr("Add Instance")
             width: 800
             height: 600
-            minimumWidth: 700
-            minimumHeight: 550
-            color: ThemeColors.background
+            minimumWidth: 600
+            minimumHeight: 450
+            color: Qt.platform.os === "osx" ? "transparent" : ThemeColors.background
             flags: Qt.Window
             visible: true
 

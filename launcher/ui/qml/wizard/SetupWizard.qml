@@ -24,9 +24,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
 import ProjTLauncher 1.0
-import ProjTLauncher.Mac 1.0
 import "../Theme.js" as Theme
-import "../components"
 
 Window {
     id: setupWizard
@@ -35,17 +33,9 @@ Window {
     width: 620
     height: 660
     minimumWidth: 300
-    minimumHeight: 450
+    minimumHeight: 400
     flags: Qt.Dialog
     visible: true
-    color: Qt.platform.os === "osx" ? "#01000000" : ThemeColors.background
-
-    MacVisualEffectView {
-        anchors.fill: parent
-        visible: Qt.platform.os === "osx"
-        material: MacVisualEffectView.Sheet
-        blendingMode: MacVisualEffectView.BehindWindow
-    }
 
     property int currentPageIndex: 0
     property var pageIds: []
@@ -141,35 +131,34 @@ Window {
                     anchors.margins: Theme.spacingM
                     spacing: Theme.spacingS
 
-                    AppButton {
+                    Button {
                         text: qsTr("Refresh")
-                        visible: setupWizard.currentPageWantsRefresh()
-                        enabled: !!setupWizard.currentPageItem()
-                        onClicked: setupWizard.refreshCurrentPage()
+                        visible: currentPageWantsRefresh()
+                        enabled: !!currentPageItem()
+                        onClicked: refreshCurrentPage()
                     }
 
                     Item {
                         Layout.fillWidth: true
                     }
 
-                    AppButton {
+                    Button {
                         text: qsTr("< Back")
-                        enabled: setupWizard.currentPageIndex > 0
+                        enabled: currentPageIndex > 0
                         onClicked: {
-                            if (setupWizard.currentPageIndex > 0) {
-                                setupWizard.currentPageIndex--;
+                            if (currentPageIndex > 0) {
+                                currentPageIndex--;
                             }
                         }
                     }
 
-                    AppButton {
-                        text: setupWizard.currentPageIndex < setupWizard.pages.length - 1 ? qsTr("Next >") : qsTr("Finish")
-                        variant: setupWizard.currentPageIndex === setupWizard.pages.length - 1 ? "primary" : "secondary"
+                    Button {
+                        text: currentPageIndex < pages.length - 1 ? qsTr("Next >") : qsTr("Finish")
                         onClicked: {
-                            if (setupWizard.currentPageIndex < setupWizard.pages.length - 1) {
-                                setupWizard.currentPageIndex++;
+                            if (currentPageIndex < pages.length - 1) {
+                                currentPageIndex++;
                             } else {
-                                setupWizard.finishSetup();
+                                finishSetup();
                             }
                         }
                     }
