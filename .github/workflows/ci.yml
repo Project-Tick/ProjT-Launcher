@@ -545,7 +545,7 @@ jobs:
             ProjTLauncher-macOS-${{ env.VERSION }}.zip
             ProjTLauncher-${{ env.VERSION }}.tar.gz
 
-  quazip-ubuntu:
+  build-quazip-ubuntu:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     needs: [prepare]
     name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
@@ -564,7 +564,7 @@ jobs:
         ref: ${{ inputs.ref }}
         working_directory: quazip
 
-  quazip-ubuntu-zlibconst:
+  build-quazip-ubuntu-zlibconst:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     needs: [prepare]
     name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-zlibconst
@@ -583,7 +583,7 @@ jobs:
       ref: ${{ inputs.ref }}
       working_directory: quazip
 
-  quazip-ubuntu-no-qtextcodec:
+  build-quazip-ubuntu-no-qtextcodec:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     needs: [prepare]
     name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-no-qtextcodec
@@ -602,7 +602,7 @@ jobs:
       ref: ${{ inputs.ref }}
       working_directory: quazip
 
-  quazip-macos:
+  build-quazip-macos:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     needs: [prepare]
     name: macos-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
@@ -626,7 +626,7 @@ jobs:
       ref: ${{ inputs.ref }}
       working_directory: quazip
 
-  quazip-alpine:
+  build-quazip-alpine:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     needs: [prepare]
     name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
@@ -671,7 +671,7 @@ jobs:
         working-directory: quazip
         run: build/qztest/qztest
 
-  quazip-windows-x64:
+  build-quazip-windows-x64:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     needs: [prepare]
     name: Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
@@ -690,7 +690,7 @@ jobs:
       ref: ${{ inputs.ref }}
       working_directory: quazip
 
-  quazip-windows-x86:
+  build-quazip-windows-x86:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     needs: [prepare]
     name: Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
@@ -709,7 +709,7 @@ jobs:
       ref: ${{ inputs.ref }}
       working_directory: quazip
 
-  quazip-ubuntu-ci-extract:
+  build-quazip-ubuntu-ci-extract:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     name: extract-Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
     strategy:
@@ -719,7 +719,7 @@ jobs:
         qt_version: [ 6.8.2 ]
         shared: [ ON ]
     uses: ./.github/workflows/reusable.yml
-    needs: [ quazip-ubuntu, quazip-macos, quazip-windows-x64, quazip-windows-x86 ]
+    needs: [ build-quazip-ubuntu, build-quazip-macos, build-quazip-windows-x64, build-quazip-windows-x86, prepare ]
     with:
       runs_on: ubuntu-${{ matrix.os_version }}
       os_version: ${{ matrix.os_version }}
@@ -729,7 +729,7 @@ jobs:
       ref: ${{ inputs.ref }}
       working_directory: quazip
 
-  quazip-macos-ci-extract:
+  build-quazip-macos-ci-extract:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     name: extract-macos-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
     strategy:
@@ -739,7 +739,7 @@ jobs:
         qt_version: [ 6.8.2 ]
         shared: [ ON ]
     uses: ./.github/workflows/reusable.yml
-    needs: [ quazip-ubuntu, quazip-macos, quazip-windows-x64, quazip-windows-x86 ]
+    needs: [ build-quazip-ubuntu, build-quazip-macos, build-quazip-windows-x64, build-quazip-windows-x86, prepare ]
     with:
       runs_on: macos-${{ matrix.os_version }}
       os_version: ${{ matrix.os_version }}
@@ -749,7 +749,7 @@ jobs:
       ref: ${{ inputs.ref }}
       working_directory: quazip
 
-  quazip-windows-x64-ci-extract:
+  build-quazip-windows-x64-ci-extract:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     name: extract-Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
     strategy:
@@ -758,7 +758,7 @@ jobs:
         preset: [ vcpkg ]
         qt_version: [ 6.8.2 ]
     uses: ./.github/workflows/reusable-win.yml
-    needs: [ quazip-ubuntu, quazip-macos, quazip-windows-x64, quazip-windows-x86 ]
+    needs: [ build-quazip-ubuntu, build-quazip-macos, build-quazip-windows-x64, build-quazip-windows-x86, prepare ]
     with:
       runs_on: "win-x64"
       arch: x64
@@ -769,7 +769,7 @@ jobs:
       ref: ${{ inputs.ref }}
       working_directory: quazip
 
-  quazip-fedora:
+  build-quazip-fedora:
     if: true && needs.prepare.outputs.run-quazip == 'true'
     name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
     runs-on: "ubuntu-22.04"
