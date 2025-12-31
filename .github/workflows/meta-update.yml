@@ -1,0 +1,136 @@
+name: Update ProjT Launcher Minecraft Meta Files
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        type: string
+        required: false
+
+concurrency:
+  group: >
+    projt-meta-update-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONUNBUFFERED: "1"
+  STATE_DIRECTORY: /tmp/meta-state
+  CACHE_DIRECTORY: /tmp/meta-cache
+
+jobs:
+  update:
+    if: github.repository_owner == 'Project-Tick'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure git user
+        run: |
+          git config --global user.name "Project Tick Bot"
+          git config --global user.email "github@bot.yongdohyun.org.tr"
+
+      - name: Prepare SSH keys for clones/pushes
+        env:
+          DEPLOY_SSH_KEY_UPSTREAM: ${{ secrets.DEPLOY_SSH_KEY_UPSTREAM }}
+          DEPLOY_SSH_KEY_LAUNCHER: ${{ secrets.DEPLOY_SSH_KEY_LAUNCHER }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)" >/dev/null
+
+          add_key() {
+            local key_content="$1"
+            local key_file="$2"
+            if [ -n "$key_content" ]; then
+              install -m 600 /dev/null "$key_file"
+              printf '%s\n' "$key_content" > "$key_file"
+              ssh-add "$key_file"
+            fi
+          }
+
+          add_key "$DEPLOY_SSH_KEY_UPSTREAM" ~/.ssh/deploy_key_upstream
+          add_key "$DEPLOY_SSH_KEY_LAUNCHER" ~/.ssh/deploy_key_launcher
+
+          echo "GIT_SSH_COMMAND=ssh -o StrictHostKeyChecking=accept-new" >> "$GITHUB_ENV"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install .
+
+      - name: Choose repo URLs (prefer HTTPS token)
+        env:
+          META_UPSTREAM_URL: ${{ secrets.META_UPSTREAM_URL }}
+          META_LAUNCHER_URL: ${{ secrets.META_LAUNCHER_URL }}
+          DEPLOY_SSH_KEY_UPSTREAM: ${{ secrets.DEPLOY_SSH_KEY_UPSTREAM }}
+          DEPLOY_SSH_KEY_LAUNCHER: ${{ secrets.DEPLOY_SSH_KEY_LAUNCHER }}
+          DEPLOY_PAT: ${{ secrets.DEPLOY_PAT }}
+          META_BOT_TOKEN: ${{ secrets.META_BOT_TOKEN }}
+        run: |
+          token="${DEPLOY_PAT:-$META_BOT_TOKEN}"
+          if [ -n "$token" ]; then
+            echo "Using HTTPS URLs with token"
+            echo "META_UPSTREAM_URL=https://x-access-token:${token}@github.com/Project-Tick/meta-upstream.git" >> "$GITHUB_ENV"
+            echo "META_LAUNCHER_URL=https://x-access-token:${token}@github.com/Project-Tick/meta-launcher.git" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          if [ -n "$DEPLOY_SSH_KEY_UPSTREAM" ] || [ -n "$DEPLOY_SSH_KEY_LAUNCHER" ]; then
+            echo "Using SSH URLs (no token supplied)"
+            echo "META_UPSTREAM_URL=${META_UPSTREAM_URL:-git@github.com:Project-Tick/meta-upstream.git}" >> "$GITHUB_ENV"
+            echo "META_LAUNCHER_URL=${META_LAUNCHER_URL:-git@github.com:Project-Tick/meta-launcher.git}" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          echo "No token or SSH keys provided; cannot push to repos." >&2
+          exit 1
+
+      - name: Configure git auth for HTTPS (PAT recommended)
+        env:
+          META_BOT_TOKEN: ${{ secrets.META_BOT_TOKEN }}
+          DEPLOY_PAT: ${{ secrets.DEPLOY_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          token="${DEPLOY_PAT:-$META_BOT_TOKEN}"
+          if [ -n "$token" ]; then
+            git config --global url."https://${token}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+            git config --global url."https://${token}:x-oauth-basic@github.com/".insteadOf "git@github.com:"
+            echo "Using PAT for GitHub authentication"
+          elif [ -n "$GITHUB_TOKEN" ]; then
+            git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+            git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "git@github.com:"
+            echo "Using GITHUB_TOKEN for GitHub authentication (must have access to target repos)"
+          else
+            echo "No token provided; HTTPS pushes will fail. Add DEPLOY_PAT secret with access to meta-upstream and meta-launcher."
+          fi
+
+      - name: Prepare state and cache directories
+        run: |
+          mkdir -p "$STATE_DIRECTORY" "$CACHE_DIRECTORY"
+
+      - name: Make scripts executable
+        run: chmod +x init.sh update.sh
+
+      - name: Initialize upstream and launcher repositories
+        run: ./init.sh
+
+      - name: Run updater
+        run: ./update.sh

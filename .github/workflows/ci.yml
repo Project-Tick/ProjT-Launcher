@@ -17,7 +17,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
   release:
-    types: [ released ]
+    types: [released]
   workflow_run:
     workflows:
       - Reviewed
@@ -289,3 +289,13 @@ jobs:
           else
             echo "- Scope flags: n/a (non-PR event)" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  meta-update:
+    name: Update Meta Files
+    needs: prepare
+    if: needs.prepare.outputs.run-schedule == 'true'
+    uses: ./.github/workflows/meta-update.yml
+    permissions:
+      contents: write
+    with:
+      ref: ${{ github.sha }}
