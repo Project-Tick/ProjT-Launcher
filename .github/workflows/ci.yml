@@ -2869,27 +2869,13 @@ jobs:
   unlock:
     if: (needs.prepare.outputs.is-merge-group == 'true' || needs.prepare.outputs.is-pr == 'true') && always()
     # Modify this list to add or remove jobs from required status checks.
-    needs:
-      - prepare
-      - clang-lint
-      - markdown-lint
-      - check
-      - meta-update
-      - build-projt-launcher-debug
-      - build-projt-launcher-release
-      - create-release
-      - winget
-      - process-review
-      - scorecard-analysis
-      - eval
+    needs: [prepare]
     runs-on: ubuntu-latest
     permissions:
       statuses: write
     steps:
       - uses: actions/github-script@v8
         env:
-          RESULTS: ${{ toJSON(needs.*.result) }}
-          NEEDS_JSON: ${{ toJSON(needs) }}
           RUN_ZLIB: ${{ needs.prepare.outputs.run-zlib }}
           RUN_BZIP2: ${{ needs.prepare.outputs.run-bzip2 }}
           RUN_QUAZIP: ${{ needs.prepare.outputs.run-quazip }}
@@ -2901,33 +2887,8 @@ jobs:
           SHOULD_TEST: ${{ needs.prepare.outputs.should-test }}
         with:
           script: |
-            const { serverUrl, repo, runId, payload } = context;
+            const { serverUrl, repo, runId, payload, job } = context;
             const target_url = `${serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${runId}`;
-
-            const needsData = JSON.parse(process.env.NEEDS_JSON || '{}');
-            const entries = Object.entries(needsData);
-            const statusCounts = { success: 0, failure: 0, cancelled: 0, skipped: 0, neutral: 0, unknown: 0 };
-            const failedJobs = [];
-            const skippedJobs = [];
-            const neutralJobs = [];
-            const cancelledJobs = [];
-            let hasFailure = false;
-
-            for (const [name, data] of entries) {
-              const r = data.result || 'unknown';
-              if (statusCounts[r] === undefined) statusCounts[r] = 0;
-              statusCounts[r] += 1;
-              if (r === 'failure') {
-                hasFailure = true;
-                failedJobs.push(name);
-              } else if (r === 'skipped') {
-                skippedJobs.push(name);
-              } else if (r === 'neutral') {
-                neutralJobs.push(name);
-              } else if (r === 'cancelled') {
-                cancelledJobs.push(name);
-              }
-            }
 
             const runFlags = {
               zlib: process.env.RUN_ZLIB === 'true',
@@ -2941,13 +2902,104 @@ jobs:
               should_test: process.env.SHOULD_TEST === 'true',
             };
 
+            const listJobs = async () => {
+              const jobs = [];
+              let page = 1;
+              while (true) {
+                const res = await github.rest.actions.listJobsForWorkflowRun({
+                  owner: repo.owner,
+                  repo: repo.repo,
+                  run_id: runId,
+                  per_page: 100,
+                  page,
+                });
+                jobs.push(...res.data.jobs);
+                if (res.data.jobs.length < 100) break;
+                page += 1;
+              }
+              return jobs;
+            };
+
+            const waitForJobs = async () => {
+              for (let i = 0; i < 20; i++) {
+                const jobs = await listJobs();
+                const pending = jobs.filter(
+                  j =>
+                    j.name !== job &&
+                    (j.status !== 'completed' || !j.conclusion)
+                );
+                if (pending.length === 0) {
+                  return jobs;
+                }
+                await new Promise(resolve => setTimeout(resolve, 15000));
+              }
+              return await listJobs();
+            };
+
+            const jobs = await waitForJobs();
+
+            const statusCounts = { success: 0, failure: 0, cancelled: 0, skipped: 0, neutral: 0, timed_out: 0, action_required: 0, unknown: 0 };
+            const failedJobs = [];
+            const skippedJobs = [];
+            const neutralJobs = [];
+            const cancelledJobs = [];
+            const timedOutJobs = [];
+            const actionRequiredJobs = [];
+            const pendingOrMissing = [];
+
+            for (const j of jobs) {
+              if (j.name === job) continue; // skip self
+              const conclusion = j.conclusion || 'unknown';
+              if (statusCounts[conclusion] === undefined) statusCounts[conclusion] = 0;
+              statusCounts[conclusion] += 1;
+              if (conclusion === 'failure') failedJobs.push(j.name);
+              else if (conclusion === 'skipped') skippedJobs.push(j.name);
+              else if (conclusion === 'neutral') neutralJobs.push(j.name);
+              else if (conclusion === 'cancelled') cancelledJobs.push(j.name);
+              else if (conclusion === 'timed_out') timedOutJobs.push(j.name);
+              else if (conclusion === 'action_required') actionRequiredJobs.push(j.name);
+            }
+
+            const requiredJobs = [
+              { name: 'lint', needed: runFlags.should_test },
+              { name: 'clang-lint', needed: runFlags.should_test },
+              { name: 'markdown-lint', needed: runFlags.should_test },
+              { name: 'check', needed: runFlags.should_test },
+              { name: 'meta-update', needed: runFlags.run_schedule },
+              { name: 'build-projt-launcher-debug', needed: runFlags.regular_build },
+              { name: 'build-projt-launcher-release', needed: runFlags.release_build },
+              { name: 'create-release', needed: runFlags.release_build },
+              { name: 'winget', needed: runFlags.release_build },
+              { name: 'process-review', needed: true },
+              { name: 'scorecard-analysis', needed: true },
+              { name: 'eval', needed: runFlags.should_test },
+            ];
+
+            const jobMap = new Map(jobs.map(j => [j.name, j]));
+            for (const req of requiredJobs) {
+              if (!req.needed) continue;
+              const found = jobMap.get(req.name);
+              if (!found || found.conclusion === null || found.conclusion === undefined) {
+                pendingOrMissing.push(req.name);
+              }
+            }
+
+            const hasFailure =
+              failedJobs.length > 0 ||
+              timedOutJobs.length > 0 ||
+              actionRequiredJobs.length > 0 ||
+              pendingOrMissing.length > 0;
+
             const state = hasFailure ? 'error' : 'success';
             const summaryLines = [
               `- Results: ${JSON.stringify(statusCounts)}`,
               `- Failed jobs: ${failedJobs.length ? failedJobs.join(', ') : 'none'}`,
+              `- Timed out jobs: ${timedOutJobs.length ? timedOutJobs.join(', ') : 'none'}`,
+              `- Action required jobs: ${actionRequiredJobs.length ? actionRequiredJobs.join(', ') : 'none'}`,
               `- Skipped jobs: ${skippedJobs.length ? skippedJobs.join(', ') : 'none'}`,
               `- Neutral jobs: ${neutralJobs.length ? neutralJobs.join(', ') : 'none'}`,
               `- Cancelled jobs: ${cancelledJobs.length ? cancelledJobs.join(', ') : 'none'}`,
+              `- Pending/missing required jobs: ${pendingOrMissing.length ? pendingOrMissing.join(', ') : 'none'}`,
               `- Run flags: ${JSON.stringify(runFlags)}`,
               `- Decision: ${state === 'success' ? 'no PR failures' : 'failures detected'}`,
             ];
