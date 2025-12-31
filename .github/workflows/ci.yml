@@ -313,18 +313,22 @@ jobs:
               should_test=true
               should_build=true
             fi
-            if [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ]; then
-              should_test=true
-              should_build=false
-              run_zlib=false
-              run_bzip2=false
-              run_quazip=false
-              run_website=false
-              run_nix=false
-            fi
             if [ "$SCOPE_LAUNCHERJAVA" = "true" ] || [ "$SCOPE_JAVACHECK" = "true" ] || [ "$SCOPE_LIBNBT" = "true" ]; then
               should_test=true
+              should_build=true
               run_regular_build=true
+            fi
+            if [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ]; then
+              if [ "$SCOPE_CI" != "true" ] && [ "$SCOPE_LAUNCHERJAVA" != "true" ] && [ "$SCOPE_JAVACHECK" != "true" ] && [ "$SCOPE_LIBNBT" != "true" ] && [ "$SCOPE_ZLIB" != "true" ] && [ "$SCOPE_BZIP2" != "true" ] && [ "$SCOPE_QUAZIP" != "true" ] && [ "$SCOPE_WEBSITE" != "true" ] && [ "$SCOPE_PACKAGES" != "true" ]; then
+                should_test=true
+                should_build=false
+                run_zlib=false
+                run_bzip2=false
+                run_quazip=false
+                run_website=false
+                run_nix=false
+                run_regular_build=false
+              fi
             fi
           fi
 
