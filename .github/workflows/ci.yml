@@ -176,6 +176,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           ACTOR: ${{ github.actor }}
+          IS_PR: ${{ steps.trigger.outputs.is-pr }}
           SCOPE_LAUNCHER: ${{ steps.scope.outputs.launcher || 'false' }}
           SCOPE_WEBSITE: ${{ steps.scope.outputs.website || 'false' }}
           SCOPE_QUAZIP: ${{ steps.scope.outputs.quazip || 'false' }}
@@ -195,7 +196,7 @@ jobs:
           }
 
           scope_selected=false
-          if [ "$SCOPE_LAUNCHER" = "true" ] || [ "$SCOPE_WEBSITE" = "true" ] || [ "$SCOPE_QUAZIP" = "true" ] || [ "$SCOPE_BZIP2" = "true" ] || [ "$SCOPE_ZLIB" = "true" ] || [ "$SCOPE_PACKAGES" = "true" ]; then
+          if [ "$IS_PR" = "true" ] && { [ "$SCOPE_LAUNCHER" = "true" ] || [ "$SCOPE_WEBSITE" = "true" ] || [ "$SCOPE_QUAZIP" = "true" ] || [ "$SCOPE_BZIP2" = "true" ] || [ "$SCOPE_ZLIB" = "true" ] || [ "$SCOPE_PACKAGES" = "true" ]; }; then
             scope_selected=true
           fi
 
@@ -228,11 +229,13 @@ jobs:
           match '^website/' && run_website=true
           match '^flake\.nix$|^shell\.nix$|^nix/' && run_nix=true
 
-          if [ "$SCOPE_ZLIB" = "true" ]; then run_zlib=true; fi
-          if [ "$SCOPE_BZIP2" = "true" ]; then run_bzip2=true; fi
-          if [ "$SCOPE_QUAZIP" = "true" ]; then run_quazip=true; fi
-          if [ "$SCOPE_WEBSITE" = "true" ]; then run_website=true; fi
-          if [ "$SCOPE_PACKAGES" = "true" ]; then run_nix=true; fi
+          if [ "$IS_PR" = "true" ]; then
+            if [ "$SCOPE_ZLIB" = "true" ]; then run_zlib=true; fi
+            if [ "$SCOPE_BZIP2" = "true" ]; then run_bzip2=true; fi
+            if [ "$SCOPE_QUAZIP" = "true" ]; then run_quazip=true; fi
+            if [ "$SCOPE_WEBSITE" = "true" ]; then run_website=true; fi
+            if [ "$SCOPE_PACKAGES" = "true" ]; then run_nix=true; fi
+          fi
 
           echo "should-test=$should_test" >> "$GITHUB_OUTPUT"
           echo "should-build=$should_build" >> "$GITHUB_OUTPUT"
@@ -257,4 +260,8 @@ jobs:
           echo "- Run quazip: \`${{ steps.decide.outputs.run-quazip }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run website: \`${{ steps.decide.outputs.run-website }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run nix: \`${{ steps.decide.outputs.run-nix }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Scope flags: launcher=${{ steps.scope.outputs.launcher || 'false' }}, website=${{ steps.scope.outputs.website || 'false' }}, quazip=${{ steps.scope.outputs.quazip || 'false' }}, bzip2=${{ steps.scope.outputs.bzip2 || 'false' }}, zlib=${{ steps.scope.outputs.zlib || 'false' }}, packages=${{ steps.scope.outputs.packages || 'false' }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.trigger.outputs.is-pr }}" = "true" ]; then
+            echo "- Scope flags: launcher=${{ steps.scope.outputs.launcher || 'false' }}, website=${{ steps.scope.outputs.website || 'false' }}, quazip=${{ steps.scope.outputs.quazip || 'false' }}, bzip2=${{ steps.scope.outputs.bzip2 || 'false' }}, zlib=${{ steps.scope.outputs.zlib || 'false' }}, packages=${{ steps.scope.outputs.packages || 'false' }}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Scope flags: n/a (non-PR event)" >> "$GITHUB_STEP_SUMMARY"
+          fi
