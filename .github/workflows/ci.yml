@@ -377,7 +377,7 @@ jobs:
   check:
     name: Check
     needs: [prepare]
-    if: needs.prepare.outputs.should-test == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
+    if: needs.prepare.outputs.should-test == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true' && needs.prepare.outputs.is-pr == 'true'
     uses: ./.github/workflows/check.yml
     permissions:
       pull-requests: write
@@ -798,6 +798,7 @@ jobs:
     env:
       BUILD_TYPE: Release
     if: true && needs.prepare.outputs.run-quazip == 'true'
+    needs: prepare
     runs-on: ubuntu-22.04
     defaults:
       run:
@@ -825,6 +826,7 @@ jobs:
 
   build-quazip-use-qt6-zlib-windows:
     if: true && needs.prepare.outputs.run-quazip == 'true'
+    needs: prepare
     env:
       BUILD_TYPE: Release
     runs-on: windows-latest
@@ -980,6 +982,7 @@ jobs:
 
   build-quazip-use-qt5-zlib-windows:
     if: true && needs.prepare.outputs.run-quazip == 'true'
+    needs: prepare
     env:
       BUILD_TYPE: Release
     runs-on: windows-latest
@@ -1355,6 +1358,7 @@ jobs:
   bzip2-ubuntu-jammy-cmake:
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Ubuntu Jammy - CMake
+    needs: prepare
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -1763,6 +1767,7 @@ jobs:
 
   build-website:
     if: needs.prepare.outputs.run-website == 'true'
+    needs: prepare
     runs-on: ubuntu-latest
 
     strategy:
@@ -2267,6 +2272,7 @@ jobs:
           zlib/build/CMakeFiles/CMakeError.log
 
   CodeQL:
+    needs: prepare
     name: CodeQL Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -2796,6 +2802,7 @@ jobs:
           stale-pr-label: inactive
 
   update-contributors:
+    needs: prepare
     if: github.repository_owner == 'Project-Tick' && needs.prepare.outputs.schedule-cron == '0 * * * *'
     runs-on: ubuntu-latest
 
@@ -2840,6 +2847,7 @@ jobs:
           merge-method: merge
 
   update-flake:
+    needs: prepare
     if: github.repository_owner == 'Project-Tick' && needs.prepare.outputs.schedule-cron == '0 */5 * * *'
     runs-on: ubuntu-latest
 
