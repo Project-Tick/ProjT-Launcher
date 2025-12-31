@@ -308,91 +308,14 @@ const CONFIG = {
     enabled: true,
     mergeMethod: "squash",
   },
-  ciApproval: {
-    enabledEnv: "BOT_CI_APPROVALS",
-    rules: [
+  autoApprove: {
+    enabledEnv: "BOT_AUTO_APPROVE_RUNS",
+    workflowRules: [
       {
-        id: "forked-zlib",
-        mode: "require-any",
         scopes: ["Zlib"],
         workflows: ["c-std.yml", "cmake.yml", "configure.yml", "fuzz.yml", "msys-cygwin.yml"],
       },
-      {
-        id: "forked-qt-zlib",
-        mode: "require-any",
-        scopes: ["Zlib", "Quazip", "bzip2"],
-        workflows: ["qt-zlib.yml"],
-      },
-      {
-        id: "core-heavy",
-        mode: "require-any",
-        scopes: [
-          "Launcher (C++/Qt)",
-          "Metadata Generator (Python)",
-          "Launcher Java System",
-          "JavaCheck",
-          "libnbtplusplus",
-          "Packages",
-          "Quazip",
-          "bzip2",
-          "Zlib",
-        ],
-        workflows: ["build.yml", "eval.yml", "codeql.yml", "pull-request-target.yml"],
-      },
-      {
-        id: "core-light",
-        mode: "always",
-        workflows: ["check.yml", "lint.yml"],
-      },
-      {
-        id: "meta-automation",
-        mode: "always",
-        workflows: [
-          "backport.yml",
-          "comment.yml",
-          "edited.yml",
-          "merge-blocking-pr.yml",
-          "merge-group.yml",
-          "review.yml",
-          "reviewed.yml",
-        ],
-      },
     ],
-    defaultMode: "skip",
-  },
-  ciDispatch: {
-    enabledEnv: "BOT_CI_DISPATCH",
-    rules: [
-      {
-        id: "forked-zlib",
-        mode: "require-any",
-        scopes: ["Zlib"],
-        workflows: ["c-std.yml", "cmake.yml", "configure.yml", "msys-cygwin.yml"],
-      },
-      {
-        id: "forked-qt-zlib",
-        mode: "require-any",
-        scopes: ["Zlib", "Quazip", "bzip2"],
-        workflows: ["qt-zlib.yml"],
-      },
-      {
-        id: "core-heavy",
-        mode: "require-any",
-        scopes: [
-          "Launcher (C++/Qt)",
-          "Metadata Generator (Python)",
-          "Launcher Java System",
-          "JavaCheck",
-          "libnbtplusplus",
-          "Packages",
-          "Quazip",
-          "bzip2",
-          "Zlib",
-        ],
-        workflows: ["build.yml", "eval.yml", "codeql.yml"],
-      },
-    ],
-    defaultMode: "skip",
   },
   ciSummary: {
     marker: "<!-- projt-bot:pr-summary -->",
@@ -538,133 +461,15 @@ function getWorkflowKey(run) {
   return String(run?.name ?? "");
 }
 
-function findCiApprovalRule(run) {
+function findAutoApproveRule(run) {
   const key = getWorkflowKey(run);
   if (!key) return null;
-  return CONFIG.ciApproval?.rules?.find((rule) => rule.workflows.includes(key)) ?? null;
+  return CONFIG.autoApprove?.workflowRules?.find((rule) => rule.workflows.includes(key)) ?? null;
 }
 
-function isCiApprovalEnabled(env) {
-  const flag = CONFIG.ciApproval?.enabledEnv;
-  const configured = flag ? env?.[flag] : undefined;
-  if (configured !== undefined) return String(configured).toLowerCase() === "true";
-  return String(env?.BOT_AUTO_APPROVE_RUNS ?? "false").toLowerCase() === "true";
-}
-
-function isCiDispatchEnabled(env) {
-  const flag = CONFIG.ciDispatch?.enabledEnv;
-  const configured = flag ? env?.[flag] : undefined;
-  if (configured !== undefined) return String(configured).toLowerCase() === "true";
-  return String(env?.BOT_CI_APPROVALS ?? "false").toLowerCase() === "true";
-}
-
-function evaluateCiApproval({ rule, selectedOptions, selectedLabels, hasPr }) {
-  const mode = rule?.mode ?? CONFIG.ciApproval?.defaultMode ?? "skip";
-  if (!hasPr) {
-    return mode === "skip" ? { approve: false, reason: "no-pr" } : { approve: true, reason: "no-pr" };
-  }
-  if (mode === "always") return { approve: true, reason: "always" };
-  if (mode === "skip") return { approve: false, reason: "mode-skip" };
-
-  const scopes = Array.isArray(rule?.scopes) ? rule.scopes : [];
-  if (scopes.length === 0) return { approve: true, reason: "no-scopes" };
-
-  const matches = scopes.map((scope) => isScopeSelected(scope, { selectedOptions, selectedLabels }));
-  if (mode === "require-all") {
-    return matches.every(Boolean) ? { approve: true, reason: "scopes-all" } : { approve: false, reason: "scopes-missing" };
-  }
-  if (mode === "require-any") {
-    return matches.some(Boolean) ? { approve: true, reason: "scopes-any" } : { approve: false, reason: "scopes-missing" };
-  }
-
-  return { approve: false, reason: "unknown-mode" };
-}
-
-function buildDispatchRef({ pullRequest, owner, repo }) {
-  const baseRef = pullRequest?.base?.ref ?? "develop";
-  const headRepo = String(pullRequest?.head?.repo?.full_name ?? "").toLowerCase();
-  const baseRepo = `${owner}/${repo}`.toLowerCase();
-  if (headRepo && headRepo === baseRepo) {
-    return pullRequest?.head?.ref ?? baseRef;
-  }
-  return baseRef;
-}
-
-function buildCheckoutRef({ pullRequest }) {
-  if (typeof pullRequest?.number === "number") {
-    return `refs/pull/${pullRequest.number}/head`;
-  }
-  return pullRequest?.head?.sha ?? pullRequest?.head?.ref ?? pullRequest?.base?.ref ?? "develop";
-}
-
-async function listWorkflowRuns({ owner, repo, workflow, env }) {
-  const { data } = await githubApi({
-    env,
-    method: "GET",
-    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30`,
-  });
-  return Array.isArray(data?.workflow_runs) ? data.workflow_runs : [];
-}
-
-async function hasWorkflowRunForSha({ owner, repo, workflow, sha, env }) {
-  if (!sha) return false;
-  const runs = await listWorkflowRuns({ owner, repo, workflow, env });
-  return runs.some((run) => run?.event === "workflow_dispatch" && run?.head_sha === sha);
-}
-
-async function dispatchWorkflow({ owner, repo, workflow, ref, inputs, env, dryRun }) {
-  if (dryRun) {
-    console.log("DRY_RUN: would dispatch workflow", { workflow, ref, inputs });
-    return { ok: true, skipped: true, reason: "dry-run" };
-  }
-  await githubApi({
-    env,
-    method: "POST",
-    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/dispatches`,
-    body: { ref, inputs },
-  });
-  return { ok: true, dispatched: true };
-}
-
-async function dispatchWorkflowsForPR({ owner, repo, pullRequest, selectedOptions, selectedLabels, env, dryRun }) {
-  if (!isCiDispatchEnabled(env)) return { ok: true, skipped: "dispatch-disabled" };
-  if (!pullRequest?.number) return { ok: false, error: "missing-pull-number" };
-
-  const results = [];
-  const rules = Array.isArray(CONFIG.ciDispatch?.rules) ? CONFIG.ciDispatch.rules : [];
-  const ref = buildDispatchRef({ pullRequest, owner, repo });
-  const inputs = { ref: buildCheckoutRef({ pullRequest }) };
-
-  for (const rule of rules) {
-    const decision = evaluateCiApproval({
-      rule,
-      selectedOptions,
-      selectedLabels,
-      hasPr: true,
-    });
-    if (!decision.approve) {
-      results.push({ rule: rule.id, skipped: true, reason: decision.reason });
-      continue;
-    }
-
-    for (const workflow of rule.workflows ?? []) {
-      const already = await hasWorkflowRunForSha({
-        owner,
-        repo,
-        workflow,
-        sha: pullRequest.head?.sha ?? "",
-        env,
-      });
-      if (already) {
-        results.push({ workflow, skipped: true, reason: "already-dispatched" });
-        continue;
-      }
-      const result = await dispatchWorkflow({ owner, repo, workflow, ref, inputs, env, dryRun });
-      results.push({ workflow, ...result });
-    }
-  }
-
-  return { ok: true, results };
+function isAutoApproveEnabled(env) {
+  const flag = CONFIG.autoApprove?.enabledEnv;
+  return String(env?.[flag] ?? "false").toLowerCase() === "true";
 }
 
 function resolveTemplateLabel(selection, repoLabels) {
@@ -1112,27 +917,6 @@ async function handlePullRequest({ owner, repo, pullNumber, env, options = {} })
   const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
   const labelsToDelete = [...labelsToRemove].filter((l) => currentLabels.has(l));
 
-  const selectedOptions = getSelectedScopeOptions(pullRequest.body ?? "");
-  const selectedLabels = new Set([...currentLabels, ...labelsToAdd]);
-
-  let ciDispatch = null;
-  if (!light) {
-    try {
-      ciDispatch = await dispatchWorkflowsForPR({
-        owner,
-        repo,
-        pullRequest,
-        selectedOptions,
-        selectedLabels,
-        env,
-        dryRun,
-      });
-    } catch (error) {
-      console.warn("CI dispatch failed:", error?.message ?? error);
-      ciDispatch = { ok: false, error: String(error?.message ?? error) };
-    }
-  }
-
   let ciSummary = null;
   if (!light) {
     try {
@@ -1188,7 +972,7 @@ async function handlePullRequest({ owner, repo, pullNumber, env, options = {} })
   }
 
   if (newLabels.length === 0 && labelsToDelete.length === 0) {
-    return { ok: true, changed: false, added: [], removed: [], dryRun, ciDispatch, ciSummary, autoMerge: autoMergeResult };
+    return { ok: true, changed: false, added: [], removed: [], dryRun, ciSummary, autoMerge: autoMergeResult };
   }
 
   if (!dryRun) {
@@ -1215,7 +999,7 @@ async function handlePullRequest({ owner, repo, pullNumber, env, options = {} })
     }
   }
 
-  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciDispatch, ciSummary, autoMerge: autoMergeResult };
+  return { ok: true, changed: true, added: newLabels, removed: labelsToDelete, dryRun, ciSummary, autoMerge: autoMergeResult };
 }
 
 async function listOpenPullRequests({ owner, repo, env }) {
@@ -1313,7 +1097,7 @@ async function findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env }) {
   const { data } = await githubApi({
     env,
     method: "GET",
-    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30&event=pull_request`,
+    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30&event=pull_request_target`,
   });
   const runs = Array.isArray(data?.workflow_runs) ? data.workflow_runs : [];
   return (
@@ -1775,33 +1559,33 @@ async function handleIssueComment({ payload, env }) {
 }
 
 async function handleWorkflowRun({ owner, repo, payload, env }) {
-  if (!isCiApprovalEnabled(env)) return { ok: true, skipped: "disabled" };
+  if (!isAutoApproveEnabled(env)) return { ok: true, skipped: "disabled" };
 
   const run = payload?.workflow_run;
   if (!run) return { ok: false, error: "missing-workflow-run" };
+  if (run.event !== "pull_request") return { ok: true, skipped: "not-pr-event" };
   if (run.status !== "waiting") return { ok: true, skipped: "not-waiting" };
 
-  const rule = findCiApprovalRule(run);
+  const rule = findAutoApproveRule(run);
   if (!rule) return { ok: true, skipped: "no-rule" };
 
   const prNumber = Number(run.pull_requests?.[0]?.number);
-  const hasPr = Number.isFinite(prNumber);
-  let selectedOptions = new Set();
-  let selectedLabels = new Set();
+  if (!Number.isFinite(prNumber)) return { ok: true, skipped: "no-pr-number" };
 
-  if (hasPr) {
-    const { data: pr } = await githubApi({
-      env,
-      method: "GET",
-      path: `/repos/${owner}/${repo}/pulls/${prNumber}`,
-    });
-    const body = String(pr?.body ?? "");
-    selectedOptions = getSelectedScopeOptions(body);
-    selectedLabels = new Set((pr.labels ?? []).map((label) => label.name));
-  }
+  const { data: pr } = await githubApi({
+    env,
+    method: "GET",
+    path: `/repos/${owner}/${repo}/pulls/${prNumber}`,
+  });
 
-  const decision = evaluateCiApproval({ rule, selectedOptions, selectedLabels, hasPr });
-  if (!decision.approve) return { ok: true, skipped: decision.reason };
+  const body = String(pr?.body ?? "");
+  const selectedOptions = getSelectedScopeOptions(body);
+  const selectedLabels = new Set((pr.labels ?? []).map((label) => label.name));
+  const scopes = Array.isArray(rule.scopes) ? rule.scopes : [];
+  const allowed =
+    scopes.length === 0 || scopes.some((scope) => isScopeSelected(scope, { selectedOptions, selectedLabels }));
+
+  if (!allowed) return { ok: true, skipped: "scope-not-selected" };
 
   await githubApi({
     env,
@@ -1809,7 +1593,7 @@ async function handleWorkflowRun({ owner, repo, payload, env }) {
     path: `/repos/${owner}/${repo}/actions/runs/${run.id}/approve`,
   });
 
-  return { ok: true, approved: true, reason: decision.reason };
+  return { ok: true, approved: true };
 }
 
 async function githubApi({ env, method, path, body }) {

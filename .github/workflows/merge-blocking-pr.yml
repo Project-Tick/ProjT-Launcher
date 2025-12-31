@@ -59,3 +59,4 @@ jobs:
           while read -r pr ; do
             gh -R ${{ github.repository }} workflow run 'blocked-prs.yml' -r "${{ github.ref_name }}" -f pr_id="$pr"
           done < <(jq -c '.[].number' <<< "$DEPS")
+

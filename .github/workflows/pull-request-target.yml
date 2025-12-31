@@ -1,10 +1,17 @@
 name: General Evaluation Process for Pull Requests
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: >
+    projt-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # Prepare PR information
