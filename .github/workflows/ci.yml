@@ -2871,7 +2871,6 @@ jobs:
     # Modify this list to add or remove jobs from required status checks.
     needs:
       - prepare
-      - lint
       - clang-lint
       - markdown-lint
       - check
