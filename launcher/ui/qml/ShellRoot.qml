@@ -133,6 +133,7 @@ Rectangle {
             settingsWindowLoader.item.currentPageIndex = index;
         });
     }
+
     function openInstanceSettingsPage(instanceId, pageKey) {
         if (pageKey === "backups") {
             showBackupDialog(instanceId);
@@ -188,6 +189,55 @@ Rectangle {
             }
             instanceSettingsWindowLoader.item.currentPageIndex = index;
         });
+    }
+
+    Loader {
+        id: settingsWindowLoader
+        active: false
+        sourceComponent: Window {
+            id: settingsWindow
+            title: qsTr("Settings")
+            width: 800
+            height: 600
+            minimumWidth: 700
+            minimumHeight: 500
+            color: Qt.platform.os === "osx" ? "#01000000" : ThemeColors.background
+            flags: Qt.Window
+            visible: true
+
+            MacVisualEffectView {
+                anchors.fill: parent
+                visible: Qt.platform.os === "osx"
+                material: MacVisualEffectView.Sheet
+                blendingMode: MacVisualEffectView.BehindWindow
+            }
+            // Contents will go here...
+        }
+    }
+
+    Loader {
+        id: instanceSettingsWindowLoader
+        property string instanceId: ""
+        active: false
+        sourceComponent: Window {
+            id: instanceSettingsWindow
+            title: qsTr("Instance Settings")
+            width: 800
+            height: 600
+            minimumWidth: 700
+            minimumHeight: 500
+            color: Qt.platform.os === "osx" ? "#01000000" : ThemeColors.background
+            flags: Qt.Window
+            visible: true
+
+            MacVisualEffectView {
+                anchors.fill: parent
+                visible: Qt.platform.os === "osx"
+                material: MacVisualEffectView.Sheet
+                blendingMode: MacVisualEffectView.BehindWindow
+            }
+            // Contents will go here...
+        }
     }
 
     Loader {
