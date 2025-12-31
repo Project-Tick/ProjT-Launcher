@@ -3047,12 +3047,17 @@ jobs:
               .addList(summaryLines)
               .write();
 
-            if (!payload.merge_group || !payload.merge_group.head_sha) {
-              core.warning('merge_group payload missing head_sha; cannot post status.');
+            const sha =
+              (payload.merge_group && payload.merge_group.head_sha) ||
+              (payload.pull_request && payload.pull_request.head && payload.pull_request.head.sha) ||
+              github.sha;
+
+            if (!sha) {
+              core.warning('No SHA found for status reporting; skipping status update.');
             } else {
               await github.rest.repos.createCommitStatus({
                 ...repo,
-                sha: payload.merge_group.head_sha,
+                sha,
                 // WARNING:
                 // Do NOT change the name of this, otherwise the rule will not catch it anymore.
                 // This would prevent all PRs from merging.
