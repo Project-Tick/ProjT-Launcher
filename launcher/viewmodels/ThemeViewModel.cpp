@@ -68,7 +68,14 @@ class ThemeViewModel::ThemeListModel : public QAbstractListModel {
     void refresh()
     {
         beginResetModel();
-        m_themes = APPLICATION->themeManager()->getValidApplicationThemes();
+        auto allThemes = APPLICATION->themeManager()->getValidApplicationThemes();
+        m_themes.clear();
+        for (auto* theme : allThemes) {
+            QString id = theme->id();
+            if (id == "system" || id == "dark" || id == "bright" || id == "light" || id == "fusion") {
+                m_themes.append(theme);
+            }
+        }
         endResetModel();
     }
 

@@ -69,12 +69,8 @@ int main(int argc, char* argv[])
         qDebug() << "QT_QUICK_BACKEND not set, falling back to software renderer.";
     }
 
-    // Set Qt Quick Controls style - use macOS style on macOS for native look
-#ifdef Q_OS_MACOS
-    QQuickStyle::setStyle("macOS");
-#else
+    // Force Basic style for QML to allow customization
     QQuickStyle::setStyle("Basic");
-#endif
 
     // initialize Qt
     Application app(argc, argv);

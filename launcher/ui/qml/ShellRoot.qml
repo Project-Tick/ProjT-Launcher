@@ -190,76 +190,20 @@ Rectangle {
             instanceSettingsWindowLoader.item.currentPageIndex = index;
         });
     }
-
-    Loader {
-        id: settingsWindowLoader
-        active: false
-        sourceComponent: Window {
-            id: settingsWindow
-            title: qsTr("Settings")
-            width: 800
-            height: 600
-            minimumWidth: 700
-            minimumHeight: 500
-            color: Qt.platform.os === "osx" ? "#01000000" : ThemeColors.background
-            flags: Qt.Window
-            visible: true
-
-            MacVisualEffectView {
-                anchors.fill: parent
-                visible: Qt.platform.os === "osx"
-                material: MacVisualEffectView.Sheet
-                blendingMode: MacVisualEffectView.BehindWindow
-            }
-            // Contents will go here...
-        }
-    }
-
-    Loader {
-        id: instanceSettingsWindowLoader
-        property string instanceId: ""
-        active: false
-        sourceComponent: Window {
-            id: instanceSettingsWindow
-            title: qsTr("Instance Settings")
-            width: 800
-            height: 600
-            minimumWidth: 700
-            minimumHeight: 500
-            color: Qt.platform.os === "osx" ? "#01000000" : ThemeColors.background
-            flags: Qt.Window
-            visible: true
-
-            MacVisualEffectView {
-                anchors.fill: parent
-                visible: Qt.platform.os === "osx"
-                material: MacVisualEffectView.Sheet
-                blendingMode: MacVisualEffectView.BehindWindow
-            }
-            // Contents will go here...
-        }
-    }
-
+    // === New Instance Window (like Qt Widget NewInstanceDialog) ===
     Loader {
         id: newInstanceWindowLoader
         active: false
         sourceComponent: Window {
             id: newInstanceWindow
-            title: qsTr("New Instance")
-            width: 730
+            title: qsTr("Add Instance")
+            width: 800
             height: 600
-            minimumWidth: 600
-            minimumHeight: 450
-            color: Qt.platform.os === "osx" ? "#01000000" : ThemeColors.background
+            minimumWidth: 700
+            minimumHeight: 550
+            color: ThemeColors.background
             flags: Qt.Window
             visible: true
-
-            MacVisualEffectView {
-                anchors.fill: parent
-                visible: Qt.platform.os === "osx"
-                material: MacVisualEffectView.Sheet
-                blendingMode: MacVisualEffectView.BehindWindow
-            }
 
             onClosing: newInstanceWindowLoader.active = false
 
@@ -987,9 +931,14 @@ Rectangle {
 
     // Helper function to show windows
     function showSettingsWindow(pageIndex) {
+        console.log("[ShellRoot] showSettingsWindow called with index:", pageIndex);
         settingsWindowLoader.active = true;
-        if (pageIndex !== undefined && settingsWindowLoader.item) {
-            settingsWindowLoader.item.currentPageIndex = pageIndex;
+        if (pageIndex !== undefined) {
+            Qt.callLater(function () {
+                if (settingsWindowLoader.item) {
+                    settingsWindowLoader.item.currentPageIndex = pageIndex;
+                }
+            });
         }
     }
     function showSettingsOnAccountsPage() {
@@ -1081,6 +1030,8 @@ Rectangle {
     Loader {
         id: settingsWindowLoader
         active: false
+        onActiveChanged: if (active) console.log("[ShellRoot] settingsWindowLoader active state changed to true");
+        onStatusChanged: console.log("[ShellRoot] settingsWindowLoader status:", status);
         sourceComponent: Window {
             id: settingsWindow
             title: qsTr("Settings")
@@ -1088,9 +1039,16 @@ Rectangle {
             height: 650
             minimumWidth: 700
             minimumHeight: 500
-            color: ThemeColors.bg1
+            color: Qt.platform.os === "osx" ? "transparent" : ThemeColors.bg1
             flags: Qt.Window
             visible: true
+
+            MacVisualEffectView {
+                anchors.fill: parent
+                visible: Qt.platform.os === "osx"
+                material: MacVisualEffectView.Sheet
+                blendingMode: MacVisualEffectView.BehindWindow
+            }
 
             onClosing: settingsWindowLoader.active = false
 

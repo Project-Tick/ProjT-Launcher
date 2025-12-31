@@ -164,6 +164,8 @@ QtObject {
     readonly property color highlight: accent
     readonly property color highlightedText: accentText
     readonly property color link: accent
+    readonly property color surfaceHighlight: Qt.rgba(accent.r, accent.g, accent.b, 0.1)
+    readonly property color disabled: textDisabled
 
     // =========================================================================
     // STATES & OPACITY
@@ -212,6 +214,12 @@ QtObject {
     readonly property int radiusL: 12
     readonly property int radiusXL: 16
     readonly property int radiusPill: 999 
+
+    // Animations
+    readonly property int durationShort: 150
+    readonly property int durationNormal: 250
+    readonly property int durationLong: 400
+    readonly property int easeType: Easing.OutCubic
 
     // Legacy Aliases
     readonly property int radius: radiusM

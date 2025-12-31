@@ -622,12 +622,16 @@ void LauncherSettingsViewModel::setLaunchAction(const QString& value)
 {
     if (m_launchAction != value) {
         m_launchAction = value;
-        QString settingValue = "none";
-        if (value == "hideWindow")
-            settingValue = "hide";
-        else if (value == "closeWindow")
-            settingValue = "close";
-        APPLICATION->settings()->set("LaunchMaximized", settingValue);
+        if (value == "hideWindow") {
+            APPLICATION->settings()->set("CloseAfterLaunch", true);
+            APPLICATION->settings()->set("QuitAfterGameStop", false);
+        } else if (value == "closeWindow") {
+            APPLICATION->settings()->set("CloseAfterLaunch", false);
+            APPLICATION->settings()->set("QuitAfterGameStop", true);
+        } else {
+            APPLICATION->settings()->set("CloseAfterLaunch", false);
+            APPLICATION->settings()->set("QuitAfterGameStop", false);
+        }
         emit launchActionChanged();
     }
 }
