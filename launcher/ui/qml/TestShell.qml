@@ -25,9 +25,9 @@ import QtQuick.Controls 2.15
 
 Rectangle {
     id: root
-    width: 280
-    height: 100
-    color: "#00000000"
+    width: 800
+    height: 600
+    color: "#800080" // Purple - Solid color for visibility check
     border.color: "#40FFFFFF"
     radius: 4
 

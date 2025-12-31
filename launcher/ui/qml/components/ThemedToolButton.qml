@@ -125,21 +125,14 @@ ToolButton {
         implicitWidth: 32
         implicitHeight: 30
         radius: ThemeColors.radiusS
-        opacity: enabled ? 1.0 : 0.5
 
         color: {
             var _ = control._themeUpdateCount;
-            var highlightColor = control._highlightColor;
-            var buttonColor = control._buttonColor;
-            var hoverColor = Qt.lighter(buttonColor, 1.06);
-            var pressedColor = Qt.darker(buttonColor, 1.12);
+            var hoverColor = Qt.rgba(255, 255, 255, 0.04);
+            var pressedColor = Qt.rgba(255, 255, 255, 0.08);
 
             if (control.checked || control.active) {
-                if (control.pressed)
-                    return Qt.darker(highlightColor, 1.18);
-                if (control.hovered)
-                    return Qt.lighter(highlightColor, 1.06);
-                return Qt.rgba(highlightColor.r, highlightColor.g, highlightColor.b, 0.18);
+                return Qt.rgba(ThemeColors.accent.r, ThemeColors.accent.g, ThemeColors.accent.b, 0.12);
             }
             if (control.pressed)
                 return pressedColor;
@@ -148,12 +141,18 @@ ToolButton {
             return "transparent";
         }
 
-        border.width: control.visualFocus || control.checked || control.active ? 1 : 0
-        border.color: control.visualFocus ? control._highlightColor : control._highlightColor
+        border.width: (control.checked || control.active) ? 1 : 0
+        border.color: ThemeColors.accent
+        opacity: control.enabled ? ((control.checked || control.active) ? 1.0 : (control.hovered ? 0.8 : 0.0)) : 0.4
 
         Behavior on color {
             ColorAnimation {
-                duration: 120
+                duration: ThemeColors.durationShort
+            }
+        }
+        Behavior on opacity {
+            NumberAnimation {
+                duration: ThemeColors.durationShort
             }
         }
     }

@@ -1,23 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
-/*
- *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
@@ -28,7 +11,7 @@ import "../components"
 
 Rectangle {
     id: loginPage
-    color: ThemeColors.background
+    color: ThemeColors.bg
 
     property var vm: ProjT.accountsVM
     property bool accountAdded: false
@@ -38,14 +21,13 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        spacing: Theme.spacingS
+        anchors.margins: ThemeColors.spacingM
+        spacing: ThemeColors.spacingS
 
         // Title
         Label {
             text: qsTr("Add Microsoft account")
-            font.pointSize: 14
-            font.bold: true
+            font: ThemeColors.fontTitle
             color: ThemeColors.text
         }
 
@@ -53,22 +35,25 @@ Rectangle {
         Label {
             Layout.fillWidth: true
             text: qsTr("In order to play Minecraft, you must have at least one Microsoft account logged in. Do you want to log in now?")
-            color: ThemeColors.text
+            color: ThemeColors.textSecondary
             wrapMode: Text.WordWrap
-            font.pixelSize: Theme.fontBody
+            font: ThemeColors.fontBody
         }
 
         // Separator
         Rectangle {
             Layout.fillWidth: true
+            Layout.topMargin: 10
+            Layout.bottomMargin: 10
             height: 1
             color: ThemeColors.border
         }
 
         // Login button
-        Button {
+        AppButton {
             Layout.alignment: Qt.AlignLeft
             text: qsTr("Add Microsoft account")
+            variant: "primary"
             onClicked: {
                 loginRequested();
                 if (vm)

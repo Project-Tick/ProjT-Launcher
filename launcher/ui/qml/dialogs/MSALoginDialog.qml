@@ -1,29 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
-/*
- *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "../components"
 
 WindowDialog {
     id: msaLoginDialog
@@ -33,6 +17,8 @@ WindowDialog {
     width: 440
     height: 480
     standardButtons: Dialog.Cancel
+    
+    // WindowDialog uses ThemeColors.bg1/surface automatically
 
     property var vm: typeof ProjT !== "undefined" && ProjT ? ProjT.accountsVM : null
     property string loginUrl: ""
@@ -55,7 +41,7 @@ WindowDialog {
             ColumnLayout {
                 anchors.centerIn: parent
                 visible: topPanelState === 0
-                spacing: Theme.spacingS
+                spacing: ThemeColors.spacingS
 
                 Label {
                     text: qsTr("Please wait...")
@@ -74,13 +60,12 @@ WindowDialog {
             }
 
             // Button state
-            Button {
+            AppButton {
                 anchors.centerIn: parent
                 visible: topPanelState === 1
                 text: qsTr("Sign in with Microsoft")
-                implicitWidth: 250
-                implicitHeight: 40
-                highlighted: true
+                variant: "primary"
+                width: 250
                 onClicked: {
                     if (vm) {
                         topPanelState = 0;
@@ -94,9 +79,10 @@ WindowDialog {
         // "Or" separator with lines
         RowLayout {
             Layout.fillWidth: true
-            Layout.topMargin: Theme.spacingM
-            Layout.bottomMargin: Theme.spacingM
-            spacing: Theme.spacingM
+            Layout.topMargin: ThemeColors.spacingM
+            Layout.bottomMargin: ThemeColors.spacingM
+            spacing: ThemeColors.spacingM
+            visible: topPanelState === 1 // Only show if button visible
 
             Rectangle {
                 Layout.fillWidth: true
@@ -126,7 +112,7 @@ WindowDialog {
             ColumnLayout {
                 anchors.centerIn: parent
                 visible: bottomPanelState === 0
-                spacing: Theme.spacingS
+                spacing: ThemeColors.spacingS
 
                 Label {
                     text: qsTr("Please wait...")
@@ -146,21 +132,23 @@ WindowDialog {
                 BusyIndicator {
                     Layout.alignment: Qt.AlignHCenter
                     running: bottomPanelState === 0
+                    // Customizing BusyIndicator color is complex due to default style, 
+                    // but typically follows accent in Fusion/Material.
                 }
             }
 
             // Code ready state
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: Theme.spacingM
+                anchors.margins: ThemeColors.spacingM
                 visible: bottomPanelState === 1
-                spacing: Theme.spacingM
+                spacing: ThemeColors.spacingM
 
                 // QR Code
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredWidth: 150
-                    Layout.preferredHeight: 150
+                    Layout.preferredWidth: 156
+                    Layout.preferredHeight: 156
                     color: "white"
                     radius: 4
 
@@ -176,7 +164,7 @@ WindowDialog {
                     Label {
                         anchors.centerIn: parent
                         text: qsTr("QR Code")
-                        color: ThemeColors.textSecondary
+                        color: "#000000" // Always black on white paper
                         visible: qrCodeData === ""
                     }
                 }
@@ -184,7 +172,7 @@ WindowDialog {
                 // Device Code with Copy button
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter
-                    spacing: Theme.spacingS
+                    spacing: ThemeColors.spacingS
 
                     Label {
                         id: codeLabel
@@ -199,12 +187,11 @@ WindowDialog {
                         }
                     }
 
-                    Button {
+                    AppButton {
                         id: copyCodeBtn
-                        flat: true
-                        icon.name: "edit-copy"
-                        icon.width: 22
-                        icon.height: 22
+                        variant: "ghost"
+                        iconSource: Theme.icon("edit-copy")
+                        size: "small"
                         ToolTip.visible: hovered
                         ToolTip.text: qsTr("Copy code to clipboard")
                         onClicked: {
@@ -218,7 +205,7 @@ WindowDialog {
                 // Info message
                 Label {
                     Layout.fillWidth: true
-                    text: qsTr("Open <a href=\"%1\">%1</a> and enter the code above to sign in.").arg(loginUrl || "https://microsoft.com/link")
+                    text: qsTr("Open <a href=\"%1\" style=\"color: %2\">%1</a> and enter the code above to sign in.").arg(loginUrl || "https://microsoft.com/link").arg(ThemeColors.accent)
                     color: ThemeColors.textSecondary
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
@@ -286,13 +273,17 @@ WindowDialog {
         standardButtons: Dialog.Ok
         x: (parent.width - width) / 2
         y: (parent.height - height) / 2
-
+        // Use standard dialog styling or custom content
+        topPadding: 20
+        bottomPadding: 20
+        
         property string message: ""
 
         Label {
             text: errorDialog.message
-            color: ThemeColors.error
+            color: ThemeColors.danger
             wrapMode: Text.WordWrap
+            width: parent.width
         }
     }
 

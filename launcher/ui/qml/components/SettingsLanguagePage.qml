@@ -16,7 +16,6 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 import QtQuick 2.15
@@ -24,125 +23,143 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "."
 
 Rectangle {
     id: languagePage
-    color: ThemeColors.background
+    color: "transparent"
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        spacing: Theme.spacingM
+        anchors.margins: 0
+        spacing: ThemeColors.spacingM
 
-        Label {
-            text: qsTr("Select Language")
-            font.pointSize: 12
-            font.bold: true
-            color: ThemeColors.text
-        }
-
-        TextField {
-            id: searchField
-            Layout.fillWidth: true
-            placeholderText: qsTr("Search languages...")
-            selectByMouse: true
-        }
-
-        Rectangle {
+        SettingsSection {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: ThemeColors.surface
-            border.color: ThemeColors.border
-            border.width: 1
-            radius: Theme.radiusS
+            title: qsTr("Language Selection")
+            iconSource: Theme.icon("language")
 
-            ListView {
-                id: languageList
-                anchors.fill: parent
-                anchors.margins: 1
-                clip: true
+            ColumnLayout {
+                spacing: ThemeColors.spacingM
+                Layout.fillWidth: true
+                Layout.fillHeight: true
 
-                // Use TranslationsModel from backend
-                model: translationsModel
-
-                // Get selected index from model
-                currentIndex: translationsModel ? translationsModel.selectedIndex().row : 0
-
-                delegate: ItemDelegate {
-                    id: langDelegate
-                    width: languageList.width
-                    highlighted: ListView.isCurrentItem
-
-                    // Filter by search text
-                    visible: {
-                        if (searchField.text.length === 0)
-                            return true;
-                        var langName = model.display || "";
-                        return langName.toLowerCase().indexOf(searchField.text.toLowerCase()) >= 0;
-                    }
-                    height: visible ? 40 : 0
-
-                    contentItem: RowLayout {
-                        spacing: Theme.spacingM
-
-                        // Column 0: Language name
-                        Label {
-                            text: (model.display !== undefined ? model.display : "") || (model.name !== undefined ? model.name : "") || ""
-                            color: langDelegate.highlighted ? ThemeColors.accent : ThemeColors.text
-                            font.bold: langDelegate.highlighted
-                            Layout.fillWidth: true
-                            elide: Text.ElideRight
-                        }
-
-                        // Column 1: Completeness percentage (if available)
-                        Label {
-                            // Get completeness from column 1
-                            text: {
-                                if (translationsModel) {
-                                    var idx = translationsModel.index(index, 1);
-                                    return translationsModel.data(idx, Qt.DisplayRole) || "";
-                                }
-                                return "";
-                            }
-                            color: ThemeColors.textSecondary
-                            font.pointSize: 9
-                        }
-                    }
-
+                TextField {
+                    id: searchField
+                    Layout.fillWidth: true
+                    placeholderText: qsTr("Search languages...")
+                    selectByMouse: true
+                    leftPadding: 32
                     background: Rectangle {
-                        color: langDelegate.highlighted ? ThemeColors.highlight : (langDelegate.hovered ? ThemeColors.hover : "transparent")
+                        color: ThemeColors.bg1
+                        radius: ThemeColors.radius
+                        border.color: searchField.activeFocus ? ThemeColors.accent : ThemeColors.border
                     }
-
-                    onClicked: {
-                        languageList.currentIndex = index;
-                        // Get the language key from UserRole
-                        if (translationsModel) {
-                            var langKey = translationsModel.data(translationsModel.index(index, 0), Qt.UserRole);
-                            if (langKey) {
-                                translationsModel.selectLanguage(langKey);
-                                translationsModel.updateLanguage(langKey);
-                            }
-                        }
+                    Text {
+                        text: "🔍"
+                        anchors.left: parent.left
+                        anchors.leftMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: ThemeColors.textSecondary
                     }
                 }
 
-                ScrollBar.vertical: ScrollBar {}
-            }
-        }
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    color: ThemeColors.bg1
+                    border.color: ThemeColors.border
+                    radius: ThemeColors.radius
 
-        Label {
-            text: qsTr("Translation completeness is shown on the right. Help us translate!")
-            color: ThemeColors.textSecondary
-            font.pointSize: 9
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
-        }
+                    ListView {
+                        id: languageList
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        clip: true
+                        model: translationsModel
+                        spacing: 2
+                        currentIndex: translationsModel ? translationsModel.selectedIndex().row : 0
 
-        Button {
-            text: qsTr("Help translate on Weblate")
-            onClicked: {
-                Qt.openUrlExternally("https://hosted.weblate.org/engage/prismlauncher/");
+                        delegate: ItemDelegate {
+                            id: langDelegate
+                            width: languageList.width
+                            height: visible ? 40 : 0
+                            highlighted: ListView.isCurrentItem
+                            
+                            visible: {
+                                if (searchField.text.length === 0) return true;
+                                var langName = model.display || "";
+                                return langName.toLowerCase().indexOf(searchField.text.toLowerCase()) >= 0;
+                            }
+
+                            background: Rectangle {
+                                color: langDelegate.highlighted ? ThemeColors.surfaceHighlight : (langDelegate.hovered ? ThemeColors.bg3 : "transparent")
+                                radius: ThemeColors.radiusS
+                                border.color: langDelegate.highlighted ? ThemeColors.border : "transparent"
+                            }
+
+                            contentItem: RowLayout {
+                                spacing: ThemeColors.spacingM
+                                Label {
+                                    text: (model.display !== undefined ? model.display : "") || (model.name !== undefined ? model.name : "") || ""
+                                    color: langDelegate.highlighted ? ThemeColors.textTitle : ThemeColors.text
+                                    font.weight: langDelegate.highlighted ? Font.DemiBold : Font.Normal
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
+                                Label {
+                                    text: {
+                                        if (translationsModel) {
+                                            var idx = translationsModel.index(index, 1);
+                                            return translationsModel.data(idx, Qt.DisplayRole) || "";
+                                        }
+                                        return "";
+                                    }
+                                    color: langDelegate.highlighted ? ThemeColors.text : ThemeColors.textSecondary
+                                    font.pixelSize: 11
+                                }
+                            }
+
+                            onClicked: {
+                                languageList.currentIndex = index;
+                                if (translationsModel) {
+                                    var langKey = translationsModel.data(translationsModel.index(index, 0), Qt.UserRole);
+                                    if (langKey) {
+                                        translationsModel.selectLanguage(langKey);
+                                        translationsModel.updateLanguage(langKey);
+                                    }
+                                }
+                            }
+                        }
+                        ScrollBar.vertical: ScrollBar {}
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: ThemeColors.spacingS
+
+                    Text {
+                        text: "💡"
+                        font.pixelSize: 14
+                    }
+                    
+                    Label {
+                        text: qsTr("Translation completeness is shown on the right. Help us translate!")
+                        color: ThemeColors.textSecondary
+                        font.pixelSize: 11
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                    }
+
+                    ThemedButton {
+                        text: qsTr("Help Translate")
+                        onClicked: Qt.openUrlExternally("https://hosted.weblate.org/engage/prismlauncher/")
+                    }
+                }
             }
         }
     }
 }
+

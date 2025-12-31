@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/qml/ProjTLauncher">
+        <!-- Force Rebuild -->
         <file>qmldir</file>
         <file alias="ThemeColors.qml">ThemeColors.qml</file>
     </qresource>
@@ -24,6 +25,7 @@
         <file>components/LowerBottomBar.qml</file>
         <file>components/InstanceDetailSidebar.qml</file>
         <file>components/InstanceDelegate.qml</file>
+        <file>components/InstanceGridDelegate.qml</file>
         <file>components/InstanceContextMenu.qml</file>
         <file>components/MainToolBar.qml</file>
         <file>components/InstanceToolBar.qml</file>
@@ -31,6 +33,16 @@
         <file>components/StatusBar.qml</file>
         <file>components/ThemedButton.qml</file>
         <file>components/ThemedToolButton.qml</file>
+        <file>components/ThemedCheckBox.qml</file>
+        <file>components/AppButton.qml</file>
+        <file>components/+macos/AppButton.qml</file>
+        <file>components/AppTextField.qml</file>
+        <file>components/+macos/AppTextField.qml</file>
+        <file>components/AppComboBox.qml</file>
+        <file>components/+macos/AppComboBox.qml</file>
+        <file>components/AppCheckBox.qml</file>
+        <file>components/+macos/AppCheckBox.qml</file>
+        <file>components/SettingsSection.qml</file>
         <file>components/NewInstanceCustomPage.qml</file>
         <file>components/NewInstanceImportPage.qml</file>
         <file>components/NewInstancePlaceholderPage.qml</file>
@@ -79,6 +91,7 @@
         <file>modplatform/ImportPage.qml</file>
         <file>modplatform/ImportFTBPage.qml</file>
         <!-- Dialogs -->
+        <file>dialogs/ImportInstanceWindow.qml</file>
         <file>dialogs/ExportDialog.qml</file>
         <file>dialogs/BackupDialog.qml</file>
         <file>dialogs/ProgressDialog.qml</file>

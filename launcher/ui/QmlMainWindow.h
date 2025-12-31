@@ -32,7 +32,9 @@ class NewsViewModel;
 class SettingsViewModel;
 class ThemeViewModel;
 class ShellStateBridge;
-class QQuickWidget;
+class ThemeViewModel;
+class ShellStateBridge;
+class QQuickView;
 
 class QmlMainWindow : public QMainWindow {
     Q_OBJECT
@@ -64,6 +66,6 @@ class QmlMainWindow : public QMainWindow {
                                  ThemeViewModel* themeViewModel,
                                  SettingsObjectPtr settings);
 
-    QQuickWidget* m_quickWidget = nullptr;
+    QQuickView* m_quickView = nullptr;
     ShellStateBridge* m_stateBridge = nullptr;
 };

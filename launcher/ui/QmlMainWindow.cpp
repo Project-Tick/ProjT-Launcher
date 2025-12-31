@@ -29,14 +29,20 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickItem>
-#include <QQuickWidget>
+#include <QQuickView>
 #include <QUrl>
 #include <QVBoxLayout>
 
+#ifdef Q_OS_MACOS
+#include <QtQml/qqml.h>
+#include "ui/macos/MacVisualEffectItem.h"
+#include "ui/macos/MacWindowEffects.h"
+#endif
+
 #include "Application.h"
-#include "settings/Setting.h"
+#include "settings/Setting.h"  // IWYU pragma: keep - needed for Setting::get/set in ShellStateBridge
 #include "settings/SettingsObject.h"
-#include "translations/TranslationsModel.h"
+#include "translations/TranslationsModel.h"  // IWYU pragma: keep - needed for translationsModel context property
 #include "ui/QmlContextBridge.h"
 #include "viewmodels/ATLauncherViewModel.h"
 #include "viewmodels/AccountsViewModel.h"
@@ -134,34 +140,14 @@ class ShellStateBridge : public QObject {
 
 static QUrl resolveQmlUrl(const QString& fileName)
 {
-    // First try the embedded resource
-    const QString resourcePath = QStringLiteral(":/qml/%1").arg(fileName);
-    if (QFile::exists(resourcePath)) {
-        qDebug() << "[QmlMainWindow] Loading QML from resource:" << resourcePath;
-        return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
-    }
+    qDebug() << "[QmlMainWindow] Resolving URL for:" << fileName;
 
-    // Try to find source directory for development builds
-    // Build path is typically: <project>/build/Debug/projtlauncher.exe
-    // Source path is: <project>/launcher/ui/qml/
-    QDir dir(QCoreApplication::applicationDirPath());
-
-    // Try going up multiple levels to find source tree
-    for (int i = 0; i < 4; ++i) {
-        QDir sourceDir(dir);
-        if (sourceDir.cd(QStringLiteral("launcher/ui/qml"))) {
-            QFileInfo info(sourceDir.filePath(fileName));
-            if (info.exists()) {
-                qDebug() << "[QmlMainWindow] Loading QML from source:" << info.absoluteFilePath();
-                return QUrl::fromLocalFile(info.absoluteFilePath());
-            }
-        }
-        if (!dir.cdUp())
-            break;
-    }
-
-    qWarning() << "[QmlMainWindow] QML file not found:" << fileName << "- trying qrc anyway";
-    return QUrl(QStringLiteral("qrc:/qml/%1").arg(fileName));
+    // Always prefer embedded resource
+    // Note: QFile::exists(":/qml/...") might fail on some platforms/configs
+    // even if the resource is available to the QML engine.
+    QString qrcPath = QStringLiteral("qrc:/qml/%1").arg(fileName);
+    qDebug() << "[QmlMainWindow] Returning forced QRC path:" << qrcPath;
+    return QUrl(qrcPath);
 }
 
 /**
@@ -342,6 +328,9 @@ bool registerLauncherViewModelEnums()
 {
     qmlRegisterUncreatableMetaObject(LauncherViewModel::staticMetaObject, "ProjTLauncher", 1, 0, "LauncherViewModelEnums",
                                      QStringLiteral("Enums are exposed via existing context objects."));
+#ifdef Q_OS_MACOS
+    qmlRegisterType<MacVisualEffectItem>("ProjTLauncher.Mac", 1, 0, "MacVisualEffectView");
+#endif
     return true;
 }
 
@@ -365,36 +354,43 @@ QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel,
     // and Application can track open windows correctly.
     setAttribute(Qt::WA_DeleteOnClose, true);
 
+#ifdef Q_OS_MACOS
+    setAttribute(Qt::WA_TranslucentBackground);
+#endif
+
     auto container = new QWidget(this);
     auto layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    m_quickWidget = new QQuickWidget(container);
-    m_quickWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
-    m_quickWidget->setClearColor(Qt::transparent);
+    m_quickView = new QQuickView();
+    m_quickView->setResizeMode(QQuickView::SizeRootObjectToView);
+    m_quickView->setColor(Qt::transparent);
 
-    // Set initial palette for QQuickWidget
-    m_quickWidget->setPalette(qApp->palette());
+    // Embed QQuickView
+    QWidget* quickWidgetContainer = QWidget::createWindowContainer(m_quickView, container);
+    // Important for macOS transparency: container should not block the view
+    quickWidgetContainer->setAttribute(Qt::WA_TranslucentBackground);
 
     // Add Qt's QML import paths for development builds loading from source
-    QQmlEngine* engine = m_quickWidget->engine();
+    QQmlEngine* engine = m_quickView->engine();
     setupQmlImportPaths(engine);
 
     exposeContextProperties(launcherViewModel, instanceListViewModel, newsViewModel, settingsViewModel, themeViewModel,
                             APPLICATION->settings());
 
-    // Update QuickWidget palette when theme changes
+    // Update QuickView color when theme changes (although we keep it transparent mostly)
     connect(themeViewModel, &ThemeViewModel::themeColorsChanged, this, [this]() {
-        if (m_quickWidget) {
-            qDebug() << "[QmlMainWindow] Theme changed, updating QuickWidget palette";
-            m_quickWidget->setPalette(qApp->palette());
-            m_quickWidget->update();
+        if (m_quickView) {
+            // Force redraw
+            // m_quickView->update();
+            // We usually want it transparent for the native effect
+            m_quickView->setColor(Qt::transparent);
         }
     });
 
-    m_quickWidget->setSource(resolveQmlUrl(QStringLiteral("ShellRoot.qml")));
+    m_quickView->setSource(resolveQmlUrl(QStringLiteral("ShellRoot.qml")));
 
-    layout->addWidget(m_quickWidget);
+    layout->addWidget(quickWidgetContainer);
     setCentralWidget(container);
 
     m_stateBridge = new ShellStateBridge(APPLICATION->settings(), this);
@@ -402,10 +398,10 @@ QmlMainWindow::QmlMainWindow(LauncherViewModel* launcherViewModel,
 
 void QmlMainWindow::openNewInstanceDialog(const QString& groupName, const QString& importUrl)
 {
-    if (!m_quickWidget)
+    if (!m_quickView)
         return;
 
-    QQuickItem* root = m_quickWidget->rootObject();
+    QQuickItem* root = m_quickView->rootObject();
     if (!root)
         return;
 
@@ -414,10 +410,10 @@ void QmlMainWindow::openNewInstanceDialog(const QString& groupName, const QStrin
 
 void QmlMainWindow::openSettingsPage(const QString& pageKey)
 {
-    if (!m_quickWidget)
+    if (!m_quickView)
         return;
 
-    QQuickItem* root = m_quickWidget->rootObject();
+    QQuickItem* root = m_quickView->rootObject();
     if (!root)
         return;
 
@@ -426,10 +422,10 @@ void QmlMainWindow::openSettingsPage(const QString& pageKey)
 
 void QmlMainWindow::openInstanceSettingsPage(const QString& instanceId, const QString& pageKey)
 {
-    if (!m_quickWidget)
+    if (!m_quickView)
         return;
 
-    QQuickItem* root = m_quickWidget->rootObject();
+    QQuickItem* root = m_quickView->rootObject();
     if (!root)
         return;
 
@@ -438,10 +434,10 @@ void QmlMainWindow::openInstanceSettingsPage(const QString& instanceId, const QS
 
 void QmlMainWindow::openSetupWizard(const QStringList& pageIds)
 {
-    if (!m_quickWidget)
+    if (!m_quickView)
         return;
 
-    QQuickItem* root = m_quickWidget->rootObject();
+    QQuickItem* root = m_quickView->rootObject();
     if (!root)
         return;
 
@@ -455,7 +451,7 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
                                             ThemeViewModel* themeViewModel,
                                             SettingsObjectPtr settings)
 {
-    auto ctx = m_quickWidget->rootContext();
+    auto ctx = m_quickView->rootContext();
 
     m_stateBridge = new ShellStateBridge(settings, this);
     ctx->setContextProperty(QStringLiteral("shellState"), m_stateBridge);
@@ -562,6 +558,12 @@ void QmlMainWindow::exposeContextProperties(LauncherViewModel* launcherViewModel
     if (m_stateBridge && m_stateBridge->dockVisible()) {
         show();
     }
+
+#ifdef Q_OS_MACOS
+    // Create the window handle if it doesn't exist
+    winId();
+    MacWindowEffects::applyVibrancy(winId());
+#endif
 }
 
 void QmlMainWindow::processURLs(const QList<QUrl>& urls)

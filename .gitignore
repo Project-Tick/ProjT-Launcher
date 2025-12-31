@@ -24,10 +24,11 @@ cmake-build-*/
 Debug
 compile_commands.json
 _site/
+TASK.md
 # Build dirs
 build
 /build-*
-
+build\ 2/
 # Ctags File
 tags
 

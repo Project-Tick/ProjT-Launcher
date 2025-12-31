@@ -1,23 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
-/*
- *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
@@ -42,11 +25,8 @@ Rectangle {
     signal doubleClicked(string instanceId)
     signal rightClicked(string instanceId, int mouseX, int mouseY)
 
-    Component.onCompleted: {
-        console.log("[InstanceDelegate] Created - name:", instanceName, "id:", instanceId);
-    }
-
-    height: 64
+    width: 140
+    height: 180
     color: isSelected ? ThemeColors.cardSelected
                       : (mouseArea.containsMouse ? ThemeColors.cardHover : ThemeColors.cardBackground)
     border.color: isSelected ? ThemeColors.accentEnd : ThemeColors.separator
@@ -54,7 +34,7 @@ Rectangle {
     radius: ThemeColors.radiusM
 
     // Subtle scale effect on hover
-    scale: mouseArea.containsMouse ? 1.01 : 1.0
+    scale: mouseArea.containsMouse ? 1.02 : 1.0
 
     Behavior on color {
         ColorAnimation {
@@ -77,26 +57,27 @@ Rectangle {
         }
     }
 
-    RowLayout {
+    ColumnLayout {
         anchors.fill: parent
         anchors.margins: ThemeColors.spacingS
-        spacing: ThemeColors.spacingM
+        spacing: ThemeColors.spacingS
 
         // === Instance Icon ===
         Rectangle {
-            width: 44
-            height: 44
+            Layout.alignment: Qt.AlignHCenter
+            Layout.topMargin: Theme.spacingS
+            width: 80
+            height: 80
             radius: ThemeColors.radiusS
             color: ThemeColors.backgroundAlt
             border.color: ThemeColors.separator
             border.width: 1
-            Layout.alignment: Qt.AlignVCenter
 
             Image {
                 anchors.fill: parent
-                anchors.margins: 2
+                anchors.margins: 4
                 source: iconPath ? ("file://" + iconPath) : ""
-                sourceSize: Qt.size(44, 44)
+                sourceSize: Qt.size(80, 80)
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
                 cache: true
@@ -109,14 +90,37 @@ Rectangle {
                     anchors.fill: parent
                     visible: !parent.status || parent.status === Image.Error
                     color: ThemeColors.backgroundAlt
+                    radius: ThemeColors.radiusS
 
                     Text {
                         anchors.centerIn: parent
                         text: instanceName.charAt(0).toUpperCase()
-                        font.pointSize: 16
+                        font.pointSize: 24
                         font.bold: true
                         color: ThemeColors.text
                     }
+                }
+            }
+            
+            // Running indicator overlay
+            Rectangle {
+                width: 20
+                height: 20
+                radius: 10
+                visible: isRunning
+                color: ThemeColors.success
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: -4
+                border.color: ThemeColors.cardBackground
+                border.width: 2
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "R"
+                    color: ThemeColors.highlightedText
+                    font.pointSize: 10
+                    font.bold: true
                 }
             }
         }
@@ -124,72 +128,48 @@ Rectangle {
         // === Instance Info ===
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: Theme.spacingXS
-
-            RowLayout {
+            Layout.fillHeight: true
+            spacing: 2
+            
+            Text {
+                text: instanceName
+                color: ThemeColors.text
+                font.pointSize: 11
+                font.bold: true
+                elide: Text.ElideRight
+                wrapMode: Text.Wrap
+                maximumLineCount: 2
                 Layout.fillWidth: true
-                spacing: Theme.spacingS
-
-                Text {
-                    text: instanceName
-                    color: ThemeColors.text
-                    font.pointSize: 12
-                    font.bold: true
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                }
-
-                // Running indicator
-                Rectangle {
-                    width: 24
-                    height: 24
-                    radius: 12
-                    visible: isRunning
-                    color: ThemeColors.success
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: qsTr("R")
-                        color: ThemeColors.highlightedText
-                        font.pointSize: 10
-                        font.bold: true
-                    }
-                }
+                horizontalAlignment: Text.AlignHCenter
+                Layout.alignment: Qt.AlignHCenter
             }
 
-            RowLayout {
+            Text {
+                text: instanceGroup ? (instanceGroup) : qsTr("No Group")
+                color: ThemeColors.textSecondary
+                font.pointSize: 9
+                elide: Text.ElideRight
                 Layout.fillWidth: true
-                spacing: Theme.spacingS
-
-                Text {
-                    text: instanceGroup ? (instanceGroup) : qsTr("No Group")
-                    color: ThemeColors.textSecondary
-                    font.pointSize: 10
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                }
-
-                // Last played info
-                Text {
-                    text: lastPlayedText
-                    color: ThemeColors.textSecondary
-                    font.pointSize: 9
-                    font.italic: true
-                    Layout.alignment: Qt.AlignRight
-                }
+                horizontalAlignment: Text.AlignHCenter
+                Layout.alignment: Qt.AlignHCenter
             }
-        }
 
-        // === Launch Button ===
-        ThemedButton {
-            id: playButton
-            text: isRunning ? qsTr("Running...") : qsTr("Play")
-            size: "large"
-            success: true
-            enabled: !isRunning
-            Layout.alignment: Qt.AlignVCenter
+            Item { Layout.fillHeight: true } // Spacer
 
-            onClicked: delegate.doubleClicked(instanceId)
+            // Play Button (only visible on hover or selection to keep clean)
+            ThemedButton {
+                text: isRunning ? qsTr("Running...") : qsTr("Play")
+                size: "small"
+                success: true
+                enabled: !isRunning
+                Layout.alignment: Qt.AlignHCenter
+                visible: mouseArea.containsMouse || isSelected
+                opacity: visible ? 1 : 0
+                
+                onClicked: delegate.doubleClicked(instanceId)
+                
+                Behavior on opacity { NumberAnimation { duration: 100 } }
+            }
         }
     }
 
@@ -199,6 +179,7 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        propagateComposedEvents: true
 
         onClicked: function (mouse) {
             if (mouse.button === Qt.LeftButton) {
@@ -218,7 +199,7 @@ Rectangle {
     }
 
     // === Tooltip ===
-    ToolTip.text: qsTr("Left-click to select, double-click to launch, right-click for more options")
+    ToolTip.text: instanceName + (instanceGroup ? " (" + instanceGroup + ")" : "")
     ToolTip.visible: mouseArea.containsMouse && !isRunning
     ToolTip.delay: 800
 }

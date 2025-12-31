@@ -24,6 +24,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "." as Components
 
 Rectangle {
     id: customPage
@@ -57,15 +58,20 @@ Rectangle {
         }
 
         // Filter options
-        GroupBox {
+        Rectangle {
             Layout.fillWidth: true
-            title: qsTr("Filter")
+            Layout.preferredHeight: 48
+            color: ThemeColors.surface
+            radius: Theme.radiusS
+            border.color: ThemeColors.border
+            border.width: 1
 
             RowLayout {
                 anchors.fill: parent
+                anchors.margins: Theme.spacingS
                 spacing: Theme.spacingM
 
-                CheckBox {
+                AppCheckBox {
                     id: showReleasesCheck
                     text: qsTr("Releases")
                     checked: vm ? vm.showReleases : true
@@ -76,7 +82,7 @@ Rectangle {
                     }
                 }
 
-                CheckBox {
+                AppCheckBox {
                     id: showSnapshotsCheck
                     text: qsTr("Snapshots")
                     checked: vm ? vm.showSnapshots : false
@@ -87,7 +93,7 @@ Rectangle {
                     }
                 }
 
-                CheckBox {
+                AppCheckBox {
                     id: showBetasCheck
                     text: qsTr("Old Versions")
                     checked: vm ? vm.showOldVersions : false
@@ -102,9 +108,8 @@ Rectangle {
                     Layout.fillWidth: true
                 }
 
-                Button {
+                AppButton {
                     text: qsTr("Refresh")
-                    icon.name: "view-refresh"
                     onClicked: {
                         if (vm) {
                             vm.loadMinecraftVersions();
@@ -118,10 +123,10 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: ThemeColors.surface
+            color: ThemeColors.glassSurface2
             border.color: ThemeColors.border
             border.width: 1
-            radius: Theme.radiusS
+            radius: Theme.radiusL
 
             ListView {
                 id: versionListView
@@ -132,9 +137,15 @@ Rectangle {
                 model: vm ? vm.minecraftVersionsModel : []
 
                 delegate: ItemDelegate {
+                    id: versionDelegate
                     width: versionListView.width
-                    height: 32
+                    height: 36
                     highlighted: versionListView.currentIndex === index
+
+                    background: Rectangle {
+                        color: versionDelegate.highlighted ? ThemeColors.accent : (versionDelegate.hovered ? ThemeColors.surface2 : "transparent")
+                        radius: Theme.radiusS
+                    }
 
                     contentItem: RowLayout {
                         spacing: Theme.spacingS
@@ -148,13 +159,13 @@ Rectangle {
 
                         Label {
                             text: model.version || model.versionId || ""
-                            color: ThemeColors.text
+                            color: versionDelegate.highlighted ? ThemeColors.accentText : ThemeColors.text
                             Layout.fillWidth: true
                         }
 
                         Label {
                             text: model.type || ""
-                            color: ThemeColors.textSecondary
+                            color: versionDelegate.highlighted ? ThemeColors.accentText : ThemeColors.textSecondary
                             font.pointSize: 9
                         }
                     }

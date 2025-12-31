@@ -32,31 +32,14 @@ Rectangle {
     property var themeVM: ProjT.themeVM
     property int _themeUpdateCount: 0
     
-    color: {
-        var _ = _themeUpdateCount
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
-    }
+    // Modern glassmorphism styling
+    color: ThemeColors.surfacePanel
     
-    property color toolBarColor: {
-        var _ = _themeUpdateCount
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar
-    }
-    property color borderColor: {
-        var _ = _themeUpdateCount
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border
-    }
-    property color textColor: {
-        var _ = _themeUpdateCount
-        return themeVM ? themeVM.textColor : ThemeColors.text
-    }
-    property color textSecondaryColor: {
-        var _ = _themeUpdateCount
-        return themeVM ? Qt.darker(themeVM.textColor, 1.3) : ThemeColors.textSecondary
-    }
-    property color highlightColor: {
-        var _ = _themeUpdateCount
-        return themeVM ? themeVM.highlightColor : ThemeColors.highlight
-    }
+    property color toolBarColor: ThemeColors.surfacePanel
+    property color borderColor: ThemeColors.separator
+    property color textColor: ThemeColors.textTitle
+    property color textSecondaryColor: ThemeColors.textSubtitle
+    property color highlightColor: ThemeColors.highlight
     
     Connections {
         target: themeVM

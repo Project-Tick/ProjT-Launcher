@@ -1207,6 +1207,10 @@ if (APPLE)
     set(LAUNCHER_SOURCES
         ${LAUNCHER_SOURCES}
         ui/themes/ThemeManager.mm
+        ui/macos/MacWindowEffects.h
+        ui/macos/MacWindowEffects.mm
+        ui/macos/MacVisualEffectItem.h
+        ui/macos/MacVisualEffectItem.mm
     )
 endif()
 

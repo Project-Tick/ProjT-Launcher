@@ -29,7 +29,7 @@ Window {
     visible: false
     modality: modal ? Qt.WindowModal : Qt.NonModal
     flags: Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
-    color: ThemeColors.background // Ensure default dark background
+    color: ThemeColors.bg1 // Dynamic background
 
     // Keep compatibility with Dialog API
     property bool modal: false

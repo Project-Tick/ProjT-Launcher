@@ -16,7 +16,6 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 import QtQuick 2.15
@@ -24,188 +23,215 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "."
 
 ScrollView {
     id: minecraftPage
     clip: true
+    contentWidth: availableWidth
+    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
     property var vm: ProjT.launcherSettingsVM
 
-    ColumnLayout {
-        width: minecraftPage.width - Theme.spacingL
-        spacing: Theme.spacingM
+    Rectangle {
+        width: minecraftPage.availableWidth
+        implicitHeight: mainColumn.implicitHeight + 40
+        color: "transparent"
 
-        // Window
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Window")
+        ColumnLayout {
+            id: mainColumn
+            width: Math.min(parent.width - 40, 700)
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: 20
+            spacing: 16
 
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
+            // === Window Management ===
+            SettingsSection {
+                Layout.fillWidth: true
+                title: qsTr("Window Manager")
+                iconSource: Theme.icon("minecraft")
 
-                CheckBox {
-                    id: maximizedCheck
-                    text: qsTr("Start Minecraft maximized")
-                    checked: vm ? vm.startMaximized : false
-                    onCheckedChanged: if (vm)
-                        vm.startMaximized = checked
-                }
-
-                RowLayout {
+                ColumnLayout {
+                    spacing: 16
                     Layout.fillWidth: true
-                    spacing: Theme.spacingM
 
-                    Label {
-                        text: qsTr("Window width:")
-                        color: ThemeColors.text
+                    ThemedCheckBox {
+                        text: qsTr("Start Minecraft maximized")
+                        description: qsTr("Game window will open in fullscreen mode")
+                        checked: vm ? vm.startMaximized : false
+                        onCheckedChanged: if (vm) vm.startMaximized = checked
+                        useSwitch: true
+                        Layout.fillWidth: true
                     }
 
-                    SpinBox {
-                        id: windowWidthSpin
-                        from: 256
-                        to: 4096
-                        value: vm ? vm.windowWidth : 854
-                        editable: true
-                        onValueChanged: if (vm)
-                            vm.windowWidth = value
-                    }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(ThemeColors.separator.r, ThemeColors.separator.g, ThemeColors.separator.b, 0.3) }
 
-                    Label {
-                        text: qsTr("Window height:")
-                        color: ThemeColors.text
-                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 24
 
-                    SpinBox {
-                        id: windowHeightSpin
-                        from: 256
-                        to: 4096
-                        value: vm ? vm.windowHeight : 480
-                        editable: true
-                        onValueChanged: if (vm)
-                            vm.windowHeight = value
+                        ColumnLayout {
+                            spacing: 8
+                            Label {
+                                text: qsTr("Default Width")
+                                color: ThemeColors.textSecondary
+                                font.pixelSize: 12
+                            }
+                            SpinBox {
+                                from: 256; to: 7680
+                                value: vm ? vm.windowWidth : 854
+                                editable: true
+                                onValueChanged: if (vm) vm.windowWidth = value
+                            }
+                        }
+
+                        ColumnLayout {
+                            spacing: 8
+                            Label {
+                                text: qsTr("Default Height")
+                                color: ThemeColors.textSecondary
+                                font.pixelSize: 12
+                            }
+                            SpinBox {
+                                from: 256; to: 4320
+                                value: vm ? vm.windowHeight : 480
+                                editable: true
+                                onValueChanged: if (vm) vm.windowHeight = value
+                            }
+                        }
+                        
+                        Item { Layout.fillWidth: true }
                     }
                 }
             }
-        }
 
-        // Game Time
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Game Time")
+            // === Game Time ===
+            SettingsSection {
+                Layout.fillWidth: true
+                title: qsTr("Playtime Tracking")
+                iconSource: Theme.icon("log")
 
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
+                ColumnLayout {
+                    spacing: 4
+                    Layout.fillWidth: true
 
-                CheckBox {
-                    text: qsTr("Record time spent playing")
-                    checked: vm ? vm.showGameTime : true
-                    onCheckedChanged: if (vm)
-                        vm.showGameTime = checked
-                }
-
-                CheckBox {
-                    text: qsTr("Show time spent playing in the instance list")
-                    checked: vm ? vm.showGlobalGameTime : true
-                    onCheckedChanged: if (vm)
-                        vm.showGlobalGameTime = checked
+                    ThemedCheckBox {
+                        text: qsTr("Record time spent playing")
+                        description: qsTr("Track how much time you spend in each instance")
+                        checked: vm ? vm.showGameTime : true
+                        onCheckedChanged: if (vm) vm.showGameTime = checked
+                        Layout.fillWidth: true
+                    }
+                    
+                    ThemedCheckBox {
+                        text: qsTr("Show playtime in instance list")
+                        description: qsTr("Display total playtime on instance cards")
+                        checked: vm ? vm.showGlobalGameTime : true
+                        onCheckedChanged: if (vm) vm.showGlobalGameTime = checked
+                        Layout.fillWidth: true
+                    }
                 }
             }
-        }
 
-        // Mods Management
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Mods Management")
+            // === System Integration ===
+            SettingsSection {
+                Layout.fillWidth: true
+                title: qsTr("System Integration")
+                iconSource: Theme.icon("externaltools")
 
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                CheckBox {
-                    text: qsTr("Enable \"Manage Mods\" button")
+                ColumnLayout {
+                    spacing: 4
+                    Layout.fillWidth: true
+                    
+                    ThemedCheckBox {
+                        text: qsTr("Show game log in console")
+                        description: qsTr("Open console window when game launches")
+                        checked: vm ? vm.showGameLog : true
+                        onCheckedChanged: if (vm) vm.showGameLog = checked
+                        Layout.fillWidth: true
+                    }
+                    
+                    ThemedCheckBox {
+                        text: qsTr("Skip Mojang account migration check")
+                        checked: vm ? vm.skipMigrationCheck : false
+                        onCheckedChanged: if (vm) vm.skipMigrationCheck = checked
+                        Layout.fillWidth: true
+                    }
+                    
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(ThemeColors.separator.r, ThemeColors.separator.g, ThemeColors.separator.b, 0.3); Layout.topMargin: 8; Layout.bottomMargin: 8 }
+                    
+                    ThemedCheckBox {
+                        text: qsTr("Use native OpenAL")
+                        description: qsTr("Use system's audio library instead of bundled one")
+                        checked: vm ? vm.useNativeOpenAL : false
+                        onCheckedChanged: if (vm) vm.useNativeOpenAL = checked
+                        Layout.fillWidth: true
+                    }
+                    
+                    ThemedCheckBox {
+                        text: qsTr("Use native GLFW")
+                        description: qsTr("Use system's window library instead of bundled one")
+                        checked: vm ? vm.useNativeGLFW : false
+                        onCheckedChanged: if (vm) vm.useNativeGLFW = checked
+                        Layout.fillWidth: true
+                    }
+                }
+            }
+            
+            // === Modifications ===
+            SettingsSection {
+                Layout.fillWidth: true
+                title: qsTr("Modifications")
+                iconSource: Theme.icon("loadermods")
+                
+                ThemedCheckBox {
+                    text: qsTr("Enable 'Manage Mods' button")
+                    description: qsTr("Show mod management option in instance context menu")
                     checked: vm ? vm.enableManageModsButton : true
-                    onCheckedChanged: if (vm)
-                        vm.enableManageModsButton = checked
+                    onCheckedChanged: if (vm) vm.enableManageModsButton = checked
+                    Layout.fillWidth: true
                 }
             }
-        }
 
-        // Linux Specific
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Linux Specific")
-            visible: Qt.platform.os === "linux"
+            // === Linux Specific (Visible only on Linux) ===
+            SettingsSection {
+                Layout.fillWidth: true
+                title: qsTr("Linux Optimizations")
+                icon: "🐧"
+                visible: Qt.platform.os === "linux"
 
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                CheckBox {
-                    text: qsTr("Enable Feral GameMode")
-                    checked: vm ? vm.enableFeralGamemode : false
-                    onCheckedChanged: if (vm)
-                        vm.enableFeralGamemode = checked
-                }
-
-                CheckBox {
-                    text: qsTr("Use discrete GPU (prime-run)")
-                    checked: vm ? vm.enableDiscreteGpu : false
-                    onCheckedChanged: if (vm)
-                        vm.enableDiscreteGpu = checked
-                }
-
-                CheckBox {
-                    text: qsTr("Use MangoHud")
-                    checked: vm ? vm.enableMangoHud : false
-                    onCheckedChanged: if (vm)
-                        vm.enableMangoHud = checked
-                }
-            }
-        }
-
-        // Miscellaneous
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Miscellaneous")
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                CheckBox {
-                    text: qsTr("Show game log in console")
-                    checked: vm ? vm.showGameLog : true
-                    onCheckedChanged: if (vm)
-                        vm.showGameLog = checked
-                }
-
-                CheckBox {
-                    text: qsTr("Skip Mojang account migration check")
-                    checked: vm ? vm.skipMigrationCheck : false
-                    onCheckedChanged: if (vm)
-                        vm.skipMigrationCheck = checked
-                }
-
-                CheckBox {
-                    text: qsTr("Use native OpenAL")
-                    checked: vm ? vm.useNativeOpenAL : false
-                    onCheckedChanged: if (vm)
-                        vm.useNativeOpenAL = checked
-                }
-
-                CheckBox {
-                    text: qsTr("Use native GLFW")
-                    checked: vm ? vm.useNativeGLFW : false
-                    onCheckedChanged: if (vm)
-                        vm.useNativeGLFW = checked
+                ColumnLayout {
+                    spacing: 4
+                    Layout.fillWidth: true
+                    
+                    ThemedCheckBox {
+                        text: qsTr("Enable Feral GameMode")
+                        description: qsTr("Apply CPU and GPU optimizations for gaming")
+                        checked: vm ? vm.enableFeralGamemode : false
+                        onCheckedChanged: if (vm) vm.enableFeralGamemode = checked
+                        Layout.fillWidth: true
+                    }
+                    
+                    ThemedCheckBox {
+                        text: qsTr("Use discrete GPU (prime-run)")
+                        description: qsTr("Force dedicated graphics on hybrid systems")
+                        checked: vm ? vm.enableDiscreteGpu : false
+                        onCheckedChanged: if (vm) vm.enableDiscreteGpu = checked
+                        Layout.fillWidth: true
+                    }
+                    
+                    ThemedCheckBox {
+                        text: qsTr("Use MangoHud")
+                        description: qsTr("Show performance overlay in game")
+                        checked: vm ? vm.enableMangoHud : false
+                        onCheckedChanged: if (vm) vm.enableMangoHud = checked
+                        Layout.fillWidth: true
+                    }
                 }
             }
-        }
-
-        Item {
-            height: Theme.spacingL
+            
+            Item { height: 20 }
         }
     }
 }

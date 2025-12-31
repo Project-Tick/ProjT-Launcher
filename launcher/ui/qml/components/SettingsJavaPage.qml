@@ -16,7 +16,6 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 import QtQuick 2.15
@@ -24,10 +23,11 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "."
 
 ColumnLayout {
     id: javaPage
-    spacing: 0
+    spacing: ThemeColors.spacingM
 
     property var vm: ProjT.launcherSettingsVM
     property var detectedJavas: []
@@ -36,9 +36,7 @@ ColumnLayout {
         target: vm
         function onJavaAutoDetected(javaPaths) {
             detectedJavas = javaPaths;
-            if (javaPaths.length > 0) {
-                javaSelectionDialog.open();
-            }
+            if (javaPaths.length > 0) javaSelectionDialog.open();
         }
         function onJavaTestResult(success, message) {
             javaTestResultLabel.text = message;
@@ -49,12 +47,42 @@ ColumnLayout {
     TabBar {
         id: tabBar
         Layout.fillWidth: true
+        Layout.preferredWidth: Math.min(parent.width, 400)
+        Layout.alignment: Qt.AlignHCenter
+        
+        background: Rectangle { color: "transparent" }
 
         TabButton {
             text: qsTr("General")
+            width: implicitWidth + 32
+            
+            contentItem: Text {
+                text: parent.text
+                font.weight: parent.checked ? Font.DemiBold : Font.Normal
+                color: parent.checked ? ThemeColors.accent : ThemeColors.textSecondary
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: parent.checked ? Qt.rgba(ThemeColors.accent.r, ThemeColors.accent.g, ThemeColors.accent.b, 0.1) : "transparent"
+                radius: ThemeColors.radius
+            }
         }
         TabButton {
             text: qsTr("Installations")
+            width: implicitWidth + 32
+            
+             contentItem: Text {
+                text: parent.text
+                font.weight: parent.checked ? Font.DemiBold : Font.Normal
+                color: parent.checked ? ThemeColors.accent : ThemeColors.textSecondary
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+             background: Rectangle {
+                color: parent.checked ? Qt.rgba(ThemeColors.accent.r, ThemeColors.accent.g, ThemeColors.accent.b, 0.1) : "transparent"
+                radius: ThemeColors.radius
+            }
         }
     }
 
@@ -63,280 +91,258 @@ ColumnLayout {
         Layout.fillHeight: true
         currentIndex: tabBar.currentIndex
 
-        // General Tab
+        // === General Tab ===
         ScrollView {
             clip: true
+            contentWidth: availableWidth
 
             ColumnLayout {
                 width: parent.width - Theme.spacingL
-                spacing: Theme.spacingM
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: ThemeColors.spacingM
 
                 // Java Runtime
-                GroupBox {
+                SettingsSection {
                     Layout.fillWidth: true
-                    title: qsTr("Java Runtime")
+                    title: qsTr("Runtime Configuration")
+                    iconSource: Theme.icon("java")
 
                     ColumnLayout {
-                        anchors.fill: parent
-                        spacing: Theme.spacingS
+                        spacing: ThemeColors.spacingS
+                        Layout.fillWidth: true
 
                         CheckBox {
                             id: autoDetectCheck
-                            text: qsTr("Auto-detect Java")
+                            text: qsTr("Auto-detect best Java version")
                             checked: vm ? !vm.defaultJavaPath : true
                         }
 
-                        RowLayout {
+                        ColumnLayout {
+                            visible: !autoDetectCheck.checked
                             Layout.fillWidth: true
-                            spacing: Theme.spacingS
-                            enabled: !autoDetectCheck.checked
+                            spacing: ThemeColors.spacingXS
 
                             Label {
-                                text: qsTr("Java path:")
-                                color: ThemeColors.text
+                                text: qsTr("Java executable path")
+                                color: ThemeColors.textSecondary
+                                font.pixelSize: 12
                             }
-
-                            TextField {
-                                id: javaPathField
+                            
+                            RowLayout {
                                 Layout.fillWidth: true
-                                placeholderText: qsTr("/usr/bin/java")
-                                text: vm ? vm.defaultJavaPath : ""
-                                onTextChanged: if (vm && !autoDetectCheck.checked)
-                                    vm.defaultJavaPath = text
-                            }
+                                spacing: ThemeColors.spacingS
 
-                            Button {
-                                text: qsTr("Browse...")
-                                onClicked: browseForJava()
-                            }
-
-                            Button {
-                                text: qsTr("Test")
-                                onClicked: {
-                                    if (vm && vm.testJavaPath) {
-                                        vm.testJavaPath(javaPathField.text);
-                                    }
+                                TextField {
+                                    id: javaPathField
+                                    Layout.fillWidth: true
+                                    placeholderText: qsTr("/usr/bin/java")
+                                    text: vm ? vm.defaultJavaPath : ""
+                                    onTextChanged: if(vm && !autoDetectCheck.checked) vm.defaultJavaPath = text
+                                }
+                                ThemedButton {
+                                    text: "📂"
+                                    onClicked: browseForJava()
+                                    ToolTip.visible: hovered
+                                    ToolTip.text: qsTr("Browse")
+                                }
+                                ThemedButton {
+                                    text: qsTr("Test")
+                                    outline: true
+                                    onClicked: if(vm && vm.testJavaPath) vm.testJavaPath(javaPathField.text)
                                 }
                             }
                         }
 
                         Label {
                             id: javaTestResultLabel
-                            text: ""
-                            color: ThemeColors.textSecondary
-                            font.pointSize: 9
+                            visible: text !== ""
                             wrapMode: Text.WordWrap
                             Layout.fillWidth: true
                         }
 
-                        Button {
-                            text: qsTr("Auto-detect Java installations...")
-                            onClicked: {
-                                if (vm && vm.autoDetectJava) {
-                                    vm.autoDetectJava();
-                                }
-                            }
+                        ThemedButton {
+                            text: qsTr("Scan for Java installations...")
+                            outline: true
+                            onClicked: if(vm && vm.autoDetectJava) vm.autoDetectJava()
                         }
                     }
                 }
 
                 // Memory
-                GroupBox {
+                SettingsSection {
                     Layout.fillWidth: true
-                    title: qsTr("Memory")
+                    title: qsTr("Memory Allocation")
+                    iconSource: Theme.icon("settings")
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        spacing: Theme.spacingS
+                    GridLayout {
+                        columns: 2
+                        columnSpacing: ThemeColors.spacingXL
+                        rowSpacing: ThemeColors.spacingM
+                        Layout.fillWidth: true
 
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Theme.spacingM
-
-                            Label {
-                                text: qsTr("Minimum memory allocation:")
-                                color: ThemeColors.text
-                            }
-
-                            SpinBox {
-                                id: minMemSpin
-                                from: 256
-                                to: 65536
-                                value: vm ? vm.defaultMinMemory : 512
-                                stepSize: 128
-                                editable: true
-                                onValueModified: if (vm)
-                                    vm.defaultMinMemory = value
-                            }
-
-                            Label {
-                                text: qsTr("MiB")
-                                color: ThemeColors.textSecondary
-                            }
+                        Label {
+                            text: qsTr("Minimum (MiB):")
+                            color: ThemeColors.textSecondary
                         }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Theme.spacingM
-
-                            Label {
-                                text: qsTr("Maximum memory allocation:")
-                                color: ThemeColors.text
-                            }
-
-                            SpinBox {
-                                id: maxMemSpin
-                                from: 256
-                                to: 65536
-                                value: vm ? vm.defaultMaxMemory : 4096
-                                stepSize: 128
-                                editable: true
-                                onValueModified: if (vm)
-                                    vm.defaultMaxMemory = value
-                            }
-
-                            Label {
-                                text: qsTr("MiB")
-                                color: ThemeColors.textSecondary
-                            }
+                        SpinBox {
+                            id: minMemSpin
+                            from: 256; to: 65536
+                            value: vm ? vm.defaultMinMemory : 512
+                            stepSize: 128
+                            editable: true
+                            onValueModified: if(vm) vm.defaultMinMemory = value
                         }
 
                         Label {
-                            text: qsTr("Note: You generally don't need more than 4-8 GB for Minecraft")
+                            text: qsTr("Maximum (MiB):")
                             color: ThemeColors.textSecondary
-                            font.pointSize: 9
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
                         }
+                        SpinBox {
+                            id: maxMemSpin
+                            from: 256; to: 65536
+                            value: vm ? vm.defaultMaxMemory : 4096
+                            stepSize: 128
+                            editable: true
+                            onValueModified: if(vm) vm.defaultMaxMemory = value
+                            
+                            // Add a validator or warning visual if needed
+                        }
+                    }
+                    
+                    Label {
+                        text: qsTr("Tip: 4096 MiB (4GB) is recommended for most modpacks.")
+                        color: ThemeColors.textSecondary
+                        font.italic: true
+                        font.pixelSize: 12
                     }
                 }
 
                 // JVM Arguments
-                GroupBox {
+                SettingsSection {
                     Layout.fillWidth: true
                     title: qsTr("JVM Arguments")
+                    iconSource: Theme.icon("custom-commands")
 
                     ColumnLayout {
-                        anchors.fill: parent
-                        spacing: Theme.spacingS
+                        spacing: ThemeColors.spacingS
+                        Layout.fillWidth: true
 
                         TextArea {
                             id: jvmArgsArea
                             Layout.fillWidth: true
                             Layout.preferredHeight: 80
-                            placeholderText: qsTr("-XX:+UseG1GC -XX:+ParallelRefProcEnabled...")
+                            placeholderText: "-XX:+UseG1GC..."
                             text: vm ? vm.defaultJvmArgs : ""
                             wrapMode: Text.Wrap
-                            onTextChanged: if (vm)
-                                vm.defaultJvmArgs = text
+                            background: Rectangle {
+                                color: ThemeColors.bg1
+                                radius: ThemeColors.radiusS
+                                border.color: parent.activeFocus ? ThemeColors.accent : ThemeColors.border
+                            }
+                            onTextChanged: if(vm) vm.defaultJvmArgs = text
                         }
-
-                        Label {
-                            text: qsTr("Custom JVM arguments. Leave empty for defaults.")
+                         Label {
+                            text: qsTr("Leave empty to use recommended defaults.")
                             color: ThemeColors.textSecondary
-                            font.pointSize: 9
+                            font.pixelSize: 11
                         }
                     }
                 }
-
-                Item {
-                    height: Theme.spacingL
-                }
+                
+                Item { height: ThemeColors.spacingL }
             }
         }
 
-        // Installations Tab
+        // === Installations Tab ===
         ColumnLayout {
-            spacing: Theme.spacingS
+            spacing: ThemeColors.spacingM
 
             RowLayout {
                 Layout.fillWidth: true
-                Layout.margins: Theme.spacingS
-                spacing: Theme.spacingS
+                Layout.margins: ThemeColors.spacingM
+                spacing: ThemeColors.spacingS
 
-                Button {
-                    text: qsTr("Download")
-                    onClicked: {
-                        if (vm && vm.downloadJava) {
-                            vm.downloadJava();
-                        }
-                    }
+                ThemedButton {
+                    text: qsTr("Download Java")
+                    onClicked: if(vm && vm.downloadJava) vm.downloadJava()
                 }
 
-                Button {
+                ThemedButton {
                     text: qsTr("Remove")
+                    outline: true
                     enabled: javaInstallationsList.currentIndex >= 0
-                    onClicked: {
-                        if (vm && vm.removeJavaInstallation) {
-                            vm.removeJavaInstallation(javaInstallationsList.currentIndex);
-                        }
-                    }
+                    onClicked: if(vm && vm.removeJavaInstallation) vm.removeJavaInstallation(javaInstallationsList.currentIndex)
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                }
+                Item { Layout.fillWidth: true }
 
-                Button {
+                ThemedButton {
                     text: qsTr("Refresh")
-                    onClicked: {
-                        if (vm && vm.refreshJavaInstallations) {
-                            vm.refreshJavaInstallations();
-                        }
-                    }
+                    flatStyle: true
+                    onClicked: if(vm && vm.refreshJavaInstallations) vm.refreshJavaInstallations()
                 }
             }
 
-            // Java installations list
-            Frame {
+            Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.margins: Theme.spacingS
+                Layout.margins: ThemeColors.spacingM
+                color: ThemeColors.bg1
+                radius: ThemeColors.radius
+                border.color: ThemeColors.border
 
                 ListView {
                     id: javaInstallationsList
                     anchors.fill: parent
+                    anchors.margins: 4
                     clip: true
                     model: vm ? vm.javaInstallationsModel : []
 
                     delegate: ItemDelegate {
                         width: javaInstallationsList.width
-                        height: 48
+                        height: 50
                         highlighted: ListView.isCurrentItem
+                        
+                        background: Rectangle {
+                            color: parent.highlighted ? ThemeColors.surfaceHighlight : "transparent"
+                            radius: ThemeColors.radiusS
+                        }
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: Theme.spacingS
-                            spacing: Theme.spacingS
+                            anchors.margins: ThemeColors.spacingS
+                            spacing: ThemeColors.spacingS
+
+                            Text {
+                                text: "☕"
+                                font.pixelSize: 16
+                            }
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 2
-
+                                spacing: 0
                                 Label {
-                                    text: model.name || model.version || ""
-                                    color: ThemeColors.text
+                                    text: model.name || model.version || "Unknown Version"
+                                    color: ThemeColors.textTitle
                                     font.bold: true
                                 }
-
                                 Label {
                                     text: model.path || ""
                                     color: ThemeColors.textSecondary
-                                    font.pointSize: 9
+                                    font.pixelSize: 11
                                     elide: Text.ElideMiddle
                                     Layout.fillWidth: true
                                 }
                             }
-
+                            
                             Label {
                                 text: model.vendor || ""
-                                color: ThemeColors.textSecondary
+                                color: ThemeColors.textDisabled
+                                font.pixelSize: 11
                             }
                         }
-
                         onClicked: javaInstallationsList.currentIndex = index
                     }
-
                     ScrollBar.vertical: ScrollBar {}
                 }
             }
@@ -348,8 +354,7 @@ ColumnLayout {
             var result = ProjT.launcherVM.browseForFile(qsTr("Select Java Executable"), "");
             if (result && result.length > 0) {
                 javaPathField.text = result;
-                if (vm)
-                    vm.defaultJavaPath = result;
+                if (vm) vm.defaultJavaPath = result;
             }
         }
     }
@@ -362,10 +367,17 @@ ColumnLayout {
         modal: true
         anchors.centerIn: parent
         width: 500
+        parent: Overlay.overlay
+
+        background: Rectangle {
+            color: ThemeColors.surface
+            border.color: ThemeColors.border
+            radius: ThemeColors.radius
+        }
 
         ColumnLayout {
             anchors.fill: parent
-            spacing: Theme.spacingM
+            spacing: ThemeColors.spacingM
 
             Label {
                 text: qsTr("Found %1 Java installation(s):").arg(detectedJavas.length)
@@ -385,7 +397,6 @@ ColumnLayout {
                     highlighted: ListView.isCurrentItem
                     onClicked: detectedJavasList.currentIndex = index
                 }
-
                 ScrollBar.vertical: ScrollBar {}
             }
         }
@@ -393,9 +404,9 @@ ColumnLayout {
         onAccepted: {
             if (detectedJavasList.currentIndex >= 0 && detectedJavasList.currentIndex < detectedJavas.length) {
                 javaPathField.text = detectedJavas[detectedJavasList.currentIndex];
-                if (vm)
-                    vm.defaultJavaPath = javaPathField.text;
+                if (vm) vm.defaultJavaPath = javaPathField.text;
             }
         }
     }
 }
+

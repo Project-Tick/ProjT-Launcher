@@ -241,7 +241,7 @@ set(Launcher_BUG_TRACKER_URL "https://github.com/Project-Tick/ProjT-Launcher/iss
 
 # Translations Platform URL
 set(Launcher_TRANSLATIONS_URL "https://hosted.weblate.org/projects/projectticklauncher/launcher/" CACHE STRING "URL for the translations platform.")
-set(Launcher_TRANSLATION_FILES_URL "http://i18n.yongdohyun.org.tr/" CACHE STRING "URL for the translations files.")
+set(Launcher_TRANSLATION_FILES_URL "https://github.com/PrismLauncher/Translations/raw/master/" CACHE STRING "URL for the translations files.")
 
 # Matrix Space
 set(Launcher_MATRIX_URL "https://projtlauncher.yongdohyun.org.tr/matrix" CACHE STRING "URL to the Matrix Space")

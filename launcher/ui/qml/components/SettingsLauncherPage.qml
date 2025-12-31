@@ -16,7 +16,6 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 import QtQuick 2.15
@@ -24,534 +23,462 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "."
 
 ScrollView {
     id: launcherPage
     clip: true
+    contentWidth: availableWidth
+    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
     property var vm: ProjT.launcherSettingsVM
 
-    ColumnLayout {
-        width: launcherPage.width - Theme.spacingL
-        spacing: Theme.spacingM
+    Rectangle {
+        width: launcherPage.availableWidth
+        implicitHeight: mainColumn.implicitHeight + 40
+        color: "transparent"
 
-        // User Interface
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("User Interface")
+        ColumnLayout {
+            id: mainColumn
+            width: Math.min(parent.width - 40, 700)
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: 20
+            spacing: 16
 
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
+            // === User Interface ===
+            SettingsSection {
+                Layout.fillWidth: true
+                title: qsTr("User Interface")
+                iconSource: Theme.icon("appearance")
 
-                Label {
-                    text: qsTr("Instance Sorting")
-                    color: ThemeColors.text
-                    font.bold: true
-                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 16
 
-                RadioButton {
-                    id: sortByNameRadio
-                    text: qsTr("By &name")
-                    checked: vm ? vm.sortByName : true
-                    onCheckedChanged: {
-                        if (vm && checked)
-                            vm.sortByName = true;
-                    }
-                }
-
-                RadioButton {
-                    text: qsTr("&By last launched")
-                    checked: vm ? !vm.sortByName : false
-                    onCheckedChanged: {
-                        if (vm && checked)
-                            vm.sortByName = false;
-                    }
-                }
-
-                Item {
-                    height: 6
-                }
-
-                Label {
-                    text: qsTr("Instance Renaming")
-                    color: ThemeColors.text
-                    font.bold: true
-                }
-
-                RadioButton {
-                    text: qsTr("Ask what to do")
-                    checked: vm ? vm.renamingBehavior === "ask" : true
-                    onCheckedChanged: {
-                        if (vm && checked)
-                            vm.renamingBehavior = "ask";
-                    }
-                }
-
-                RadioButton {
-                    text: qsTr("Always rename the folder")
-                    checked: vm ? vm.renamingBehavior === "always" : false
-                    onCheckedChanged: {
-                        if (vm && checked)
-                            vm.renamingBehavior = "always";
-                    }
-                }
-
-                RadioButton {
-                    text: qsTr("Never rename the folder")
-                    checked: vm ? vm.renamingBehavior === "never" : false
-                    onCheckedChanged: {
-                        if (vm && checked)
-                            vm.renamingBehavior = "never";
-                    }
-                }
-
-                Item {
-                    height: 6
-                }
-
-                CheckBox {
-                    text: qsTr("&Replace toolbar with menubar")
-                    ToolTip.text: qsTr("The menubar is more friendly for keyboard-driven interaction.")
-                    ToolTip.visible: hovered
-                    checked: vm ? vm.preferMenuBar : false
-                    onCheckedChanged: if (vm)
-                        vm.preferMenuBar = checked
-                }
-            }
-        }
-
-        // Updater Settings
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Updater")
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                CheckBox {
-                    id: autoUpdateCheckBox
-                    text: qsTr("Check for updates automatically")
-                    checked: vm ? vm.autoUpdateCheck : true
-                    onCheckedChanged: if (vm)
-                        vm.autoUpdateCheck = checked
-                }
-
-                RowLayout {
-                    spacing: Theme.spacingS
-
-                    Label {
-                        text: qsTr("How Often?")
-                        color: ThemeColors.text
-                    }
-
-                    SpinBox {
-                        id: updateIntervalSpinBox
-                        from: 0
-                        to: 168
-                        value: vm ? vm.updateInterval : 0
-                        textFromValue: function (value) {
-                            if (value === 0)
-                                return qsTr("On Launch");
-                            return qsTr("Every %1 hours").arg(value);
-                        }
-                        ToolTip.text: qsTr("Set to 0 to only check on launch")
-                        ToolTip.visible: hovered
-                        onValueModified: if (vm)
-                            vm.updateInterval = value
-                    }
-
-                    Item {
+                    // Instance Sorting
+                    ColumnLayout {
                         Layout.fillWidth: true
-                    }
-                }
-            }
-        }
-
-        // Folders
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Folders")
-
-            GridLayout {
-                anchors.fill: parent
-                columns: 3
-                rowSpacing: Theme.spacingS
-                columnSpacing: Theme.spacingS
-
-                Label {
-                    text: qsTr("I&nstances:")
-                    color: ThemeColors.text
-                }
-                TextField {
-                    id: instDirTextBox
-                    Layout.fillWidth: true
-                    text: vm ? vm.instancesFolder : ""
-                    readOnly: true
-                }
-                Button {
-                    text: qsTr("Browse")
-                    onClicked: browseForInstancesFolder()
-                }
-
-                Label {
-                    text: qsTr("&Mods:")
-                    color: ThemeColors.text
-                }
-                TextField {
-                    id: modsDirTextBox
-                    Layout.fillWidth: true
-                    text: vm ? vm.modsFolder : ""
-                    readOnly: true
-                }
-                Button {
-                    text: qsTr("Browse")
-                    onClicked: browseForModsFolder()
-                }
-
-                Label {
-                    text: qsTr("&Icons:")
-                    color: ThemeColors.text
-                }
-                TextField {
-                    id: iconsDirTextBox
-                    Layout.fillWidth: true
-                    text: vm ? vm.iconsFolder : ""
-                    readOnly: true
-                }
-                Button {
-                    text: qsTr("Browse")
-                    onClicked: browseForIconsFolder()
-                }
-
-                Label {
-                    text: qsTr("&Java:")
-                    color: ThemeColors.text
-                }
-                TextField {
-                    id: javaDirTextBox
-                    Layout.fillWidth: true
-                    text: vm ? vm.javaFolder : ""
-                    readOnly: true
-                }
-                Button {
-                    text: qsTr("Browse")
-                    onClicked: browseForJavaFolder()
-                }
-
-                Label {
-                    text: qsTr("&Skins:")
-                    color: ThemeColors.text
-                }
-                TextField {
-                    id: skinsDirTextBox
-                    Layout.fillWidth: true
-                    text: vm ? vm.skinsFolder : ""
-                    readOnly: true
-                }
-                Button {
-                    text: qsTr("Browse")
-                    onClicked: browseForSkinsFolder()
-                }
-
-                Label {
-                    text: qsTr("&Downloads:")
-                    color: ThemeColors.text
-                }
-                TextField {
-                    id: downloadsDirTextBox
-                    Layout.fillWidth: true
-                    text: vm ? vm.downloadsFolder : ""
-                    readOnly: true
-                }
-                Button {
-                    text: qsTr("Browse")
-                    onClicked: browseForDownloadsFolder()
-                }
-            }
-        }
-
-        // Mods and Modpacks
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Mods and Modpacks")
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                CheckBox {
-                    text: qsTr("Check &subfolders for blocked mods")
-                    ToolTip.text: qsTr("When enabled, in addition to the downloads folder, its sub folders will also be searched when looking for resources (e.g. when looking for blocked mods on CurseForge).")
-                    ToolTip.visible: hovered
-                    checked: vm ? vm.downloadsDirWatchRecursive : false
-                    onCheckedChanged: if (vm)
-                        vm.downloadsDirWatchRecursive = checked
-                }
-
-                CheckBox {
-                    text: qsTr("Move blocked mods instead of copying them")
-                    ToolTip.text: qsTr("When enabled, it will move blocked resources instead of copying them.")
-                    ToolTip.visible: hovered
-                    checked: vm ? vm.downloadsDirMove : false
-                    onCheckedChanged: if (vm)
-                        vm.downloadsDirMove = checked
-                }
-
-                CheckBox {
-                    id: metadataEnableBtn
-                    text: qsTr("Keep track of mod metadata")
-                    ToolTip.text: qsTr("Store version information provided by mod providers (like Modrinth or CurseForge) for mods.")
-                    ToolTip.visible: hovered
-                    checked: vm ? vm.metadataEnabled : true
-                    onCheckedChanged: if (vm)
-                        vm.metadataEnabled = checked
-                }
-
-                Label {
-                    visible: !metadataEnableBtn.checked
-                    text: qsTr("<span style='font-weight:600; color:#f5c211;'>Warning</span><span style='color:#f5c211;'>: Disabling mod metadata may also disable some QoL features, such as mod updating!</span>")
-                    textFormat: Text.RichText
-                    wrapMode: Text.Wrap
-                    Layout.fillWidth: true
-                }
-
-                CheckBox {
-                    text: qsTr("Install dependencies automatically")
-                    ToolTip.text: qsTr("Automatically detect, install, and update mod dependencies.")
-                    ToolTip.visible: hovered
-                    checked: vm ? vm.dependenciesEnabled : true
-                    onCheckedChanged: if (vm)
-                        vm.dependenciesEnabled = checked
-                }
-
-                CheckBox {
-                    text: qsTr("Suggest to update an existing instance during modpack installation")
-                    ToolTip.text: qsTr("When creating a new modpack instance, suggest updating an existing instance instead.")
-                    ToolTip.visible: hovered
-                    checked: vm ? vm.modpackUpdatePrompt : true
-                    onCheckedChanged: if (vm)
-                        vm.modpackUpdatePrompt = checked
-                }
-            }
-        }
-
-        // Console
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Console")
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                RowLayout {
-                    spacing: Theme.spacingS
-
-                    Label {
-                        text: qsTr("Log History &Limit:")
-                        color: ThemeColors.text
-                    }
-
-                    SpinBox {
-                        id: lineLimitSpinBox
-                        from: 10000
-                        to: 1000000
-                        stepSize: 10000
-                        value: vm ? vm.logHistoryLimit : 100000
-                        textFromValue: function (value) {
-                            return value + qsTr(" lines");
+                        spacing: 8
+                        
+                        Label {
+                            text: qsTr("Instance Sorting")
+                            color: ThemeColors.text
+                            font.pixelSize: 13
+                            font.weight: Font.Medium
                         }
-                        onValueModified: if (vm)
-                            vm.logHistoryLimit = value
+
+                        RowLayout {
+                            spacing: 24
+                            
+                            RadioButton {
+                                id: sortByNameRadio
+                                text: qsTr("By Name")
+                                checked: vm ? vm.sortByName : true
+                                onCheckedChanged: if (vm && checked) vm.sortByName = true
+                                
+                                indicator: Rectangle {
+                                    implicitWidth: 20
+                                    implicitHeight: 20
+                                    x: sortByNameRadio.leftPadding
+                                    y: parent.height / 2 - height / 2
+                                    radius: 10
+                                    color: "transparent"
+                                    border.color: sortByNameRadio.checked ? ThemeColors.accent : ThemeColors.border
+                                    border.width: 2
+                                    
+                                    Rectangle {
+                                        width: 10
+                                        height: 10
+                                        anchors.centerIn: parent
+                                        radius: 5
+                                        color: ThemeColors.accent
+                                        visible: sortByNameRadio.checked
+                                    }
+                                }
+                                
+                                contentItem: Text {
+                                    text: sortByNameRadio.text
+                                    color: ThemeColors.text
+                                    font.pixelSize: 13
+                                    leftPadding: sortByNameRadio.indicator.width + 8
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            
+                            RadioButton {
+                                id: sortByLastPlayedRadio
+                                text: qsTr("By Last Played")
+                                checked: vm ? !vm.sortByName : false
+                                onCheckedChanged: if (vm && checked) vm.sortByName = false
+                                
+                                indicator: Rectangle {
+                                    implicitWidth: 20
+                                    implicitHeight: 20
+                                    x: sortByLastPlayedRadio.leftPadding
+                                    y: parent.height / 2 - height / 2
+                                    radius: 10
+                                    color: "transparent"
+                                    border.color: sortByLastPlayedRadio.checked ? ThemeColors.accent : ThemeColors.border
+                                    border.width: 2
+                                    
+                                    Rectangle {
+                                        width: 10
+                                        height: 10
+                                        anchors.centerIn: parent
+                                        radius: 5
+                                        color: ThemeColors.accent
+                                        visible: sortByLastPlayedRadio.checked
+                                    }
+                                }
+                                
+                                contentItem: Text {
+                                    text: sortByLastPlayedRadio.text
+                                    color: ThemeColors.text
+                                    font.pixelSize: 13
+                                    leftPadding: sortByLastPlayedRadio.indicator.width + 8
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: Qt.rgba(ThemeColors.separator.r, ThemeColors.separator.g, ThemeColors.separator.b, 0.5)
+                    }
+
+                    // Menubar toggle
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            
+                            Label {
+                                text: qsTr("Replace toolbar with menubar")
+                                color: ThemeColors.text
+                                font.pixelSize: 13
+                            }
+                            Label {
+                                text: qsTr("Shows traditional menu bar instead of toolbar buttons")
+                                color: ThemeColors.textSecondary
+                                font.pixelSize: 11
+                            }
+                        }
+                        
+                        Switch {
+                            checked: vm ? vm.preferMenuBar : false
+                            onCheckedChanged: if (vm) vm.preferMenuBar = checked
+                        }
                     }
                 }
-
-                CheckBox {
-                    text: qsTr("&Stop logging when log overflows")
-                    checked: vm ? vm.stopLoggingOnOverflow : false
-                    onCheckedChanged: if (vm)
-                        vm.stopLoggingOnOverflow = checked
-                }
             }
-        }
 
-        // Tasks
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Tasks")
+            // === Updater ===
+            SettingsSection {
+                Layout.fillWidth: true
+                title: qsTr("Updater")
+                iconSource: Theme.icon("refresh")
 
-            GridLayout {
-                anchors.fill: parent
-                columns: 3
-                rowSpacing: Theme.spacingS
-                columnSpacing: Theme.spacingS
-
-                Label {
-                    text: qsTr("Concurrent Task Limit:")
-                    color: ThemeColors.text
-                }
-                SpinBox {
-                    id: numberOfConcurrentTasksSpinBox
-                    from: 1
-                    to: 20
-                    value: vm ? vm.concurrentTasks : 4
-                    implicitWidth: 80
-                    onValueModified: if (vm)
-                        vm.concurrentTasks = value
-                }
-                Item {
+                ColumnLayout {
                     Layout.fillWidth: true
-                }
+                    spacing: 16
 
-                Label {
-                    text: qsTr("Concurrent Download Limit:")
-                    color: ThemeColors.text
-                }
-                SpinBox {
-                    id: numberOfConcurrentDownloadsSpinBox
-                    from: 1
-                    to: 20
-                    value: vm ? vm.concurrentDownloads : 6
-                    implicitWidth: 80
-                    onValueModified: if (vm)
-                        vm.concurrentDownloads = value
-                }
-                Item {
-                    Layout.fillWidth: true
-                }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            
+                            Label {
+                                text: qsTr("Check for updates automatically")
+                                color: ThemeColors.text
+                                font.pixelSize: 13
+                            }
+                            Label {
+                                text: qsTr("Launcher will check for new versions on startup")
+                                color: ThemeColors.textSecondary
+                                font.pixelSize: 11
+                            }
+                        }
+                        
+                        Switch {
+                            checked: vm ? vm.autoUpdateCheck : true
+                            onCheckedChanged: if (vm) vm.autoUpdateCheck = checked
+                        }
+                    }
 
-                Label {
-                    text: qsTr("Retry Limit:")
-                    color: ThemeColors.text
-                }
-                SpinBox {
-                    id: numberOfManualRetriesSpinBox
-                    from: 0
-                    to: 10
-                    value: vm ? vm.retryLimit : 3
-                    implicitWidth: 80
-                    onValueModified: if (vm)
-                        vm.retryLimit = value
-                }
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                Label {
-                    text: qsTr("HTTP Timeout:")
-                    color: ThemeColors.text
-                    ToolTip.text: qsTr("Seconds to wait until the requests are terminated")
-                    ToolTip.visible: mouseArea.containsMouse
-
-                    MouseArea {
-                        id: mouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
+                    RowLayout {
+                        Layout.fillWidth: true
+                        visible: vm ? vm.autoUpdateCheck : true
+                        spacing: 16
+                        
+                        Label { 
+                            text: qsTr("Check Frequency:")
+                            color: ThemeColors.textSecondary
+                            font.pixelSize: 13
+                        }
+                        
+                        SpinBox {
+                            id: updateIntervalSpinner
+                            from: 0
+                            to: 168
+                            stepSize: 1
+                            value: vm ? vm.updateInterval : 0
+                            editable: true
+                            
+                            textFromValue: function(value) {
+                                if (value === 0) return qsTr("On Launch");
+                                if (value === 1) return qsTr("1 hour");
+                                return value + qsTr(" hours");
+                            }
+                            
+                            valueFromText: function(text) {
+                                return parseInt(text) || 0;
+                            }
+                            
+                            onValueModified: if (vm) vm.updateInterval = value
+                        }
                     }
                 }
-                SpinBox {
-                    id: timeoutSecondsSpinBox
-                    from: 5
-                    to: 300
-                    value: vm ? vm.httpTimeout : 30
-                    implicitWidth: 80
-                    textFromValue: function (value) {
-                        return value + "s";
-                    }
-                    onValueModified: if (vm)
-                        vm.httpTimeout = value
-                }
-                Item {
+            }
+
+            // === Storage Locations ===
+            SettingsSection {
+                Layout.fillWidth: true
+                title: qsTr("Storage Locations")
+                iconSource: Theme.icon("viewfolder")
+
+                ColumnLayout {
                     Layout.fillWidth: true
+                    spacing: 12
+
+                    Repeater {
+                        model: [
+                            { label: qsTr("Instances"), prop: "instancesFolder", browse: "browseForInstancesFolder" },
+                            { label: qsTr("Mods"), prop: "modsFolder", browse: "browseForModsFolder" },
+                            { label: qsTr("Icons"), prop: "iconsFolder", browse: "browseForIconsFolder" },
+                            { label: qsTr("Java"), prop: "javaFolder", browse: "browseForJavaFolder" },
+                            { label: qsTr("Downloads"), prop: "downloadsFolder", browse: "browseForDownloadsFolder" }
+                        ]
+                        
+                        delegate: RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 12
+                            
+                            Label {
+                                text: modelData.label
+                                color: ThemeColors.textSecondary
+                                font.pixelSize: 13
+                                Layout.preferredWidth: 100
+                            }
+                            
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 36
+                                radius: 8
+                                color: ThemeColors.bg1
+                                border.color: ThemeColors.border
+                                border.width: 1
+                                
+                                Text {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: vm ? vm[modelData.prop] || "" : ""
+                                    color: ThemeColors.text
+                                    font.pixelSize: 12
+                                    elide: Text.ElideMiddle
+                                }
+                            }
+                            
+                            ThemedButton {
+                                text: qsTr("Browse")
+                                onClicked: launcherPage[modelData.browse]()
+                            }
+                        }
+                    }
                 }
             }
-        }
 
-        // Backups
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Backups")
+            // === Mods & Modpacks ===
+            SettingsSection {
+                Layout.fillWidth: true
+                title: qsTr("Mods & Modpacks")
+                iconSource: Theme.icon("loadermods")
 
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
 
-                CheckBox {
-                    text: qsTr("Automatically backup before launch")
-                    ToolTip.text: qsTr("Automatically create a backup of your instance before launching. Backups include saves, config, and options, but not mods.")
-                    ToolTip.visible: hovered
-                    checked: vm ? vm.autoBackupBeforeLaunch : false
-                    onCheckedChanged: if (vm)
-                        vm.autoBackupBeforeLaunch = checked
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            
+                            Label {
+                                text: qsTr("Check subfolders for blocked mods")
+                                color: ThemeColors.text
+                                font.pixelSize: 13
+                            }
+                            Label {
+                                text: qsTr("Recursively watch downloads directory")
+                                color: ThemeColors.textSecondary
+                                font.pixelSize: 11
+                            }
+                        }
+                        
+                        Switch {
+                            checked: vm ? vm.downloadsDirWatchRecursive : false
+                            onCheckedChanged: if (vm) vm.downloadsDirWatchRecursive = checked
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(ThemeColors.separator.r, ThemeColors.separator.g, ThemeColors.separator.b, 0.3) }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            
+                            Label {
+                                text: qsTr("Keep track of mod metadata")
+                                color: ThemeColors.text
+                                font.pixelSize: 13
+                            }
+                            Label {
+                                text: qsTr("Required for automatic mod updates")
+                                color: ThemeColors.textSecondary
+                                font.pixelSize: 11
+                            }
+                        }
+                        
+                        Switch {
+                            id: metadataSwitch
+                            checked: vm ? vm.metadataEnabled : true
+                            onCheckedChanged: if (vm) vm.metadataEnabled = checked
+                        }
+                    }
+                    
+                    // Warning message
+                    Rectangle {
+                        Layout.fillWidth: true
+                        visible: vm && !vm.metadataEnabled
+                        height: warningText.implicitHeight + 16
+                        radius: 8
+                        color: Qt.rgba(ThemeColors.warning.r, ThemeColors.warning.g, ThemeColors.warning.b, 0.1)
+                        border.color: Qt.rgba(ThemeColors.warning.r, ThemeColors.warning.g, ThemeColors.warning.b, 0.3)
+                        
+                        Label {
+                            id: warningText
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            text: "⚠️ " + qsTr("Disabling metadata will prevent automatic mod updates and dependency resolution")
+                            color: ThemeColors.warning
+                            font.pixelSize: 12
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(ThemeColors.separator.r, ThemeColors.separator.g, ThemeColors.separator.b, 0.3) }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            
+                            Label {
+                                text: qsTr("Auto-install dependencies")
+                                color: ThemeColors.text
+                                font.pixelSize: 13
+                            }
+                            Label {
+                                text: qsTr("Automatically download required libraries")
+                                color: ThemeColors.textSecondary
+                                font.pixelSize: 11
+                            }
+                        }
+                        
+                        Switch {
+                            checked: vm ? vm.dependenciesEnabled : true
+                            onCheckedChanged: if (vm) vm.dependenciesEnabled = checked
+                        }
+                    }
                 }
             }
-        }
 
-        Item {
-            height: Theme.spacingL
+            // === Advanced ===
+            SettingsSection {
+                Layout.fillWidth: true
+                title: qsTr("Advanced")
+                iconSource: Theme.icon("settings")
+                collapsible: true
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 16
+
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columns: 3
+                        rowSpacing: 16
+                        columnSpacing: 16
+
+                        Label { text: qsTr("Max Concurrent Tasks"); color: ThemeColors.textSecondary; font.pixelSize: 13 }
+                        Item { Layout.fillWidth: true }
+                        SpinBox {
+                            from: 1; to: 20
+                            value: vm ? vm.concurrentTasks : 4
+                            onValueModified: if (vm) vm.concurrentTasks = value
+                        }
+
+                        Label { text: qsTr("Max Concurrent Downloads"); color: ThemeColors.textSecondary; font.pixelSize: 13 }
+                        Item { Layout.fillWidth: true }
+                        SpinBox {
+                            from: 1; to: 20
+                            value: vm ? vm.concurrentDownloads : 6
+                            onValueModified: if (vm) vm.concurrentDownloads = value
+                        }
+                        
+                        Label { text: qsTr("Console Scrollback Limit"); color: ThemeColors.textSecondary; font.pixelSize: 13 }
+                        Item { Layout.fillWidth: true }
+                        SpinBox {
+                            from: 10000; to: 1000000; stepSize: 10000
+                            value: vm ? vm.logHistoryLimit : 100000
+                            onValueModified: if (vm) vm.logHistoryLimit = value
+                            
+                            textFromValue: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+
+            Item { height: 20 }
         }
     }
 
     // Browse functions
-    function browseForInstancesFolder() {
-        if (ProjT.launcherVM && ProjT.launcherVM.browseForFolder) {
-            var result = ProjT.launcherVM.browseForFolder(qsTr("Select Instances Folder"));
-            if (result && result.length > 0) {
-                if (vm)
-                    vm.instancesFolder = result;
-            }
-        }
-    }
-
-    function browseForModsFolder() {
-        if (ProjT.launcherVM && ProjT.launcherVM.browseForFolder) {
-            var result = ProjT.launcherVM.browseForFolder(qsTr("Select Mods Folder"));
-            if (result && result.length > 0) {
-                if (vm)
-                    vm.modsFolder = result;
-            }
-        }
-    }
-
-    function browseForIconsFolder() {
-        if (ProjT.launcherVM && ProjT.launcherVM.browseForFolder) {
-            var result = ProjT.launcherVM.browseForFolder(qsTr("Select Icons Folder"));
-            if (result && result.length > 0) {
-                if (vm)
-                    vm.iconsFolder = result;
-            }
-        }
-    }
-
-    function browseForJavaFolder() {
-        if (ProjT.launcherVM && ProjT.launcherVM.browseForFolder) {
-            var result = ProjT.launcherVM.browseForFolder(qsTr("Select Java Folder"));
-            if (result && result.length > 0) {
-                if (vm)
-                    vm.javaFolder = result;
-            }
-        }
-    }
-
-    function browseForSkinsFolder() {
-        if (ProjT.launcherVM && ProjT.launcherVM.browseForFolder) {
-            var result = ProjT.launcherVM.browseForFolder(qsTr("Select Skins Folder"));
-            if (result && result.length > 0) {
-                if (vm)
-                    vm.skinsFolder = result;
-            }
-        }
-    }
-
-    function browseForDownloadsFolder() {
-        if (ProjT.launcherVM && ProjT.launcherVM.browseForFolder) {
-            var result = ProjT.launcherVM.browseForFolder(qsTr("Select Downloads Folder"));
-            if (result && result.length > 0) {
-                if (vm)
-                    vm.downloadsFolder = result;
-            }
-        }
-    }
+    function browseForInstancesFolder() { if (ProjT.launcherVM) { var r = ProjT.launcherVM.browseForFolder(qsTr("Select Instances Folder")); if (r && vm) vm.instancesFolder = r; } }
+    function browseForModsFolder() { if (ProjT.launcherVM) { var r = ProjT.launcherVM.browseForFolder(qsTr("Select Mods Folder")); if (r && vm) vm.modsFolder = r; } }
+    function browseForIconsFolder() { if (ProjT.launcherVM) { var r = ProjT.launcherVM.browseForFolder(qsTr("Select Icons Folder")); if (r && vm) vm.iconsFolder = r; } }
+    function browseForJavaFolder() { if (ProjT.launcherVM) { var r = ProjT.launcherVM.browseForFolder(qsTr("Select Java Folder")); if (r && vm) vm.javaFolder = r; } }
+    function browseForDownloadsFolder() { if (ProjT.launcherVM) { var r = ProjT.launcherVM.browseForFolder(qsTr("Select Downloads Folder")); if (r && vm) vm.downloadsFolder = r; } }
 }

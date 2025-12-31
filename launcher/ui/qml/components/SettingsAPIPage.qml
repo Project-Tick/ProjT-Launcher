@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-// SPDX-FileCopyrightText: 2025 Project Tick
-// SPDX-FileContributor: Project Tick Team
 /*
  *  ProjT Launcher - Minecraft Launcher
  *  Copyright (C) 2025 Project Tick
@@ -16,7 +13,6 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 import QtQuick 2.15
@@ -24,276 +20,208 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "."
 
 ScrollView {
     id: apiPage
     clip: true
+    contentWidth: availableWidth
 
     property var vm: ProjT.launcherSettingsVM
 
     ColumnLayout {
-        width: apiPage.width - Theme.spacingL
-        spacing: Theme.spacingM
+        width: parent.width - ThemeColors.spacingL
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: ThemeColors.spacingM
 
         // Pastebin Service
-        GroupBox {
+        SettingsSection {
             Layout.fillWidth: true
-            title: qsTr("&Pastebin Service")
+            title: qsTr("Paste Service")
+            iconSource: Theme.icon("news")
 
             ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
+                spacing: ThemeColors.spacingS
+                Layout.fillWidth: true
 
-                Label {
-                    text: qsTr("Paste Service &Type")
-                    color: ThemeColors.text
-                }
-
+                Label { text: qsTr("Service Type"); color: ThemeColors.textTitle; font.weight: Font.DemiBold }
                 ComboBox {
                     id: pasteTypeComboBox
+                    Layout.fillWidth: true
                     model: vm ? vm.pasteServiceTypes : []
                     currentIndex: vm ? vm.pasteServiceType : 0
-                    onActivated: if (vm)
-                        vm.pasteServiceType = currentIndex
+                    onActivated: if(vm) vm.pasteServiceType = currentIndex
                 }
 
-                Label {
-                    text: qsTr("Base &URL")
-                    color: ThemeColors.text
-                }
-
+                Label { text: qsTr("Base URL"); color: ThemeColors.textTitle; font.weight: Font.DemiBold }
                 TextField {
                     id: baseURLEntry
                     Layout.fillWidth: true
                     placeholderText: qsTr("Use Default")
                     text: vm ? vm.pasteBaseUrl : ""
-                    onTextChanged: if (vm)
-                        vm.pasteBaseUrl = text
+                    onTextChanged: if(vm) vm.pasteBaseUrl = text
                 }
-
                 Label {
-                    text: qsTr("Note: you probably want to change or clear the Base URL after changing the paste service type.")
+                    text: qsTr("Note: Update the Base URL if you change the service type.")
                     color: ThemeColors.textSecondary
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
+                    font.pixelSize: 11
                 }
             }
         }
 
-        // Metadata Server
-        GroupBox {
+        // Servers (Metadata & Assets)
+        SettingsSection {
             Layout.fillWidth: true
-            title: qsTr("Meta&data Server")
+            title: qsTr("Custom Servers")
+            iconSource: Theme.icon("server")
 
             ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
+                spacing: ThemeColors.spacingM
+                Layout.fillWidth: true
 
-                Label {
-                    text: qsTr("You can set this to a third-party metadata server to use patched libraries or other hacks.")
-                    color: ThemeColors.text
-                    textFormat: Text.RichText
-                    wrapMode: Text.WordWrap
+                ColumnLayout {
                     Layout.fillWidth: true
+                    spacing: ThemeColors.spacingS
+                    Label { text: qsTr("Metadata Server"); color: ThemeColors.textTitle; font.weight: Font.DemiBold }
+                     TextField {
+                        id: metaURL
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Use Default")
+                        text: vm ? vm.metaUrl : ""
+                        onTextChanged: if(vm) vm.metaUrl = text
+                    }
+                    Label {
+                        text: qsTr("Used for patched libraries or custom launcher metadata.")
+                        color: ThemeColors.textSecondary
+                        font.pixelSize: 11
+                    }
                 }
 
-                TextField {
-                    id: metaURL
+                 ColumnLayout {
                     Layout.fillWidth: true
-                    placeholderText: qsTr("Use Default")
-                    text: vm ? vm.metaUrl : ""
-                    onTextChanged: if (vm)
-                        vm.metaUrl = text
-                }
-            }
-        }
-
-        // Assets Server
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Assets Server")
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                Label {
-                    text: qsTr("You can set this to another server if you have problems with downloading assets.")
-                    color: ThemeColors.text
-                    textFormat: Text.RichText
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-
-                TextField {
-                    id: resourceURL
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Use Default")
-                    text: vm ? vm.resourceUrl : ""
-                    onTextChanged: if (vm)
-                        vm.resourceUrl = text
-                }
-            }
-        }
-
-        // User Agent
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("User Agent")
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                TextField {
-                    id: userAgentLineEdit
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Use Default")
-                    text: vm ? vm.userAgent : ""
-                    onTextChanged: if (vm)
-                        vm.userAgent = text
-                }
-
-                Label {
-                    text: qsTr("Enter a custom User Agent here. The special string $LAUNCHER_VER will be replaced with the version of the launcher.")
-                    color: ThemeColors.textSecondary
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
+                    spacing: ThemeColors.spacingS
+                    Label { text: qsTr("Assets Server"); color: ThemeColors.textTitle; font.weight: Font.DemiBold }
+                     TextField {
+                        id: resourceURL
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Use Default")
+                        text: vm ? vm.resourceUrl : ""
+                        onTextChanged: if(vm) vm.resourceUrl = text
+                    }
+                    Label {
+                        text: qsTr("Alternative server for downloading game assets.")
+                        color: ThemeColors.textSecondary
+                        font.pixelSize: 11
+                    }
                 }
             }
         }
 
         // API Keys
-        GroupBox {
+        SettingsSection {
             Layout.fillWidth: true
-            title: qsTr("&API Keys")
+            title: qsTr("API Keys")
+            iconSource: Theme.icon("accounts")
 
             ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
+                spacing: ThemeColors.spacingM
+                Layout.fillWidth: true
 
-                // Microsoft Authentication
-                Label {
-                    text: qsTr("&Microsoft Authentication")
-                    color: ThemeColors.text
-                    textFormat: Text.RichText
-                    wrapMode: Text.WordWrap
+                // Microsoft
+                ColumnLayout {
                     Layout.fillWidth: true
-                }
-
-                TextField {
-                    id: msaClientID
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Use Default")
-                    text: vm ? vm.msaClientId : ""
-                    onTextChanged: if (vm)
-                        vm.msaClientId = text
-                }
-
-                Label {
-                    text: qsTr("Note: you probably don't need to set this if logging in via Microsoft Authentication already works.")
-                    color: ThemeColors.textSecondary
-                    textFormat: Text.RichText
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-
-                Item {
-                    height: 6
-                }
-
-                // Modrinth
-                Label {
-                    text: qsTr("Mod&rinth")
-                    color: ThemeColors.text
-                    textFormat: Text.RichText
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-
-                TextField {
-                    id: modrinthToken
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Use None")
-                    text: vm ? vm.modrinthToken : ""
-                    onTextChanged: if (vm)
-                        vm.modrinthToken = text
-                }
-
-                Label {
-                    text: "Note: you only need to set this to access private data. Read the <a href='https://docs.modrinth.com/api/#authentication'>documentation</a> for more information."
-                    textFormat: Text.RichText
-                    color: ThemeColors.textSecondary
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                    onLinkActivated: Qt.openUrlExternally(link)
-
-                    MouseArea {
-                        anchors.fill: parent
-                        acceptedButtons: Qt.NoButton
-                        cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    spacing: ThemeColors.spacingS
+                    Label { text: qsTr("Microsoft Authentication Client ID"); color: ThemeColors.textTitle; font.weight: Font.DemiBold }
+                    TextField {
+                        id: msaClientID
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Use Default")
+                        text: vm ? vm.msaClientId : ""
+                        onTextChanged: if(vm) vm.msaClientId = text
                     }
                 }
 
-                Item {
-                    height: 6
+                Rectangle { height: 1; color: ThemeColors.separator; Layout.fillWidth: true }
+
+                // Modrinth
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: ThemeColors.spacingS
+                    Label { text: qsTr("Modrinth Token"); color: ThemeColors.textTitle; font.weight: Font.DemiBold }
+                    TextField {
+                        id: modrinthToken
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("None")
+                        text: vm ? vm.modrinthToken : ""
+                        onTextChanged: if(vm) vm.modrinthToken = text
+                    }
+                    Text {
+                        text: "Required for accessing private Modrinth data. <a href='https://docs.modrinth.com/api/#authentication'>Documentation</a>"
+                        color: ThemeColors.textSecondary
+                        font.pixelSize: 11
+                        onLinkActivated: Qt.openUrlExternally(link)
+                         MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                    }
                 }
+
+                Rectangle { height: 1; color: ThemeColors.separator; Layout.fillWidth: true }
 
                 // CurseForge
-                Label {
-                    text: qsTr("&CurseForge")
-                    color: ThemeColors.text
-                    textFormat: Text.RichText
-                    wrapMode: Text.WordWrap
+                ColumnLayout {
                     Layout.fillWidth: true
+                    spacing: ThemeColors.spacingS
+                    Label { text: qsTr("CurseForge API Key"); color: ThemeColors.textTitle; font.weight: Font.DemiBold }
+                    TextField {
+                        id: flameKey
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Use Default")
+                        text: vm ? vm.curseforgeApiKey : ""
+                        onTextChanged: if(vm) vm.curseforgeApiKey = text
+                    }
                 }
-
-                TextField {
-                    id: flameKey
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Use Default")
-                    text: vm ? vm.curseforgeApiKey : ""
-                    onTextChanged: if (vm)
-                        vm.curseforgeApiKey = text
-                }
-
-                Label {
-                    text: qsTr("Note: you probably don't need to set this if CurseForge already works.")
-                    color: ThemeColors.textSecondary
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-
-                Item {
-                    height: 6
-                }
+                
+                Rectangle { height: 1; color: ThemeColors.separator; Layout.fillWidth: true }
 
                 // Technic
-                Label {
-                    text: qsTr("&Technic")
-                    color: ThemeColors.text
-                }
-
-                TextField {
-                    id: technicClientID
+                 ColumnLayout {
                     Layout.fillWidth: true
-                    placeholderText: qsTr("Use Default")
-                    text: vm ? vm.technicClientId : ""
-                    onTextChanged: if (vm)
-                        vm.technicClientId = text
-                }
-
-                Label {
-                    text: qsTr("Note: you only need to set this to access private data.")
-                    color: ThemeColors.textSecondary
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
+                    spacing: ThemeColors.spacingS
+                    Label { text: qsTr("Technic Client ID"); color: ThemeColors.textTitle; font.weight: Font.DemiBold }
+                    TextField {
+                        id: technicClientID
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Use Default")
+                        text: vm ? vm.technicClientId : ""
+                        onTextChanged: if(vm) vm.technicClientId = text
+                    }
                 }
             }
         }
-
-        Item {
-            Layout.fillHeight: true
+        
+        // User Agent
+        SettingsSection {
+            Layout.fillWidth: true
+            title: qsTr("Network")
+            iconSource: Theme.icon("proxy")
+             ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: ThemeColors.spacingS
+                    Label { text: qsTr("User Agent"); color: ThemeColors.textTitle; font.weight: Font.DemiBold }
+                    TextField {
+                        id: userAgentLineEdit
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Use Default")
+                        text: vm ? vm.userAgent : ""
+                        onTextChanged: if(vm) vm.userAgent = text
+                    }
+                    Label {
+                        text: qsTr("Custom User Agent string. Use $LAUNCHER_VER for version.")
+                        color: ThemeColors.textSecondary
+                        font.pixelSize: 11
+                    }
+                }
         }
+        
+        Item { height: ThemeColors.spacingL }
     }
 }

@@ -69,8 +69,12 @@ int main(int argc, char* argv[])
         qDebug() << "QT_QUICK_BACKEND not set, falling back to software renderer.";
     }
 
-    // Force Basic style for QML to allow customization
+    // Set Qt Quick Controls style - use macOS style on macOS for native look
+#ifdef Q_OS_MACOS
+    QQuickStyle::setStyle("macOS");
+#else
     QQuickStyle::setStyle("Basic");
+#endif
 
     // initialize Qt
     Application app(argc, argv);
@@ -79,6 +83,7 @@ int main(int argc, char* argv[])
         case Application::StartingUp:
         case Application::Initialized: {
             Q_INIT_RESOURCE(multimc);
+            Q_INIT_RESOURCE(qml);  // Explicitly init QML resources
             Q_INIT_RESOURCE(backgrounds);
             Q_INIT_RESOURCE(documents);
             Q_INIT_RESOURCE(projtlauncher);

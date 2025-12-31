@@ -33,24 +33,12 @@ Rectangle {
     property var themeVM: ProjT.themeVM
     property int _themeUpdateCount: 0
 
-    // Computed colors for theme reactivity
-    color: {
-        var _ = _themeUpdateCount;
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar;
-    }
+    // Computed colors for theme reactivity - using modern glassmorphism
+    color: ThemeColors.surfacePanel
 
-    property color toolBarColor: {
-        var _ = _themeUpdateCount;
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar;
-    }
-    property color borderColor: {
-        var _ = _themeUpdateCount;
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border;
-    }
-    property color textSecondaryColor: {
-        var _ = _themeUpdateCount;
-        return themeVM ? Qt.darker(themeVM.textColor, 1.3) : ThemeColors.textSecondary;
-    }
+    property color toolBarColor: ThemeColors.surfacePanel
+    property color borderColor: ThemeColors.separator
+    property color textSecondaryColor: ThemeColors.textSubtitle
     property color successColor: ThemeColors.success
 
     // Listen for theme changes

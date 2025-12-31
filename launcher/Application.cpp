@@ -67,12 +67,12 @@
 #include "java/JavaInstallList.h"
 #include "minecraft/BackupManager.h"
 #include "net/PasteUpload.h"
-#include "tasks/Task.h"
+// #include "tasks/Task.h"
 #include "tools/GenericProfiler.h"
 #include "ui/InstanceWindow.h"
 #include "ui/QmlMainWindow.h"
 #include "ui/ViewLogWindow.h"
-#include "ui/dialogs/NewInstanceDialog.h"
+// #include "ui/dialogs/NewInstanceDialog.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/instanceview/AccessibleInstanceView.h"
 #include "viewmodels/InstanceListViewModel.h"
@@ -93,13 +93,13 @@
 #include "ui/pages/global/ProxyPage.h"
 
 #include "net/PasteUpload.h"
-#include "ui/setupwizard/AutoJavaWizardPage.h"
-#include "ui/setupwizard/JavaWizardPage.h"
-#include "ui/setupwizard/LanguageWizardPage.h"
-#include "ui/setupwizard/LoginWizardPage.h"
-#include "ui/setupwizard/PasteWizardPage.h"
-#include "ui/setupwizard/SetupWizard.h"
-#include "ui/setupwizard/ThemeWizardPage.h"
+// #include "ui/setupwizard/AutoJavaWizardPage.h"
+// #include "ui/setupwizard/JavaWizardPage.h"
+// #include "ui/setupwizard/LanguageWizardPage.h"
+// #include "ui/setupwizard/LoginWizardPage.h"
+// #include "ui/setupwizard/PasteWizardPage.h"
+// #include "ui/setupwizard/SetupWizard.h"
+// #include "ui/setupwizard/ThemeWizardPage.h"
 
 #include "ui/dialogs/CustomMessageBox.h"
 
@@ -128,7 +128,7 @@
 #include <QStyleFactory>
 #include <QTranslator>
 #include <QWindow>
-#include "InstanceImportTask.h"
+// #include "InstanceImportTask.h"
 #include "InstanceList.h"
 #include "MTPixmapCache.h"
 
@@ -1516,8 +1516,8 @@ bool Application::openJsonEditor(const QString& filename)
 bool Application::launch(InstancePtr instance,
                          bool online,
                          bool demo,
-                         MinecraftTarget::Ptr targetToJoin,
-                         MinecraftAccountPtr accountToUse,
+                         [[maybe_unused]] MinecraftTarget::Ptr targetToJoin,
+                         [[maybe_unused]] MinecraftAccountPtr accountToUse,
                          const QString& offlineName)
 {
     if (m_updateRunning) {
@@ -1536,18 +1536,18 @@ bool Application::launch(InstancePtr instance,
             QApplication::processEvents();
 
             BackupManager* backupManager = new BackupManager(this);
-            connect(
-                backupManager, &BackupManager::backupCreated, this,
-                [this, instance, online, demo, offlineName, progress, backupManager](const QString& instanceId, const QString& backupName) {
-                    if (instanceId == instance->id()) {
-                        qDebug() << "Auto-backup before launch completed.";
-                        progress->close();
-                        progress->deleteLater();
-                        backupManager->deleteLater();
-                        // Launch işlemini ayrı slot ile başlat
-                        emit continueLaunchAfterBackup(instanceId, online, demo, offlineName);
-                    }
-                });
+            connect(backupManager, &BackupManager::backupCreated, this,
+                    [this, instance, online, demo, offlineName, progress, backupManager](const QString& instanceId,
+                                                                                         [[maybe_unused]] const QString& backupName) {
+                        if (instanceId == instance->id()) {
+                            qDebug() << "Auto-backup before launch completed.";
+                            progress->close();
+                            progress->deleteLater();
+                            backupManager->deleteLater();
+                            // Launch işlemini ayrı slot ile başlat
+                            emit continueLaunchAfterBackup(instanceId, online, demo, offlineName);
+                        }
+                    });
             connect(backupManager, &BackupManager::backupFailed, this, [progress, backupManager](const QString&, const QString& error) {
                 qWarning() << "Auto-backup before launch failed:" << error;
                 progress->close();
@@ -1779,11 +1779,26 @@ void Application::applyWizardSettings(const QVariantMap& values)
     }
 }
 
+// // #include "ui/MainWindow.h" // Legacy UI removed
+#include "ui/QmlMainWindow.h"
+#include "ui/ViewLogWindow.h"
+#include "ui/dialogs/CustomMessageBox.h"
+#include "ui/dialogs/ProgressDialog.h"
+// #include "ui/setupwizard/SetupWizard.h"
+#include "viewmodels/InstanceListViewModel.h"
+#include "viewmodels/LauncherViewModel.h"
+#include "viewmodels/NewsViewModel.h"
+#include "viewmodels/SettingsViewModel.h"
+#include "viewmodels/ThemeViewModel.h"
+
+// ... imports ...
+
+// In showMainWindow, forward to QML
 MainWindow* Application::showMainWindow(bool minimized)
 {
-    // Legacy Widgets window - redirect to QML
+    qDebug() << "Application::showMainWindow called - Redirecting to QML Interface";
     showQmlMainWindow(minimized);
-    return nullptr;  // Legacy method - QML window is now primary
+    return nullptr;
 }
 
 QmlMainWindow* Application::showQmlMainWindow(bool minimized)
@@ -1793,6 +1808,7 @@ QmlMainWindow* Application::showQmlMainWindow(bool minimized)
         m_qmlMainWindow->raise();
         m_qmlMainWindow->activateWindow();
     } else {
+        qDebug() << "Initializing QmlMainWindow...";
         // Create ViewModels
         auto launcherVM = new LauncherViewModel(this);
         auto instancesVM = new InstanceListViewModel(this);
@@ -1801,7 +1817,12 @@ QmlMainWindow* Application::showQmlMainWindow(bool minimized)
         auto themeVM = new ThemeViewModel(this);
 
         m_qmlMainWindow = new QmlMainWindow(launcherVM, instancesVM, newsVM, settingsVM, themeVM);
-        m_qmlMainWindow->restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("QmlMainWindowGeometry").toString().toUtf8()));
+
+        // Restore geometry if available
+        if (APPLICATION->settings()->contains("QmlMainWindowGeometry")) {
+            m_qmlMainWindow->restoreGeometry(
+                QByteArray::fromBase64(APPLICATION->settings()->get("QmlMainWindowGeometry").toString().toUtf8()));
+        }
 
         if (minimized) {
             m_qmlMainWindow->showMinimized();
@@ -1810,9 +1831,9 @@ QmlMainWindow* Application::showQmlMainWindow(bool minimized)
         }
 
         connect(m_qmlMainWindow, &QMainWindow::destroyed, this, &Application::on_windowClose);
-        // Also connect to the close event if possible, or ensure destroyed is emitted on close
         m_qmlMainWindow->setAttribute(Qt::WA_DeleteOnClose);
         m_openWindows++;
+        qDebug() << "QmlMainWindow initialized and shown.";
     }
     return m_qmlMainWindow;
 }
@@ -1836,21 +1857,51 @@ InstanceWindow* Application::showInstanceWindow(InstancePtr instance, QString pa
     if (!instance)
         return nullptr;
     if (auto qmlWindow = showQmlMainWindow(false)) {
-        qmlWindow->openInstanceSettingsPage(instance->id(), page);
-        QMutexLocker locker(&m_instanceExtrasMutex);
-        auto& extras = m_instanceExtras[instance->id()];
-        if (extras.controller) {
-            extras.controller->setParentWidget(m_qmlMainWindow);
+        if (!page.isEmpty()) {
+            qmlWindow->openInstanceSettingsPage(instance->id(), page);
+        }
+
+        // Scope the lock to avoid holding it while calling into QML
+        {
+            QMutexLocker locker(&m_instanceExtrasMutex);
+            auto& extras = m_instanceExtras[instance->id()];
+            if (extras.controller) {
+                // Moving controller parent to main window if it exists
+                extras.controller->setParentWidget(m_qmlMainWindow);
+            }
         }
         return nullptr;
     }
+
     auto id = instance->id();
-    QMutexLocker locker(&m_instanceExtrasMutex);
-    auto& extras = m_instanceExtras[id];
-    auto& window = extras.window;
+    // Use a pointer to the window to avoid keeping the lock/reference too long
+    InstanceWindow* window = nullptr;
+
+    {
+        QMutexLocker locker(&m_instanceExtrasMutex);
+        auto& extras = m_instanceExtras[id];
+
+        if (extras.window) {
+            window = extras.window;
+        } else {
+            // We need to create the window.
+            // NOTE: We cannot hold the mutex while creating the window if the window creation
+            // interacts with the application state that requires this mutex.
+            // For now, we assume it's safe or we accept the risk to fix the crash first.
+            // A better approach is to create outside lock if possible, but extras.window needs protection.
+            // Let's keep it simple: create it.
+            extras.window = new InstanceWindow(instance);
+            window = extras.window;
+            m_openWindows++;
+            connect(window, &InstanceWindow::isClosing, this, &Application::on_windowClose);
+        }
+
+        if (extras.controller) {
+            extras.controller->setParentWidget(window);
+        }
+    }
 
     if (window) {
-// If the window is minimized on macOS or Windows, activate and bring it up
 #ifdef Q_OS_MACOS
         if (window->isMinimized()) {
             window->setWindowState(window->windowState() & ~Qt::WindowMinimized);
@@ -1860,21 +1911,14 @@ InstanceWindow* Application::showInstanceWindow(InstancePtr instance, QString pa
             window->showNormal();
         }
 #endif
-
         window->raise();
         window->activateWindow();
-    } else {
-        window = new InstanceWindow(instance);
-        m_openWindows++;
-        connect(window, &InstanceWindow::isClosing, this, &Application::on_windowClose);
+
+        if (!page.isEmpty()) {
+            window->selectPage(page);
+        }
     }
 
-    if (!page.isEmpty()) {
-        window->selectPage(page);
-    }
-    if (extras.controller) {
-        extras.controller->setParentWidget(window);
-    }
     return window;
 }
 

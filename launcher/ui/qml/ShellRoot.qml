@@ -24,6 +24,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
 import ProjTLauncher 1.0
+import ProjTLauncher.Mac 1.0
 import "components"
 import "dialogs"
 import "instance"
@@ -40,9 +41,13 @@ Rectangle {
     property int _themeUpdateCount: 0
 
     // Root background color with direct theme binding
-    color: {
-        var _ = _themeUpdateCount;
-        return themeVM ? themeVM.windowColor : ThemeColors.background;
+    color: Qt.platform.os === "osx" ? "transparent" : (themeVM ? themeVM.windowColor : ThemeColors.background)
+
+    MacVisualEffectView {
+        anchors.fill: parent
+        visible: Qt.platform.os === "osx"
+        material: MacVisualEffectView.WindowBackground
+        blendingMode: MacVisualEffectView.BehindWindow
     }
 
     // Instance toolbar visibility (only on Instances page)
@@ -58,7 +63,6 @@ Rectangle {
             root._themeUpdateCount++;
         }
     }
-
     Component.onCompleted: {
         console.log("[ShellRoot] Component loaded");
         console.log("[ShellRoot] LauncherVM available:", !!ProjT.launcherVM);
@@ -196,9 +200,16 @@ Rectangle {
             height: 600
             minimumWidth: 600
             minimumHeight: 450
-            color: ThemeColors.background
+            color: Qt.platform.os === "osx" ? "transparent" : ThemeColors.background
             flags: Qt.Window
             visible: true
+
+            MacVisualEffectView {
+                anchors.fill: parent
+                visible: Qt.platform.os === "osx"
+                material: MacVisualEffectView.Sheet
+                blendingMode: MacVisualEffectView.BehindWindow
+            }
 
             onClosing: newInstanceWindowLoader.active = false
 
@@ -225,8 +236,8 @@ Rectangle {
                 // === Top Section: Icon + Name + Group (like Qt UI) ===
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 100
-                    color: ThemeColors.surface
+                    Layout.preferredHeight: 120
+                    color: Qt.platform.os === "osx" ? "transparent" : ThemeColors.surface
 
                     RowLayout {
                         anchors.fill: parent
@@ -324,7 +335,7 @@ Rectangle {
                             columnSpacing: Theme.spacingM
 
                             Label {
-                                text: qsTr("&Name:")
+                                text: qsTr("Name:")
                                 color: ThemeColors.text
                             }
 
@@ -337,7 +348,7 @@ Rectangle {
                             }
 
                             Label {
-                                text: qsTr("&Group:")
+                                text: qsTr("Group:")
                                 color: ThemeColors.text
                             }
 
@@ -1027,7 +1038,7 @@ Rectangle {
             height: 650
             minimumWidth: 700
             minimumHeight: 500
-            color: ThemeColors.background
+            color: ThemeColors.bg1
             flags: Qt.Window
             visible: true
 
@@ -1047,9 +1058,9 @@ Rectangle {
 
                     // Left sidebar - Category list
                     Rectangle {
-                        Layout.preferredWidth: 180
+                        Layout.preferredWidth: 200
                         Layout.fillHeight: true
-                        color: ThemeColors.surface
+                        color: ThemeColors.bg2
 
                         ListView {
                             id: settingsPageList
@@ -1099,14 +1110,72 @@ Rectangle {
 
                             delegate: ItemDelegate {
                                 width: settingsPageList.width
-                                height: 40
+                                height: 44
                                 highlighted: settingsPageList.currentIndex === index
 
                                 icon.name: model.iconName
-                                icon.width: 24
-                                icon.height: 24
+                                icon.width: 22
+                                icon.height: 22
+                                icon.color: highlighted ? ThemeColors.accent : ThemeColors.text
 
                                 text: model.name
+                                font.pixelSize: 13
+                                font.weight: highlighted ? Font.DemiBold : Font.Normal
+
+                                contentItem: RowLayout {
+                                    spacing: 12
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+
+                                    Image {
+                                        source: parent.parent.icon.source
+                                        sourceSize.width: 22
+                                        sourceSize.height: 22
+                                        visible: false
+                                    }
+
+                                    Rectangle {
+                                        width: 22
+                                        height: 22
+                                        radius: 4
+                                        color: parent.parent.highlighted ? Qt.rgba(ThemeColors.accent.r, ThemeColors.accent.g, ThemeColors.accent.b, 0.15) : "transparent"
+                                        
+                                        Image {
+                                            anchors.centerIn: parent
+                                            width: 16
+                                            height: 16
+                                            source: {
+                                                var icons = ["settings", "appearance", "minecraft", "java", "language", "externaltools", "accounts", "news", "proxy"];
+                                                return Theme.icon(icons[index] || "settings");
+                                            }
+                                            sourceSize: Qt.size(16, 16)
+                                        }
+                                    }
+
+                                    Text {
+                                        text: model.name
+                                        color: parent.parent.highlighted ? ThemeColors.accent : ThemeColors.text
+                                        font.pixelSize: 13
+                                        font.weight: parent.parent.highlighted ? Font.DemiBold : Font.Normal
+                                        Layout.fillWidth: true
+                                    }
+                                }
+
+                                background: Rectangle {
+                                    radius: 8
+                                    color: parent.highlighted ? Qt.rgba(ThemeColors.accent.r, ThemeColors.accent.g, ThemeColors.accent.b, 0.12) : 
+                                           parent.hovered ? Qt.rgba(255, 255, 255, 0.05) : "transparent"
+                                    
+                                    Rectangle {
+                                        visible: parent.parent.highlighted
+                                        width: 3
+                                        height: parent.height - 12
+                                        anchors.left: parent.left
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        radius: 2
+                                        color: ThemeColors.accent
+                                    }
+                                }
 
                                 onClicked: {
                                     settingsPageList.currentIndex = index;
@@ -1120,7 +1189,7 @@ Rectangle {
                     Rectangle {
                         Layout.preferredWidth: 1
                         Layout.fillHeight: true
-                        color: ThemeColors.border
+                        color: ThemeColors.separator
                     }
 
                     // Right content area
@@ -1133,7 +1202,7 @@ Rectangle {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 40
-                            color: ThemeColors.surface
+                            color: ThemeColors.bg2
 
                             RowLayout {
                                 anchors.fill: parent
@@ -1156,7 +1225,7 @@ Rectangle {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 1
-                            color: ThemeColors.border
+                            color: ThemeColors.separator
                         }
 
                         // Page stack

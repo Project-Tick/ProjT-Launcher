@@ -1,43 +1,30 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Project Tick
 // SPDX-FileContributor: Project Tick Team
-/*
- *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- */
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
+import "../components" // For AppButton, AppTextField
 
 WindowDialog {
     id: newInstanceDialog
     title: qsTr("New Instance")
     modal: true
-    width: 700
-    height: 550
+    width: 850
+    height: 600
     standardButtons: Dialog.NoButton
+    
+    // Dynamic background
+    // WindowDialog uses ThemeColors.bg1 automatically
 
     property var vm: ProjT ? ProjT.instancesVM : null
     property var versionsVM: ProjT ? ProjT.newInstanceVM : null
     property string currentPage: "vanilla"
 
-    // Theme binding for reactive updates
+    // Theme binding
     property var themeVM: ProjT.themeVM
     property int _themeUpdateCount: 0
 
@@ -48,31 +35,28 @@ WindowDialog {
         }
     }
 
-    // Dialog background styling
-    background: Rectangle {
-        color: ThemeColors.background
-        border.color: ThemeColors.border
-        border.width: 1
-        radius: 8
-    }
-
-    // Dialog header styling
+    // Custom Header
     header: Rectangle {
-        height: 40
-        color: ThemeColors.toolBar
-
-        Label {
-            anchors.centerIn: parent
-            text: newInstanceDialog.title
-            color: ThemeColors.text
-            font.bold: true
-            font.pointSize: 12
+        height: 50
+        color: ThemeColors.surface // Sidebar extends to header mostly in modern apps, but let's keep it clean
+        
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 20
+            anchors.rightMargin: 20
+            
+            Label {
+                text: newInstanceDialog.title
+                color: ThemeColors.textTitle
+                font.bold: true
+                font.pixelSize: 16
+                Layout.fillWidth: true
+            }
         }
 
         Rectangle {
             anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
+            width: parent.width
             height: 1
             color: ThemeColors.border
         }
@@ -84,96 +68,95 @@ WindowDialog {
 
         // Left sidebar
         Rectangle {
-            Layout.preferredWidth: 180
+            Layout.preferredWidth: 220
             Layout.fillHeight: true
-            color: ThemeColors.backgroundAlt
+            color: ThemeColors.surface // Sidebar/Panel color
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: Theme.spacingS
-                spacing: 2
+                anchors.margins: 12
+                spacing: 4
 
                 Label {
-                    text: qsTr("Create Instance")
-                    color: ThemeColors.text
-                    font.bold: true
+                    text: qsTr("SOURCE")
+                    color: ThemeColors.textMuted
+                    font: ThemeColors.fontCaption
                     Layout.fillWidth: true
-                    padding: Theme.spacingS
+                    Layout.bottomMargin: 8
+                    Layout.leftMargin: 8
                 }
 
                 // Navigation items
                 Repeater {
                     model: [
-                        {
-                            id: "vanilla",
-                            name: qsTr("Vanilla"),
-                            icon: "🎮"
-                        },
-                        {
-                            id: "curseforge",
-                            name: "CurseForge",
-                            icon: "🔥"
-                        },
-                        {
-                            id: "modrinth",
-                            name: "Modrinth",
-                            icon: "🌿"
-                        },
-                        {
-                            id: "atlauncher",
-                            name: "ATLauncher",
-                            icon: "⚡"
-                        },
-                        {
-                            id: "ftb",
-                            name: "FTB",
-                            icon: "📦"
-                        },
-                        {
-                            id: "technic",
-                            name: "Technic",
-                            icon: "⚙"
-                        },
-                        {
-                            id: "import",
-                            name: qsTr("Import"),
-                            icon: "📂"
-                        }
+                        { id: "vanilla", name: qsTr("Vanilla"), icon: "minecraft" },
+                        { id: "curseforge", name: "CurseForge", icon: "centralmods" },
+                        { id: "modrinth", name: "Modrinth", icon: "loadermods" },
+                        { id: "atlauncher", name: "ATLauncher", icon: "server" },
+                        { id: "ftb", name: "FTB", icon: "server" },
+                        { id: "technic", name: "Technic", icon: "server" },
+                        { id: "import", name: qsTr("Import Zip"), icon: "viewfolder" }
                     ]
 
-                    delegate: ItemDelegate {
+                    delegate: AbstractButton {
                         Layout.fillWidth: true
-                        highlighted: currentPage === modelData.id
-
+                        Layout.preferredHeight: 40
+                        
+                        property bool isActive: currentPage === modelData.id
+                        
                         background: Rectangle {
-                            color: highlighted ? Qt.rgba(ThemeColors.highlight.r, ThemeColors.highlight.g, ThemeColors.highlight.b, 0.2) : (hovered ? ThemeColors.hover : "transparent")
-                            radius: 4
+                            color: parent.isActive ? ThemeColors.surface2 : (parent.hovered ? ThemeColors.hoverOverlay : "transparent")
+                            radius: 6
+                            border.width: parent.isActive ? 1 : 0
+                            border.color: ThemeColors.border
                         }
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: Theme.spacingS
-                            spacing: Theme.spacingS
-
-                            Label {
-                                text: modelData.icon
-                                font.pointSize: 14
+                        contentItem: RowLayout {
+                            spacing: 12
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
+                            
+                            // SVG Icon
+                            Image {
+                                source: Theme.icon(modelData.icon)
+                                sourceSize: Qt.size(18, 18)
+                                width: 18
+                                height: 18
+                                Layout.alignment: Qt.AlignVCenter
+                                opacity: parent.parent.isActive ? 1.0 : 0.7
                             }
-
+                            
                             Label {
                                 text: modelData.name
-                                color: highlighted ? ThemeColors.highlight : ThemeColors.text
-                                font.bold: highlighted
+                                color: parent.parent.isActive ? ThemeColors.text : ThemeColors.textSecondary
+                                font.weight: parent.parent.isActive ? Font.DemiBold : Font.Normal
+                                font: ThemeColors.fontBody
+                                Layout.fillWidth: true
                             }
                         }
 
                         onClicked: currentPage = modelData.id
+                        hoverEnabled: true
+                        
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: parent.clicked()
+                            hoverEnabled: true
+                            onEntered: parent.hovered = true
+                            onExited: parent.hovered = false
+                        }
                     }
                 }
 
-                Item {
-                    Layout.fillHeight: true
-                }
+                Item { Layout.fillHeight: true }
+            }
+            
+            Rectangle {
+                anchors.right: parent.right
+                width: 1
+                height: parent.height
+                color: ThemeColors.border
             }
         }
 
@@ -181,281 +164,180 @@ WindowDialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: ThemeColors.background
+            color: ThemeColors.bg // Main background
 
             StackLayout {
                 anchors.fill: parent
-                anchors.margins: Theme.spacingM
+                anchors.margins: 24
                 currentIndex: {
                     switch (currentPage) {
-                    case "vanilla":
-                        return 0;
-                    case "curseforge":
-                        return 1;
-                    case "modrinth":
-                        return 2;
-                    case "atlauncher":
-                        return 3;
-                    case "ftb":
-                        return 4;
-                    case "technic":
-                        return 5;
-                    case "import":
-                        return 6;
-                    default:
-                        return 0;
+                        case "vanilla": return 0;
+                        case "curseforge": return 1;
+                        case "modrinth": return 2;
+                        case "atlauncher": return 3;
+                        case "ftb": return 4;
+                        case "technic": return 5;
+                        case "import": return 6;
+                        default: return 0;
                     }
                 }
 
-                // Vanilla page
                 VanillaPage {}
-
-                // CurseForge placeholder
-                ModpackBrowserPage {
-                    source: "curseforge"
-                    sourceName: "CurseForge"
-                    sourceColor: ThemeColors.error
-                }
-
-                // Modrinth placeholder
-                ModpackBrowserPage {
-                    source: "modrinth"
-                    sourceName: "Modrinth"
-                    sourceColor: "#1bd96a"
-                }
-
-                // ATLauncher placeholder
-                ModpackBrowserPage {
-                    source: "atlauncher"
-                    sourceName: "ATLauncher"
-                    sourceColor: "#1e8e3e"
-                }
-
-                // FTB placeholder
-                ModpackBrowserPage {
-                    source: "ftb"
-                    sourceName: "FTB"
-                    sourceColor: ThemeColors.error
-                }
-
-                // Technic placeholder
-                ModpackBrowserPage {
-                    source: "technic"
-                    sourceName: "Technic"
-                    sourceColor: ThemeColors.error
-                }
-
-                // Import page
+                
+                // Placesholders
+                ModpackBrowserPage { source: "curseforge"; sourceName: "CurseForge"; sourceColor: "#f16436" }
+                ModpackBrowserPage { source: "modrinth"; sourceName: "Modrinth"; sourceColor: "#1bd96a" }
+                ModpackBrowserPage { source: "atlauncher"; sourceName: "ATLauncher"; sourceColor: "#1e8e3e" }
+                ModpackBrowserPage { source: "ftb"; sourceName: "FTB"; sourceColor: "#f44336" }
+                ModpackBrowserPage { source: "technic"; sourceName: "Technic"; sourceColor: "#2196f3" }
+                
                 ImportPage {}
             }
         }
     }
 
-    // Vanilla instance creation
+    // Components
     component VanillaPage: ColumnLayout {
-        spacing: Theme.spacingM
+        spacing: 20
 
-        Label {
-            text: qsTr("Create Vanilla Instance")
-            color: ThemeColors.text
-            font.bold: true
-            font.pointSize: Theme.fontSizeMedium
+        RowLayout {
+            spacing: 16
+            Image {
+                source: Theme.icon("minecraft")
+                sourceSize: Qt.size(32, 32)
+            }
+            ColumnLayout {
+                spacing: 2
+                Label {
+                    text: qsTr("Create Vanilla Instance")
+                    color: ThemeColors.textTitle
+                    font: ThemeColors.fontTitle
+                }
+                Label {
+                    text: qsTr("Customize your installation")
+                    color: ThemeColors.textMuted
+                    font: ThemeColors.fontCaption
+                }
+            }
         }
 
-        // Instance name
-        RowLayout {
+        GridLayout {
+            columns: 2
+            rowSpacing: 16
+            columnSpacing: 16
             Layout.fillWidth: true
 
-            Label {
-                text: qsTr("Name:")
-                Layout.preferredWidth: 100
-            }
-
-            TextField {
+            Label { text: qsTr("Name"); color: ThemeColors.text; font: ThemeColors.fontBodyBold; Layout.alignment: Qt.AlignVCenter }
+            AppTextField {
                 id: vanillaNameField
                 Layout.fillWidth: true
-                placeholderText: qsTr("Instance name...")
-            }
-        }
-
-        // Group
-        RowLayout {
-            Layout.fillWidth: true
-
-            Label {
-                text: qsTr("Group:")
-                Layout.preferredWidth: 100
+                placeholderText: qsTr("My New Instance")
             }
 
-            ComboBox {
+            Label { text: qsTr("Group"); color: ThemeColors.text; font: ThemeColors.fontBodyBold; Layout.alignment: Qt.AlignVCenter }
+            AppComboBox {
                 id: vanillaGroupCombo
                 Layout.fillWidth: true
                 editable: true
                 model: vm ? vm.groupList : []
+                // TODO: Themify ComboBox
             }
         }
 
-        // Version selection
-        GroupBox {
+        SettingsSection {
             Layout.fillWidth: true
             Layout.fillHeight: true
             title: qsTr("Minecraft Version")
+            iconSource: Theme.icon("minecraft")
 
             ColumnLayout {
                 anchors.fill: parent
-                spacing: Theme.spacingS
-
+                spacing: 12
+                
                 RowLayout {
                     Layout.fillWidth: true
-
-                    CheckBox {
-                        id: showReleasesCheck
-                        text: qsTr("Releases")
-                        checked: versionsVM ? versionsVM.showReleases : true
-                        onCheckedChanged: {
-                            if (versionsVM)
-                                versionsVM.showReleases = checked;
-                        }
-                    }
-
-                    CheckBox {
-                        id: showSnapshotsCheck
-                        text: qsTr("Snapshots")
-                        checked: versionsVM ? versionsVM.showSnapshots : false
-                        onCheckedChanged: {
-                            if (versionsVM)
-                                versionsVM.showSnapshots = checked;
-                        }
-                    }
-
-                    CheckBox {
-                        id: showOldCheck
-                        text: qsTr("Old Versions")
-                        checked: versionsVM ? versionsVM.showOldVersions : false
-                        onCheckedChanged: {
-                            if (versionsVM)
-                                versionsVM.showOldVersions = checked;
-                        }
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    ThemedButton {
-                        text: qsTr("Refresh")
-                        icon.name: "view-refresh"
-                        size: "small"
-                        onClicked: {
-                            if (versionsVM)
-                                versionsVM.loadMinecraftVersions();
-                        }
-                    }
+                    spacing: 16
+                    AppCheckBox { text: qsTr("Releases"); checked: versionsVM ? versionsVM.showReleases : true; onCheckedChanged: if(versionsVM) versionsVM.showReleases = checked }
+                    AppCheckBox { text: qsTr("Snapshots"); checked: versionsVM ? versionsVM.showSnapshots : false; onCheckedChanged: if(versionsVM) versionsVM.showSnapshots = checked }
+                    AppCheckBox { text: qsTr("Old"); checked: versionsVM ? versionsVM.showOldVersions : false; onCheckedChanged: if(versionsVM) versionsVM.showOldVersions = checked }
+                    Item { Layout.fillWidth: true }
+                    AppButton { text: qsTr("Refresh"); size: "small"; onClicked: if(versionsVM) versionsVM.loadMinecraftVersions() }
                 }
 
-                TextField {
+                AppTextField {
                     id: versionSearchField
                     Layout.fillWidth: true
                     placeholderText: qsTr("Search versions...")
                 }
 
-                Frame {
+                ListView {
+                    id: versionList
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    clip: true
+                    model: versionsVM ? versionsVM.minecraftVersionsModel : []
+                    property string selectedVersion: ""
 
-                    ListView {
-                        id: versionList
-                        anchors.fill: parent
-                        clip: true
-                        model: versionsVM ? versionsVM.minecraftVersionsModel : []
+                     delegate: ItemDelegate {
+                        width: versionList.width
+                        height: visible ? 36 : 0
+                        highlighted: versionText === versionList.selectedVersion
+                        
+                        property string versionText: model.version || model.versionId || ""
+                        property string versionType: model.type || ""
+                        
+                        visible: versionSearchField.text.length === 0 || versionText.toLowerCase().includes(versionSearchField.text.toLowerCase())
 
-                        property string selectedVersion: ""
-
-                        delegate: ItemDelegate {
-                            width: versionList.width
-                            height: visible ? 36 : 0
-                            highlighted: versionText === versionList.selectedVersion
-
-                            property string versionText: model.version || model.versionId || ""
-                            property string versionType: model.type || ""
-
-                            visible: {
-                                // Filter by search
-                                if (versionSearchField.text.length > 0) {
-                                    if (!versionText.toLowerCase().includes(versionSearchField.text.toLowerCase())) {
-                                        return false;
-                                    }
-                                }
-                                return true;
-                            }
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.margins: Theme.spacingS
-
-                                Rectangle {
-                                    Layout.preferredWidth: 20
-                                    Layout.preferredHeight: 20
-                                    radius: 4
-                                    color: {
-                                        if (versionType === "snapshot")
-                                            return ThemeColors.warning;
-                                        if (versionType === "old_beta" || versionType === "old_alpha")
-                                            return "#8b5cf6";
-                                        return ThemeColors.success;
-                                    }
-
-                                    Label {
-                                        anchors.centerIn: parent
-                                        text: {
-                                            if (versionType === "snapshot")
-                                                return "S";
-                                            if (versionType === "old_beta" || versionType === "old_alpha")
-                                                return "O";
-                                            return "R";
-                                        }
-                                        color: "white"
-                                        font.bold: true
-                                        font.pointSize: 9
-                                    }
-                                }
-
-                                Label {
-                                    text: versionText
-                                    color: ThemeColors.text
-                                    Layout.fillWidth: true
-                                }
-                            }
-
-                            onClicked: {
-                                versionList.selectedVersion = versionText;
-                                if (versionsVM)
-                                    versionsVM.selectedMinecraftVersion = versionText;
-                            }
+                        background: Rectangle {
+                            color: highlighted ? ThemeColors.surface2 : (hovered ? ThemeColors.hoverOverlay : "transparent")
+                            radius: 4
+                            border.width: highlighted ? 1 : 0
+                            border.color: ThemeColors.accent
                         }
 
-                        ScrollBar.vertical: ScrollBar {}
+                        contentItem: RowLayout {
+                            spacing: 10
+                            anchors.left: parent.left
+                            anchors.leftMargin: 8
+                            
+                            Rectangle {
+                                width: 8; height: 8; radius: 4
+                                color: versionType === "release" ? ThemeColors.success : ThemeColors.warning
+                            }
+                            
+                            Label {
+                                text: versionText
+                                color: highlighted ? ThemeColors.text : ThemeColors.text
+                                font.bold: highlighted
+                            }
+                        }
+                        
+                        onClicked: {
+                            versionList.selectedVersion = versionText;
+                            if (versionsVM) versionsVM.selectedMinecraftVersion = versionText;
+                        }
                     }
+                    ScrollBar.vertical: ScrollBar {}
                 }
             }
         }
 
-        // Create button
         RowLayout {
             Layout.fillWidth: true
-
-            Item {
-                Layout.fillWidth: true
-            }
-
-            ThemedButton {
+            Layout.alignment: Qt.AlignRight
+            spacing: 12
+            
+            Item { Layout.fillWidth: true }
+            
+            AppButton {
                 text: qsTr("Cancel")
+                variant: "ghost"
                 onClicked: newInstanceDialog.reject()
             }
-
-            ThemedButton {
+            
+            AppButton {
                 text: qsTr("Create")
-                primary: true
+                variant: "primary"
                 enabled: vanillaNameField.text.length > 0 && versionList.selectedVersion.length > 0
                 onClicked: {
                     if (vm) {
@@ -467,235 +349,117 @@ WindowDialog {
         }
     }
 
-    // Modpack browser page component
     component ModpackBrowserPage: ColumnLayout {
         property string source: ""
         property string sourceName: ""
         property string sourceColor: ThemeColors.accent
 
-        spacing: Theme.spacingM
+        spacing: 20
+
+        RowLayout {
+            spacing: 16
+            Rectangle {
+                width: 32; height: 32; radius: 8; color: sourceColor
+                Label { anchors.centerIn: parent; text: sourceName.charAt(0); color: "white"; font.bold: true }
+            }
+            Label {
+                text: qsTr("Browse %1").arg(sourceName)
+                color: ThemeColors.textTitle
+                font: ThemeColors.fontTitle
+            }
+        }
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.spacingM
+            AppTextField {
+                Layout.fillWidth: true
+                placeholderText: qsTr("Search %1...").arg(sourceName)
+            }
+            AppButton { text: qsTr("Search"); variant: "primary" }
+        }
 
-            Rectangle {
-                Layout.preferredWidth: 40
-                Layout.preferredHeight: 40
-                radius: 8
-                color: sourceColor
-
+        Rectangle {
+            Layout.fillWidth: true; Layout.fillHeight: true
+            color: ThemeColors.surface2; radius: 8
+            border.color: ThemeColors.border
+            border.width: 1
+            
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 12
+                Image { 
+                    source: Theme.icon("centralmods")
+                    sourceSize: Qt.size(48, 48)
+                    opacity: 0.5
+                    Layout.alignment: Qt.AlignHCenter
+                }
                 Label {
-                    anchors.centerIn: parent
-                    text: sourceName.charAt(0)
-                    color: "white"
-                    font.bold: true
-                    font.pointSize: 16
+                    text: qsTr("Integration Coming Soon")
+                    color: ThemeColors.textSecondary
                 }
             }
-
-            Label {
-                text: qsTr("Browse %1 Modpacks").arg(sourceName)
-                color: ThemeColors.text
-                font.bold: true
-                font.pointSize: Theme.fontSizeMedium
-            }
         }
-
-        // Search
+        
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.spacingS
-
-            TextField {
-                id: modpackSearchField
-                Layout.fillWidth: true
-                placeholderText: qsTr("Search modpacks...")
-            }
-
-            ThemedButton {
-                text: qsTr("Search")
-                primary: true
-            }
-        }
-
-        // Results placeholder
-        Frame {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-
-            Label {
-                anchors.centerIn: parent
-                text: qsTr("Search for %1 modpacks to install").arg(sourceName)
-                color: ThemeColors.textSecondary
-            }
-        }
-
-        // Buttons
-        RowLayout {
-            Layout.fillWidth: true
-
-            Item {
-                Layout.fillWidth: true
-            }
-
-            ThemedButton {
-                text: qsTr("Cancel")
-                onClicked: newInstanceDialog.reject()
-            }
+            Item { Layout.fillWidth: true }
+            AppButton { text: qsTr("Cancel"); onClicked: newInstanceDialog.reject() }
         }
     }
 
-    // Import page component
     component ImportPage: ColumnLayout {
-        spacing: Theme.spacingM
-
+        spacing: 20
+        
         Label {
             text: qsTr("Import Instance")
-            color: ThemeColors.text
-            font.bold: true
-            font.pointSize: Theme.fontSizeMedium
+            color: ThemeColors.textTitle
+             font: ThemeColors.fontTitle
         }
 
-        GroupBox {
+        SettingsSection {
             Layout.fillWidth: true
-            title: qsTr("Import from File")
-
+            title: qsTr("Source")
+            iconSource: Theme.icon("viewfolder")
+            
             ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                Label {
-                    Layout.fillWidth: true
-                    text: qsTr("Import a modpack from a local file (.zip, .mrpack, or folder)")
-                    color: ThemeColors.textSecondary
-                    wrapMode: Text.WordWrap
-                }
-
+                spacing: 12
+                Layout.fillWidth: true
+                
+                Label { text: qsTr("Local File (.zip, .mrpack)"); color: ThemeColors.textMuted }
                 RowLayout {
-                    Layout.fillWidth: true
-
-                    TextField {
-                        id: importPathField
-                        Layout.fillWidth: true
-                        placeholderText: qsTr("Select a file or folder...")
-                        readOnly: true
-                    }
-
-                    ThemedButton {
-                        text: qsTr("Browse...")
-                        onClicked: openImportFileDialog()
-                    }
+                   AppTextField { id: importPathField; Layout.fillWidth: true; placeholderText: qsTr("Select file..."); readOnly: true }
+                   AppButton { text: qsTr("Browse"); onClicked: openImportFileDialog() }
                 }
+
+                Rectangle { height: 1; color: ThemeColors.border; Layout.fillWidth: true; Layout.margins: 8 }
+
+                Label { text: qsTr("Or Direct URL"); color: ThemeColors.textMuted }
+                AppTextField { id: importUrlField; Layout.fillWidth: true; placeholderText: "https://example.com/modpack.zip" }
             }
         }
 
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Import from URL")
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                Label {
-                    Layout.fillWidth: true
-                    text: qsTr("Import a modpack from a URL (CurseForge, Modrinth, etc.)")
-                    color: ThemeColors.textSecondary
-                    wrapMode: Text.WordWrap
-                }
-
-                TextField {
-                    id: importUrlField
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("https://...")
-                }
-            }
-        }
-
-        // Instance settings
-        GroupBox {
-            Layout.fillWidth: true
-            title: qsTr("Instance Settings")
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: Theme.spacingS
-
-                RowLayout {
-                    Layout.fillWidth: true
-
-                    Label {
-                        text: qsTr("Name:")
-                        Layout.preferredWidth: 80
-                    }
-
-                    TextField {
-                        id: importNameField
-                        Layout.fillWidth: true
-                        placeholderText: qsTr("Instance name (leave empty for auto)")
-                    }
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-
-                    Label {
-                        text: qsTr("Group:")
-                        Layout.preferredWidth: 80
-                    }
-
-                    ComboBox {
-                        id: importGroupCombo
-                        Layout.fillWidth: true
-                        editable: true
-                        model: vm ? vm.groupList : []
-                    }
-                }
-            }
-        }
-
-        Item {
-            Layout.fillHeight: true
-        }
-
-        // Buttons
         RowLayout {
             Layout.fillWidth: true
-
-            Item {
-                Layout.fillWidth: true
-            }
-
-            ThemedButton {
-                text: qsTr("Cancel")
-                onClicked: newInstanceDialog.reject()
-            }
-
-            ThemedButton {
+            Item { Layout.fillWidth: true }
+            AppButton { text: qsTr("Cancel"); variant: "ghost"; onClicked: newInstanceDialog.reject() }
+            AppButton { 
                 text: qsTr("Import")
-                primary: true
+                variant: "primary"
                 enabled: importPathField.text.length > 0 || importUrlField.text.length > 0
                 onClicked: {
                     if (vm) {
-                        if (importUrlField.text.length > 0) {
-                            vm.importFromUrl(importUrlField.text, importNameField.text, importGroupCombo.editText);
-                        } else {
-                            vm.importFromFile(importPathField.text, importNameField.text, importGroupCombo.editText);
-                        }
+                        if (importUrlField.text.length > 0) vm.importFromUrl(importUrlField.text, "Imported Instance", "Import");
+                        else vm.importFromFile(importPathField.text, "Imported Instance", "Import");
                         newInstanceDialog.accept();
                     }
                 }
             }
         }
 
-        // Use ViewModel to open file dialog (Qt 6 compatible)
         function openImportFileDialog() {
             if (ProjT && ProjT.launcherVM) {
                 var path = ProjT.launcherVM.browseForFile(qsTr("Select Modpack"), "Modpack files (*.zip *.mrpack);;All files (*)");
-                if (path && path.length > 0) {
-                    importPathField.text = path;
-                }
+                if (path && path.length > 0) importPathField.text = path;
             }
         }
     }

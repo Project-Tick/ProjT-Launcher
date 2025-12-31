@@ -207,13 +207,78 @@ Rectangle {
                 }
 
                 // === Empty State ===
-                Text {
+                Item {
+                    id: emptyState
                     visible: instanceList.count === 0
-                    anchors.centerIn: parent
-                    text: qsTr("No instances.\nClick 'New' to create one.")
-                    color: ThemeColors.textSecondary
-                    font.pointSize: 14
-                    horizontalAlignment: Text.AlignHCenter
+                    anchors.fill: parent
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 16
+
+                        // Icon
+                        Rectangle {
+                            width: 80
+                            height: 80
+                            radius: 16
+                            color: ThemeColors.bg3
+                            anchors.horizontalCenter: parent.horizontalCenter
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "📦"
+                                font.pixelSize: 40
+                            }
+                        }
+
+                        // Title
+                        Text {
+                            text: qsTr("No Instances Yet")
+                            color: ThemeColors.textTitle
+                            font.pixelSize: 20
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+
+                        // Subtitle
+                        Text {
+                            text: qsTr("Create your first Minecraft instance\nto start playing.")
+                            color: ThemeColors.textSecondary
+                            font.pixelSize: 13
+                            horizontalAlignment: Text.AlignHCenter
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            lineHeight: 1.4
+                        }
+
+                        // Spacer
+                        Item { width: 1; height: 8 }
+
+                        // CTA Button
+                        Button {
+                            text: qsTr("+ Create Instance")
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            implicitWidth: 160
+                            implicitHeight: 40
+
+                            contentItem: Text {
+                                text: parent.text
+                                font.pixelSize: 14
+                                font.bold: true
+                                color: "#ffffff"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            background: Rectangle {
+                                radius: 8
+                                color: parent.pressed ? Qt.darker(ThemeColors.accent, 1.1) : 
+                                       parent.hovered ? Qt.lighter(ThemeColors.accent, 1.1) : 
+                                       ThemeColors.accent
+                            }
+
+                            onClicked: instancePage.createNewInstance()
+                        }
+                    }
                 }
 
                 // === Busy Overlay ===

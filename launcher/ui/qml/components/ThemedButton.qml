@@ -95,8 +95,8 @@ Button {
 
     implicitWidth: Math.max(implicitHeight, contentItem.implicitWidth + leftPadding + rightPadding)
 
-    scale: control.pressed ? 0.98 : 1.0
-    Behavior on scale { NumberAnimation { duration: 50 } }
+    scale: control.pressed ? 0.97 : 1.0
+    Behavior on scale { NumberAnimation { duration: ThemeColors.durationShort; easing.type: ThemeColors.easeType } }
 
     leftPadding: size === "small" ? 10 : 12
     rightPadding: leftPadding
@@ -238,13 +238,14 @@ Button {
         // Smooth color transitions
         Behavior on color {
             ColorAnimation {
-                duration: 120
-                easing.type: Easing.OutQuad
+                duration: ThemeColors.durationShort
+                easing.type: ThemeColors.easeType
             }
         }
         Behavior on border.color {
             ColorAnimation {
-                duration: 120
+                duration: ThemeColors.durationShort
+                easing.type: ThemeColors.easeType
             }
         }
     }

@@ -22,6 +22,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQml 2.15
 import ProjTLauncher 1.0
 import "../Theme.js" as Theme
 
@@ -63,14 +64,8 @@ Rectangle {
     signal openSkinsFolder
 
     // Computed colors for child elements
-    property color toolBarColor: {
-        var _ = _themeUpdateCount;
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.05) : ThemeColors.toolBar;
-    }
-    property color borderColor: {
-        var _ = _themeUpdateCount;
-        return themeVM ? Qt.darker(themeVM.windowColor, 1.2) : ThemeColors.border;
-    }
+    property color toolBarColor: ThemeColors.background
+    property color borderColor: ThemeColors.separator
 
     Rectangle {
         anchors.fill: parent
@@ -83,6 +78,7 @@ Rectangle {
             anchors.bottom: parent.bottom
             height: 1
             color: toolbar.borderColor
+            opacity: 0.8
         }
 
         RowLayout {
@@ -285,11 +281,133 @@ Rectangle {
                 display: AbstractButton.TextBesideIcon
                 Layout.preferredHeight: 32
 
-                onClicked: toolbar.accountsMenuRequested()
+                onClicked: accountsMenu.open()
 
-                ToolTip.text: qsTr("Open account settings")
-                ToolTip.visible: hovered
-                ToolTip.delay: 500
+                Menu {
+                    id: accountsMenu
+                    y: accountsBtn.height
+
+                    background: Rectangle {
+                        implicitWidth: 240
+                        color: ThemeColors.surface
+                        border.color: ThemeColors.border
+                        radius: ThemeColors.radiusS
+                    }
+
+                    // Account List
+                    Instantiator {
+                        model: ProjT.accountsVM ? ProjT.accountsVM.model : null
+                        delegate: MenuItem {
+                            id: accountMenuItem
+                            property int modelIndex: index
+                            property bool isDefault: ProjT.accountsVM && ProjT.accountsVM.isAccountDefault(index)
+                            
+                            implicitHeight: 36
+                            
+                            contentItem: RowLayout {
+                                spacing: Theme.spacingS
+                                
+                                // Avatar placeholder (could be replaced with actual skin head if available)
+                                Rectangle {
+                                    width: 20
+                                    height: 20
+                                    color: ThemeColors.backgroundAlt
+                                    radius: 2
+                                    Image {
+                                        anchors.fill: parent
+                                        source: "qrc:/icons/multimc/scalable/status/steve.svg" // Fallback
+                                        fillMode: Image.PreserveAspectFit
+                                        visible: true // In future binding to skin
+                                    }
+                                }
+
+                                Label {
+                                    text: ProjT.accountsVM ? ProjT.accountsVM.getAccountName(modelIndex) : ""
+                                    color: ThemeColors.text
+                                    font.bold: isDefault
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                Label {
+                                    text: "✓"
+                                    visible: isDefault
+                                    color: ThemeColors.accent
+                                    font.bold: true
+                                }
+                            }
+                            
+                            background: Rectangle {
+                                color: accountMenuItem.highlighted ? ThemeColors.highlight : "transparent"
+                                radius: ThemeColors.radiusS - 2
+                            }
+
+                            onTriggered: {
+                                if (ProjT.accountsVM) {
+                                    ProjT.accountsVM.setDefaultAccount(modelIndex);
+                                }
+                            }
+                        }
+                        onObjectAdded: accountsMenu.insertItem(index, object)
+                        onObjectRemoved: accountsMenu.removeItem(object)
+                    }
+
+                    MenuSeparator {
+                        visible: ProjT.accountsVM && ProjT.accountsVM.hasAccounts
+                        contentItem: Rectangle {
+                            implicitHeight: 1
+                            color: ThemeColors.border
+                        }
+                    }
+
+                    MenuItem {
+                        text: qsTr("Manage Accounts...")
+                        icon.name: "configure"
+                        
+                        contentItem: RowLayout {
+                            spacing: Theme.spacingS
+                            Image {
+                                source: "qrc:/icons/multimc/scalable/settings.svg" // Fallback icon path or theme icon
+                                Layout.preferredWidth: 16
+                                Layout.preferredHeight: 16
+                                visible: false // Use text only for consistency if icons missing
+                            }
+                            Label {
+                                text: parent.parent.text
+                                color: ThemeColors.text
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                        }
+                        
+                        background: Rectangle {
+                            color: parent.highlighted ? ThemeColors.highlight : "transparent"
+                            radius: ThemeColors.radiusS - 2
+                        }
+                        
+                        onTriggered: toolbar.accountsMenuRequested()
+                    }
+                    
+                    MenuItem {
+                        text: qsTr("Add Microsoft Account")
+                        
+                        contentItem: Label {
+                            text: parent.text
+                            color: ThemeColors.text
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        
+                        background: Rectangle {
+                            color: parent.highlighted ? ThemeColors.highlight : "transparent"
+                            radius: ThemeColors.radiusS - 2
+                        }
+                        
+                        onTriggered: {
+                             if (ProjT.accountsVM) ProjT.accountsVM.addMicrosoftAccount();
+                             toolbar.accountsMenuRequested(); // Go to accounts page to see login dialog
+                        }
+                    }
+                }
             }
         }
     }
