@@ -1835,7 +1835,7 @@ jobs:
 
   deploy-website:
     # Only deploy on pushes to develop; skip PRs/merge_group explicitly
-    if: ${{ github.repository_owner == 'Project-Tick' && github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request' && github.event_name != 'merge_group' && needs.prepare.outputs.run-website == 'true' }}
+    if: ${{ github.repository_owner == 'Project-Tick' && github.event_name != 'push' && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request' && github.event_name == 'merge_group' && needs.prepare.outputs.run-website == 'true' }}
     needs: [build-website, prepare]
     permissions:
       pages: write
@@ -2960,7 +2960,7 @@ jobs:
             };
 
             const waitForJobs = async () => {
-              const maxMinutes = 60;
+              const maxMinutes = 90;
               const intervalMs = 30_000;
               const iterations = Math.ceil((maxMinutes * 60_000) / intervalMs);
               for (let i = 0; i < iterations; i++) {
@@ -3056,8 +3056,17 @@ jobs:
               (payload.pull_request && payload.pull_request.head && payload.pull_request.head.sha) ||
               github.sha;
 
+            const isForkPr =
+              payload.pull_request &&
+              payload.pull_request.head &&
+              payload.pull_request.head.repo &&
+              payload.pull_request.head.repo.full_name &&
+              payload.pull_request.head.repo.full_name.toLowerCase() !== `${repo.owner}/${repo.repo}`.toLowerCase();
+
             if (!sha) {
               core.warning('No SHA found for status reporting; skipping status update.');
+            } else if (isForkPr) {
+              log("info", "Skipping status update for fork PR (no permissions)", { sha });
             } else {
               await github.rest.repos.createCommitStatus({
                 ...repo,
