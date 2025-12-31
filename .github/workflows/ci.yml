@@ -2458,6 +2458,9 @@ jobs:
 
   relabel:
     name: Re-apply labels on base change
+    permissions:
+      contents: read
+      pull-requests: write
     needs: [prepare]
     runs-on: ubuntu-latest
     if: >
