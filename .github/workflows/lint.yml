@@ -1,0 +1,16 @@
+name: Lint Markdown Files
+
+on: [push, pull_request, merge_group]
+concurrency:
+  group: lint-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    if: github.repository_owner == 'Project-Tick'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: nosborn/github-action-markdown-cli@1a79194d2cebd7ebdf9f8079ab17f7761b14aec0
+        with:
+          files: .
