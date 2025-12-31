@@ -1,6 +1,7 @@
 name: Project Tick CI
 
 on:
+  merge_group:
   push:
     tags:
       - "*"
@@ -21,7 +22,6 @@ on:
     workflows:
       - Reviewed
     types: [completed]
-  
   pull_request_review:
     types: [submitted]
   branch_protection_rule:
