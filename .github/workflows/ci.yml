@@ -2869,7 +2869,20 @@ jobs:
   unlock:
     if: (needs.prepare.outputs.is-merge-group == 'true' || needs.prepare.outputs.is-pr == 'true') && always()
     # Modify this list to add or remove jobs from required status checks.
-    needs: prepare
+    needs:
+      - prepare
+      - lint
+      - clang-lint
+      - markdown-lint
+      - check
+      - meta-update
+      - build-projt-launcher-debug
+      - build-projt-launcher-release
+      - create-release
+      - winget
+      - process-review
+      - scorecard-analysis
+      - eval
     runs-on: ubuntu-latest
     permissions:
       statuses: write
