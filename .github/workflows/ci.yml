@@ -2924,7 +2924,7 @@ jobs:
             };
 
             const waitForJobs = async () => {
-              const maxMinutes = 30;
+              const maxMinutes = 60;
               const intervalMs = 30_000;
               const iterations = Math.ceil((maxMinutes * 60_000) / intervalMs);
               for (let i = 0; i < iterations; i++) {
