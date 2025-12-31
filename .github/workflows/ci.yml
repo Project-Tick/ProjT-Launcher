@@ -38,6 +38,21 @@ jobs:
     outputs:
       should-test: ${{ steps.decide.outputs.should-test }}
       should-build: ${{ steps.decide.outputs.should-build }}
+      event-name: ${{ steps.trigger.outputs.event-name }}
+      is-pr: ${{ steps.trigger.outputs.is-pr }}
+      is-push: ${{ steps.trigger.outputs.is-push }}
+      is-tag-push: ${{ steps.trigger.outputs.is-tag-push }}
+      is-branch-push: ${{ steps.trigger.outputs.is-branch-push }}
+      is-merge-group: ${{ steps.trigger.outputs.is-merge-group }}
+      is-dispatch: ${{ steps.trigger.outputs.is-dispatch }}
+      is-schedule: ${{ steps.trigger.outputs.is-schedule }}
+      is-issue-comment: ${{ steps.trigger.outputs.is-issue-comment }}
+      is-release: ${{ steps.trigger.outputs.is-release }}
+      is-workflow-run: ${{ steps.trigger.outputs.is-workflow-run }}
+      is-pr-review: ${{ steps.trigger.outputs.is-pr-review }}
+      is-branch-protection: ${{ steps.trigger.outputs.is-branch-protection }}
+      ref-name: ${{ steps.trigger.outputs.ref-name }}
+      ref-type: ${{ steps.trigger.outputs.ref-type }}
       run-zlib: ${{ steps.decide.outputs.run-zlib }}
       run-bzip2: ${{ steps.decide.outputs.run-bzip2 }}
       run-quazip: ${{ steps.decide.outputs.run-quazip }}
@@ -71,6 +86,61 @@ jobs:
           git diff --name-only "$base"...HEAD > changed.txt || true
           changed_files=$(cat changed.txt | tr '\n' ',' | sed 's/,$//')
           echo "changed-files=$changed_files" >> "$GITHUB_OUTPUT"
+
+      - name: Detect trigger context
+        id: trigger
+        run: |
+          event="${{ github.event_name }}"
+          ref="${{ github.ref }}"
+          ref_name="${{ github.ref_name }}"
+          ref_type="${{ github.ref_type }}"
+
+          is_pr=false
+          is_push=false
+          is_tag_push=false
+          is_branch_push=false
+          is_merge_group=false
+          is_dispatch=false
+          is_schedule=false
+          is_issue_comment=false
+          is_release=false
+          is_workflow_run=false
+          is_pr_review=false
+          is_branch_protection=false
+
+          case "$event" in
+            pull_request) is_pr=true ;;
+            push)
+              is_push=true
+              if [ "$ref_type" = "tag" ]; then is_tag_push=true; else is_branch_push=true; fi
+              ;;
+            merge_group) is_merge_group=true ;;
+            workflow_dispatch) is_dispatch=true ;;
+            schedule) is_schedule=true ;;
+            issue_comment) is_issue_comment=true ;;
+            release) is_release=true ;;
+            workflow_run) is_workflow_run=true ;;
+            pull_request_review) is_pr_review=true ;;
+            branch_protection_rule) is_branch_protection=true ;;
+          esac
+
+          {
+            echo "event-name=$event"
+            echo "ref-name=$ref_name"
+            echo "ref-type=$ref_type"
+            echo "is-pr=$is_pr"
+            echo "is-push=$is_push"
+            echo "is-tag-push=$is_tag_push"
+            echo "is-branch-push=$is_branch_push"
+            echo "is-merge-group=$is_merge_group"
+            echo "is-dispatch=$is_dispatch"
+            echo "is-schedule=$is_schedule"
+            echo "is-issue-comment=$is_issue_comment"
+            echo "is-release=$is_release"
+            echo "is-workflow-run=$is_workflow_run"
+            echo "is-pr-review=$is_pr_review"
+            echo "is-branch-protection=$is_branch_protection"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Parse PR scope checklist
         id: scope
@@ -178,6 +248,8 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Base ref: \`${{ steps.base.outputs.base }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Head ref: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Event: \`${{ steps.trigger.outputs.event-name }}\` (ref: `${{ steps.trigger.outputs.ref-name }}` type: `${{ steps.trigger.outputs.ref-type }}`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Trigger flags: pr=${{ steps.trigger.outputs.is-pr }}, push=${{ steps.trigger.outputs.is-push }}, merge_group=${{ steps.trigger.outputs.is-merge-group }}, dispatch=${{ steps.trigger.outputs.is-dispatch }}, schedule=${{ steps.trigger.outputs.is-schedule }}, issue_comment=${{ steps.trigger.outputs.is-issue-comment }}, release=${{ steps.trigger.outputs.is-release }}, workflow_run=${{ steps.trigger.outputs.is-workflow-run }}, pr_review=${{ steps.trigger.outputs.is-pr-review }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Should test: \`${{ steps.decide.outputs.should-test }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Should build: \`${{ steps.decide.outputs.should-build }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run zlib: \`${{ steps.decide.outputs.run-zlib }}\`" >> "$GITHUB_STEP_SUMMARY"
