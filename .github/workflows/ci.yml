@@ -2339,6 +2339,25 @@ jobs:
           cmake --preset linux
           cmake --build --preset linux --config Debug
 
+      - name: Build bundled libraries (standalone)
+        run: |
+          set -euo pipefail
+
+          if [ -f "zlib/CMakeLists.txt" ]; then
+            cmake -S zlib -B build-codeql/zlib -DCMAKE_BUILD_TYPE=Debug -DZLIB_BUILD_TESTING=OFF
+            cmake --build build-codeql/zlib --config Debug
+          fi
+
+          if [ -f "bzip2/CMakeLists.txt" ]; then
+            cmake -S bzip2 -B build-codeql/bzip2 -DCMAKE_BUILD_TYPE=Debug -DENABLE_LIB_ONLY=ON -DENABLE_TESTS=OFF -DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF
+            cmake --build build-codeql/bzip2 --config Debug
+          fi
+
+          if [ -f "quazip/CMakeLists.txt" ]; then
+            cmake -S quazip -B build-codeql/quazip -DCMAKE_BUILD_TYPE=Debug -DQUAZIP_QT_MAJOR_VERSION=6 -DQUAZIP_ENABLE_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
+            cmake --build build-codeql/quazip --config Debug
+          fi
+
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
 
