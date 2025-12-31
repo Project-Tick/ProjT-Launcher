@@ -53,6 +53,9 @@ jobs:
       is-branch-protection: ${{ steps.trigger.outputs.is-branch-protection }}
       ref-name: ${{ steps.trigger.outputs.ref-name }}
       ref-type: ${{ steps.trigger.outputs.ref-type }}
+      build-type: ${{ steps.decide.outputs.build-type }}
+      run-release-build: ${{ steps.decide.outputs.run-release-build }}
+      run-regular-build: ${{ steps.decide.outputs.run-regular-build }}
       run-zlib: ${{ steps.decide.outputs.run-zlib }}
       run-bzip2: ${{ steps.decide.outputs.run-bzip2 }}
       run-quazip: ${{ steps.decide.outputs.run-quazip }}
@@ -181,6 +184,7 @@ jobs:
           IS_PUSH: ${{ steps.trigger.outputs.is-push }}
           IS_MERGE_GROUP: ${{ steps.trigger.outputs.is-merge-group }}
           IS_SCHEDULE: ${{ steps.trigger.outputs.is-schedule }}
+          IS_TAG: ${{ steps.trigger.outputs.is-tag-push }}
           SCOPE_LAUNCHER: ${{ steps.scope.outputs.launcher || 'false' }}
           SCOPE_WEBSITE: ${{ steps.scope.outputs.website || 'false' }}
           SCOPE_QUAZIP: ${{ steps.scope.outputs.quazip || 'false' }}
@@ -233,6 +237,13 @@ jobs:
           run_website=false
           run_nix=false
           run_schedule=false
+          build_type="Debug"
+          run_release_build=false
+          run_regular_build=false
+
+          if [ "$IS_TAG" = "true" ]; then
+            build_type="Release"
+          fi
 
           if [ "$IS_PUSH" = "true" ] || [ "$IS_MERGE_GROUP" = "true" ]; then
             # On push/merge_group run everything
@@ -259,6 +270,12 @@ jobs:
             if [ "$SCOPE_PACKAGES" = "true" ]; then run_nix=true; fi
           fi
 
+          if [ "$IS_TAG" = "true" ]; then
+            run_release_build=true
+          elif [ "$should_build" = "true" ]; then
+            run_regular_build=true
+          fi
+
           echo "should-test=$should_test" >> "$GITHUB_OUTPUT"
           echo "should-build=$should_build" >> "$GITHUB_OUTPUT"
           echo "run-zlib=$run_zlib" >> "$GITHUB_OUTPUT"
@@ -267,6 +284,9 @@ jobs:
           echo "run-website=$run_website" >> "$GITHUB_OUTPUT"
           echo "run-nix=$run_nix" >> "$GITHUB_OUTPUT"
           echo "run-schedule=$run_schedule" >> "$GITHUB_OUTPUT"
+          echo "build-type=$build_type" >> "$GITHUB_OUTPUT"
+          echo "run-release-build=$run_release_build" >> "$GITHUB_OUTPUT"
+          echo "run-regular-build=$run_regular_build" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         run: |
@@ -278,6 +298,9 @@ jobs:
           echo "- Trigger flags: pr=${{ steps.trigger.outputs.is-pr }}, push=${{ steps.trigger.outputs.is-push }}, merge_group=${{ steps.trigger.outputs.is-merge-group }}, dispatch=${{ steps.trigger.outputs.is-dispatch }}, schedule=${{ steps.trigger.outputs.is-schedule }}, issue_comment=${{ steps.trigger.outputs.is-issue-comment }}, release=${{ steps.trigger.outputs.is-release }}, workflow_run=${{ steps.trigger.outputs.is-workflow-run }}, pr_review=${{ steps.trigger.outputs.is-pr-review }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Should test: \`${{ steps.decide.outputs.should-test }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Should build: \`${{ steps.decide.outputs.should-build }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Build type: \`${{ steps.decide.outputs.build-type }}\` (Release if tag push, else Debug)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run release build: \`${{ steps.decide.outputs.run-release-build }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run regular build: \`${{ steps.decide.outputs.run-regular-build }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run zlib: \`${{ steps.decide.outputs.run-zlib }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run bzip2: \`${{ steps.decide.outputs.run-bzip2 }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run quazip: \`${{ steps.decide.outputs.run-quazip }}\`" >> "$GITHUB_STEP_SUMMARY"
@@ -299,3 +322,18 @@ jobs:
       contents: write
     with:
       ref: ${{ github.sha }}
+
+  build-projt-launcher-debug:
+    name: Build ProjT Launcher ( DEBUG )
+    needs: prepare
+    if: needs.prepare.outputs.should-build == 'true'
+    uses: ./.github/workflows/build-projt-launcher.yml
+    permissions:
+      contents: read
+      packages: write
+      pages: write
+      id-token: write
+    with:
+      ref: ${{ github.sha }}
+      build-type: Debug
+      
