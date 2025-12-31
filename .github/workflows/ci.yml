@@ -644,6 +644,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-debian-testing-cmake-debug:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Debian (testing) - CMake Debug
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -681,6 +682,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-debian-testing-cmake:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Debian (testing) - CMake
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -718,6 +720,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-debian-testing-cmake-shared-static:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Debian (testing) - CMake shared+static
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -755,6 +758,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-debian-testing-cmake-static-only:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Debian (testing) - CMake static only
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -792,6 +796,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-ubuntu-jammy-meson:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Ubuntu Jammy - Meson
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -829,6 +834,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-ubuntu-jammy-cmake:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Ubuntu Jammy - CMake
     runs-on: ubuntu-latest
     defaults:
@@ -865,6 +871,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-fedora-meson:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Fedora - Meson
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -898,6 +905,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-fedora-cmake:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Fedora - CMake
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -932,6 +940,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-fedora-rawhide-meson:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Fedora Rawhide - Meson
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -965,6 +974,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-fedora-rawhide-cmake:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Fedora Rawhide - CMake
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -999,6 +1009,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-opensuse-leap-meson:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: openSUSE Leap - Meson
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -1057,6 +1068,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-opensuse-leap-cmake:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: openSUSE Leap - CMake
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -1116,6 +1128,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-opensuse-tumbleweed-meson:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: openSUSE Tumbleweed - Meson
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -1174,6 +1187,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-opensuse-tumbleweed-cmake:
+    if: needs.prepare.outputs.run-bzip2 == 'true'
     name: openSUSE Tumbleweed - CMake
     needs: [prepare]
     runs-on: ubuntu-latest
@@ -1233,7 +1247,7 @@ jobs:
           path: CMakeOutput.log
 
   build-website:
-    if: github.repository_owner == 'Project-Tick'
+    if: github.repository_owner == 'Project-Tick' && needs.prepare.outputs.run-website == 'true'
     runs-on: ubuntu-latest
 
     strategy:
@@ -1262,7 +1276,7 @@ jobs:
 
   deploy-website:
     # Only deploy on pushes to develop; skip PRs/merge_group explicitly
-    if: ${{ github.repository_owner == 'Project-Tick' && github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request' && github.event_name != 'merge_group' }}
+    if: ${{ github.repository_owner == 'Project-Tick' && github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request' && github.event_name != 'merge_group' && needs.prepare.outputs.run-website == 'true' }}
     needs: [build-website, prepare]
     permissions:
       pages: write
