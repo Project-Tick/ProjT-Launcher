@@ -2924,7 +2924,10 @@ jobs:
             };
 
             const waitForJobs = async () => {
-              for (let i = 0; i < 20; i++) {
+              const maxMinutes = 30;
+              const intervalMs = 30_000;
+              const iterations = Math.ceil((maxMinutes * 60_000) / intervalMs);
+              for (let i = 0; i < iterations; i++) {
                 const jobs = await listJobs();
                 const pending = jobs.filter(
                   j =>
@@ -2934,7 +2937,7 @@ jobs:
                 if (pending.length === 0) {
                   return jobs;
                 }
-                await new Promise(resolve => setTimeout(resolve, 15000));
+                await new Promise(resolve => setTimeout(resolve, intervalMs));
               }
               return await listJobs();
             };
