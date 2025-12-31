@@ -177,6 +177,9 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           ACTOR: ${{ github.actor }}
           IS_PR: ${{ steps.trigger.outputs.is-pr }}
+          IS_PUSH: ${{ steps.trigger.outputs.is-push }}
+          IS_MERGE_GROUP: ${{ steps.trigger.outputs.is-merge-group }}
+          IS_SCHEDULE: ${{ steps.trigger.outputs.is-schedule }}
           SCOPE_LAUNCHER: ${{ steps.scope.outputs.launcher || 'false' }}
           SCOPE_WEBSITE: ${{ steps.scope.outputs.website || 'false' }}
           SCOPE_QUAZIP: ${{ steps.scope.outputs.quazip || 'false' }}
@@ -206,6 +209,9 @@ jobs:
           elif [ "$ACTOR" = "dependabot[bot]" ]; then
             should_test=true
             should_build=true
+          elif [ "$IS_SCHEDULE" = "true" ]; then
+            should_test=false
+            should_build=false
           elif match '^(launcher|libraries|tests|buildconfig|cmake|program_info|zlib|quazip|bzip2)/|CMakeLists.txt|\\.cpp$|\\.h$|\\.ui$'; then
             should_test=true
             should_build=true
@@ -223,11 +229,20 @@ jobs:
           run_website=false
           run_nix=false
 
-          match '^zlib/' && run_zlib=true
-          match '^bzip2/' && run_bzip2=true
-          match '^quazip/' && run_quazip=true
-          match '^website/' && run_website=true
-          match '^flake\.nix$|^shell\.nix$|^nix/' && run_nix=true
+          if [ "$IS_PUSH" = "true" ] || [ "$IS_MERGE_GROUP" = "true" ]; then
+            # On push/merge_group run everything
+            run_zlib=true
+            run_bzip2=true
+            run_quazip=true
+            run_website=true
+            run_nix=true
+          elif [ "$IS_SCHEDULE" != "true" ]; then
+            match '^zlib/' && run_zlib=true
+            match '^bzip2/' && run_bzip2=true
+            match '^quazip/' && run_quazip=true
+            match '^website/' && run_website=true
+            match '^flake\.nix$|^shell\.nix$|^nix/' && run_nix=true
+          fi
 
           if [ "$IS_PR" = "true" ]; then
             if [ "$SCOPE_ZLIB" = "true" ]; then run_zlib=true; fi
