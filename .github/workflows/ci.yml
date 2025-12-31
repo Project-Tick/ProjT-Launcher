@@ -629,7 +629,7 @@ jobs:
 
   build-quazip-alpine:
     if: true && needs.prepare.outputs.run-quazip == 'true'
-    needs: [prepare]
+    needs: prepare
     name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
     runs-on: "ubuntu-22.04"
     container:
@@ -772,6 +772,7 @@ jobs:
 
   build-quazip-fedora:
     if: true && needs.prepare.outputs.run-quazip == 'true'
+    needs: prepare
     name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
     runs-on: "ubuntu-22.04"
     defaults:
