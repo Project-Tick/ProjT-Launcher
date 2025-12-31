@@ -32,3 +32,157 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare:
+    name: Prepare Workflow Context
+    runs-on: ubuntu-latest
+    outputs:
+      should-test: ${{ steps.decide.outputs.should-test }}
+      should-build: ${{ steps.decide.outputs.should-build }}
+      run-zlib: ${{ steps.decide.outputs.run-zlib }}
+      run-bzip2: ${{ steps.decide.outputs.run-bzip2 }}
+      run-quazip: ${{ steps.decide.outputs.run-quazip }}
+      run-website: ${{ steps.decide.outputs.run-website }}
+      run-nix: ${{ steps.decide.outputs.run-nix }}
+      changed-files: ${{ steps.collect.outputs.changed-files }}
+      base-ref: ${{ steps.base.outputs.base }}
+      head-ref: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine base ref
+        id: base
+        run: |
+          if [ -n "${{ github.event.pull_request.base.sha || '' }}" ]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.before || '' }}" ]; then
+            echo "base=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=HEAD~1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Collect changed files
+        id: collect
+        run: |
+          base="${{ steps.base.outputs.base }}"
+          git fetch --no-tags --prune --depth=200 origin +refs/heads/*:refs/remotes/origin/* || true
+          git diff --name-only "$base"...HEAD > changed.txt || true
+          changed_files=$(cat changed.txt | tr '\n' ',' | sed 's/,$//')
+          echo "changed-files=$changed_files" >> "$GITHUB_OUTPUT"
+
+      - name: Parse PR scope checklist
+        id: scope
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          python3 <<'PY'
+          import json, os, re
+
+          event_path = os.environ.get("GITHUB_EVENT_PATH")
+          body = ""
+          if event_path and os.path.isfile(event_path):
+            with open(event_path, "r", encoding="utf-8") as f:
+              payload = json.load(f)
+              body = payload.get("pull_request", {}).get("body") or ""
+
+          scopes = {
+            "launcher": r"- \[[xX]\]\s+Launcher\b",
+            "website": r"- \[[xX]\]\s+Website\b",
+            "quazip": r"- \[[xX]\]\s+Quazip\b",
+            "bzip2": r"- \[[xX]\]\s+bzip2\b",
+            "zlib": r"- \[[xX]\]\s+Zlib\b",
+            "packages": r"- \[[xX]\]\s+Packages\b",
+          }
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+            for key, pattern in scopes.items():
+              selected = bool(re.search(pattern, body, flags=re.IGNORECASE))
+              f.write(f"{key}={'true' if selected else 'false'}\n")
+          PY
+
+      - name: Decide scope
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          SCOPE_LAUNCHER: ${{ steps.scope.outputs.launcher || 'false' }}
+          SCOPE_WEBSITE: ${{ steps.scope.outputs.website || 'false' }}
+          SCOPE_QUAZIP: ${{ steps.scope.outputs.quazip || 'false' }}
+          SCOPE_BZIP2: ${{ steps.scope.outputs.bzip2 || 'false' }}
+          SCOPE_ZLIB: ${{ steps.scope.outputs.zlib || 'false' }}
+          SCOPE_PACKAGES: ${{ steps.scope.outputs.packages || 'false' }}
+        run: |
+          changed="$(cat changed.txt || true)"
+
+          is_pr=false
+          if [ -n "${{ github.event.pull_request.number || '' }}" ]; then
+            is_pr=true
+          fi
+
+          match() {
+            echo "$changed" | grep -E "$1" >/dev/null 2>&1
+          }
+
+          scope_selected=false
+          if [ "$SCOPE_LAUNCHER" = "true" ] || [ "$SCOPE_WEBSITE" = "true" ] || [ "$SCOPE_QUAZIP" = "true" ] || [ "$SCOPE_BZIP2" = "true" ] || [ "$SCOPE_ZLIB" = "true" ] || [ "$SCOPE_PACKAGES" = "true" ]; then
+            scope_selected=true
+          fi
+
+          if $is_pr || [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$EVENT_NAME" = "merge_group" ] || [ "$EVENT_NAME" = "schedule" ]; then
+            should_test=true
+            should_build=true
+          elif [ "$ACTOR" = "dependabot[bot]" ]; then
+            should_test=true
+            should_build=true
+          elif match '^(launcher|libraries|tests|buildconfig|cmake|program_info|zlib|quazip|bzip2)/|CMakeLists.txt|\\.cpp$|\\.h$|\\.ui$'; then
+            should_test=true
+            should_build=true
+          elif $scope_selected; then
+            should_test=true
+            should_build=true
+          else
+            should_test=false
+            should_build=false
+          fi
+
+          run_zlib=false
+          run_bzip2=false
+          run_quazip=false
+          run_website=false
+          run_nix=false
+
+          match '^zlib/' && run_zlib=true
+          match '^bzip2/' && run_bzip2=true
+          match '^quazip/' && run_quazip=true
+          match '^website/' && run_website=true
+          match '^flake\.nix$|^shell\.nix$|^nix/' && run_nix=true
+
+          if [ "$SCOPE_ZLIB" = "true" ]; then run_zlib=true; fi
+          if [ "$SCOPE_BZIP2" = "true" ]; then run_bzip2=true; fi
+          if [ "$SCOPE_QUAZIP" = "true" ]; then run_quazip=true; fi
+          if [ "$SCOPE_WEBSITE" = "true" ]; then run_website=true; fi
+          if [ "$SCOPE_PACKAGES" = "true" ]; then run_nix=true; fi
+
+          echo "should-test=$should_test" >> "$GITHUB_OUTPUT"
+          echo "should-build=$should_build" >> "$GITHUB_OUTPUT"
+          echo "run-zlib=$run_zlib" >> "$GITHUB_OUTPUT"
+          echo "run-bzip2=$run_bzip2" >> "$GITHUB_OUTPUT"
+          echo "run-quazip=$run_quazip" >> "$GITHUB_OUTPUT"
+          echo "run-website=$run_website" >> "$GITHUB_OUTPUT"
+          echo "run-nix=$run_nix" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        run: |
+          echo "## Prepare Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Base ref: \`${{ steps.base.outputs.base }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Head ref: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Should test: \`${{ steps.decide.outputs.should-test }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Should build: \`${{ steps.decide.outputs.should-build }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run zlib: \`${{ steps.decide.outputs.run-zlib }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run bzip2: \`${{ steps.decide.outputs.run-bzip2 }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run quazip: \`${{ steps.decide.outputs.run-quazip }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run website: \`${{ steps.decide.outputs.run-website }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run nix: \`${{ steps.decide.outputs.run-nix }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Scope flags: launcher=${{ steps.scope.outputs.launcher || 'false' }}, website=${{ steps.scope.outputs.website || 'false' }}, quazip=${{ steps.scope.outputs.quazip || 'false' }}, bzip2=${{ steps.scope.outputs.bzip2 || 'false' }}, zlib=${{ steps.scope.outputs.zlib || 'false' }}, packages=${{ steps.scope.outputs.packages || 'false' }}" >> "$GITHUB_STEP_SUMMARY"
