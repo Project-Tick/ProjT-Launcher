@@ -98,16 +98,16 @@ class ModrinthAPI : public ResourceAPI {
     static QString getSideFilters(ModPlatform::Side side)
     {
         switch (side) {
-        case ModPlatform::Side::ClientSide:
-            return QString("\"client_side:required\",\"client_side:optional\"],[\"server_side:optional\",\"server_side:unsupported\"");
-        case ModPlatform::Side::ServerSide:
-            return QString("\"server_side:required\",\"server_side:optional\"],[\"client_side:optional\",\"client_side:unsupported\"");
-        case ModPlatform::Side::UniversalSide:
-            return QString("\"client_side:required\"],[\"server_side:required\"");
-        case ModPlatform::Side::NoSide:
-        // fallthrough
-        default:
-            return {};
+            case ModPlatform::Side::ClientSide:
+                return QString("\"client_side:required\",\"client_side:optional\"],[\"server_side:optional\",\"server_side:unsupported\"");
+            case ModPlatform::Side::ServerSide:
+                return QString("\"server_side:required\",\"server_side:optional\"],[\"client_side:optional\",\"client_side:unsupported\"");
+            case ModPlatform::Side::UniversalSide:
+                return QString("\"client_side:required\"],[\"server_side:required\"");
+            case ModPlatform::Side::NoSide:
+            // fallthrough
+            default:
+                return {};
         }
     }
 
@@ -130,19 +130,19 @@ class ModrinthAPI : public ResourceAPI {
     static QString resourceTypeParameter(ModPlatform::ResourceType type)
     {
         switch (type) {
-        case ModPlatform::ResourceType::Mod:
-            return "mod";
-        case ModPlatform::ResourceType::ResourcePack:
-            return "resourcepack";
-        case ModPlatform::ResourceType::ShaderPack:
-            return "shader";
-        case ModPlatform::ResourceType::DataPack:
-            return "datapack";
-        case ModPlatform::ResourceType::Modpack:
-            return "modpack";
-        default:
-            qWarning() << "Invalid resource type for Modrinth API!";
-            break;
+            case ModPlatform::ResourceType::Mod:
+                return "mod";
+            case ModPlatform::ResourceType::ResourcePack:
+                return "resourcepack";
+            case ModPlatform::ResourceType::ShaderPack:
+                return "shader";
+            case ModPlatform::ResourceType::DataPack:
+                return "datapack";
+            case ModPlatform::ResourceType::Modpack:
+                return "modpack";
+            default:
+                qWarning() << "Invalid resource type for Modrinth API!";
+                break;
         }
 
         return "";

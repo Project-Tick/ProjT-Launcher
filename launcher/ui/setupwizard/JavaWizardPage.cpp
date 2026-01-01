@@ -76,25 +76,25 @@ bool JavaWizardPage::validatePage()
     settings->set("AutomaticJavaDownload", m_java_widget->autoDownloadJava());
     settings->set("UserAskedAboutAutomaticJavaDownload", true);
     switch (result) {
-    default:
-    case JavaWizardWidget::ValidationStatus::Bad: {
-        return false;
-    }
-    case JavaWizardWidget::ValidationStatus::AllOK: {
-        settings->set("JavaPath", m_java_widget->javaPath());
-    } /* fallthrough */
-    case JavaWizardWidget::ValidationStatus::JavaBad: {
-        // Memory
-        auto s = APPLICATION->settings();
-        s->set("MinMemAlloc", m_java_widget->minHeapSize());
-        s->set("MaxMemAlloc", m_java_widget->maxHeapSize());
-        if (m_java_widget->permGenEnabled()) {
-            s->set("PermGen", m_java_widget->permGenSize());
-        } else {
-            s->reset("PermGen");
+        default:
+        case JavaWizardWidget::ValidationStatus::Bad: {
+            return false;
         }
-        return true;
-    }
+        case JavaWizardWidget::ValidationStatus::AllOK: {
+            settings->set("JavaPath", m_java_widget->javaPath());
+        } /* fallthrough */
+        case JavaWizardWidget::ValidationStatus::JavaBad: {
+            // Memory
+            auto s = APPLICATION->settings();
+            s->set("MinMemAlloc", m_java_widget->minHeapSize());
+            s->set("MaxMemAlloc", m_java_widget->maxHeapSize());
+            if (m_java_widget->permGenEnabled()) {
+                s->set("PermGen", m_java_widget->permGenSize());
+            } else {
+                s->reset("PermGen");
+            }
+            return true;
+        }
     }
 }
 

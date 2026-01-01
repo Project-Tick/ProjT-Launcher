@@ -189,8 +189,8 @@ bool FlameCreationTask::updateInstance()
         QDir old_minecraft_dir(inst->gameRoot());
 
         // We will remove all the previous overrides, to prevent duplicate files!
-        // TODO: Şu anda 'overrides' güncellemede her şeyi ezmekte. Değişmeyen dosyalar korunmalı.
-        // FIXME: Disabled mod'lar için özel bir işlem yapılmalı.
+    // TODO: Şu anda 'overrides' güncellemede her şeyi ezmekte. Değişmeyen dosyalar korunmalı.
+    // FIXME: Disabled mod'lar için özel bir işlem yapılmalı.
         auto old_overrides = Override::readOverrides("overrides", old_index_folder);
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())
@@ -479,8 +479,6 @@ bool FlameCreationTask::createInstance()
     // Don't add managed info to packs without an ID (most likely imported from ZIP)
     if (!m_managedId.isEmpty())
         instance.setManagedPack("flame", m_managedId, m_pack.name, m_managedVersionId, m_pack.version);
-    else if (m_pack.projectID != 0 && m_pack.fileID != 0)
-        instance.setManagedPack("flame", QString::number(m_pack.projectID), m_pack.name, QString::number(m_pack.fileID), m_pack.version);
     else
         instance.setManagedPack("flame", "", name(), "", "");
 
@@ -711,33 +709,33 @@ void FlameCreationTask::validateOtherResources(QEventLoop& loop)
         QString worldPath;
 
         switch (type) {
-        case ModPlatform::ResourceType::Mod:
-            validatePath(fileName, targetFolder, "mods");
-            zipMods.push_back(fileName);
-            break;
-        case ModPlatform::ResourceType::ResourcePack:
-            validatePath(fileName, targetFolder, "resourcepacks");
-            break;
-        case ModPlatform::ResourceType::TexturePack:
-            validatePath(fileName, targetFolder, "texturepacks");
-            break;
-        case ModPlatform::ResourceType::DataPack:
-            validatePath(fileName, targetFolder, "datapacks");
-            break;
-        case ModPlatform::ResourceType::ShaderPack:
-            // in theory flame API can't do this but who knows, that *may* change ?
-            // better to handle it if it *does* occur in the future
-            validatePath(fileName, targetFolder, "shaderpacks");
-            break;
-        case ModPlatform::ResourceType::World:
-            worldPath = validatePath(fileName, targetFolder, "saves");
-            installWorld(worldPath);
-            break;
-        case ModPlatform::ResourceType::Unknown:
-        /* fallthrough */
-        default:
-            qDebug() << "Can't Identify" << fileName << "at" << localPath << ", leaving it where it is.";
-            break;
+            case ModPlatform::ResourceType::Mod:
+                validatePath(fileName, targetFolder, "mods");
+                zipMods.push_back(fileName);
+                break;
+            case ModPlatform::ResourceType::ResourcePack:
+                validatePath(fileName, targetFolder, "resourcepacks");
+                break;
+            case ModPlatform::ResourceType::TexturePack:
+                validatePath(fileName, targetFolder, "texturepacks");
+                break;
+            case ModPlatform::ResourceType::DataPack:
+                validatePath(fileName, targetFolder, "datapacks");
+                break;
+            case ModPlatform::ResourceType::ShaderPack:
+                // in theory flame API can't do this but who knows, that *may* change ?
+                // better to handle it if it *does* occur in the future
+                validatePath(fileName, targetFolder, "shaderpacks");
+                break;
+            case ModPlatform::ResourceType::World:
+                worldPath = validatePath(fileName, targetFolder, "saves");
+                installWorld(worldPath);
+                break;
+            case ModPlatform::ResourceType::Unknown:
+            /* fallthrough */
+            default:
+                qDebug() << "Can't Identify" << fileName << "at" << localPath << ", leaving it where it is.";
+                break;
         }
     }
     // TODO: Diğer kaynak tipleriyle de çalışacak şekilde genişletilmeli.

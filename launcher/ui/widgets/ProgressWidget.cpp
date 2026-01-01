@@ -26,6 +26,7 @@
 
 ========================================================================== */
 
+
 #include "ProgressWidget.h"
 #include <QEventLoop>
 #include <QLabel>

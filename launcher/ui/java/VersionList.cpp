@@ -87,31 +87,31 @@ QVariant VersionList::data(const QModelIndex& index, int role) const
 
     auto version = (m_vlist[index.row()]);
     switch (role) {
-    case SortRole:
-        return -index.row();
-    case VersionPointerRole:
-        return QVariant::fromValue(std::dynamic_pointer_cast<BaseVersion>(m_vlist[index.row()]));
-    case VersionIdRole:
-        return version->descriptor();
-    case VersionRole:
-        return version->version.toString();
-    case RecommendedRole:
-        return false;  // do not recommend any version
-    case JavaNameRole:
-        return version->name();
-    case JavaMajorRole: {
-        auto major = version->version.toString();
-        if (major.startsWith("java")) {
-            major = "Java " + major.mid(4);
+        case SortRole:
+            return -index.row();
+        case VersionPointerRole:
+            return QVariant::fromValue(std::dynamic_pointer_cast<BaseVersion>(m_vlist[index.row()]));
+        case VersionIdRole:
+            return version->descriptor();
+        case VersionRole:
+            return version->version.toString();
+        case RecommendedRole:
+            return false;  // do not recommend any version
+        case JavaNameRole:
+            return version->name();
+        case JavaMajorRole: {
+            auto major = version->version.toString();
+            if (major.startsWith("java")) {
+                major = "Java " + major.mid(4);
+            }
+            return major;
         }
-        return major;
-    }
-    case TypeRole:
-        return version->packageType;
-    case Meta::VersionList::TimeRole:
-        return version->releaseTime;
-    default:
-        return QVariant();
+        case TypeRole:
+            return version->packageType;
+        case Meta::VersionList::TimeRole:
+            return version->releaseTime;
+        default:
+            return QVariant();
     }
 }
 

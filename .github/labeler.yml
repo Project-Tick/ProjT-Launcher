@@ -33,7 +33,7 @@
 2.code-base-changes:
   - changed-files:
       - any-glob-to-any-file:
-          - launcher/**/*.{cpp,h,mm,qml,ui,json,yml,xml,js}
+          - launcher/**/*.{cpp,h,mm,ui,json,yml,xml,js}
           - launcher/**/*.sh
           - launcher/**/*.bat
           - launcher/**/*.ps1

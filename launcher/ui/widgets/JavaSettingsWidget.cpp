@@ -75,8 +75,8 @@
 
 #include "ui_JavaSettingsWidget.h"
 
-JavaSettingsWidget::JavaSettingsWidget(InstancePtr instance, SettingsViewModel* viewModel, QWidget* parent)
-    : QWidget(parent), m_instance(std::move(instance)), m_settingsViewModel(viewModel), m_ui(new Ui::JavaSettingsWidget)
+JavaSettingsWidget::JavaSettingsWidget(InstancePtr instance, QWidget* parent)
+    : QWidget(parent), m_instance(std::move(instance)), m_ui(new Ui::JavaSettingsWidget)
 {
     m_ui->setupUi(this);
 
@@ -145,11 +145,8 @@ void JavaSettingsWidget::loadSettings()
         settings = APPLICATION->settings();
 
     // Java Settings
-    const bool overrideJava =
-        m_settingsViewModel && m_instance ? m_settingsViewModel->overrideJavaLocation() : settings->get("OverrideJavaLocation").toBool();
-    m_ui->javaInstallationGroupBox->setChecked(overrideJava);
-    const auto javaPathValue = m_settingsViewModel && m_instance ? m_settingsViewModel->javaPath() : settings->get("JavaPath").toString();
-    m_ui->javaPathTextBox->setText(javaPathValue);
+    m_ui->javaInstallationGroupBox->setChecked(settings->get("OverrideJavaLocation").toBool());
+    m_ui->javaPathTextBox->setText(settings->get("JavaPath").toString());
 
     m_ui->skipCompatibilityCheckBox->setChecked(settings->get("IgnoreJavaCompatibility").toBool());
 
@@ -164,15 +161,9 @@ void JavaSettingsWidget::loadSettings()
     }
 
     // Memory
-    const bool overrideMemory =
-        m_settingsViewModel && m_instance ? m_settingsViewModel->overrideMemory() : settings->get("OverrideMemory").toBool();
-    m_ui->memoryGroupBox->setChecked(m_instance == nullptr || overrideMemory);
+    m_ui->memoryGroupBox->setChecked(m_instance == nullptr || settings->get("OverrideMemory").toBool());
     int min = settings->get("MinMemAlloc").toInt();
     int max = settings->get("MaxMemAlloc").toInt();
-    if (m_settingsViewModel && m_instance) {
-        min = m_settingsViewModel->minMemory();
-        max = m_settingsViewModel->maxMemory();
-    }
     if (min < max) {
         m_ui->minMemSpinBox->setValue(min);
         m_ui->maxMemSpinBox->setValue(max);
@@ -184,8 +175,7 @@ void JavaSettingsWidget::loadSettings()
 
     // Java arguments
     m_ui->javaArgumentsGroupBox->setChecked(m_instance == nullptr || settings->get("OverrideJavaArgs").toBool());
-    const auto jvmArgs = m_settingsViewModel && m_instance ? m_settingsViewModel->jvmArgs() : settings->get("JvmArgs").toString();
-    m_ui->jvmArgsTextBox->setPlainText(jvmArgs);
+    m_ui->jvmArgsTextBox->setPlainText(settings->get("JvmArgs").toString());
 }
 
 void JavaSettingsWidget::saveSettings()
@@ -202,22 +192,15 @@ void JavaSettingsWidget::saveSettings()
     // Java Install Settings
     bool javaInstall = m_instance == nullptr || m_ui->javaInstallationGroupBox->isChecked();
 
-    if (m_instance != nullptr && m_settingsViewModel) {
-        m_settingsViewModel->setOverrideJavaLocation(m_instance->id(), javaInstall);
-        if (javaInstall) {
-            m_settingsViewModel->setJavaPath(m_instance->id(), m_ui->javaPathTextBox->text());
-        }
-    } else {
-        if (m_instance != nullptr)
-            settings->set("OverrideJavaLocation", javaInstall);
+    if (m_instance != nullptr)
+        settings->set("OverrideJavaLocation", javaInstall);
 
-        if (javaInstall) {
-            settings->set("JavaPath", m_ui->javaPathTextBox->text());
-            settings->set("IgnoreJavaCompatibility", m_ui->skipCompatibilityCheckBox->isChecked());
-        } else {
-            settings->reset("JavaPath");
-            settings->reset("IgnoreJavaCompatibility");
-        }
+    if (javaInstall) {
+        settings->set("JavaPath", m_ui->javaPathTextBox->text());
+        settings->set("IgnoreJavaCompatibility", m_ui->skipCompatibilityCheckBox->isChecked());
+    } else {
+        settings->reset("JavaPath");
+        settings->reset("IgnoreJavaCompatibility");
     }
 
     if (m_instance == nullptr) {
@@ -229,25 +212,18 @@ void JavaSettingsWidget::saveSettings()
     // Memory
     bool memory = m_instance == nullptr || m_ui->memoryGroupBox->isChecked();
 
-    if (m_instance != nullptr && m_settingsViewModel) {
-        m_settingsViewModel->setOverrideMemory(m_instance->id(), memory);
-    } else if (m_instance != nullptr) {
+    if (m_instance != nullptr)
         settings->set("OverrideMemory", memory);
-    }
 
     if (memory) {
         int min = m_ui->minMemSpinBox->value();
         int max = m_ui->maxMemSpinBox->value();
-        if (m_settingsViewModel && m_instance) {
-            m_settingsViewModel->setMemorySettings(m_instance->id(), min, max);
+        if (min < max) {
+            settings->set("MinMemAlloc", min);
+            settings->set("MaxMemAlloc", max);
         } else {
-            if (min < max) {
-                settings->set("MinMemAlloc", min);
-                settings->set("MaxMemAlloc", max);
-            } else {
-                settings->set("MinMemAlloc", max);
-                settings->set("MaxMemAlloc", min);
-            }
+            settings->set("MinMemAlloc", max);
+            settings->set("MaxMemAlloc", min);
         }
         settings->set("PermGen", m_ui->permGenSpinBox->value());
     } else {
@@ -263,12 +239,7 @@ void JavaSettingsWidget::saveSettings()
         settings->set("OverrideJavaArgs", javaArgs);
 
     if (javaArgs) {
-        const auto args = m_ui->jvmArgsTextBox->toPlainText().replace("\n", " ");
-        if (m_settingsViewModel && m_instance) {
-            m_settingsViewModel->setJavaArgs(m_instance->id(), args);
-        } else {
-            settings->set("JvmArgs", args);
-        }
+        settings->set("JvmArgs", m_ui->jvmArgsTextBox->toPlainText().replace("\n", " "));
     } else {
         settings->reset("JvmArgs");
     }
@@ -311,12 +282,6 @@ void JavaSettingsWidget::onJavaTest()
 
 void JavaSettingsWidget::onJavaAutodetect()
 {
-    if (m_settingsViewModel && m_instance) {
-        m_settingsViewModel->autoDetectJava(m_instance->id(), this);
-        m_ui->javaPathTextBox->setText(m_settingsViewModel->javaPath());
-        return;
-    }
-
     if (JavaUtils::getJavaCheckPath().isEmpty()) {
         JavaCommon::javaCheckNotFound(this);
         return;
@@ -349,8 +314,7 @@ void JavaSettingsWidget::updateThresholds()
     const QString warningColour(QStringLiteral("<span style='color:#f5c211'>%1</span>"));
 
     if (maxMem >= sysMiB) {
-        m_ui->labelMaxMemNotice->setText(
-            QString("<span style='color:red'>%1</span>").arg(tr("Your maximum memory allocation exceeds your system memory capacity.")));
+        m_ui->labelMaxMemNotice->setText(QString("<span style='color:red'>%1</span>").arg(tr("Your maximum memory allocation exceeds your system memory capacity.")));
         m_ui->labelMaxMemNotice->show();
     } else if (maxMem > (sysMiB * 0.9)) {
         m_ui->labelMaxMemNotice->setText(warningColour.arg(tr("Your maximum memory allocation is close to your system memory capacity.")));

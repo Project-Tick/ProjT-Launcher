@@ -61,7 +61,6 @@
 #include <QWidget>
 #include "BaseInstance.h"
 #include "JavaCommon.h"
-#include "viewmodels/SettingsViewModel.h"
 
 namespace Ui {
 class JavaSettingsWidget;
@@ -71,8 +70,8 @@ class JavaSettingsWidget : public QWidget {
     Q_OBJECT
 
    public:
-    explicit JavaSettingsWidget(QWidget* parent = nullptr) : JavaSettingsWidget(nullptr, nullptr, parent) {}
-    explicit JavaSettingsWidget(InstancePtr instance, SettingsViewModel* viewModel = nullptr, QWidget* parent = nullptr);
+    explicit JavaSettingsWidget(QWidget* parent = nullptr) : JavaSettingsWidget(nullptr, nullptr) {}
+    explicit JavaSettingsWidget(InstancePtr instance, QWidget* parent = nullptr);
     ~JavaSettingsWidget() override;
 
     void loadSettings();
@@ -86,7 +85,6 @@ class JavaSettingsWidget : public QWidget {
 
    private:
     InstancePtr m_instance;
-    SettingsViewModel* m_settingsViewModel = nullptr;
     Ui::JavaSettingsWidget* m_ui;
     unique_qobject_ptr<JavaCommon::TestCheck> m_checker;
 };

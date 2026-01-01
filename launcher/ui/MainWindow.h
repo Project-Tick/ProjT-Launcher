@@ -68,14 +68,10 @@
 #include "minecraft/auth/MinecraftAccount.h"
 
 class LaunchController;
+class NewsChecker;
 class QToolButton;
 class InstanceProxyModel;
 class LabeledToolButton;
-class LauncherViewModel;
-class InstanceListViewModel;
-class NewsViewModel;
-class SettingsViewModel;
-class TestQmlPanel;
 class QLabel;
 class MinecraftLauncher;
 class BaseProfilerFactory;
@@ -147,8 +143,6 @@ class MainWindow : public QMainWindow {
     void on_actionViewSelectedInstFolder_triggered();
 
     void refreshInstances();
-    void handleInstanceRenameRequest(const QString& id, const QString& newName);
-    void handleInstanceDuplicateRequest(const QString& id, const QString& newName);
 
     void checkForUpdates();
 
@@ -250,22 +244,14 @@ class MainWindow : public QMainWindow {
     void setCatBackground(bool enabled);
     void updateInstanceToolIcon(QString new_icon);
     void setSelectedInstanceById(const QString& id);
-    void updateInstanceListMetrics();
     void updateStatusCenter();
-    void updateInstanceActions();
-    void syncSelectionFromViewModel();
-    void applyNoSelectionState();
+    void setInstanceActionsEnabled(bool enabled);
 
     void runModalTask(Task* task);
     void instanceFromInstanceTask(InstanceTask* task);
 
    private:
     Ui::MainWindow* ui;
-    LauncherViewModel* m_launcherViewModel = nullptr;
-    InstanceListViewModel* m_instanceListViewModel = nullptr;
-    NewsViewModel* m_newsViewModel = nullptr;
-    SettingsViewModel* m_settingsViewModel = nullptr;
-    TestQmlPanel* m_testQmlPanel = nullptr;
     // these are managed by Qt's memory management model!
     InstanceView* view = nullptr;
     InstanceProxyModel* proxymodel = nullptr;
@@ -279,10 +265,10 @@ class MainWindow : public QMainWindow {
 
     std::shared_ptr<Setting> instanceToolbarSetting = nullptr;
 
+    unique_qobject_ptr<NewsChecker> m_newsChecker;
+
     InstancePtr m_selectedInstance;
     QString m_currentInstIcon;
-    bool m_syncingSelectionFromViewModel = false;
-    bool m_restoringSelection = false;
 
     // managed by the application object
     Task* m_versionLoadTask = nullptr;

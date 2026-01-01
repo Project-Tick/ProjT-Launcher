@@ -70,6 +70,7 @@
 class LaunchController;
 class LocalPeer;
 class InstanceWindow;
+class MainWindow;
 class ViewLogWindow;
 class SetupWizard;
 class GenericPageProvider;
@@ -89,8 +90,6 @@ class ITheme;
 class MCEditTool;
 class ThemeManager;
 class IconTheme;
-class MainWindow;
-class QmlMainWindow;
 
 namespace Meta {
 class Index;
@@ -200,18 +199,13 @@ class Application : public QApplication {
     bool openJsonEditor(const QString& filename);
 
     InstanceWindow* showInstanceWindow(InstancePtr instance, QString page = QString());
-    [[deprecated("Use showQmlMainWindow() instead")]] MainWindow* showMainWindow(
-        bool minimized = false);  // Legacy - redirects to QML, will be removed
-    QmlMainWindow* showQmlMainWindow(bool minimized = false);
+    MainWindow* showMainWindow(bool minimized = false);
     ViewLogWindow* showLogWindow();
 
     void updateIsRunning(bool running);
     bool updatesAreAllowed();
 
     void ShowGlobalSettings(class QWidget* parent, QString open_page = QString());
-    Q_INVOKABLE void notifyGlobalSettingsApplied();
-    Q_INVOKABLE void finishSetupWizard(int status);
-    Q_INVOKABLE void applyWizardSettings(const QVariantMap& values);
 
     bool updaterEnabled();
     QString updaterBinaryName();
@@ -316,7 +310,7 @@ class Application : public QApplication {
     bool m_updateRunning = false;
 
     // main window, if any
-    QmlMainWindow* m_qmlMainWindow = nullptr;  // QML-based main window
+    MainWindow* m_mainWindow = nullptr;
 
     // log window, if any
     ViewLogWindow* m_viewLogWindow = nullptr;

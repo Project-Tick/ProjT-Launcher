@@ -10,7 +10,6 @@ const typeConfig = {
   master: ['development', 'primary'],
   main: ['development', 'primary'],
   release: ['release', 'primary'],
-  qml_migration: ['development', 'feature'],
   feature: ['development', 'feature'],
   bugfix: ['development', 'bugfix'],
   hotfix: ['release', 'hotfix'],
@@ -22,7 +21,6 @@ const orderConfig = {
   master: 1,
   main: 1,
   release: 2,
-  qml_migration: 3,
   feature: 4,
   bugfix: 4,
   hotfix: 5,
@@ -53,7 +51,6 @@ function classify(branch) {
     branch,
     order: orderConfig[normalizedPrefix] ?? orderConfig[prefix.split('/')[0]] ?? Infinity,
     isRelease: prefix.startsWith('release') || prefix.startsWith('hotfix'),
-    isFeature: prefix.startsWith('feature') || prefix === 'qml_migration',
     type: typeConfig[normalizedPrefix] ?? typeConfig[prefix.split('/')[0]] ?? ['wip'],
     version: version ?? null,
     suffix: suffix ?? null,
@@ -90,11 +87,11 @@ if (require.main === module) {
   console.log('ProjT Launcher Branch Classifier Tests\n')
   
   console.log('split(branch):')
-  const testSplits = ['develop', 'release-1.0.0', 'feature/new-ui', 'qml_migration', 'hotfix-1.0.1']
+  const testSplits = ['develop', 'release-1.0.0', 'feature/new-ui', 'hotfix-1.0.1']
   testSplits.forEach(b => console.log(`  ${b}:`, split(b)))
   
   console.log('\nclassify(branch):')
-  const testClassify = ['develop', 'master', 'release-1.0.0', 'qml_migration', 'feature/settings', 'bugfix/crash-fix']
+  const testClassify = ['develop', 'master', 'release-1.0.0', 'feature/settings', 'bugfix/crash-fix']
   testClassify.forEach(b => console.log(`  ${b}:`, classify(b)))
   
   console.log('\nshouldRunFullCI(branch):')

@@ -99,8 +99,6 @@ struct Manifest {
     QString name;
     QString version;
     QString author;
-    int projectID = 0;
-    int fileID = 0;
     // File id -> File
     QMap<int, Flame::File> files;
     QString overrides;

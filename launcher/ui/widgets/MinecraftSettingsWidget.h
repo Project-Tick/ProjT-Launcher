@@ -61,7 +61,6 @@
 #include <QWidget>
 #include "JavaSettingsWidget.h"
 #include "minecraft/MinecraftInstance.h"
-#include "viewmodels/SettingsViewModel.h"
 
 namespace Ui {
 class MinecraftSettingsWidget;
@@ -69,7 +68,7 @@ class MinecraftSettingsWidget;
 
 class MinecraftSettingsWidget : public QWidget {
    public:
-    MinecraftSettingsWidget(MinecraftInstancePtr instance, SettingsViewModel* viewModel = nullptr, QWidget* parent = nullptr);
+    MinecraftSettingsWidget(MinecraftInstancePtr instance, QWidget* parent = nullptr);
     ~MinecraftSettingsWidget() override;
 
     void loadSettings();
@@ -85,7 +84,6 @@ class MinecraftSettingsWidget : public QWidget {
     void selectDataPacksFolder();
 
     MinecraftInstancePtr m_instance;
-    SettingsViewModel* m_settingsViewModel = nullptr;
     Ui::MinecraftSettingsWidget* m_ui;
     JavaSettingsWidget* m_javaSettings = nullptr;
     bool m_quickPlaySingleplayer = false;

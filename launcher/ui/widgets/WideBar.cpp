@@ -196,16 +196,16 @@ QMenu* WideBar::createContextMenu(QWidget* parent, const QString& title)
     auto* contextMenu = new QMenu(title, parent);
     for (auto& item : m_entries) {
         switch (item.type) {
-        default:
-        case BarEntry::Type::None:
-            break;
-        case BarEntry::Type::Separator:
-        case BarEntry::Type::Spacer:
-            contextMenu->addSeparator();
-            break;
-        case BarEntry::Type::Action:
-            contextMenu->addAction(item.menu_action);
-            break;
+            default:
+            case BarEntry::Type::None:
+                break;
+            case BarEntry::Type::Separator:
+            case BarEntry::Type::Spacer:
+                contextMenu->addSeparator();
+                break;
+            case BarEntry::Type::Action:
+                contextMenu->addAction(item.menu_action);
+                break;
         }
     }
     return contextMenu;

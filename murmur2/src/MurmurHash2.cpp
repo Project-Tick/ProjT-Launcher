@@ -83,15 +83,15 @@ void FourBytes_MurmurHash2(const unsigned char* data, IncrementalHashInfo& prev)
 
         // Handle the last few bytes of the input array
         switch (prev.len) {
-        case 3:
-            prev.h ^= data[2] << 16;
-            /* fall through */
-        case 2:
-            prev.h ^= data[1] << 8;
-            /* fall through */
-        case 1:
-            prev.h ^= data[0];
-            prev.h *= m;
+            case 3:
+                prev.h ^= data[2] << 16;
+                /* fall through */
+            case 2:
+                prev.h ^= data[1] << 8;
+                /* fall through */
+            case 1:
+                prev.h ^= data[0];
+                prev.h *= m;
         };
 
         // Do a few final mixes of the hash to ensure the last few

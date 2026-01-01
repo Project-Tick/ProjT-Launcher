@@ -13,8 +13,8 @@
 #pragma once
 
 #include <QWidget>
-#include "minecraft/BackupManager.h"
 #include "minecraft/MinecraftInstance.h"
+#include "minecraft/BackupManager.h"
 #include "ui/pages/BasePage.h"
 
 namespace Ui {
@@ -24,7 +24,7 @@ class BackupDialog;
 class BackupPage : public QWidget, public BasePage {
     Q_OBJECT
 
-   public:
+public:
     explicit BackupPage(MinecraftInstance* inst, QWidget* parent = nullptr);
     ~BackupPage() override;
 
@@ -38,7 +38,7 @@ class BackupPage : public QWidget, public BasePage {
     void openedImpl() override;
     void closedImpl() override;
 
-   private slots:
+private slots:
     void on_createButton_clicked();
     void on_restoreButton_clicked();
     void on_deleteButton_clicked();
@@ -50,7 +50,7 @@ class BackupPage : public QWidget, public BasePage {
     void updateBackupDetails();
     void updateEstimatedSize();
 
-   private:
+private:
     BackupOptions getSelectedOptions() const;
     void setupConnections();
 
