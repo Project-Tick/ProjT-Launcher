@@ -75,7 +75,7 @@ jobs:
       head-ref: ${{ github.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
 
@@ -414,7 +414,7 @@ jobs:
       contents: read
     
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           ref: ${{ needs.prepare.outputs.head-ref }}
 
@@ -434,7 +434,7 @@ jobs:
     if: needs.prepare.outputs.should-test == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: nosborn/github-action-markdown-cli@1a79194d2cebd7ebdf9f8079ab17f7761b14aec0
         with:
           files: .
@@ -445,8 +445,8 @@ jobs:
     if: needs.prepare.outputs.run-bot == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
         with:
           node-version: '20'
       - name: Check bot syntax
@@ -458,8 +458,8 @@ jobs:
     if: needs.prepare.outputs.run-meta == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/setup-python@4f41a90a1f38628c7ccc608d05fbafe701bc20ae
         with:
           python-version: '3.11'
       - name: Compile meta sources
@@ -471,8 +471,8 @@ jobs:
     if: needs.prepare.outputs.run-branding == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/setup-python@4f41a90a1f38628c7ccc608d05fbafe701bc20ae
         with:
           python-version: '3.11'
       - name: Validate SVG assets
@@ -565,7 +565,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           submodules: "true"
           path: "ProjTLauncher-source"
@@ -592,7 +592,7 @@ jobs:
           df -h
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
       - name: Grab and store version
         run: |
           tag_name=$(echo ${{ github.ref }} | grep -oE "[^/]+$")
@@ -648,7 +648,7 @@ jobs:
 
       - name: Create release
         id: create_release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@5122b4edc95f85501a71628a57dc180a03ec7588
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ github.ref }}
@@ -778,7 +778,7 @@ jobs:
     steps:
       - name: Show OS info
         run: cat /etc/os-release
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Install build tools
         working-directory: quazip
@@ -916,7 +916,7 @@ jobs:
         runner:
           - "fedora:42"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Install build tools
         run: dnf -y install g++ make cmake qt6-qtbase-devel qt6-qt5compat-devel zlib-ng-devel zlib-ng-compat-devel
       - name: Run cmake
@@ -944,7 +944,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Configure CMake
         run: cmake -DCMAKE_BUILD_TYPE="${{env.BUILD_TYPE}}" -DBUILD_SHARED_LIBS=OFF -DQUAZIP_ENABLE_TESTS=ON -DQUAZIP_USE_QT_ZLIB=ON -DCMAKE_PREFIX_PATH="/usr/local/Qt-${{ matrix.qt_version }}" -B build
@@ -973,15 +973,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: TheMrMilchmann/setup-msvc-dev@v3
+      - uses: TheMrMilchmann/setup-msvc-dev@3462509a550bd581ef073d5daa110e2fa2738b38
         with:
           arch: x64
 
       - name: Restore Qt build cache
         id: cache-qt-restore
-        uses: actions/cache@v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
         with:
           key: windows-qt-${{ matrix.qt_version }}
           path: qt-everywhere-src-${{ matrix.qt_version }}
@@ -989,7 +989,7 @@ jobs:
       - name: Restore Qt zip
         if: steps.cache-qt-restore.outputs.cache-hit != 'true'
         id: cache-qt-zip-restore
-        uses: actions/cache@v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
         with:
           key: windows-qt-${{ matrix.qt_version }}-zip
           path: qt-everywhere-src-${{ matrix.qt_version }}.zip
@@ -1004,7 +1004,7 @@ jobs:
       - name: Save Qt zip
         if: steps.cache-qt-restore.outputs.cache-hit != 'true' && steps.cache-qt-zip-restore.outputs.cache-hit != 'true'
         id: cache-qt-zip-save
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
         with:
           path: qt-everywhere-src-${{ matrix.qt_version }}.zip
           key: windows-qt-${{ matrix.qt_version }}-zip
@@ -1089,7 +1089,7 @@ jobs:
       - name: Cache Qt
         if: steps.cache-qt-restore.outputs.cache-hit != 'true'
         id: cache-qt
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
         with:
           path: qt-everywhere-src-${{ matrix.qt_version }}
           key: windows-qt-${{ matrix.qt_version }}
@@ -1129,15 +1129,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: TheMrMilchmann/setup-msvc-dev@v3
+      - uses: TheMrMilchmann/setup-msvc-dev@3462509a550bd581ef073d5daa110e2fa2738b38
         with:
           arch: x64
 
       - name: Restore Qt build cache
         id: cache-qt-restore
-        uses: actions/cache@v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
         with:
           key: windows-qt-${{ matrix.qt_version }}
           path: qt-everywhere-src-${{ matrix.qt_version }}
@@ -1145,7 +1145,7 @@ jobs:
       - name: Restore Qt zip
         if: steps.cache-qt-restore.outputs.cache-hit != 'true'
         id: cache-qt-zip-restore
-        uses: actions/cache@v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
         with:
           key: windows-qt-${{ matrix.qt_version }}-zip
           path: qt-everywhere-src-${{ matrix.qt_version }}.zip
@@ -1160,7 +1160,7 @@ jobs:
       - name: Save Qt zip
         if: steps.cache-qt-restore.outputs.cache-hit != 'true' && steps.cache-qt-zip-restore.outputs.cache-hit != 'true'
         id: cache-qt-zip-save
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
         with:
           path: qt-everywhere-src-${{ matrix.qt_version }}.zip
           key: windows-qt-${{ matrix.qt_version }}-zip
@@ -1245,7 +1245,7 @@ jobs:
       - name: Cache Qt
         if: steps.cache-qt-restore.outputs.cache-hit != 'true'
         id: cache-qt
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
         with:
           path: qt-everywhere-src-${{ matrix.qt_version }}
           key: windows-qt-${{ matrix.qt_version }}-zip
@@ -1277,7 +1277,7 @@ jobs:
     container:
       image: debian:testing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
       - name: Install deps
@@ -1297,7 +1297,7 @@ jobs:
 
       - name: Upload meson log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: meson-log
           path: meson-log.txt
@@ -1313,7 +1313,7 @@ jobs:
     container:
       image: debian:testing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
       - name: Install deps
@@ -1334,7 +1334,7 @@ jobs:
 
       - name: Upload CMakeOutput.log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: CMakeOutput.log
           path: CMakeOutput.log
@@ -1350,7 +1350,7 @@ jobs:
     container:
       image: debian:testing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
       - name: Install deps
@@ -1371,7 +1371,7 @@ jobs:
 
       - name: Upload CMakeOutput.log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: CMakeOutput.log
           path: CMakeOutput.log
@@ -1387,7 +1387,7 @@ jobs:
     container:
       image: debian:testing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
       - name: Install deps
@@ -1408,7 +1408,7 @@ jobs:
 
       - name: Upload CMakeOutput.log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: CMakeOutput.log
           path: CMakeOutput.log
@@ -1424,7 +1424,7 @@ jobs:
     container:
       image: debian:testing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
       - name: Install deps
@@ -1445,7 +1445,7 @@ jobs:
 
       - name: Upload CMakeOutput.log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: CMakeOutput.log
           path: CMakeOutput.log
@@ -1461,7 +1461,7 @@ jobs:
     container:
       image: ubuntu:jammy
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
       - name: Install deps
@@ -1482,7 +1482,7 @@ jobs:
 
       - name: Upload meson log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: meson-log
           path: meson-log.txt
@@ -1498,7 +1498,7 @@ jobs:
     container:
       image: ubuntu:jammy
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Install deps
         run: |
@@ -1520,7 +1520,7 @@ jobs:
 
       - name: Upload CMakeOutput.log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: CMakeOutput.log
           path: CMakeOutput.log
@@ -1536,7 +1536,7 @@ jobs:
     container:
       image: registry.fedoraproject.org/fedora:35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Install deps
         run: |
@@ -1554,7 +1554,7 @@ jobs:
 
       - name: Upload meson log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: meson-log
           path: meson-log.txt
@@ -1570,7 +1570,7 @@ jobs:
     container:
       image: registry.fedoraproject.org/fedora:35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Install deps
         run: |
@@ -1589,7 +1589,7 @@ jobs:
 
       - name: Upload CMakeOutput.log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: CMakeOutput.log
           path: CMakeOutput.log
@@ -1605,7 +1605,7 @@ jobs:
     container:
       image: registry.fedoraproject.org/fedora:rawhide
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Install deps
         run: |
@@ -1623,7 +1623,7 @@ jobs:
 
       - name: Upload meson log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: meson-log
           path: meson-log.txt
@@ -1639,7 +1639,7 @@ jobs:
     container:
       image: registry.fedoraproject.org/fedora:rawhide
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Install deps
         run: |
@@ -1658,7 +1658,7 @@ jobs:
 
       - name: Upload CMakeOutput.log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: CMakeOutput.log
           path: CMakeOutput.log
@@ -1697,7 +1697,7 @@ jobs:
              Mesa-libEGL-devel \
              Mesa-libGL-devel
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
       - name: Install deps
@@ -1716,7 +1716,7 @@ jobs:
 
       - name: Upload meson log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: meson-log
           path: meson-log.txt
@@ -1755,7 +1755,7 @@ jobs:
              Mesa-libEGL-devel \
              Mesa-libGL-devel
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
       - name: Install deps
@@ -1775,7 +1775,7 @@ jobs:
 
       - name: Upload CMakeOutput.log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: CMakeOutput.log
           path: CMakeOutput.log
@@ -1814,7 +1814,7 @@ jobs:
              Mesa-libEGL-devel \
              Mesa-libGL-devel
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
       - name: Install deps
@@ -1833,7 +1833,7 @@ jobs:
 
       - name: Upload meson log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: meson-log
           path: meson-log.txt
@@ -1872,7 +1872,7 @@ jobs:
              Mesa-libEGL-devel \
              Mesa-libGL-devel
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
       - name: Install deps
@@ -1892,7 +1892,7 @@ jobs:
 
       - name: Upload CMakeOutput.log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: CMakeOutput.log
           path: CMakeOutput.log
@@ -1907,14 +1907,14 @@ jobs:
         node-version: [20.x]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
         with:
           node-version: ${{ matrix.node-version }}
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@1e1c8eafbd745f64b1ef30a7d7ed7965034c486c
 
       - name: Install dependencies & build
         run: |
@@ -1922,13 +1922,13 @@ jobs:
           pnpm run build
 
       - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
         with:
           path: ./_site
 
   deploy-website:
     # Only deploy on pushes to develop; skip PRs/merge_group explicitly
-    if: ${{ github.repository_owner == 'Project-Tick' && github.event_name != 'push' && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request' && github.event_name == 'merge_group' && needs.prepare.outputs.run-website == 'true' }}
+    if: ${{ github.repository_owner == 'Project-Tick' &&  needs.prepare.outputs.run-website == 'true' }}
     needs: [build-website, prepare]
     permissions:
       pages: write
@@ -1940,7 +1940,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@854d7aa1b99e4509c4d1b53d69b7ba4eaf39215a
 
   backport:
     name: Backport to Release Branch
@@ -1950,7 +1950,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -2015,7 +2015,7 @@ jobs:
 
       - name: Create backport PR
         if: steps.target.outputs.target_branch != ''
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           script: |
             const branch = '${{ steps.target.outputs.target_branch }}';
@@ -2140,7 +2140,7 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
     - name: Install packages (Linux)
@@ -2249,7 +2249,7 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
 
     - name: Generate project files (cmake)
@@ -2367,7 +2367,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
     - name: Install packages (Windows)
       if: runner.os == 'Windows'
@@ -2395,7 +2395,7 @@ jobs:
       run: cmake --build build --config ${{ matrix.build-config || 'Release' }} -t ${{ matrix.pkgtgt }}
 
     - name: Upload build errors
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
       if: failure()
       with:
         name: ${{ matrix.name }} (cmake)
@@ -2414,12 +2414,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           submodules: "true"
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@f67ec12472e1b361f5e1e2085f5e6f85a57e3cd6
         with:
           config-file: ./.github/codeql/codeql-config.yml
           queries: security-and-quality
@@ -2456,7 +2456,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@f67ec12472e1b361f5e1e2085f5e6f85a57e3cd6
 
   build-zlib-ci-configure:
     name: ${{ matrix.name }}
@@ -2567,7 +2567,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
     - name: Install packages (Ubuntu)
       if: runner.os == 'Linux' && matrix.packages
@@ -2599,7 +2599,7 @@ jobs:
         QEMU_RUN: ${{ matrix.qemu-run }}
 
     - name: Upload build errors
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
       if: failure()
       with:
         name: ${{ matrix.name }} (configure)
@@ -2614,12 +2614,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
@@ -2666,11 +2666,11 @@ jobs:
         working-directory: zlib
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         fetch-depth: 0
     - name: Setup MSYS2
-      uses: msys2/setup-msys2@v2
+      uses: msys2/setup-msys2@9012c742974e959643d3ea41569d7ee281f67186
       with:
         msystem: ${{ matrix.sys }}
         update: true
@@ -2705,11 +2705,11 @@ jobs:
     name: Cygwin
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         fetch-depth: 0
     - name: Setup cygwin
-      uses: cygwin/cygwin-install-action@master
+      uses: cygwin/cygwin-install-action@7d2dc1e241644c3318bed9ec74115d1929baa681
       with:
         packages: >-
           cmake
@@ -2738,7 +2738,7 @@ jobs:
 
     steps:
       - name: Publish on Winget
-        uses: vedantmgoyal2009/winget-releaser@v2
+        uses: vedantmgoyal2009/winget-releaser@19e706d4c9121098010096f9c495a70a7518b30f
         with:
           identifier: ProjectTick.ProjTLauncher
           version: ${{ github.event.release.tag_name }}
@@ -2754,14 +2754,14 @@ jobs:
     
     steps:
       - name: Checkout CI scripts
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           persist-credentials: false
           sparse-checkout: |
             ci/github-script
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
         with:
           node-version: '20'
 
@@ -2772,7 +2772,7 @@ jobs:
           npm ci --omit=dev
 
       - name: Process review
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           github-token: ${{ github.token }}
           retries: 3
@@ -2886,7 +2886,7 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/stale@v10
+      - uses: actions/stale@a21a0816299b11691f9592ef0d63d08e02f06d9d
         with:
           days-before-stale: 60
           days-before-close: -1 # Don't close anything
@@ -2903,12 +2903,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Use Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@1e1c8eafbd745f64b1ef30a7d7ed7965034c486c
         name: Install pnpm
 
       - name: Install dependencies & update contributors
@@ -2927,7 +2927,7 @@ jobs:
 
       - name: Create PR
         id: cpr
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@2271f1ddcf09437ed8f019733eb5cfba58ac76f0
         with:
           base: "develop"
           branch: "update-contributors"
@@ -2937,7 +2937,7 @@ jobs:
 
       - name: Enable Pull Request Automerge
         if: steps.cpr.outputs.pull-request-operation == 'created'
-        uses: peter-evans/enable-pull-request-automerge@v3
+        uses: peter-evans/enable-pull-request-automerge@23c09f60046c64f1b0079b44af614bfa411395b9
         with:
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: merge
@@ -2948,13 +2948,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
-      - uses: cachix/install-nix-action@v31
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15
 
       - name: Use PAT
         run: echo "GITHUB_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
 
-      - uses: DeterminateSystems/update-flake-lock@v28
+      - uses: DeterminateSystems/update-flake-lock@2235257b90962ba68499d64da5b0d1eaa3b46c1e
         with:
           commit-msg: "chore(nix): update lockfile"
           pr-title: "chore(nix): update lockfile"
@@ -2969,7 +2969,7 @@ jobs:
     permissions:
       statuses: write
     steps:
-      - uses: actions/github-script@v8
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         env:
           RUN_ZLIB: ${{ needs.prepare.outputs.run-zlib }}
           RUN_BZIP2: ${{ needs.prepare.outputs.run-bzip2 }}
