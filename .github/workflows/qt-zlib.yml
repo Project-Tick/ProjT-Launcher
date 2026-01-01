@@ -57,7 +57,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: TheMrMilchmann/setup-msvc-dev@v3
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: x64
 
@@ -210,7 +210,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: TheMrMilchmann/setup-msvc-dev@v3
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: x64
 
