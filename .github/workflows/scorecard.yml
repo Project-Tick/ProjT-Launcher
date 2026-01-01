@@ -10,13 +10,14 @@ on:
   branch_protection_rule:
 
 permissions:
-  security-events: write
-  id-token: write
   contents: read
 
 jobs:
   scorecard:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
