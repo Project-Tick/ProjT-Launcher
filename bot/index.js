@@ -741,6 +741,8 @@ function parsePositiveInt(value) {
   return Number.isFinite(num) && num > 0 ? num : null;
 }
 
+export { safeJsonParse, parsePositiveInt };
+
 async function maybeAutoMerge({ owner, repo, pullNumber, pullRequest, maintainers, currentLabels, ciSummary, env }) {
   const enabledFlag = CONFIG.autoMerge?.enabledEnv;
   const autoMergeEnabled = enabledFlag

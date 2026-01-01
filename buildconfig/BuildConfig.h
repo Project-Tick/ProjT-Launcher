@@ -82,6 +82,8 @@ class Config {
     int VERSION_MINOR;
     /// The patch version number.
     int VERSION_PATCH;
+    /// The tweak version number.
+    int VERSION_TWEAK;
 
     /**
      * The version channel

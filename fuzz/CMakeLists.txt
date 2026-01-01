@@ -1,0 +1,25 @@
+set(FUZZ_ENGINE "")
+if(DEFINED ENV{LIB_FUZZING_ENGINE})
+    set(FUZZ_ENGINE $ENV{LIB_FUZZING_ENGINE})
+endif()
+
+function(add_fuzzer target)
+    add_executable(${target} ${ARGN})
+    target_compile_features(${target} PRIVATE cxx_std_20)
+    if(FUZZ_ENGINE)
+        target_link_libraries(${target} PRIVATE ${FUZZ_ENGINE})
+    else()
+        target_compile_options(${target} PRIVATE -fsanitize=fuzzer)
+        target_link_options(${target} PRIVATE -fsanitize=fuzzer)
+    endif()
+endfunction()
+
+add_fuzzer(fuzz_nbt_reader fuzz_nbt_reader.cpp)
+target_link_libraries(fuzz_nbt_reader PRIVATE nbt++)
+
+add_fuzzer(fuzz_qjson_parse fuzz_qjson_parse.cpp)
+target_link_libraries(fuzz_qjson_parse PRIVATE Qt6::Core)
+
+add_fuzzer(fuzz_gzip fuzz_gzip.cpp ${PROJECT_SOURCE_DIR}/launcher/GZip.cpp)
+target_include_directories(fuzz_gzip PRIVATE ${PROJECT_SOURCE_DIR}/launcher)
+target_link_libraries(fuzz_gzip PRIVATE Qt6::Core ZLIB::ZLIB)

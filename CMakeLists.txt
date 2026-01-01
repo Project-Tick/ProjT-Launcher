@@ -182,6 +182,7 @@ if(ENABLE_LTO)
 endif()
 
 option(BUILD_TESTING "Build the testing tree." ON)
+option(BUILD_FUZZERS "Build fuzzing targets." OFF)
 option(Launcher_ALLOW_FETCHCONTENT "Allow FetchContent fallback for tomlplusplus" ON)
 option(Launcher_ALLOW_ECM_FETCHCONTENT "Allow FetchContent fallback for ECM" ON)
 
@@ -269,10 +270,11 @@ set(Launcher_FMLLIBS_BASE_URL "https://files.projtlauncher.yongdohyun.org.tr/fml
 set(Launcher_VERSION_MAJOR 0)
 set(Launcher_VERSION_MINOR 0)
 set(Launcher_VERSION_PATCH 3)
+set(Launcher_VERSION_TWEAK 5)
 
-set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}")
-set(Launcher_VERSION_NAME4 "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.0")
-set(Launcher_VERSION_NAME4_COMMA "${Launcher_VERSION_MAJOR},${Launcher_VERSION_MINOR},${Launcher_VERSION_PATCH},0")
+set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.${Launcher_VERSION_TWEAK}")
+set(Launcher_VERSION_NAME4 "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.${Launcher_VERSION_TWEAK}")
+set(Launcher_VERSION_NAME4_COMMA "${Launcher_VERSION_MAJOR},${Launcher_VERSION_MINOR},${Launcher_VERSION_PATCH},${Launcher_VERSION_TWEAK}")
 
 # Build platform.
 set(Launcher_BUILD_PLATFORM "unknown" CACHE STRING "A short string identifying the platform that this build was built for. Only used to display in the about dialog.")
@@ -931,6 +933,9 @@ add_subdirectory(buildconfig)
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
+endif()
+if(BUILD_FUZZERS)
+    add_subdirectory(fuzz EXCLUDE_FROM_ALL)
 endif()
 # NOTE: this must always be last to appease the CMake deity of quirky install command evaluation order.
 add_subdirectory(launcher)

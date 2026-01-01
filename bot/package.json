@@ -1,0 +1,11 @@
+{
+  "name": "projtlauncher-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "fast-check": "^3.23.2"
+  }
+}
