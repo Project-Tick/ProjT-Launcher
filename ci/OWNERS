@@ -10,7 +10,7 @@
 # This file is an OWNERS/CODEOWNERS-style mapping for this repository.
 # It is not automatically enforced unless a validator is wired into CI.
 #
-# ProjT Launcher is a Qt6/QML-based Minecraft launcher
+# ProjT Launcher is a Qt6/Qt-Widgets-based Minecraft launcher
 # Repository: YongDo-Hyun/ProjT-Launcher
 # =============================================================================
 
@@ -62,7 +62,7 @@
 # =============================================================================
 # UI COMPONENTS
 # =============================================================================
-# Qt/QML UI
+# Qt-Widgets UI
 /launcher/ui/                           @YongDo-Hyun
 /launcher/qtquick/                      @YongDo-Hyun
 /launcher/resources/                    @YongDo-Hyun

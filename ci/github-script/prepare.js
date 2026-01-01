@@ -144,7 +144,6 @@ module.exports = async ({ github, context, core, dry }) => {
         '|--------|---------|',
         '| `develop` | Main development branch |',
         '| `master` / `main` | Stable branch |',
-        '| `qml_migration` | QML migration feature branch |',
         '| `release-X.Y.Z` | Release branches |',
         '',
         'Please [change the base branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/changing-the-base-branch-of-a-pull-request) to the appropriate target.',
@@ -183,11 +182,11 @@ module.exports = async ({ github, context, core, dry }) => {
 
     // Validate feature branches target develop
     if (headClassification.isFeature && 
-        !['develop', 'qml_migration'].includes(base.ref)) {
+        !['develop'].includes(base.ref)) {
       const body = [
         '## Feature Branch Target',
         '',
-        `Feature branches should typically target \`develop\` or \`qml_migration\`, not \`${base.ref}\`.`,
+        `Feature branches should typically target \`develop\`, not \`${base.ref}\`.`,
         '',
         'Please verify this is the correct target branch.',
       ].join('\n')
@@ -241,8 +240,7 @@ module.exports = async ({ github, context, core, dry }) => {
         f.filename.startsWith('launcher/')
       ).length,
       ui: files.filter(f => 
-        f.filename.includes('/ui/') || 
-        f.filename.includes('/qml/')
+        f.filename.includes('/ui/')
       ).length,
       build: files.filter(f => 
         f.filename.includes('CMake') || 

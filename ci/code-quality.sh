@@ -36,7 +36,7 @@ if (( $# != 0 )); then
   shift
 else
   trace "Usage: $0 BASE_BRANCH [REPOSITORY]"
-  trace "BASE_BRANCH: The base branch to compare against (e.g., develop, master, qml_migration)"
+  trace "BASE_BRANCH: The base branch to compare against (e.g., develop, master)"
   trace "REPOSITORY: Repository URL (defaults to $repo)"
   exit 1
 fi

@@ -59,7 +59,6 @@ const COMMIT_TYPE_SET = new Set(COMMIT_TYPES)
 const VALID_SCOPES = [
   'core',
   'ui',
-  'qml',
   'minecraft',
   'modplatform',
   'modrinth',
