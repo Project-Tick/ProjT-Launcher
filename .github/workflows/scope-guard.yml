@@ -19,6 +19,19 @@ jobs:
             const marker = '<!-- scope-guard -->';
             const pr = context.payload.pull_request;
             const body = pr.body || '';
+            const isForkPr =
+              pr.head &&
+              pr.head.repo &&
+              pr.base &&
+              pr.base.repo &&
+              pr.head.repo.full_name &&
+              pr.base.repo.full_name &&
+              pr.head.repo.full_name.toLowerCase() !== pr.base.repo.full_name.toLowerCase();
+
+            if (isForkPr) {
+              core.info('Scope guard skipped: fork PR does not allow comment/label writes.');
+              return;
+            }
 
             const scopeDefs = [
               { key: 'launcher', label: 'Launcher', patterns: [/^launcher\//, /^libraries\//, /^tests\//, /^buildconfig\//, /^cmake\//, /^program_info\//, /^CMakeLists\.txt$/, /\.cpp$/, /\.h$/, /\.ui$/] },
