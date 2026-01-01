@@ -2984,9 +2984,10 @@ jobs:
           SHOULD_BUILD: ${{ needs.prepare.outputs.should-build }}
           SHOULD_TEST: ${{ needs.prepare.outputs.should-test }}
           IS_PR: ${{ needs.prepare.outputs.is-pr }}
-          IS_SCHEDULE: ${{ needs.prepare.outputs.is-schedule }}
           IS_PR_REVIEW: ${{ needs.prepare.outputs.is-pr-review }}
           IS_WORKFLOW_RUN: ${{ needs.prepare.outputs.is-workflow-run }}
+          IS_MERGE_GROUP: ${{ needs.prepare.outputs.is-merge-group }}
+          IS_SCHEDULE: ${{ needs.prepare.outputs.is-schedule }}
         with:
           script: |
             const { serverUrl, repo, runId, payload, job, eventName } = context;
@@ -3011,6 +3012,8 @@ jobs:
               is_pr_review: process.env.IS_PR_REVIEW === 'true',
               is_workflow_run: process.env.IS_WORKFLOW_RUN === 'true',
             };
+            const isPr = process.env.IS_PR === 'true';
+            const isMergeGroup = process.env.IS_MERGE_GROUP === 'true';
 
             const slugify = value =>
               (value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -3090,20 +3093,14 @@ jobs:
             }
 
             const requiredJobs = [
-              { name: 'lint', needed: runFlags.should_test },
               { name: 'clang-lint', needed: runFlags.should_test },
               { name: 'markdown-lint', needed: runFlags.should_test },
-              { name: 'bot-smoke', needed: runFlags.bot },
-              { name: 'meta-smoke', needed: runFlags.meta },
-              { name: 'branding-check', needed: runFlags.branding },
-              { name: 'check', needed: runFlags.is_pr },
-              { name: 'meta-update', needed: runFlags.run_schedule },
-              { name: 'Build ProjT Launcher ( DEBUG )', needed: runFlags.regular_build },
-              { name: 'Build ProjT Launcher ( RELEASE )', needed: runFlags.release_build },
-              { name: 'create-release', needed: runFlags.release_build },
-              { name: 'winget', needed: runFlags.release_build },
-              { name: 'process-review', needed: runFlags.is_pr_review || runFlags.is_workflow_run },
-              { name: 'System Evaluation', needed: runFlags.should_test && !runFlags.is_schedule },
+              { name: 'check', needed: runFlags.should_test && isPr },
+              { name: 'build-projt-launcher-debug', needed: runFlags.regular_build },
+              { name: 'build-projt-launcher-release', needed: runFlags.release_build && !isPr && !isMergeGroup },
+              { name: 'create-release', needed: runFlags.release_build && !isPr && !isMergeGroup },
+              { name: 'winget', needed: runFlags.release_build && !isPr && !isMergeGroup },
+              { name: 'eval', needed: runFlags.should_test && !runFlags.run_schedule },
             ];
 
             const jobMap = new Map();
