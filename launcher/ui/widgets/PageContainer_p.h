@@ -69,15 +69,15 @@ class PageModel : public QAbstractListModel {
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const
     {
         switch (role) {
-        case Qt::DisplayRole:
-            return m_pages.at(index.row())->displayName();
-        case Qt::DecorationRole: {
-            QIcon icon = m_pages.at(index.row())->icon();
-            if (icon.isNull())
-                icon = m_emptyIcon;
-            // HACK: fixes icon stretching on windows. TODO: report Qt bug for this
-            return QIcon(icon.pixmap(QSize(48, 48)));
-        }
+            case Qt::DisplayRole:
+                return m_pages.at(index.row())->displayName();
+            case Qt::DecorationRole: {
+                QIcon icon = m_pages.at(index.row())->icon();
+                if (icon.isNull())
+                    icon = m_emptyIcon;
+                // HACK: fixes icon stretching on windows. TODO: report Qt bug for this
+                return QIcon(icon.pixmap(QSize(48, 48)));
+            }
         }
         return QVariant();
     }

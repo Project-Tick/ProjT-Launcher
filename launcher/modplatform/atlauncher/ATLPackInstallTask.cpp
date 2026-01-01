@@ -151,20 +151,20 @@ void PackInstallTask::onDownloadSucceeded()
     bool resetDirectory;
 
     switch (m_install_mode) {
-    case InstallMode::Reinstall:
-    case InstallMode::Update:
-        message = m_version.messages.update;
-        resetDirectory = true;
-        break;
+        case InstallMode::Reinstall:
+        case InstallMode::Update:
+            message = m_version.messages.update;
+            resetDirectory = true;
+            break;
 
-    case InstallMode::Install:
-        message = m_version.messages.install;
-        resetDirectory = false;
-        break;
+        case InstallMode::Install:
+            message = m_version.messages.install;
+            resetDirectory = false;
+            break;
 
-    default:
-        emitFailed(tr("Unsupported installation mode"));
-        return;
+        default:
+            emitFailed(tr("Unsupported installation mode"));
+            return;
     }
 
     // Display message if one exists
@@ -313,46 +313,46 @@ void PackInstallTask::deleteExistingFiles()
 QString PackInstallTask::getDirForModType(ModType type, QString raw)
 {
     switch (type) {
-    // Mod types that can either be ignored at this stage, or ignored
-    // completely.
-    case ModType::Root:
-    case ModType::Extract:
-    case ModType::Decomp:
-    case ModType::TexturePackExtract:
-    case ModType::ResourcePackExtract:
-    case ModType::MCPC:
-        return Q_NULLPTR;
-    case ModType::Forge:
-        // Forge detection happens later on, if it cannot be detected it will
-        // install a jarmod component.
-    case ModType::Jar:
-        return "jarmods";
-    case ModType::Mods:
-        return "mods";
-    case ModType::Flan:
-        return "Flan";
-    case ModType::Dependency:
-        return FS::PathCombine("mods", m_version.minecraft);
-    case ModType::Ic2Lib:
-        return FS::PathCombine("mods", "ic2");
-    case ModType::DenLib:
-        return FS::PathCombine("mods", "denlib");
-    case ModType::Coremods:
-        return "coremods";
-    case ModType::Plugins:
-        return "plugins";
-    case ModType::TexturePack:
-        return "texturepacks";
-    case ModType::ResourcePack:
-        return "resourcepacks";
-    case ModType::ShaderPack:
-        return "shaderpacks";
-    case ModType::Millenaire:
-        qWarning() << "Unsupported mod type: " + raw;
-        return Q_NULLPTR;
-    case ModType::Unknown:
-        emitFailed(tr("Unknown mod type: %1").arg(raw));
-        return Q_NULLPTR;
+        // Mod types that can either be ignored at this stage, or ignored
+        // completely.
+        case ModType::Root:
+        case ModType::Extract:
+        case ModType::Decomp:
+        case ModType::TexturePackExtract:
+        case ModType::ResourcePackExtract:
+        case ModType::MCPC:
+            return Q_NULLPTR;
+        case ModType::Forge:
+            // Forge detection happens later on, if it cannot be detected it will
+            // install a jarmod component.
+        case ModType::Jar:
+            return "jarmods";
+        case ModType::Mods:
+            return "mods";
+        case ModType::Flan:
+            return "Flan";
+        case ModType::Dependency:
+            return FS::PathCombine("mods", m_version.minecraft);
+        case ModType::Ic2Lib:
+            return FS::PathCombine("mods", "ic2");
+        case ModType::DenLib:
+            return FS::PathCombine("mods", "denlib");
+        case ModType::Coremods:
+            return "coremods";
+        case ModType::Plugins:
+            return "plugins";
+        case ModType::TexturePack:
+            return "texturepacks";
+        case ModType::ResourcePack:
+            return "resourcepacks";
+        case ModType::ShaderPack:
+            return "shaderpacks";
+        case ModType::Millenaire:
+            qWarning() << "Unsupported mod type: " + raw;
+            return Q_NULLPTR;
+        case ModType::Unknown:
+            emitFailed(tr("Unknown mod type: %1").arg(raw));
+            return Q_NULLPTR;
     }
 
     return Q_NULLPTR;
@@ -530,16 +530,16 @@ bool PackInstallTask::createLibrariesComponent(QString instanceRoot, std::shared
         library->setRawName(libName);
 
         switch (lib.download) {
-        case DownloadType::Server:
-            library->setAbsoluteUrl(BuildConfig.ATL_DOWNLOAD_SERVER_URL + lib.url);
-            break;
-        case DownloadType::Direct:
-            library->setAbsoluteUrl(lib.url);
-            break;
-        case DownloadType::Browser:
-        case DownloadType::Unknown:
-            emitFailed(tr("Unknown or unsupported download type: %1").arg(lib.download_raw));
-            return false;
+            case DownloadType::Server:
+                library->setAbsoluteUrl(BuildConfig.ATL_DOWNLOAD_SERVER_URL + lib.url);
+                break;
+            case DownloadType::Direct:
+                library->setAbsoluteUrl(lib.url);
+                break;
+            case DownloadType::Browser:
+            case DownloadType::Unknown:
+                emitFailed(tr("Unknown or unsupported download type: %1").arg(lib.download_raw));
+                return false;
         }
 
         f->libraries.append(library);
@@ -752,19 +752,19 @@ void PackInstallTask::downloadMods()
 
         QString url;
         switch (mod.download) {
-        case DownloadType::Server:
-            url = BuildConfig.ATL_DOWNLOAD_SERVER_URL + mod.url;
-            break;
-        case DownloadType::Browser: {
-            blocked_mods.append(mod);
-            continue;
-        }
-        case DownloadType::Direct:
-            url = mod.url;
-            break;
-        case DownloadType::Unknown:
-            emitFailed(tr("Unknown download type: %1").arg(mod.download_raw));
-            return;
+            case DownloadType::Server:
+                url = BuildConfig.ATL_DOWNLOAD_SERVER_URL + mod.url;
+                break;
+            case DownloadType::Browser: {
+                blocked_mods.append(mod);
+                continue;
+            }
+            case DownloadType::Direct:
+                url = mod.url;
+                break;
+            case DownloadType::Unknown:
+                emitFailed(tr("Unknown download type: %1").arg(mod.download_raw));
+                return;
         }
 
         QFileInfo fileName(mod.file);

@@ -20,6 +20,9 @@
  */
 
 #include "BackupManager.h"
+#include "MinecraftInstance.h"
+#include "FileSystem.h"
+#include "MMCZip.h"
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
@@ -27,9 +30,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QtConcurrent>
-#include "FileSystem.h"
-#include "MMCZip.h"
-#include "MinecraftInstance.h"
 
 // BackupOptions implementation
 qint64 BackupOptions::estimateSize() const
@@ -37,22 +37,15 @@ qint64 BackupOptions::estimateSize() const
     // Rough estimation based on typical Minecraft instance sizes
     // Note: This is a rough estimate for UI display. Actual size may vary.
     qint64 size = 0;
-    if (includeSaves)
-        size += 500LL * 1024 * 1024;  // 500MB average for saves
-    if (includeConfig)
-        size += 50LL * 1024 * 1024;  // 50MB for config
-    if (includeMods)
-        size += 1000LL * 1024 * 1024;  // 1GB for mods
-    if (includeResourcePacks)
-        size += 200LL * 1024 * 1024;  // 200MB
-    if (includeShaderPacks)
-        size += 100LL * 1024 * 1024;  // 100MB
-    if (includeScreenshots)
-        size += 100LL * 1024 * 1024;  // 100MB
-    if (includeOptions)
-        size += 1LL * 1024 * 1024;  // 1MB
+    if (includeSaves) size += 500LL * 1024 * 1024; // 500MB average for saves
+    if (includeConfig) size += 50LL * 1024 * 1024;  // 50MB for config
+    if (includeMods) size += 1000LL * 1024 * 1024;  // 1GB for mods
+    if (includeResourcePacks) size += 200LL * 1024 * 1024; // 200MB
+    if (includeShaderPacks) size += 100LL * 1024 * 1024;   // 100MB
+    if (includeScreenshots) size += 100LL * 1024 * 1024;   // 100MB
+    if (includeOptions) size += 1LL * 1024 * 1024;         // 1MB
     // Add custom paths roughly - assume 50MB per path as placeholder
-    size += customPaths.size() * 50LL * 1024 * 1024;  // 50MB per custom path
+    size += customPaths.size() * 50LL * 1024 * 1024; // 50MB per custom path
     return size;
 }
 
@@ -63,11 +56,11 @@ InstanceBackup::InstanceBackup(const QString& path) : m_backupPath(path)
     if (!info.exists()) {
         return;
     }
-
+    
     m_size = info.size();
     m_createdAt = info.birthTime();
     m_name = info.completeBaseName();
-
+    
     // Try to load metadata
     QString metaPath = path + ".json";
     if (QFile::exists(metaPath)) {
@@ -75,7 +68,7 @@ InstanceBackup::InstanceBackup(const QString& path) : m_backupPath(path)
         if (metaFile.open(QIODevice::ReadOnly)) {
             QJsonDocument doc = QJsonDocument::fromJson(metaFile.readAll());
             QJsonObject obj = doc.object();
-
+            
             if (obj.contains("name"))
                 m_name = obj["name"].toString();
             if (obj.contains("description"))
@@ -98,24 +91,26 @@ QString InstanceBackup::displaySize() const
     double size = m_size;
     QStringList units = { "B", "KB", "MB", "GB" };
     int unitIndex = 0;
-
+    
     while (size >= 1024.0 && unitIndex < units.size() - 1) {
         size /= 1024.0;
         unitIndex++;
     }
-
+    
     return QString::number(size, 'f', 2) + " " + units[unitIndex];
 }
 
 // BackupManager implementation
-BackupManager::BackupManager(QObject* parent) : QObject(parent) {}
+BackupManager::BackupManager(QObject* parent) : QObject(parent)
+{
+}
 
 QString BackupManager::getBackupDirectory(InstancePtr instance)
 {
     if (!instance) {
         return QString();
     }
-
+    
     QString backupDir = FS::PathCombine(instance->instanceRoot(), "backups");
     FS::ensureFolderPathExists(backupDir);
     return backupDir;
@@ -127,44 +122,36 @@ bool BackupManager::createBackup(InstancePtr instance, const QString& backupName
         qWarning() << "BackupManager: instance is null";
         return false;
     }
-
+    
     QString backupDir = getBackupDirectory(instance);
     qDebug() << "BackupManager: backup directory:" << backupDir;
-
+    
     QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
     QString safeName = backupName.isEmpty() ? timestamp : backupName + "_" + timestamp;
     QString backupPath = FS::PathCombine(backupDir, safeName + ".zip");
-
+    
     qDebug() << "BackupManager: creating backup at:" << backupPath;
-
+    
     // Create metadata
     QJsonObject metadata;
     metadata["name"] = backupName.isEmpty() ? timestamp : backupName;
     metadata["created"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     metadata["instanceName"] = instance->name();
-
+    
     QStringList includedPaths;
-    if (options.includeSaves)
-        includedPaths << "saves";
-    if (options.includeConfig)
-        includedPaths << "config";
-    if (options.includeMods)
-        includedPaths << "mods";
-    if (options.includeResourcePacks)
-        includedPaths << "resourcepacks";
-    if (options.includeShaderPacks)
-        includedPaths << "shaderpacks";
-    if (options.includeScreenshots)
-        includedPaths << "screenshots";
-    if (options.includeOptions)
-        includedPaths << "options.txt"
-                      << "optionsof.txt";
-
+    if (options.includeSaves) includedPaths << "saves";
+    if (options.includeConfig) includedPaths << "config";
+    if (options.includeMods) includedPaths << "mods";
+    if (options.includeResourcePacks) includedPaths << "resourcepacks";
+    if (options.includeShaderPacks) includedPaths << "shaderpacks";
+    if (options.includeScreenshots) includedPaths << "screenshots";
+    if (options.includeOptions) includedPaths << "options.txt" << "optionsof.txt";
+    
     // Add custom paths to included paths list
     includedPaths += options.customPaths;
-
+    
     metadata["includedPaths"] = QJsonArray::fromStringList(includedPaths);
-
+    
     // Save metadata
     QFile metaFile(backupPath + ".json");
     if (metaFile.open(QIODevice::WriteOnly)) {
@@ -173,11 +160,11 @@ bool BackupManager::createBackup(InstancePtr instance, const QString& backupName
     } else {
         qWarning() << "BackupManager: failed to write metadata file";
     }
-
+    
     // Get the game root (where .minecraft files are)
     auto minecraftInstance = std::dynamic_pointer_cast<MinecraftInstance>(instance);
     QString gameRoot = minecraftInstance ? minecraftInstance->gameRoot() : instance->instanceRoot();
-
+    
     // Compress backup
     qDebug() << "BackupManager: starting compression...";
     qDebug() << "BackupManager: game root is:" << gameRoot;
@@ -187,7 +174,7 @@ bool BackupManager::createBackup(InstancePtr instance, const QString& backupName
         QFile::remove(backupPath + ".json");
         return false;
     }
-
+    
     qDebug() << "BackupManager: backup created successfully";
     emit backupCreated(instance->id(), backupName);
     return true;
@@ -199,13 +186,15 @@ void BackupManager::createBackupAsync(InstancePtr instance, const QString& backu
         emit backupFailed(QString(), "Instance is null");
         return;
     }
-
+    
     QString instanceId = instance->id();
     emit backupStarted(instanceId, backupName);
-
+    
     // Run backup in background thread
-    auto future = QtConcurrent::run([this, instance, backupName, options]() { return createBackup(instance, backupName, options); });
-
+    auto future = QtConcurrent::run([this, instance, backupName, options]() {
+        return createBackup(instance, backupName, options);
+    });
+    
     // Watch for completion
     auto watcher = new QFutureWatcher<bool>(this);
     connect(watcher, &QFutureWatcher<bool>::finished, this, [this, watcher, instanceId, backupName]() {
@@ -224,15 +213,16 @@ void BackupManager::restoreBackupAsync(InstancePtr instance, const InstanceBacku
         emit restoreFailed(QString(), "Instance is null");
         return;
     }
-
+    
     QString instanceId = instance->id();
     QString backupName = backup.name();
     emit restoreStarted(instanceId, backupName);
-
+    
     // Run restore in background thread
-    auto future = QtConcurrent::run(
-        [this, instance, backup, createBackupBeforeRestore]() { return restoreBackup(instance, backup, createBackupBeforeRestore); });
-
+    auto future = QtConcurrent::run([this, instance, backup, createBackupBeforeRestore]() {
+        return restoreBackup(instance, backup, createBackupBeforeRestore);
+    });
+    
     // Watch for completion
     auto watcher = new QFutureWatcher<bool>(this);
     connect(watcher, &QFutureWatcher<bool>::finished, this, [this, watcher, instanceId, backupName]() {
@@ -248,13 +238,17 @@ void BackupManager::restoreBackupAsync(InstancePtr instance, const InstanceBacku
 bool BackupManager::compressBackup(const QString& sourcePath, const QString& backupPath, const BackupOptions& options)
 {
     QFileInfoList files;
-
+    
     qDebug() << "BackupManager: compressing from" << sourcePath << "to" << backupPath;
-    qDebug() << "BackupManager: backup options - saves:" << options.includeSaves << "config:" << options.includeConfig
-             << "mods:" << options.includeMods << "resourcepacks:" << options.includeResourcePacks
-             << "shaderpacks:" << options.includeShaderPacks << "screenshots:" << options.includeScreenshots
-             << "options:" << options.includeOptions << "customPaths:" << options.customPaths;
-
+    qDebug() << "BackupManager: backup options - saves:" << options.includeSaves
+             << "config:" << options.includeConfig
+             << "mods:" << options.includeMods
+             << "resourcepacks:" << options.includeResourcePacks
+             << "shaderpacks:" << options.includeShaderPacks
+             << "screenshots:" << options.includeScreenshots
+             << "options:" << options.includeOptions
+             << "customPaths:" << options.customPaths;
+    
     // Helper lambda to recursively collect files
     auto collectFilesRecursive = [&files](const QString& dirPath) {
         qDebug() << "BackupManager: scanning directory" << dirPath;
@@ -267,7 +261,7 @@ bool BackupManager::compressBackup(const QString& sourcePath, const QString& bac
         }
         qDebug() << "BackupManager: found" << count << "files in" << dirPath;
     };
-
+    
     if (options.includeSaves) {
         QString savesPath = FS::PathCombine(sourcePath, "saves");
         qDebug() << "BackupManager: checking saves path:" << savesPath;
@@ -340,34 +334,34 @@ bool BackupManager::compressBackup(const QString& sourcePath, const QString& bac
             qDebug() << "BackupManager: optionsof.txt does not exist";
         }
     }
-
+    
     // Include custom paths
     for (const QString& customPath : options.customPaths) {
         QString fullPath = FS::PathCombine(sourcePath, customPath);
         QFileInfo info(fullPath);
-
+        
         if (info.isFile()) {
             files.append(info);
         } else if (info.isDir()) {
             collectFilesRecursive(fullPath);
         }
     }
-
+    
     if (files.isEmpty()) {
         qWarning() << "BackupManager: no files to backup!";
         // For new instances with no files, consider backup successful to allow launch
         return true;
     }
-
+    
     qDebug() << "BackupManager: collected" << files.size() << "files";
-
+    
     // Use MMCZip to compress - sourcePath is the base directory for relative paths
     bool result = MMCZip::compressDirFiles(backupPath, sourcePath, files);
-
+    
     if (!result) {
         qWarning() << "BackupManager: MMCZip::compressDirFiles failed";
     }
-
+    
     return result;
 }
 
@@ -377,13 +371,13 @@ bool BackupManager::restoreBackup(InstancePtr instance, const InstanceBackup& ba
         qWarning() << "BackupManager: invalid instance or backup";
         return false;
     }
-
+    
     // Get the game root (where .minecraft files are)
     auto minecraftInstance = std::dynamic_pointer_cast<MinecraftInstance>(instance);
     QString gameRoot = minecraftInstance ? minecraftInstance->gameRoot() : instance->instanceRoot();
-
+    
     qDebug() << "BackupManager: restoring backup to game root:" << gameRoot;
-
+    
     // Create safety backup before restore
     if (createBackupBeforeRestore) {
         qDebug() << "BackupManager: creating safety backup before restore";
@@ -397,14 +391,14 @@ bool BackupManager::restoreBackup(InstancePtr instance, const InstanceBackup& ba
         safetyOptions.includeOptions = true;
         createBackup(instance, "pre-restore_" + backup.name(), safetyOptions);
     }
-
+    
     // Extract backup
     qDebug() << "BackupManager: extracting backup from" << backup.backupPath() << "to" << gameRoot;
     if (!extractBackup(backup.backupPath(), gameRoot)) {
         qWarning() << "BackupManager: failed to extract backup";
         return false;
     }
-
+    
     qDebug() << "BackupManager: backup restored successfully";
     emit backupRestored(instance->id(), backup.name());
     return true;
@@ -413,19 +407,19 @@ bool BackupManager::restoreBackup(InstancePtr instance, const InstanceBackup& ba
 bool BackupManager::extractBackup(const QString& backupPath, const QString& targetPath)
 {
     qDebug() << "BackupManager: extracting" << backupPath << "to" << targetPath;
-
+    
     if (!QFile::exists(backupPath)) {
         qWarning() << "BackupManager: backup file does not exist:" << backupPath;
         return false;
     }
-
+    
     auto result = MMCZip::extractDir(backupPath, targetPath);
-
+    
     if (!result.has_value()) {
         qWarning() << "BackupManager: extraction failed";
         return false;
     }
-
+    
     qDebug() << "BackupManager: extraction successful";
     return true;
 }
@@ -435,7 +429,7 @@ QList<InstanceBackup> BackupManager::listBackups(InstancePtr instance) const
     if (!instance) {
         return {};
     }
-
+    
     QString backupDir = getBackupDirectory(instance);
     return scanBackupDirectory(backupDir);
 }
@@ -444,22 +438,22 @@ QList<InstanceBackup> BackupManager::scanBackupDirectory(const QString& backupDi
 {
     QList<InstanceBackup> backups;
     QDir dir(backupDir);
-
+    
     if (!dir.exists()) {
         return backups;
     }
-
+    
     QStringList zipFiles = dir.entryList(QStringList() << "*.zip", QDir::Files, QDir::Time);
-
+    
     for (const QString& zipFile : zipFiles) {
         QString fullPath = dir.absoluteFilePath(zipFile);
         InstanceBackup backup(fullPath);
-
+        
         if (backup.isValid()) {
             backups.append(backup);
         }
     }
-
+    
     return backups;
 }
 
@@ -468,24 +462,25 @@ int BackupManager::deleteOldBackups(InstancePtr instance, int maxCount)
     if (!instance || maxCount < 1) {
         return 0;
     }
-
+    
     QList<InstanceBackup> backups = listBackups(instance);
-
+    
     if (backups.size() <= maxCount) {
         return 0;
     }
-
+    
     // Sort by date (newest first)
-    std::sort(backups.begin(), backups.end(),
-              [](const InstanceBackup& a, const InstanceBackup& b) { return a.createdAt() > b.createdAt(); });
-
+    std::sort(backups.begin(), backups.end(), [](const InstanceBackup& a, const InstanceBackup& b) {
+        return a.createdAt() > b.createdAt();
+    });
+    
     int deletedCount = 0;
     for (int i = maxCount; i < backups.size(); i++) {
         if (deleteBackup(backups[i])) {
             deletedCount++;
         }
     }
-
+    
     return deletedCount;
 }
 
@@ -494,10 +489,10 @@ bool BackupManager::deleteBackup(const InstanceBackup& backup)
     if (!backup.isValid()) {
         return false;
     }
-
+    
     bool success = QFile::remove(backup.backupPath());
-    QFile::remove(backup.backupPath() + ".json");  // Remove metadata too
-
+    QFile::remove(backup.backupPath() + ".json"); // Remove metadata too
+    
     return success;
 }
 
@@ -507,7 +502,7 @@ bool BackupManager::autoBackupBeforeLaunch(InstancePtr instance)
     options.includeSaves = true;
     options.includeConfig = true;
     options.includeOptions = true;
-    options.includeMods = false;  // Don't backup mods by default (too large)
-
+    options.includeMods = false; // Don't backup mods by default (too large)
+    
     return createBackup(instance, "auto-backup-pre-launch", options);
 }

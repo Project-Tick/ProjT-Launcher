@@ -96,9 +96,7 @@ struct AccountProfile {
  * Said information may include things such as that account's username, client token, and access
  * token if the user chose to stay logged in.
  */
-class MinecraftAccount
-    : public QObject
-    , public Usable {
+class MinecraftAccount : public QObject, public Usable {
     Q_OBJECT
    public: /* construction */
     //! Do not copy accounts. ever.
@@ -147,15 +145,15 @@ class MinecraftAccount
     QString typeString() const
     {
         switch (data.type) {
-        case AccountType::MSA: {
-            return "msa";
-        } break;
-        case AccountType::Offline: {
-            return "offline";
-        } break;
-        default: {
-            return "unknown";
-        }
+            case AccountType::MSA: {
+                return "msa";
+            } break;
+            case AccountType::Offline: {
+                return "offline";
+            } break;
+            default: {
+                return "unknown";
+            }
         }
     }
 

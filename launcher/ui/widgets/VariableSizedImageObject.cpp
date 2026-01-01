@@ -94,8 +94,11 @@ QSizeF VariableSizedImageObject::intrinsicSize(QTextDocument* doc, int posInDocu
     return { size };
 }
 
-void VariableSizedImageObject::drawObject(
-    QPainter* painter, const QRectF& rect, QTextDocument* doc, int posInDocument, const QTextFormat& format)
+void VariableSizedImageObject::drawObject(QPainter* painter,
+                                          const QRectF& rect,
+                                          QTextDocument* doc,
+                                          int posInDocument,
+                                          const QTextFormat& format)
 {
     if (!format.hasProperty(ImageData)) {
         QUrl image_url{ qvariant_cast<QString>(format.property(QTextFormat::ImageName)) };

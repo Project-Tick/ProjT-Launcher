@@ -100,43 +100,43 @@ ExportToModListDialog::~ExportToModListDialog()
 void ExportToModListDialog::formatChanged(int index)
 {
     switch (index) {
-    case 0: {
-        enableCustom(false);
-        ui->resultText->show();
-        m_format = ExportToModList::HTML;
-        break;
-    }
-    case 1: {
-        enableCustom(false);
-        ui->resultText->show();
-        m_format = ExportToModList::MARKDOWN;
-        break;
-    }
-    case 2: {
-        enableCustom(false);
-        ui->resultText->hide();
-        m_format = ExportToModList::PLAINTXT;
-        break;
-    }
-    case 3: {
-        enableCustom(false);
-        ui->resultText->hide();
-        m_format = ExportToModList::JSON;
-        break;
-    }
-    case 4: {
-        enableCustom(false);
-        ui->resultText->hide();
-        m_format = ExportToModList::CSV;
-        break;
-    }
-    case 5: {
-        m_template_changed = true;
-        enableCustom(true);
-        ui->resultText->hide();
-        m_format = ExportToModList::CUSTOM;
-        break;
-    }
+        case 0: {
+            enableCustom(false);
+            ui->resultText->show();
+            m_format = ExportToModList::HTML;
+            break;
+        }
+        case 1: {
+            enableCustom(false);
+            ui->resultText->show();
+            m_format = ExportToModList::MARKDOWN;
+            break;
+        }
+        case 2: {
+            enableCustom(false);
+            ui->resultText->hide();
+            m_format = ExportToModList::PLAINTXT;
+            break;
+        }
+        case 3: {
+            enableCustom(false);
+            ui->resultText->hide();
+            m_format = ExportToModList::JSON;
+            break;
+        }
+        case 4: {
+            enableCustom(false);
+            ui->resultText->hide();
+            m_format = ExportToModList::CSV;
+            break;
+        }
+        case 5: {
+            m_template_changed = true;
+            enableCustom(true);
+            ui->resultText->hide();
+            m_format = ExportToModList::CUSTOM;
+            break;
+        }
     }
     triggerImp();
 }
@@ -159,20 +159,20 @@ void ExportToModListDialog::triggerImp()
     auto txt = ExportToModList::exportToModList(m_mods, m_format, static_cast<ExportToModList::OptionalData>(opt));
     ui->finalText->setPlainText(txt);
     switch (m_format) {
-    case ExportToModList::CUSTOM:
-        return;
-    case ExportToModList::HTML:
-        ui->resultText->setHtml(StringUtils::htmlListPatch(txt));
-        break;
-    case ExportToModList::MARKDOWN:
-        ui->resultText->setHtml(StringUtils::htmlListPatch(markdownToHTML(txt)));
-        break;
-    case ExportToModList::PLAINTXT:
-        break;
-    case ExportToModList::JSON:
-        break;
-    case ExportToModList::CSV:
-        break;
+        case ExportToModList::CUSTOM:
+            return;
+        case ExportToModList::HTML:
+            ui->resultText->setHtml(StringUtils::htmlListPatch(txt));
+            break;
+        case ExportToModList::MARKDOWN:
+            ui->resultText->setHtml(StringUtils::htmlListPatch(markdownToHTML(txt)));
+            break;
+        case ExportToModList::PLAINTXT:
+            break;
+        case ExportToModList::JSON:
+            break;
+        case ExportToModList::CSV:
+            break;
     }
     auto exampleLine = exampleLines[m_format];
     if (!m_template_changed && ui->templateText->toPlainText() != exampleLine)
@@ -203,18 +203,18 @@ void ExportToModListDialog::done(int result)
 QString ExportToModListDialog::extension()
 {
     switch (m_format) {
-    case ExportToModList::HTML:
-        return ".html";
-    case ExportToModList::MARKDOWN:
-        return ".md";
-    case ExportToModList::PLAINTXT:
-        return ".txt";
-    case ExportToModList::CUSTOM:
-        return ".txt";
-    case ExportToModList::JSON:
-        return ".json";
-    case ExportToModList::CSV:
-        return ".csv";
+        case ExportToModList::HTML:
+            return ".html";
+        case ExportToModList::MARKDOWN:
+            return ".md";
+        case ExportToModList::PLAINTXT:
+            return ".txt";
+        case ExportToModList::CUSTOM:
+            return ".txt";
+        case ExportToModList::JSON:
+            return ".json";
+        case ExportToModList::CSV:
+            return ".csv";
     }
     return ".txt";
 }
@@ -224,18 +224,18 @@ void ExportToModListDialog::addExtra(ExportToModList::OptionalData option)
     if (m_format != ExportToModList::CUSTOM)
         return;
     switch (option) {
-    case ExportToModList::Authors:
-        ui->templateText->insertPlainText("{authors}");
-        break;
-    case ExportToModList::Url:
-        ui->templateText->insertPlainText("{url}");
-        break;
-    case ExportToModList::Version:
-        ui->templateText->insertPlainText("{version}");
-        break;
-    case ExportToModList::FileName:
-        ui->templateText->insertPlainText("{filename}");
-        break;
+        case ExportToModList::Authors:
+            ui->templateText->insertPlainText("{authors}");
+            break;
+        case ExportToModList::Url:
+            ui->templateText->insertPlainText("{url}");
+            break;
+        case ExportToModList::Version:
+            ui->templateText->insertPlainText("{version}");
+            break;
+        case ExportToModList::FileName:
+            ui->templateText->insertPlainText("{filename}");
+            break;
     }
 }
 void ExportToModListDialog::enableCustom(bool enabled)

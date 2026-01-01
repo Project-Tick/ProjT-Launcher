@@ -135,34 +135,34 @@ void CheckJava::executeTask()
 void CheckJava::checkJavaFinished(const JavaChecker::Result& result)
 {
     switch (result.validity) {
-    case JavaChecker::Result::Validity::Errored: {
-        // Error message displayed if java can't start
-        emit logLine(QString("Could not start java:"), MessageLevel::Error);
-        emit logLines(result.errorLog.split('\n'), MessageLevel::Error);
-        emit logLine(QString("\nCheck your Java settings."), MessageLevel::Launcher);
-        emitFailed(QString("Could not start java!"));
-        return;
-    }
-    case JavaChecker::Result::Validity::ReturnedInvalidData: {
-        emit logLine(QString("Java checker returned some invalid data we don't understand:"), MessageLevel::Error);
-        emit logLines(result.outLog.split('\n'), MessageLevel::Warning);
-        emit logLine("\nMinecraft might not start properly.", MessageLevel::Launcher);
-        m_parent->instance()->updateRuntimeContext();
-        emitSucceeded();
-        return;
-    }
-    case JavaChecker::Result::Validity::Valid: {
-        auto instance = m_parent->instance();
-        printJavaInfo(result.javaVersion.toString(), result.mojangPlatform, result.realPlatform, result.javaVendor);
-        instance->settings()->set("JavaVersion", result.javaVersion.toString());
-        instance->settings()->set("JavaArchitecture", result.mojangPlatform);
-        instance->settings()->set("JavaRealArchitecture", result.realPlatform);
-        instance->settings()->set("JavaVendor", result.javaVendor);
-        instance->settings()->set("JavaSignature", m_javaSignature);
-        m_parent->instance()->updateRuntimeContext();
-        emitSucceeded();
-        return;
-    }
+        case JavaChecker::Result::Validity::Errored: {
+            // Error message displayed if java can't start
+            emit logLine(QString("Could not start java:"), MessageLevel::Error);
+            emit logLines(result.errorLog.split('\n'), MessageLevel::Error);
+            emit logLine(QString("\nCheck your Java settings."), MessageLevel::Launcher);
+            emitFailed(QString("Could not start java!"));
+            return;
+        }
+        case JavaChecker::Result::Validity::ReturnedInvalidData: {
+            emit logLine(QString("Java checker returned some invalid data we don't understand:"), MessageLevel::Error);
+            emit logLines(result.outLog.split('\n'), MessageLevel::Warning);
+            emit logLine("\nMinecraft might not start properly.", MessageLevel::Launcher);
+            m_parent->instance()->updateRuntimeContext();
+            emitSucceeded();
+            return;
+        }
+        case JavaChecker::Result::Validity::Valid: {
+            auto instance = m_parent->instance();
+            printJavaInfo(result.javaVersion.toString(), result.mojangPlatform, result.realPlatform, result.javaVendor);
+            instance->settings()->set("JavaVersion", result.javaVersion.toString());
+            instance->settings()->set("JavaArchitecture", result.mojangPlatform);
+            instance->settings()->set("JavaRealArchitecture", result.realPlatform);
+            instance->settings()->set("JavaVendor", result.javaVendor);
+            instance->settings()->set("JavaSignature", m_javaSignature);
+            m_parent->instance()->updateRuntimeContext();
+            emitSucceeded();
+            return;
+        }
     }
 }
 

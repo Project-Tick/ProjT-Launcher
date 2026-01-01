@@ -70,8 +70,8 @@
 #include "minecraft/auth/AccountList.h"
 #include "settings/Setting.h"
 
-MinecraftSettingsWidget::MinecraftSettingsWidget(MinecraftInstancePtr instance, SettingsViewModel* viewModel, QWidget* parent)
-    : QWidget(parent), m_instance(std::move(instance)), m_settingsViewModel(viewModel), m_ui(new Ui::MinecraftSettingsWidget)
+MinecraftSettingsWidget::MinecraftSettingsWidget(MinecraftInstancePtr instance, QWidget* parent)
+    : QWidget(parent), m_instance(std::move(instance)), m_ui(new Ui::MinecraftSettingsWidget)
 {
     m_ui->setupUi(this);
 
@@ -84,7 +84,7 @@ MinecraftSettingsWidget::MinecraftSettingsWidget(MinecraftInstancePtr instance, 
         m_ui->globalDataPacksGroupBox->hide();
         m_ui->loaderGroup->hide();
     } else {
-        m_javaSettings = new JavaSettingsWidget(m_instance, m_settingsViewModel, this);
+        m_javaSettings = new JavaSettingsWidget(m_instance, this);
         m_ui->javaScrollArea->setWidget(m_javaSettings);
 
         m_ui->showGameTime->setText(tr("Show time &playing this instance"));
@@ -131,16 +131,11 @@ MinecraftSettingsWidget::MinecraftSettingsWidget(MinecraftInstancePtr instance, 
         connect(m_ui->dataPacksPathBrowse, &QPushButton::clicked, this, &MinecraftSettingsWidget::selectDataPacksFolder);
 
         connect(m_ui->loaderGroup, &QGroupBox::toggled, this, [this](bool value) {
-            if (m_settingsViewModel && m_instance) {
-                m_settingsViewModel->setLoaderPreferences(m_instance->id(), {}, value);
-            } else {
-                m_instance->settings()->set("OverrideModDownloadLoaders", value);
-                if (!value)
-                    m_instance->settings()->reset("ModDownloadLoaders");
-            }
-            if (value) {
+            m_instance->settings()->set("OverrideModDownloadLoaders", value);
+            if (value)
                 saveSelectedLoaders();
-            }
+            else
+                m_instance->settings()->reset("ModDownloadLoaders");
         });
         connect(m_ui->neoForge, &QCheckBox::stateChanged, this, &MinecraftSettingsWidget::saveSelectedLoaders);
         connect(m_ui->forge, &QCheckBox::stateChanged, this, &MinecraftSettingsWidget::saveSelectedLoaders);
@@ -214,10 +209,9 @@ void MinecraftSettingsWidget::loadSettings()
         m_javaSettings->loadSettings();
 
     // Custom commands
-    const auto preCmd = m_settingsViewModel ? m_settingsViewModel->preLaunchCommand() : settings->get("PreLaunchCommand").toString();
-    const auto postCmd = m_settingsViewModel ? m_settingsViewModel->postExitCommand() : settings->get("PostExitCommand").toString();
-    m_ui->customCommands->initialize(m_instance != nullptr, m_instance == nullptr || settings->get("OverrideCommands").toBool(), preCmd,
-                                     settings->get("WrapperCommand").toString(), postCmd);
+    m_ui->customCommands->initialize(m_instance != nullptr, m_instance == nullptr || settings->get("OverrideCommands").toBool(),
+                                     settings->get("PreLaunchCommand").toString(), settings->get("WrapperCommand").toString(),
+                                     settings->get("PostExitCommand").toString());
 
     // Environment variables
     m_ui->environmentVariables->initialize(m_instance != nullptr, m_instance == nullptr || settings->get("OverrideEnv").toBool(),
@@ -283,8 +277,7 @@ void MinecraftSettingsWidget::loadSettings()
         m_ui->quilt->blockSignals(true);
         m_ui->liteLoader->blockSignals(true);
 
-        const bool overrideLoaders = m_settingsViewModel && m_instance ? m_settingsViewModel->overrideLoader()
-                                                                       : settings->get("OverrideModDownloadLoaders").toBool();
+        const bool overrideLoaders = settings->get("OverrideModDownloadLoaders").toBool();
         const QStringList loaders = Json::toStringList(settings->get("ModDownloadLoaders").toString());
 
         m_ui->loaderGroup->setChecked(overrideLoaders);
@@ -381,15 +374,9 @@ void MinecraftSettingsWidget::saveSettings()
             settings->set("OverrideCommands", custcmd);
 
         if (custcmd) {
-            if (m_settingsViewModel) {
-                m_settingsViewModel->setPreLaunchCommand(m_instance ? m_instance->id() : QString(),
-                                                         m_ui->customCommands->prelaunchCommand());
-                m_settingsViewModel->setPostExitCommand(m_instance ? m_instance->id() : QString(), m_ui->customCommands->postexitCommand());
-            } else {
-                settings->set("PreLaunchCommand", m_ui->customCommands->prelaunchCommand());
-                settings->set("PostExitCommand", m_ui->customCommands->postexitCommand());
-            }
+            settings->set("PreLaunchCommand", m_ui->customCommands->prelaunchCommand());
             settings->set("WrapperCommand", m_ui->customCommands->wrapperCommand());
+            settings->set("PostExitCommand", m_ui->customCommands->postexitCommand());
         } else {
             settings->reset("PreLaunchCommand");
             settings->reset("WrapperCommand");
@@ -397,20 +384,15 @@ void MinecraftSettingsWidget::saveSettings()
         }
 
         // Environment Variables
-        auto envOverride = m_instance == nullptr || m_ui->environmentVariables->override();
-        auto envMap = m_ui->environmentVariables->value();
+        auto env = m_instance == nullptr || m_ui->environmentVariables->override();
 
-        if (m_settingsViewModel) {
-            m_settingsViewModel->setEnvironmentVars(m_instance ? m_instance->id() : QString(), envOverride, envMap);
-        } else {
-            if (m_instance != nullptr)
-                settings->set("OverrideEnv", envOverride);
+        if (m_instance != nullptr)
+            settings->set("OverrideEnv", env);
 
-            if (envOverride)
-                settings->set("Env", Json::fromMap(envMap));
-            else
-                settings->reset("Env");
-        }
+        if (env)
+            settings->set("Env", Json::fromMap(m_ui->environmentVariables->value()));
+        else
+            settings->reset("Env");
 
         // Workarounds
         bool workarounds = m_instance == nullptr || m_ui->nativeWorkaroundsGroupBox->isChecked();
@@ -572,11 +554,7 @@ void MinecraftSettingsWidget::saveSelectedLoaders()
     if (m_ui->liteLoader->isChecked())
         loaders << getModLoaderAsString(ModPlatform::LiteLoader);
 
-    if (m_settingsViewModel && m_instance) {
-        m_settingsViewModel->setLoaderPreferences(m_instance->id(), loaders, true);
-    } else if (m_instance) {
-        m_instance->settings()->set("ModDownloadLoaders", Json::fromStringList(loaders));
-    }
+    m_instance->settings()->set("ModDownloadLoaders", Json::fromStringList(loaders));
 }
 
 void MinecraftSettingsWidget::saveDataPacksPath()

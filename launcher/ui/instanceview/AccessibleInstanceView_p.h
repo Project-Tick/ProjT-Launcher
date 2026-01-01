@@ -30,9 +30,7 @@
 class QAccessibleTableCell;
 class QAccessibleTableHeaderCell;
 
-class AccessibleInstanceView
-    : public QAccessibleTableInterface
-    , public QAccessibleObject {
+class AccessibleInstanceView : public QAccessibleTableInterface, public QAccessibleObject {
    public:
     explicit AccessibleInstanceView(QWidget* w);
     bool isValid() const override;
@@ -89,10 +87,7 @@ class AccessibleInstanceView
     inline int logicalIndex(const QModelIndex& index) const;
 };
 
-class AccessibleInstanceViewItem
-    : public QAccessibleInterface
-    , public QAccessibleTableCellInterface
-    , public QAccessibleActionInterface {
+class AccessibleInstanceViewItem : public QAccessibleInterface, public QAccessibleTableCellInterface, public QAccessibleActionInterface {
    public:
     AccessibleInstanceViewItem(QAbstractItemView* view, const QModelIndex& m_index);
 

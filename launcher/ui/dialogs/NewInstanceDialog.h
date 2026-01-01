@@ -71,9 +71,7 @@ class QDialogButtonBox;
 class ImportPage;
 class FlamePage;
 
-class NewInstanceDialog
-    : public QDialog
-    , public BasePageProvider {
+class NewInstanceDialog : public QDialog, public BasePageProvider {
     Q_OBJECT
 
    public:

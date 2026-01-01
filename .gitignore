@@ -116,7 +116,7 @@ obj-*/
 docs/TODO_FIXME_REPORT.md
 memory-bank/
 tree.txt
-mb_*
+
 node_modules/
 .qtcreator/
 .wiki-local/

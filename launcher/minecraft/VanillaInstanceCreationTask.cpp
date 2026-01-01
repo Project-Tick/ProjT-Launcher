@@ -36,11 +36,6 @@ VanillaCreationTask::VanillaCreationTask(BaseVersion::Ptr version, QString loade
 
 bool VanillaCreationTask::createInstance()
 {
-    if (!m_version) {
-        setError(tr("No Minecraft version specified for instance creation."));
-        return false;
-    }
-
     setStatus(tr("Creating instance from version %1").arg(m_version->name()));
 
     auto instance_settings = std::make_shared<INISettingsObject>(FS::PathCombine(m_stagingPath, "instance.cfg"));

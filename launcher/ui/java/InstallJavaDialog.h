@@ -50,9 +50,7 @@ class PackProfile;
 class QDialogButtonBox;
 
 namespace Java {
-class InstallDialog final
-    : public QDialog
-    , private BasePageProvider {
+class InstallDialog final : public QDialog, private BasePageProvider {
     Q_OBJECT
 
    public:
