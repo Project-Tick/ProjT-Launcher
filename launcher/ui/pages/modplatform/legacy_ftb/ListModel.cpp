@@ -199,8 +199,7 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
             ((ListModel*)this)->requestLogo(pack.logo);
             return icon;
         }
-        case Qt::UserRole:
-        case PackDataRole: {
+        case Qt::UserRole: {
             QVariant v;
             v.setValue(pack);
             return v;
@@ -219,14 +218,7 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
             return pack.name;
         case Qt::SizeHintRole:
             return QSize(0, 58);
-        // Custom data for QML
-        case NameRole:
-            return pack.name;
-        case DescriptionRole:
-            return pack.description;
-        case IconUrlRole:
-            return QString(BuildConfig.LEGACY_FTB_CDN_BASE_URL + "static/%1").arg(pack.logo);
-        // Legacy Widget roles
+        // Custom data
         case UserDataTypes::TITLE:
             return pack.name;
         case UserDataTypes::DESCRIPTION:
@@ -238,12 +230,6 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
     }
 
     return {};
-}
-
-QHash<int, QByteArray> ListModel::roleNames() const
-{
-    return { { NameRole, "name" },         { DescriptionRole, "description" }, { IconUrlRole, "iconUrl" },
-             { PackDataRole, "packData" }, { Qt::DisplayRole, "display" },     { Qt::ToolTipRole, "toolTip" } };
 }
 
 void ListModel::fill(ModpackList modpacks_)

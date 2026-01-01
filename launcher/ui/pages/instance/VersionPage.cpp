@@ -310,12 +310,12 @@ void VersionPage::on_actionRemove_triggered()
         if (response != QMessageBox::Yes)
             return;
     }
-
+    
     if (!m_profile->remove(index)) {
         QMessageBox::critical(this, tr("Error"), tr("Couldn't remove file"));
         return;
     }
-
+    
     // remove() automatically updates model via beginRemoveRows/endRemoveRows
     updateButtons();
     m_container->refreshContainer();
@@ -559,11 +559,13 @@ void VersionPage::on_actionCustomize_triggered()
     auto patch = m_profile->getComponent(version);
     if (!patch->getVersionFile()) {
         // Version file not yet loaded - wait for async loading
-        QMessageBox::information(this, tr("Version Update"), tr("Please wait for the version file to load before customizing."));
+        QMessageBox::information(this, tr("Version Update"), 
+                                tr("Please wait for the version file to load before customizing."));
         return;
     }
     if (!m_profile->customize(version)) {
-        QMessageBox::critical(this, tr("Error"), tr("Failed to customize version. The version file may be read-only."));
+        QMessageBox::critical(this, tr("Error"), 
+                            tr("Failed to customize version. The version file may be read-only."));
         return;
     }
     // Model automatically updates via dataChanged signal from PackProfile
@@ -605,7 +607,8 @@ void VersionPage::on_actionRevert_triggered()
         return;
 
     if (!m_profile->revertToBase(version)) {
-        QMessageBox::critical(this, tr("Error"), tr("Failed to revert version. The version may not have any customizations."));
+        QMessageBox::critical(this, tr("Error"), 
+                            tr("Failed to revert version. The version may not have any customizations."));
         return;
     }
     // Model automatically updates via dataChanged signal from PackProfile

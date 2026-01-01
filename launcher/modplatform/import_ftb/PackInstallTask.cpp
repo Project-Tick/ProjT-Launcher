@@ -91,38 +91,38 @@ void PackInstallTask::copySettings()
     auto modloader = m_pack.loaderType;
     if (modloader.has_value())
         switch (modloader.value()) {
-        case ModPlatform::NeoForge: {
-            components->setComponentVersion("net.neoforged", m_pack.version, true);
-            break;
-        }
-        case ModPlatform::Forge: {
-            components->setComponentVersion("net.minecraftforge", m_pack.version, true);
-            break;
-        }
-        case ModPlatform::Fabric: {
-            components->setComponentVersion("net.fabricmc.fabric-loader", m_pack.version, true);
-            break;
-        }
-        case ModPlatform::Quilt: {
-            components->setComponentVersion("org.quiltmc.quilt-loader", m_pack.version, true);
-            break;
-        }
-        case ModPlatform::Cauldron:
-            break;
-        case ModPlatform::LiteLoader:
-            break;
-        case ModPlatform::DataPack:
-            break;
-        case ModPlatform::Babric:
-            break;
-        case ModPlatform::BTA:
-            break;
-        case ModPlatform::LegacyFabric:
-            break;
-        case ModPlatform::Ornithe:
-            break;
-        case ModPlatform::Rift:
-            break;
+            case ModPlatform::NeoForge: {
+                components->setComponentVersion("net.neoforged", m_pack.version, true);
+                break;
+            }
+            case ModPlatform::Forge: {
+                components->setComponentVersion("net.minecraftforge", m_pack.version, true);
+                break;
+            }
+            case ModPlatform::Fabric: {
+                components->setComponentVersion("net.fabricmc.fabric-loader", m_pack.version, true);
+                break;
+            }
+            case ModPlatform::Quilt: {
+                components->setComponentVersion("org.quiltmc.quilt-loader", m_pack.version, true);
+                break;
+            }
+            case ModPlatform::Cauldron:
+                break;
+            case ModPlatform::LiteLoader:
+                break;
+            case ModPlatform::DataPack:
+                break;
+            case ModPlatform::Babric:
+                break;
+            case ModPlatform::BTA:
+                break;
+            case ModPlatform::LegacyFabric:
+                break;
+            case ModPlatform::Ornithe:
+                break;
+            case ModPlatform::Rift:
+                break;
         }
     components->saveNow();
 

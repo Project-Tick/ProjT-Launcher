@@ -52,9 +52,7 @@
 #include "ui/widgets/PageContainer.h"
 #include "ui/widgets/VersionSelectWidget.h"
 
-class InstallLoaderPage
-    : public VersionSelectWidget
-    , public BasePage {
+class InstallLoaderPage : public VersionSelectWidget, public BasePage {
     Q_OBJECT
    public:
     InstallLoaderPage(const QString& id,

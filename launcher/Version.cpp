@@ -141,8 +141,7 @@ QDebug operator<<(QDebug debug, const Version& v)
         first = false;
     }
 
-    debug.nospace() << " ]"
-                    << " }";
+    debug.nospace() << " ]" << " }";
 
     return debug;
 }

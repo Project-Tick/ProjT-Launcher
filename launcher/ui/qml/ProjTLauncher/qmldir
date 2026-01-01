@@ -1,2 +1,0 @@
-module ProjTLauncher
-singleton ThemeColors 1.0 ../ThemeColors.qml

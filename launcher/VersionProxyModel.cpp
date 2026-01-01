@@ -130,12 +130,8 @@ QVariant VersionProxyModel::headerData(int section, Qt::Orientation orientation,
         switch (column) {
             case Name:
                 return tr("Version");
-            case ParentVersion: {
-                if (auto list = qobject_cast<BaseVersionList*>(sourceModel())) {
-                    return list->parentVersionHeader();
-                }
-                return tr("Minecraft");
-            }
+            case ParentVersion:
+                return tr("Minecraft");  // FIXME: this should come from metadata
             case Branch:
                 return tr("Branch");
             case Type:
@@ -155,12 +151,8 @@ QVariant VersionProxyModel::headerData(int section, Qt::Orientation orientation,
         switch (column) {
             case Name:
                 return tr("The name of the version.");
-            case ParentVersion: {
-                if (auto list = qobject_cast<BaseVersionList*>(sourceModel())) {
-                    return tr("The version of %1 that this version belongs to.").arg(list->parentVersionHeader());
-                }
-                return tr("Minecraft version");
-            }
+            case ParentVersion:
+                return tr("Minecraft version");  // FIXME: this should come from metadata
             case Branch:
                 return tr("The version's branch");
             case Type:

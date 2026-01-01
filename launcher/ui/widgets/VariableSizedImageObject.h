@@ -51,9 +51,7 @@
  *  Why? Because we want to re-scale images dynamically based on the document's size, in order to
  *  not have images being weirdly cropped out in different resolutions.
  */
-class VariableSizedImageObject final
-    : public QObject
-    , public QTextObjectInterface {
+class VariableSizedImageObject final : public QObject, public QTextObjectInterface {
     Q_OBJECT
     Q_INTERFACES(QTextObjectInterface)
 

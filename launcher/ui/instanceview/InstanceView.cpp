@@ -665,7 +665,6 @@ void InstanceView::dropEvent(QDropEvent* event)
             }
             auto instanceId = QString::fromUtf8(mimedata->data("application/x-instanceid"));
             auto instanceList = APPLICATION->instances().get();
-            // delegate group changes to the view model through the list
             instanceList->setInstanceGroup(instanceId, group->text);
             event->setDropAction(Qt::MoveAction);
             event->accept();
@@ -867,120 +866,120 @@ QModelIndex InstanceView::moveCursor(QAbstractItemView::CursorAction cursorActio
     }
     // Handle different movement actions.
     switch (cursorAction) {
-    case MoveUp: {
-        if (row == 0) {
-            int prevGroupIndex = group_index - 1;
-            while (prevGroupIndex >= 0) {
-                auto prevGroup = m_groups[prevGroupIndex];
-                if (prevGroup->collapsed) {
-                    prevGroupIndex--;
-                    continue;
+        case MoveUp: {
+            if (row == 0) {
+                int prevGroupIndex = group_index - 1;
+                while (prevGroupIndex >= 0) {
+                    auto prevGroup = m_groups[prevGroupIndex];
+                    if (prevGroup->collapsed) {
+                        prevGroupIndex--;
+                        continue;
+                    }
+                    int newRow = prevGroup->numRows() - 1;
+                    int newRowSize = prevGroup->rows[newRow].size();
+                    int newColumn = m_currentCursorColumn;
+                    if (m_currentCursorColumn >= newRowSize) {
+                        newColumn = newRowSize - 1;
+                    }
+                    return prevGroup->rows[newRow][newColumn];
                 }
-                int newRow = prevGroup->numRows() - 1;
-                int newRowSize = prevGroup->rows[newRow].size();
+            } else {
+                int newRow = row - 1;
+                int newRowSize = cat->rows[newRow].size();
                 int newColumn = m_currentCursorColumn;
                 if (m_currentCursorColumn >= newRowSize) {
                     newColumn = newRowSize - 1;
                 }
-                return prevGroup->rows[newRow][newColumn];
+                return cat->rows[newRow][newColumn];
             }
-        } else {
-            int newRow = row - 1;
-            int newRowSize = cat->rows[newRow].size();
-            int newColumn = m_currentCursorColumn;
-            if (m_currentCursorColumn >= newRowSize) {
-                newColumn = newRowSize - 1;
-            }
-            return cat->rows[newRow][newColumn];
+            return current;
         }
-        return current;
-    }
-    case MoveDown: {
-        if (row == cat->rows.size() - 1) {
-            int nextGroupIndex = group_index + 1;
-            while (nextGroupIndex < m_groups.size()) {
-                auto nextGroup = m_groups[nextGroupIndex];
-                if (nextGroup->collapsed) {
-                    nextGroupIndex++;
-                    continue;
+        case MoveDown: {
+            if (row == cat->rows.size() - 1) {
+                int nextGroupIndex = group_index + 1;
+                while (nextGroupIndex < m_groups.size()) {
+                    auto nextGroup = m_groups[nextGroupIndex];
+                    if (nextGroup->collapsed) {
+                        nextGroupIndex++;
+                        continue;
+                    }
+                    int newRowSize = nextGroup->rows[0].size();
+                    int newColumn = m_currentCursorColumn;
+                    if (m_currentCursorColumn >= newRowSize) {
+                        newColumn = newRowSize - 1;
+                    }
+                    return nextGroup->rows[0][newColumn];
                 }
-                int newRowSize = nextGroup->rows[0].size();
+            } else {
+                int newRow = row + 1;
+                int newRowSize = cat->rows[newRow].size();
                 int newColumn = m_currentCursorColumn;
                 if (m_currentCursorColumn >= newRowSize) {
                     newColumn = newRowSize - 1;
                 }
-                return nextGroup->rows[0][newColumn];
+                return cat->rows[newRow][newColumn];
             }
-        } else {
-            int newRow = row + 1;
-            int newRowSize = cat->rows[newRow].size();
-            int newColumn = m_currentCursorColumn;
-            if (m_currentCursorColumn >= newRowSize) {
-                newColumn = newRowSize - 1;
-            }
-            return cat->rows[newRow][newColumn];
+            return current;
         }
-        return current;
-    }
-    case MoveLeft: {
-        if (column > 0) {
-            m_currentCursorColumn = column - 1;
-            return cat->rows[row][column - 1];
-        } else if (row > 0) {
-            row -= 1;
-            int newRowSize = cat->rows[row].size();
-            m_currentCursorColumn = newRowSize - 1;
-            return cat->rows[row][m_currentCursorColumn];
-        } else {
-            int prevGroupIndex = group_index - 1;
-            while (prevGroupIndex >= 0) {
-                auto prevGroup = m_groups[prevGroupIndex];
-                if (prevGroup->collapsed) {
-                    prevGroupIndex--;
-                    continue;
+        case MoveLeft: {
+            if (column > 0) {
+                m_currentCursorColumn = column - 1;
+                return cat->rows[row][column - 1];
+            } else if (row > 0) {
+                row -= 1;
+                int newRowSize = cat->rows[row].size();
+                m_currentCursorColumn = newRowSize - 1;
+                return cat->rows[row][m_currentCursorColumn];
+            } else {
+                int prevGroupIndex = group_index - 1;
+                while (prevGroupIndex >= 0) {
+                    auto prevGroup = m_groups[prevGroupIndex];
+                    if (prevGroup->collapsed) {
+                        prevGroupIndex--;
+                        continue;
+                    }
+                    int lastRow = prevGroup->numRows() - 1;
+                    int lastCol = prevGroup->rows[lastRow].size() - 1;
+                    m_currentCursorColumn = lastCol;
+                    return prevGroup->rows[lastRow][lastCol];
                 }
-                int lastRow = prevGroup->numRows() - 1;
-                int lastCol = prevGroup->rows[lastRow].size() - 1;
-                m_currentCursorColumn = lastCol;
-                return prevGroup->rows[lastRow][lastCol];
             }
+            return current;
         }
-        return current;
-    }
-    case MoveRight: {
-        if (column < cat->rows[row].size() - 1) {
-            m_currentCursorColumn = column + 1;
-            return cat->rows[row][column + 1];
-        } else if (row < cat->rows.size() - 1) {
-            row += 1;
-            m_currentCursorColumn = 0;
-            return cat->rows[row][m_currentCursorColumn];
-        } else {
-            int nextGroupIndex = group_index + 1;
-            while (nextGroupIndex < m_groups.size()) {
-                auto nextGroup = m_groups[nextGroupIndex];
-                if (nextGroup->collapsed) {
-                    nextGroupIndex++;
-                    continue;
-                }
+        case MoveRight: {
+            if (column < cat->rows[row].size() - 1) {
+                m_currentCursorColumn = column + 1;
+                return cat->rows[row][column + 1];
+            } else if (row < cat->rows.size() - 1) {
+                row += 1;
                 m_currentCursorColumn = 0;
-                return nextGroup->rows[0][0];
+                return cat->rows[row][m_currentCursorColumn];
+            } else {
+                int nextGroupIndex = group_index + 1;
+                while (nextGroupIndex < m_groups.size()) {
+                    auto nextGroup = m_groups[nextGroupIndex];
+                    if (nextGroup->collapsed) {
+                        nextGroupIndex++;
+                        continue;
+                    }
+                    m_currentCursorColumn = 0;
+                    return nextGroup->rows[0][0];
+                }
             }
+            return current;
         }
-        return current;
-    }
-    case MoveHome: {
-        m_currentCursorColumn = 0;
-        return cat->rows[row][0];
-    }
-    case MoveEnd: {
-        auto last = cat->rows[row].size() - 1;
-        m_currentCursorColumn = last;
-        return cat->rows[row][last];
-    }
-    default:
-        // For unsupported cursor actions, return the current index.
-        break;
+        case MoveHome: {
+            m_currentCursorColumn = 0;
+            return cat->rows[row][0];
+        }
+        case MoveEnd: {
+            auto last = cat->rows[row].size() - 1;
+            m_currentCursorColumn = last;
+            return cat->rows[row][last];
+        }
+        default:
+            // For unsupported cursor actions, return the current index.
+            break;
     }
     return current;
 }

@@ -66,17 +66,17 @@ class FlameAPI : public ResourceAPI {
     static int getClassId(ModPlatform::ResourceType type)
     {
         switch (type) {
-        default:
-        case ModPlatform::ResourceType::Mod:
-            return 6;
-        case ModPlatform::ResourceType::ResourcePack:
-            return 12;
-        case ModPlatform::ResourceType::ShaderPack:
-            return 6552;
-        case ModPlatform::ResourceType::Modpack:
-            return 4471;
-        case ModPlatform::ResourceType::DataPack:
-            return 6945;
+            default:
+            case ModPlatform::ResourceType::Mod:
+                return 6;
+            case ModPlatform::ResourceType::ResourcePack:
+                return 12;
+            case ModPlatform::ResourceType::ShaderPack:
+                return 6552;
+            case ModPlatform::ResourceType::Modpack:
+                return 4471;
+            case ModPlatform::ResourceType::DataPack:
+                return 6945;
         }
     }
 
@@ -84,25 +84,25 @@ class FlameAPI : public ResourceAPI {
     {
         // https://docs.curseforge.com/?http#tocS_ModLoaderType
         switch (loaders) {
-        case ModPlatform::Forge:
-            return 1;
-        case ModPlatform::Cauldron:
-            return 2;
-        case ModPlatform::LiteLoader:
-            return 3;
-        case ModPlatform::Fabric:
-            return 4;
-        case ModPlatform::Quilt:
-            return 5;
-        case ModPlatform::NeoForge:
-            return 6;
-        case ModPlatform::DataPack:
-        case ModPlatform::Babric:
-        case ModPlatform::BTA:
-        case ModPlatform::LegacyFabric:
-        case ModPlatform::Ornithe:
-        case ModPlatform::Rift:
-            break;  // not supported
+            case ModPlatform::Forge:
+                return 1;
+            case ModPlatform::Cauldron:
+                return 2;
+            case ModPlatform::LiteLoader:
+                return 3;
+            case ModPlatform::Fabric:
+                return 4;
+            case ModPlatform::Quilt:
+                return 5;
+            case ModPlatform::NeoForge:
+                return 6;
+            case ModPlatform::DataPack:
+            case ModPlatform::Babric:
+            case ModPlatform::BTA:
+            case ModPlatform::LegacyFabric:
+            case ModPlatform::Ornithe:
+            case ModPlatform::Rift:
+                break;  // not supported
         }
         return 0;
     }

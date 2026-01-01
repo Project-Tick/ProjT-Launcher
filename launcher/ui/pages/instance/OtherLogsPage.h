@@ -59,14 +59,16 @@
 
 #include <QWidget>
 
-#include "BaseInstance.h"
+#include <Application.h>
+#include <QFileSystemWatcher>
+#include "LogPage.h"
 #include "ui/pages/BasePage.h"
 
 namespace Ui {
 class OtherLogsPage;
 }
 
-class LogsViewModel;
+class RecursiveFileSystemWatcher;
 
 class OtherLogsPage : public QWidget, public BasePage {
     Q_OBJECT
@@ -74,8 +76,6 @@ class OtherLogsPage : public QWidget, public BasePage {
    public:
     explicit OtherLogsPage(QString id, QString displayName, QString helpPage, InstancePtr instance = nullptr, QWidget* parent = 0);
     ~OtherLogsPage();
-
-    void setLogsViewModel(LogsViewModel* viewModel);
 
     QString id() const override { return m_id; }
     QString displayName() const override { return m_displayName; }
@@ -108,10 +108,10 @@ class OtherLogsPage : public QWidget, public BasePage {
    private:
     void reload();
     void modelStateToUI();
+    void UIToModelState();
     void setControlsEnabled(bool enabled);
-    void syncViewModel();
-    void updateViewModelCategory() const;
-    QString currentCategoryLabel() const;
+
+    QStringList getPaths();
 
    private:
     QString m_id;
@@ -119,6 +119,13 @@ class OtherLogsPage : public QWidget, public BasePage {
     QString m_helpPage;
 
     Ui::OtherLogsPage* ui;
+    InstancePtr m_instance;
+    /** Path to display log paths relative to. */
+    QString m_basePath;
+    QStringList m_logSearchPaths;
     QString m_currentFile;
-    LogsViewModel* m_logsViewModel = nullptr;
+    QFileSystemWatcher m_watcher;
+
+    LogFormatProxyModel* m_proxy;
+    shared_qobject_ptr<LogModel> m_model;
 };

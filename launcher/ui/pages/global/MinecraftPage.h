@@ -70,7 +70,7 @@ class MinecraftPage : public MinecraftSettingsWidget, public BasePage {
     Q_OBJECT
 
    public:
-    explicit MinecraftPage(QWidget* parent = nullptr) : MinecraftSettingsWidget(nullptr, nullptr, parent) {}
+    explicit MinecraftPage(QWidget* parent = nullptr) : MinecraftSettingsWidget(nullptr, parent) {}
     ~MinecraftPage() override {}
 
     QString displayName() const override { return tr("Minecraft"); }

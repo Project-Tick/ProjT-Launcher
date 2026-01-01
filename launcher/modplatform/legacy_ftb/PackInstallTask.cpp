@@ -218,7 +218,7 @@ void PackInstallTask::install()
     FS::deletePath(m_stagingPath + "/unzip");
 
     if (fallback) {
-        // TODO: Fallback mekanizması eklenmeli. Şu anda hata durumunda sürekli başarısız oluyor.
+    // TODO: Fallback mekanizması eklenmeli. Şu anda hata durumunda sürekli başarısız oluyor.
         emitFailed(tr("No installation method found!"));
         return;
     }

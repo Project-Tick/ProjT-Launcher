@@ -61,7 +61,6 @@
 
 #include "BaseInstance.h"
 #include "ui/pages/BasePage.h"
-#include "viewmodels/InstanceListViewModel.h"
 
 namespace Ui {
 class NotesPage;
@@ -71,7 +70,7 @@ class NotesPage : public QWidget, public BasePage {
     Q_OBJECT
 
    public:
-    explicit NotesPage(BaseInstance* inst, InstanceListViewModel* viewModel, QWidget* parent = 0);
+    explicit NotesPage(BaseInstance* inst, QWidget* parent = 0);
     virtual ~NotesPage();
     virtual QString displayName() const override { return tr("Notes"); }
     virtual QIcon icon() const override
@@ -89,5 +88,4 @@ class NotesPage : public QWidget, public BasePage {
    private:
     Ui::NotesPage* ui;
     BaseInstance* m_inst;
-    InstanceListViewModel* m_instanceViewModel = nullptr;
 };

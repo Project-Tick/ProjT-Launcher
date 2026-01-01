@@ -85,91 +85,91 @@ QVariant TexturePackFolderModel::data(const QModelIndex& index, int role) const
     int column = index.column();
 
     switch (role) {
-    case Qt::DisplayRole:
-        switch (column) {
-        case NameColumn:
-            return m_resources[row]->name();
-        case DateColumn:
-            return m_resources[row]->dateTimeChanged();
-        case ProviderColumn:
-            return m_resources[row]->provider();
-        case SizeColumn:
-            return m_resources[row]->sizeStr();
-        default:
+        case Qt::DisplayRole:
+            switch (column) {
+                case NameColumn:
+                    return m_resources[row]->name();
+                case DateColumn:
+                    return m_resources[row]->dateTimeChanged();
+                case ProviderColumn:
+                    return m_resources[row]->provider();
+                case SizeColumn:
+                    return m_resources[row]->sizeStr();
+                default:
+                    return {};
+            }
+        case Qt::ToolTipRole:
+            if (column == NameColumn) {
+                if (at(row).isSymLinkUnder(instDirPath())) {
+                    return m_resources[row]->internal_id() +
+                           tr("\nWarning: This resource is symbolically linked from elsewhere. Editing it will also change the original."
+                              "\nCanonical Path: %1")
+                               .arg(at(row).fileinfo().canonicalFilePath());
+                    ;
+                }
+                if (at(row).isMoreThanOneHardLink()) {
+                    return m_resources[row]->internal_id() +
+                           tr("\nWarning: This resource is hard linked elsewhere. Editing it will also change the original.");
+                }
+            }
+
+            return m_resources[row]->internal_id();
+        case Qt::DecorationRole: {
+            if (column == NameColumn && (at(row).isSymLinkUnder(instDirPath()) || at(row).isMoreThanOneHardLink()))
+                return QIcon::fromTheme("status-yellow");
+            if (column == ImageColumn) {
+                return at(row).image({ 32, 32 }, Qt::AspectRatioMode::KeepAspectRatioByExpanding);
+            }
             return {};
         }
-    case Qt::ToolTipRole:
-        if (column == NameColumn) {
-            if (at(row).isSymLinkUnder(instDirPath())) {
-                return m_resources[row]->internal_id() +
-                       tr("\nWarning: This resource is symbolically linked from elsewhere. Editing it will also change the original."
-                          "\nCanonical Path: %1")
-                           .arg(at(row).fileinfo().canonicalFilePath());
-                ;
+        case Qt::SizeHintRole:
+            if (column == ImageColumn) {
+                return QSize(32, 32);
             }
-            if (at(row).isMoreThanOneHardLink()) {
-                return m_resources[row]->internal_id() +
-                       tr("\nWarning: This resource is hard linked elsewhere. Editing it will also change the original.");
+            return {};
+        case Qt::CheckStateRole:
+            if (column == ActiveColumn) {
+                return m_resources[row]->enabled() ? Qt::Checked : Qt::Unchecked;
             }
-        }
-
-        return m_resources[row]->internal_id();
-    case Qt::DecorationRole: {
-        if (column == NameColumn && (at(row).isSymLinkUnder(instDirPath()) || at(row).isMoreThanOneHardLink()))
-            return QIcon::fromTheme("status-yellow");
-        if (column == ImageColumn) {
-            return at(row).image({ 32, 32 }, Qt::AspectRatioMode::KeepAspectRatioByExpanding);
-        }
-        return {};
-    }
-    case Qt::SizeHintRole:
-        if (column == ImageColumn) {
-            return QSize(32, 32);
-        }
-        return {};
-    case Qt::CheckStateRole:
-        if (column == ActiveColumn) {
-            return m_resources[row]->enabled() ? Qt::Checked : Qt::Unchecked;
-        }
-        return {};
-    default:
-        return {};
+            return {};
+        default:
+            return {};
     }
 }
 
 QVariant TexturePackFolderModel::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, int role) const
 {
     switch (role) {
-    case Qt::DisplayRole:
-        switch (section) {
-        case ActiveColumn:
-        case NameColumn:
-        case DateColumn:
-        case ImageColumn:
-        case ProviderColumn:
-        case SizeColumn:
-            return columnNames().at(section);
-        default:
-            return {};
+        case Qt::DisplayRole:
+            switch (section) {
+                case ActiveColumn:
+                case NameColumn:
+                case DateColumn:
+                case ImageColumn:
+                case ProviderColumn:
+                case SizeColumn:
+                    return columnNames().at(section);
+                default:
+                    return {};
+            }
+        case Qt::ToolTipRole: {
+            switch (section) {
+                case ActiveColumn:
+                    return tr("Is the texture pack enabled?");
+                case NameColumn:
+                    return tr("The name of the texture pack.");
+                case DateColumn:
+                    return tr("The date and time this texture pack was last changed (or added).");
+                case ProviderColumn:
+                    return tr("The source provider of the texture pack.");
+                case SizeColumn:
+                    return tr("The size of the texture pack.");
+                default:
+                    return {};
+            }
         }
-    case Qt::ToolTipRole: {
-        switch (section) {
-        case ActiveColumn:
-            return tr("Is the texture pack enabled?");
-        case NameColumn:
-            return tr("The name of the texture pack.");
-        case DateColumn:
-            return tr("The date and time this texture pack was last changed (or added).");
-        case ProviderColumn:
-            return tr("The source provider of the texture pack.");
-        case SizeColumn:
-            return tr("The size of the texture pack.");
         default:
-            return {};
-        }
-    }
-    default:
-        break;
+            break;
     }
 
     return {};

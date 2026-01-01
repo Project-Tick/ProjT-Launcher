@@ -58,10 +58,8 @@
 #include "NotesPage.h"
 #include <QTabBar>
 #include "ui_NotesPage.h"
-#include "viewmodels/InstanceListViewModel.h"
 
-NotesPage::NotesPage(BaseInstance* inst, InstanceListViewModel* viewModel, QWidget* parent)
-    : QWidget(parent), ui(new Ui::NotesPage), m_inst(inst), m_instanceViewModel(viewModel)
+NotesPage::NotesPage(BaseInstance* inst, QWidget* parent) : QWidget(parent), ui(new Ui::NotesPage), m_inst(inst)
 {
     ui->setupUi(this);
     ui->noteEditor->setText(m_inst->notes());
@@ -74,9 +72,7 @@ NotesPage::~NotesPage()
 
 bool NotesPage::apply()
 {
-    if (m_instanceViewModel && m_inst) {
-        m_instanceViewModel->updateInstanceNotes(m_inst->id(), ui->noteEditor->toPlainText());
-    }
+    m_inst->setNotes(ui->noteEditor->toPlainText());
     return true;
 }
 

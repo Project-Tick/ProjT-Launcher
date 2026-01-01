@@ -66,26 +66,18 @@
 #include <QPushButton>
 #include <QScrollBar>
 
-#include "ui/pages/BasePage.h"
 #include "ui/widgets/PageContainer.h"
 
 #include "InstancePageProvider.h"
 
 #include "icons/IconList.h"
-#include "viewmodels/InstanceListViewModel.h"
-#include "viewmodels/SettingsViewModel.h"
 
-InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
-    : QMainWindow(parent)
-    , m_instance(instance)
-    , m_instanceListViewModel(new InstanceListViewModel(this))
-    , m_settingsViewModel(new SettingsViewModel(this))
+InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent) : QMainWindow(parent), m_instance(instance)
 {
     setAttribute(Qt::WA_DeleteOnClose);
 
     auto icon = APPLICATION->icons()->getIcon(m_instance->iconKey());
     QString windowTitle = tr("Console window for ") + m_instance->name();
-    m_settingsViewModel->setInstanceId(m_instance->id());
 
     // Set window properties
     {
@@ -95,7 +87,7 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
 
     // Add page container
     {
-        auto provider = std::make_shared<InstancePageProvider>(m_instance, m_instanceListViewModel, m_settingsViewModel);
+        auto provider = std::make_shared<InstancePageProvider>(m_instance);
         // Do not force the console page as the default when creating the window.
         // Creating the window should not automatically open the console; the
         // console will still be shown explicitly on error or when requested.
@@ -103,15 +95,7 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
         m_container->setParentContainer(this);
         setCentralWidget(m_container);
         setContentsMargins(0, 0, 0, 0);
-        hookPageSelectionSignals();
     }
-    // Let the ViewModel drive apply/reset by delegating to the container hooks.
-    m_settingsViewModel->setApplyHook([this]() { return m_container ? m_container->saveAll() : true; });
-    m_settingsViewModel->setResetHook([this]() {
-        if (m_container) {
-            m_container->refreshContainer();
-        }
-    });
 
     // Add custom buttons to the page container layout.
     {
@@ -156,7 +140,12 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
     }
 
     // restore window state
-    restoreWindowStateFromSettings();
+    {
+        auto base64State = APPLICATION->settings()->get("ConsoleWindowState").toString().toUtf8();
+        restoreState(QByteArray::fromBase64(base64State));
+        auto base64Geometry = APPLICATION->settings()->get("ConsoleWindowGeometry").toString().toUtf8();
+        restoreGeometry(QByteArray::fromBase64(base64Geometry));
+    }
 
     // set up instance and launch process recognition
     {
@@ -176,7 +165,6 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent)
         static_cast<ManagedPackPage*>(m_container->getPage("managed_pack"))->setInstanceWindow(this);
     }
 
-    m_settingsViewModel->notifySettingsLoaded();
     show();
 }
 
@@ -216,35 +204,6 @@ void InstanceWindow::runningStateChanged(bool running)
     }
 }
 
-void InstanceWindow::restoreWindowStateFromSettings()
-{
-    auto base64State = APPLICATION->settings()->get("ConsoleWindowState").toString().toUtf8();
-    restoreState(QByteArray::fromBase64(base64State));
-    auto base64Geometry = APPLICATION->settings()->get("ConsoleWindowGeometry").toString().toUtf8();
-    restoreGeometry(QByteArray::fromBase64(base64Geometry));
-}
-
-void InstanceWindow::saveWindowStateToSettings() const
-{
-    APPLICATION->settings()->set("ConsoleWindowState", QString::fromUtf8(saveState().toBase64()));
-    APPLICATION->settings()->set("ConsoleWindowGeometry", QString::fromUtf8(saveGeometry().toBase64()));
-}
-
-void InstanceWindow::hookPageSelectionSignals()
-{
-    if (!m_container || !m_settingsViewModel) {
-        return;
-    }
-    connect(m_container, &PageContainer::selectedPageChanged, this, [this](BasePage*, BasePage* selected) {
-        const QString pageId = selected ? selected->id() : QString();
-        m_settingsViewModel->loadCategory(pageId);
-    });
-
-    if (auto* current = m_container->selectedPage()) {
-        m_settingsViewModel->loadCategory(current->id());
-    }
-}
-
 void InstanceWindow::closeEvent(QCloseEvent* event)
 {
     bool proceed = true;
@@ -256,17 +215,14 @@ void InstanceWindow::closeEvent(QCloseEvent* event)
         return;
     }
 
-    saveWindowStateToSettings();
+    APPLICATION->settings()->set("ConsoleWindowState", QString::fromUtf8(saveState().toBase64()));
+    APPLICATION->settings()->set("ConsoleWindowGeometry", QString::fromUtf8(saveGeometry().toBase64()));
     emit isClosing();
     event->accept();
 }
 
 bool InstanceWindow::saveAll()
 {
-    if (m_settingsViewModel) {
-        m_settingsViewModel->notifySaveRequested();
-        m_settingsViewModel->applyChanges();
-    }
     return m_container->saveAll();
 }
 
@@ -277,19 +233,12 @@ QString InstanceWindow::instanceId()
 
 bool InstanceWindow::selectPage(QString pageId)
 {
-    const bool result = m_container->selectPage(pageId);
-    if (result && m_settingsViewModel) {
-        m_settingsViewModel->loadCategory(pageId);
-    }
-    return result;
+    return m_container->selectPage(pageId);
 }
 
 void InstanceWindow::refreshContainer()
 {
     m_container->refreshContainer();
-    if (m_settingsViewModel) {
-        m_settingsViewModel->refresh();
-    }
 }
 
 BasePage* InstanceWindow::selectedPage() const
