@@ -8,7 +8,7 @@ query-filters:
       id: cpp/fixme-comment
 
 paths-ignore:
-  - build/**
-  - **/build/**
-  - build-codeql/**
-  - **/ui_*.h
+  - "build/**"
+  - "**/build/**"
+  - "build-codeql/**"
+  - "**/ui_*.h"
