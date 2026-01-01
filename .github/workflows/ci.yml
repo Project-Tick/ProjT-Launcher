@@ -3066,7 +3066,7 @@ jobs:
             if (!sha) {
               core.warning('No SHA found for status reporting; skipping status update.');
             } else if (isForkPr) {
-              log("info", "Skipping status update for fork PR (no permissions)", { sha });
+              console.log("info", "Skipping status update for fork PR (no permissions)", { sha });
             } else {
               await github.rest.repos.createCommitStatus({
                 ...repo,
