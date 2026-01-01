@@ -523,6 +523,7 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.schedule-cron == '0 * * * *'
     uses: ./.github/workflows/meta-update.yml
+    secrets: inherit
     permissions:
       contents: write
     with:
