@@ -1,0 +1,43 @@
+name: Scorecard analysis
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  push:
+    branches:
+      - "develop"
+      - "release-*"
+  branch_protection_rule:
+
+permissions:
+  security-events: write
+  id-token: write
+  contents: read
+
+jobs:
+  scorecard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run analysis
+        uses: ossf/scorecard-action@v2.3.1
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SARIF file
+          path: results.sarif
+          retention-days: 5
+
+      - name: Upload to code-scanning
+        uses: github/codeql-action/upload-sarif@v3.24.9
+        with:
+          sarif_file: results.sarif

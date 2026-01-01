@@ -66,6 +66,9 @@ jobs:
       run-quazip: ${{ steps.decide.outputs.run-quazip }}
       run-website: ${{ steps.decide.outputs.run-website }}
       run-nix: ${{ steps.decide.outputs.run-nix }}
+      run-bot: ${{ steps.decide.outputs.run-bot }}
+      run-meta: ${{ steps.decide.outputs.run-meta }}
+      run-branding: ${{ steps.decide.outputs.run-branding }}
       run-schedule: ${{ steps.decide.outputs.run-schedule }}
       changed-files: ${{ steps.collect.outputs.changed-files }}
       base-ref: ${{ steps.base.outputs.base }}
@@ -176,6 +179,8 @@ jobs:
           scopes = {
             "launcher": r"- \[[xX]\]\s+Launcher\b",
             "website": r"- \[[xX]\]\s+Website\b",
+            "bot": r"- \[[xX]\]\s+Bot\b",
+            "meta": r"- \[[xX]\]\s+Metadata Generator\b",
             "quazip": r"- \[[xX]\]\s+Quazip\b",
             "bzip2": r"- \[[xX]\]\s+bzip2\b",
             "zlib": r"- \[[xX]\]\s+Zlib\b",
@@ -183,6 +188,7 @@ jobs:
             "docs": r"- \[[xX]\]\s+Docs\b",
             "tools": r"- \[[xX]\]\s+Tools\b",
             "ci": r"- \[[xX]\]\s+CI\b",
+            "branding": r"- \[[xX]\]\s+Branding\b",
             "launcherjava": r"- \[[xX]\]\s+Launcher Java System\b",
             "javacheck": r"- \[[xX]\]\s+JavaCheck\b",
             "libnbtplusplus": r"- \[[xX]\]\s+libnbtplusplus\b",
@@ -208,6 +214,8 @@ jobs:
           IS_PR_CLOSED: ${{ steps.trigger.outputs.is-pr-closed }}
           SCOPE_LAUNCHER: ${{ steps.scope.outputs.launcher || 'false' }}
           SCOPE_WEBSITE: ${{ steps.scope.outputs.website || 'false' }}
+          SCOPE_BOT: ${{ steps.scope.outputs.bot || 'false' }}
+          SCOPE_META: ${{ steps.scope.outputs.meta || 'false' }}
           SCOPE_QUAZIP: ${{ steps.scope.outputs.quazip || 'false' }}
           SCOPE_BZIP2: ${{ steps.scope.outputs.bzip2 || 'false' }}
           SCOPE_ZLIB: ${{ steps.scope.outputs.zlib || 'false' }}
@@ -215,6 +223,7 @@ jobs:
           SCOPE_DOCS: ${{ steps.scope.outputs.docs || 'false' }}
           SCOPE_TOOLS: ${{ steps.scope.outputs.tools || 'false' }}
           SCOPE_CI: ${{ steps.scope.outputs.ci || 'false' }}
+          SCOPE_BRANDING: ${{ steps.scope.outputs.branding || 'false' }}
           SCOPE_LAUNCHERJAVA: ${{ steps.scope.outputs.launcherjava || 'false' }}
           SCOPE_JAVACHECK: ${{ steps.scope.outputs.javacheck || 'false' }}
           SCOPE_LIBNBT: ${{ steps.scope.outputs.libnbtplusplus || 'false' }}
@@ -231,7 +240,7 @@ jobs:
           }
 
           scope_selected=false
-          if [ "$IS_PR" = "true" ] && { [ "$SCOPE_LAUNCHER" = "true" ] || [ "$SCOPE_WEBSITE" = "true" ] || [ "$SCOPE_QUAZIP" = "true" ] || [ "$SCOPE_BZIP2" = "true" ] || [ "$SCOPE_ZLIB" = "true" ] || [ "$SCOPE_PACKAGES" = "true" ] || [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ] || [ "$SCOPE_CI" = "true" ]; }; then
+          if [ "$IS_PR" = "true" ] && { [ "$SCOPE_LAUNCHER" = "true" ] || [ "$SCOPE_WEBSITE" = "true" ] || [ "$SCOPE_BOT" = "true" ] || [ "$SCOPE_META" = "true" ] || [ "$SCOPE_QUAZIP" = "true" ] || [ "$SCOPE_BZIP2" = "true" ] || [ "$SCOPE_ZLIB" = "true" ] || [ "$SCOPE_PACKAGES" = "true" ] || [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ] || [ "$SCOPE_CI" = "true" ] || [ "$SCOPE_BRANDING" = "true" ]; }; then
             scope_selected=true
           fi
 
@@ -269,6 +278,9 @@ jobs:
           run_quazip=false
           run_website=false
           run_nix=false
+          run_bot=false
+          run_meta=false
+          run_branding=false
           run_schedule=false
           build_type="Debug"
           run_release_build=false
@@ -288,6 +300,9 @@ jobs:
             run_quazip=true
             run_website=true
             run_nix=true
+            run_bot=true
+            run_meta=true
+            run_branding=true
           elif [ "$IS_SCHEDULE" = "true" ]; then
             run_schedule=true
           elif [ "$IS_SCHEDULE" != "true" ]; then
@@ -295,6 +310,9 @@ jobs:
             match '^bzip2/' && run_bzip2=true
             match '^quazip/' && run_quazip=true
             match '^website/' && run_website=true
+            match '^bot/' && run_bot=true
+            match '^meta/' && run_meta=true
+            match '^program_info/|^public/|^website/img/' && run_branding=true
             match '^flake\.nix$|^shell\.nix$|^nix/' && run_nix=true
           fi
 
@@ -303,6 +321,9 @@ jobs:
             if [ "$SCOPE_BZIP2" = "true" ]; then run_bzip2=true; fi
             if [ "$SCOPE_QUAZIP" = "true" ]; then run_quazip=true; fi
             if [ "$SCOPE_WEBSITE" = "true" ]; then run_website=true; fi
+            if [ "$SCOPE_BOT" = "true" ]; then run_bot=true; fi
+            if [ "$SCOPE_META" = "true" ]; then run_meta=true; fi
+            if [ "$SCOPE_BRANDING" = "true" ]; then run_branding=true; fi
             if [ "$SCOPE_PACKAGES" = "true" ]; then run_nix=true; fi
             if [ "$SCOPE_CI" = "true" ]; then
               run_zlib=true
@@ -310,6 +331,9 @@ jobs:
               run_quazip=true
               run_website=true
               run_nix=true
+              run_bot=true
+              run_meta=true
+              run_branding=true
               should_test=true
               should_build=true
             fi
@@ -318,7 +342,7 @@ jobs:
               should_build=true
               run_regular_build=true
             fi
-            if [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ]; then
+            if [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ] || [ "$SCOPE_BOT" = "true" ] || [ "$SCOPE_META" = "true" ] || [ "$SCOPE_BRANDING" = "true" ]; then
               if [ "$SCOPE_CI" != "true" ] && [ "$SCOPE_LAUNCHERJAVA" != "true" ] && [ "$SCOPE_JAVACHECK" != "true" ] && [ "$SCOPE_LIBNBT" != "true" ] && [ "$SCOPE_ZLIB" != "true" ] && [ "$SCOPE_BZIP2" != "true" ] && [ "$SCOPE_QUAZIP" != "true" ] && [ "$SCOPE_WEBSITE" != "true" ] && [ "$SCOPE_PACKAGES" != "true" ]; then
                 should_test=true
                 should_build=false
@@ -345,6 +369,9 @@ jobs:
           echo "run-quazip=$run_quazip" >> "$GITHUB_OUTPUT"
           echo "run-website=$run_website" >> "$GITHUB_OUTPUT"
           echo "run-nix=$run_nix" >> "$GITHUB_OUTPUT"
+          echo "run-bot=$run_bot" >> "$GITHUB_OUTPUT"
+          echo "run-meta=$run_meta" >> "$GITHUB_OUTPUT"
+          echo "run-branding=$run_branding" >> "$GITHUB_OUTPUT"
           echo "run-schedule=$run_schedule" >> "$GITHUB_OUTPUT"
           echo "build-type=$build_type" >> "$GITHUB_OUTPUT"
           echo "run-release-build=$run_release_build" >> "$GITHUB_OUTPUT"
@@ -373,7 +400,7 @@ jobs:
           echo "- Run nix: \`${{ steps.decide.outputs.run-nix }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run schedule-specific: \`${{ steps.decide.outputs.run-schedule }}\`" >> "$GITHUB_STEP_SUMMARY"
           if [ "${{ steps.trigger.outputs.is-pr }}" = "true" ]; then
-            echo "- Scope flags: launcher=${{ steps.scope.outputs.launcher || 'false' }}, website=${{ steps.scope.outputs.website || 'false' }}, quazip=${{ steps.scope.outputs.quazip || 'false' }}, bzip2=${{ steps.scope.outputs.bzip2 || 'false' }}, zlib=${{ steps.scope.outputs.zlib || 'false' }}, packages=${{ steps.scope.outputs.packages || 'false' }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Scope flags: launcher=${{ steps.scope.outputs.launcher || 'false' }}, website=${{ steps.scope.outputs.website || 'false' }}, bot=${{ steps.scope.outputs.bot || 'false' }}, meta=${{ steps.scope.outputs.meta || 'false' }}, quazip=${{ steps.scope.outputs.quazip || 'false' }}, bzip2=${{ steps.scope.outputs.bzip2 || 'false' }}, zlib=${{ steps.scope.outputs.zlib || 'false' }}, packages=${{ steps.scope.outputs.packages || 'false' }}, branding=${{ steps.scope.outputs.branding || 'false' }}" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "- Scope flags: n/a (non-PR event)" >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -411,6 +438,72 @@ jobs:
       - uses: nosborn/github-action-markdown-cli@1a79194d2cebd7ebdf9f8079ab17f7761b14aec0
         with:
           files: .
+
+  bot-smoke:
+    name: Bot Smoke
+    needs: prepare
+    if: needs.prepare.outputs.run-bot == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - name: Check bot syntax
+        run: node -c bot/index.js
+
+  meta-smoke:
+    name: Meta Smoke
+    needs: prepare
+    if: needs.prepare.outputs.run-meta == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Compile meta sources
+        run: python -m compileall meta
+
+  branding-check:
+    name: Branding Check
+    needs: prepare
+    if: needs.prepare.outputs.run-branding == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Validate SVG assets
+        run: |
+          python - <<'PY'
+          import glob
+          import sys
+          import xml.etree.ElementTree as ET
+
+          paths = []
+          paths.extend(glob.glob("program_info/**/*.svg", recursive=True))
+          paths.extend(glob.glob("website/img/**/*.svg", recursive=True))
+          paths.extend(glob.glob("public/**/*.svg", recursive=True))
+
+          if not paths:
+            print("No SVG assets found to validate.")
+            sys.exit(0)
+
+          failures = []
+          for path in paths:
+            try:
+              ET.parse(path)
+            except Exception as exc:
+              failures.append((path, str(exc)))
+
+          if failures:
+            for path, err in failures:
+              print(f"Invalid SVG: {path}: {err}")
+            sys.exit(1)
+          print(f"Validated {len(paths)} SVG assets.")
+          PY
 
   check:
     name: Check
@@ -2782,43 +2875,6 @@ jobs:
             
             core.info('Review processing complete');
 
-  scorecard-analysis:
-    name: Scorecard analysis
-    needs: [prepare]
-    if: >
-      (needs.prepare.outputs.is-schedule == 'true' && needs.prepare.outputs.schedule-cron == '0 3 * * *')
-      || needs.prepare.outputs.is-branch-protection == 'true'
-      || needs.prepare.outputs.is-branch-push == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      id-token: write
-
-    steps:
-      - name: "Checkout code"
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: "Run analysis"
-        uses: ossf/scorecard-action@v2.3.1
-        with:
-          results_file: results.sarif
-          results_format: sarif
-          publish_results: true
-
-      - name: "Upload artifact"
-        uses: actions/upload-artifact@v4
-        with:
-          name: SARIF file
-          path: results.sarif
-          retention-days: 5
-
-      - name: "Upload to code-scanning"
-        uses: github/codeql-action/upload-sarif@v3.24.9
-        with:
-          sarif_file: results.sarif
-
   stale-label:
     name: Label stale issues and PRs
     if: needs.prepare.outputs.schedule-cron == '0 * * * *'
@@ -2920,10 +2976,17 @@ jobs:
           RUN_QUAZIP: ${{ needs.prepare.outputs.run-quazip }}
           RUN_WEBSITE: ${{ needs.prepare.outputs.run-website }}
           RUN_NIX: ${{ needs.prepare.outputs.run-nix }}
+          RUN_BOT: ${{ needs.prepare.outputs.run-bot }}
+          RUN_META: ${{ needs.prepare.outputs.run-meta }}
+          RUN_BRANDING: ${{ needs.prepare.outputs.run-branding }}
           RUN_RELEASE_BUILD: ${{ needs.prepare.outputs.run-release-build }}
           RUN_REGULAR_BUILD: ${{ needs.prepare.outputs.run-regular-build }}
           SHOULD_BUILD: ${{ needs.prepare.outputs.should-build }}
           SHOULD_TEST: ${{ needs.prepare.outputs.should-test }}
+          IS_PR: ${{ needs.prepare.outputs.is-pr }}
+          IS_SCHEDULE: ${{ needs.prepare.outputs.is-schedule }}
+          IS_PR_REVIEW: ${{ needs.prepare.outputs.is-pr-review }}
+          IS_WORKFLOW_RUN: ${{ needs.prepare.outputs.is-workflow-run }}
         with:
           script: |
             const { serverUrl, repo, runId, payload, job, eventName } = context;
@@ -2935,11 +2998,18 @@ jobs:
               quazip: process.env.RUN_QUAZIP === 'true',
               website: process.env.RUN_WEBSITE === 'true',
               nix: process.env.RUN_NIX === 'true',
+              bot: process.env.RUN_BOT === 'true',
+              meta: process.env.RUN_META === 'true',
+              branding: process.env.RUN_BRANDING === 'true',
               release_build: process.env.RUN_RELEASE_BUILD === 'true',
               regular_build: process.env.RUN_REGULAR_BUILD === 'true',
               should_build: process.env.SHOULD_BUILD === 'true',
               should_test: process.env.SHOULD_TEST === 'true',
               run_schedule: process.env.RUN_SCHEDULE === 'true' || eventName === 'schedule',
+              is_pr: process.env.IS_PR === 'true',
+              is_schedule: process.env.IS_SCHEDULE === 'true',
+              is_pr_review: process.env.IS_PR_REVIEW === 'true',
+              is_workflow_run: process.env.IS_WORKFLOW_RUN === 'true',
             };
 
             const slugify = value =>
@@ -3023,15 +3093,17 @@ jobs:
               { name: 'lint', needed: runFlags.should_test },
               { name: 'clang-lint', needed: runFlags.should_test },
               { name: 'markdown-lint', needed: runFlags.should_test },
-              { name: 'check', needed: runFlags.should_test },
+              { name: 'bot-smoke', needed: runFlags.bot },
+              { name: 'meta-smoke', needed: runFlags.meta },
+              { name: 'branding-check', needed: runFlags.branding },
+              { name: 'check', needed: runFlags.is_pr },
               { name: 'meta-update', needed: runFlags.run_schedule },
-              { name: 'build-projt-launcher-debug', needed: runFlags.regular_build },
-              { name: 'build-projt-launcher-release', needed: runFlags.release_build },
+              { name: 'Build ProjT Launcher ( DEBUG )', needed: runFlags.regular_build },
+              { name: 'Build ProjT Launcher ( RELEASE )', needed: runFlags.release_build },
               { name: 'create-release', needed: runFlags.release_build },
               { name: 'winget', needed: runFlags.release_build },
-              { name: 'process-review', needed: true },
-              { name: 'scorecard-analysis', needed: true },
-              { name: 'eval', needed: runFlags.should_test },
+              { name: 'process-review', needed: runFlags.is_pr_review || runFlags.is_workflow_run },
+              { name: 'System Evaluation', needed: runFlags.should_test && !runFlags.is_schedule },
             ];
 
             const jobMap = new Map();
