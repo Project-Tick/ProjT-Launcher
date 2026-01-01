@@ -2924,6 +2924,10 @@ jobs:
           RUN_REGULAR_BUILD: ${{ needs.prepare.outputs.run-regular-build }}
           SHOULD_BUILD: ${{ needs.prepare.outputs.should-build }}
           SHOULD_TEST: ${{ needs.prepare.outputs.should-test }}
+          RUN_SCHEDULE: ${{ needs.prepare.outputs.run-schedule }}
+          IS_PR: ${{ needs.prepare.outputs.is-pr }}
+          IS_MERGE_GROUP: ${{ needs.prepare.outputs.is-merge-group }}
+          IS_SCHEDULE: ${{ needs.prepare.outputs.is-schedule }}
         with:
           script: |
             const { serverUrl, repo, runId, payload, job, eventName } = context;
@@ -2941,6 +2945,8 @@ jobs:
               should_test: process.env.SHOULD_TEST === 'true',
               run_schedule: process.env.RUN_SCHEDULE === 'true' || eventName === 'schedule',
             };
+            const isPr = process.env.IS_PR === 'true';
+            const isMergeGroup = process.env.IS_MERGE_GROUP === 'true';
 
             const slugify = value =>
               (value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -3020,18 +3026,14 @@ jobs:
             }
 
             const requiredJobs = [
-              { name: 'lint', needed: runFlags.should_test },
               { name: 'clang-lint', needed: runFlags.should_test },
               { name: 'markdown-lint', needed: runFlags.should_test },
-              { name: 'check', needed: runFlags.should_test },
-              { name: 'meta-update', needed: runFlags.run_schedule },
+              { name: 'check', needed: runFlags.should_test && isPr },
               { name: 'build-projt-launcher-debug', needed: runFlags.regular_build },
-              { name: 'build-projt-launcher-release', needed: runFlags.release_build },
-              { name: 'create-release', needed: runFlags.release_build },
-              { name: 'winget', needed: runFlags.release_build },
-              { name: 'process-review', needed: true },
-              { name: 'scorecard-analysis', needed: true },
-              { name: 'eval', needed: runFlags.should_test },
+              { name: 'build-projt-launcher-release', needed: runFlags.release_build && !isPr && !isMergeGroup },
+              { name: 'create-release', needed: runFlags.release_build && !isPr && !isMergeGroup },
+              { name: 'winget', needed: runFlags.release_build && !isPr && !isMergeGroup },
+              { name: 'eval', needed: runFlags.should_test && !runFlags.run_schedule },
             ];
 
             const jobMap = new Map();
