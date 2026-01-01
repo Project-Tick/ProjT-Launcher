@@ -2926,7 +2926,7 @@ jobs:
           SHOULD_TEST: ${{ needs.prepare.outputs.should-test }}
         with:
           script: |
-            const { serverUrl, repo, runId, payload, job } = context;
+            const { serverUrl, repo, runId, payload, job, eventName } = context;
             const target_url = `${serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${runId}`;
 
             const runFlags = {
@@ -2939,7 +2939,14 @@ jobs:
               regular_build: process.env.RUN_REGULAR_BUILD === 'true',
               should_build: process.env.SHOULD_BUILD === 'true',
               should_test: process.env.SHOULD_TEST === 'true',
+              run_schedule: process.env.RUN_SCHEDULE === 'true' || eventName === 'schedule',
             };
+
+            const slugify = value =>
+              (value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const currentJobSlug = slugify(job);
+            const currentJobName = process.env.GITHUB_JOB || job;
+            const currentJobId = Number(process.env.GITHUB_JOB_ID || 0);
 
             const listJobs = async () => {
               const jobs = [];
@@ -2960,16 +2967,19 @@ jobs:
             };
 
             const waitForJobs = async () => {
-              const maxMinutes = 90;
-              const intervalMs = 30_000;
+              const maxMinutes = 120;
+              const intervalMs = 60_000;
               const iterations = Math.ceil((maxMinutes * 60_000) / intervalMs);
               for (let i = 0; i < iterations; i++) {
                 const jobs = await listJobs();
-                const pending = jobs.filter(
-                  j =>
-                    j.name !== job &&
-                    (j.status !== 'completed' || !j.conclusion)
-                );
+                const pending = jobs.filter(j => {
+                  const jobSlug = slugify(j.name);
+                  const isSelf =
+                    jobSlug === currentJobSlug ||
+                    j.name === currentJobName ||
+                    (currentJobId !== 0 && j.id === currentJobId);
+                  return !isSelf && (j.status !== 'completed' || !j.conclusion);
+                });
                 if (pending.length === 0) {
                   return jobs;
                 }
@@ -2988,9 +2998,16 @@ jobs:
             const timedOutJobs = [];
             const actionRequiredJobs = [];
             const pendingOrMissing = [];
+            const failedRequired = [];
 
             for (const j of jobs) {
-              if (j.name === job) continue; // skip self
+              const jobSlug = slugify(j.name);
+              if (
+                jobSlug === currentJobSlug ||
+                j.name === currentJobName ||
+                (currentJobId !== 0 && j.id === currentJobId)
+              )
+                continue; // skip self
               const conclusion = j.conclusion || 'unknown';
               if (statusCounts[conclusion] === undefined) statusCounts[conclusion] = 0;
               statusCounts[conclusion] += 1;
@@ -3017,12 +3034,19 @@ jobs:
               { name: 'eval', needed: runFlags.should_test },
             ];
 
-            const jobMap = new Map(jobs.map(j => [j.name, j]));
+            const jobMap = new Map();
+            for (const j of jobs) {
+              jobMap.set(j.name, j);
+              jobMap.set(slugify(j.name), j); // align job_id-style references with display names
+            }
             for (const req of requiredJobs) {
               if (!req.needed) continue;
-              const found = jobMap.get(req.name);
+              const reqKey = slugify(req.name);
+              const found = jobMap.get(req.name) || jobMap.get(reqKey);
               if (!found || found.conclusion === null || found.conclusion === undefined) {
                 pendingOrMissing.push(req.name);
+              } else if (found.conclusion !== 'success') {
+                failedRequired.push(req.name);
               }
             }
 
@@ -3030,7 +3054,8 @@ jobs:
               failedJobs.length > 0 ||
               timedOutJobs.length > 0 ||
               actionRequiredJobs.length > 0 ||
-              pendingOrMissing.length > 0;
+              pendingOrMissing.length > 0 ||
+              failedRequired.length > 0;
 
             const state = hasFailure ? 'error' : 'success';
             const summaryLines = [
@@ -3041,6 +3066,7 @@ jobs:
               `- Skipped jobs: ${skippedJobs.length ? skippedJobs.join(', ') : 'none'}`,
               `- Neutral jobs: ${neutralJobs.length ? neutralJobs.join(', ') : 'none'}`,
               `- Cancelled jobs: ${cancelledJobs.length ? cancelledJobs.join(', ') : 'none'}`,
+              `- Required jobs not successful: ${failedRequired.length ? failedRequired.join(', ') : 'none'}`,
               `- Pending/missing required jobs: ${pendingOrMissing.length ? pendingOrMissing.join(', ') : 'none'}`,
               `- Run flags: ${JSON.stringify(runFlags)}`,
               `- Decision: ${state === 'success' ? 'no PR failures' : 'failures detected'}`,
