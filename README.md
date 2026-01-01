@@ -181,7 +181,7 @@ python -m pip install .
 Launcher contributor docs:
 
 - [**Getting Started**](docs/contributing/GETTING_STARTED.md): Setup your environment (Windows/Linux/macOS).
-- [**Code Style**](docs/contributing/CODE_STYLE.md): Strict rules for C++ and QML.
+- [**Code Style**](docs/contributing/CODE_STYLE.md): Strict rules for C++ and Qt Widgets.
 - [**Project Structure**](docs/contributing/PROJECT_STRUCTURE.md): Where to put your files.
 - [**Architecture**](docs/contributing/ARCHITECTURE.md): Understanding MVVM and the Task system.
 - [**Architecture (Detailed)**](docs/architecture/OVERVIEW.md): A guided tour of modules, data flow, and contracts.

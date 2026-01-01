@@ -566,7 +566,6 @@ function classifyBranch(branch) {
     master: ["development", "primary"],
     main: ["development", "primary"],
     release: ["release", "primary"],
-    qml_migration: ["development", "feature"],
     feature: ["development", "feature"],
     bugfix: ["development", "bugfix"],
     hotfix: ["release", "hotfix"],

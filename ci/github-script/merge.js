@@ -8,7 +8,7 @@ const { classify } = require('../supportedBranches.js')
 // Component definitions for ProjT Launcher
 const COMPONENTS = {
   core: ['launcher/', 'systeminfo/', 'katabasis/', 'libnbtplusplus/', 'launcherjava/'],
-  ui: ['launcher/ui/', 'launcher/resources/', 'launcher/ui/qml/'],
+  ui: ['launcher/ui/', 'launcher/resources/', 'launcher/ui/'],
   minecraft: ['launcher/minecraft/', 'tomlplusplus/', 'qdcss/'],
   modplatform: ['launcher/modplatform/'],
   build: ['CMakeLists.txt', 'cmake/', 'vcpkg.json', 'CMakePresets.json'],
@@ -71,7 +71,7 @@ function runChecklist({
   )
 
   const checklist = {
-    'PR targets a development branch (develop, master, qml_migration)':
+    'PR targets a development branch (develop, master)':
       classify(pull_request.base.ref).type.includes('development'),
     
     'PR has passing CI checks':

@@ -52,7 +52,7 @@ Please read the specific sections below before writing a single line of code (st
 
 - **Formatting**: `clang-format` usage.
 - **Modern C++**: C++20 features and best practices.
-- **QML**: Component structure and formatting.
+- **Qt Widgets**: Component structure and formatting.
 
 ### 3. [📁 Project Structure](docs/contributing/PROJECT_STRUCTURE.md)
 
