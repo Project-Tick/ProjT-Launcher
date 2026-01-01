@@ -4,6 +4,7 @@
 <!-- Summarize the changes and why they are needed. -->
 
 ## Scope
+<!-- Select all that apply. CI/jobs may be filtered based on this selection. -->
 
 - [ ] Launcher (C++/Qt)
 - [ ] Website (Eleventy)
@@ -33,6 +34,7 @@
 - [ ] Chore
 
 ## If you are selected packages scope, please select Package Types
+<!-- Required when "Packages" is selected above. -->
 
 - [ ] NixOS
 - [ ] Flatpak

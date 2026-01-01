@@ -1,49 +1,44 @@
-# This workflow uses actions that are not certified by GitHub. They are provided
-# by a third-party and are governed by separate terms of service, privacy
-# policy, and support documentation.
+name: Scorecard analysis
 
-name: Scorecard supply-chain security
 on:
-  branch_protection_rule:
   schedule:
-    - cron: '40 5 * * 2'
+    - cron: "0 3 * * *"
   push:
-    branches: [ "master" ]
+    branches:
+      - "develop"
+      - "release-*"
+  branch_protection_rule:
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
-  analysis:
-    name: Scorecard analysis
+  scorecard:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: quazip
     permissions:
       security-events: write
       id-token: write
-
     steps:
-      - name: "Checkout code"
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: "Run analysis"
+      - name: Run analysis
         uses: ossf/scorecard-action@v2.3.1
         with:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
 
-      - name: "Upload artifact"
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: SARIF file
           path: results.sarif
           retention-days: 5
 
-      - name: "Upload to code-scanning"
+      - name: Upload to code-scanning
         uses: github/codeql-action/upload-sarif@v3.24.9
         with:
           sarif_file: results.sarif

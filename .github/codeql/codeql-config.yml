@@ -1,3 +1,14 @@
+name: ProjT CodeQL
+
+queries:
+  - uses: security-and-quality
+
 query-filters:
   - exclude:
       id: cpp/fixme-comment
+
+paths-ignore:
+  - "build/**"
+  - "**/build/**"
+  - "build-codeql/**"
+  - "**/ui_*.h"

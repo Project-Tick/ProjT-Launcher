@@ -1,12 +1,16 @@
 name: Update ProjT Launcher Minecraft Meta Files
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 * * * *" # Every hour
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        type: string
+        required: false
 
 concurrency:
-  group: auto-update
+  group: >
+    projt-meta-update-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:

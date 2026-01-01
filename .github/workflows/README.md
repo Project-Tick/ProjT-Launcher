@@ -12,6 +12,7 @@ The workflows are organized by functionality:
 - **`check.yml`**: Reusable workflow for PR validation (commits/CODEOWNERS/basic quality checks)
 - **`bot.yml`**: PR automation (labeling, assigning reviewers, and maintainer-only bot commands like `backport`)
 - **`comment.yml`**: Handles bot commands in PR comments
+- **`scope-guard.yml`**: Validates PR scope checkbox selection against changed files
 - **`review.yml`** / **`reviewed.yml`**: Review event handling and status updates
 - **`edited.yml`**: Re-runs labeler when PR base branch changes
 
@@ -32,6 +33,7 @@ The workflows are organized by functionality:
 - **`backport.yml`**: Creates backport PRs when a merged PR is labeled `backport/release-*`
 - **`stale.yml`**: Marks inactive issues/PRs (never closes them)
 - **`update-flake.yml`**: Weekly `flake.lock` updates
+- **`scorecard.yml`**: OSSF Scorecard analysis and SARIF upload
 
 ## Bot Commands
 

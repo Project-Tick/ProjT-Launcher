@@ -305,21 +305,31 @@ const CONFIG = {
     },
   },
   autoMerge: {
-    enabled: true,
-    mergeMethod: "squash",
+    // Controlled via env BOT_AUTO_MERGE_ENABLED (default true)
+    enabledEnv: "BOT_AUTO_MERGE_ENABLED",
+    mergeMethodEnv: "BOT_AUTO_MERGE_METHOD",
+    mergeMethod: "merge",
   },
   autoApprove: {
     enabledEnv: "BOT_AUTO_APPROVE_RUNS",
     workflowRules: [
       {
         scopes: ["Zlib"],
-        workflows: ["c-std.yml", "cmake.yml", "configure.yml", "fuzz.yml", "msys-cygwin.yml"],
+        workflows: ["ci.yml"],
+      },
+      {
+        scopes: ["bzip2", "Quazip"],
+        workflows: ["ci.yml"],
+      },
+      {
+        scopes: ["Launcher (C++/Qt)"],
+        workflows: ["ci.yml"],
       },
     ],
   },
   ciSummary: {
     marker: "<!-- projt-bot:pr-summary -->",
-    workflowFile: "pull-request-target.yml",
+    workflowFile: "ci.yml",
     jobs: [
       { label: "Prepare", match: ["prepare"] },
       { label: "Check", match: ["check"] },
@@ -339,10 +349,7 @@ const CONFIG = {
   statusPage: {
     path: "/status",
     workflows: [
-      { file: "pull-request-target.yml", label: "PR Checks" },
-      { file: "build.yml", label: "Build" },
-      { file: "buildwebsite.yml", label: "Build Website" },
-      { file: "lint.yml", label: "Lint" },
+      { file: "ci.yml", label: "CI" },
     ],
   },
   labeler: {
@@ -360,6 +367,23 @@ function json(data, status = 200) {
       "cache-control": "no-store",
     },
   });
+}
+
+function log(level, message, fields = {}) {
+  const id = fields.correlationId || fields.reqId || fields.id;
+  const payload = {
+    level,
+    msg: message,
+    ts: new Date().toISOString(),
+    ...(id ? { correlationId: id } : {}),
+    ...fields,
+  };
+  // Prefer single-line JSON for easier ingestion
+  console.log(JSON.stringify(payload));
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function safeJsonParse(text) {
@@ -398,6 +422,28 @@ function badgeForJob({ status, conclusion }) {
 
 function hasSignedOffBy(message) {
   return /(^|\n)\s*signed-off-by:\s+.+/i.test(String(message));
+}
+
+function extractCommands(body, commandList = []) {
+  const normalized = String(body || "").toLowerCase();
+  const found = new Set();
+  for (const cmd of commandList) {
+    if (!cmd) continue;
+    const needle = String(cmd).toLowerCase();
+    if (normalized.includes(needle)) {
+      found.add(cmd);
+    }
+  }
+  return found;
+}
+
+async function postComment({ env, owner, repo, issueNumber, body }) {
+  await githubApi({
+    env,
+    method: "POST",
+    path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
+    body: { body },
+  });
 }
 
 function isBotIdentity({ name, email, login }) {
@@ -541,6 +587,10 @@ function classifyBranch(branch) {
 let repoLabelsCache = null;
 let botLoginCache = null;
 let appTokenCache = null;
+const circuitBreaker = {
+  failures: 0,
+  openUntil: 0,
+};
 
 function hasGitHubAuth(env) {
   if (env.GITHUB_TOKEN) return true;
@@ -693,13 +743,17 @@ function parsePositiveInt(value) {
 }
 
 async function maybeAutoMerge({ owner, repo, pullNumber, pullRequest, maintainers, currentLabels, ciSummary, env }) {
-  if (!CONFIG.autoMerge?.enabled) return { ok: true, skipped: "disabled" };
+  const enabledFlag = CONFIG.autoMerge?.enabledEnv;
+  const autoMergeEnabled = enabledFlag
+    ? String(env[enabledFlag] ?? "true").toLowerCase() === "true"
+    : Boolean(CONFIG.autoMerge?.enabled ?? true);
+  if (!autoMergeEnabled) return { ok: true, skipped: "disabled" };
 
   const author = String(pullRequest?.user?.login ?? "").toLowerCase();
   const isMaintainer = maintainers.has(author) || currentLabels.has(CONFIG.maintainerLabel);
   // Allow auto-approve on green when explicitly enabled via env var
-  const allowApproveOnGreen = String(env.BOT_APPROVE_ON_GREEN ?? "false").toLowerCase() === "true";
-  if (!isMaintainer && !allowApproveOnGreen) return { ok: true, skipped: "not-maintainer" };
+  const allowApproveOnGreen = String(env.BOT_APPROVE_ON_GREEN ?? "true").toLowerCase() === "true";
+  if (!isMaintainer && !allowApproveOnGreen) return { ok: true, skipped: "auto-merge-disabled" };
 
   if (pullRequest.state !== "open" || pullRequest.draft) return { ok: true, skipped: "not-open-or-draft" };
   if (pullRequest.mergeable === false) return { ok: true, skipped: "merge-conflict" };
@@ -721,14 +775,19 @@ async function maybeAutoMerge({ owner, repo, pullNumber, pullRequest, maintainer
   });
 
   // Merge
+  const mergeMethod =
+    (CONFIG.autoMerge?.mergeMethodEnv && env[CONFIG.autoMerge.mergeMethodEnv]) ||
+    CONFIG.autoMerge?.mergeMethod ||
+    "squash";
+
   await githubApi({
     env,
     method: "PUT",
     path: `/repos/${owner}/${repo}/pulls/${pullNumber}/merge`,
-    body: { merge_method: CONFIG.autoMerge.mergeMethod || "squash" },
+    body: { merge_method: mergeMethod },
   });
 
-  return { ok: true, merged: true, method: CONFIG.autoMerge.mergeMethod || "squash" };
+  return { ok: true, merged: true, method: mergeMethod };
 }
 
 async function processOpenPullRequests(env, options = {}) {
@@ -1094,12 +1153,21 @@ async function checkDcoForPullRequest({ owner, repo, pullNumber, env }) {
 
 async function findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env }) {
   const workflow = CONFIG.ciSummary.workflowFile;
-  const { data } = await githubApi({
-    env,
-    method: "GET",
-    path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30&event=pull_request_target`,
-  });
-  const runs = Array.isArray(data?.workflow_runs) ? data.workflow_runs : [];
+  const events = ["pull_request", "pull_request_target"];
+  let runs = [];
+  for (const event of events) {
+    try {
+      const { data } = await githubApi({
+        env,
+        method: "GET",
+        path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30&event=${event}`,
+      });
+      runs = runs.concat(Array.isArray(data?.workflow_runs) ? data.workflow_runs : []);
+    } catch (err) {
+      log("warn", "findWorkflowRunForPR: list runs failed", { workflow, event, error: String(err?.message ?? err) });
+    }
+  }
+
   return (
     runs.find((run) => {
       const prs = run.pull_requests ?? [];
@@ -1504,6 +1572,7 @@ async function performMergeCommand({ owner, repo, issueNumber, env, commentAutho
 }
 
 async function handleIssueComment({ payload, env }) {
+  const correlationId = crypto.randomUUID();
   const issue = payload?.issue;
   const commentBody = String(payload?.comment?.body ?? "");
   const association = String(payload?.comment?.author_association ?? "");
@@ -1511,51 +1580,159 @@ async function handleIssueComment({ payload, env }) {
   const isPR = Boolean(issue?.pull_request);
 
   if (!isPR || typeof issueNumber !== "number") {
+    log("info", "Ignoring comment (not a PR)", { correlationId, issueNumber });
     return { ok: true, ignored: true, reason: "not-a-pr" };
   }
 
   const allowed = parseAllowedAssociations(env);
   if (!allowed.has(association.toUpperCase())) {
+    log("info", "Ignoring comment (association denied)", { correlationId, issueNumber, association });
     return { ok: true, ignored: true, reason: "association-denied", association };
-  }
-
-  if (!containsCommand(commentBody, CONFIG.commentCommands)) {
-    return { ok: true, ignored: true, reason: "no-command" };
   }
 
   const owner = env.GITHUB_OWNER;
   const repo = env.GITHUB_REPO;
-  const result = await handlePullRequest({ owner, repo, pullNumber: issueNumber, env });
+  const shouldComment = String(env.BOT_COMMENT_ON_COMMAND ?? "false").toLowerCase() === "true";
 
-  // If the commenter requested a merge via command, attempt to approve+merge
-  if (containsCommand(commentBody, ["bot merge", "/bot merge"])) {
-    try {
-      const commentAuthor = String(payload?.comment?.user?.login ?? "").toLowerCase();
-      const mergeResult = await performMergeCommand({ owner, repo, issueNumber, env, commentAuthor });
-      if (shouldComment) {
-        const text = mergeResult?.ok ? `Merge attempted: ${mergeResult.merged ? "merged" : "not merged"}.` : `Merge failed: ${mergeResult?.error ?? "unknown"}`;
-        await githubApi({ env, method: "POST", path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments`, body: { body: text } });
+  const commands = extractCommands(commentBody, CONFIG.commentCommands);
+  if (commands.size === 0) {
+    log("info", "Ignoring comment (no command)", { correlationId, issueNumber });
+    return { ok: true, ignored: true, reason: "no-command" };
+  }
+
+  const dispatchResult = [];
+  for (const cmd of commands) {
+    const logFields = { correlationId, issueNumber, command: cmd };
+    if (cmd === "bot merge" || cmd === "/bot merge") {
+      try {
+        const commentAuthor = String(payload?.comment?.user?.login ?? "").toLowerCase();
+        const mergeResult = await performMergeCommand({ owner, repo, issueNumber, env, commentAuthor });
+        dispatchResult.push({ command: cmd, result: mergeResult });
+        if (shouldComment) {
+          const text = mergeResult?.ok
+            ? `Merge attempted: ${mergeResult.merged ? "merged" : "not merged"}.`
+            : `Merge failed: ${mergeResult?.error ?? "unknown"}`;
+          await postComment({ env, owner, repo, issueNumber, body: text });
+        }
+      } catch (err) {
+        log("warn", "Merge command failed", { ...logFields, error: String(err?.message ?? err) });
+        if (shouldComment) {
+          await postComment({
+            env,
+            owner,
+            repo,
+            issueNumber,
+            body: `Merge command failed: ${String(err?.message ?? err)}`,
+          });
+        }
       }
-    } catch (err) {
-      console.warn("Merge command failed:", err?.message ?? err);
+      continue;
+    }
+
+    if (cmd === "/retest" || cmd === "bot rerun" || cmd === "/bot rerun") {
+      const result = await handlePullRequest({ owner, repo, pullNumber: issueNumber, env });
+      dispatchResult.push({ command: cmd, ok: result?.ok !== false, result });
       if (shouldComment) {
-        await githubApi({ env, method: "POST", path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments`, body: { body: `Merge command failed: ${String(err?.message ?? err)}` } });
+        await postComment({
+          env,
+          owner,
+          repo,
+          issueNumber,
+          body: formatResultComment({ result, pr: issueNumber }),
+        });
       }
+      continue;
+    }
+
+    if (cmd === "/rebuild") {
+      log("info", "Rebuild requested", logFields);
+      dispatchResult.push({ command: cmd, ok: true, info: "rebuild-requested" });
+      if (shouldComment) {
+        await postComment({
+          env,
+          owner,
+          repo,
+          issueNumber,
+          body: "Rebuild requested. Please trigger CI via rerun or push.",
+        });
+      }
+      continue;
+    }
+
+    if (cmd === "/backport") {
+      log("info", "Backport requested", logFields);
+      dispatchResult.push({ command: cmd, ok: true, info: "backport-requested" });
+      if (shouldComment) {
+        await postComment({
+          env,
+          owner,
+          repo,
+          issueNumber,
+          body: "Backport requested. Please apply the backport label to target branch.",
+        });
+      }
+      continue;
+    }
+
+    if (cmd === "/help" || cmd === "bot help") {
+      dispatchResult.push({ command: cmd, ok: true, info: "Help dispatched" });
+      if (shouldComment) {
+        await postComment({
+          env,
+          owner,
+          repo,
+          issueNumber,
+          body:
+            "Available commands: `/help`, `/status`, `/version`, `/retest`, `/rebuild`, `/backport`, `/bot merge`, `/bot labels`, `/bot rerun`.",
+        });
+      }
+      continue;
+    }
+
+    if (cmd === "/status") {
+      dispatchResult.push({ command: cmd, ok: true, info: "Status requested" });
+      if (shouldComment) {
+        await postComment({
+          env,
+          owner,
+          repo,
+          issueNumber,
+          body: "Status: request received. CI results will be updated shortly.",
+        });
+      }
+      continue;
+    }
+
+    if (cmd === "/version") {
+      dispatchResult.push({ command: cmd, ok: true, info: "Version requested" });
+      if (shouldComment) {
+        await postComment({
+          env,
+          owner,
+          repo,
+          issueNumber,
+          body: "Bot version: projtlauncher-bot (worker).",
+        });
+      }
+      continue;
+    }
+
+    // Default: rerun/labels/other commands trigger PR processing
+    const result = await handlePullRequest({ owner, repo, pullNumber: issueNumber, env });
+    dispatchResult.push({ command: cmd, ok: result?.ok !== false, result });
+    if (shouldComment) {
+      const summary = formatResultComment({ result, pr: issueNumber });
+      await postComment({
+        env,
+        owner,
+        repo,
+        issueNumber,
+        body: summary,
+      });
     }
   }
 
-  const shouldComment = String(env.BOT_COMMENT_ON_COMMAND ?? "false").toLowerCase() === "true";
-  if (shouldComment) {
-    const summary = formatResultComment({ result, pr: issueNumber });
-    await githubApi({
-      env,
-      method: "POST",
-      path: `/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
-      body: { body: summary },
-    });
-  }
-
-  return { ok: true, handled: true, result };
+  return { ok: true, handled: true, results: dispatchResult };
 }
 
 async function handleWorkflowRun({ owner, repo, payload, env }) {
@@ -1614,15 +1791,73 @@ async function githubApi({ env, method, path, body }) {
     init.body = JSON.stringify(body);
   }
 
-  const res = await fetch(url, init);
-  const contentType = res.headers.get("content-type") ?? "";
-  const data = contentType.includes("application/json") ? await res.json() : await res.text();
-  if (!res.ok) {
-    const message = typeof data === "string" ? data : JSON.stringify(data);
-    throw new Error(`GitHub API ${method} ${path} failed: ${res.status} ${message}`);
+  const maxAttempts = Number(env.BOT_GITHUB_RETRIES || 3);
+  const timeoutMs = Number(env.BOT_GITHUB_TIMEOUT_MS || 15000);
+  const baseDelay = Number(env.BOT_GITHUB_BACKOFF_MS || 500);
+  const cbFails = Number(env.BOT_GITHUB_CB_FAILS || 5);
+  const cbCooldown = Number(env.BOT_GITHUB_CB_COOLDOWN_MS || 60_000);
+
+  const now = Date.now();
+  if (now < circuitBreaker.openUntil) {
+    const waitMs = circuitBreaker.openUntil - now;
+    const err = new Error(`GitHub API circuit open, retry after ${waitMs}ms`);
+    err.circuitOpen = true;
+    throw err;
   }
 
-  return { res, data };
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...init, signal: controller.signal });
+      clearTimeout(timer);
+      const contentType = res.headers.get("content-type") ?? "";
+      const data = contentType.includes("application/json") ? await res.json() : await res.text();
+      if (!res.ok) {
+        const message = typeof data === "string" ? data : JSON.stringify(data);
+        const error = new Error(`GitHub API ${method} ${path} failed: ${res.status} ${message}`);
+        error.status = res.status;
+        error.response = data;
+        throw error;
+      }
+      // success -> reset breaker
+      circuitBreaker.failures = 0;
+      circuitBreaker.openUntil = 0;
+      return { res, data };
+    } catch (error) {
+      clearTimeout(timer);
+      lastError = error;
+      const status = error?.status;
+      const retryable =
+        !status || status >= 500 || status === 429 || error?.name === "AbortError";
+      log("warn", "GitHub API attempt failed", {
+        attempt,
+        maxAttempts,
+        method,
+        path,
+        status: status ?? "unknown",
+        retryable,
+        error: String(error?.message ?? error),
+      });
+      if (!retryable || attempt === maxAttempts) {
+        circuitBreaker.failures += 1;
+        if (circuitBreaker.failures >= cbFails) {
+          circuitBreaker.openUntil = Date.now() + cbCooldown;
+          log("error", "GitHub API circuit opened", {
+            failures: circuitBreaker.failures,
+            cooldownMs: cbCooldown,
+            method,
+            path,
+          });
+        }
+        throw error;
+      }
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      await sleep(delay);
+    }
+  }
+  throw lastError ?? new Error(`GitHub API ${method} ${path} failed after retries`);
 }
 
 async function getGitHubAuth(env) {
