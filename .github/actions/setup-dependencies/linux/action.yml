@@ -47,7 +47,8 @@ runs:
           libcmark-dev \
           cmark \
           libtomlplusplus-dev \
-          libqrencode-dev
+          libqrencode-dev \
+          lcov
 
         # Qt imageformat plugin was looking for libtiff.so.5; we standardize on libtiff6 and expose compat symlink.
         archdir="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"

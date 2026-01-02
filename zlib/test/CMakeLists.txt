@@ -92,6 +92,10 @@ if(ZLIB_BUILD_STATIC)
             set(llvm_option "gcov")
         endif(${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
 
+        # Add coverage flags to ZLIBSTATIC to generate .gcda files during testing
+        target_compile_options(ZLIB::ZLIBSTATIC INTERFACE -coverage)
+        target_link_options(ZLIB::ZLIBSTATIC INTERFACE -coverage)
+
         add_executable(infcover infcover.c)
         target_link_libraries(infcover ZLIB::ZLIBSTATIC)
         target_compile_options(infcover PRIVATE -coverage)
