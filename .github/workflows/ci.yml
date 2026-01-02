@@ -31,8 +31,8 @@ on:
 concurrency:
   group: ${{ github.event_name == 'schedule'
     && format('projt-schedule-{0}', github.run_id)
-    || format('projt-{0}-{1}', github.workflow, github.event.pull_request.number || github.ref) }}
-  cancel-in-progress: true
+    || format('projt-{0}-{1}-{2}', github.workflow, github.event_name, github.event.pull_request.number || github.ref) }}
+  cancel-in-progress: ${{ (github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'push' && github.ref_type == 'branch') }}
 
 jobs:
   prepare:
