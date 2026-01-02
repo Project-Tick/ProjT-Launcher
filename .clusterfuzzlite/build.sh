@@ -39,8 +39,8 @@ cmake -S . -B build -G Ninja \
   -DBUILD_TESTING=OFF \
   -DBUILD_FUZZERS=ON \
   -DLAUNCHER_FUZZ_ONLY=ON \
-  -DCMAKE_BUILD_RPATH="$ORIGIN" \
-  -DCMAKE_INSTALL_RPATH="$ORIGIN" \
+  -DCMAKE_BUILD_RPATH="\$ORIGIN" \
+  -DCMAKE_INSTALL_RPATH="\$ORIGIN" \
   -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
 
 cmake --build build --target fuzz_nbt_reader fuzz_qjson_parse fuzz_gzip
