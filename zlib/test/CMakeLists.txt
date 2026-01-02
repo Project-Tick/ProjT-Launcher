@@ -129,6 +129,10 @@ if(ZLIB_BUILD_STATIC)
             PRIVATE ZLIB_BUILD
                     $<$<BOOL:${HAVE___ATTR__VIS_HIDDEN}>:HAVE_HIDDEN>)
         target_link_libraries(zlib_static_example64 ZLIB::ZLIBSTATIC)
+        if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID}
+                                                    STREQUAL "Clang")
+            target_link_options(zlib_static_example64 PRIVATE -coverage)
+        endif()
         add_test(NAME zlib_static_example64 COMMAND zlib_static_example64)
     endif(HAVE_OFF64_T)
 endif(ZLIB_BUILD_STATIC)
