@@ -439,35 +439,40 @@ if(WIN32 AND NOT MINGW)
     list(APPEND CMAKE_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/dependencies")
 endif()
 
-# System Libraries - Using bundled zlib (only if ZLIB not already found via NuGet)
-if(NOT ZLIB_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
-    message(STATUS "Using bundled zlib")
-    set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
-    add_subdirectory(zlib)
-    
-    if(TARGET zlibstatic)
-        set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    endif()
-    if(TARGET zlib)
-        set_target_properties(zlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    endif()
+# Try to find system zlib first
+find_package(ZLIB QUIET)
 
-    # Create the ZLIB::ZLIB alias target for consistency
-    if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
-        add_library(ZLIB::ZLIB ALIAS zlibstatic)
-    elseif(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
-        add_library(ZLIB::ZLIB ALIAS zlib)
+# System Libraries - Using bundled zlib (only if ZLIB not already found)
+if(NOT ZLIB_FOUND)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
+        message(STATUS "Using bundled zlib")
+        set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
+        add_subdirectory(zlib)
+        
+        if(TARGET zlibstatic)
+            set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        endif()
+        if(TARGET zlib)
+            set_target_properties(zlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        endif()
+
+        # Create the ZLIB::ZLIB alias target for consistency
+        if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
+            add_library(ZLIB::ZLIB ALIAS zlibstatic)
+        elseif(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
+            add_library(ZLIB::ZLIB ALIAS zlib)
+        endif()
+        
+        # Set ZLIB variables for projects that need them
+        # Our custom FindZLIB.cmake will handle these when find_package(ZLIB) is called
+        set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}")
+        set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}")
+        set(ZLIB_LIBRARY "ZLIB::ZLIB")
+        set(ZLIB_LIBRARIES "ZLIB::ZLIB")
+        set(ZLIB_FOUND TRUE)
+    else()
+        message(FATAL_ERROR "Bundled zlib not found in ${CMAKE_CURRENT_SOURCE_DIR}/zlib/ and system zlib not found")
     endif()
-    
-    # Set ZLIB variables for projects that need them
-    # Our custom FindZLIB.cmake will handle these when find_package(ZLIB) is called
-    set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}")
-    set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}")
-    set(ZLIB_LIBRARY "ZLIB::ZLIB")
-    set(ZLIB_LIBRARIES "ZLIB::ZLIB")
-    set(ZLIB_FOUND TRUE)
-else()
-    message(FATAL_ERROR "Bundled zlib not found in ${CMAKE_CURRENT_SOURCE_DIR}/zlib/")
 endif()
 
 if(NOT OpenSSL_FOUND)
