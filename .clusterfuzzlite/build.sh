@@ -18,8 +18,19 @@ if command -v apt-get >/dev/null 2>&1; then
     qtbase5-dev \
     qttools5-dev \
     qttools5-dev-tools \
-    ninja-build
+    ninja-build \
+    python3-pip
 fi
+
+# Install Qt6 toolchain via aqt (not available from focal apt repos)
+QT_VERSION=6.5.3
+QT_ROOT="/opt/Qt/${QT_VERSION}/gcc_64"
+if [ ! -d "${QT_ROOT}" ]; then
+  python3 -m pip install --no-cache-dir "aqtinstall==3.1.*"
+  python3 -m aqt install-qt --outputdir /opt/Qt linux desktop "${QT_VERSION}" gcc_64 -m qttools qt5compat qtnetworkauth
+fi
+export PATH="${QT_ROOT}/bin:${PATH}"
+export CMAKE_PREFIX_PATH="${QT_ROOT}/lib/cmake:${CMAKE_PREFIX_PATH:-}"
 
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
