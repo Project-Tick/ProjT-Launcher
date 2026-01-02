@@ -70,6 +70,7 @@ jobs:
       run-meta: ${{ steps.decide.outputs.run-meta }}
       run-branding: ${{ steps.decide.outputs.run-branding }}
       run-schedule: ${{ steps.decide.outputs.run-schedule }}
+      dominant-scope: ${{ steps.decide.outputs.dominant-scope }}
       changed-files: ${{ steps.collect.outputs.changed-files }}
       base-ref: ${{ steps.base.outputs.base }}
       head-ref: ${{ github.sha }}
@@ -285,6 +286,40 @@ jobs:
           build_type="Debug"
           run_release_build=false
           run_regular_build=false
+          dominant_scope="none"
+
+          # Pick a dominant scope (highest priority wins) for summary/routing
+          if [ "$SCOPE_CI" = "true" ]; then
+            dominant_scope="ci"
+          elif [ "$SCOPE_LAUNCHER" = "true" ]; then
+            dominant_scope="launcher"
+          elif [ "$SCOPE_LAUNCHERJAVA" = "true" ]; then
+            dominant_scope="launcher-java"
+          elif [ "$SCOPE_JAVACHECK" = "true" ]; then
+            dominant_scope="javacheck"
+          elif [ "$SCOPE_LIBNBT" = "true" ]; then
+            dominant_scope="libnbtplusplus"
+          elif [ "$SCOPE_ZLIB" = "true" ]; then
+            dominant_scope="zlib"
+          elif [ "$SCOPE_BZIP2" = "true" ]; then
+            dominant_scope="bzip2"
+          elif [ "$SCOPE_QUAZIP" = "true" ]; then
+            dominant_scope="quazip"
+          elif [ "$SCOPE_PACKAGES" = "true" ]; then
+            dominant_scope="packages"
+          elif [ "$SCOPE_WEBSITE" = "true" ]; then
+            dominant_scope="website"
+          elif [ "$SCOPE_BOT" = "true" ]; then
+            dominant_scope="bot"
+          elif [ "$SCOPE_META" = "true" ]; then
+            dominant_scope="meta"
+          elif [ "$SCOPE_TOOLS" = "true" ]; then
+            dominant_scope="tools"
+          elif [ "$SCOPE_DOCS" = "true" ]; then
+            dominant_scope="docs"
+          elif [ "$SCOPE_BRANDING" = "true" ]; then
+            dominant_scope="branding"
+          fi
 
           if [ "$IS_TAG" = "true" ]; then
             build_type="Release"
@@ -343,7 +378,7 @@ jobs:
               run_regular_build=true
             fi
             if [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ] || [ "$SCOPE_BOT" = "true" ] || [ "$SCOPE_META" = "true" ] || [ "$SCOPE_BRANDING" = "true" ]; then
-              if [ "$SCOPE_CI" != "true" ] && [ "$SCOPE_LAUNCHERJAVA" != "true" ] && [ "$SCOPE_JAVACHECK" != "true" ] && [ "$SCOPE_LIBNBT" != "true" ] && [ "$SCOPE_ZLIB" != "true" ] && [ "$SCOPE_BZIP2" != "true" ] && [ "$SCOPE_QUAZIP" != "true" ] && [ "$SCOPE_WEBSITE" != "true" ] && [ "$SCOPE_PACKAGES" != "true" ]; then
+              if [ "$SCOPE_LAUNCHER" != "true" ] && [ "$SCOPE_CI" != "true" ] && [ "$SCOPE_LAUNCHERJAVA" != "true" ] && [ "$SCOPE_JAVACHECK" != "true" ] && [ "$SCOPE_LIBNBT" != "true" ] && [ "$SCOPE_ZLIB" != "true" ] && [ "$SCOPE_BZIP2" != "true" ] && [ "$SCOPE_QUAZIP" != "true" ] && [ "$SCOPE_WEBSITE" != "true" ] && [ "$SCOPE_PACKAGES" != "true" ]; then
                 should_test=true
                 should_build=false
                 run_zlib=false
@@ -362,6 +397,29 @@ jobs:
             run_regular_build=true
           fi
 
+          # If no scope was explicitly selected, infer a dominant area from the jobs we plan to run
+          if [ "$dominant_scope" = "none" ]; then
+            if [ "$run_regular_build" = "true" ]; then
+              dominant_scope="launcher"
+            elif [ "$run_zlib" = "true" ]; then
+              dominant_scope="zlib"
+            elif [ "$run_bzip2" = "true" ]; then
+              dominant_scope="bzip2"
+            elif [ "$run_quazip" = "true" ]; then
+              dominant_scope="quazip"
+            elif [ "$run_website" = "true" ]; then
+              dominant_scope="website"
+            elif [ "$run_bot" = "true" ]; then
+              dominant_scope="bot"
+            elif [ "$run_meta" = "true" ]; then
+              dominant_scope="meta"
+            elif [ "$run_nix" = "true" ]; then
+              dominant_scope="packages"
+            elif [ "$run_branding" = "true" ]; then
+              dominant_scope="branding"
+            fi
+          fi
+
           echo "should-test=$should_test" >> "$GITHUB_OUTPUT"
           echo "should-build=$should_build" >> "$GITHUB_OUTPUT"
           echo "run-zlib=$run_zlib" >> "$GITHUB_OUTPUT"
@@ -376,6 +434,7 @@ jobs:
           echo "build-type=$build_type" >> "$GITHUB_OUTPUT"
           echo "run-release-build=$run_release_build" >> "$GITHUB_OUTPUT"
           echo "run-regular-build=$run_regular_build" >> "$GITHUB_OUTPUT"
+          echo "dominant-scope=$dominant_scope" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         run: |
@@ -399,8 +458,9 @@ jobs:
           echo "- Run website: \`${{ steps.decide.outputs.run-website }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run nix: \`${{ steps.decide.outputs.run-nix }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run schedule-specific: \`${{ steps.decide.outputs.run-schedule }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Dominant scope: \`${{ steps.decide.outputs.dominant-scope || 'none' }}\`" >> "$GITHUB_STEP_SUMMARY"
           if [ "${{ steps.trigger.outputs.is-pr }}" = "true" ]; then
-            echo "- Scope flags: launcher=${{ steps.scope.outputs.launcher || 'false' }}, website=${{ steps.scope.outputs.website || 'false' }}, bot=${{ steps.scope.outputs.bot || 'false' }}, meta=${{ steps.scope.outputs.meta || 'false' }}, quazip=${{ steps.scope.outputs.quazip || 'false' }}, bzip2=${{ steps.scope.outputs.bzip2 || 'false' }}, zlib=${{ steps.scope.outputs.zlib || 'false' }}, packages=${{ steps.scope.outputs.packages || 'false' }}, branding=${{ steps.scope.outputs.branding || 'false' }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Scope flags: launcher=${{ steps.scope.outputs.launcher || 'false' }}, launcher-java=${{ steps.scope.outputs.launcherjava || 'false' }}, javacheck=${{ steps.scope.outputs.javacheck || 'false' }}, libnbtplusplus=${{ steps.scope.outputs.libnbtplusplus || 'false' }}, website=${{ steps.scope.outputs.website || 'false' }}, bot=${{ steps.scope.outputs.bot || 'false' }}, meta=${{ steps.scope.outputs.meta || 'false' }}, quazip=${{ steps.scope.outputs.quazip || 'false' }}, bzip2=${{ steps.scope.outputs.bzip2 || 'false' }}, zlib=${{ steps.scope.outputs.zlib || 'false' }}, packages=${{ steps.scope.outputs.packages || 'false' }}, docs=${{ steps.scope.outputs.docs || 'false' }}, tools=${{ steps.scope.outputs.tools || 'false' }}, ci=${{ steps.scope.outputs.ci || 'false' }}, branding=${{ steps.scope.outputs.branding || 'false' }}" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "- Scope flags: n/a (non-PR event)" >> "$GITHUB_STEP_SUMMARY"
           fi

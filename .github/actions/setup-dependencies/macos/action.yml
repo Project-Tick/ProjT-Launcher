@@ -14,14 +14,14 @@ runs:
       shell: bash
       run: |
         brew update
-        brew install mono ninja extra-cmake-modules temurin@17 \
+        brew install mono ninja extra-cmake-modules temurin@21 \
           zlib quazip cmark tomlplusplus qrencode
         brew unlink qt || true # Avoid conflicts with the Qt we actually want to use
 
     - name: Set JAVA_HOME
       shell: bash
       run: |
-        echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> "$GITHUB_ENV"
+        echo "JAVA_HOME=$(/usr/libexec/java_home -v 21)" >> "$GITHUB_ENV"
         echo "PATH=$JAVA_HOME/bin:$PATH" >> "$GITHUB_ENV"
 
 
