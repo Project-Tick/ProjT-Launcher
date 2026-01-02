@@ -257,13 +257,13 @@ Building with default API keys implies acceptance of:
 - [Microsoft Identity Platform Terms](https://docs.microsoft.com/en-us/legal/microsoft-identity-platform/terms-of-use)
 - [CurseForge API Terms](https://support.curseforge.com/en/support/solutions/articles/9000207405-curse-forge-3rd-party-api-terms-and-conditions)
 
----
 ## Infrastructure & Embedded Components
 
 The following sections document components that are embedded directly
 in this monorepo to support ProjT Launcher’s long-term operation.
 
 This includes:
+
 - Forked upstream libraries
 - CI tooling and local evaluation helpers
 - Automation bots and PR infrastructure
@@ -546,17 +546,13 @@ libnbt++ is a free C++ library for Minecraft's file format Named Binary Tag
 (NBT). It can read and write compressed and uncompressed NBT files and
 provides a code interface for working with NBT data.
 
-----------
-
 libnbt++ 2 is a remake of the old libnbt++ library with the goal of making it
 more easily usable and fixing some problems. The old libnbt++ especially
 suffered from a very convoluted syntax and boilerplate code needed to work
 with NBT data.
 
-----------
-
 libnbt++ 3 is a remake of the old libnbt++ 2 library with the goal of fixing some
-problems. The old libnbt++2 especially suffered from a very convoluted syntax and 
+problems. The old libnbt++2 especially suffered from a very convoluted syntax and
 boilerplate code needed to work with NBT data.
 
 ### Building
