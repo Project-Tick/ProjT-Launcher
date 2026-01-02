@@ -13,7 +13,6 @@
   self,
   stripJavaArchivesHook,
   tomlplusplus,
-  zlib,
   msaClientID ? null,
   gamemodeSupport ? stdenv.hostPlatform.isLinux,
 }:
