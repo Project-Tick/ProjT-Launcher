@@ -36,6 +36,7 @@ concurrency:
 
 jobs:
   prepare:
+    timeout-minutes: 5
     name: Prepare Workflow Context
     runs-on: ubuntu-latest
     outputs:
@@ -483,6 +484,7 @@ jobs:
           fi
 
   clang-lint:
+    timeout-minutes: 5
     name: Clang Lint
     needs: prepare
     runs-on: ubuntu-latest
@@ -506,6 +508,7 @@ jobs:
           fi
 
   markdown-lint:
+    timeout-minutes: 5
     name: Markdown Lint
     needs: prepare
     if: needs.prepare.outputs.should-test == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
@@ -517,6 +520,7 @@ jobs:
           files: .
 
   bot-smoke:
+    timeout-minutes: 5
     name: Bot Smoke
     needs: prepare
     if: needs.prepare.outputs.run-bot == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
@@ -530,6 +534,7 @@ jobs:
         run: node -c bot/index.js
 
   meta-smoke:
+    timeout-minutes: 5
     name: Meta Smoke
     needs: prepare
     if: needs.prepare.outputs.run-meta == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
@@ -543,6 +548,7 @@ jobs:
         run: python -m compileall meta
 
   branding-check:
+    timeout-minutes: 5
     name: Branding Check
     needs: prepare
     if: needs.prepare.outputs.run-branding == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
@@ -637,6 +643,8 @@ jobs:
     secrets: inherit
 
   create-release:
+    timeout-minutes: 10
+    name: Create Release
     needs: build-projt-launcher-release
     runs-on: ubuntu-latest
     outputs:
@@ -837,6 +845,7 @@ jobs:
       working_directory: quazip
 
   build-quazip-alpine:
+    timeout-minutes: 50
     if: true && needs.prepare.outputs.run-quazip == 'true'
     needs: prepare
     name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
@@ -1005,6 +1014,7 @@ jobs:
         run: build/qztest/qztest
 
   build-quazip-use-qt-zlib-ubuntu:
+    timeout-minutes: 50
     env:
       BUILD_TYPE: Release
     if: true && needs.prepare.outputs.run-quazip == 'true'
@@ -1035,6 +1045,7 @@ jobs:
         run: ctest --verbose -C Release
 
   build-quazip-use-qt6-zlib-windows:
+    timeout-minutes: 50
     if: true && needs.prepare.outputs.run-quazip == 'true'
     needs: prepare
     env:
@@ -1191,6 +1202,7 @@ jobs:
         run: ctest --verbose --output-on-failure -C Release
 
   build-quazip-use-qt5-zlib-windows:
+    timeout-minutes: 50
     if: true && needs.prepare.outputs.run-quazip == 'true'
     needs: prepare
     env:
@@ -1345,6 +1357,7 @@ jobs:
         run: ctest --verbose --output-on-failure -C Release
 
   bzip2-debian-testing-meson:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Debian (testing) - Meson
     needs: [prepare]
@@ -1381,6 +1394,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-debian-testing-cmake-debug:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Debian (testing) - CMake Debug
     needs: [prepare]
@@ -1418,6 +1432,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-debian-testing-cmake:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Debian (testing) - CMake
     needs: [prepare]
@@ -1455,6 +1470,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-debian-testing-cmake-shared-static:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Debian (testing) - CMake shared+static
     needs: [prepare]
@@ -1492,6 +1508,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-debian-testing-cmake-static-only:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Debian (testing) - CMake static only
     needs: [prepare]
@@ -1529,6 +1546,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-ubuntu-jammy-meson:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Ubuntu Jammy - Meson
     needs: [prepare]
@@ -1566,6 +1584,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-ubuntu-jammy-cmake:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Ubuntu Jammy - CMake
     needs: prepare
@@ -1604,6 +1623,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-fedora-meson:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Fedora - Meson
     needs: [prepare]
@@ -1638,6 +1658,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-fedora-cmake:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Fedora - CMake
     needs: [prepare]
@@ -1673,6 +1694,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-fedora-rawhide-meson:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Fedora Rawhide - Meson
     needs: [prepare]
@@ -1707,6 +1729,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-fedora-rawhide-cmake:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: Fedora Rawhide - CMake
     needs: [prepare]
@@ -1742,6 +1765,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-opensuse-leap-meson:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: openSUSE Leap - Meson
     needs: [prepare]
@@ -1859,6 +1883,7 @@ jobs:
           path: CMakeOutput.log
 
   bzip2-opensuse-tumbleweed-meson:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: openSUSE Tumbleweed - Meson
     needs: [prepare]
@@ -1917,6 +1942,7 @@ jobs:
           path: meson-log.txt
 
   bzip2-opensuse-tumbleweed-cmake:
+    timeout-minutes: 10
     if: needs.prepare.outputs.run-bzip2 == 'true'
     name: openSUSE Tumbleweed - CMake
     needs: [prepare]
@@ -1976,6 +2002,7 @@ jobs:
           path: CMakeOutput.log
 
   build-website:
+    timeout-minutes: 5
     if: needs.prepare.outputs.run-website == 'true'
     needs: prepare
     runs-on: ubuntu-latest
@@ -2005,6 +2032,7 @@ jobs:
           path: ./_site
 
   deploy-website:
+    timeout-minutes: 5
     # Only deploy on pushes to develop; skip PRs/merge_group explicitly
     if: ${{ github.repository_owner == 'Project-Tick' &&  needs.prepare.outputs.run-website == 'true' }}
     needs: [build-website, prepare]
@@ -2021,6 +2049,7 @@ jobs:
         uses: actions/deploy-pages@854d7aa1b99e4509c4d1b53d69b7ba4eaf39215a
 
   backport:
+    timeout-minutes: 5
     name: Backport to Release Branch
     # Only run on closed/merged PRs with backport label
     needs: [prepare]
@@ -2127,6 +2156,7 @@ jobs:
             }
 
   build-zlib-main:
+    timeout-minutes: 30
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
     needs: prepare
@@ -2280,6 +2310,7 @@ jobs:
 
 
   build-zlib-msvc:
+    timeout-minutes: 30
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
     needs: prepare
@@ -2354,6 +2385,7 @@ jobs:
       run: ctest ./build2 -C Release --output-on-failure --max-width 120
 
   build-zlib-ci-cmake:
+    timeout-minutes: 30
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     needs: prepare
@@ -2537,6 +2569,7 @@ jobs:
         uses: github/codeql-action/analyze@f67ec12472e1b361f5e1e2085f5e6f85a57e3cd6
 
   build-zlib-ci-configure:
+    timeout-minutes: 30
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     needs: prepare
@@ -2730,6 +2763,7 @@ jobs:
           fi
 
   build-zlib-MSys:
+    timeout-minutes: 10
     runs-on: windows-latest
     needs: prepare
     if: needs.prepare.outputs.run-zlib == 'true'
@@ -2771,6 +2805,7 @@ jobs:
       run: ctest --output-on-failure --test-dir "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" -C Release
 
   build-zlib-cygwin:
+    timeout-minutes: 10
     strategy:
       fail-fast: false
     runs-on: windows-latest
@@ -2954,6 +2989,7 @@ jobs:
             core.info('Review processing complete');
 
   stale-label:
+    timeout-minutes: 5
     name: Label stale issues and PRs
     if: needs.prepare.outputs.schedule-cron == '0 * * * *'
     needs: prepare
@@ -2976,6 +3012,7 @@ jobs:
           stale-pr-label: inactive
 
   update-contributors:
+    timeout-minutes: 10
     needs: prepare
     if: github.repository_owner == 'Project-Tick' && needs.prepare.outputs.schedule-cron == '0 * * * *'
     runs-on: ubuntu-latest
@@ -3021,6 +3058,7 @@ jobs:
           merge-method: merge
 
   update-flake:
+    timeout-minutes: 10
     needs: prepare
     if: github.repository_owner == 'Project-Tick' && needs.prepare.outputs.schedule-cron == '0 */5 * * *'
     runs-on: ubuntu-latest
