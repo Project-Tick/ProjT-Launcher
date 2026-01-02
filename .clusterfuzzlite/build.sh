@@ -39,8 +39,8 @@ cmake -S . -B build -G Ninja \
   -DBUILD_TESTING=OFF \
   -DBUILD_FUZZERS=ON \
   -DLAUNCHER_FUZZ_ONLY=ON \
-  -DCMAKE_BUILD_RPATH="${QT_ROOT}/lib" \
-  -DCMAKE_INSTALL_RPATH="${QT_ROOT}/lib" \
+  -DCMAKE_BUILD_RPATH="$ORIGIN" \
+  -DCMAKE_INSTALL_RPATH="$ORIGIN" \
   -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
 
 cmake --build build --target fuzz_nbt_reader fuzz_qjson_parse fuzz_gzip
@@ -53,4 +53,12 @@ cp build/fuzz_gzip "$OUT/"
 cp "${QT_ROOT}/lib/libQt6Core.so"* "$OUT/" || true
 cp "${QT_ROOT}/lib/libQt6Core5Compat.so"* "$OUT/" || true
 cp "${QT_ROOT}/lib/libQt6NetworkAuth.so"* "$OUT/" || true
-cp "${QT_ROOT}/lib/libicu"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libQt6Xml.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libicudata.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libicui18n.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libicuio.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libicule.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libiculx.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libicutest.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libicutu.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libicuuc.so"* "$OUT/" || true
