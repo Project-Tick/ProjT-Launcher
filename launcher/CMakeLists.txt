@@ -1390,14 +1390,16 @@ if(WIN32 AND BUILD_SHARED_LIBS)
     endif()
 endif()
 
-# Install zlib DLL on Windows (if found via NuGet)
-if(WIN32 AND ZLIB_FOUND AND NOT TARGET zlibstatic)
-    if(DEFINED ZLIB_LIBRARY AND ZLIB_LIBRARY MATCHES ".*\\.lib$")
-        string(REPLACE ".lib" ".dll" ZLIB_DLL "${ZLIB_LIBRARY}")
-        if(EXISTS "${ZLIB_DLL}")
-            install(FILES "${ZLIB_DLL}" DESTINATION "." COMPONENT Runtime OPTIONAL)
-        endif()
-    endif()
+# Install bundled zlib DLLs from bin/ to root on Windows
+if(WIN32 AND ZLIB_FOUND)
+    install(CODE "
+        file(GLOB ZLIB_DLLS \"${CMAKE_INSTALL_PREFIX}/bin/z*.dll\")
+        foreach(DLL \${ZLIB_DLLS})
+            get_filename_component(DLL_NAME \"\${DLL}\" NAME)
+            message(STATUS \"Copying zlib DLL to root: \${DLL_NAME}\")
+            file(COPY \"\${DLL}\" DESTINATION \"${CMAKE_INSTALL_PREFIX}\")
+        endforeach()
+    ")
 endif()
 
 # Install cmark shared library DLL on Windows
@@ -1640,4 +1642,16 @@ if(WIN32 OR (UNIX AND APPLE))
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${RESOURCES_DEST_DIR}
         COMPONENT bundle
     )
+    
+    # Copy zlib DLLs from bin/ to root on Windows
+    if(WIN32)
+        install(CODE "
+            file(GLOB ZLIB_DLLS \"${CMAKE_INSTALL_PREFIX}/bin/z*.dll\")
+            foreach(DLL \${ZLIB_DLLS})
+                get_filename_component(DLL_NAME \"\${DLL}\" NAME)
+                message(STATUS \"Copying zlib DLL: \${DLL_NAME} to root\")
+                file(COPY \"\${DLL}\" DESTINATION \"${CMAKE_INSTALL_PREFIX}\")
+            endforeach()
+        ")
+    endif()
 endif()
