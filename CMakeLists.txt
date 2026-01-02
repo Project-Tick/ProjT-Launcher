@@ -9,6 +9,19 @@ endif()
 
 project(Launcher)
 
+# Set default build type for single-config generators (Unix/macOS)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+
+# For multi-config generators (MSVC), ensure CMAKE_CONFIGURATION_TYPES is set
+if(CMAKE_CONFIGURATION_TYPES)
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" _config)
+    if(NOT _config IN_LIST CMAKE_CONFIGURATION_TYPES)
+        list(APPEND CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}")
+    endif()
+endif()
+
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BUILD_DIR}" IS_IN_SOURCE_BUILD)
 if(IS_IN_SOURCE_BUILD)
     message(FATAL_ERROR "You are building the Launcher in-source. Please separate the build tree from the source tree.")

@@ -35,7 +35,7 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.13' 
-        architecture: ${{ (inputs.vcvars-arch == 'x86' || inputs.vcvars-arch == 'amd64_x86') && 'x86' || 'x64' }}
+        architecture: ${{ (inputs.vcvars-arch == 'x86' || inputs.vcvars-arch == 'amd64_x86') && 'x86' || (inputs.vcvars-arch == 'amd64_arm64') && 'arm64' || 'x64' }}
 
     - name: Configure NuGet sources (MSVC)
       if: ${{ inputs.msystem == '' }}
