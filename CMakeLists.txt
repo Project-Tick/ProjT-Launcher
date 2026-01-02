@@ -546,23 +546,11 @@ if(WIN32 AND NOT MINGW)
     list(APPEND CMAKE_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/dependencies")
 endif()
 
-# System Libraries
-if(NOT ZLIB_FOUND)
-
-    find_package(ZLIB QUIET)
-endif()
-
-if(NOT ZLIB_FOUND)
-    message(STATUS "ZLIB not found on system, using FetchContent fallback")
-    include(FetchContent)
-    FetchContent_Declare(
-        zlib
-        URL https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz
-    )
-    # ZLIB CMake options - don't install
+# System Libraries - Using bundled zlib
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
+    message(STATUS "Using bundled zlib")
     set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
-    
-    launcher_fetchcontent_makeavailable(zlib)
+    add_subdirectory(zlib)
     
     if(TARGET zlibstatic)
         set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -578,36 +566,14 @@ if(NOT ZLIB_FOUND)
         add_library(ZLIB::ZLIB ALIAS zlib)
     endif()
     
-    # Set variables for compatibility
-    set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}" CACHE PATH "ZLIB Include Dir" FORCE)
-    set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}" CACHE PATH "ZLIB Include Dirs" FORCE)
-    set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
-    # Ensure compatibility for projects that expect ZLIB_LIBRARY / ZLIB_LIBRARIES
-    # Force these to the target name so later find_package() calls do not reset them to NOTFOUND.
-    set(ZLIB_LIBRARY "ZLIB::ZLIB" CACHE STRING "Zlib library target" FORCE)
-    set(ZLIB_LIBRARIES "ZLIB::ZLIB" CACHE STRING "Zlib libraries" FORCE)
-    
-    # Create a custom FindZLIB.cmake that sub-projects will find first
-    # This prevents them from failing when they call find_package(ZLIB)
-    set(_custom_find_zlib_dir "${CMAKE_BINARY_DIR}/cmake-modules")
-    file(MAKE_DIRECTORY "${_custom_find_zlib_dir}")
-    file(WRITE "${_custom_find_zlib_dir}/FindZLIB.cmake" "
-# Custom FindZLIB.cmake - uses pre-built ZLIB from FetchContent
-if(TARGET ZLIB::ZLIB)
     set(ZLIB_FOUND TRUE)
-    get_target_property(ZLIB_INCLUDE_DIRS ZLIB::ZLIB INTERFACE_INCLUDE_DIRECTORIES)
-    if(NOT ZLIB_INCLUDE_DIRS)
-        set(ZLIB_INCLUDE_DIRS \"${zlib_SOURCE_DIR};${zlib_BINARY_DIR}\")
-    endif()
-    set(ZLIB_INCLUDE_DIR \"\${ZLIB_INCLUDE_DIRS}\")
-    set(ZLIB_LIBRARIES ZLIB::ZLIB)
-    set(ZLIB_LIBRARY ZLIB::ZLIB)
 else()
-    set(ZLIB_FOUND FALSE)
-endif()
-")
-    # Prepend our custom module path so it's found first
-    list(INSERT CMAKE_MODULE_PATH 0 "${_custom_find_zlib_dir}")
+    if(NOT ZLIB_FOUND)
+        find_package(ZLIB QUIET)
+    endif()
+    if(NOT ZLIB_FOUND)
+        message(FATAL_ERROR "ZLIB not found and bundled version not available")
+    endif()
 endif()
 
 if(NOT OpenSSL_FOUND)
@@ -618,7 +584,23 @@ find_package(Qt6 COMPONENTS DBus)
 list(APPEND Launcher_QT_DBUS Qt6::DBus)
 list(APPEND Launcher_QT_LIBS Qt6::Core5Compat)
 
-# System / Package Manager Provided Libs
+# System / Package Manager Provided Libs - Using bundled versions
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/bzip2/CMakeLists.txt")
+    message(STATUS "Using bundled bzip2")
+    set(ENABLE_LIB_ONLY ON CACHE BOOL "" FORCE)
+    set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+    set(ENABLE_DOCS OFF CACHE BOOL "" FORCE)
+    set(ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+    if(WIN32)
+        set(ENABLE_SHARED_LIB OFF CACHE BOOL "" FORCE)
+    endif()
+    set(ENABLE_STATIC_LIB ON CACHE BOOL "" FORCE)
+    add_subdirectory(bzip2)
+    set(BZIP2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bzip2" CACHE PATH "" FORCE)
+else()
+    message(FATAL_ERROR "Bundled bzip2 not found")
+endif()
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/quazip/CMakeLists.txt")
     message(STATUS "Using bundled QuaZip")
     set(QUAZIP_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
@@ -627,32 +609,9 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/quazip/CMakeLists.txt")
     set(QUAZIP_BZIP2 ON CACHE BOOL "" FORCE)
     set(QUAZIP_FETCH_LIBS OFF CACHE BOOL "" FORCE)
     set(QUAZIP_FORCE_FETCH_LIBS OFF CACHE BOOL "" FORCE)
-
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/bzip2/CMakeLists.txt")
-        message(STATUS "Using bundled bzip2 for QuaZip")
-        set(ENABLE_LIB_ONLY ON CACHE BOOL "" FORCE)
-        set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-        set(ENABLE_DOCS OFF CACHE BOOL "" FORCE)
-        set(ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
-        if(WIN32)
-            set(ENABLE_SHARED_LIB OFF CACHE BOOL "" FORCE)
-        endif()
-        set(ENABLE_STATIC_LIB ON CACHE BOOL "" FORCE)
-        add_subdirectory(bzip2)
-        set(BZIP2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bzip2" CACHE PATH "" FORCE)
-    endif()
-
     add_subdirectory(quazip)
 else()
-    find_package(QuaZip-Qt6 1.3 QUIET)
-    if(NOT QuaZip-Qt6_FOUND)
-        message(STATUS "QuaZip-Qt6 not found on system, using FetchContent fallback")
-        include(FetchContent)
-        FetchContent_Declare(quazip URL https://github.com/stachenov/quazip/archive/refs/tags/v1.5.zip)
-        set(QUAZIP_QT6 ON CACHE BOOL "" FORCE)
-        set(QUAZIP_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-        launcher_fetchcontent_makeavailable(quazip)
-    endif()
+    message(FATAL_ERROR "Bundled QuaZip not found")
 endif()
 
 find_package(tomlplusplus 3.2.0 QUIET)
