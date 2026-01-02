@@ -22,4 +22,9 @@ target_link_libraries(fuzz_qjson_parse PRIVATE Qt6::Core)
 
 add_fuzzer(fuzz_gzip fuzz_gzip.cpp ${PROJECT_SOURCE_DIR}/launcher/GZip.cpp)
 target_include_directories(fuzz_gzip PRIVATE ${PROJECT_SOURCE_DIR}/launcher)
-target_link_libraries(fuzz_gzip PRIVATE Qt6::Core ZLIB::ZLIB)
+# Use static zlib for fuzzer to avoid sanitizer symbol mismatch
+if(TARGET zlibstatic)
+    target_link_libraries(fuzz_gzip PRIVATE Qt6::Core zlibstatic)
+else()
+    target_link_libraries(fuzz_gzip PRIVATE Qt6::Core ZLIB::ZLIB)
+endif()
