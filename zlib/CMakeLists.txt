@@ -11,9 +11,34 @@ project(
 # CPack
 # ============================================================================
 set(CPACK_PACKAGE_VENDOR "zlib-Project")
-set(CPACK_PACKAGE_DESCRIPTION_FILE ${zlib_SOURCE_DIR}/README)
+
+# Prefer local README; otherwise use the repository root README.
+set(_zlib_readme "")
+set(_zlib_readme_candidates
+    "${zlib_SOURCE_DIR}/README"
+    "${zlib_SOURCE_DIR}/README.md"
+    "${CMAKE_SOURCE_DIR}/README.md"
+    "${CMAKE_SOURCE_DIR}/README")
+get_filename_component(_zlib_parent "${zlib_SOURCE_DIR}/.." ABSOLUTE)
+list(APPEND _zlib_readme_candidates
+    "${_zlib_parent}/README.md"
+    "${_zlib_parent}/README")
+
+foreach(_candidate IN LISTS _zlib_readme_candidates)
+    if(EXISTS "${_candidate}")
+        set(_zlib_readme "${_candidate}")
+        break()
+    endif()
+endforeach()
+
+if(_zlib_readme)
+    set(CPACK_PACKAGE_DESCRIPTION_FILE "${_zlib_readme}")
+    set(CPACK_RESOURCE_FILE_README "${_zlib_readme}")
+else()
+    message(FATAL_ERROR "No README found for CPack description (expected zlib/README or repo README.md/README).")
+endif()
+
 set(CPACK_RESOURCE_FILE_LICENSE ${zlib_SOURCE_DIR}/LICENSE)
-set(CPACK_RESOURCE_FILE_README ${zlib_SOURCE_DIR}/README)
 
 # ============================================================================
 # configuration

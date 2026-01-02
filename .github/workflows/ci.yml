@@ -177,6 +177,11 @@ jobs:
               payload = json.load(f)
               body = payload.get("pull_request", {}).get("body") or ""
 
+          scope_body = body
+          m = re.search(r"##\s*Scope\s*(.*?)(?:\n##\s|\Z)", body, flags=re.IGNORECASE | re.DOTALL)
+          if m:
+            scope_body = m.group(1)
+
           scopes = {
             "launcher": r"- \[[xX]\]\s+Launcher\b",
             "website": r"- \[[xX]\]\s+Website\b",
@@ -197,7 +202,7 @@ jobs:
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
             for key, pattern in scopes.items():
-              selected = bool(re.search(pattern, body, flags=re.IGNORECASE))
+              selected = bool(re.search(pattern, scope_body, flags=re.IGNORECASE))
               f.write(f"{key}={'true' if selected else 'false'}\n")
           PY
 

@@ -74,7 +74,7 @@ Please read the specific sections below before writing a single line of code (st
 
 ### Other Areas
 
-- **Bot**: `bot/README.md`
+- **Bot**: `bot/`
 - **Website**: `.eleventy.js`, `website/`, `package.json`
 - **Metadata generator**: `meta/`, `pyproject.toml`
 
