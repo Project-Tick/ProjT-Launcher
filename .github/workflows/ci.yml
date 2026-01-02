@@ -683,6 +683,33 @@ jobs:
         run: |
           tag_name=$(echo ${{ github.ref }} | grep -oE "[^/]+$")
           echo "VERSION=$tag_name" >> $GITHUB_ENV
+      - name: Package source libraries
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          cd "${{ github.workspace }}"
+          SRC_DIR="ProjTLauncher-source"
+          libs=(libnbtplusplus zlib quazip bzip2 launcherjava)
+
+          sign_file() {
+            local path="$1"
+            if [ -n "${GPG_PRIVATE_KEY}" ] && [ -n "${GPG_PASSPHRASE}" ]; then
+              echo "${GPG_PRIVATE_KEY}" | gpg --batch --yes --import
+              gpg --batch --yes --armor --pinentry-mode loopback --passphrase "${GPG_PASSPHRASE}" --output "${path}.asc" --detach-sign "${path}"
+            fi
+          }
+
+          for d in "${libs[@]}"; do
+            base="${d}-${{ env.VERSION }}"
+            tar -C "${SRC_DIR}" -czf "${base}.tar.gz" "${d}"
+            tar -C "${SRC_DIR}" -cJf "${base}.tar.xz" "${d}"
+            (cd "${SRC_DIR}" && zip -r "../${base}.zip" "${d}")
+
+            sign_file "${base}.tar.gz"
+            sign_file "${base}.tar.xz"
+            sign_file "${base}.zip"
+          done
       - name: Package artifacts properly
         run: |
           mv ${{ github.workspace }}/ProjTLauncher-source ProjTLauncher-${{ env.VERSION }}
@@ -762,6 +789,36 @@ jobs:
             ProjTLauncher-Windows-MSVC-Setup-${{ env.VERSION }}.exe
             ProjTLauncher-macOS-${{ env.VERSION }}.zip
             ProjTLauncher-${{ env.VERSION }}.tar.gz
+            libnbtplusplus-${{ env.VERSION }}.zip
+            libnbtplusplus-${{ env.VERSION }}.tar.gz
+            libnbtplusplus-${{ env.VERSION }}.tar.xz
+            libnbtplusplus-${{ env.VERSION }}.zip.asc
+            libnbtplusplus-${{ env.VERSION }}.tar.gz.asc
+            libnbtplusplus-${{ env.VERSION }}.tar.xz.asc
+            zlib-${{ env.VERSION }}.zip
+            zlib-${{ env.VERSION }}.tar.gz
+            zlib-${{ env.VERSION }}.tar.xz
+            zlib-${{ env.VERSION }}.zip.asc
+            zlib-${{ env.VERSION }}.tar.gz.asc
+            zlib-${{ env.VERSION }}.tar.xz.asc
+            quazip-${{ env.VERSION }}.zip
+            quazip-${{ env.VERSION }}.tar.gz
+            quazip-${{ env.VERSION }}.tar.xz
+            quazip-${{ env.VERSION }}.zip.asc
+            quazip-${{ env.VERSION }}.tar.gz.asc
+            quazip-${{ env.VERSION }}.tar.xz.asc
+            bzip2-${{ env.VERSION }}.zip
+            bzip2-${{ env.VERSION }}.tar.gz
+            bzip2-${{ env.VERSION }}.tar.xz
+            bzip2-${{ env.VERSION }}.zip.asc
+            bzip2-${{ env.VERSION }}.tar.gz.asc
+            bzip2-${{ env.VERSION }}.tar.xz.asc
+            launcherjava-${{ env.VERSION }}.zip
+            launcherjava-${{ env.VERSION }}.tar.gz
+            launcherjava-${{ env.VERSION }}.tar.xz
+            launcherjava-${{ env.VERSION }}.zip.asc
+            launcherjava-${{ env.VERSION }}.tar.gz.asc
+            launcherjava-${{ env.VERSION }}.tar.xz.asc
 
   build-quazip-ubuntu:
     if: true && needs.prepare.outputs.run-quazip == 'true'
