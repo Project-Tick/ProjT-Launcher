@@ -95,6 +95,10 @@ if(ZLIB_BUILD_STATIC)
         # Add coverage flags to ZLIBSTATIC to generate .gcda files during testing
         target_compile_options(zlibstatic PRIVATE -coverage)
         target_link_options(zlibstatic PRIVATE -coverage)
+        
+        # Also link coverage flags to executables using zlibstatic
+        target_link_options(zlib_static_example PRIVATE -coverage)
+        target_link_options(static_minigzip PRIVATE -coverage)
 
         add_executable(infcover infcover.c)
         target_link_libraries(infcover ZLIB::ZLIBSTATIC)
