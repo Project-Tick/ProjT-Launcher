@@ -394,6 +394,18 @@ jobs:
                 run_regular_build=false
               fi
             fi
+
+            # If scopes are explicitly selected on a PR, clamp component runs to those scopes (docs/tools/branding remain no-op)
+            if [ "$scope_selected" = "true" ]; then
+              run_zlib=$([ "$SCOPE_ZLIB" = "true" ] && echo true || echo false)
+              run_bzip2=$([ "$SCOPE_BZIP2" = "true" ] && echo true || echo false)
+              run_quazip=$([ "$SCOPE_QUAZIP" = "true" ] && echo true || echo false)
+              run_website=$([ "$SCOPE_WEBSITE" = "true" ] && echo true || echo false)
+              run_nix=$([ "$SCOPE_PACKAGES" = "true" ] && echo true || echo false)
+              run_bot=$([ "$SCOPE_BOT" = "true" ] && echo true || echo false)
+              run_meta=$([ "$SCOPE_META" = "true" ] && echo true || echo false)
+              run_branding=$([ "$SCOPE_BRANDING" = "true" ] && echo true || echo false)
+            fi
           fi
 
           if [ "$IS_TAG" = "true" ]; then
