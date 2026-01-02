@@ -976,7 +976,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: TheMrMilchmann/setup-msvc-dev@3462509a550bd581ef073d5daa110e2fa2738b38
+      - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
         with:
           arch: x64
 
@@ -1132,7 +1132,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: TheMrMilchmann/setup-msvc-dev@3462509a550bd581ef073d5daa110e2fa2738b38
+      - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
         with:
           arch: x64
 
