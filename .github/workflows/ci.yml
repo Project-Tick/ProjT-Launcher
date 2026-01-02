@@ -2781,7 +2781,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: Setup MSYS2
-      uses: msys2/setup-msys2@9012c742974e959643d3ea41569d7ee281f67186
+      uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda
       with:
         msystem: ${{ matrix.sys }}
         update: true

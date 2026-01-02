@@ -10,7 +10,7 @@ PRs that introduce behavior changes without appropriate tests **may be rejected*
 ### When are tests required?
 
 | Change Type | Test Required? |
-|-----------|----------------|
+| ----------- | ---------------- |
 | New core logic (non-UI) | ✅ Yes |
 | New task | ✅ Yes |
 | Bug fix | ✅ Yes (regression if possible) |

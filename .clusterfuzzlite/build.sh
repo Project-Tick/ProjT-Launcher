@@ -36,7 +36,8 @@ export CMAKE_PREFIX_PATH="${QT_ROOT}/lib/cmake:${CMAKE_PREFIX_PATH:-}"
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DBUILD_TESTING=OFF \
-  -DBUILD_FUZZERS=ON
+  -DBUILD_FUZZERS=ON \
+  -DLAUNCHER_FUZZ_ONLY=ON
 
 cmake --build build --target fuzz_nbt_reader fuzz_qjson_parse fuzz_gzip
 

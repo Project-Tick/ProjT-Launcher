@@ -279,6 +279,9 @@ set(Launcher_VERSION_NAME4_COMMA "${Launcher_VERSION_MAJOR},${Launcher_VERSION_M
 # Build platform.
 set(Launcher_BUILD_PLATFORM "unknown" CACHE STRING "A short string identifying the platform that this build was built for. Only used to display in the about dialog.")
 
+# CI fuzz builds use a reduced target set; skip heavy components and installers when enabled.
+option(LAUNCHER_FUZZ_ONLY "Build only fuzzing targets (skips installers, Java launcher, and desktop integration)" OFF)
+
 # Github repo URL with releases for updater
 set(Launcher_UPDATER_GITHUB_REPO "https://github.com/Project-Tick/ProjT-Launcher" CACHE STRING "Base github URL for the updater.")
 
@@ -825,12 +828,14 @@ if (NOT APPLE AND (NOT Launcher_UPDATER_GITHUB_REPO STREQUAL "" AND NOT Launcher
     set(Launcher_BUILD_UPDATER YES)
 endif()
 
-if(NOT (UNIX AND APPLE))
-    # Install "portable.txt" if selected component is "portable"
-    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${Launcher_Portable_File}" DESTINATION "." COMPONENT portable EXCLUDE_FROM_ALL)
+if(NOT LAUNCHER_FUZZ_ONLY)
+    if(NOT (UNIX AND APPLE))
+        # Install "portable.txt" if selected component is "portable"
+        install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${Launcher_Portable_File}" DESTINATION "." COMPONENT portable EXCLUDE_FROM_ALL)
+    endif()
 endif()
 
-if(UNIX AND APPLE)
+if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND APPLE)
     set(BINARY_DEST_DIR "${Launcher_Name}.app/Contents/MacOS")
     set(LIBRARY_DEST_DIR "${Launcher_Name}.app/Contents/MacOS")
     set(PLUGIN_DEST_DIR "${Launcher_Name}.app/Contents/MacOS")
@@ -861,7 +866,7 @@ if(UNIX AND APPLE)
     # Add the icon
     install(FILES ${Launcher_Branding_ICNS} DESTINATION ${RESOURCES_DEST_DIR} RENAME ${Launcher_Name}.icns)
 
-elseif(UNIX)
+elseif(NOT LAUNCHER_FUZZ_ONLY AND UNIX)
     include(KDEInstallDirs)
 
     set(BINARY_DEST_DIR "bin")
@@ -919,13 +924,15 @@ else()
 endif()
 
 add_subdirectory(./systeminfo) # system information library
-add_subdirectory(./launcherjava) # java based launcher part for Minecraft
-add_subdirectory(./javacheck) # java compatibility checker
-add_subdirectory(./rainbow) # Qt extension for colors
-add_subdirectory(./LocalPeer) # fork of a library from Qt solutions
-add_subdirectory(./gamemode)
-add_subdirectory(./murmur2) # Hash for usage with the CurseForge API
-add_subdirectory(./qdcss) # css parser
+if(NOT LAUNCHER_FUZZ_ONLY)
+    add_subdirectory(./launcherjava) # java based launcher part for Minecraft
+    add_subdirectory(./javacheck) # java compatibility checker
+    add_subdirectory(./rainbow) # Qt extension for colors
+    add_subdirectory(./LocalPeer) # fork of a library from Qt solutions
+    add_subdirectory(./gamemode)
+    add_subdirectory(./murmur2) # Hash for usage with the CurseForge API
+    add_subdirectory(./qdcss) # css parser
+endif()
 
 ############################### Built Artifacts ###############################
 
