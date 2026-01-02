@@ -10,9 +10,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     }
 
     QJsonParseError error{};
-    QJsonDocument::fromJson(
-        QByteArray(reinterpret_cast<const char*>(data), static_cast<int>(size)),
-        &error);
+    QJsonDocument::fromJson(QByteArray(reinterpret_cast<const char*>(data), static_cast<int>(size)), &error);
 
     return 0;
 }
