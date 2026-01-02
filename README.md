@@ -306,7 +306,7 @@ Copyright (C) 2019-2020 Federico Mena Quintero <federico@gnome.org>
 
 Copyright (C) 2021-2025 [Micah Snyder](https://gitlab.com/micahsnyder).
 
-Copyright (C) 2025 [Yong-Do-Hyun](https://github.com/YongDo-Hyun).
+Copyright (C) 2025 [YongDo-Hyun](https://github.com/YongDo-Hyun).
 
 Copyright (C) 2025 [grxtor](https://github.com/grxtor).
 

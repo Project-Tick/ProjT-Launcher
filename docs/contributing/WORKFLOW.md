@@ -2,28 +2,26 @@
 
 ## ⚠️ Process Policy
 
-We follow specific workflow standards to ensure a clean history and high code quality.
+We follow specific workflow standards to ensure traceability, reviewability,
+and a clear project history.
 
-- **Commits**: Should follow Conventional Commits.
+- **Commits**: Must follow Conventional Commits.
 - **Sign-off**: Mandatory (DCO). The bot labels `status:dco-missing` when any non-bot commit lacks `Signed-off-by:`.
-- **History**: Linear history preferred (Rebase).
+- **History**: Rebase must never be used on branches that are already part of an open PR or have been merged into `develop`.
+- **Merge strategy**: Merge commits only (no squash, no rebase merge).
 
 ## 1. Branching Strategy (Git Explained)
 
 Think of branches like **Parallel Universes**:
 
-- **`master` (The Public Universe)**:
-  - This is what users download. It is always stable.
-  - **Never** push directly to master.
+- **develop**
+  - Integration branch for upcoming releases.
+  - Protected branch.
+  - Never push directly.
 
-- **`develop` (The Construction Site)**:
-  - This is where we merge new features. It might have bugs.
-  - We build the next release from here.
-
-- **`feat/my-feature` (Your Personal Universe)**:
-  - You create this from `develop`.
-  - You can break things here. It's safe.
-  - When you are done, you ask to merge it back to `develop` (Pull Request).
+- **release-X.Y.Z**
+  - Created from `develop`.
+  - May contain multiple commits.
 
 ## 2. Commit Messages (Strict)
 
@@ -66,18 +64,26 @@ Signed-off-by: John Doe <john@example.com>
 
 - `update code` (What code?)
 - `fix bug` (Which bug?)
-- `wip` (Work in progress - Squash this before merging!)
+- `wip` (Work in progress commits must be cleaned up before opening a PR)
 
 ## 3. Pull Request Rules
 
 **What is a PR?** It's a request to merge your "Personal Universe" into the "Construction Site".
 
-1. **One Feature per PR**: Do not fix a bug AND add a feature in the same PR.
-2. **Clean History (Squash)**:
-   - *What is it?* Combining 10 small "wip" commits into 1 clean commit.
-   - *Why?* We don't want to see "fix typo", "fix typo again" in the history.
-3. **CI Green**: All automated checks must pass.
-4. **Review**: At least 1 maintainer must approve your code.
+1. **One feature per PR**
+   - No mixing unrelated changes.
+
+2. **Merge Commit Required**
+   - Pull requests must be merged using **Create a merge commit**.
+   - **Squash merge is forbidden.**
+   - **Rebase merge is forbidden.**
+   - Individual commits must remain visible in history.
+
+3. **CI Green**
+   - All checks must pass before merging.
+
+4. **Review**
+   - At least one maintainer approval is required.
 
 ### Pull Request Template
 
@@ -107,15 +113,20 @@ git push --force-with-lease
 ## 5. Release Process
 
 1. **Freeze**: No new features merged to `develop`.
-2. **Branch**: Create `release/vX.Y.Z` from `develop`.
+2. **Branch**: Create `release-X.Y.Z` from `develop`.
 3. **Test**: QA performs regression testing.
-4. **Fix**: Bug fixes are committed to `release/vX.Y.Z`.
-5. **Merge**: Merge `release/vX.Y.Z` into `master` and `develop`.
-6. **Tag**: Tag `master` with `vX.Y.Z`.
+4. **Fix**: Bug fixes are committed to `release-X.Y.Z`.
+5. **Merge**: Merge `release-X.Y.Z` into  `develop`.
+6. **Tag**: Tag `develop` with `X.Y.Z`.
+
+Rebase is allowed **only** for the following purposes:
+
+- Resolving merge conflicts
+- Cleaning up a local feature branch before opening a PR
+
+Rewriting commit history after a PR is opened is discouraged.
 
 ## 6. Handling Merge Conflicts
-
-**Do not use merge commits.** Use rebase.
 
 ```bash
 git fetch origin
@@ -130,24 +141,17 @@ git push --force-with-lease
 
 For critical bugs in production:
 
-1. Create `hotfix/vX.Y.Z+1` from `master`.
+1. Create `hotfix/X.Y.Z+1` from `develop`.
 2. Fix the bug.
-3. Merge into `master` and `develop`.
-4. Tag `master`.
+3. Merge into `develop`.
+4. Tag `develop`.
 
 ## Code Review Process
 
-1. **Automated Checks**: CI/CD pipeline runs.
-2. **Bot Checks**: DCO label (`status:dco-missing`) must be clear.
-3. **Maintainer Review**: At least 1 approval required.
-4. **Merge**: Squash and merge preferred.
-
-## Backporting
-
-To backport to release branches, add the following labels to the PR:
-
-- `backport release-1.x`
-- `backport release-0.x`
+1. CI/CD pipeline runs
+2. DCO label must be clear
+3. At least one maintainer approval
+4. Merge using **Create a merge commit**
 
 ---
 
@@ -155,7 +159,7 @@ To backport to release branches, add the following labels to the PR:
 
 ### License
 
-ProjT Launcher is licensed under **GNU General Public License v3.0 or later**.
+ProjT Launcher is licensed under **GPL-3.0-only**.
 
 ### Adding New Files
 

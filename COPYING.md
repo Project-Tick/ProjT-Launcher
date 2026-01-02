@@ -59,146 +59,6 @@
          See the License for the specific language governing permissions and
          limitations under the License.
 
-## ProjT Launcher Meta Scripts
-
-    Microsoft Public License (Ms-PL)
-
-    This license governs use of the accompanying software. If you use the
-    software, you accept this license. If you do not accept the license, do not
-    use the software.
-
-    1.  Definitions
-        The terms "reproduce," "reproduction," "derivative works," and "distribution"
-        have the same meaning here as under U.S. copyright law. A "contribution" is
-        the original software, or any additions or changes to the software. A
-        "contributor" is any person that distributes its contribution under this
-        license. "Licensed patents" are a contributor's patent claims that read
-        directly on its contribution.
-
-    2.  Grant of Rights
-         (A) Copyright Grant- Subject to the terms of this license, including the
-         license conditions and limitations in section 3, each contributor grants
-         you a non-exclusive, worldwide, royalty-free copyright license to
-         reproduce its contribution, prepare derivative works of its contribution,
-         and distribute its contribution or any derivative works that you create.
-
-         (B) Patent Grant- Subject to the terms of this license, including the
-         license conditions and limitations in section 3, each contributor grants
-         you a non-exclusive, worldwide, royalty-free license under its licensed
-         patents to make, have made, use, sell, offer for sale, import, and/or
-         otherwise dispose of its contribution in the software or derivative works
-         of the contribution in the software.
-
-    3.  Conditions and Limitations
-         (A) No Trademark License- This license does not grant you rights to use
-         any contributors' name, logo, or trademarks.
-
-         (B) If you bring a patent claim against any contributor over patents that
-         you claim are infringed by the software, your patent license from such
-         contributor to the software ends automatically.
-
-         (C) If you distribute any portion of the software, you must retain all
-         copyright, patent, trademark, and attribution notices that are present in
-         the software.
-
-         (D) If you distribute any portion of the software in source code form,
-         you may do so only under this license by including a complete copy of
-         this license with your distribution. If you distribute any portion of the
-         software in compiled or object code form, you may only do so under a
-         license that complies with this license.
-
-         (E) The software is licensed "as-is." You bear the risk of using it. The
-         contributors give no express warranties, guarantees, or conditions. You
-         may have additional consumer rights under your local laws which this
-         license cannot change. To the extent permitted under your local laws, the
-         contributors exclude the implied warranties of merchantability, fitness
-         for a particular purpose and non-infringement.
-
-## ProjT Launcher Website
-
-     ProjT Launcher Website
-     Copyright (C) 2025 Project Tick
-
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU Affero General Public License as published by
-     the Free Software Foundation, version 3.
-
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU Affero General Public License for more details.
-
-     You should have received a copy of the GNU Affero General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-## Prism Launcher
-
-    Prism Launcher - Minecraft Launcher
-    Copyright 2022-2025 Prism Launcher Contributors
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, version 3.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-    This file incorporates work covered by the following copyright and
-    permission notice:
-
-         Copyright 2013-2021 MultiMC Contributors
-
-         Licensed under the Apache License, Version 2.0 (the "License");
-         you may not use this file except in compliance with the License.
-         You may obtain a copy of the License at
-
-             http://www.apache.org/licenses/LICENSE-2.0
-
-         Unless required by applicable law or agreed to in writing, software
-         distributed under the License is distributed on an "AS IS" BASIS,
-         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-         See the License for the specific language governing permissions and
-         limitations under the License.
-
-## PolyMC
-
-     PolyMC - Minecraft Launcher
-     Copyright (C) 2021-2022 PolyMC Contributors
-
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation, version 3.
-
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
-
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/ >.
-
-    This file incorporates work covered by the following copyright and
-    permission notice:
-
-         Copyright 2013-2021 MultiMC Contributors
-
-         Licensed under the Apache License, Version 2.0 (the "License");
-         you may not use this file except in compliance with the License.
-         You may obtain a copy of the License at
-
-             http://www.apache.org/licenses/LICENSE-2.0
-
-         Unless required by applicable law or agreed to in writing, software
-         distributed under the License is distributed on an "AS IS" BASIS,
-         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-         See the License for the specific language governing permissions and
-         limitations under the License.
-
 ## MinGW-w64 runtime (Windows)
 
     Copyright (c) 2009, 2010, 2011, 2012, 2013 by the mingw-w64 project
@@ -248,24 +108,6 @@
 
     Licensed under LGPL v3
 
-## libnbt++
-
-    libnbt++ - A library for the Minecraft Named Binary Tag format.
-    Copyright (C) 2013, 2015  ljfa-ag
-
-    libnbt++ is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    libnbt++ is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
-
 ## rainbow (KGuiAddons)
 
     Copyright (C) 2007 Matthew Woehlke <mw_triad@users.sourceforge.net>
@@ -288,35 +130,6 @@
     along with this library; see the file COPYING.LIB.  If not, write to
     the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
     Boston, MA 02110-1301, USA.
-
-## cmark
-
-    Copyright (c) 2014, John MacFarlane
-
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-        * Redistributions of source code must retain the above copyright
-        notice, this list of conditions and the following disclaimer.
-
-        * Redistributions in binary form must reproduce the above
-        copyright notice, this list of conditions and the following
-        disclaimer in the documentation and/or other materials provided
-        with the distribution.
-
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Batch icon set
 
@@ -345,89 +158,6 @@
     This license is copied below, and is also available with a FAQ at:
     http://scripts.sil.org/OFL
 
-## Quazip
-
-    Copyright (C) 2005-2021 Sergey A. Tachenov
-
-    The QuaZip library is licensed under the GNU Lesser General Public
-    License V2.1 plus a static linking exception.
-
-    The original ZIP/UNZIP package (MiniZip) is copyrighted by Gilles
-    Vollant and contributors, see quazip/(un)zip.h files for details.
-    Basically it's the zlib license.
-
-    STATIC LINKING EXCEPTION
-
-    The copyright holders give you permission to link this library with
-    independent modules to produce an executable, regardless of the license
-    terms of these independent modules, and to copy and distribute the
-    resulting executable under terms of your choice, provided that you also
-    meet, for each linked independent module, the terms and conditions of
-    the license of that module. An independent module is a module which is
-    not derived from or based on this library. If you modify this library,
-    you must extend this exception to your version of the library.
-
-    See COPYING file for the full LGPL text.
-
-## zlib
-
-    Copyright (C) 1995–2025
-    Jean-loup Gailly, Mark Adler
-
-    Licensed under the zlib license.
-    See `zlib/LICENSE` for the full license text.
-
-## launcher (`launcherjava`)
-
-     PolyMC - Minecraft Launcher
-     Copyright (C) 2021-2022 PolyMC Contributors
-
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation, version 3.
-
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
-
-     Linking this library statically or dynamically with other modules is
-     making a combined work based on this library. Thus, the terms and
-     conditions of the GNU General Public License cover the whole
-     combination.
-
-     As a special exception, the copyright holders of this library give
-     you permission to link this library with independent modules to
-     produce an executable, regardless of the license terms of these
-     independent modules, and to copy and distribute the resulting
-     executable under terms of your choice, provided that you also meet,
-     for each linked independent module, the terms and conditions of the
-     license of that module. An independent module is a module which is
-     not derived from or based on this library. If you modify this
-     library, you may extend this exception to your version of the
-     library, but you are not obliged to do so. If you do not wish to do
-     so, delete this exception statement from your version.
-
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-    This file incorporates work covered by the following copyright and
-    permission notice:
-
-         Copyright 2013-2021 MultiMC Contributors
-
-         Licensed under the Apache License, Version 2.0 (the "License");
-         you may not use this file except in compliance with the License.
-         You may obtain a copy of the License at
-
-             http://www.apache.org/licenses/LICENSE-2.0
-
-         Unless required by applicable law or agreed to in writing, software
-         distributed under the License is distributed on an "AS IS" BASIS,
-         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-         See the License for the specific language governing permissions and
-         limitations under the License.
-
 ## lionshead
 
     Code has been taken from https://github.com/natefoo/lionshead and loosely
@@ -454,25 +184,6 @@
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
-
-## tomlplusplus
-
-    MIT License
-
-    Copyright (c) Mark Gillard <mark.gillard@outlook.com.au>
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-    documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
-    permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
-    Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-    WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-    COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-    OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## Gamemode
 
@@ -567,9 +278,3 @@
     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
     CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-## Inspiration Acknowledgment
-
-    Some CI concepts and general workflow ideas were inspired by the Nixpkgs project,  
-    but all related files in this repository have been rewritten for ProjT Launcher's architecture  
-    and are not derivative works.

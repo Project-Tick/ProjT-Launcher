@@ -15,7 +15,7 @@ The launcher UI uses **Qt Widgets** (`.ui` files + C++). Keep UI code in `launch
 
 2. **Core/Domain Layer**
    - Files: `launcher/`, `launcher/minecraft/`, `launcher/net/`, `launcher/modplatform/`, `launcher/java/`
-   - Responsibilities: data models, networking, settings, launch logic
+   - Responsibilities: data models, networking, settings, persistence, launch logic
    - Avoid UI dependencies in this layer.
 
 3. **Task System**
@@ -23,9 +23,14 @@ The launcher UI uses **Qt Widgets** (`.ui` files + C++). Keep UI code in `launch
    - Responsibilities: long-running or async work (downloads, extracting, indexing)
    - UI starts tasks and listens to signals for progress/completion.
 
+> [!IMPORTANT]
+> Tasks are executed off the UI thread using the launcher’s internal task executor.
+> UI code must not assume which thread a task runs on.
+
 ## UI to Core Communication
 
-Prefer signals/slots and existing service objects over direct calls from UI to deep internals. For long work, use `Task` and connect progress signals to UI elements.
+Prefer signals/slots and existing service objects over direct calls from UI to deep internals. For long work, use `Task` and connect progress signals to UI elements. Service objects are long-lived, non-UI classes owned by Application
+(e.g. AccountManager, InstanceManager, NetworkManager).
 
 ```cpp
 auto task = makeShared<MyTask>();
