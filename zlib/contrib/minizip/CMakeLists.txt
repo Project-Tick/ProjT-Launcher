@@ -195,12 +195,18 @@ if(MINIZIP_BUILD_STATIC)
     target_compile_definitions(
         minizipstatic PRIVATE $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>)
     target_link_libraries(minizipstatic PRIVATE MINIZIP::minizipstatic)
+    if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
+        target_link_options(minizipstatic PRIVATE -coverage)
+    endif()
     add_executable(miniunzipstatic ${MINIUNZIP_SRCS} ${MINIUNZIP_HDRS})
     set_target_properties(miniunzipstatic
                           PROPERTIES EXPORT_NAME miniunzip_static_executable)
     target_compile_definitions(
         miniunzipstatic PRIVATE $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>)
     target_link_libraries(miniunzipstatic PRIVATE MINIZIP::minizipstatic)
+    if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
+        target_link_options(miniunzipstatic PRIVATE -coverage)
+    endif()
 endif(MINIZIP_BUILD_STATIC)
 
 if(MINIZIP_INSTALL)
