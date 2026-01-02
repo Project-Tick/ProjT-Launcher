@@ -1390,6 +1390,16 @@ if(WIN32 AND BUILD_SHARED_LIBS)
     endif()
 endif()
 
+# Install zlib DLL on Windows (if found via NuGet)
+if(WIN32 AND ZLIB_FOUND AND NOT TARGET zlibstatic)
+    if(DEFINED ZLIB_LIBRARY AND ZLIB_LIBRARY MATCHES ".*\\.lib$")
+        string(REPLACE ".lib" ".dll" ZLIB_DLL "${ZLIB_LIBRARY}")
+        if(EXISTS "${ZLIB_DLL}")
+            install(FILES "${ZLIB_DLL}" DESTINATION "." COMPONENT Runtime OPTIONAL)
+        endif()
+    endif()
+endif()
+
 # Install cmark shared library DLL on Windows
 if(WIN32)
     if(TARGET cmark::cmark)

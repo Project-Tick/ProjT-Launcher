@@ -364,8 +364,7 @@ if(ENABLE_STATIC_LIB)
         COMPILE_FLAGS       "${WARNCFLAGS}"
         VERSION             ${LT_VERSION}
         SOVERSION           ${LT_SOVERSION}
-        ARCHIVE_OUTPUT_NAME bz2_static
-        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+        ARCHIVE_OUTPUT_NAME bz2_static)
     target_compile_definitions(bz2_static PUBLIC BZ2_STATICLIB)
     install(TARGETS bz2_static DESTINATION ${CMAKE_INSTALL_LIBDIR})
     install(FILES bzlib.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
