@@ -2049,13 +2049,12 @@ jobs:
         uses: actions/deploy-pages@854d7aa1b99e4509c4d1b53d69b7ba4eaf39215a
 
   backport:
-    timeout-minutes: 5
     name: Backport to Release Branch
     # Only run on closed/merged PRs with backport label
     needs: [prepare]
     if: needs.prepare.outputs.is-pr-closed == 'true' && github.event.pull_request.merged == true && contains(join(github.event.pull_request.labels.*.name, ','), 'backport/')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
