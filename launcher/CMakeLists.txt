@@ -1381,6 +1381,30 @@ if(DEFINED Launcher_APP_BINARY_DEFS)
     target_compile_definitions(Launcher_logic PRIVATE ${Launcher_APP_BINARY_DEFS})
 endif()
 
+# Install QuaZip shared library DLL on Windows
+if(WIN32 AND BUILD_SHARED_LIBS)
+    if(TARGET QuaZip::QuaZip)
+        install(FILES $<TARGET_FILE:QuaZip::QuaZip> DESTINATION "." COMPONENT Runtime OPTIONAL)
+    elseif(TARGET QuaZip)
+        install(FILES $<TARGET_FILE:QuaZip> DESTINATION "." COMPONENT Runtime OPTIONAL)
+    endif()
+endif()
+
+# Install cmark shared library DLL on Windows
+if(WIN32)
+    if(TARGET cmark::cmark)
+        get_target_property(CMARK_TYPE cmark::cmark TYPE)
+        if(CMARK_TYPE STREQUAL "SHARED_LIBRARY")
+            install(FILES $<TARGET_FILE:cmark::cmark> DESTINATION "." COMPONENT Runtime OPTIONAL)
+        endif()
+    elseif(TARGET cmark)
+        get_target_property(CMARK_TYPE cmark TYPE)
+        if(CMARK_TYPE STREQUAL "SHARED_LIBRARY")
+            install(FILES $<TARGET_FILE:cmark> DESTINATION "." COMPONENT Runtime OPTIONAL)
+        endif()
+    endif()
+endif()
+
 install(TARGETS ${Launcher_Name}
     RUNTIME_DEPENDENCY_SET LAUNCHER_DEPENDENCY_SET
     BUNDLE DESTINATION "." COMPONENT Runtime
