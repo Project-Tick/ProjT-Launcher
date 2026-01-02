@@ -7,7 +7,9 @@
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    if (!data || size == 0) {
+    // Avoid excessive allocations on pathological inputs
+    constexpr size_t kMaxInputSize = 1 << 20; // 1 MiB
+    if (!data || size == 0 || size > kMaxInputSize) {
         return 0;
     }
 
