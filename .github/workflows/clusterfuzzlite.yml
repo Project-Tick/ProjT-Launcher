@@ -26,10 +26,11 @@ jobs:
         with:
           sanitizer: ${{ matrix.sanitizer }}
           language: c++
-          upload-artifact: true
+          project-src-path: .
       - name: Run fuzzers
         uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
         with:
           sanitizer: ${{ matrix.sanitizer }}
           language: c++
+          project-src-path: .
           fuzz-seconds: ${{ github.event_name == 'schedule' && 600 || 60 }}

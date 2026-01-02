@@ -388,7 +388,8 @@ function sleep(ms) {
 
 function safeJsonParse(text) {
   try {
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+    return parsed !== null && typeof parsed === "object" ? parsed : null;
   } catch {
     return null;
   }
@@ -737,7 +738,23 @@ function parseListEnv(value) {
 }
 
 function parsePositiveInt(value) {
-  const num = Number.parseInt(String(value ?? ""), 10);
+  let text = "";
+  if (typeof value === "string") {
+    text = value;
+  } else if (typeof value === "number") {
+    text = String(value);
+  } else if (typeof value === "bigint") {
+    text = value.toString();
+  } else if (value == null) {
+    text = "";
+  } else {
+    try {
+      text = String(value);
+    } catch {
+      return null;
+    }
+  }
+  const num = Number.parseInt(text, 10);
   return Number.isFinite(num) && num > 0 ? num : null;
 }
 
