@@ -32,15 +32,25 @@ if [ ! -d "${QT_ROOT}" ]; then
 fi
 export PATH="${QT_ROOT}/bin:${PATH}"
 export CMAKE_PREFIX_PATH="${QT_ROOT}/lib/cmake:${CMAKE_PREFIX_PATH:-}"
+export LD_LIBRARY_PATH="${QT_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DBUILD_TESTING=OFF \
   -DBUILD_FUZZERS=ON \
-  -DLAUNCHER_FUZZ_ONLY=ON
+  -DLAUNCHER_FUZZ_ONLY=ON \
+  -DCMAKE_BUILD_RPATH="${QT_ROOT}/lib" \
+  -DCMAKE_INSTALL_RPATH="${QT_ROOT}/lib" \
+  -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
 
 cmake --build build --target fuzz_nbt_reader fuzz_qjson_parse fuzz_gzip
 
 cp build/fuzz_nbt_reader "$OUT/"
 cp build/fuzz_qjson_parse "$OUT/"
 cp build/fuzz_gzip "$OUT/"
+
+# Bundle minimal Qt runtime bits alongside fuzzers
+cp "${QT_ROOT}/lib/libQt6Core.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libQt6Core5Compat.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libQt6NetworkAuth.so"* "$OUT/" || true
+cp "${QT_ROOT}/lib/libicu"* "$OUT/" || true
