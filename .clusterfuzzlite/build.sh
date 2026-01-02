@@ -8,9 +8,9 @@ cd "${REPO_ROOT}"
 if command -v apt-get >/dev/null 2>&1; then
   apt-get update
   apt-get install -y --no-install-recommends \
-    qt6-base-dev \
-    qt6-base-dev-tools \
-    qt6-tools-dev-tools \
+    qtbase5-dev \
+    qttools5-dev \
+    qttools5-dev-tools \
     ninja-build
 fi
 
