@@ -1,7 +1,7 @@
 # 🤝 Contribution Guidelines
 
 > **ProjT Launcher**  
-> Copyright (C) 2025 Project Tick  
+> Copyright (C) 2026 Project Tick  
 > Licensed under multiple licenses (Launcher: GPL-3.0-only, Website: AGPL-3.0-only, Metadata generator: MS-PL). See `LICENSE` and `COPYING`.
 
 ## 🧭 Project Areas
@@ -104,4 +104,4 @@ Please read the specific sections below before writing a single line of code (st
 
 ---
 
-### Last updated: December 2025
+### Last updated: January 2026

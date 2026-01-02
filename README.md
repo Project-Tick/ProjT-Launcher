@@ -49,6 +49,10 @@ This repo is a monorepo with the launcher and the pieces that keep it running:
 
 ## Reading Guide
 
+> This README is intentionally a repository handbook.
+> It centralizes project philosophy, infrastructure, and
+> long-term maintenance documentation in one place.
+
 This README serves multiple audiences and use cases.
 
 - **Users**:  

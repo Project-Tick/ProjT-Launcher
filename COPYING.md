@@ -1,7 +1,7 @@
 ## ProjT Launcher
 
      ProjT Launcher - Minecraft Launcher
-     Copyright (C) 2025 Project Tick
+     Copyright (C) 2026 Project Tick
 
      This program is free software: you can redistribute it and/or modify
      it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 
         Modified version:
         ProjT Launcher Logo
-        © 2025 Project Tick
+        © 2026 Project Tick
         Licensed under CC BY-SA 4.0
 
         Prism Launcher - Minecraft Launcher

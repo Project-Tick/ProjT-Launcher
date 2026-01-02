@@ -134,11 +134,11 @@ Use these templates when creating new files to ensure you follow all rules.
 
 ```cpp
 // SPDX-License-Identifier: GPL-3.0-only
-// SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
  *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
+ *  Copyright (C) 2026 Project Tick
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -184,11 +184,11 @@ class MyNewClass : public QObject {
 
 ```cpp
 // SPDX-License-Identifier: GPL-3.0-only
-// SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
  *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
+ *  Copyright (C) 2026 Project Tick
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

@@ -35,7 +35,7 @@ set(LEGACY_SRC
     tr/org/yongdohyun/projtlauncher/legacy/utils/url/ByteArrayUrlConnection.java
     tr/org/yongdohyun/projtlauncher/legacy/utils/url/UrlUtils.java
     net/minecraft/Launcher.java
-    tr/org/yongdohyun/projtlauncher/legacy/LegacyProxy.java
+    legacyshim/LegacyProxy.java
 )
 
 add_jar(ProjTLaunch ${SRC})

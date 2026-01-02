@@ -165,11 +165,11 @@ Every new file must start with this header:
 
 ```cpp
 // SPDX-License-Identifier: GPL-3.0-only
-// SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
  *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
+ *  Copyright (C) 2026 Project Tick
  *
  *  This file is part of ProjT Launcher and is licensed under
  *  the GNU General Public License version 3 or later.
@@ -186,11 +186,11 @@ Preserve original copyright notices when modifying code from other projects:
 
 ```cpp
 // SPDX-License-Identifier: GPL-3.0-only
-// SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
  *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
+ *  Copyright (C) 2026 Project Tick
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
