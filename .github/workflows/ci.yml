@@ -3173,6 +3173,8 @@ jobs:
           IS_WORKFLOW_RUN: ${{ needs.prepare.outputs.is-workflow-run }}
           IS_MERGE_GROUP: ${{ needs.prepare.outputs.is-merge-group }}
           IS_SCHEDULE: ${{ needs.prepare.outputs.is-schedule }}
+          IS_RELEASE: ${{ needs.prepare.outputs.is-release }}
+          IS_PR_CLOSED: ${{ needs.prepare.outputs.is-pr-closed }}
         with:
           script: |
             const { serverUrl, repo, runId, payload, job, eventName } = context;
@@ -3196,6 +3198,8 @@ jobs:
               is_schedule: process.env.IS_SCHEDULE === 'true',
               is_pr_review: process.env.IS_PR_REVIEW === 'true',
               is_workflow_run: process.env.IS_WORKFLOW_RUN === 'true',
+              is_release: process.env.IS_RELEASE === 'true',
+              is_pr_closed: process.env.IS_PR_CLOSED === 'true',
             };
             const isPr = process.env.IS_PR === 'true';
             const isMergeGroup = process.env.IS_MERGE_GROUP === 'true';
@@ -3248,6 +3252,18 @@ jobs:
 
             const jobs = await waitForJobs();
 
+            // Filter jobs to only keep the latest attempt for each job name.
+            // This is crucial because re-running jobs creates new job entries in the API,
+            // and we only care about the most recent result.
+            const latestJobsMap = new Map();
+            for (const j of jobs) {
+              const existing = latestJobsMap.get(j.name);
+              if (!existing || j.id > existing.id) {
+                latestJobsMap.set(j.name, j);
+              }
+            }
+            const latestJobs = Array.from(latestJobsMap.values());
+
             const statusCounts = { success: 0, failure: 0, cancelled: 0, skipped: 0, neutral: 0, timed_out: 0, action_required: 0, unknown: 0 };
             const failedJobs = [];
             const skippedJobs = [];
@@ -3258,7 +3274,7 @@ jobs:
             const pendingOrMissing = [];
             const failedRequired = [];
 
-            for (const j of jobs) {
+            for (const j of latestJobs) {
               const jobSlug = slugify(j.name);
               if (
                 jobSlug === currentJobSlug ||
@@ -3277,33 +3293,48 @@ jobs:
               else if (conclusion === 'action_required') actionRequiredJobs.push(j.name);
             }
 
+            const isNormalTest = runFlags.should_test && !runFlags.is_schedule && !runFlags.is_release && !runFlags.is_pr_closed;
+
             const requiredJobs = [
-              { name: 'clang-lint', needed: runFlags.should_test },
-              { name: 'markdown-lint', needed: runFlags.should_test },
-              { name: 'bot-smoke', needed: runFlags.bot },
-              { name: 'meta-smoke', needed: runFlags.meta },
-              { name: 'branding-check', needed: runFlags.branding },
-              { name: 'check', needed: runFlags.is_pr },
-              { name: 'build-projt-launcher-debug', needed: runFlags.regular_build },
-              { name: 'build-projt-launcher-release', needed: runFlags.release_build && !runFlags.is_pr && !isMergeGroup },
-              { name: 'create-release', needed: runFlags.release_build && !isPr && !isMergeGroup },
+              { name: 'Clang Lint', needed: isNormalTest },
+              { name: 'Markdown Lint', needed: isNormalTest },
+              { name: 'Bot Smoke', needed: runFlags.bot },
+              { name: 'Meta Smoke', needed: runFlags.meta },
+              { name: 'Branding Check', needed: runFlags.branding },
+              { name: 'Check', needed: isNormalTest && runFlags.is_pr },
+              { name: 'Build ProjT Launcher ( DEBUG )', needed: runFlags.regular_build },
+              { name: 'Build ProjT Launcher ( RELEASE )', needed: runFlags.release_build && !runFlags.is_pr && !isMergeGroup },
+              { name: 'Create Release', needed: runFlags.release_build && !isPr && !isMergeGroup },
               { name: 'Winget', needed: runFlags.release_build && !isPr && !isMergeGroup },
-              { name: 'System Evaluation', needed: runFlags.should_test && !runFlags.is_schedule },
+              { name: 'System Evaluation', needed: isNormalTest },
             ];
 
-            const jobMap = new Map();
-            for (const j of jobs) {
-              jobMap.set(j.name, j);
-              jobMap.set(slugify(j.name), j); // align job_id-style references with display names
-            }
             for (const req of requiredJobs) {
               if (!req.needed) continue;
-              const reqKey = slugify(req.name);
-              const found = jobMap.get(req.name) || jobMap.get(reqKey);
-              if (!found || found.conclusion === null || found.conclusion === undefined) {
+              const reqSlug = slugify(req.name);
+              
+              const matchingJobs = latestJobs.filter(j => {
+                const jSlug = slugify(j.name);
+                return (
+                  jSlug === reqSlug || 
+                  jSlug.startsWith(reqSlug + "-") || 
+                  j.name === req.name || 
+                  j.name.startsWith(req.name + " / ")
+                );
+              });
+
+              if (matchingJobs.length === 0) {
                 pendingOrMissing.push(req.name);
-              } else if (found.conclusion !== 'success') {
-                failedRequired.push(req.name);
+              } else {
+                const nonSuccess = matchingJobs.filter(j => 
+                  j.conclusion && 
+                  j.conclusion !== 'success' && 
+                  j.conclusion !== 'skipped' &&
+                  j.conclusion !== 'neutral'
+                );
+                if (nonSuccess.length > 0) {
+                  failedRequired.push(req.name);
+                }
               }
             }
 
