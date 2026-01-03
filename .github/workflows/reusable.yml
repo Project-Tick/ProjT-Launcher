@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload cp.zip to GitHub Actions Storage
         if: inputs.run_tests && !inputs.cross_extract
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           overwrite: true
           name: "${{ inputs.runs_on }}_qt${{ inputs.qt_version }}_shared${{ inputs.shared }}_cp"
