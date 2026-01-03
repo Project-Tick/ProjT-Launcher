@@ -823,6 +823,8 @@ async function processOpenPullRequests(env, options = {}) {
   const stats = { total: pullRequests.length, processed: 0, errors: 0 };
   const results = [];
 
+  console.log(`[Scan] Found ${pullRequests.length} open PRs: ${pullRequests.map(p => "#" + p.number).join(", ")}`);
+
   for (const pr of pullRequests) {
     const pullNumber = pr.number;
     try {
@@ -1171,28 +1173,48 @@ async function checkDcoForPullRequest({ owner, repo, pullNumber, env }) {
 
 async function findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env }) {
   const workflow = CONFIG.ciSummary.workflowFile;
-  const events = ["pull_request", "pull_request_target"];
+  // Search without event filter to catch push, pull_request, etc.
   let runs = [];
-  for (const event of events) {
-    try {
-      const { data } = await githubApi({
-        env,
-        method: "GET",
-        path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=30&event=${event}`,
-      });
-      runs = runs.concat(Array.isArray(data?.workflow_runs) ? data.workflow_runs : []);
-    } catch (err) {
-      log("warn", "findWorkflowRunForPR: list runs failed", { workflow, event, error: String(err?.message ?? err) });
-    }
+  try {
+    const { data } = await githubApi({
+      env,
+      method: "GET",
+      path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=100`,
+    });
+    runs = Array.isArray(data?.workflow_runs) ? data.workflow_runs : [];
+  } catch (err) {
+    log("warn", "findWorkflowRunForPR: list runs failed", { workflow, error: String(err?.message ?? err) });
+  }
+
+  if (runs.length === 0) {
+    console.log(`[WorkflowRun] PR #${pullNumber}: No runs found at all for workflow ${workflow}`);
   }
 
   return (
     runs.find((run) => {
       const prs = run.pull_requests ?? [];
       const matchesPr = prs.some((pr) => pr.number === pullNumber);
-      if (!matchesPr) return false;
-      if (headSha && run.head_sha && run.head_sha !== headSha) return false;
-      return true;
+      
+      // If it's a push event in the same repo, pull_requests array might be empty in the run object
+      // but the head_sha will match.
+      const matchesSha = headSha && run.head_sha === headSha;
+
+      if (matchesPr) {
+        // Merge Queue (merge_group) runs have different SHAs, so we allow mismatch if it's a merge_group
+        const isMergeGroup = run.event === "merge_group";
+        if (!isMergeGroup && headSha && run.head_sha && run.head_sha !== headSha) {
+          console.log(`[WorkflowRun] PR #${pullNumber}: Found run ${run.id} by PR match, but SHA mismatch. PR=${headSha.substring(0,7)}, Run=${run.head_sha.substring(0,7)}`);
+          return false;
+        }
+        return true;
+      }
+
+      if (matchesSha) {
+        console.log(`[WorkflowRun] PR #${pullNumber}: Found run ${run.id} by SHA match (${headSha.substring(0,7)})`);
+        return true;
+      }
+
+      return false;
     }) ?? null
   );
 }
@@ -1487,7 +1509,10 @@ function globToRegExp(pattern) {
 async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, env, dryRun }) {
   const headSha = pullRequest?.head?.sha ?? "";
   const run = await findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env });
-  if (!run) return { ok: false, skipped: true, reason: "no-workflow-run" };
+  if (!run) {
+    console.log(`[StatusUpdate] PR #${pullNumber}: No matching workflow run found for SHA ${headSha.substring(0,7)}`);
+    return { ok: false, skipped: true, reason: "no-workflow-run" };
+  }
 
   const jobs = await listJobsForRun({ owner, repo, runId: run.id, env });
   const body = buildCiSummaryBody({ run, jobs });
@@ -1497,10 +1522,51 @@ async function updateCiSummaryComment({ owner, repo, pullNumber, pullRequest, en
     jobs: jobs.map((job) => ({
       id: job.id,
       name: job.name,
-      status: job.status,
       conclusion: job.conclusion,
     })),
   };
+
+  // Update commit status to mirror "no PR failures" (especially for fork PRs and Merge Queue)
+  if (!dryRun && run.status === "completed") {
+    const isSuccess = run.conclusion === "success";
+    const targetState = isSuccess ? "success" : "failure";
+    
+    const baseOwner = pullRequest?.base?.repo?.owner?.login || owner;
+    const baseRepo = pullRequest?.base?.repo?.name || repo;
+    
+    // Use the SHA from the workflow run itself, as it might be a merge commit (Merge Queue)
+    const targetSha = run.head_sha || headSha;
+
+    if (targetSha) {
+      try {
+        // Check current statuses to avoid redundant updates
+        const { data: statuses } = await githubApi({
+          env,
+          method: "GET",
+          path: `/repos/${baseOwner}/${baseRepo}/commits/${targetSha}/statuses`,
+        });
+        
+        const existing = statuses.find(s => s.context === "no PR failures");
+        
+        if (!existing || existing.state !== targetState) {
+          await githubApi({
+            env,
+            method: "POST",
+            path: `/repos/${baseOwner}/${baseRepo}/statuses/${targetSha}`,
+            body: {
+              state: targetState,
+              context: "no PR failures",
+              description: isSuccess ? "All checks passed (ProjT Bot)" : "CI failures detected (ProjT Bot)",
+              target_url: run.html_url,
+            },
+          });
+          console.log(`[StatusUpdate] PR #${pullNumber}: Status updated to ${targetState} for SHA ${targetSha.substring(0,7)}`);
+        }
+      } catch (err) {
+        console.error(`[StatusUpdate] PR #${pullNumber}: Status check/update failed for SHA ${targetSha.substring(0,7)}:`, err?.message ?? err);
+      }
+    }
+  }
 
   const comments = await listIssueComments({ owner, repo, issueNumber: pullNumber, env });
   const marker = CONFIG.ciSummary.marker;

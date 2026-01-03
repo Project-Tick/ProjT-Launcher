@@ -1,7 +1,13 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
+import { webcrypto } from 'node:crypto';
 import worker from './index.js';
+
+// Ensure crypto is available globally for Node.js versions < 19
+if (!globalThis.crypto) {
+  globalThis.crypto = webcrypto;
+}
 
 dotenv.config();
 
@@ -53,8 +59,8 @@ app.all('*', async (req, res) => {
   }
 });
 
-// Scheduled tasks (every 5 minutes as per wrangler.json)
-cron.schedule('*/5 * * * *', async () => {
+// Scheduled tasks (every minute as requested)
+cron.schedule('* * * * *', async () => {
   console.log('Running scheduled task...');
   const env = process.env;
   const ctx = {
@@ -63,7 +69,7 @@ cron.schedule('*/5 * * * *', async () => {
     }
   };
   try {
-    await worker.scheduled({ cron: '*/5 * * * *' }, env, ctx);
+    await worker.scheduled({ cron: '* * * * *' }, env, ctx);
   } catch (error) {
     console.error('Scheduled task error:', error);
   }
