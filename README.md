@@ -1,12 +1,12 @@
 <p align="center">
   <picture>
-    <source srcset="/program_info/tr.org.yongdohyun.ProjTLauncher.logo-darkmode.svg">
-    <img alt="ProjT Launcher" src="/program_info/tr.org.yongdohyun.ProjTLauncher.logo.svg" width="40%">
+    <source srcset="/program_info/tr.org.projecttick.ProjTLauncher.logo-darkmode.svg">
+    <img alt="ProjT Launcher" src="/program_info/tr.org.projecttick.ProjTLauncher.logo.svg" width="40%">
   </picture>
 </p>
 
 <p align="center">
-  <img alt="ProjT Launcher Main Menu" src="https://projtlauncher.yongdohyun.org.tr/img/screenshots/projtlauncher_dark_main_window.png" width="80%">
+  <img alt="ProjT Launcher Main Menu" src="https://projtlauncher.projecttick.org.tr/img/screenshots/projtlauncher_dark_main_window.png" width="80%">
 </p>
 
 <p align="center">
@@ -406,7 +406,7 @@ QuaZip is the C++ wrapper for Gilles Vollant's ZIP/UNZIP package
 If you need to write files to a ZIP archive or read files from one
 using QIODevice API, QuaZip is exactly the kind of tool you need.
 
-See [the documentation](https://projtlauncher.yongdohyun.org.tr/wiki/) for details.
+See [the documentation](https://projtlauncher.projecttick.org.tr/wiki/) for details.
 
 Want to report a bug or ask for a feature? Open an [issue](https://github.com/Project-Tick/ProjT-Launcher/issues).
 
@@ -871,19 +871,21 @@ We use [cachix](https://cachix.org/) to cache our development and release builds
 If you want to avoid rebuilds you may add the Cachix bucket to your substitutors, or use `--accept-flake-config`
 to temporarily enable it when using `nix` commands.
 
+<!-- 
 Example (NixOS):
 
 ```nix
 {
   nix.settings = {
-    trusted-substituters = [ "https://cache.yongdohyun.org.tr" ];
+    trusted-substituters = [ "https://cache.projecttick.org.tr" ];
 
     trusted-public-keys = [
-      "cache.yongdohyun.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
+      "cache.projecttick.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
     ];
   };
 }
-```
+``` 
+-->
 
 #### Installing the package directly
 
@@ -996,10 +998,10 @@ Example (NixOS):
 ```nix
 {
   nix.settings = {
-    trusted-substituters = [ "https://cache.yongdohyun.org.tr" ];
+    trusted-substituters = [ "https://cache.projecttick.org.tr" ];
 
     trusted-public-keys = [
-      "cache.yongdohyun.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
+      "cache.projecttick.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
     ];
   };
 }

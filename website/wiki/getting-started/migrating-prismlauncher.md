@@ -17,7 +17,7 @@ Left-click on the tab and select the **View Instance Folder** option. This shoul
 
 Now that the Prism Launcher instance directory is open, you may **select**, and then **copy** the instances that you wish to transfer.
 
-## <img src="https://raw.githubusercontent.com/Project-Tick/ProjT-Launcher/develop/program_info/tr.org.yongdohyun.ProjTLauncher.svg" alt="Prism Launcher Logo" height="20" /> In ProjT Launcher
+## <img src="https://raw.githubusercontent.com/Project-Tick/ProjT-Launcher/develop/program_info/tr.org.projecttick.ProjTLauncher.svg" alt="Prism Launcher Logo" height="20" /> In ProjT Launcher
 
 To complete the transfer process, you must now open ProjT Launcher.
 

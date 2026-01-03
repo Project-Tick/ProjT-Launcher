@@ -51,7 +51,7 @@ ensure_component_dir(LWJGL3_COMPONENT)
 def map_log4j_artifact(version):
     x = pversion.parse(version)
     if x <= pversion.parse("2.0"):
-        return "2.0-beta9-fixed", "https://files.yongdohyun.org.tr/maven/%s"
+        return "2.0-beta9-fixed", "https://files.projecttick.org.tr/maven/%s"
     if x <= pversion.parse("2.17.1"):
         return (
             "2.17.1",

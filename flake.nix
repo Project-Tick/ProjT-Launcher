@@ -89,7 +89,7 @@
             ```
 
             Feel free to ask any questions in our Discord server or Matrix space:
-              - https://projtlauncher.yongdohyun.org.tr/discord
+              - https://projtlauncher.projecttick.org.tr/discord
               - https://matrix.to/#/#projtlauncher:matrix.org
 
             And thanks for helping out :)
