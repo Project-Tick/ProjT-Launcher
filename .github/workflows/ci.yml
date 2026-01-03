@@ -2347,7 +2347,7 @@ jobs:
     - name: Generate project files with tests (cmake)
       if: matrix.builder == 'cmake'
       run: |
-        cmake -S . -B ./build2 -D CMAKE_BUILD_TYPE=Release ${{ matrix.os.cmake-opt }} -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=OFF
+        cmake -S . -B ./build2 -D CMAKE_BUILD_TYPE=Release ${{ matrix.os.cmake-opt }} -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=OFF -DCMAKE_C_FLAGS_RELEASE="-O2" -DCMAKE_CXX_FLAGS_RELEASE="-O2"
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: -std=${{ matrix.std.value }} ${{ matrix.arch.compiler-opt }} -Wall -Wextra
@@ -2426,7 +2426,7 @@ jobs:
 
     - name: Generate project files with tests (cmake)
       run: |
-        cmake -S . -B ./build2 ${{ matrix.arch.value }} -D CMAKE_BUILD_TYPE=Release -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=OFF
+        cmake -S . -B ./build2 ${{ matrix.arch.value }} -D CMAKE_BUILD_TYPE=Release -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=OFF -DCMAKE_C_FLAGS="" -DCMAKE_CXX_FLAGS=""
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: ${{ matrix.std.value }}
@@ -2545,7 +2545,7 @@ jobs:
       run: |
         sudo apt install libbz2-dev
     - name: Generate project files
-      run: cmake -S . -B build ${{ matrix.cmake-args }} -D CMAKE_BUILD_TYPE=${{ matrix.build-config || 'Release' }} -DZLIB_BUILD_MINIZIP=ON
+      run: cmake -S . -B build ${{ matrix.cmake-args }} -D CMAKE_BUILD_TYPE=${{ matrix.build-config || 'Release' }} -DZLIB_BUILD_MINIZIP=ON -DCMAKE_C_FLAGS="" -DCMAKE_CXX_FLAGS=""
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: ${{ matrix.cflags }}
@@ -2854,7 +2854,9 @@ jobs:
           -B "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" \
           -DCMAKE_VERBOSE_MAKEFILE=ON \
           -DCMAKE_BUILD_TYPE=Release \
-          -DMINIZIP_ENABLE_BZIP2=ON
+          -DMINIZIP_ENABLE_BZIP2=ON \
+          -DCMAKE_C_FLAGS="" \
+          -DCMAKE_CXX_FLAGS=""
     - name: Build
       run: cmake --build "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" --config Release
     - name: Run tests
@@ -2893,6 +2895,8 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DZLIB_BUILD_MINIZIP=ON \
           -DMINIZIP_ENABLE_BZIP2=OFF \
+          -DCMAKE_C_FLAGS="" \
+          -DCMAKE_CXX_FLAGS="" \
           -G Ninja
     - name: Build
       run: cmake --build "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" --config Release -v -j1
