@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 project(launcher Java)
-find_package(Java 1.7 REQUIRED COMPONENTS Development)
+find_package(Java 1.8 REQUIRED COMPONENTS Development)
 
 include(UseJava)
 set(CMAKE_JAVA_JAR_ENTRY_POINT tr.org.yongdohyun.projtlauncher.normal.EntryPoint)
-set(CMAKE_JAVA_COMPILE_FLAGS -target 7 -source 7)
+set(CMAKE_JAVA_COMPILE_FLAGS -target 8 -source 8)
 
 set(SRC
     tr/org/yongdohyun/projtlauncher/normal/EntryPoint.java
@@ -35,7 +35,7 @@ set(LEGACY_SRC
     tr/org/yongdohyun/projtlauncher/legacy/utils/url/ByteArrayUrlConnection.java
     tr/org/yongdohyun/projtlauncher/legacy/utils/url/UrlUtils.java
     net/minecraft/Launcher.java
-    tr/org/yongdohyun/projtlauncher/legacy/LegacyProxy.java
+    legacyshim/LegacyProxy.java
 )
 
 add_jar(ProjTLaunch ${SRC})

@@ -205,7 +205,12 @@
 				"lhs": "${hostSystemName}",
 				"rhs": "Windows"
 			},
-			"configurePreset": "windows_msvc"
+			"configurePreset": "windows_msvc",
+			"filter": {
+				"exclude": {
+					"name": "^example64|example$|spectest_library|pathological_tests_library|roundtriptest_library|entity_library$"
+				}
+			}
 		}
 	]
 }

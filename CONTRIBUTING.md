@@ -1,8 +1,8 @@
 # 🤝 Contribution Guidelines
 
 > **ProjT Launcher**  
-> Copyright (C) 2025 Project Tick  
-> Licensed under multiple licenses (Launcher: GPL-3.0-only, Website: AGPL-3.0-only, Metadata generator: MS-PL). See `LICENSE` and `COPYING`.
+> Copyright (C) 2026 Project Tick  
+> Licensed under multiple licenses (Launcher: GPL-3.0-only, Website: AGPL-3.0-only, Metadata generator: MS-PL, Zlib: Zlib license, Quazip: LGPL-2.1-or-later, bzip2: bzip2 license, libnbt++ 3: GPL-3.0-only). See `LICENSE` and `COPYING`.
 
 ## 🧭 Project Areas
 
@@ -12,11 +12,9 @@
 - **Metadata generator (Python)**: `meta/`, `pyproject.toml`
 - **Documentation**: `docs/`
 - **CI/Tools**: `ci/`, `.github/`, `scripts/`, `tools/`
-
-## 🧩 Vendored Projects
-
-- **bzip2**: See `bzip2/README.md`, `bzip2/COMPILING.md`, `bzip2/NEWS.md`, `bzip2/code-of-conduct.md`.
-- **quazip**: See `quazip/README.md`, `quazip/CONTRIBUTING.md`, `quazip/SECURITY.md`, `quazip/QuaZip-1.x-migration.md`.
+- **Forked Libraries**: `quazip/`, `zlib/`, `bzip2`, `libnbtplusplus/`
+- **Non fork Libraries**: `launcherjava/`
+- **Vendored Libraries**: `gamemode/`, `LocalPeer/`, `murmur2/`, `qdcss/`, `rainbow/`, `systeminfo/`
 
 ## 🛠 Engineering Standards
 
@@ -76,7 +74,7 @@ Please read the specific sections below before writing a single line of code (st
 
 ### Other Areas
 
-- **Bot**: `bot/README.md`
+- **Bot**: `bot/`
 - **Website**: `.eleventy.js`, `website/`, `package.json`
 - **Metadata generator**: `meta/`, `pyproject.toml`
 
@@ -104,4 +102,4 @@ Please read the specific sections below before writing a single line of code (st
 
 ---
 
-### Last updated: December 2025
+### Last updated: January 2026

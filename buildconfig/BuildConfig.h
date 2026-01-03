@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
  *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
+ *  Copyright (C) 2026 Project Tick
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -82,6 +82,8 @@ class Config {
     int VERSION_MINOR;
     /// The patch version number.
     int VERSION_PATCH;
+    /// The tweak version number.
+    int VERSION_TWEAK;
 
     /**
      * The version channel

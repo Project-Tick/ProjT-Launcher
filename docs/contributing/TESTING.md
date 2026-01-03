@@ -2,7 +2,21 @@
 
 ## ⚠️ Testing Policy
 
-**Tests are highly encouraged for all new features.**
+Tests are **mandatory** for most changes.  
+PRs that introduce behavior changes without appropriate tests **may be rejected**.
+
+**All new features must include reasonable test coverage.**
+
+### When are tests required?
+
+| Change Type | Test Required? |
+| ----------- | ---------------- |
+| New core logic (non-UI) | ✅ Yes |
+| New task | ✅ Yes |
+| Bug fix | ✅ Yes (regression if possible) |
+| Refactor (no behavior change) | ⚠️ Recommended |
+| UI-only layout change (.ui) | ❌ No |
+| Docs / comments | ❌ No |
 
 ### Why do we write tests?
 
@@ -46,6 +60,8 @@ QTEST_GUILESS_MAIN(MyClassTest)
 
 ## Strict Rules
 
+Tests that do not follow naming conventions will not be discovered by CI.
+
 ### 1. Naming Conventions
 
 - **File**: `ClassName_test.cpp` (e.g., `FileSystem_test.cpp`)
@@ -56,6 +72,7 @@ QTEST_GUILESS_MAIN(MyClassTest)
 
 - **Forbidden**: `QThread::sleep()`, `QCoreApplication::processEvents()` (unless absolutely necessary).
 - **Mandatory**: Use `QSignalSpy` for signal verification.
+- Any test relying on timing instead of signals will be rejected.
 
 ```cpp
 // ✅ CORRECT
@@ -70,6 +87,8 @@ QCOMPARE(spy.count(), 1);
 
 **What is it?** Creating a fake version of a complex object.
 **Why?** We don't want to actually download files from the internet during a test.
+
+- Unit tests must not require internet access, user accounts, or system-specific state.
 
 - **Do not** make real network requests in unit tests.
 - Create "Fake" implementations of interfaces for testing.
@@ -87,8 +106,16 @@ public:
 
 ### 4. Performance
 
-- Tests must run fast (<100ms per test case).
+- A single test case should typically complete in under 100ms.
+- Slow tests must be clearly marked and justified in the test name or comments.
 - Heavy integration tests must be marked and separated.
+
+## CI Enforcement
+
+- All tests are run in CI using `ctest`.
+- Failing tests will block merging.
+- PRs that reduce test coverage without justification may be rejected.
+- Tests must pass on all supported platforms.
 
 ## Running Tests
 
@@ -121,6 +148,11 @@ void test_FullInstanceCreationFlow() {
 
 - **Prefer**: Testing core logic in C++ (models, tasks, parsers).
 - **UI tests**: Optional and should be minimal; keep them focused on widget behavior.
+
+### ⚠️ Integration Tests vs Unit Tests
+
+Integration tests must not replace unit tests.
+Core logic must still be tested in isolation.
 
 ## Running Tests from CLI
 

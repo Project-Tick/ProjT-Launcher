@@ -9,6 +9,19 @@ endif()
 
 project(Launcher)
 
+# Set default build type for single-config generators (Unix/macOS)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+
+# For multi-config generators (MSVC), ensure CMAKE_CONFIGURATION_TYPES is set
+if(CMAKE_CONFIGURATION_TYPES)
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" _config)
+    if(NOT _config IN_LIST CMAKE_CONFIGURATION_TYPES)
+        list(APPEND CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}")
+    endif()
+endif()
+
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BUILD_DIR}" IS_IN_SOURCE_BUILD)
 if(IS_IN_SOURCE_BUILD)
     message(FATAL_ERROR "You are building the Launcher in-source. Please separate the build tree from the source tree.")
@@ -182,6 +195,7 @@ if(ENABLE_LTO)
 endif()
 
 option(BUILD_TESTING "Build the testing tree." ON)
+option(BUILD_FUZZERS "Build fuzzing targets." OFF)
 option(Launcher_ALLOW_FETCHCONTENT "Allow FetchContent fallback for tomlplusplus" ON)
 option(Launcher_ALLOW_ECM_FETCHCONTENT "Allow FetchContent fallback for ECM" ON)
 
@@ -269,13 +283,17 @@ set(Launcher_FMLLIBS_BASE_URL "https://files.projtlauncher.yongdohyun.org.tr/fml
 set(Launcher_VERSION_MAJOR 0)
 set(Launcher_VERSION_MINOR 0)
 set(Launcher_VERSION_PATCH 3)
+set(Launcher_VERSION_TWEAK 5)
 
-set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}")
-set(Launcher_VERSION_NAME4 "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.0")
-set(Launcher_VERSION_NAME4_COMMA "${Launcher_VERSION_MAJOR},${Launcher_VERSION_MINOR},${Launcher_VERSION_PATCH},0")
+set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.${Launcher_VERSION_TWEAK}")
+set(Launcher_VERSION_NAME4 "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.${Launcher_VERSION_TWEAK}")
+set(Launcher_VERSION_NAME4_COMMA "${Launcher_VERSION_MAJOR},${Launcher_VERSION_MINOR},${Launcher_VERSION_PATCH},${Launcher_VERSION_TWEAK}")
 
 # Build platform.
 set(Launcher_BUILD_PLATFORM "unknown" CACHE STRING "A short string identifying the platform that this build was built for. Only used to display in the about dialog.")
+
+# CI fuzz builds use a reduced target set; skip heavy components and installers when enabled.
+option(LAUNCHER_FUZZ_ONLY "Build only fuzzing targets (skips installers, Java launcher, and desktop integration)" OFF)
 
 # Github repo URL with releases for updater
 set(Launcher_UPDATER_GITHUB_REPO "https://github.com/Project-Tick/ProjT-Launcher" CACHE STRING "Base github URL for the updater.")
@@ -371,56 +389,6 @@ set(Launcher_BUILD_TIMESTAMP "${TODAY}")
 
 ################################ 3rd Party Libs ################################
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
-    message(STATUS "Using bundled zlib")
-    set(ZLIB_BUILD_TESTING OFF CACHE BOOL "" FORCE)
-    set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
-    set(ZLIB_BUILD_STATIC ON CACHE BOOL "" FORCE)
-    set(ZLIB_INSTALL OFF CACHE BOOL "" FORCE)
-    add_subdirectory(zlib)
-
-    if(TARGET zlibstatic)
-        set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    endif()
-    if(TARGET zlib)
-        set_target_properties(zlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    endif()
-
-    if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
-        add_library(ZLIB::ZLIB ALIAS zlibstatic)
-    elseif(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
-        add_library(ZLIB::ZLIB ALIAS zlib)
-    endif()
-
-    set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}" CACHE PATH "ZLIB Include Dir" FORCE)
-    set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}" CACHE PATH "ZLIB Include Dirs" FORCE)
-    set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
-    set(ZLIB_LIBRARY "ZLIB::ZLIB" CACHE STRING "Zlib library target" FORCE)
-    set(ZLIB_LIBRARIES "ZLIB::ZLIB" CACHE STRING "Zlib libraries" FORCE)
-    set(ZLIB_ROOT "${zlib_BINARY_DIR}" CACHE PATH "" FORCE)
-    set(ZLIB_ROOT_DIR "${zlib_SOURCE_DIR}" CACHE PATH "" FORCE)
-
-    # Ensure subprojects resolve ZLIB via a local FindZLIB.cmake.
-    set(_custom_find_zlib_dir "${CMAKE_BINARY_DIR}/cmake-modules")
-    file(MAKE_DIRECTORY "${_custom_find_zlib_dir}")
-    file(WRITE "${_custom_find_zlib_dir}/FindZLIB.cmake" "
-# Custom FindZLIB.cmake - uses bundled zlib
-if(TARGET ZLIB::ZLIB)
-    set(ZLIB_FOUND TRUE)
-    get_target_property(ZLIB_INCLUDE_DIRS ZLIB::ZLIB INTERFACE_INCLUDE_DIRECTORIES)
-    if(NOT ZLIB_INCLUDE_DIRS)
-        set(ZLIB_INCLUDE_DIRS \"${zlib_SOURCE_DIR};${zlib_BINARY_DIR}\")
-    endif()
-    set(ZLIB_INCLUDE_DIR \"\${ZLIB_INCLUDE_DIRS}\")
-    set(ZLIB_LIBRARIES ZLIB::ZLIB)
-    set(ZLIB_LIBRARY ZLIB::ZLIB)
-else()
-    set(ZLIB_FOUND FALSE)
-endif()
-")
-    list(INSERT CMAKE_MODULE_PATH 0 "${_custom_find_zlib_dir}")
-endif()
-
 if(WIN32 AND NOT MINGW)
     # Detect NuGet architecture
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|arm64")
@@ -431,64 +399,7 @@ if(WIN32 AND NOT MINGW)
         set(OSSL_ARCH "x64")
     endif()
 
-    if(NOT ZLIB_FOUND)
-        # Find ZLIB from NuGet
-        file(GLOB NUGET_ZLIB_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/zlib-msvc-${NUGET_ARCH}*")
-        if(NUGET_ZLIB_ROOTS)
-            list(GET NUGET_ZLIB_ROOTS 0 ZLIB_ROOT_DIR)
-            set(ZLIB_ROOT "${ZLIB_ROOT_DIR}/build/native" CACHE PATH "" FORCE)
-            
-            find_path(ZLIB_INC "${ZLIB_ROOT_DIR}/build/native/include/zlib.h" NO_DEFAULT_PATH)
-            find_library(ZLIB_LIBRARY
-                NAMES zlibstatic zlib zlib1
-                PATHS
-                    "${ZLIB_ROOT_DIR}/build/native"
-                    "${ZLIB_ROOT_DIR}"
-                PATH_SUFFIXES
-                    lib
-                    "lib/${NUGET_ARCH}"
-                    "lib/${NUGET_ARCH}/native"
-                    "lib/win-${NUGET_ARCH}"
-                    "lib/win-${NUGET_ARCH}/native"
-                    lib/native
-                    lib/Release
-                    "lib/${NUGET_ARCH}/Release"
-                    "lib/win-${NUGET_ARCH}/Release"
-                NO_DEFAULT_PATH
-            )
-
-            if(NOT ZLIB_LIBRARY)
-                file(GLOB_RECURSE ZLIB_LIBS "${ZLIB_ROOT_DIR}/*.lib")
-                foreach(LIB_PATH ${ZLIB_LIBS})
-                    if(LIB_PATH MATCHES "[Dd]ebug")
-                        continue()
-                    endif()
-                    if(LIB_PATH MATCHES "win-${NUGET_ARCH}/native" OR LIB_PATH MATCHES "/${NUGET_ARCH}/native" OR
-                       LIB_PATH MATCHES "win-${NUGET_ARCH}" OR LIB_PATH MATCHES "/${NUGET_ARCH}/")
-                        set(ZLIB_LIBRARY "${LIB_PATH}")
-                        break()
-                    endif()
-                    if(NOT ZLIB_LIBRARY)
-                        set(ZLIB_LIBRARY "${LIB_PATH}")
-                    endif()
-                endforeach()
-            endif()
-
-            if(ZLIB_LIBRARY)
-                set(ZLIB_LIBRARIES "${ZLIB_LIBRARY}" CACHE STRING "" FORCE)
-                set(ZLIB_INCLUDE_DIR "${ZLIB_ROOT_DIR}/build/native/include" CACHE PATH "" FORCE)
-                set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
-                message(STATUS "Found ZLIB via NuGet: ${ZLIB_LIBRARY}")
-
-                if(NOT TARGET ZLIB::ZLIB)
-                    add_library(ZLIB::ZLIB UNKNOWN IMPORTED)
-                    set_target_properties(ZLIB::ZLIB PROPERTIES
-                        IMPORTED_LOCATION "${ZLIB_LIBRARY}"
-                        INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIR}")
-                endif()
-            endif()
-        endif()
-    endif()
+    # Note: ZLIB is handled via bundled version only, no NuGet fallback
 
     # Find OpenSSL from NuGet
     file(GLOB NUGET_OSSL_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/openssl-native*")
@@ -541,68 +452,43 @@ if(WIN32 AND NOT MINGW)
     list(APPEND CMAKE_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/dependencies")
 endif()
 
-# System Libraries
+# Try to find system zlib first
+find_package(ZLIB QUIET)
+
+# System Libraries - Using bundled zlib (only if ZLIB not already found)
 if(NOT ZLIB_FOUND)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
+        message(STATUS "Using bundled zlib")
+        set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
+        # Disable instrumentation for external dependencies to avoid linker issues
+        string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+        string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        add_subdirectory(zlib)
+        
+        if(TARGET zlibstatic)
+            set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        endif()
+        if(TARGET zlib)
+            set_target_properties(zlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        endif()
 
-    find_package(ZLIB QUIET)
-endif()
-
-if(NOT ZLIB_FOUND)
-    message(STATUS "ZLIB not found on system, using FetchContent fallback")
-    include(FetchContent)
-    FetchContent_Declare(
-        zlib
-        URL https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz
-    )
-    # ZLIB CMake options - don't install
-    set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
-    
-    launcher_fetchcontent_makeavailable(zlib)
-    
-    if(TARGET zlibstatic)
-        set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        # Create the ZLIB::ZLIB alias target for consistency
+        if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
+            add_library(ZLIB::ZLIB ALIAS zlibstatic)
+        elseif(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
+            add_library(ZLIB::ZLIB ALIAS zlib)
+        endif()
+        
+        # Set ZLIB variables for projects that need them
+        # Our custom FindZLIB.cmake will handle these when find_package(ZLIB) is called
+        set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}")
+        set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}")
+        set(ZLIB_LIBRARY "ZLIB::ZLIB")
+        set(ZLIB_LIBRARIES "ZLIB::ZLIB")
+        set(ZLIB_FOUND TRUE)
+    else()
+        message(FATAL_ERROR "Bundled zlib not found in ${CMAKE_CURRENT_SOURCE_DIR}/zlib/ and system zlib not found")
     endif()
-    if(TARGET zlib)
-        set_target_properties(zlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    endif()
-
-    # Create the ZLIB::ZLIB target if it doesn't exist
-    if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
-        add_library(ZLIB::ZLIB ALIAS zlibstatic)
-    elseif(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
-        add_library(ZLIB::ZLIB ALIAS zlib)
-    endif()
-    
-    # Set variables for compatibility
-    set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}" CACHE PATH "ZLIB Include Dir" FORCE)
-    set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}" CACHE PATH "ZLIB Include Dirs" FORCE)
-    set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
-    # Ensure compatibility for projects that expect ZLIB_LIBRARY / ZLIB_LIBRARIES
-    # Force these to the target name so later find_package() calls do not reset them to NOTFOUND.
-    set(ZLIB_LIBRARY "ZLIB::ZLIB" CACHE STRING "Zlib library target" FORCE)
-    set(ZLIB_LIBRARIES "ZLIB::ZLIB" CACHE STRING "Zlib libraries" FORCE)
-    
-    # Create a custom FindZLIB.cmake that sub-projects will find first
-    # This prevents them from failing when they call find_package(ZLIB)
-    set(_custom_find_zlib_dir "${CMAKE_BINARY_DIR}/cmake-modules")
-    file(MAKE_DIRECTORY "${_custom_find_zlib_dir}")
-    file(WRITE "${_custom_find_zlib_dir}/FindZLIB.cmake" "
-# Custom FindZLIB.cmake - uses pre-built ZLIB from FetchContent
-if(TARGET ZLIB::ZLIB)
-    set(ZLIB_FOUND TRUE)
-    get_target_property(ZLIB_INCLUDE_DIRS ZLIB::ZLIB INTERFACE_INCLUDE_DIRECTORIES)
-    if(NOT ZLIB_INCLUDE_DIRS)
-        set(ZLIB_INCLUDE_DIRS \"${zlib_SOURCE_DIR};${zlib_BINARY_DIR}\")
-    endif()
-    set(ZLIB_INCLUDE_DIR \"\${ZLIB_INCLUDE_DIRS}\")
-    set(ZLIB_LIBRARIES ZLIB::ZLIB)
-    set(ZLIB_LIBRARY ZLIB::ZLIB)
-else()
-    set(ZLIB_FOUND FALSE)
-endif()
-")
-    # Prepend our custom module path so it's found first
-    list(INSERT CMAKE_MODULE_PATH 0 "${_custom_find_zlib_dir}")
 endif()
 
 if(NOT OpenSSL_FOUND)
@@ -613,7 +499,25 @@ find_package(Qt6 COMPONENTS DBus)
 list(APPEND Launcher_QT_DBUS Qt6::DBus)
 list(APPEND Launcher_QT_LIBS Qt6::Core5Compat)
 
-# System / Package Manager Provided Libs
+# System / Package Manager Provided Libs - Using bundled versions
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/bzip2/CMakeLists.txt")
+    message(STATUS "Using bundled bzip2")
+    set(ENABLE_LIB_ONLY ON CACHE BOOL "" FORCE)
+    set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+    set(ENABLE_DOCS OFF CACHE BOOL "" FORCE)
+    set(ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+    # Disable shared library and use static library for consistent linking
+    set(ENABLE_SHARED_LIB OFF CACHE BOOL "" FORCE)
+    set(ENABLE_STATIC_LIB ON CACHE BOOL "" FORCE)
+    # Disable instrumentation for external dependencies to avoid linker issues
+    string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    add_subdirectory(bzip2)
+    set(BZIP2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bzip2" CACHE PATH "" FORCE)
+else()
+    message(FATAL_ERROR "Bundled bzip2 not found")
+endif()
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/quazip/CMakeLists.txt")
     message(STATUS "Using bundled QuaZip")
     set(QUAZIP_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
@@ -622,29 +526,12 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/quazip/CMakeLists.txt")
     set(QUAZIP_BZIP2 ON CACHE BOOL "" FORCE)
     set(QUAZIP_FETCH_LIBS OFF CACHE BOOL "" FORCE)
     set(QUAZIP_FORCE_FETCH_LIBS OFF CACHE BOOL "" FORCE)
-
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/bzip2/CMakeLists.txt")
-        message(STATUS "Using bundled bzip2 for QuaZip")
-        set(ENABLE_LIB_ONLY ON CACHE BOOL "" FORCE)
-        set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-        set(ENABLE_DOCS OFF CACHE BOOL "" FORCE)
-        set(ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
-        set(ENABLE_STATIC_LIB ON CACHE BOOL "" FORCE)
-        add_subdirectory(bzip2)
-        set(BZIP2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bzip2" CACHE PATH "" FORCE)
-    endif()
-
+    # Disable instrumentation for external dependencies to avoid linker issues
+    string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     add_subdirectory(quazip)
 else()
-    find_package(QuaZip-Qt6 1.3 QUIET)
-    if(NOT QuaZip-Qt6_FOUND)
-        message(STATUS "QuaZip-Qt6 not found on system, using FetchContent fallback")
-        include(FetchContent)
-        FetchContent_Declare(quazip URL https://github.com/stachenov/quazip/archive/refs/tags/v1.5.zip)
-        set(QUAZIP_QT6 ON CACHE BOOL "" FORCE)
-        set(QUAZIP_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-        launcher_fetchcontent_makeavailable(quazip)
-    endif()
+    message(FATAL_ERROR "Bundled QuaZip not found")
 endif()
 
 find_package(tomlplusplus 3.2.0 QUIET)
@@ -658,29 +545,36 @@ if(NOT tomlplusplus_FOUND)
     endif()
 endif()
 
-# cmark - System library
-find_library(CMARK_LIB NAMES cmark)
-find_path(CMARK_INC NAMES cmark.h)
-if(CMARK_LIB AND CMARK_INC)
-    if(NOT TARGET cmark::cmark)
-        add_library(cmark::cmark UNKNOWN IMPORTED)
-        set_target_properties(cmark::cmark PROPERTIES 
-            IMPORTED_LOCATION "${CMARK_LIB}"
-            INTERFACE_INCLUDE_DIRECTORIES "${CMARK_INC}")
-    endif()
-else()
-    message(STATUS "cmark not found on system, using FetchContent fallback")
-    include(FetchContent)
-    FetchContent_Declare(cmark URL https://github.com/commonmark/cmark/archive/refs/tags/0.31.1.zip)
+# cmark - Using bundled or system library
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmark/CMakeLists.txt")
+    message(STATUS "Using bundled cmark")
     set(CMARK_TESTS OFF CACHE BOOL "" FORCE)
     set(CMARK_SHARED ON CACHE BOOL "" FORCE)
-    launcher_fetchcontent_makeavailable(cmark)
+    add_subdirectory(cmark)
     if(TARGET cmark AND NOT TARGET cmark::cmark)
         add_library(cmark::cmark ALIAS cmark)
     endif()
-
-    if(WIN32 AND (CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|arm64" OR CMAKE_GENERATOR_PLATFORM MATCHES "ARM64"))
-        file(WRITE "${CMAKE_BINARY_DIR}/CTestCustom.cmake" "set(CTEST_CUSTOM_TESTS_IGNORE\n  spectest_library\n  pathological_tests_library\n  roundtriptest_library\n  entity_library\n)\n")
+else()
+    find_library(CMARK_LIB NAMES cmark)
+    find_path(CMARK_INC NAMES cmark.h)
+    if(CMARK_LIB AND CMARK_INC)
+        message(STATUS "Found system cmark")
+        if(NOT TARGET cmark::cmark)
+            add_library(cmark::cmark UNKNOWN IMPORTED)
+            set_target_properties(cmark::cmark PROPERTIES 
+                IMPORTED_LOCATION "${CMARK_LIB}"
+                INTERFACE_INCLUDE_DIRECTORIES "${CMARK_INC}")
+        endif()
+    else()
+        message(STATUS "cmark not found, using FetchContent fallback")
+        include(FetchContent)
+        FetchContent_Declare(cmark URL https://github.com/commonmark/cmark/archive/refs/tags/0.31.1.zip)
+        set(CMARK_TESTS OFF CACHE BOOL "" FORCE)
+        set(CMARK_SHARED ON CACHE BOOL "" FORCE)
+        launcher_fetchcontent_makeavailable(cmark)
+        if(TARGET cmark AND NOT TARGET cmark::cmark)
+            add_library(cmark::cmark ALIAS cmark)
+        endif()
     endif()
 endif()
 
@@ -700,10 +594,18 @@ else()
             IMPORTED_LOCATION "${QRENCODE_LIB}"
             INTERFACE_INCLUDE_DIRECTORIES "${QRENCODE_INC}")
     else()
-        message(STATUS "qrencode not found on system, using FetchContent fallback")
+        message(STATUS "qrencode not found, using FetchContent fallback")
         include(FetchContent)
         FetchContent_Declare(qrencode_repo URL https://github.com/fukuchi/libqrencode/archive/refs/tags/v4.1.1.zip)
+        # Set CMake policy version to avoid version compatibility error
+        set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
         # Avoid optional tools/tests that require getopt/PNG on Windows.
+        if(WIN32)
+            set(_qrencode_prev_build_shared_libs "${BUILD_SHARED_LIBS}")
+            set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+            set(ENABLE_SHARED OFF CACHE BOOL "" FORCE)
+            set(ENABLE_STATIC ON CACHE BOOL "" FORCE)
+        endif()
         set(WITH_TOOLS OFF CACHE BOOL "" FORCE)
         set(WITH_PNG OFF CACHE BOOL "" FORCE)
         set(_launcher_prev_build_testing "${BUILD_TESTING}")
@@ -716,6 +618,9 @@ else()
         set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
         set(WITH_TESTS OFF CACHE BOOL "" FORCE)
         launcher_fetchcontent_makeavailable(qrencode_repo)
+        if(WIN32)
+            set(BUILD_SHARED_LIBS "${_qrencode_prev_build_shared_libs}" CACHE BOOL "" FORCE)
+        endif()
         set(BUILD_TESTING "${_launcher_prev_build_testing}" CACHE BOOL "" FORCE)
         if(_launcher_with_tests_set)
             set(WITH_TESTS "${_launcher_prev_with_tests}" CACHE BOOL "" FORCE)
@@ -740,70 +645,6 @@ else()
         if(NOT DEFINED QRENCODE_INC OR QRENCODE_INC STREQUAL "")
             set(QRENCODE_INC "${qrencode_repo_SOURCE_DIR};${qrencode_repo_SOURCE_DIR}/include;${qrencode_repo_SOURCE_DIR}/lib" CACHE PATH "QRENCODE include dir" FORCE)
         endif()
-        set(qrencode_assert_source "")
-        if(EXISTS "${qrencode_repo_SOURCE_DIR}/tests/assert.c")
-            set(qrencode_assert_source "${qrencode_repo_SOURCE_DIR}/tests/assert.c")
-        elseif(EXISTS "${qrencode_repo_SOURCE_DIR}/assert.c")
-             set(qrencode_assert_source "${qrencode_repo_SOURCE_DIR}/assert.c")
-        elseif(EXISTS "${qrencode_repo_SOURCE_DIR}/tests/common.c")
-             set(qrencode_assert_source "${qrencode_repo_SOURCE_DIR}/tests/common.c")
-        endif()
-
-        if(EXISTS "${qrencode_assert_source}")
-            get_filename_component(qrencode_assert_fname "${qrencode_assert_source}" NAME)
-            set(qrencode_common_target "")
-            if(TARGET common)
-                set(qrencode_common_target common)
-            elseif(TARGET commond)
-                set(qrencode_common_target commond)
-            endif()
-
-            if(qrencode_common_target)
-                set_target_properties(${qrencode_common_target} PROPERTIES
-                    WINDOWS_EXPORT_ALL_SYMBOLS ON)
-                get_target_property(qrencode_common_sources ${qrencode_common_target} SOURCES)
-                set(qrencode_common_has_assert FALSE)
-                if(qrencode_common_sources)
-                    foreach(qrencode_common_item IN LISTS qrencode_common_sources)
-                        get_filename_component(qrencode_common_name "${qrencode_common_item}" NAME)
-                        if(qrencode_common_name STREQUAL "${qrencode_assert_fname}")
-                            set(qrencode_common_has_assert TRUE)
-                            break()
-                        endif()
-                    endforeach()
-                endif()
-                if(NOT qrencode_common_has_assert)
-                    target_sources(${qrencode_common_target} PRIVATE
-                        "${qrencode_assert_source}")
-                endif()
-            endif()
-            foreach(qrencode_test_target IN ITEMS
-                test_bitstream
-                test_basic
-                test_case
-                test_mask
-                test_qrencode
-                test_estimatebit
-                test_split)
-                if(TARGET ${qrencode_test_target})
-                    get_target_property(qrencode_test_sources ${qrencode_test_target} SOURCES)
-                    set(qrencode_test_has_assert FALSE)
-                    if(qrencode_test_sources)
-                        foreach(qrencode_test_item IN LISTS qrencode_test_sources)
-                            get_filename_component(qrencode_test_name "${qrencode_test_item}" NAME)
-                            if(qrencode_test_name STREQUAL "${qrencode_assert_fname}")
-                                set(qrencode_test_has_assert TRUE)
-                                break()
-                            endif()
-                        endforeach()
-                    endif()
-                    if(NOT qrencode_test_has_assert)
-                        target_sources(${qrencode_test_target} PRIVATE
-                            "${qrencode_assert_source}")
-                    endif()
-                endif()
-            endforeach()
-        endif()
     endif()
 endif()
 
@@ -823,12 +664,14 @@ if (NOT APPLE AND (NOT Launcher_UPDATER_GITHUB_REPO STREQUAL "" AND NOT Launcher
     set(Launcher_BUILD_UPDATER YES)
 endif()
 
-if(NOT (UNIX AND APPLE))
-    # Install "portable.txt" if selected component is "portable"
-    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${Launcher_Portable_File}" DESTINATION "." COMPONENT portable EXCLUDE_FROM_ALL)
+if(NOT LAUNCHER_FUZZ_ONLY)
+    if(NOT (UNIX AND APPLE))
+        # Install "portable.txt" if selected component is "portable"
+        install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${Launcher_Portable_File}" DESTINATION "." COMPONENT portable EXCLUDE_FROM_ALL)
+    endif()
 endif()
 
-if(UNIX AND APPLE)
+if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND APPLE)
     set(BINARY_DEST_DIR "${Launcher_Name}.app/Contents/MacOS")
     set(LIBRARY_DEST_DIR "${Launcher_Name}.app/Contents/MacOS")
     set(PLUGIN_DEST_DIR "${Launcher_Name}.app/Contents/MacOS")
@@ -859,7 +702,7 @@ if(UNIX AND APPLE)
     # Add the icon
     install(FILES ${Launcher_Branding_ICNS} DESTINATION ${RESOURCES_DEST_DIR} RENAME ${Launcher_Name}.icns)
 
-elseif(UNIX)
+elseif(NOT LAUNCHER_FUZZ_ONLY AND UNIX)
     include(KDEInstallDirs)
 
     set(BINARY_DEST_DIR "bin")
@@ -894,6 +737,13 @@ elseif(WIN32)
     set(PLUGIN_DEST_DIR ".")
     set(RESOURCES_DEST_DIR ".")
     set(JARS_DEST_DIR "jars")
+elseif(LAUNCHER_FUZZ_ONLY)
+    # For fuzz-only builds on other platforms, skip installer/layout specifics.
+    set(BINARY_DEST_DIR ".")
+    set(LIBRARY_DEST_DIR ".")
+    set(PLUGIN_DEST_DIR ".")
+    set(RESOURCES_DEST_DIR ".")
+    set(JARS_DEST_DIR "jars")
 else()
     message(FATAL_ERROR "Platform not supported")
 endif()
@@ -917,13 +767,15 @@ else()
 endif()
 
 add_subdirectory(./systeminfo) # system information library
-add_subdirectory(./launcherjava) # java based launcher part for Minecraft
-add_subdirectory(./javacheck) # java compatibility checker
-add_subdirectory(./rainbow) # Qt extension for colors
-add_subdirectory(./LocalPeer) # fork of a library from Qt solutions
-add_subdirectory(./gamemode)
-add_subdirectory(./murmur2) # Hash for usage with the CurseForge API
-add_subdirectory(./qdcss) # css parser
+if(NOT LAUNCHER_FUZZ_ONLY)
+    add_subdirectory(./launcherjava) # java based launcher part for Minecraft
+    add_subdirectory(./javacheck) # java compatibility checker
+    add_subdirectory(./rainbow) # Qt extension for colors
+    add_subdirectory(./LocalPeer) # fork of a library from Qt solutions
+    add_subdirectory(./gamemode)
+    add_subdirectory(./murmur2) # Hash for usage with the CurseForge API
+    add_subdirectory(./qdcss) # css parser
+endif()
 
 ############################### Built Artifacts ###############################
 
@@ -931,6 +783,9 @@ add_subdirectory(buildconfig)
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
+endif()
+if(BUILD_FUZZERS)
+    add_subdirectory(fuzz EXCLUDE_FROM_ALL)
 endif()
 # NOTE: this must always be last to appease the CMake deity of quirky install command evaluation order.
 add_subdirectory(launcher)

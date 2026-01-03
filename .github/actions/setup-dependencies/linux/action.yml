@@ -40,14 +40,15 @@ runs:
           dpkg-dev \
           ninja-build extra-cmake-modules scdoc \
           appstream libxcb-cursor-dev \
-          openjdk-17-jdk \
+          openjdk-21-jdk \
           libtiff6 \
           zlib1g-dev \
           libquazip1-qt6-dev \
           libcmark-dev \
           cmark \
           libtomlplusplus-dev \
-          libqrencode-dev
+          libqrencode-dev \
+          lcov
 
         # Qt imageformat plugin was looking for libtiff.so.5; we standardize on libtiff6 and expose compat symlink.
         archdir="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"
@@ -60,7 +61,7 @@ runs:
     - name: Set JAVA_HOME
       shell: bash
       run: |
-        echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> "$GITHUB_ENV"
+        echo "JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64" >> "$GITHUB_ENV"
         echo "PATH=$JAVA_HOME/bin:$PATH" >> "$GITHUB_ENV"
 
     - name: Setup AppImage tooling

@@ -69,8 +69,8 @@ if(ZLIB_BUILD_STATIC)
     add_executable(static_minigzip minigzip.c)
     target_link_libraries(static_minigzip ZLIB::ZLIBSTATIC)
 
-    if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL
-                                                "Clang")
+    if(ZLIB_ENABLE_COVERAGE AND (${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL
+                                                "Clang"))
         set(CFLAGS_OLD ${CMAKE_C_FLAGS})
         set(CMAKE_C_FLAGS
             ""
@@ -92,6 +92,14 @@ if(ZLIB_BUILD_STATIC)
             set(llvm_option "gcov")
         endif(${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
 
+        # Add coverage flags to ZLIBSTATIC to generate .gcda files during testing
+        target_compile_options(zlibstatic PRIVATE -coverage)
+        target_link_options(zlibstatic PRIVATE -coverage)
+        
+        # Also link coverage flags to executables using zlibstatic
+        target_link_options(zlib_static_example PRIVATE -coverage)
+        target_link_options(static_minigzip PRIVATE -coverage)
+
         add_executable(infcover infcover.c)
         target_link_libraries(infcover ZLIB::ZLIBSTATIC)
         target_compile_options(infcover PRIVATE -coverage)
@@ -111,8 +119,7 @@ if(ZLIB_BUILD_STATIC)
         set(CMAKE_C_FLAGS
             ${CFLAGS_OLD}
             CACHE STRING "" FORCE)
-    endif(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID}
-                                                   STREQUAL "Clang")
+    endif()
 
     if(HAVE_OFF64_T)
         add_executable(zlib_static_example64 example.c)
@@ -121,6 +128,10 @@ if(ZLIB_BUILD_STATIC)
             PRIVATE ZLIB_BUILD
                     $<$<BOOL:${HAVE___ATTR__VIS_HIDDEN}>:HAVE_HIDDEN>)
         target_link_libraries(zlib_static_example64 ZLIB::ZLIBSTATIC)
+        if(ZLIB_ENABLE_COVERAGE AND (${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID}
+                                                    STREQUAL "Clang"))
+            target_link_options(zlib_static_example64 PRIVATE -coverage)
+        endif()
         add_test(NAME zlib_static_example64 COMMAND zlib_static_example64)
     endif(HAVE_OFF64_T)
 endif(ZLIB_BUILD_STATIC)

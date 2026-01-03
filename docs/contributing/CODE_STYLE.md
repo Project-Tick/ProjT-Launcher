@@ -34,7 +34,7 @@ BreakBeforeBraces: Custom
 
 **Why?** Modern C++ (C++20) features prevent bugs that were common in older versions.
 
-- **`auto`**: Use `auto` only when the type is obvious (e.g., `auto* widget = new QWidget();`) or for iterators.
+- **`auto`**: Use `auto` only when the type is obvious (e.g., `auto* widget = new QWidget(this);`) or for iterators.
   - *Why?* It makes code cleaner, but overusing it hides important type information.
   - **`nullptr`**: Always use `nullptr`, never `NULL` or `0`.
     - *Why?* `NULL` is just the number 0. `nullptr` is a specific type that prevents accidental math with pointers.
@@ -45,13 +45,16 @@ BreakBeforeBraces: Custom
 
 ### 2. Memory Management
 
+Direct use of `new` is only allowed when immediately assigning a QObject parent.
+All other heap allocations must use smart pointers.
+
 **Why?** Memory leaks (forgetting to delete memory) are the #1 cause of crashes in C++.
 
 - **Raw Pointers (`*`)**: **Forbidden** for ownership.
   - *Bad:* `MyClass* obj = new MyClass();` (Who deletes this? Often forgotten.)
   - **Smart Pointers**: Use `std::unique_ptr` or `std::shared_ptr`.
     - *Good:* `auto obj = std::make_unique<MyClass>();` (Automatically deleted when it goes out of scope.)
-  - **Qt Parent Ownership**: Raw pointers are allowed **only** if they are parented to a `QObject`.
+  - **Qt Parent Ownership**: Do not transfer ownership of raw pointers manually; rely exclusively on QObject parent ownership.
     - *Good:* `new QButton(this);` (Qt deletes the button when `this` is deleted.)
 
 ### 3. Error Handling
@@ -61,7 +64,7 @@ BreakBeforeBraces: Custom
 - **Exceptions**: Avoid them. They are slow and hard to track.
 - **`std::optional`**: Use when a value might be missing.
   - *Example:* `std::optional<User> findUser(id)` (Returns a User or nothing).
-  - **`std::expected`**: Use when an operation can fail.
+  - **`std::expected` (or equivalent)**: Use when an operation can fail.
     - *Example:* Returns either the Result OR an Error.
 
 ### 4. Lambda Expressions
@@ -134,11 +137,11 @@ Use these templates when creating new files to ensure you follow all rules.
 
 ```cpp
 // SPDX-License-Identifier: GPL-3.0-only
-// SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
  *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
+ *  Copyright (C) 2026 Project Tick
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -184,11 +187,11 @@ class MyNewClass : public QObject {
 
 ```cpp
 // SPDX-License-Identifier: GPL-3.0-only
-// SPDX-FileCopyrightText: 2025 Project Tick
+// SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
  *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2025 Project Tick
+ *  Copyright (C) 2026 Project Tick
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

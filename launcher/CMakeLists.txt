@@ -1381,6 +1381,42 @@ if(DEFINED Launcher_APP_BINARY_DEFS)
     target_compile_definitions(Launcher_logic PRIVATE ${Launcher_APP_BINARY_DEFS})
 endif()
 
+# Install QuaZip shared library DLL on Windows
+if(WIN32 AND BUILD_SHARED_LIBS)
+    if(TARGET QuaZip::QuaZip)
+        install(FILES $<TARGET_FILE:QuaZip::QuaZip> DESTINATION "." COMPONENT Runtime OPTIONAL)
+    elseif(TARGET QuaZip)
+        install(FILES $<TARGET_FILE:QuaZip> DESTINATION "." COMPONENT Runtime OPTIONAL)
+    endif()
+endif()
+
+# Install bundled zlib DLLs from bin/ to root on Windows
+if(WIN32 AND ZLIB_FOUND)
+    install(CODE "
+        file(GLOB ZLIB_DLLS \"${CMAKE_INSTALL_PREFIX}/bin/z*.dll\")
+        foreach(DLL \${ZLIB_DLLS})
+            get_filename_component(DLL_NAME \"\${DLL}\" NAME)
+            message(STATUS \"Copying zlib DLL to root: \${DLL_NAME}\")
+            file(COPY \"\${DLL}\" DESTINATION \"${CMAKE_INSTALL_PREFIX}\")
+        endforeach()
+    ")
+endif()
+
+# Install cmark shared library DLL on Windows
+if(WIN32)
+    if(TARGET cmark::cmark)
+        get_target_property(CMARK_TYPE cmark::cmark TYPE)
+        if(CMARK_TYPE STREQUAL "SHARED_LIBRARY")
+            install(FILES $<TARGET_FILE:cmark::cmark> DESTINATION "." COMPONENT Runtime OPTIONAL)
+        endif()
+    elseif(TARGET cmark)
+        get_target_property(CMARK_TYPE cmark TYPE)
+        if(CMARK_TYPE STREQUAL "SHARED_LIBRARY")
+            install(FILES $<TARGET_FILE:cmark> DESTINATION "." COMPONENT Runtime OPTIONAL)
+        endif()
+    endif()
+endif()
+
 install(TARGETS ${Launcher_Name}
     RUNTIME_DEPENDENCY_SET LAUNCHER_DEPENDENCY_SET
     BUNDLE DESTINATION "." COMPONENT Runtime
@@ -1606,4 +1642,16 @@ if(WIN32 OR (UNIX AND APPLE))
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${RESOURCES_DEST_DIR}
         COMPONENT bundle
     )
+    
+    # Copy zlib DLLs from bin/ to root on Windows
+    if(WIN32)
+        install(CODE "
+            file(GLOB ZLIB_DLLS \"${CMAKE_INSTALL_PREFIX}/bin/z*.dll\")
+            foreach(DLL \${ZLIB_DLLS})
+                get_filename_component(DLL_NAME \"\${DLL}\" NAME)
+                message(STATUS \"Copying zlib DLL: \${DLL_NAME} to root\")
+                file(COPY \"\${DLL}\" DESTINATION \"${CMAKE_INSTALL_PREFIX}\")
+            endforeach()
+        ")
+    endif()
 endif()

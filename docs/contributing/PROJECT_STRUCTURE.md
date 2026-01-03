@@ -14,12 +14,12 @@ Think of the project like a **Restaurant**:
    * They show the food (UI).
    * *Rule:* Waiters **never** cook the food. (No business logic in UI).
 
-2. **`launcher/`, `minecraft/`, `net/`, `tasks/` (The Head Chef + Line Cooks)**:
+2. **`launcher/` and its submodules (`minecraft/`, `net/`, `tasks/`, etc.) (The Head Chef + Line Cooks)**:
    * They take the order from the UI.
    * They decide what needs to be done and do the work.
    * They don't care who ordered the food.
 
-3. **`resources/`, `icons/`, `translations/` (The Pantry)**:
+3. **`launcher/resources/`, `launcher/icons/`, `launcher/translations/` (The Pantry)**:
    * Where the ingredients (Icons, Images, Fonts) are stored.
 
 ---
@@ -46,7 +46,7 @@ ProjT-Launcher/
 │   ├── resources/               # Assets (Icons, Images)
 │   ├── icons/                   # App icons
 │   └── translations/            # Language files (.ts)
-├── tests/                       # Unit Tests (Must mirror source structure)
+├── tests/                       # Tests must mirror the source layout.
 ├── cmake/                       # Build scripts
 └── docs/                        # You are here
 ```
@@ -61,7 +61,7 @@ ProjT-Launcher/
 | `launcher/minecraft/` | **Game Logic.** Anything related to Minecraft itself. | `MinecraftInstance.cpp` |
 | `launcher/net/` | **Internet stuff.** Downloading files, checking server status. | `NetJob.cpp` |
 | `launcher/modplatform/` | **Mod platform integrations.** | `ModrinthPackInstallTask.cpp` |
-| `launcher/` | **General Utilities.** String manipulation, File system helpers. | `StringUtils.cpp` |
+| `launcher/` | **Application core and shared services** | `Application.cpp` |
 
 ### 2. UI Files (Qt Widgets)
 
@@ -91,8 +91,8 @@ Use this table if you are unsure where a specific piece of code belongs.
 | A new **Main Screen** (e.g., Mod Manager) | `launcher/ui/pages/` | `ModManagerPage.ui` |
 | A **Sub-screen** (e.g., Mod List) | `launcher/ui/pages/modplatform/` | `ModListPage.ui` |
 | Logic for that Screen | `launcher/ui/` (paired C++ class) | `ModManagerPage.cpp` |
-| A helper function (e.g., `formatDate`) | `launcher/` (or specific util) | `StringUtils.h` |
-| A global constant (e.g., `MAX_RAM`) | `launcher/DefaultVariable.h` | `DefaultVariable.h` |
+| A helper function (e.g., `formatDate`) | Closest relevant module or `launcher/` if truly cross-cutting | `StringUtils.h` |
+| A global constant (e.g., `MAX_RAM`) | `launcher/Default.h` | `Default.h` |
 | A new **Dialog** (e.g., "Are you sure?") | `launcher/ui/dialogs/` | `ConfirmDialog.ui` |
 | Code to unzip a file | `launcher/tasks/` | `UnzipTask.cpp` |
 | Code to talk to a new API | `launcher/net/` | `CurseForgeAPI.cpp` |
@@ -117,9 +117,16 @@ Use this table if you are unsure where a specific piece of code belongs.
 
 ## Third-Party Libraries
 
-* **Location**: `./`
-* **Policy**: Do not modify third-party code directly. Use patches in `cmake/patches/` if absolutely necessary.
-* **Adding Libraries**: Prefer `vcpkg` or `FetchContent` over vendoring code.
+* **Location**: `./` eg. `gamemode/`
+* **Policy**: Do not modify third-party code directly. Each patch must document:
+  * Upstream reference
+  * Reason for patch
+  * Removal plan (if temporary)
+
+* **Adding Libraries**:
+  * Windows: Prefer NuGet packages when available.
+  * Cross-platform: Prefer FetchContent.
+  * Vendoring is allowed only for long-term maintained forks.
 
 ## CMake Structure
 

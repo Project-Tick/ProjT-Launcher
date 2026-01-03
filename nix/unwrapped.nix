@@ -13,7 +13,6 @@
   self,
   stripJavaArchivesHook,
   tomlplusplus,
-  zlib,
   msaClientID ? null,
   gamemodeSupport ? stdenv.hostPlatform.isLinux,
 }:
@@ -63,6 +62,9 @@ stdenv.mkDerivation {
       ../rainbow
       ../systeminfo
       ../tests
+      ../quazip
+      ../bzip2
+      ../zlib
     ];
   };
 
@@ -80,7 +82,6 @@ stdenv.mkDerivation {
     kdePackages.qtnetworkauth
     kdePackages.quazip
     tomlplusplus
-    zlib
     qrencode
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_14 ]

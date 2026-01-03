@@ -40,17 +40,17 @@ You cannot edit the main project directly. You need your own copy.
 
 ## Required Tools (And Why We Need Them)
 
-We use specific tools to build the launcher. You **must** install the exact versions listed.
+We use specific tools to build the launcher. You **must** follow the specified major versions and toolchain constraints.
 
 | Tool | Version | What is it? | Why strict? |
 | ------ | --------- | ------------- | ------------- |
 | **CMake** | 3.22+ | The "Builder". It creates the instructions for how to compile the code. | Old versions miss features we use. |
-| **Qt** | 6.x (Latest) | The "Framework". It provides the windows, buttons, and graphics. | **CRITICAL**. We use Qt 6 features. |
+| **Qt** | 6.x (Supported) | The "Framework". It provides the windows, buttons, and graphics. | **CRITICAL**. We use Qt 6 features. |
 | **Compiler** | C++20 | The "Translator". Converts C++ code into an executable (.exe). | We use modern C++20 features (concepts, ranges). |
 | **Ninja** | 1.10+ | The "Worker". It executes the build instructions from CMake very fast. | It's much faster than Make or MSBuild. |
 | **Git** | 2.30+ | The "Time Machine". Tracks changes and versions. | Required for version control. |
 | **Java JDK** | 8, 17, 21 | The "Engine". Required to actually run Minecraft. | Minecraft requires specific Java versions. |
-| **Libraries** | Latest | cmark, zlib, quazip, tomlplusplus, qrcodegencpp | These must be installed on your system. |
+| **Libraries** | Latest | cmark, tomlplusplus, qrcodegencpp | Provided via system packages (Linux/macOS) or NuGet (Windows). |
 
 ## 🖥️ OS-Specific Setup
 
@@ -58,12 +58,15 @@ We use specific tools to build the launcher. You **must** install the exact vers
 
 We recommend using **Visual Studio 2022** or **VS Code** with the MSVC compiler.
 
+> [!IMPORTANT]
+> On Windows, binary dependencies are managed via NuGet. vcpkg is not supported.
+
 - Install Visual Studio 2022 Community:
   - Workload: "Desktop development with C++"
 - Install Qt 6:
   - Use the Qt Online Installer.
   - Select Custom installation.
-  - Select `Qt 6.10.1` -> `MSVC 2022 64-bit`.
+  - Select `Qt 6.x (latest)` -> `MSVC 2022 64-bit`.
   - Select `All additional libraries`.
   - Select `Qt Shader Tools`.
 - Install NuGet (Dependency Manager):
@@ -164,7 +167,7 @@ mkdir build
 cd build
 
 # 2. Configure (Replace path to Qt if not in PATH)
-cmake -DCMAKE_PREFIX_PATH="C:/Qt/6.x/msvc2019_64" -GNinja ..
+cmake -DCMAKE_PREFIX_PATH="C:/Qt/6.x/msvc2022_64" -GNinja ..
 
 # 3. Build
 ninja
@@ -191,7 +194,7 @@ ninja
             "environment": [
                 {
                     "name": "PATH",
-                    "value": "${env:PATH};C:/Qt/6.10.1/msvc2019_64/bin"
+                    "value": "${env:PATH};C:/Qt/6.x/msvc2022_64/bin"
                 }
             ],
             "console": "integratedTerminal"
@@ -203,7 +206,7 @@ ninja
 ### Qt Creator
 
 - Open Project: Open `CMakeLists.txt` as a project.
-- Kit Selection: Select the Kit matching your Qt 6.10.1 installation.
+- Kit Selection: Select the Kit matching your Qt 6.x installation.
 - Code Style: Go to `Tools > Options > C++ > Code Style` and import `.clang-format`.
 
 ---
@@ -282,7 +285,7 @@ ctest --preset windows_msvc --build-config Debug --output-on-failure
 - **Fix**: Set `CMAKE_PREFIX_PATH` to your Qt bin folder.
 
 ```bash
-cmake --preset windows_msvc -DCMAKE_PREFIX_PATH="C:/Qt/6.10.1/msvc2019_64"
+cmake --preset windows_msvc -DCMAKE_PREFIX_PATH="C:/Qt/6.x/msvc2022_64"
 ```
 
 ### "Ninja not found"
