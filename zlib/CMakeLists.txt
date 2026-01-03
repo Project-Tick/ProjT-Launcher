@@ -45,6 +45,7 @@ set(CPACK_RESOURCE_FILE_LICENSE ${zlib_SOURCE_DIR}/LICENSE)
 # ============================================================================
 
 option(ZLIB_BUILD_TESTING "Enable Zlib Examples as tests" ON)
+option(ZLIB_ENABLE_COVERAGE "Enable coverage testing" OFF)
 option(ZLIB_BUILD_SHARED "Enable building zlib shared library" ON)
 option(ZLIB_BUILD_STATIC "Enable building zlib static library" ON)
 option(ZLIB_BUILD_MINIZIP "Enable building libminizip contrib library" OFF)
