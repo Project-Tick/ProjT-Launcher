@@ -98,6 +98,7 @@ permissions:
   contents: read
 
 env:
+  NODE_NO_WARNINGS: 1
   CHECKOUT_REF: ${{ inputs.ref || github.event.inputs.ref || github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha || github.sha }}
   CMAKE_CONFIGURE_ARGS: -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING
 
