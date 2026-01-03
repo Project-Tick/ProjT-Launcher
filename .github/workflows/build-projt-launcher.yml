@@ -93,12 +93,6 @@ on:
         description: 'Checkout submodules (true/false/recursive)'
         required: false
         default: 'true'
-      app_id:
-        description: 'Application ID'
-        required: true
-      git_ref:
-        description: 'Git reference'
-        required: true
 
 permissions:
   contents: read
@@ -208,7 +202,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -266,7 +260,7 @@ jobs:
         uses: ./.github/actions/package/linux
         with:
           version: ${{ steps.short-version.outputs.version }}
-          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
           qt-version: ${{ steps.setup-dependencies.outputs.qt-version }}
 
@@ -297,7 +291,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -355,7 +349,7 @@ jobs:
         uses: ./.github/actions/package/linux
         with:
           version: ${{ steps.short-version.outputs.version }}
-          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
           qt-version: ${{ steps.setup-dependencies.outputs.qt-version }}
 
@@ -391,7 +385,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -447,7 +441,7 @@ jobs:
         uses: ./.github/actions/package/windows
         with:
           version: ${{ steps.short-version.outputs.version }}
-          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
           windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
           windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
@@ -481,7 +475,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -537,7 +531,7 @@ jobs:
         uses: ./.github/actions/package/windows
         with:
           version: ${{ steps.short-version.outputs.version }}
-          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
 
           windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
@@ -574,7 +568,7 @@ jobs:
 
       - name: Set build type
         shell: bash
-        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -631,10 +625,9 @@ jobs:
         uses: ./.github/actions/package/windows
         with:
           version: ${{ steps.short-version.outputs.version }}
-          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
           msystem: ${{ matrix.msystem }}
-
           windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
           windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
 
@@ -669,7 +662,7 @@ jobs:
 
       - name: Set build type
         shell: bash
-        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -726,7 +719,7 @@ jobs:
         uses: ./.github/actions/package/windows
         with:
           version: ${{ steps.short-version.outputs.version }}
-          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
           msystem: ${{ matrix.msystem }}
 
@@ -759,7 +752,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ inputs.build-type || github.event.inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -817,7 +810,7 @@ jobs:
         uses: ./.github/actions/package/macos
         with:
           version: ${{ steps.short-version.outputs.version }}
-          build-type: ${{ steps.setup-dependencies.outputs.build-type }}
+          build-type: ${{ env.BUILD_TYPE }}
           artifact-name: ${{ matrix.artifact-name }}
           apple-codesign-cert: ${{ secrets.APPLE-CODESIGN-CERT }}
           apple-codesign-password: ${{ secrets.APPLE-CODESIGN_PASSWORD }}
