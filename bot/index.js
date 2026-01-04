@@ -612,6 +612,13 @@ const circuitBreaker = {
   openUntil: 0,
 };
 
+// Cache to prevent duplicate approvals in a short window
+const approvedRunsCache = new Set();
+// Clear cache every 10 minutes
+if (typeof setInterval !== "undefined") {
+  setInterval(() => approvedRunsCache.clear(), 10 * 60 * 1000);
+}
+
 function hasGitHubAuth(env) {
   if (env.GITHUB_TOKEN) return true;
   return Boolean(env.GITHUB_APP_ID && env.GITHUB_APP_INSTALLATION_ID && env.GITHUB_APP_PRIVATE_KEY);
@@ -1847,6 +1854,7 @@ async function handleIssueComment({ payload, env }) {
 
 async function handleWorkflowRun({ owner, repo, payload, env }) {
   const run = payload?.workflow_run;
+  const action = payload?.action;
   if (!run) return { ok: false, error: "missing-workflow-run" };
 
   // Extract PR number
@@ -1857,7 +1865,7 @@ async function handleWorkflowRun({ owner, repo, payload, env }) {
   }
 
   // If we found a PR, trigger handlePullRequest to update labels and CI summary
-  if (Number.isFinite(prNumber) && run.status === "completed") {
+  if (Number.isFinite(prNumber) && action === "completed") {
     console.log(`[WorkflowRun] Triggering handlePullRequest for PR #${prNumber} due to run ${run.id} completion`);
     // We don't await here to avoid blocking, but we use ctx.waitUntil in the caller
     handlePullRequest({ owner, repo, pullNumber: prNumber, env }).catch(err => 
@@ -1866,7 +1874,13 @@ async function handleWorkflowRun({ owner, repo, payload, env }) {
   }
 
   // Auto-approval logic
-  if (isAutoApproveEnabled(env) && run.event === "pull_request" && run.status === "waiting") {
+  if (isAutoApproveEnabled(env) && run.event === "pull_request" && run.status === "waiting" && action === "requested") {
+    // Check cache to avoid double approval
+    if (approvedRunsCache.has(run.id)) {
+      console.log(`[WorkflowRun] Run ${run.id} already approved recently, skipping.`);
+      return { ok: true, skipped: "already-approved" };
+    }
+
     const rule = findAutoApproveRule(run);
     if (rule && Number.isFinite(prNumber)) {
       const { data: pr } = await githubApi({
@@ -1878,6 +1892,24 @@ async function handleWorkflowRun({ owner, repo, payload, env }) {
       const body = String(pr?.body ?? "");
       const selectedOptions = getSelectedScopeOptions(body);
       const selectedLabels = new Set((pr.labels ?? []).map((label) => label.name));
+      const scopes = Array.isArray(rule.scopes) ? rule.scopes : [];
+      const allowed =
+        scopes.length === 0 || scopes.some((scope) => isScopeSelected(scope, { selectedOptions, selectedLabels }));
+
+      if (allowed) {
+        approvedRunsCache.add(run.id);
+        await githubApi({
+          env,
+          method: "POST",
+          path: `/repos/${owner}/${repo}/actions/runs/${run.id}/approve`,
+        });
+        console.log(`[WorkflowRun] Approved run ${run.id} for PR #${prNumber}`);
+      }
+    }
+  }
+
+  return { ok: true };
+}
       const scopes = Array.isArray(rule.scopes) ? rule.scopes : [];
       const allowed =
         scopes.length === 0 || scopes.some((scope) => isScopeSelected(scope, { selectedOptions, selectedLabels }));
