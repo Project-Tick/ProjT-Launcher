@@ -3,7 +3,12 @@ ProjT Launcher - Project Tick
 
 https://git.projecttick.org.tr/projt-launcher.git
 
-A Minecraft launcher and automation stack that helps maintainers avoid missed updates,security drift, and broken metadata in long-lived projects. A fork of Prism Launcher, diverging on purpose to keep maintenance and infrastructure healthy over time. Built for projects that rely on CI, automation, and long-term maintenance, often maintained by small teams or individuals.
+A Minecraft launcher and automation stack that helps maintainers avoid missed
+updates, security drift, and broken metadata in long-lived projects.
+
+A fork of Prism Launcher, diverging on purpose to keep maintenance and infrastructure
+healthy over time. Built for projects that rely on CI, automation, and long-term maintenance,
+often maintained by small teams or individuals.
 
 ----------------------------------------------------------------------
 
@@ -19,7 +24,7 @@ This repo is a monorepo with the launcher and the pieces that keep it running:
 - Docs/CI/Tools: docs/, ci/, .github/workflows/, scripts/, tools/
 - Forked libraries: bzip2/, quazip/, zlib/, libnbtplusplus/
 - Bundled libraries: gamemode/, LocalPeer/, murmur2/, qdcss/, rainbow/, systeminfo/
-- Non Fork libraries: launcherjava/
+- Non-Fork libraries: launcherjava/
 
 WARNING:
 Forks are expected; large rebundling or CI changes should clearly document intent.
@@ -131,8 +136,8 @@ These are for testing and contributors only:
 Quick Starts
 ------------
 
-ProjT Launcher
-~~~~~~~~~~~~~~
+Launcher (C++/Qt)
+~~~~~~~~~~~~~~~~~
 
 Prerequisites
 ^^^^^^^^^^^^^
@@ -165,9 +170,7 @@ The website source lives in website/, and the production output is built into pu
 Bot (Cloudflare Workers)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Local smoke test:
-
-Commands:
+Local smoke test commands:
 
 cd bot
 wrangler dev
@@ -193,6 +196,8 @@ Local Run
 ^^^^^^^^^
 
 Set META_UPSTREAM_URL and META_LAUNCHER_URL (or define them in config.sh), then:
+
+Commands:
 
 python -m pip install -r requirements.txt
 python -m pip install .
@@ -250,7 +255,8 @@ Building with default API keys implies acceptance of:
 - https://docs.microsoft.com/en-us/legal/microsoft-identity-platform/terms-of-use
 - https://support.curseforge.com/en/support/solutions/articles/9000207405-curse-forge-3rd-party-api-terms-and-conditions
 
-## Infrastructure & Embedded Components
+Infrastructure & Embedded Components
+------------------------------------
 
 The following sections document components that are embedded directly
 in this monorepo to support ProjT Launcher’s long-term operation.
@@ -267,102 +273,89 @@ infrastructure reviewers.
 If you are only interested in building or using the launcher,
 you can safely skip to the License section.
 
-### Included Components Overview
+Included Components Overview
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Compression & IO: bzip2, zlib, quazip
 - Core data formats: libnbt++
 - Automation & CI: Cloudflare Workers bot, CI scripts, evaluation tooling
 - Packaging & distribution: Nix, program_info
 
-## Bzip2 `bzip2/`
+Bzip2 bzip2/
+------------
 
 Lossless compression library used for BZip2 support.
 This repository contains a fork of the upstream project and it now advances in its own tree; see upstream for the original source.
-License: bzip2 license (BSD-like). See `bzip2/COPYING`.
-Forked Source: [https://gitlab.com/bzip2/bzip2](https://gitlab.com/bzip2/bzip2)
+License: bzip2 license (BSD-like). See bzip2/COPYING.
+Forked Source: https://gitlab.com/bzip2/bzip2
 
-This is Bzip2/libbz2; a program and library for lossless, block-sorting data
-compression.
+This is Bzip2/libbz2; a program and library for lossless, block-sorting data compression.
 
-This document pertains to the Bzip2 feature development effort hosted on
-[Github.com](https://gitlab.com/Project-Tick/ProjT-Launcher).
+This document pertains to the Bzip2 feature development effort hosted on https://git.projecttick.com/projt-launcher.git/
 
-The documentation here may differ from that on the Bzip2 1.1 project page
-maintained by Micah Snyder on [gitlab.com](https://gitlab.com/bzip2/bzip2).
-
+The documentation here may differ from that on the Bzip2 1.1 project page maintained by Micah Snyder on https://gitlab.com/bzip2/bzip2
 The documentation here may differ from that on the Bzip2 1.0.x project page
-maintained by Mark Wielaard on [sourceware.org](https://sourceware.org/bzip2/).
+maintained by Mark Wielaard on https://sourceware.org/bzip2/
 
 Copyright (C) 1996-2010 Julian Seward <jseward@acm.org>
 
 Copyright (C) 2019-2020 Federico Mena Quintero <federico@gnome.org>
 
-Copyright (C) 2021-2025 [Micah Snyder](https://gitlab.com/micahsnyder).
+Copyright (C) 2021-2025 Micah Snyder https://gitlab.com/micahsnyder
 
-Copyright (C) 2025 [YongDo-Hyun](https://github.com/YongDo-Hyun).
+Copyright (C) 2025 YongDo-Hyun https://github.com/YongDo-Hyun
 
-Copyright (C) 2025 [grxtor](https://github.com/grxtor).
+Copyright (C) 2025 grxtor https://github.com/grxtor
 
-Please read the [WARNING](#warning), [DISCLAIMER](#disclaimer) and
-[PATENTS](#patents) sections in this file for important information.
-
-This program is released under the terms of the license contained in the
-[COPYING](bzip2/COPYING) file.
-
+Please read the WARNING section, DISCLAIMER and PATENTS sections in this file for important information.
+This program is released under the terms of the license contained in the bzip2/COPYING file.
 This version is fully compatible with the previous public releases.
+Complete documentation is available in Postscript form manual.ps,
+PDF manual.pdf or HTML manual.html  A plain-text version of the
+manual page is available as bzip2.txt
 
-Complete documentation is available in Postscript form (manual.ps),
-PDF (manual.pdf) or HTML (manual.html).  A plain-text version of the
-manual page is available as bzip2.txt.
+Contributing to Bzip2's development
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-### Contributing to Bzip2's development
+The Bzip2 project is hosted on GitHub for feature development work. It can be found at https://git.projecttick.org.tr
+Changes to be included in the next feature version are committed to the develop branch. Feature releases are maintained
+in release-X.Y.Z branches. Long-term feature and experimental development will occur in feature branches.
+Feature branches are unstable. Feature branches may be rebased and force-pushed on occasion to keep them up-to-date and
+to resolve merge conflicts. The `rustify` branch is a feature branch that represents an effort to
+gradually port Bzip2 to https://www.rust-lang.org
 
-The Bzip2 project is hosted on GitHub for feature development work.
-It can be found at [https://gitlab.com/Project-Tick/ProjT-Launcher](https://gitlab.com/Project-Tick/ProjT-Launcher).
+Report a Bug
+~~~~~~~~~~~~
 
-Changes to be included in the next feature version are committed to the
-`develop` branch.
-
-Feature releases are maintained in `release-*` branches.
-
-Long-term feature and experimental development will occur in feature branches.
-*Feature branches are unstable.* Feature branches may be rebased and force-
-pushed on occasion to keep them up-to-date and to resolve merge conflicts.
-
-The `rustify` branch is a feature branch that represents an effort to
-gradually port Bzip2 to [Rust](https://www.rust-lang.org).
-
-### Report a Bug
-
-Please report bugs via [GitHub Issues](https://gitlab.com/Project-Tick/ProjT-Launcher/issues).
-
+Please report bugs via Mailing Lists
 Before you create a new issue, please verify that no one else has already
 reported the same issue.
 
-### Compiling Bzip2 and libbz2
+Compiling Bzip2 and libbz2
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Please see the [`COMPILING.md`](bzip2/COMPILING.md) file for details.
+Please see the bzip2/COMPILING file for details.
 This includes instructions for building using Meson or CMake.
 
-### WARNING
+WARNING
+~~~~~~~
 
 This program and library (attempts to) compress data by performing several
 non-trivial transformations on it. Unless you are 100% familiar with *all* the
 algorithms contained herein, and with the consequences of modifying them, you
 should NOT meddle with the compression or decompression machinery.
 Incorrect changes can and very likely *will* lead to disastrous loss of data.
+Please contact the maintainers if you want to modify the algorithms.
 
-**Please contact the maintainers if you want to modify the algorithms.**
+DISCLAIMER
+~~~~~~~~~~
 
-### DISCLAIMER
-
-**I TAKE NO RESPONSIBILITY FOR ANY LOSS OF DATA ARISING FROM THE USE OF THIS
-PROGRAM/LIBRARY, HOWSOEVER CAUSED.**
+I TAKE NO RESPONSIBILITY FOR ANY LOSS OF DATA ARISING FROM THE USE OF THIS
+PROGRAM/LIBRARY, HOWSOEVER CAUSED.
 
 Every compression of a file implies an assumption that the compressed file can
 be decompressed to reproduce the original. Great efforts in design, coding and
 testing have been made to ensure that this program works correctly.
-
 However, the complexity of the algorithms, and, in particular, the presence of
 various special cases in the code which occur with very low but non-zero
 probability make it impossible to rule out the possibility of bugs remaining in
@@ -375,23 +368,24 @@ That is not to say this program is inherently unreliable.
 Indeed, I very much hope the opposite is true.
 Bzip2/libbz2 has been carefully constructed and extensively tested.
 
-### PATENTS
+PATENTS
+~~~~~~~
 
 To the best of my knowledge, Bzip2/libbz2 does not use any patented algorithms.
 However, I do not have the resources to carry out a patent search.
 Therefore I cannot give any guarantee of the above statement.
 
-### Maintainers
+Maintainers
+~~~~~~~~~~~
 
 - Micah Snyder — upstream feature development (historical)
 - YongDo-Hyun — ProjT Launcher fork maintenance
 
-## Quazip `quazip/`
+Quazip quazip/
+--------------
 
-[![CI](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci.yml)
-
-Forked Source: [https://github.com/stachenov/quazip](https://github.com/stachenov/quazip)
-Local docs: `quazip/QuaZip-1.x-migration.md`
+Forked Source: https://github.com/stachenov/quazip
+Local docs: quazip/QuaZip-1.x-migration
 
 QuaZip is the C++ wrapper for Gilles Vollant's ZIP/UNZIP package
 (AKA Minizip) using Qt library.
@@ -399,115 +393,113 @@ QuaZip is the C++ wrapper for Gilles Vollant's ZIP/UNZIP package
 If you need to write files to a ZIP archive or read files from one
 using QIODevice API, QuaZip is exactly the kind of tool you need.
 
-See [the documentation](https://projtlauncher.projecttick.org.tr/wiki/) for details.
+See https://projtlauncher.projecttick.org.tr/wiki/ for details.
 
-Want to report a bug or ask for a feature? Open an [issue](https://github.com/Project-Tick/ProjT-Launcher/issues).
-
-Want to fix a bug or implement a new feature? See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-You're a package maintainer and want to update to QuaZip 1.0? Read [the migration guide](https://github.com/Project-Tick/ProjT-Launcher/blob/develop/quazip/QuaZip-1.x-migration.md).
+Want to report a bug or ask for a feature? Please contact via Mailing Lists.
+Want to fix a bug or implement a new feature? See CONTRIBUTING
+You're a package maintainer and want to update to QuaZip 1.0? Read quazip/QuaZip-1.x-migration
 
 Copyright notice:
 
 Copyright (C) 2005-2020 Sergey A. Tachenov and contributors
-
-Distributed under LGPL, full details in the [COPYING](quazip/COPYING) file.
-
+Distributed under LGPL, full details in the quazip/COPYING file.
 Original ZIP package is copyrighted by Gilles Vollant, see
 quazip/(un)zip.h files for details, but basically it's the zlib license.
 
-### Build
+Build
+~~~~~
 
-### Dependencies
+Dependencies
+^^^^^^^^^^^^
 
 You need at least the following dependencies:
 
 - Qt6 or Qt5 (searched in that order)
 
-### Linux
+Linux
+^^^^^
 
-```bash
+Commands:
+
 sudo apt-get install libbz2-dev
 cmake -B build
 cmake --build build
-```
 
-### Windows
+Windows
+^^^^^^^
 
-When using Qt online installer on Windows with MSVC, make sure to select the box for `MSVC 20XY 64-bit` and under additional libraries, select `Qt 5 Compatibility Module`.
-Finally, add `C:\Qt\6.8.2\msvc20XY_64` to your PATH.
+When using Qt online installer on Windows with MSVC, make sure to select the box for MSVC 20XY 64-bit and under additional libraries, select Qt 5 Compatibility Module.
+Finally, add C:\Qt\6.8.2\msvc20XY_64 to your PATH.
 
-If you don't use a package manager you will have to add library and include directories to your PATH or specify them with `CMAKE_PREFIX_PATH`.
+If you don't use a package manager you will have to add library and include directories to your PATH or specify them with CMAKE_PREFIX_PATH.
 Qt is not installed as a dependency of either vcpkg or conan.
 
-#### x64
+x64
+^^^
 
 Using vcpkg
 
-```bat
+Commands:
+
 cmake --preset vcpkg
 cmake --build build --config Release
-```
 
 Using conan v2
 
-```bat
+Commands:
+
 conan install . -of build -s build_type=Release -o *:shared=False --build=missing
 cmake --preset conan
 cmake --build build --config Release
-```
 
-#### x86
+x86
+^^^
 
 Only Qt5 is tested on x86.
 
 Using vcpkg
 
-```bat
+Commands:
+
 cmake --preset vcpkg_x86
 cmake --build build --config Release
-```
 
 Using conan v2
 
-```bat
+Commands:
+
 conan install . -of build -s build_type=Release -s:h arch=x86 -o *:shared=False --build=missing
 cmake --preset conan_x86
 cmake --build build --config Release
-```
 
-### Additional build options
+Additional build options
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you built Qt from source and installed it, you might need to tell CMake where to find it, for example: `-DCMAKE_PREFIX_PATH="/usr/local/Qt-6.8.2"`.  
-Alternatively, if you did not install the source build it might look something like: `-DCMAKE_PREFIX_PATH="/home/you/qt-everywhere-src-6.8.2/qtbase/lib/cmake"`.  
-Replace `qtbase` if you used a custom prefix at `configure` step.
-
-Qt installed through Linux distribution packages or official Qt online installer should be detected automatically.
-
+If you built Qt from source and installed it, you might need to tell CMake where to find it, for example: -DCMAKE_PREFIX_PATH="/usr/local/Qt-6.8.2".  
+Alternatively, if you did not install the source build it might look something like: -DCMAKE_PREFIX_PATH="/home/you/qt-everywhere-src-6.8.2/qtbase/lib/cmake".  
+Replace qtbase if you used a custom prefix at configure step. Qt installed through Linux distribution packages or official Qt online installer should be detected automatically.
 CMake is used to configure and build the project. A typical configure, build, install and clean is shown below.
 
-```bash
+Commands:
+
 cmake -B build -DQUAZIP_QT_MAJOR_VERSION=6 -DBUILD_SHARED_LIBS=ON -DQUAZIP_ENABLE_TESTS=ON
 cmake --build build --config Release
 sudo cmake --install build
 cd build
 ctest --verbose -C Release
 cmake --build . --target clean
-```
 
 CMake options
 
-| Option                      | Description                                                                                                                                                   | Default |
-|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `QUAZIP_QT_MAJOR_VERSION` | Specifies which major Qt version should be searched for (6 or 5). By default it tries to find the most recent. |  |
-| `BUILD_SHARED_LIBS` | Build QuaZip as a shared library | `ON` |
-| `QUAZIP_LIB_FILE_NAME` | Specifies output libname. | `quazip<quazip-version>-qt<qt-version>` |
-| `QUAZIP_INSTALL` | Enable installation | `ON` |
-| `QUAZIP_USE_QT_ZLIB` | Use Qt's bundled zlib instead of system zlib (**not recommended**). Qt must be built with `-qt-zlib` and `-static`. Incompatible with `BUILD_SHARED_LIBS=ON`. | `OFF` |
-| `QUAZIP_ENABLE_TESTS` | Build QuaZip tests | `OFF` |
-| `QUAZIP_BZIP2` | Enable BZIP2 compression | `ON` |
-| `QUAZIP_BZIP2_STDIO` | Output BZIP2 errors to stdio when BZIP2 compression is enabled | `ON` |
-| `QUAZIP_ENABLE_QTEXTCODEC` | Set to OFF to explicitely disable the use of QTextCodec on Qt6 even if Core5Compat is available. This uses [QStringConverter](https://doc.qt.io/qt-6/qstringconverter.html) in the background with less supported encodings. | `ON` |
+QUAZIP_QT_MAJOR_VERSION: Specifies which major Qt version should be searched for (6 or 5). By default it tries to find the most recent.
+BUILD_SHARED_LIBS: Build QuaZip as a shared library. Default: ON
+QUAZIP_LIB_FILE_NAME: Specifies output libname. quazip<quazip-version>-qt<qt-version>
+QUAZIP_INSTALL: Enable installation Default: ON
+QUAZIP_USE_QT_ZLIB: Use Qt's bundled zlib instead of system zlib (not recommended). Qt must be built with -qt-zlib and -static. Incompatible with BUILD_SHARED_LIBS=ON. Default: OFF
+QUAZIP_ENABLE_TESTS: Build QuaZip tests Default: OFF
+QUAZIP_BZIP2: Enable BZIP2 compression Default: ON
+QUAZIP_BZIP2_STDIO: Output BZIP2 errors to stdio when BZIP2 compression is enabled Default: ON
+QUAZIP_ENABLE_QTEXTCODEC: Set to OFF to explicitely disable the use of QTextCodec on Qt6 even if Core5Compat is available. This uses QStringConverter: https://doc.qt.io/qt-6/qstringconverter.html in the background with less supported encodings. Default: ON
 
 ## Zlib `zlib/`
 
