@@ -1910,23 +1910,6 @@ async function handleWorkflowRun({ owner, repo, payload, env }) {
 
   return { ok: true };
 }
-      const scopes = Array.isArray(rule.scopes) ? rule.scopes : [];
-      const allowed =
-        scopes.length === 0 || scopes.some((scope) => isScopeSelected(scope, { selectedOptions, selectedLabels }));
-
-      if (allowed) {
-        await githubApi({
-          env,
-          method: "POST",
-          path: `/repos/${owner}/${repo}/actions/runs/${run.id}/approve`,
-        });
-        console.log(`[WorkflowRun] Approved run ${run.id} for PR #${prNumber}`);
-      }
-    }
-  }
-
-  return { ok: true };
-}
 
 async function githubApi({ env, method, path, body }) {
   const { token } = await getGitHubAuth(env);
