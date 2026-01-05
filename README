@@ -567,22 +567,24 @@ Modifications:
 Copyright © 2026
 Project Tick contributors
 
-## JavaCheck `javacheck/`
+JavaCheck javacheck/
+---------------------
 
 A very simple program to print provided system properties.
 
-Each argument is printed out as `{arg}={System.getProperty(arg)}`. If any properties are null,
+Each argument is printed out as {arg}={System.getProperty(arg)} If any properties are null,
 they will not be printed and the program will exit with code 1.
 
-## libnbt++ 3 `libnbtplusplus/`
+libnbt++ 3 libnbtplusplus/
+--------------------------
 
-This repository includes **libnbt++ 3**, the currently maintained version
+This repository includes libnbt++ 3, the currently maintained version
 used by ProjT Launcher.
 
 Earlier versions (libnbt++ and libnbt++2) are documented here for historical
 context only and are not used directly.
 
-See forked [github repo](https://github.com/PrismLauncher/libnbtplusplus).
+See forked https://github.com/PrismLauncher/libnbtplusplus
 
 libnbt++ is a free C++ library for Minecraft's file format Named Binary Tag
 (NBT). It can read and write compressed and uncompressed NBT files and
@@ -597,62 +599,57 @@ libnbt++ 3 is a remake of the old libnbt++ 2 library with the goal of fixing som
 problems. The old libnbt++2 especially suffered from a very convoluted syntax and
 boilerplate code needed to work with NBT data.
 
-### Building
+Building
+~~~~~~~~
 
 This project uses CMake for building. Ensure you have CMake installed.
 
-#### Prerequisites
+Prerequisites
+^^^^^^^^^^^^^
 
 - C++11 compatible compiler
 - CMake 3.15 or later
 - ZLIB (optional, for compressed NBT support)
 
-#### Build Steps
+Build Steps
+^^^^^^^^^^^
 
-1. Clone the repository:
+1. Clone the repository with this commands:
 
-   ```bash
-   git clone https://github.com/Project-Tick/ProjT-Launcher.git
-   cd ProjT-Launcher/libnbtplusplus
-   ```
+git clone https://github.com/Project-Tick/ProjT-Launcher.git
+cd ProjT-Launcher/libnbtplusplus
 
-2. Create a build directory:
+2. Create a build directory with this commands:
 
-   ```bash
-   mkdir build
-   cd build
-   ```
+mkdir build
+cd build
 
-3. Configure with CMake:
 
-   ```bash
+3. Configure with CMake with this commands:
+
    cmake ..
-   ```
 
    Options:
-   - `NBT_BUILD_SHARED=OFF` (default): Build static library
-   - `NBT_USE_ZLIB=ON` (default): Enable zlib support
-   - `NBT_BUILD_TESTS=ON` (default): Build tests
+   - NBT_BUILD_SHARED=OFF (default): Build static library
+   - NBT_USE_ZLIB=ON (default): Enable zlib support
+   - NBT_BUILD_TESTS=ON (default): Build tests
 
-4. Build:
+4. Build with this commands:
 
-   ```bash
    cmake --build .
-   ```
 
-5. Install (optional):
+5. Install with this commands (optional):
 
-   ```bash
    cmake --install .
-   ```
 
-### Usage
+Usage
+~~~~~
 
 Include the headers and link against the library.
 
-#### Example
+Example
+^^^^^^^
 
-```cpp
 #include <nbt_tags.h>
 #include <fstream>
 #include <iostream>
@@ -667,13 +664,14 @@ int main() {
 
     return 0;
 }
-```
 
-### License
+License
+~~~~~~~
 
-This project is licensed under the GNU General Public License v3.0. See the [COPYING](libnbtplusplus/COPYING) file for details.
+This project is licensed under the GNU General Public License v3.0. See the libnbtplusplus/COPYING file for details.
 
-## launcherjava `launcherjava/`
+launcherjava launcherjava/
+--------------------------
 
 Java launcher part for Minecraft.
 
@@ -681,20 +679,19 @@ It does the following:
 
 - Waits for a launch script on stdin.
 - Consumes the launch script you feed it.
-- Proceeds with launch when it gets the `launcher` command.
+- Proceeds with launch when it gets the launcher command.
 
-If "abort" is sent, the process will exit.
+If abort is sent, the process will exit.
 
 This means the process is essentially idle until the final command is sent. You can, for example, attach a profiler before you send it.
 
-The `standard` and `legacy` launchers are available.
+The standard and legacy launchers are available.
 
-- `standard` can handle launching any Minecraft version, at the cost of some extra features `legacy` enables (custom window icon and title).
-- `legacy` is intended for use with Minecraft versions < 1.6 and is deprecated.
+- standard can handle launching any Minecraft version, at the cost of some extra features legacy enables (custom window icon and title).
+- legacy is intended for use with Minecraft versions < 1.6 and is deprecated.
 
 Example (some parts have been censored):
 
-```text
 mod legacyjavafixer-1.0
 mainClass net.minecraft.launchwrapper.Launch
 param --username
@@ -722,50 +719,22 @@ windowParams 854x480
 userName CENSORED
 sessionId token:CENSORED:CENSORED
 launcher standard
-```
 
-Available under [![GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-C4282D?logo=gnu)](LICENSE) (with classpath exception), sublicensed from its original [![Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-D22128?logo=apache)](LICENSE) codebase
+Available under GPL-3.0 see launcherjava/LICENSE (with classpath exception), sublicensed from its original Apache-2.0 codebase
 
-## ProjT Launcher Nix Packaging `nix/`
+ProjT Launcher Nix Packaging nix/
+---------------------------------
 
-<!-- ### Installing a stable release (nixpkgs) -->
+Installing a development release (flake)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-<!-- > **Note**  
-> Some examples still reference the upstream `Project-Tick/ProjT-Launcher` repository. Replace those occurrences with the Git host/owner of ProjT Launcher once your mirror is public. -->
+Installing the package directly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-<!-- ProjT Launcher currently reuses the upstream `projtlauncher` packages that have been in [nixpkgs](https://github.com/NixOS/nixpkgs/) since 25.11. -->
-
-<!-- Check the upstream [ProjT Launcher entry on the NixOS Wiki](https://wiki.nixos.org/wiki/ProjT_Launcher) for up-to-date instructions until our dedicated documentation is published. -->
-
-### Installing a development release (flake)
-
-We use [cachix](https://cachix.org/) to cache our development and release builds.
-If you want to avoid rebuilds you may add the Cachix bucket to your substitutors, or use `--accept-flake-config`
-to temporarily enable it when using `nix` commands.
-
-<!-- 
-Example (NixOS):
-
-```nix
-{
-  nix.settings = {
-    trusted-substituters = [ "https://cache.projecttick.org.tr" ];
-
-    trusted-public-keys = [
-      "cache.projecttick.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
-    ];
-  };
-}
-``` 
--->
-
-#### Installing the package directly
-
-After adding `github:Project-Tick/ProjT-Launcher` to your flake inputs, you can access the flake's `packages` output.
+After adding github:Project-Tick/ProjT-Launcher to your flake inputs, you can access the flake's packages output.
 
 Example:
 
-```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -797,20 +766,19 @@ Example:
       };
     };
 }
-```
 
-#### Using the overlay
+Using the overlay
+^^^^^^^^^^^^^^^^^
 
 Alternatively, if you don't want to use our `packages` output, you can add our overlay to your nixpkgs instance.
 This will ensure ProjT Launcher is built with your system's packages.
 
-> [!WARNING]
-> Depending on what revision of nixpkgs your system uses, this may result in binaries that differ from the above `packages` output
-> If this is the case, you will not be able to use the binary cache
+WARNING:
+Depending on what revision of nixpkgs your system uses, this may result in binaries that differ from the above `packages` output
+If this is the case, you will not be able to use the binary cache
 
 Example:
 
-```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -844,48 +812,30 @@ Example:
       };
     };
 }
-```
 
-#### Installing the package ad-hoc (`nix shell`, `nix run`, etc.)
+Installing the package ad-hoc (nix shell, nix run, etc.)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can simply call the default package of this flake.
 
 Example:
 
-```shell
 nix run github:Project-Tick/ProjT-Launcher
 
 nix shell github:Project-Tick/ProjT-Launcher
 
 nix profile install github:Project-Tick/ProjT-Launcher
-```
 
-### Installing a development release (without flakes)
+Installing a development release (without flakes)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We use [Cachix](https://cachix.org/) to cache our development and release builds.
-If you want to avoid rebuilds you may add the Cachix bucket to your substitutors.
-
-Example (NixOS):
-
-```nix
-{
-  nix.settings = {
-    trusted-substituters = [ "https://cache.projecttick.org.tr" ];
-
-    trusted-public-keys = [
-      "cache.projecttick.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
-    ];
-  };
-}
-```
-
-#### Installing the package directly (`fetchTarball`)
+Installing the package directly (fetchTarball)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We use flake-compat to allow using this Flake on a system that doesn't use flakes.
 
 Example:
 
-```nix
 { pkgs, ... }:
 {
   environment.systemPackages = [
@@ -894,16 +844,15 @@ Example:
     )).packages.${pkgs.system}.projtlauncher
   ];
 }
-```
 
-#### Using the overlay (`fetchTarball`)
+Using the overlay (fetchTarball)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Alternatively, if you don't want to use our `packages` output, you can add our overlay to your instance of nixpkgs.
+Alternatively, if you don't want to use our packages output, you can add our overlay to your instance of nixpkgs.
 This results in ProjT Launcher using your system's libraries
 
 Example:
 
-```nix
 { pkgs, ... }:
 {
   nixpkgs.overlays = [
@@ -914,44 +863,45 @@ Example:
 
   environment.systemPackages = [ pkgs.projtlauncher ];
 }
-```
 
-#### Installing the package ad-hoc (`nix-env`)
+Installing the package ad-hoc (nix-env)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can add this repository as a channel and install its packages that way.
 
 Example:
 
-```shell
 nix-channel --add https://github.com/Project-Tick/ProjT-Launcher/archive/develop.tar.gz projtlauncher
 
 nix-channel --update projtlauncher
 
 nix-env -iA projtlauncher.projtlauncher
-```
 
-### Package variants
+Package variants
+~~~~~~~~~~~~~~~~
 
 Both Nixpkgs and this repository offer the following packages:
 
-- `projtlauncher` - The preferred build, wrapped with everything necessary to run the launcher and Minecraft
-- `projtlauncher-unwrapped` - A minimal build that allows for advanced customization of the launcher's runtime environment
+- projtlauncher - The preferred build, wrapped with everything necessary to run the launcher and Minecraft
+- projtlauncher-unwrapped - A minimal build that allows for advanced customization of the launcher's runtime environment
 
-#### Customizing wrapped packages
+Customizing wrapped packages
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The wrapped package (`projtlauncher`) offers some build parameters to further customize the launcher's environment.
+The wrapped package (projtlauncher) offers some build parameters to further customize the launcher's environment.
 
 The following parameters can be overridden:
 
-- `additionalLibs` (default: `[ ]`) Additional libraries that will be added to `LD_LIBRARY_PATH`
-- `additionalPrograms` (default: `[ ]`) Additional libraries that will be added to `PATH`
-- `controllerSupport` (default: `isLinux`) Turn on/off support for controllers on Linux (macOS will always have this)
-- `gamemodeSupport` (default: `isLinux`) Turn on/off support for [Feral GameMode](https://github.com/FeralInteractive/gamemode) on Linux
-- `jdks` (default: `[ jdk21 jdk17 jdk8 ]`) Java runtimes added to `PROJTLAUNCHER_JAVA_PATHS` variable
-- `msaClientID` (default: `null`, requires full rebuild!) Client ID used for Microsoft Authentication
-- `textToSpeechSupport` (default: `isLinux`) Turn on/off support for text-to-speech on Linux (macOS will always have this)
+- additionalLibs (default: [ ]) Additional libraries that will be added to LD_LIBRARY_PATH
+- additionalPrograms (default: [ ]) Additional libraries that will be added to PATH
+- controllerSupport (default: isLinux) Turn on/off support for controllers on Linux (macOS will always have this)
+- gamemodeSupport (default: isLinux) Turn on/off support for https://github.com/FeralInteractive/gamemode on Linux
+- jdks (default: [ jdk21 jdk17 jdk8 ]) Java runtimes added to PROJTLAUNCHER_JAVA_PATHS variable
+- msaClientID (default: null, requires full rebuild!) Client ID used for Microsoft Authentication
+- textToSpeechSupport (default: isLinux) Turn on/off support for text-to-speech on Linux (macOS will always have this)
 
-## ProjT Launcher Program Info `program_info/`
+ProjT Launcher Program Info program_info/
+-----------------------------------------
 
 This is ProjT Launcher's program info which contains information about:
 
@@ -959,93 +909,77 @@ This is ProjT Launcher's program info which contains information about:
 - Various URLs and API endpoints
 - Desktop file
 
-## CI Support Files
-
-This directory contains support files and scripts used by CI/CD for the ProjT Launcher repository.
-
-### What uses this directory
-
-- GitHub Actions workflows in `.github/workflows/` (CI automation, PR tooling)
-- Nix helpers for local development and validation (`ci/default.nix`, `ci/eval/`, `ci/parse.nix`)
-- PR automation scripts (`ci/github-script/`)
-
-### Useful entry points
-
-- `ci/code-quality.sh`: Local PR-style checks between HEAD and a base branch
-- `ci/default.nix`: Nix dev environment with build dependencies
-- `ci/pinned.json`: Reference versions for tooling/CI runners
-
-### Local usage
-
-```bash
-# Compare your current branch against develop
-./ci/code-quality.sh develop
-
-# Enter Nix dev shell (if you use Nix)
-nix develop -f ci/default.nix
-```
-
-## Third-party libraries
+Third-party libraries
+---------------------
 
 This section lists third‑party/external libraries required by other components in this repository. Each entry includes the library name, its purpose in the repo, license information, and a source URL.
 
-### gamemode
+gamemode
+~~~~~~~~
 
 A performance optimization daemon.
 
-See [github repo](https://github.com/FeralInteractive/gamemode).
+See https://github.com/FeralInteractive/gamemode.
 
-![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-AB2B28?logo=bsd) licensed
+BSD-3-Clause licensed
 
-### LocalPeer
+LocalPeer
+~~~~~~~~~
 
 Library for making only one instance of the application run at all times.
 
-![License: BSD](https://img.shields.io/badge/License-BSD-blue.svg) licensed, derived from [QtSingleApplication](https://github.com/qtproject/qt-solutions/tree/master/qtsingleapplication).
+BSD licensed, derived from https://github.com/qtproject/qt-solutions/tree/master/qtsingleapplication.
 
 Changes are made to make the code more generic and useful in less usual conditions.
 
-### murmur2
+murmur2
+~~~~~~~
 
-Canonical implementation of the murmur2 hash, taken from [SMHasher](https://github.com/aappleby/smhasher).
+Canonical implementation of the murmur2 hash, taken from https://github.com/aappleby/smhasher
 
 Public domain (the author disclaimed the copyright).
 
-### rainbow
+rainbow
+~~~~~~~
 
-Color functions extracted from [KGuiAddons](https://inqlude.org/libraries/kguiaddons.html). Used for adaptive text coloring.
+Color functions extracted from https://inqlude.org/libraries/kguiaddons.html Used for adaptive text coloring.
 
-Available either under ![LGPL-2.1-or-later](https://img.shields.io/badge/license-LGPL--2.1--or--later-C4282D?logo=gnu)
+Available either under LGPL-2.1-or-later
 
-### systeminfo
+systeminfo
+~~~~~~~~~~
 
 A ProjT Launcher-specific library for probing system information.
 
-![Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-D22128?logo=apache)
+Apache-2.0
 
-### qdcss
+qdcss
+~~~~~
 
 A quick and dirty css parser, used by NilLoader to store mod metadata.
 
-Translated (and heavily trimmed down) from [the original Java code](https://github.com/unascribed/NilLoader/blob/trunk/website/main/java/nilloader/api/lib/qdcss/QDCSS.java) from NilLoader
+Translated (and heavily trimmed down) from https://github.com/unascribed/NilLoader/blob/trunk/website/main/java/nilloader/api/lib/qdcss/QDCSS.java from NilLoader
 
-Licensed under ![LGPL-3.0](https://img.shields.io/badge/license-LGPL--3.0-C4282D?logo=gnu).
+Licensed under LGPL-3.0.
 
-## License for ProjT Launcher
+License for ProjT Launcher
+--------------------------
 
-Code: [![GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-C4282D?logo=gnu)](LICENSE)
-<br>
+Code: GPL-3.0 see LICENSE
+
 Assets: CC BY-SA 4.0
 
-## License for Website
+License for Website
+-------------------
 
-Code: [![AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-C4282D?logo=gnu)](website/LICENSE)
+Code: AGPL-3.0 see website/LICENSE
 Assets: CC BY-SA 4.0
 
-## License for Metadata Generator
+License for Metadata Generator
+------------------------------
 
-Code: [![MS-PL](https://img.shields.io/badge/license-MS--PL-blue.svg)](meta/LICENSE)
+Code: MS-PL see meta/LICENSE
 
----
+------------------------------------------------------------------------
 
-<p align="center">Maintained by the <a href="https://github.com/Project-Tick">Project Tick</a> contributors.</p>
+Maintained by the Project Tick contributors.
