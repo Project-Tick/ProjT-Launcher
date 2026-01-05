@@ -1,6 +1,15 @@
 ProjT Launcher - Project Tick
 =============================
 
+NOTE: Infrastructure transition in progress
+
+ProjT Launcher is currently migrating its primary development
+infrastructure from GitHub to a self-hosted stack based on
+gitolite and cgit.
+
+GitHub repositories are used as mirrors and for transitional
+CI workflows only. The authoritative source of truth is:
+
 https://git.projecttick.org.tr/projt-launcher.git
 
 A Minecraft launcher and automation stack that helps maintainers avoid missed
@@ -501,7 +510,8 @@ QUAZIP_BZIP2: Enable BZIP2 compression Default: ON
 QUAZIP_BZIP2_STDIO: Output BZIP2 errors to stdio when BZIP2 compression is enabled Default: ON
 QUAZIP_ENABLE_QTEXTCODEC: Set to OFF to explicitely disable the use of QTextCodec on Qt6 even if Core5Compat is available. This uses QStringConverter: https://doc.qt.io/qt-6/qstringconverter.html in the background with less supported encodings. Default: ON
 
-## Zlib `zlib/`
+Zlib zlib/
+----------
 
 Zlib is a general-purpose, lossless data-compression library used for
 ZIP and GZip functionality.
@@ -510,12 +520,13 @@ This repository contains a maintained fork of the upstream zlib project.
 The fork exists to allow controlled integration, CI validation, and
 long-term maintenance within the ProjT Launcher monorepo.
 
-- **License**: zlib license (see `zlib/LICENSE`)
-- **Upstream project**: https://zlib.net
-- **Upstream source**: https://github.com/madler/zlib
-- **Fork base version**: 1.3.1.2
+- License: zlib license (see zlib/LICENSE)
+- Upstream project: https://zlib.net
+- Upstream source: https://github.com/madler/zlib
+- Fork base version: 1.3.1.2
 
-### Fork policy
+Fork policy
+~~~~~~~~~~~
 
 This fork aims to stay as close to upstream as possible.
 
@@ -526,13 +537,15 @@ This fork aims to stay as close to upstream as possible.
 
 Any deviations from upstream behavior are documented explicitly.
 
-### Documentation
+Documentation
+~~~~~~~~~~~~~
 
-- API reference: `zlib/zlib.h`
-- FAQ: `zlib/FAQ`
-- Change history: `zlib/ChangeLog`
+- API reference: zlib/zlib.h
+- FAQ: zlib/FAQ
+- Change history: zlib/ChangeLog
 
-### Build integration
+Build integration
+~~~~~~~~~~~~~~~~~
 
 Zlib is built as part of the ProjT Launcher build.
 Upstream build systems are preserved for reference, but the primary
@@ -540,10 +553,11 @@ build path is integrated into the monorepo tooling.
 
 For upstream-specific build instructions, see https://zlib.net.
 
-### Licensing
+Licensing
+~~~~~~~~~
 
 Zlib is licensed under the zlib license.
-The full license text is included unmodified in `zlib/LICENSE`.
+The full license text is included unmodified in zlib/LICENSE.
 
 Original work:
 Copyright © 1995–2025
@@ -551,44 +565,6 @@ Jean-loup Gailly, Mark Adler
 
 Modifications:
 Copyright © 2026
-Project Tick contributors
-
-### Fork policy
-
-This fork aims to stay as close to upstream as possible.
-
-- Upstream releases are periodically reviewed and merged.
-- Changes are limited to build integration, CI compatibility,
-  or clearly documented fixes.
-- Functional divergence from upstream is avoided unless required.
-
-Any deviations from upstream behavior are documented explicitly.
-
-### Documentation
-
-- API reference: `zlib/zlib.h`
-- FAQ: `zlib/FAQ`
-- Change history: `zlib/ChangeLog`
-
-### Build integration
-
-Zlib is built as part of the ProjT Launcher build.
-Upstream build systems are preserved for reference, but the primary
-build path is integrated into the monorepo tooling.
-
-For upstream-specific build instructions, see https://zlib.net.
-
-### Licensing
-
-Zlib is licensed under the zlib license.
-The full license text is included unmodified in `zlib/LICENSE`.
-
-Original work:
-Copyright © 1995–2025  
-Jean-loup Gailly, Mark Adler
-
-Modifications:
-Copyright © 2026  
 Project Tick contributors
 
 ## JavaCheck `javacheck/`
@@ -749,95 +725,6 @@ launcher standard
 ```
 
 Available under [![GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-C4282D?logo=gnu)](LICENSE) (with classpath exception), sublicensed from its original [![Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-D22128?logo=apache)](LICENSE) codebase
-
-## Bot (Cloudflare Workers) `bot/`
-
-This directory contains a Cloudflare Worker that can auto-label GitHub pull requests (similar to the CI bot).
-
-### Endpoints
-
-- `GET /` or `GET /healthz`: health check
-- `POST /github/webhook`: GitHub webhook receiver (requires signature)
-- `POST /run` or `GET /run`: manual run (requires `Authorization: Bearer <ADMIN_TOKEN>`)
-- `issue_comment` webhook: `bot rerun` / `bot labels` (or `/bot rerun`) triggers re-label for that PR (author association must be owner/member/collaborator by default). Set `BOT_COMMENT_ON_COMMAND=true` to let the bot reply with a short summary.
-
-### Required secrets (Cloudflare)
-
-Set these as Worker secrets (choose ONE auth method):
-
-PAT (simple):
-
-- `GITHUB_TOKEN`: token with permission to add/create labels (repo access as needed)
-
-GitHub App (recommended for non-personal auth):
-
-- `GITHUB_APP_ID`
-- `GITHUB_APP_INSTALLATION_ID`
-- `GITHUB_APP_PRIVATE_KEY` (PKCS#8 PEM; use `\n` for newlines when pasting)
-- `BOT_LOGIN` (optional): set to your app slug so the bot can recognize/update its own comments
-
-Common secrets:
-
-- `GITHUB_WEBHOOK_SECRET`: the webhook secret configured in GitHub
-- `ADMIN_TOKEN`: (optional but recommended) protects `/run`
-- `BOT_COMMENT_ON_COMMAND`: (optional) `true` to comment after handling `issue_comment` commands
-- `BOT_ALLOWED_ASSOCIATIONS`: (optional) comma-separated GitHub author_association values allowed to run commands (default: `OWNER,MEMBER,COLLABORATOR`)
-- `BOT_ALWAYS_REVIEWERS`: (optional) comma-separated GitHub usernames to always request as reviewers (in addition to maintainers from `ci/eval/compare/maintainers.nix`)
-- `BOT_CRON_MAX_PRS`: (optional) max PRs to scan per cron run (useful on tight CPU plans)
-- `BOT_CRON_LIGHT`: (optional) `true` to skip DCO checks, CI summaries, reviewer requests, and auto-merge during cron runs
-
-Example (local):
-
-```bash
-cd bot
-wrangler secret put GITHUB_TOKEN
-wrangler secret put GITHUB_WEBHOOK_SECRET
-wrangler secret put ADMIN_TOKEN
-```
-
-### Local smoke test
-
-```bash
-cd bot
-wrangler dev
-curl -sS http://localhost:8787/healthz
-curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:8787/run?pr=123"
-```
-
-### Config vars
-
-Defined in `bot/wrangler.json`:
-
-- `GITHUB_OWNER` (default: `Project-Tick`)
-- `GITHUB_REPO` (default: `ProjT-Launcher`)
-- `BOT_DRY_RUN` (`true`/`false`)
-- `BOT_CRON_MAX_PRS` (optional, numeric limit for scheduled runs)
-- `BOT_CRON_LIGHT` (optional, reduce work in scheduled runs)
-
-### DCO check
-
-The bot validates that each non-bot commit in a PR includes `Signed-off-by:`. If any are missing, it applies the `status:dco-missing` label (created automatically if needed). Bot commits (`[bot]`, `Project Tick Bot`, or `*@bot.*`) are exempt.
-
-### Scope labels (PR template)
-
-If a PR checks any options in the **Scope** section of `.github/pull_request_template.md`, the bot adds corresponding `31.scope:*` labels (created automatically if needed).
-
-### CI summary comment
-
-The bot posts or updates a `PR CI Summary` comment based on the latest `pull-request-target.yml` run for the PR. It requires `actions:read` in addition to issues/labels write access.
-
-### GitHub webhook setup
-
-Create a GitHub webhook pointing to:
-
-- Payload URL: `https://<your-worker-domain>/github/webhook`
-- Content type: `application/json`
-- Secret: same as `GITHUB_WEBHOOK_SECRET`
-- Events: `Pull requests` (at minimum)
-
-### Deploy
-
-Cloudflare handles deploys via the existing webhook/automation pipeline, so no GitHub Actions workflow is required in this repo. Use `wrangler deploy` locally only for manual smoke tests.
 
 ## ProjT Launcher Nix Packaging `nix/`
 
@@ -1097,269 +984,6 @@ This directory contains support files and scripts used by CI/CD for the ProjT La
 # Enter Nix dev shell (if you use Nix)
 nix develop -f ci/default.nix
 ```
-
-## ProjT Launcher CI Evaluation
-
-This directory contains Nix helpers for validating repository configuration locally (and can be wired into CI if desired).
-
-### Purpose
-
-This evaluation module performs:
-
-- CMakeLists.txt syntax validation
-- vcpkg.json dependency verification
-- Nix flake structure checking
-- Build configuration validation across platforms
-
-### Local Usage
-
-#### Quick validation
-
-```bash
-# Validate project structure
-nix-build ci -A eval.validate
-
-# Check specific component
-nix-build ci -A eval.cmake
-nix-build ci -A eval.vcpkg
-nix-build ci -A eval.nix
-```
-
-#### Full evaluation
-
-```bash
-# Run complete evaluation
-nix-build ci -A eval.full
-```
-
-### Supported Systems
-
-Evaluation is performed for the following platforms:
-
-- `x86_64-linux` - Linux (64-bit)
-- `x86_64-darwin` - macOS Intel
-- `aarch64-darwin` - macOS Apple Silicon
-- `x86_64-windows` - Windows (via cross-compilation)
-
-### Configuration
-
-The following arguments can be used:
-
-- `--arg quickTest true`: Enable quick validation mode
-- `--arg systems '["x86_64-linux"]'`: Limit to specific systems
-
-### Project Structure Validation
-
-The evaluation checks:
-
-#### CMake Configuration
-
-- `CMakeLists.txt` - Main build configuration
-- `cmake/*.cmake` - CMake modules
-- `CMakePresets.json` - Build presets
-
-#### Dependencies
-
-- `vcpkg.json` - vcpkg dependencies
-- `vcpkg-configuration.json` - vcpkg settings
-
-#### Nix Build
-
-- `flake.nix` - Nix flake definition
-- `default.nix` - Default Nix expression
-- `shell.nix` - Development shell
-
-### CI Integration
-
-Evaluation now runs automatically in `.github/workflows/eval.yml`. The workflow installs Nix on `ubuntu-latest`, evaluates the module with `nix-build --expr 'let pkgs = import <nixpkgs> {}; eval = (import ./ci/eval { inherit (pkgs) lib runCommand cmake nix jq; }) {}; in eval.full'`, and publishes the generated summary to the workflow run. Trigger it manually with **Run workflow** or let it execute on every pull request. You can mirror the same steps locally with:
-
-```bash
-NIX_PATH=nixpkgs=channel:nixos-unstable \
-nix-build --expr 'let pkgs = import <nixpkgs> {}; eval = (import ./ci/eval { inherit (pkgs) lib runCommand cmake nix jq; }) {}; in eval.full'
-cat result/summary.md
-```
-
-## ProjT Launcher - GitHub CI Scripts
-
-This folder contains [`actions/github-script`](https://github.com/actions/github-script)-based JavaScript code for CI automation.
-
-### Overview
-
-These scripts automate various GitHub workflow tasks:
-
-- PR validation and labeling
-- Commit message checking
-- Automated reviews
-- Branch management
-
-### Local Development
-
-#### Prerequisites
-
-- Node.js 18+
-- `gh` CLI authenticated
-
-#### Setup
-
-```bash
-cd ci/github-script
-npm install
-```
-
-#### Running Scripts
-
-##### Check Commits
-
-Validates commit messages in a PR:
-
-```bash
-./run commits YongDo-Hyun ProjT-Launcher 123
-```
-
-##### Check Labels
-
-Validates PR labels:
-
-```bash
-./run labels YongDo-Hyun ProjT-Launcher
-```
-
-### Scripts
-
-|Script|Description|
-|`bot.js`|Main bot logic for PR automation|
-|`commits.js`|Commit message validation|
-|`merge.js`|Merge queue handling|
-|`prepare.js`|PR preparation checks|
-|`reviewers.js`|Automatic reviewer assignment|
-|`reviews.js`|Review status checking|
-|`withRateLimit.js`|GitHub API rate limiting|
-
-### Configuration
-
-Scripts use environment variables:
-
-- `GITHUB_TOKEN`: GitHub API token
-- `GITHUB_REPOSITORY`: Repository in `owner/repo` format
-
-### Integration
-
-These scripts are called from GitHub Actions workflows in `.github/workflows/`.
-
-## Minimal Qt build images for CI
-
-These include minimal Qt built from source with `-qt-zlib` option to test `-DQUAZIP_USE_QT_ZLIB=ON` builds.
-
-`jurplel/install-qt-action` is essentially a binary downloader from Qt and does not have all options available.
-
-## GitHub Actions Workflows
-
-This directory contains workflow configurations for the ProjT Launcher CI/CD pipeline.
-
-### Overview
-
-The workflows are organized by functionality:
-
-#### Repo Maintenance
-
-- **`ci.yml`**: Very Ci needs is here
-- **`scorecard.yml`**: OSSF Scorecard analysis and SARIF upload
-- **`clusterfuzzlite.yml`**: ClusterFuzzLite fuzzing runs (libFuzzer targets)
-- **`python-fuzz.yml`**: Python Atheris fuzzing runs (meta/)
-- **`js-fuzz.yml`**: JavaScript property fuzzing runs (bot/)
-
-### Key Design Principles
-
-#### Push Events
-
-- Most workflows use standard `push` events to develop/release branches
-- This allows external contributors to test workflows without prior approval
-
-#### Pull Request Events
-
-- Workflows use `pull_request` event type (not `pull_request_target`)
-- Code review and approval by maintainers protects the repository
-
-#### Path Filters
-
-- Workflows use path filters to avoid unnecessary runs
-- For example, `build.yml` only runs when C++, CMake, or workflow files change
-
-### Workflow Files
-
-#### Workflow File Structure
-
-Each workflow file contains:
-
-- Trigger conditions (on: events)
-- Permissions (least privilege principle)
-- Jobs with specific steps
-- Environment variables for consistency
-
-### Common Patterns
-
-#### Setup & Checkout
-
-```yaml
-- uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-  with:
-    fetch-depth: 0  # Full history for git operations
-```
-
-### Conditional Steps
-
-#### Conditional Steps Example
-
-```yaml
-- name: Step name
-  if: github.ref_type == 'tag'  # Only run on tags
-  run: echo "Release build"
-```
-
-### Artifacts & Uploads
-
-#### Artifacts & Uploads Example
-
-```yaml
-- uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-  with:
-    name: build-artifacts
-    path: build/launcher
-```
-
-### Testing Workflows Locally
-
-For most workflows, you can test locally using:
-
-```bash
-# Lint check
-clang-format -i launcher/**/*.cpp launcher/**/*.h
-
-# Build test
-cmake --preset linux && cmake --build --preset linux
-
-# Flake check (if using Nix)
-nix flake check
-```
-
-### Adding New Workflows
-
-When adding new workflows:
-
-1. Follow the naming convention: lowercase, hyphens for spaces
-2. Use path filters to avoid unnecessary runs
-3. Apply least privilege permissions
-4. Use github.token by default (avoid elevated privileges)
-5. Add documentation in this README
-
-### Troubleshooting
-
-#### Troubleshooting Guide
-
-- **Workflow not triggering**: Check path filters and branch configuration
-- **Permission denied errors**: Verify permissions: section
-- **Tests failing locally but passing in CI**: Check environment differences (dependencies, paths)
-- **Slow workflows**: Consider using caching or parallelization
 
 ## Third-party libraries
 
