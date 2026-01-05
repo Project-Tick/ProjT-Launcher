@@ -41,69 +41,75 @@ git commit -s -m "Fix: explain what changed"
 
 ---
 
-## 📚 Documentation Index
+Documentation Index
+-------------------
 
-Please read the specific sections below before writing a single line of code (start with `docs/contributing/`):
+Please read the specific sections below before writing a single line of code (start with docs/contributing/):
 
-### 1. [🚀 Getting Started](docs/contributing/GETTING_STARTED.md)
+1. docs/contributing/GETTING_STARTED
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **Setup**: Required tools (Qt 6.x, CMake 3.22+).
-- **Environment**: How to set up VS Code or Visual Studio.
+- Setup: Required tools (Qt 6.x, CMake 3.22+).
+- Environment: How to set up VS Code or Visual Studio.
 
-### 2. [📝 Code Style & Standards](docs/contributing/CODE_STYLE.md)
+2. docs/contributing/CODE_STYLE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **Formatting**: `clang-format` usage.
-- **Modern C++**: C++20 features and best practices.
-- **Qt Widgets**: Component structure and formatting.
+- Formatting: clang-format usage.
+- Modern C++: C++20 features and best practices.
+- Qt Widgets: Component structure and formatting.
 
-### 3. [📁 Project Structure](docs/contributing/PROJECT_STRUCTURE.md)
+3. docs/contributing/PROJECT_STRUCTURE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **Organization**: Where to put your files.
-- **Naming**: File and class naming conventions.
+- Organization: Where to put your files.
+- Naming: File and class naming conventions.
 
-### 4. [🏗 Architecture (MVVM)](docs/contributing/ARCHITECTURE.md)
+4. docs/contributing/ARCHITECTURE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **MVVM**: Model-View-ViewModel pattern explained.
-- **Threading**: Keeping the UI responsive.
+- MVVM: Model-View-ViewModel pattern explained.
+- Threading: Keeping the UI responsive.
 
-### 5. [🧪 Testing Standards](docs/contributing/TESTING.md)
+5. docs/contributing/TESTING
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **QtTest**: How to write and run unit tests.
-- **Best Practices**: Mocking and async testing.
+- QtTest: How to write and run unit tests.
+- Best Practices: Mocking and async testing.
 
-### 6. [🔄 Workflow & Git](docs/contributing/WORKFLOW.md)
+Other Areas
+~~~~~~~~~~~
 
-- **Process**: Pull Request lifecycle.
-- **Commits**: Conventional Commits and DCO.
+- Bot: bot/
+- Website: .eleventy.js, website/, package.json
+- Metadata generator: meta/, pyproject.toml
 
-### Other Areas
+----------------------------------------------------------------
 
-- **Bot**: `bot/`
-- **Website**: `.eleventy.js`, `website/`, `package.json`
-- **Metadata generator**: `meta/`, `pyproject.toml`
+Quick FAQ
+---------
 
----
+Why is my PR failing CI?
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-## ❓ Quick FAQ
-
-### Why is my PR failing CI?
-
-- Did you run `clang-format`?
-- Did you sign off your commits (`-s`)? The bot adds `status:dco-missing` when DCO is missing.
+- Did you run clang-format?
+- Did you sign off your commits (-s)?
 - Did you write tests?
 
-### Can I use a different Qt version?
+Can I use a different Qt version?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**No (launcher).** We require exact version matching to prevent "works on my machine" issues.
+No (launcher). We require exact version matching to prevent "works on my machine" issues.
+
+--------------------------------------------------------------------
+
+Contact
+-------
+
+- Mailing Lists: Bug reports, feature requests, Questions and discussions
+- Email: yongdohyun@projtlauncher.yongdohyun.org.tr
 
 ---
 
-## 📞 Contact
-
-- **GitHub Issues**: Bug reports and feature requests
-- **GitHub Discussions**: Questions and discussions
-- **Email**: `yongdohyun@projtlauncher.yongdohyun.org.tr`
-
----
-
-### Last updated: January 2026
+Last updated: January 2026
+~~~~~~~~~~~~~~~~~~~~~~~~~~
