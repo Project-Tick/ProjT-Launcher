@@ -96,17 +96,6 @@ modules:
         url: https://github.com/commonmark/cmark.git
         tag: 0.31.1
 
-  - name: quazip
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DQUAZIP_QT6=ON
-      - -DQUAZIP_ENABLE_TESTS=OFF
-    sources:
-      - type: git
-        url: https://github.com/stachenov/quazip.git
-        tag: v1.4
-
   - name: tomlplusplus
     buildsystem: cmake-ninja
     builddir: true
