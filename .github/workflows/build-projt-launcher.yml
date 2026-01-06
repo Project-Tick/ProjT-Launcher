@@ -1,0 +1,955 @@
+name: Build ProjT Launcher
+
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+      force-prepare-yes:
+        description: Force prepare job to enable tests/builds (used by release workflow)
+        type: boolean
+        default: false
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        type: string
+        required: false
+  workflow_dispatch:
+    inputs:
+      build-type:
+        description: Type of build (Debug or Release)
+        type: string
+        default: Debug
+      force-prepare-yes:
+        description: Force prepare job to enable tests/builds (used by release workflow)
+        type: boolean
+        default: false
+      version:
+        description: Launcher version
+        required: true
+      artifact-name:
+        description: Name of the uploaded artifact
+        required: true
+        default: Linux
+      qt-version:
+        description: Version of Qt to use
+        required: true
+        default: 6.10.0
+      qt-architecture:
+        description: Qt architecture
+        required: false
+      gpg-private-key:
+        description: Private key for AppImage signing
+        required: false
+      gpg-private-key-id:
+        description: ID for the gpg-private-key, to select the signing key
+        required: false
+      apple-codesign-cert:
+        description: Certificate for signing macOS builds
+        required: false
+      apple-codesign-password:
+        description: Password for signing macOS builds
+        required: false
+      apple-codesign-id:
+        description: Certificate ID for signing macOS builds
+        required: false
+      apple-notarize-apple-id:
+        description: Apple ID used for notarizing macOS builds
+        required: false
+      apple-notarize-team-id:
+        description: Team ID used for notarizing macOS builds
+        required: false
+      apple-notarize-password:
+        description: Password used for notarizing macOS builds
+        required: false
+      sparkle-ed25519-key:
+        description: Private key for signing Sparkle updates
+        required: false
+      msystem:
+        description: MSYS2 subsystem to use
+        required: false
+      windows-codesign-cert:
+        description: Certificate for signing Windows builds
+        required: false
+      windows-codesign-password:
+        description: Password for signing Windows builds
+        required: false
+      vcvars-arch:
+        description: Visual Studio architecture to use
+        required: true
+        default: amd64
+      ref:
+        description: 'Ref (branch, tag, or SHA) to check out'
+        required: false
+      path:
+        description: 'Path to place the repository'
+        required: false
+      fetch-depth:
+        description: 'Fetch depth (default 0 = full history)'
+        required: false
+        default: '0'
+      submodules:
+        description: 'Checkout submodules (true/false/recursive)'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: read
+
+env:
+  NODE_NO_WARNINGS: 1
+  CHECKOUT_REF: ${{ inputs.ref || github.event.inputs.ref || github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha || github.sha }}
+  CMAKE_CONFIGURE_ARGS: -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING
+
+jobs:
+  flake-check:
+    name: Flake Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31.9.0
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Check flake.nix syntax and outputs
+        run: |
+          nix flake show --all-systems
+
+      - name: Run flake checks
+        run: |
+          nix flake check --show-trace
+
+  project-checkout:
+    name: Project Checkout Submodules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve inputs safely
+        id: resolved
+        run: |
+          # Resolve fetch-depth
+          if [ -z "${{ github.event.inputs.fetch-depth }}" ]; then
+            echo "depth=0" >> $GITHUB_OUTPUT
+          else
+            echo "depth=${{ github.event.inputs.fetch-depth }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Resolve ref
+          echo "ref=${{ env.CHECKOUT_REF }}" >> $GITHUB_OUTPUT
+
+          # Resolve path (default repo root)
+          if [ -z "${{ github.event.inputs.path }}" ]; then
+            echo "path=." >> $GITHUB_OUTPUT
+          else
+            echo "path=${{ github.event.inputs.path }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Resolve submodules
+          if [ -z "${{ github.event.inputs.submodules }}" ]; then
+            echo "submodules=recursive" >> $GITHUB_OUTPUT
+          else
+            echo "submodules=${{ github.event.inputs.submodules }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: ${{ steps.resolved.outputs.depth }}
+          ref: ${{ steps.resolved.outputs.ref }}
+          submodules: ${{ steps.resolved.outputs.submodules }}
+          path: ${{ steps.resolved.outputs.path }}
+
+      - name: Mark repo as safe directory
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Validate checkout state
+        run: |
+          echo "Checked out commit:"
+          git -C "${{ steps.resolved.outputs.path }}" rev-parse HEAD
+
+          echo "Submodule status:"
+          git -C "${{ steps.resolved.outputs.path }}" submodule status || true
+
+  build-linux:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [project-checkout]
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact-name: Linux
+            cmake-preset: linux
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          artifact-name: ${{ matrix.artifact-name }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set version variable
+        run: echo "VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || steps.short-version.outputs.version }}" >> $GITHUB_ENV
+
+      - name: Package (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        uses: ./.github/actions/package/linux
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          qt-version: ${{ steps.setup-dependencies.outputs.qt-version }}
+
+          gpg-private-key: ${{ secrets.LINUX_GPG_KEY }}
+          gpg-private-key-id: ${{ secrets.LINUX_GPG_ID }}
+
+  build-linux-arm64:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [project-checkout]
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04-arm
+            artifact-name: Linux-aarch64
+            cmake-preset: linux
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          artifact-name: ${{ matrix.artifact-name }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set version variable
+        run: echo "VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || steps.short-version.outputs.version }}" >> $GITHUB_ENV
+
+      - name: Package (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        uses: ./.github/actions/package/linux
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          qt-version: ${{ steps.setup-dependencies.outputs.qt-version }}
+
+          gpg-private-key: ${{ secrets.LINUX_GPG_KEY }}
+          gpg-private-key-id: ${{ secrets.LINUX_GPG_ID }}
+
+  build-windows-msvc:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [project-checkout]
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            artifact-name: Windows-MSVC
+            cmake-preset: windows_msvc
+            vcvars-arch: amd64
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+  
+      - name: Package (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: ./.github/actions/package/windows
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
+          windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+
+  build-windows-msvc-arm64:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [project-checkout]
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-11-arm
+            artifact-name: Windows-MSVC-arm64
+            cmake-preset: windows_msvc
+            vcvars-arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          artifact-name: ${{ matrix.artifact-name }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+  
+      - name: Package (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: ./.github/actions/package/windows
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+
+          windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
+          windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+        
+  build-windows-mingw:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [project-checkout]
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            artifact-name: Windows-MinGW-w64
+            cmake-preset: windows_mingw
+            msystem: CLANG64
+            vcvars-arch: amd64_x86
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+
+    steps:
+
+      - name: Set build type
+        shell: bash
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+  
+      - name: Package (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: ./.github/actions/package/windows
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+          windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
+          windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+
+  build-windows-mingw-arm64:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [project-checkout]
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-11-arm
+            artifact-name: Windows-MinGW-arm64
+            cmake-preset: windows_mingw
+            msystem: CLANGARM64
+            vcvars-arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+
+    steps:
+
+      - name: Set build type
+        shell: bash
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+  
+      - name: Package (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: ./.github/actions/package/windows
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          msystem: ${{ matrix.msystem }}
+
+          windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
+          windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+
+  build-macos:
+    name: Build (${{ matrix.artifact-name }})
+    needs: [project-checkout]
+    permissions:
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            artifact-name: macOS
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}-Qt6
+      BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+
+    steps:
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+          submodules: true
+
+      - name: Setup dependencies
+        id: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          artifact-name: ${{ matrix.artifact-name }}
+
+      - name: Clean build directory for builds
+        run: |
+          rm -rf build
+
+      - name: Configure Preset
+        run: |
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
+
+      - name: Run Build
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        run: |
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+        continue-on-error: false
+
+      - name: Upload build
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-${{ matrix.artifact-name }}
+          path: build/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.artifact-name }}
+          path: build/Testing/
+
+      - name: Get short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set version variable
+        run: echo "VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || steps.short-version.outputs.version }}" >> $GITHUB_ENV
+
+      - name: Package (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        uses: ./.github/actions/package/macos
+        with:
+          version: ${{ steps.short-version.outputs.version }}
+          build-type: ${{ env.BUILD_TYPE }}
+          artifact-name: ${{ matrix.artifact-name }}
+          apple-codesign-cert: ${{ secrets.APPLE-CODESIGN-CERT }}
+          apple-codesign-password: ${{ secrets.APPLE-CODESIGN_PASSWORD }}
+          apple-codesign-id: ${{ secrets.APPLE-CODESIGN_ID }}
+          apple-notarize-apple-id: ${{ secrets.APPLE_NOTARIZE_APPLE_ID }}
+          apple-notarize-team-id: ${{ secrets.APPLE_NOTARIZE_TEAM_ID }}
+          apple-notarize-password: ${{ secrets.APPLE-NOTARIZE_PASSWORD }}
+          sparkle-ed25519-key: ${{ secrets.SPARKLE-ED25519_KEY }}
+
+  flatpak-build:
+    name: Flatpak Build (${{ matrix.arch }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+
+    runs-on: ${{ matrix.os }}
+
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+          submodules: true
+
+      - name: Set short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Free disk space
+        shell: bash
+        run: |
+          df -h
+          rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift || true
+          rm -rf /var/lib/apt/lists/* /var/cache/apt/* || true
+          if command -v apt-get >/dev/null 2>&1; then
+            apt-get clean || true
+          fi
+          df -h
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: ProjTLauncher-${{ runner.os }}-${{ steps.short-version.outputs.version }}-Flatpak.flatpak
+          manifest-path: flatpak/tr.org.projecttick.ProjTLauncher.yml
+          arch: ${{ matrix.arch }}
+
+  nix-system-build:
+    name: Build via Nix (${{ matrix.system }})
+    needs: [flake-check]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            system: x86_64-linux
+          - os: ubuntu-24.04-arm
+            system: aarch64-linux
+          - os: macos-latest
+            system: aarch64-darwin
+    
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.CHECKOUT_REF }}
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build package via Nix (Debug)
+        if: github.ref_type != 'tag'
+        run: |
+          nix build --no-link --print-build-logs .#packages.${{ matrix.system }}.projtlauncher-debug || \
+          nix build --no-link --print-build-logs .#projtlauncher
+
+      - name: Build package via Nix (Release)
+        if: github.ref_type == 'tag'
+        run: |
+          nix build --no-link --print-build-logs .#packages.${{ matrix.system }}.projtlauncher || \
+          nix build --no-link --print-build-logs .#projtlauncher
+
+      - name: Install package for testing
+        run: |
+          nix profile install .#packages.${{ matrix.system }}.projtlauncher || \
+          nix profile install .#projtlauncher || \
+          echo "Package installation skipped or not available"
+
+      - name: Run tests via Nix
+        continue-on-error: true
+        run: |
+          nix build --no-link --print-build-logs .#checks.${{ matrix.system }}.default || \
+          echo "No tests defined in flake"
+
+      - name: Build package with result link
+        id: build-result
+        run: |
+          # Build with result link for artifact upload
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            nix build --print-build-logs .#packages.${{ matrix.system }}.projtlauncher -o result || \
+            nix build --print-build-logs .#projtlauncher -o result
+          else
+            nix build --print-build-logs .#packages.${{ matrix.system }}.projtlauncher-debug -o result || \
+            nix build --print-build-logs .#projtlauncher -o result
+          fi
+          
+          # Check if result exists
+          if [ -L result ]; then
+            echo "result-path=$(readlink -f result)" >> $GITHUB_OUTPUT
+            echo "has-result=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-result=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Nix package
+        if: steps.build-result.outputs.has-result == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ProjTLauncher-Nix-${{ matrix.system }}-${{ github.sha }}
+          path: result/**/*
+          retention-days: 7
+          if-no-files-found: warn
