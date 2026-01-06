@@ -175,3 +175,6 @@ zlib/MODULE.bazel.lock
 .wrangler/
 .github/workflows/old/
 dependencies/
+
+*.patch
+*.diff
