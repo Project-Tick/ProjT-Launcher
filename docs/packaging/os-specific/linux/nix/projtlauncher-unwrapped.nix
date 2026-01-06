@@ -88,7 +88,7 @@ stdenv.mkDerivation (finalAttrs: {
       experiment with different modpacks, resource packs, or
       gameplay styles while keeping everything neatly separated.
     '';
-    homepage = "https://projtlauncher.yongdohyun.org.tr/";
+    homepage = "https://projtlauncher.projecttick.org.tr/";
     changelog = "https://github.com/Project-Tick/ProjT-Launcher/releases/tag/${finalAttrs.version}";
     license = with lib.licenses; [
       gpl3Only

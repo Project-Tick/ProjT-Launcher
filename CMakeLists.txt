@@ -273,11 +273,11 @@ endif()
 ##################################### Set Application options #####################################
 
 ######## Set URLs ########
-set(Launcher_NEWS_RSS_URL "https://projtlauncher.yongdohyun.org.tr/feed/feed.xml" CACHE STRING "URL to fetch ProjT Launcher's news RSS feed from.")
-set(Launcher_NEWS_OPEN_URL "https://projtlauncher.yongdohyun.org.tr/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
-set(Launcher_HELP_URL "https://projtlauncher.yongdohyun.org.tr/wiki/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
-set(Launcher_LOGIN_CALLBACK_URL "https://projtlauncher.yongdohyun.org.tr/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
-set(Launcher_FMLLIBS_BASE_URL "https://files.projtlauncher.yongdohyun.org.tr/fmllibs/" CACHE STRING "URL for FML Libraries.")
+set(Launcher_NEWS_RSS_URL "https://projtlauncher.projecttick.org.tr/feed/feed.xml" CACHE STRING "URL to fetch ProjT Launcher's news RSS feed from.")
+set(Launcher_NEWS_OPEN_URL "https://projtlauncher.projecttick.org.tr/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
+set(Launcher_HELP_URL "https://projtlauncher.projecttick.org.tr/wiki/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
+set(Launcher_LOGIN_CALLBACK_URL "https://projtlauncher.projecttick.org.tr/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
+set(Launcher_FMLLIBS_BASE_URL "https://files.projtlauncher.projecttick.org.tr/fmllibs/" CACHE STRING "URL for FML Libraries.")
 
 ######## Set version numbers ########
 set(Launcher_VERSION_MAJOR 0)
@@ -302,7 +302,7 @@ set(Launcher_UPDATER_GITHUB_REPO "https://github.com/Project-Tick/ProjT-Launcher
 set(Launcher_BUILD_ARTIFACT "" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
 
 # The metadata server
-set(Launcher_META_URL "http://meta.yongdohyun.org.tr/" CACHE STRING "URL to fetch Launcher's meta files from.")
+set(Launcher_META_URL "http://meta.projecttick.org.tr/" CACHE STRING "URL to fetch Launcher's meta files from.")
 
 # Imgur API Client ID
 set(Launcher_IMGUR_CLIENT_ID "5b97b0713fba4a3" CACHE STRING "Client ID you can get from Imgur when you register an application")
@@ -312,16 +312,16 @@ set(Launcher_BUG_TRACKER_URL "https://github.com/Project-Tick/ProjT-Launcher/iss
 
 # Translations Platform URL
 set(Launcher_TRANSLATIONS_URL "https://hosted.weblate.org/projects/projectticklauncher/launcher/" CACHE STRING "URL for the translations platform.")
-set(Launcher_TRANSLATION_FILES_URL "http://i18n.yongdohyun.org.tr/" CACHE STRING "URL for the translations files.")
+set(Launcher_TRANSLATION_FILES_URL "http://i18n.projecttick.org.tr/" CACHE STRING "URL for the translations files.")
 
 # Matrix Space
-set(Launcher_MATRIX_URL "https://projtlauncher.yongdohyun.org.tr/matrix" CACHE STRING "URL to the Matrix Space")
+set(Launcher_MATRIX_URL "https://projtlauncher.projecttick.org.tr/matrix" CACHE STRING "URL to the Matrix Space")
 
 # Discord URL
-set(Launcher_DISCORD_URL "https://projtlauncher.yongdohyun.org.tr/discord" CACHE STRING "URL for the Discord guild.")
+set(Launcher_DISCORD_URL "https://projtlauncher.projecttick.org.tr/discord" CACHE STRING "URL for the Discord guild.")
 
 # Subreddit URL
-set(Launcher_SUBREDDIT_URL "https://projtlauncher.yongdohyun.org.tr/reddit" CACHE STRING "URL for the subreddit.")
+set(Launcher_SUBREDDIT_URL "https://projtlauncher.projecttick.org.tr/reddit" CACHE STRING "URL for the subreddit.")
 
 # Builds
 # Builds
@@ -682,14 +682,14 @@ if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND APPLE)
     # Mac bundle settings
     set(MACOSX_BUNDLE_BUNDLE_NAME "${Launcher_DisplayName}")
     set(MACOSX_BUNDLE_INFO_STRING "${Launcher_DisplayName}: A custom launcher for Minecraft that allows you to easily manage multiple installations of Minecraft at once.")
-    set(MACOSX_BUNDLE_GUI_IDENTIFIER "tr.org.yongdohyun.${Launcher_Name}")
+    set(MACOSX_BUNDLE_GUI_IDENTIFIER "tr.org.projecttick.${Launcher_Name}")
     set(MACOSX_BUNDLE_BUNDLE_VERSION "${Launcher_VERSION_NAME}")
     set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${Launcher_VERSION_NAME}")
     set(MACOSX_BUNDLE_LONG_VERSION_STRING "${Launcher_VERSION_NAME}")
     set(MACOSX_BUNDLE_ICON_FILE ${Launcher_Name}.icns)
     set(MACOSX_BUNDLE_COPYRIGHT "${Launcher_Copyright_Mac}")
     set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "v55ZWWD6QlPoXGV6VLzOTZxZUggWeE51X8cRQyQh6vA=" CACHE STRING "Public key for Sparkle update feed")
-    set(MACOSX_SPARKLE_UPDATE_FEED_URL "https://projtlauncher.yongdohyun.org.tr/feed/appcast.xml" CACHE STRING "URL for Sparkle update feed")
+    set(MACOSX_SPARKLE_UPDATE_FEED_URL "https://projtlauncher.projecttick.org.tr/feed/appcast.xml" CACHE STRING "URL for Sparkle update feed")
 
     set(MACOSX_SPARKLE_DOWNLOAD_URL "https://github.com/sparkle-project/Sparkle/releases/download/2.8.0/Sparkle-2.8.0.tar.xz" CACHE STRING "URL to Sparkle release archive")
     set(MACOSX_SPARKLE_SHA256 "fd5681ee92bf238aaac2d08214ceaf0cc8976e452d7f882d80bac1e61581f3b1" CACHE STRING "SHA256 checksum for Sparkle release archive")

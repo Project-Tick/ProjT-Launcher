@@ -1,0 +1,115 @@
+Contribution Guidelines
+=======================
+
+ProjT Launcher
+Copyright (C) 2026 Project Tick  
+Licensed under multiple licenses (Launcher: GPL-3.0-only, Website: AGPL-3.0-only, Metadata generator: MS-PL, Zlib: Zlib license, Quazip: LGPL-2.1-or-later, bzip2: bzip2 license, libnbt++ 3: GPL-3.0-only). See LICENSE and COPYING.
+
+Project Areas
+-------------
+
+- Launcher app (C++/Qt): launcher/, CMakeLists.txt
+- Website (Eleventy): website/, public/, package.json
+- Automation bot (Cloudflare Workers): bot/
+- Metadata generator (Python): meta/, pyproject.toml
+- Documentation: docs/
+- CI/Tools: ci/, .github/, scripts/, tools/
+- Forked Libraries: quazip/, zlib/, bzip2, libnbtplusplus/
+- Non fork Libraries: launcherjava/
+- Vendored Libraries: gamemode/, LocalPeer/, murmur2/, qdcss/, rainbow/, systeminfo/
+
+Engineering Standards
+---------------------
+
+This project follows specific engineering standards to ensure maintainability and quality. Please review them before contributing.
+
+Key Principles:
+
+- Formatted Code: Use the formatter for your area (clang-format for C++/Qt).
+- Tested Features: Write tests for new functionality.
+- MVVM Architecture: Keep business logic out of the UI.
+- Signed Commits: Sign-off your commits (DCO).
+
+DCO Sign-off
+------------
+
+Every commit must include a `Signed-off-by:` line. Example:
+
+```bash
+git commit -s -m "Fix: explain what changed"
+```
+
+---
+
+Documentation Index
+-------------------
+
+Please read the specific sections below before writing a single line of code (start with docs/contributing/):
+
+1. docs/contributing/GETTING_STARTED
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Setup: Required tools (Qt 6.x, CMake 3.22+).
+- Environment: How to set up VS Code or Visual Studio.
+
+2. docs/contributing/CODE_STYLE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Formatting: clang-format usage.
+- Modern C++: C++20 features and best practices.
+- Qt Widgets: Component structure and formatting.
+
+3. docs/contributing/PROJECT_STRUCTURE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Organization: Where to put your files.
+- Naming: File and class naming conventions.
+
+4. docs/contributing/ARCHITECTURE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- MVVM: Model-View-ViewModel pattern explained.
+- Threading: Keeping the UI responsive.
+
+5. docs/contributing/TESTING
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- QtTest: How to write and run unit tests.
+- Best Practices: Mocking and async testing.
+
+Other Areas
+~~~~~~~~~~~
+
+- Bot: bot/
+- Website: .eleventy.js, website/, package.json
+- Metadata generator: meta/, pyproject.toml
+
+----------------------------------------------------------------
+
+Quick FAQ
+---------
+
+Why is my PR failing CI?
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Did you run clang-format?
+- Did you sign off your commits (-s)?
+- Did you write tests?
+
+Can I use a different Qt version?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+No (launcher). We require exact version matching to prevent "works on my machine" issues.
+
+--------------------------------------------------------------------
+
+Contact
+-------
+
+- Mailing Lists: Bug reports, feature requests, Questions and discussions
+- Email: yongdohyun@projtlauncher.yongdohyun.org.tr
+
+---
+
+Last updated: January 2026
+~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -87,7 +87,8 @@ fi
 
 if [ "${DEPLOY_TO_FOLDER}" = true ]; then
     echo "Deploying to ${DEPLOY_FOLDER}"
-    rsync -rvog --chown="${DEPLOY_FOLDER_USER}:${DEPLOY_FOLDER_GROUP}" --exclude=.git "${LAUNCHER_DIR}/" "${DEPLOY_FOLDER}"
+    mkdir -p "${DEPLOY_FOLDER}"
+    rsync -av --exclude=.git "${META_LAUNCHER_DIR}/" "${DEPLOY_FOLDER}"
 fi
 
 exit 0

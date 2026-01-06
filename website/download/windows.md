@@ -36,7 +36,7 @@ Note: These builds are less tested than the MSVC builds.
 <!-- ## Winget Package
 
 ```powershell
-winget install --exact yongdohyun.ProjTLauncher
+winget install --exact projecttick.ProjTLauncher
 ```
 
 </div>
