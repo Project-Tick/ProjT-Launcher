@@ -59,7 +59,7 @@ runs:
       run: |
         cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }} --prefix ${{ env.INSTALL_APPIMAGE_DIR }}/usr
 
-        mv ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/tr.org.yongdohyun.ProjTLauncher.metainfo.xml ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/tr.org.yongdohyun.ProjTLauncher.appdata.xml
+        mv ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/tr.org.projecttick.ProjTLauncher.metainfo.xml ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/tr.org.projecttick.ProjTLauncher.appdata.xml
         export "NO_APPSTREAM=1" # we have to skip appstream checking because appstream on ubuntu 20.04 is outdated
 
         export OUTPUT="ProjTLauncher-Linux-$APPIMAGE_ARCH.AppImage"
@@ -109,7 +109,7 @@ runs:
         fi
 
 
-        ./linuxdeploy-"$APPIMAGE_ARCH".AppImage --appdir ${{ env.INSTALL_APPIMAGE_DIR }} --output appimage --plugin qt -i ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/icons/hicolor/scalable/apps/tr.org.yongdohyun.ProjTLauncher.svg
+        ./linuxdeploy-"$APPIMAGE_ARCH".AppImage --appdir ${{ env.INSTALL_APPIMAGE_DIR }} --output appimage --plugin qt -i ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/icons/hicolor/scalable/apps/tr.org.projecttick.ProjTLauncher.svg
 
         mv "ProjTLauncher-Linux-$APPIMAGE_ARCH.AppImage" "ProjTLauncher-Linux-${{ env.VERSION }}-${{ inputs.build-type }}-$APPIMAGE_ARCH.AppImage"
 

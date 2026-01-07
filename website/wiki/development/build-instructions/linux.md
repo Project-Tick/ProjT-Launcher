@@ -136,11 +136,11 @@ Both `flatpak` and `flatpak-builder` packages must be installed on your system t
 #### Latest Stable Release
 
 ```bash
-git clone --recursive https://github.com/flathub/tr.org.yongdohyun.ProjTLauncher
-cd tr.org.yongdohyun.ProjTLauncher
+git clone --recursive https://github.com/flathub/tr.org.projecttick.ProjTLauncher
+cd tr.org.projecttick.ProjTLauncher
 flatpak install org.kde.Sdk/x86_64/6.7 runtime/org.freedesktop.Sdk.Extension.openjdk17/x86_64/23.08 runtime/org.freedesktop.Sdk.Extension.openjdk8/x86_64/23.08 runtime/org.freedesktop.Sdk.Extension.openjdk21/x86_64/23.08 # build requirements
 # remove --user --install if you want to build without installing
-flatpak-builder --user --install flatbuild tr.org.yongdohyun.ProjTLauncher.yml
+flatpak-builder --user --install flatbuild tr.org.projecttick.ProjTLauncher.yml
 ```
 
 #### Latest Commit
@@ -150,7 +150,7 @@ git clone --recursive https://github.com/Project-Tick/ProjT-Launcher # source re
 cd ProjTLauncher/flatpak
 flatpak install org.kde.Sdk/x86_64/6.7 runtime/org.freedesktop.Sdk.Extension.openjdk17/x86_64/23.08 runtime/org.freedesktop.Sdk.Extension.openjdk8/x86_64/23.08 runtime/org.freedesktop.Sdk.Extension.openjdk21/x86_64/23.08 # build requirements
 # remove --user --install if you want to build without installing
-flatpak-builder --user --install flatbuild tr.org.yongdohyun.ProjTLauncher.yml -->
+flatpak-builder --user --install flatbuild tr.org.projecttick.ProjTLauncher.yml -->
 
 ### Installing Qt using the installer (optional)
 

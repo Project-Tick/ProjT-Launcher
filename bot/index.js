@@ -458,7 +458,7 @@ function isBotIdentity({ name, email, login }) {
   if (combined.includes("project tick bot")) return true;
   if (combined.includes("projt-launcher-bot")) return true;
   if (lowerEmail.includes("@bot.")) return true;
-  if (lowerEmail.includes("bot.yongdohyun.org.tr")) return true;
+  if (lowerEmail.includes("bot.projecttick.org.tr")) return true;
 
   return false;
 }

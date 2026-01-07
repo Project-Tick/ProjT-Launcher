@@ -1,12 +1,12 @@
 <p align="center">
   <picture>
-    <source srcset="/program_info/tr.org.yongdohyun.ProjTLauncher.logo-darkmode.svg">
-    <img alt="ProjT Launcher" src="/program_info/tr.org.yongdohyun.ProjTLauncher.logo.svg" width="40%">
+    <source srcset="/program_info/tr.org.projecttick.ProjTLauncher.logo-darkmode.svg">
+    <img alt="ProjT Launcher" src="/program_info/tr.org.projecttick.ProjTLauncher.logo.svg" width="40%">
   </picture>
 </p>
 
 <p align="center">
-  <img alt="ProjT Launcher Main Menu" src="https://projtlauncher.yongdohyun.org.tr/img/screenshots/projtlauncher_dark_main_window.png" width="80%">
+  <img alt="ProjT Launcher Main Menu" src="https://projtlauncher.projecttick.org.tr/img/screenshots/projtlauncher_dark_main_window.png" width="80%">
 </p>
 
 <p align="center">
@@ -292,7 +292,7 @@ This is Bzip2/libbz2; a program and library for lossless, block-sorting data
 compression.
 
 This document pertains to the Bzip2 feature development effort hosted on
-[Github.com](https://gitlab.com/Project-Tick/ProjT-Launcher).
+[Github.com](https://github.com/Project-Tick/ProjT-Launcher).
 
 The documentation here may differ from that on the Bzip2 1.1 project page
 maintained by Micah Snyder on [gitlab.com](https://gitlab.com/bzip2/bzip2).
@@ -325,7 +325,7 @@ manual page is available as bzip2.txt.
 ### Contributing to Bzip2's development
 
 The Bzip2 project is hosted on GitHub for feature development work.
-It can be found at [https://gitlab.com/Project-Tick/ProjT-Launcher](https://gitlab.com/Project-Tick/ProjT-Launcher).
+It can be found at [https://github.com/Project-Tick/ProjT-Launcher](https://github.com/Project-Tick/ProjT-Launcher).
 
 Changes to be included in the next feature version are committed to the
 `develop` branch.
@@ -341,7 +341,7 @@ gradually port Bzip2 to [Rust](https://www.rust-lang.org).
 
 ### Report a Bug
 
-Please report bugs via [GitHub Issues](https://gitlab.com/Project-Tick/ProjT-Launcher/issues).
+Please report bugs via [GitHub Issues](https://github.com/Project-Tick/ProjT-Launcher/issues).
 
 Before you create a new issue, please verify that no one else has already
 reported the same issue.
@@ -406,7 +406,7 @@ QuaZip is the C++ wrapper for Gilles Vollant's ZIP/UNZIP package
 If you need to write files to a ZIP archive or read files from one
 using QIODevice API, QuaZip is exactly the kind of tool you need.
 
-See [the documentation](https://projtlauncher.yongdohyun.org.tr/wiki/) for details.
+See [the documentation](https://projtlauncher.projecttick.org.tr/wiki/) for details.
 
 Want to report a bug or ask for a feature? Open an [issue](https://github.com/Project-Tick/ProjT-Launcher/issues).
 
@@ -876,10 +876,10 @@ Example (NixOS):
 ```nix
 {
   nix.settings = {
-    trusted-substituters = [ "https://cache.yongdohyun.org.tr" ];
+    trusted-substituters = [ "https://cache.projecttick.org.tr" ];
 
     trusted-public-keys = [
-      "cache.yongdohyun.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
+      "cache.projecttick.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
     ];
   };
 }
@@ -996,10 +996,10 @@ Example (NixOS):
 ```nix
 {
   nix.settings = {
-    trusted-substituters = [ "https://cache.yongdohyun.org.tr" ];
+    trusted-substituters = [ "https://cache.projecttick.org.tr" ];
 
     trusted-public-keys = [
-      "cache.yongdohyun.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
+      "cache.projecttick.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
     ];
   };
 }

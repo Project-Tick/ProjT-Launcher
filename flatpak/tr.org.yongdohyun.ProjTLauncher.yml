@@ -1,4 +1,4 @@
-id: tr.org.yongdohyun.ProjTLauncher
+id: tr.org.projecttick.ProjTLauncher
 runtime: org.kde.Platform
 runtime-version: '6.10'
 sdk: org.kde.Sdk
