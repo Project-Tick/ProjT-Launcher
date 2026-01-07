@@ -22,8 +22,7 @@ OutFile "../@Launcher_CommonName@-Setup.exe"
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "@Launcher_Project_Source_Dir@/LICENSE"
-!insertmacro MUI_PAGE_LICENSE "@Launcher_Project_Source_Dir@/COPYING.md"
-!insertmacro MUI_PAGE_LICENSE "CombinedLicenses.txt"
+!insertmacro MUI_PAGE_LICENSE "@Launcher_Project_Source_Dir@/COPYING"
 !define MUI_COMPONENTSPAGE_NODESC
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
