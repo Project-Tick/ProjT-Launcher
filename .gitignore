@@ -178,3 +178,5 @@ dependencies/
 
 *.patch
 *.diff
+*.mbox
+*.mbox.gz
