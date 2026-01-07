@@ -1,0 +1,27 @@
+name: Setup macOS dependencies
+
+inputs:
+  build-type:
+    description: Type for the build
+    required: true
+    default: Debug
+
+runs:
+  using: composite
+
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: |
+        brew update
+        brew install mono ninja extra-cmake-modules temurin@21 \
+          zlib quazip cmark tomlplusplus qrencode lcov
+        brew unlink qt || true # Avoid conflicts with the Qt we actually want to use
+
+    - name: Set JAVA_HOME
+      shell: bash
+      run: |
+        echo "JAVA_HOME=$(/usr/libexec/java_home -v 21)" >> "$GITHUB_ENV"
+        echo "PATH=$JAVA_HOME/bin:$PATH" >> "$GITHUB_ENV"
+
+
