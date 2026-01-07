@@ -14,12 +14,12 @@ set(Launcher_DisplayName "ProjT Launcher")
 set(Launcher_Name "${Launcher_CommonName}" PARENT_SCOPE)
 set(Launcher_DisplayName "${Launcher_DisplayName}" PARENT_SCOPE)
 
-set(Launcher_AppID "tr.org.projecttick.ProjTLauncher")
+set(Launcher_AppID "tr.org.yongdohyun.ProjTLauncher")
 set(Launcher_SVGFileName "${Launcher_AppID}.svg")
 set(Launcher_Copyright "© 2025-2026 Project Tick\\n© 2022-2025 Prism Launcher Contributors\\n© 2021-2022 PolyMC Contributors\\n© 2012-2021 MultiMC Contributors")
 set(Launcher_Copyright_Mac "© 2025-2026 Project Tick, © 2022-2025 Prism Launcher Contributors, © 2021-2022 PolyMC Contributors and © 2012-2021 MultiMC Contributors" PARENT_SCOPE)
 set(Launcher_Copyright "${Launcher_Copyright}" PARENT_SCOPE)
-set(Launcher_Domain "projtlauncher.projecttick.org.tr" PARENT_SCOPE)
+set(Launcher_Domain "projtlauncher.yongdohyun.org.tr" PARENT_SCOPE)
 set(Launcher_UserAgent "${Launcher_CommonName}/${Launcher_VERSION_NAME}" PARENT_SCOPE)
 set(Launcher_ConfigFile "projtlauncher.cfg" PARENT_SCOPE)
 set(Launcher_Git "https://github.com/Project-Tick/ProjT-Launcher" PARENT_SCOPE)
@@ -45,21 +45,6 @@ configure_file(projtlauncher.qrc.in projtlauncher.qrc @ONLY)
 configure_file(projtlauncher.manifest.in projtlauncher.manifest @ONLY)
 configure_file(projtlauncher.ico projtlauncher.ico COPYONLY)
 configure_file(${Launcher_SVGFileName} ${Launcher_SVGFileName} COPYONLY)
-
-set(Launcher_Project_Source_Dir "${PROJECT_SOURCE_DIR}")
-
-file(READ "${PROJECT_SOURCE_DIR}/LICENSE" MAIN_LICENSE)
-file(READ "${PROJECT_SOURCE_DIR}/zlib/LICENSE" ZLIB_LICENSE)
-file(READ "${PROJECT_SOURCE_DIR}/quazip/COPYING" QUAZIP_LICENSE)
-file(READ "${PROJECT_SOURCE_DIR}/qdcss/LICENSE" QDCSS_LICENSE)
-file(READ "${PROJECT_SOURCE_DIR}/libnbtplusplus/COPYING" LIBNBT_LICENSE)
-file(READ "${PROJECT_SOURCE_DIR}/libnbtplusplus/COPYING.LESSER" LIBNBT_LESSER_LICENSE)
-file(READ "${PROJECT_SOURCE_DIR}/launcherjava/LICENSE" LAUNCHERJAVA_LICENSE)
-file(READ "${PROJECT_SOURCE_DIR}/javacheck/LICENSE" JAVACHECK_LICENSE)
-
-set(COMBINED_LICENSES "--- zlib ---\n\n${ZLIB_LICENSE}\n\n--- QuaZip ---\n\n${QUAZIP_LICENSE}\n\n--- qdcss ---\n\n${QDCSS_LICENSE}\n\n--- libnbtplusplus ---\n\n${LIBNBT_LICENSE}\n\n${LIBNBT_LESSER_LICENSE}\n\n--- launcherjava ---\n\n${LAUNCHERJAVA_LICENSE}\n\n--- javacheck ---\n\n${JAVACHECK_LICENSE}")
-
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CombinedLicenses.txt" "${COMBINED_LICENSES}")
 
 if(MSVC)
     set(Launcher_MSVC_Redist_NSIS_Section [=[

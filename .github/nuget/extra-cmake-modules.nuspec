@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>extra-cmake-modules</id>
+    <version>0.0.0</version>
+    <authors>KDE</authors>
+    <owners>Project-Tick</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">BSD-3-Clause</license>
+    <projectUrl>https://github.com/KDE/extra-cmake-modules</projectUrl>
+    <description>KDE extra CMake modules packaged for ProjT Launcher.</description>
+    <tags>cmake kde ecm</tags>
+  </metadata>
+  <files>
+    <file src="build\**" target="build" />
+    <file src="LICENSE.txt" target="" />
+  </files>
+</package>

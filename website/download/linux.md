@@ -13,7 +13,7 @@ eleventyNavigation:
         <h1>Linux Download</h1>
         <p>Flathub supports both x86_64 and ARM64</p>
         <br>
-        <a class="button size-large type-link" href="https://flathub.org/apps/details/tr.org.projecttick.ProjTLauncher" target="_blank">Install from Flathub</a>
+        <a class="button size-large type-link" href="https://flathub.org/apps/details/tr.org.yongdohyun.ProjTLauncher" target="_blank">Install from Flathub</a>
         <p>x86_64 ONLY</p>
         <br>
         <a class="button size-large" href="https://github.com/Project-Tick/ProjT-Launcher/releases/download/{{version.current}}/ProjTLauncher-Linux-x86_64.AppImage">Download (AppImage)</a>
@@ -43,7 +43,7 @@ You can also enable Flathub and install the launcher with the following commands
 
 ```bash
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install flathub tr.org.projecttick.ProjTLauncher
+flatpak install flathub tr.org.yongdohyun.ProjTLauncher
 ```
 
 ## <img src="https://www.vectorlogo.zone/logos/nixos/nixos-icon.svg" alt="NixOS Logo" height="20" /> Nix / NixOS
