@@ -75,7 +75,7 @@ if [ "${DEPLOY_TO_GIT}" = true ]; then
     launcher_git add net.minecraftforge/* || fail_out
     launcher_git add net.neoforged/* || fail_out
     launcher_git add net.fabricmc.fabric-loader/* net.fabricmc.intermediary/* || fail_out
-    launcher_git add org.quiltmc.quilt-loader/* || fail_out # TODO: add Quilt hashed, once it is actually used
+    launcher_git add org.quiltmc.quilt-loader/* org.quiltmc.hashed/* || fail_out
     launcher_git add com.mumfrey.liteloader/* || fail_out
     launcher_git add net.minecraft.java/* net.adoptium.java/* com.azul.java/* || fail_out
 

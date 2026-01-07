@@ -264,8 +264,8 @@ void AccountList::onListChanged()
 {
     if (m_autosave) {
         if (!saveList()) {
-            qWarning() << "Failed to save account list automatically";
-            // TODO: Otomatik kaydetme başarısız olursa kullanıcıya bildirim gösterilmeli. Şu anda sadece loglanıyor.
+            qCritical() << "Failed to save account list automatically";
+            emit accountListSaveFailed(tr("Failed to save account list. Your changes may be lost."));
         }
     }
 

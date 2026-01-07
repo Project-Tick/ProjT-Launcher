@@ -116,9 +116,14 @@ else()
 
         # -ffunction-sections and -fdata-sections help reduce binary size
         # -mguard=cf enables Control Flow Guard
-        # TODO: Look into -gc-sections to further reduce binary size
+        # -Wl,--gc-sections removes unused sections during linking
         foreach(lang C CXX)
             set("CMAKE_${lang}_FLAGS_RELEASE" "-ffunction-sections -fdata-sections -mguard=cf")
+        endforeach()
+        
+        # Add linker flag to remove unused sections
+        foreach(lang C CXX)
+            set("CMAKE_${lang}_LINKER_FLAGS_RELEASE" "${CMAKE_${lang}_LINKER_FLAGS_RELEASE} -Wl,--gc-sections")
         endforeach()
     endif()
 endif()
