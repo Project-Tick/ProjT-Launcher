@@ -47,7 +47,7 @@ stdenv.mkDerivation {
     root = ../.;
     fileset = lib.fileset.unions [
       ../CMakeLists.txt
-      ../COPYING.md
+      ../COPYING
       ../libnbtplusplus
       ../buildconfig
       ../cmake
