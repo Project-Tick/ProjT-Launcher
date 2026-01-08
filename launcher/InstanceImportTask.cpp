@@ -59,6 +59,7 @@
 
 #include "Application.h"
 #include "FileSystem.h"
+#include "Json.h"
 #include "MMCZip.h"
 #include "NullInstance.h"
 
