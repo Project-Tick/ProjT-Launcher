@@ -2094,7 +2094,7 @@ jobs:
   deploy-website:
     timeout-minutes: 5
     # Only deploy on pushes to develop; skip PRs/merge_group explicitly
-    if: ${{ github.repository_owner == 'Project-Tick' &&  needs.prepare.outputs.run-website == 'true' }}
+    if: ${{ github.repository_owner == 'Project-Tick' &&  needs.prepare.outputs.run-website == 'true' && needs.prepare.outputs.is-pr == 'false' }}
     needs: [build-website, prepare]
     permissions:
       pages: write
@@ -3393,4 +3393,3 @@ jobs:
                 target_url,
               });
             }
-              
