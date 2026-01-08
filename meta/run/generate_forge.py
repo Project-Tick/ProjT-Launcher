@@ -246,7 +246,7 @@ def version_from_build_system_installer(
     v.requires = [Dependency(uid=MINECRAFT_COMPONENT, equals=version.mc_version_sane)]
     v.main_class = "io.github.zekerzhayard.forgewrapper.installer.Main"
 
-    # NOTE: Size and hash are currently missing, but maven_files is empty initially
+    # FIXME: Add the size and hash here
     v.maven_files = []
 
     # load the locally cached installer file info and use it to add the installer entry in the json

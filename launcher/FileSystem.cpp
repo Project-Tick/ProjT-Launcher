@@ -704,7 +704,7 @@ bool deletePath(QString path)
 
 bool trash(QString path, QString* pathInTrash)
 {
-    // NOTE: Flatpak trash support requires org.freedesktop.portal.Trash D-Bus integration
+    // TODO: Flatpak trash desteği eklenmeli. org.freedesktop.portal.Trash D-Bus arayüzü ile dosyalar çöp kutusuna taşınabilir.
     // See: https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Trash.html
     // This requires D-Bus integration with the Trash portal for proper sandboxed file deletion
     if (DesktopServices::isFlatpak())

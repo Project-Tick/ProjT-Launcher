@@ -164,7 +164,7 @@ def main():
 
     new_index = DerivedForgeIndex()
 
-    # NOTE: does not fully validate that the file has not changed format
+    # FIXME: does not fully validate that the file has not changed format
     # NOTE: For some insane reason, the format of the versions here is special. It having a branch at the end means it
     #           affects that particular branch.
     #       We don't care about Forge having branches.

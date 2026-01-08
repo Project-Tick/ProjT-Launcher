@@ -6,6 +6,7 @@ Summary:
 
 - **complex**: 16 items
 - **implementable**: 76 items
+- **trivial**: 6 items
 - **unknown**: 78 items
 
 ---
@@ -838,6 +839,62 @@ void SkinManageDialog::setupCapes()
     // FIXME: add a model for this, download/refresh the capes on demand
     auto& accountData = *m_acct->accountData();
     int index = 0;
+```
+
+## Trivial (6)
+
+- **TODO** in `launcher/FileSystem.cpp`:707 — // TODO: Flatpak trash desteği eklenmeli. org.freedesktop.portal.Trash D-Bus arayüzü ile dosyalar çöp kutusuna taşınabilir.
+```
+bool trash(QString path, QString* pathInTrash)
+{
+    // TODO: Flatpak trash desteği eklenmeli. org.freedesktop.portal.Trash D-Bus arayüzü ile dosyalar çöp kutusuna taşınabilir.
+    // See: https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Trash.html
+    // This requires D-Bus integration with the Trash portal for proper sandboxed file deletion
+```
+
+- **FIXME** in `meta/run/generate_neoforge.py`:54 — # FIXME: Add the size and hash here
+```
+    v.main_class = "io.github.zekerzhayard.forgewrapper.installer.Main"
+
+    # FIXME: Add the size and hash here
+    v.maven_files = []
+
+```
+
+- **FIXME** in `meta/run/update_forge.py`:167 — # FIXME: does not fully validate that the file has not changed format
+```
+    new_index = DerivedForgeIndex()
+
+    # FIXME: does not fully validate that the file has not changed format
+    # NOTE: For some insane reason, the format of the versions here is special. It having a branch at the end means it
+    #           affects that particular branch.
+```
+
+- **FIXME** in `meta/run/generate_forge.py`:249 — # FIXME: Add the size and hash here
+```
+    v.main_class = "io.github.zekerzhayard.forgewrapper.installer.Main"
+
+    # FIXME: Add the size and hash here
+    v.maven_files = []
+
+```
+
+- **FIXME** in `launcher/minecraft/mod/tasks/LocalModParseTask.cpp`:73 — // FIXME: what is the format of this? is there any?
+```
+        QJsonArray authors = firstObj.value("authorList").toArray();
+        if (authors.size() == 0) {
+            // FIXME: what is the format of this? is there any?
+            authors = firstObj.value("authors").toArray();
+        }
+```
+
+- **FIXME** in `launcher/ui/pages/modplatform/TexturePackModel.cpp`:82 — // FIXME: This duplicates the logic in meta for the 'texturepacks' trait. However, we don't have access to that
+```
+    if (s_availableVersions.empty()) {
+        for (auto&& version : m_version_list->versions()) {
+            // FIXME: This duplicates the logic in meta for the 'texturepacks' trait. However, we don't have access to that
+            //        information from the index file alone. Also, downloading every version's file isn't a very good idea.
+            if (auto ver = version->toComparableVersion(); ver <= maximumTexturePackVersion())
 ```
 
 ## Unknown (78)
