@@ -4,13 +4,15 @@ on:
   push:
     branches-ignore:
       - 'dependabot/**'
-  pull_request:
+
   workflow_dispatch:
 
 jobs:
 
   linter:
-
+    defaults:
+      run:
+        working-directory: cmark
     runs-on: ubuntu-latest
 
     steps:
@@ -27,7 +29,9 @@ jobs:
         CXX: clang++
 
   posix:
-
+    defaults:
+      run:
+        working-directory: cmark
     strategy:
       fail-fast: false
       matrix:
@@ -112,7 +116,9 @@ jobs:
          ${{ matrix.test_env }} ctest --test-dir build --output-on-failure
 
   windows:
-
+    defaults:
+      run:
+        working-directory: cmark
     runs-on: windows-latest
     strategy:
       fail-fast: false

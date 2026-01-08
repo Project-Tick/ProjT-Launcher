@@ -5,6 +5,10 @@ on: [push, pull_request]
 jobs:
   build:
 
+    defaults:
+      run:
+        working-directory: libqrencode
+
     runs-on: ubuntu-latest
 
     steps:

@@ -14,6 +14,10 @@ jobs:
     # See: https://docs.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow#configuring-a-build-matrix
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: libqrencode
+
     steps:
     - uses: actions/checkout@v2
 
