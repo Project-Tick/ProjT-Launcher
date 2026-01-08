@@ -540,41 +540,9 @@ InstanceList::InstListError InstanceList::loadList()
         }
     }
 
-    // TODO: looks like a general algorithm with a few specifics inserted. Do something about it.
+    // Remove instances that no longer exist on disk
     if (!existingIds.isEmpty()) {
-        // get the list of removed instances and sort it by their original index, from last to first
-        auto deadList = existingIds.values();
-        auto orderSortPredicate = [](const InstanceLocator& a, const InstanceLocator& b) -> bool { return a.second > b.second; };
-        std::sort(deadList.begin(), deadList.end(), orderSortPredicate);
-        // remove the contiguous ranges of rows
-        int front_bookmark = -1;
-        int back_bookmark = -1;
-        int currentItem = -1;
-        auto removeNow = [this, &front_bookmark, &back_bookmark, &currentItem]() {
-            beginRemoveRows(QModelIndex(), front_bookmark, back_bookmark);
-            m_instances.erase(m_instances.begin() + front_bookmark, m_instances.begin() + back_bookmark + 1);
-            endRemoveRows();
-            front_bookmark = -1;
-            back_bookmark = currentItem;
-        };
-        for (auto& removedItem : deadList) {
-            auto instPtr = removedItem.first;
-            instPtr->invalidate();
-            currentItem = removedItem.second;
-            if (back_bookmark == -1) {
-                // no bookmark yet
-                back_bookmark = currentItem;
-            } else if (currentItem == front_bookmark - 1) {
-                // part of contiguous sequence, continue
-            } else {
-                // seam between previous and current item
-                removeNow();
-            }
-            front_bookmark = currentItem;
-        }
-        if (back_bookmark != -1) {
-            removeNow();
-        }
+        removeDeadInstances(existingIds);
     }
     if (newList.size()) {
         add(newList);
@@ -582,6 +550,51 @@ InstanceList::InstListError InstanceList::loadList()
     m_dirty = false;
     updateTotalPlayTime();
     return NoError;
+}
+
+void InstanceList::removeDeadInstances(const QMap<InstanceId, InstanceLocator>& deadInstances)
+{
+    if (deadInstances.isEmpty()) {
+        return;
+    }
+
+    // Sort by original index (descending) to remove from back to front
+    auto deadList = deadInstances.values();
+    auto orderSortPredicate = [](const InstanceLocator& a, const InstanceLocator& b) -> bool { return a.second > b.second; };
+    std::sort(deadList.begin(), deadList.end(), orderSortPredicate);
+
+    // Remove contiguous ranges efficiently with batch operations
+    int front_bookmark = -1;
+    int back_bookmark = -1;
+    int currentItem = -1;
+
+    auto removeNow = [this, &front_bookmark, &back_bookmark, &currentItem]() {
+        beginRemoveRows(QModelIndex(), front_bookmark, back_bookmark);
+        m_instances.erase(m_instances.begin() + front_bookmark, m_instances.begin() + back_bookmark + 1);
+        endRemoveRows();
+        front_bookmark = -1;
+        back_bookmark = currentItem;
+    };
+
+    for (auto& removedItem : deadList) {
+        auto instPtr = removedItem.first;
+        instPtr->invalidate();
+        currentItem = removedItem.second;
+
+        if (back_bookmark == -1) {
+            back_bookmark = currentItem;
+        } else if (currentItem == front_bookmark - 1) {
+            // Part of contiguous sequence, continue
+        } else {
+            // Seam between previous and current item
+            removeNow();
+        }
+        front_bookmark = currentItem;
+    }
+
+    if (back_bookmark != -1) {
+        removeNow();
+    }
 }
 
 void InstanceList::updateTotalPlayTime()

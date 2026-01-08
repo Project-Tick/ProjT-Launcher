@@ -208,6 +208,10 @@ class InstanceList : public QAbstractListModel {
 
     void increaseGroupCount(const QString& group);
     void decreaseGroupCount(const QString& group);
+    
+    /// Removes instances that no longer exist on disk, optimizing for contiguous removals.
+    /// @param deadInstances Map of instance IDs to their (pointer, index) pairs to be removed.
+    void removeDeadInstances(const QMap<InstanceId, InstanceLocator>& deadInstances);
 
    private:
     int m_watchLevel = 0;
