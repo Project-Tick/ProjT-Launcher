@@ -37,6 +37,7 @@
 #include "Version.h"
 
 #include <QDateTime>
+#include <algorithm>
 
 #include "JsonFormat.h"
 
@@ -55,6 +56,22 @@ QString Meta::Version::name() const
 QString Meta::Version::typeString() const
 {
     return m_type;
+}
+
+QString Meta::Version::parentVersion() const
+{
+    // Prioritize net.minecraft
+    auto iter = std::find_if(m_requires.begin(), m_requires.end(),
+                             [](const Require& req) { return req.uid == "net.minecraft" && !req.equalsVersion.isEmpty(); });
+    if (iter != m_requires.end()) {
+        return iter->equalsVersion;
+    }
+    // Fallback to any hard dependency
+    iter = std::find_if(m_requires.begin(), m_requires.end(), [](const Require& req) { return !req.equalsVersion.isEmpty(); });
+    if (iter != m_requires.end()) {
+        return iter->equalsVersion;
+    }
+    return QString();
 }
 
 QDateTime Meta::Version::time() const

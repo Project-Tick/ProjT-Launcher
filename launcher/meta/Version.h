@@ -74,6 +74,7 @@ class Version : public QObject, public BaseVersion, public BaseEntity {
     VersionFilePtr data() const { return m_data; }
     bool isRecommended() const { return m_recommended; }
     bool isLoaded() const { return m_data != nullptr && BaseEntity::isLoaded(); }
+    QString parentVersion() const;
 
     void merge(const Version::Ptr& other);
     void mergeFromList(const Version::Ptr& other);
