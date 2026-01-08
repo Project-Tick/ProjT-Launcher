@@ -37,6 +37,7 @@
 #include "net/ApiDownload.h"
 #include "net/NetJob.h"
 #include "settings/INISettingsObject.h"
+#include "tasks/MultipleOptionsTask.h"
 
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/pages/modplatform/OptionalModDialog.h"
@@ -304,20 +305,21 @@ bool ModrinthCreationTask::createInstance()
             return false;
         }
         qDebug() << "Will try to download" << file.downloads.front() << "to" << file_path;
-        auto dl = Net::ApiDownload::makeFile(file.downloads.dequeue(), file_path);
-        dl->addValidator(new Net::ChecksumValidator(file.hashAlgorithm, file.hash));
-        downloadMods->addNetAction(dl);
-        if (!file.downloads.empty()) {
-            // FIXME: Bu işlem ConcurrentTask'a taşınmalı, şu anda senkron çalışıyor.
-            // MultipleOptionsTask's , once those exist :)
-            auto param = dl.toWeakRef();
-            connect(dl.get(), &Task::failed, [&file, file_path, param, downloadMods] {
-                auto ndl = Net::ApiDownload::makeFile(file.downloads.dequeue(), file_path);
-                ndl->addValidator(new Net::ChecksumValidator(file.hashAlgorithm, file.hash));
-                downloadMods->addNetAction(ndl);
-                if (auto shared = param.lock())
-                    shared->succeeded();
-            });
+        
+        if (file.downloads.size() > 1) {
+            // Use MultipleOptionsTask for files with multiple download URLs
+            auto downloadTask = makeShared<MultipleOptionsTask>(tr("Download %1").arg(fileName));
+            for (const auto& url : file.downloads) {
+                auto dl = Net::ApiDownload::makeFile(url, file_path);
+                dl->addValidator(new Net::ChecksumValidator(file.hashAlgorithm, file.hash));
+                downloadTask->addTask(dl);
+            }
+            downloadMods->addNetAction(downloadTask);
+        } else {
+            // Single download URL - use direct download
+            auto dl = Net::ApiDownload::makeFile(file.downloads.front(), file_path);
+            dl->addValidator(new Net::ChecksumValidator(file.hashAlgorithm, file.hash));
+            downloadMods->addNetAction(dl);
         }
     }
 

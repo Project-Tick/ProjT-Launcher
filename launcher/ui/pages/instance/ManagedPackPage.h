@@ -130,8 +130,9 @@ class GenericManagedPackPage final : public ManagedPackPage {
     {}
     ~GenericManagedPackPage() override = default;
 
-    // TODO: We may want to show this page with some useful info at some point.
-    bool shouldDisplay() const override { return false; };
+    // Show basic information about the instance
+    bool shouldDisplay() const override { return true; };
+    QString displayName() const override { return tr("Instance Info"); }
 };
 
 class ModrinthManagedPackPage final : public ManagedPackPage {

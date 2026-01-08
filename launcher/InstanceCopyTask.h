@@ -49,6 +49,7 @@ class InstanceCopyTask : public InstanceTask {
     QFuture<bool> m_copyFuture;
     QFutureWatcher<bool> m_copyFutureWatcher;
     Filter m_matcher;
+    QString m_instanceType;
     bool m_keepPlaytime;
     bool m_useLinks = false;
     bool m_useHardLinks = false;

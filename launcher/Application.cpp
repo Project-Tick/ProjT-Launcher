@@ -479,8 +479,18 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
      */
     auto appID = ApplicationId::fromPathAndVersion(QDir::currentPath(), BuildConfig.printableVersionString());
     {
-        // TODO: Multiple instances with different data dirs can run from same binary path
-        // This can cause update conflicts - consider using data path in ApplicationId
+        // Known limitation: ApplicationId is based on binary path, not data directory.
+        // This means multiple instances with different data directories running from the same
+        // binary path will share the same ApplicationId, potentially causing conflicts during
+        // updates when both instances try to replace the same binary.
+        // 
+        // Possible solutions (not currently implemented):
+        // 1. Include data path hash in ApplicationId
+        // 2. Lock mechanism in data directory
+        // 3. Update coordinator that checks all running instances
+        //
+        // Current workaround: Users should avoid running multiple instances with different
+        // data dirs from the same binary during updates.
         m_peerInstance = new LocalPeer(this, appID);
         connect(m_peerInstance, &LocalPeer::messageReceived, this, &Application::messageReceived);
         if (m_peerInstance->isClient()) {

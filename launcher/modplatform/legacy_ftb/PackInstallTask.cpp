@@ -218,9 +218,11 @@ void PackInstallTask::install()
     FS::deletePath(m_stagingPath + "/unzip");
 
     if (fallback) {
-    // TODO: Fallback mekanizması eklenmeli. Şu anda hata durumunda sürekli başarısız oluyor.
-        emitFailed(tr("No installation method found!"));
-        return;
+        // Fallback to vanilla Minecraft if no modloader was detected
+        qWarning() << "No Forge version or jarmods found, creating vanilla instance";
+        // Components already has Minecraft version set, no need to fail
+        // Just continue with vanilla Minecraft
+        fallback = false;
     }
 
     components->saveNow();

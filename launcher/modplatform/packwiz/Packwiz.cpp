@@ -168,12 +168,28 @@ void V1::updateModIndex(const QDir& index_dir, Mod& mod)
     if (real_fname != normalized_fname)
         index_file.rename(normalized_fname);
 
-    // There's already data on there!
-    // TODO: Burada daha fazla işlem yapılmalı, çünkü kullanıcı muhtemelen modun üstüne yazmak istiyor.
-    // override a file. In this case, check versions and ask the user what
-    // they want to do!
+    // There's already data on there! Compare versions and update if needed.
     if (index_file.exists()) {
-        index_file.remove();
+        try {
+            auto old_metadata = toml::parse_file(index_file.fileName().toStdString());
+            auto old_version_id = QString::fromStdString(old_metadata.at_path("update.flame.file-id").value_or("")
+                                                         .as_string()->get());
+            
+            // If versions are different, we need to update
+            bool should_update = old_version_id != mod.file_id.toString();
+            
+            if (should_update) {
+                qDebug() << "Updating existing mod" << mod.name << "from version" << old_version_id << "to" << mod.file_id.toString();
+                index_file.remove();
+            } else {
+                qDebug() << "Mod" << mod.name << "is already up to date, skipping";
+                return;
+            }
+        } catch (const toml::parse_error&) {
+            // If parsing fails, just remove and recreate
+            qWarning() << "Failed to parse existing mod index, recreating";
+            index_file.remove();
+        }
     } else {
         FS::ensureFilePathExists(index_file.fileName());
     }

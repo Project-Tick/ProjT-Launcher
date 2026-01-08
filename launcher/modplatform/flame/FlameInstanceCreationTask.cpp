@@ -745,16 +745,35 @@ void FlameCreationTask::validateOtherResources(QEventLoop& loop)
                 break;
         }
     }
-    // TODO: Diğer kaynak tipleriyle de çalışacak şekilde genişletilmeli.
-    auto task = makeShared<ConcurrentTask>("CreateModMetadata", APPLICATION->settings()->get("NumberOfConcurrentTasks").toInt());
+    
+    // Create metadata for all supported resource types
+    auto task = makeShared<ConcurrentTask>("CreateResourceMetadata", APPLICATION->settings()->get("NumberOfConcurrentTasks").toInt());
     auto results = m_modIdResolver->getResults().files;
-    auto folder = FS::PathCombine(m_stagingPath, "minecraft", "mods", ".index");
+    
     for (auto file : results) {
-        if (file.targetFolder != "mods" || (file.version.fileName.endsWith(".zip") && !zipMods.contains(file.version.fileName))) {
-            continue;
+        QString metadataFolder;
+        bool shouldCreateMetadata = false;
+        
+        // Determine metadata folder based on resource type
+        if (file.targetFolder == "mods" && (!file.version.fileName.endsWith(".zip") || zipMods.contains(file.version.fileName))) {
+            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "mods", ".index");
+            shouldCreateMetadata = true;
+        } else if (file.targetFolder == "resourcepacks") {
+            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "resourcepacks", ".index");
+            shouldCreateMetadata = true;
+        } else if (file.targetFolder == "shaderpacks") {
+            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "shaderpacks", ".index");
+            shouldCreateMetadata = true;
+        } else if (file.targetFolder == "datapacks") {
+            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "datapacks", ".index");
+            shouldCreateMetadata = true;
         }
-        task->addTask(makeShared<LocalResourceUpdateTask>(folder, file.pack, file.version));
+        
+        if (shouldCreateMetadata) {
+            task->addTask(makeShared<LocalResourceUpdateTask>(metadataFolder, file.pack, file.version));
+        }
     }
+    
     connect(task.get(), &Task::finished, &loop, &QEventLoop::quit);
     m_processUpdateFileInfoJob = task;
     task->start();

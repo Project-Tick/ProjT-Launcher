@@ -621,8 +621,23 @@ Qt::ItemFlags PackProfile::flags(const QModelIndex& index) const
     }
 
     auto patch = d->components.at(row);
-    // TODO: this will need fine-tuning later...
-    if (patch->canBeDisabled() && !d->interactionDisabled) {
+    // Components can be checkable if they can be disabled AND not required by other components
+    // Check if any other component depends on this one
+    bool hasDependents = false;
+    if (patch->canBeDisabled()) {
+        QString patchUid = patch->getID();
+        for (const auto& other : d->components) {
+            if (other == patch)
+                continue;
+            auto& reqs = other->requiredSet();
+            if (reqs.contains(patchUid)) {
+                hasDependents = true;
+                break;
+            }
+        }
+    }
+    
+    if (patch->canBeDisabled() && !d->interactionDisabled && !hasDependents) {
         outFlags |= Qt::ItemIsUserCheckable;
     }
     return outFlags;

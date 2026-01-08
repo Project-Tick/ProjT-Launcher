@@ -114,12 +114,33 @@ void ManifestDownloadTask::downloadJava(const QJsonDocument& doc)
                 QFile::link(path, file);
             }
         } else if (type == "file") {
-            // TODO: Eğer varsa sıkıştırılmış versiyonu da indirilmeli. Şu anda sadece normal dosya indiriliyor.
-            auto raw = Json::ensureObject(Json::ensureObject(meta, "downloads"), "raw");
+            auto downloads = Json::ensureObject(meta, "downloads");
             auto isExec = Json::ensureBoolean(meta, "executable", false);
-            auto url = Json::ensureString(raw, "url");
+            
+            // Prefer compressed versions for faster downloads
+            QString url;
+            QByteArray hash;
+            bool isCompressed = false;
+            
+            // Check for compressed formats in order of preference (lzma, lz4, raw)
+            if (downloads.contains("lzma")) {
+                auto lzma = Json::ensureObject(downloads, "lzma");
+                url = Json::ensureString(lzma, "url");
+                hash = QByteArray::fromHex(Json::ensureString(lzma, "sha1").toLatin1());
+                isCompressed = true;
+            } else if (downloads.contains("lz4")) {
+                auto lz4 = Json::ensureObject(downloads, "lz4");
+                url = Json::ensureString(lz4, "url");
+                hash = QByteArray::fromHex(Json::ensureString(lz4, "sha1").toLatin1());
+                isCompressed = true;
+            } else if (downloads.contains("raw")) {
+                auto raw = Json::ensureObject(downloads, "raw");
+                url = Json::ensureString(raw, "url");
+                hash = QByteArray::fromHex(Json::ensureString(raw, "sha1").toLatin1());
+            }
+            
             if (!url.isEmpty() && QUrl(url).isValid()) {
-                auto f = File{ file, url, QByteArray::fromHex(Json::ensureString(raw, "sha1").toLatin1()), isExec };
+                auto f = File{ file, url, hash, isExec };
                 toDownload.push_back(f);
             }
         }

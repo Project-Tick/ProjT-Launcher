@@ -323,8 +323,29 @@ void InstanceImportTask::processFlame()
         inst_creation_task =
             makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id, original_instance_id);
     } else {
-        // TODO: Doğrudan import edilen ZIP dosyalarından instance ID'leri alınabilmeli. Şu anda ID'ler eksik kalıyor.
-        inst_creation_task = makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, nullptr, QString(), QString());
+        // Extract instance IDs from directly imported ZIP files
+        // Read manifest.json from the staging path to get pack and version IDs
+        QString manifest_path = FS::PathCombine(m_stagingPath, "manifest.json");
+        QString pack_id;
+        QString pack_version_id;
+        
+        if (QFile::exists(manifest_path)) {
+            try {
+                auto manifest_data = Json::requireDocument(manifest_path, "Flame pack manifest");
+                auto manifest_obj = Json::requireObject(manifest_data, "Flame pack manifest");
+                
+                // Extract project ID and file ID from manifest
+                pack_id = QString::number(Json::ensureInteger(manifest_obj, "projectID", 0));
+                pack_version_id = QString::number(Json::ensureInteger(manifest_obj, "fileID", 0));
+                
+                qDebug() << "Extracted from ZIP - Pack ID:" << pack_id << "Version ID:" << pack_version_id;
+            } catch (const Exception& e) {
+                qWarning() << "Failed to parse manifest for ID extraction:" << e.cause();
+                // Continue with empty IDs
+            }
+        }
+        
+        inst_creation_task = makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id);
     }
 
     inst_creation_task->setName(*this);
@@ -417,13 +438,28 @@ void InstanceImportTask::processModrinth()
             makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id, original_instance_id);
     } else {
         QString pack_id;
-        if (!m_sourceUrl.isEmpty()) {
+        QString pack_version_id;
+        
+        // Extract pack IDs from modrinth.index.json if available
+        QString index_path = FS::PathCombine(m_stagingPath, "modrinth.index.json");
+        if (QFile::exists(index_path)) {
+            try {
+                auto index_data = Json::requireDocument(index_path, "Modrinth pack index");
+                auto index_obj = Json::requireObject(index_data, "Modrinth pack index");
+                pack_id = Json::ensureString(index_obj, "projectId", "");
+                pack_version_id = Json::ensureString(index_obj, "versionId", "");
+            } catch (const Exception& e) {
+                qWarning() << "Failed to read Modrinth index for pack IDs:" << e.cause();
+            }
+        }
+        
+        // Fallback to URL parsing if index is not available
+        if (pack_id.isEmpty() && !m_sourceUrl.isEmpty()) {
             static const QRegularExpression s_regex(R"(data\/([^\/]*)\/versions)");
             pack_id = s_regex.match(m_sourceUrl.toString()).captured(1);
         }
 
-        // TODO: Doğrudan import edilen ZIP dosyalarından instance ID'leri alınabilmeli. Şu anda ID'ler eksik kalıyor.
-        inst_creation_task = makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id);
+        inst_creation_task = makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id);
     }
 
     inst_creation_task->setName(*this);
