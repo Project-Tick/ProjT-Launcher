@@ -109,7 +109,7 @@ class LaunchProfile : public ProblemProvider {
                          QStringList& jars,
                          QStringList& nativeJars,
                          const QString& overridePath,
-                         const QString& tempPath) const;
+                         const QString& moddedJarSearchResultPath) const;
     bool hasTrait(const QString& trait) const;
     ProblemSeverity getProblemSeverity() const override;
     const QList<PatchProblem> getProblems() const override;
