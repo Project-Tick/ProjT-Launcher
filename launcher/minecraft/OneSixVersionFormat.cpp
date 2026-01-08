@@ -148,9 +148,6 @@ VersionFilePtr OneSixVersionFormat::versionFileFromJson(const QJsonDocument& doc
 
     MojangVersionFormat::readVersionProperties(root, out.get());
 
-    // added for legacy Minecraft window embedding, TODO: remove
-    readString(root, "appletClass", out->appletClass);
-
     if (root.contains("+tweakers")) {
         for (auto tweakerVal : requireArray(root.value("+tweakers"))) {
             out->addTweakers.append(requireString(tweakerVal));

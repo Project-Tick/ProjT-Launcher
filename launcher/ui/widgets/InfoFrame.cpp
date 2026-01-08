@@ -58,10 +58,10 @@
 
 #include <QLabel>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QToolTip>
-#include <QRegularExpression>
 
 #include "InfoFrame.h"
 #include "ui_InfoFrame.h"
@@ -187,7 +187,6 @@ QString InfoFrame::renderColorCodes(QString input)
     // We traverse the description and, when one of those is found, we create
     // a span element with that color set.
     //
-    // TODO: Wrap links inside <a> tags
 
     // https://minecraft.wiki/w/Formatting_codes#Color_codes
     const QMap<QChar, QString> color_codes_map = { { '0', "#000000" }, { '1', "#0000AA" }, { '2', "#00AA00" }, { '3', "#00AAAA" },
@@ -256,7 +255,8 @@ void InfoFrame::updateWithResourcePack(ResourcePack& resource_pack)
     setImage(resource_pack.image({ 64, 64 }));
 }
 
-void InfoFrame::updateWithDataPack(DataPack& data_pack) {
+void InfoFrame::updateWithDataPack(DataPack& data_pack)
+{
     setName(renderColorCodes(data_pack.name()));
     setDescription(renderColorCodes(data_pack.description()));
     setImage(data_pack.image({ 64, 64 }));

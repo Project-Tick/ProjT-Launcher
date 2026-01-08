@@ -40,7 +40,6 @@
 #include "minecraft/auth/AuthSession.h"
 #include "minecraft/launch/MinecraftTarget.h"
 
-// FIXME: temporary wrapper for existing task.
 class PrintInstanceInfo : public LaunchStep {
     Q_OBJECT
    public:

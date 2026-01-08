@@ -38,7 +38,6 @@
 
 #include <launch/LaunchStep.h>
 
-// FIXME: temporary wrapper for existing task.
 class ExtractNatives : public LaunchStep {
     Q_OBJECT
    public:

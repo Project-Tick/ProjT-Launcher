@@ -77,8 +77,7 @@ class Rule {
    private:
     struct OS {
         QString name;
-        // FIXME: unsupported
-        // retained to avoid information being lost from files
+        // NOTE: unsupported, but retained to avoid information loss
         QString version;
     };
 
