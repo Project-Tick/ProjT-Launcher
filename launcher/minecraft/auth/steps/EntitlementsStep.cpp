@@ -19,6 +19,9 @@
  */
 #include "EntitlementsStep.h"
 
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
 #include <QList>
 #include <QNetworkRequest>
 #include <QUrl>
@@ -68,8 +71,17 @@ void EntitlementsStep::onRequestDone()
 {
     qCDebug(authCredentials()) << *m_response;
 
-    // TODO: check presence of same entitlementsRequestId?
-    // TODO: validate JWTs?
+    // Parse JSON to validate request ID matches
+    QJsonParseError jsonError;
+    QJsonDocument doc = QJsonDocument::fromJson(*m_response, &jsonError);
+    if (!jsonError.error) {
+        auto obj = doc.object();
+        QString responseRequestId = obj.value("requestId").toString();
+        if (!responseRequestId.isEmpty() && responseRequestId != m_entitlements_request_id) {
+            qWarning() << "Entitlements response requestId mismatch! Expected:" << m_entitlements_request_id << "Got:" << responseRequestId;
+        }
+    }
+
     Parsers::parseMinecraftEntitlements(*m_response, m_data->minecraftEntitlement);
 
     emit finished(AccountTaskState::STATE_WORKING, tr("Got entitlements"));

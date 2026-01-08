@@ -66,6 +66,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QObject>
+#include <QString>
 #include <QTextStream>
 #include <QTimer>
 
@@ -264,8 +266,8 @@ void AccountList::onListChanged()
 {
     if (m_autosave) {
         if (!saveList()) {
-            qCritical() << "Failed to save account list automatically";
-            emit accountListSaveFailed(tr("Failed to save account list. Your changes may be lost."));
+            qWarning() << "Failed to save account list automatically";
+            emit fileSaveFailed(m_listFilePath);
         }
     }
 

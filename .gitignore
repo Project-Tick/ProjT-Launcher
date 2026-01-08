@@ -113,8 +113,8 @@ flatbuild
 vcpkg_installed/
 obj-*/
 *.log
-docs/TODO_FIXME_REPORT.md
-memory-bank/
+
+
 tree.txt
 
 node_modules/
@@ -553,3 +553,11 @@ $RECYCLE.BIN/
 
 # Clangd cache
 /.cache/clangd
+# ===========================================
+# LOCAL FILES - DO NOT COMMIT
+# These files contain local development context
+# and should never be pushed to the repository
+# ===========================================
+memory-bank/
+.clangd
+compile_commands.json

@@ -57,6 +57,10 @@
 
 #include "InstanceImportTask.h"
 
+#include <QFuture>
+#include <QString>
+#include <QUrl>
+
 #include "Application.h"
 #include "FileSystem.h"
 #include "Json.h"
@@ -324,28 +328,28 @@ void InstanceImportTask::processFlame()
         inst_creation_task =
             makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id, original_instance_id);
     } else {
-        // Extract instance IDs from directly imported ZIP files
-        // Read manifest.json from the staging path to get pack and version IDs
-        QString manifest_path = FS::PathCombine(m_stagingPath, "manifest.json");
         QString pack_id;
         QString pack_version_id;
-        
-        if (QFile::exists(manifest_path)) {
+
+        const auto manifestPath = FS::PathCombine(m_stagingPath, "manifest.json");
+        if (QFile::exists(manifestPath)) {
             try {
-                auto manifest_data = Json::requireDocument(manifest_path, "Flame pack manifest");
-                auto manifest_obj = Json::requireObject(manifest_data, "Flame pack manifest");
-                
-                // Extract project ID and file ID from manifest
-                pack_id = QString::number(Json::ensureInteger(manifest_obj, "projectID", 0));
-                pack_version_id = QString::number(Json::ensureInteger(manifest_obj, "fileID", 0));
-                
-                qDebug() << "Extracted from ZIP - Pack ID:" << pack_id << "Version ID:" << pack_version_id;
+                auto doc = Json::requireDocument(manifestPath);
+                auto obj = doc.object();
+
+                if (obj.contains("projectID")) {
+                    pack_id = QString::number(obj.value("projectID").toInt());
+                }
+                if (obj.contains("fileID")) {
+                    pack_version_id = QString::number(obj.value("fileID").toInt());
+                }
             } catch (const Exception& e) {
-                qWarning() << "Failed to parse manifest for ID extraction:" << e.cause();
-                // Continue with empty IDs
+                qWarning() << "Failed to parse manifest.json for ID extraction:" << e.cause();
+            } catch (...) {
+                qWarning() << "Failed to parse manifest.json for ID extraction (unknown error)";
             }
         }
-        
+
         inst_creation_task = makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id);
     }
 
@@ -440,27 +444,45 @@ void InstanceImportTask::processModrinth()
     } else {
         QString pack_id;
         QString pack_version_id;
-        
-        // Extract pack IDs from modrinth.index.json if available
-        QString index_path = FS::PathCombine(m_stagingPath, "modrinth.index.json");
-        if (QFile::exists(index_path)) {
+
+        // 1) Best source: modrinth.index.json inside staging
+        const auto indexPath = FS::PathCombine(m_stagingPath, "modrinth.index.json");
+        if (QFile::exists(indexPath)) {
             try {
-                auto index_data = Json::requireDocument(index_path, "Modrinth pack index");
-                auto index_obj = Json::requireObject(index_data, "Modrinth pack index");
-                pack_id = Json::ensureString(index_obj, "projectId", "");
-                pack_version_id = Json::ensureString(index_obj, "versionId", "");
+                auto doc = Json::requireDocument(indexPath);
+                auto obj = doc.object();
+
+                if (obj.contains("projectId")) {
+                    pack_id = obj.value("projectId").toString();
+                }
+                if (obj.contains("versionId")) {
+                    pack_version_id = obj.value("versionId").toString();
+                }
             } catch (const Exception& e) {
-                qWarning() << "Failed to read Modrinth index for pack IDs:" << e.cause();
+                qWarning() << "Failed to read modrinth.index.json for pack IDs:" << e.cause();
+            } catch (...) {
+                qWarning() << "Failed to read modrinth.index.json for pack IDs (unknown error)";
             }
         }
-        
-        // Fallback to URL parsing if index is not available
+
+        // 2) Fallback: derive pack_id from source URL or local filename
         if (pack_id.isEmpty() && !m_sourceUrl.isEmpty()) {
-            static const QRegularExpression s_regex(R"(data\/([^\/]*)\/versions)");
-            pack_id = s_regex.match(m_sourceUrl.toString()).captured(1);
+            if (m_sourceUrl.isLocalFile()) {
+                pack_id = QFileInfo(m_sourceUrl.toLocalFile()).baseName();
+            } else {
+                static const QRegularExpression s_regex(R"(data\/([^\/]*)\/versions)");
+                auto match = s_regex.match(m_sourceUrl.toString());
+                if (match.hasMatch()) {
+                   pack_id = match.captured(1);
+                }
+            }
         }
 
-        inst_creation_task = makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id);
+        // 3) Create task
+        inst_creation_task = makeShared<ModrinthCreationTask>(
+            m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id
+        );
+
     }
 
     inst_creation_task->setName(*this);

@@ -140,7 +140,7 @@ class AccountList : public QAbstractListModel {
     void listActivityChanged();
     void defaultAccountChanged();
     void activityChanged(bool active);
-    void accountListSaveFailed(const QString& errorMessage);
+    void fileSaveFailed(QString path);
 
    public slots:
     /**

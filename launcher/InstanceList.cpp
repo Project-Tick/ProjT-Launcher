@@ -968,22 +968,21 @@ class InstanceStaging : public Task {
 
     virtual ~InstanceStaging() {}
 
+    // Abort can now stop both the child task and any pending retries
     bool abort() override
     {
-        if (!canAbort())
-            return false;
+        m_aborted = true;
+        m_backoffTimer.stop();
 
-        // Stop retry timer if it's running
-        if (m_backoffTimer.isActive()) {
-            m_backoffTimer.stop();
-            m_parent->destroyStagingPath(m_stagingPath);
+        if (m_child && m_child->canAbort()) {
+            m_child->abort();
         }
 
-        m_child->abort();
+        m_parent->destroyStagingPath(m_stagingPath);
 
         return Task::abort();
     }
-    bool canAbort() const override { return (m_child && m_child->canAbort()) || m_backoffTimer.isActive(); }
+    bool canAbort() const override { return true; }  // Always allow abort, even during retries
 
    protected:
     virtual void executeTask() override
@@ -1036,6 +1035,7 @@ class InstanceStaging : public Task {
     QString m_stagingPath;
     unique_qobject_ptr<InstanceTask> m_child;
     QTimer m_backoffTimer;
+    bool m_aborted = false;  // Flag to track abort during backoff retries
 };
 
 Task* InstanceList::wrapInstanceTask(InstanceTask* task)

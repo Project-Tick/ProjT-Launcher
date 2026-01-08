@@ -181,7 +181,7 @@ void drawBadges(QPainter* painter, const QStyleOptionViewItem& option, BaseInsta
     painter->translate(-option.rect.topLeft());
 }
 
-static QSize viewItemTextSize(const QStyleOptionViewItem* option)
+static QSize viewItemTextSize(const QStyleOptionViewItem* option, int width)
 {
     QStyle* style = option->widget ? option->widget->style() : QApplication::style();
     QTextOption textOption;
@@ -191,7 +191,7 @@ static QSize viewItemTextSize(const QStyleOptionViewItem* option)
     textLayout.setFont(option->font);
     textLayout.setText(option->text);
     const int textMargin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, option, option->widget) + 1;
-    QRect bounds(0, 0, 100 - 2 * textMargin, 600);
+    QRect bounds(0, 0, width - 2 * textMargin, 600);
     qreal height = 0, widthUsed = 0;
     viewItemTextLayout(textLayout, bounds.width(), height, widthUsed);
     const QSize size(qCeil(widthUsed), qCeil(height));
@@ -299,10 +299,15 @@ QSize ListViewDelegate::sizeHint(const QStyleOptionViewItem& option, const QMode
     const int iconSize = 48;  // Icon height
     const int padding = 5;    // Vertical padding
     int height = iconSize + textMargin * 2 + padding;
-    QSize szz = viewItemTextSize(&opt);
+
+    // Scale width proportionally to icon size, but keep a minimum reasonable width for text
+    int width = qMax(100, iconSize * 2);
+
+    QSize szz = viewItemTextSize(&opt, width);
+
     height += szz.height();
-    // FIXME: Icon item'lar orantılı şekilde ölçeklenmeli. Şu anda sabit boyut kullanılıyor.
-    QSize sz(100, height);
+
+    QSize sz(width, height);
     return sz;
 }
 

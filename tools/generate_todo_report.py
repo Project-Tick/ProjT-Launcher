@@ -7,10 +7,20 @@ Produces: docs/TODO_FIXME_REPORT.md
 """
 import os
 import re
+import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+# Use PWD to match user's shell location (avoids resolving symlinks to Trash/cloud storage)
+import os
+root_path_str = os.getenv('PWD') or os.getcwd()
+ROOT = Path(root_path_str)
 OUT = ROOT / "docs" / "TODO_FIXME_REPORT.md"
+
+# Ensure docs directory exists
+if not OUT.parent.exists():
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+
 PATTERN = re.compile(r"\b(TODO|FIXME)\b", re.IGNORECASE)
 
 def is_text_file(path: Path) -> bool:

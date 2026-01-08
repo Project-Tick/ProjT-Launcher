@@ -56,8 +56,10 @@
  *
  * ======================================================================== */
 #include "CustomTheme.h"
-#include <FileSystem.h>
-#include <Json.h>
+#include <QFileInfo>
+#include <QString>
+#include "FileSystem.h"
+#include "Json.h"
 #include "ThemeManager.h"
 
 const char* themeFile = "theme.json";
@@ -104,25 +106,10 @@ CustomTheme::CustomTheme(ITheme* baseTheme, QFileInfo& fileInfo, bool isManifest
         QFileInfo info(qssFilePath);
         if (info.isFile()) {
             try {
-                // Basic QSS validation: check for balanced braces and valid UTF-8
-                QString qssContent = QString::fromUtf8(FS::read(qssFilePath));
-                
-                // Check for balanced braces (basic syntax validation)
-                int braceDepth = 0;
-                for (QChar c : qssContent) {
-                    if (c == '{') braceDepth++;
-                    else if (c == '}') braceDepth--;
-                    if (braceDepth < 0) {
-                        themeWarningLog() << "QSS syntax error: unbalanced braces in" << qssFilePath;
-                        return;
-                    }
+                m_styleSheet = QString::fromUtf8(FS::read(qssFilePath));
+                if (m_styleSheet.isEmpty()) {
+                    themeWarningLog() << "Theme QSS file is empty:" << qssFilePath;
                 }
-                if (braceDepth != 0) {
-                    themeWarningLog() << "QSS syntax error: unclosed braces in" << qssFilePath;
-                    return;
-                }
-                
-                m_styleSheet = qssContent;
             } catch (const Exception& e) {
                 themeWarningLog() << "Couldn't load qss:" << e.cause() << "from" << qssFilePath;
                 return;
@@ -147,27 +134,10 @@ CustomTheme::CustomTheme(ITheme* baseTheme, QFileInfo& fileInfo, bool isManifest
 
         m_palette = baseTheme->colorScheme();
         try {
-            // Basic QSS validation: check for balanced braces and valid UTF-8
-            QString qssContent = QString::fromUtf8(FS::read(path));
-            
-            // Check for balanced braces (basic syntax validation)
-            int braceDepth = 0;
-            for (QChar c : qssContent) {
-                if (c == '{') braceDepth++;
-                else if (c == '}') braceDepth--;
-                if (braceDepth < 0) {
-                    themeWarningLog() << "QSS syntax error: unbalanced braces in" << path;
-                    m_styleSheet = baseTheme->appStyleSheet();
-                    return;
-                }
+            m_styleSheet = QString::fromUtf8(FS::read(path));
+            if (m_styleSheet.isEmpty()) {
+                themeWarningLog() << "Theme QSS file is empty:" << path;
             }
-            if (braceDepth != 0) {
-                themeWarningLog() << "QSS syntax error: unclosed braces in" << path;
-                m_styleSheet = baseTheme->appStyleSheet();
-                return;
-            }
-            
-            m_styleSheet = qssContent;
         } catch (const Exception& e) {
             themeWarningLog() << "Couldn't load qss:" << e.cause() << "from" << path;
             m_styleSheet = baseTheme->appStyleSheet();

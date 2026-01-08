@@ -502,11 +502,18 @@ bool parseMojangResponse(QByteArray& data, Token& output)
         return false;
     }
 
-    // TODO: it's a JWT... validate it?
-    if (!getString(obj.value("access_token"), output.token)) {
+    // Basic JWT structure validation: JWTs have 3 dot-separated parts (header.payload.signature)
+    QString accessToken;
+    if (!getString(obj.value("access_token"), accessToken)) {
         qWarning() << "access_token is not valid";
         return false;
     }
+    auto parts = accessToken.split('.');
+    if (parts.size() != 3) {
+        qWarning() << "access_token is not a valid JWT (expected 3 parts, got" << parts.size() << ")";
+        return false;
+    }
+    output.token = accessToken;
     output.validity = Validity::Certain;
     qDebug() << "Mojang response is valid.";
     return true;

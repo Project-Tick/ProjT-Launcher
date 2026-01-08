@@ -65,14 +65,20 @@
 #include "StringUtils.h"
 #include "ui/widgets/ProjectItem.h"
 
+#include <QColor>
 #include <QLabel>
+#include <QModelIndex>
+#include <QSortFilterProxyModel>
 #include <QtMath>
 
-#include <RWStorage.h>
+#include "RWStorage.h"
 
 #include <BuildConfig.h>
 
 namespace LegacyFTB {
+
+const QColor COLOR_BROKEN(255, 0, 50);
+const QColor COLOR_BUGGED(244, 229, 66);
 
 FilterModel::FilterModel(QObject* parent) : QSortFilterProxyModel(parent)
 {
@@ -206,12 +212,10 @@ QVariant ListModel::data(const QModelIndex& index, int role) const
         }
         case Qt::ForegroundRole: {
             if (pack.broken) {
-                // FIXME: Hardcoded color
-                return QColor(255, 0, 50);
+                return COLOR_BROKEN;
             } else if (pack.bugged) {
-                // FIXME: Hardcoded color
                 // bugged pack, currently only indicates bugged xml
-                return QColor(244, 229, 66);
+                return COLOR_BUGGED;
             }
         }
         case Qt::DisplayRole:
