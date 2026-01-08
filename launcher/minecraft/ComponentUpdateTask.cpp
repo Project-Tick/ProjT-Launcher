@@ -512,32 +512,37 @@ void ComponentUpdateTask::resolveDependencies(bool checkOnly)
             } else {
                 // version needs to be decided
                 qCDebug(instanceProfileResolveC) << "Adding" << add.uid << "at position" << add.indexOfFirstDependee;
-                
-                // Determine version to use: prefer suggests, then try recommended from metadata
                 if (!add.suggests.isEmpty()) {
+                    // Use suggested version if available
                     component->m_version = add.suggests;
                 } else {
                     // Try to get recommended version from metadata
-                    bool versionSet = false;
                     auto versionList = APPLICATION->metadataIndex()->get(add.uid);
                     if (versionList) {
-                        // For intermediary/hashed, use Minecraft version
+                        versionList->waitToLoad();
+                        auto recommended = versionList->getRecommended();
+                        if (recommended) {
+                            component->m_version = recommended->descriptor();
+                        }
+                    }
+
+                    // Fallback for specific components that need Minecraft version matching
+                    if (component->m_version.isEmpty()) {
                         if (add.uid == "net.fabricmc.intermediary" || add.uid == "org.quiltmc.hashed") {
                             auto minecraft = std::find_if(components.begin(), components.end(),
                                                           [](ComponentPtr& cmp) { return cmp->getID() == "net.minecraft"; });
                             if (minecraft != components.end()) {
                                 component->m_version = (*minecraft)->getVersion();
-                                versionSet = true;
                             }
                         }
-                        
-                        // If not set yet, try to get recommended version
-                        if (!versionSet) {
-                            auto recommended = versionList->getRecommended();
-                            if (recommended) {
-                                component->m_version = recommended->descriptor();
-                                versionSet = true;
-                            }
+                    }
+
+                    // Last resort: known defaults for LWJGL when metadata unavailable
+                    if (component->m_version.isEmpty()) {
+                        if (add.uid == "org.lwjgl") {
+                            component->m_version = "2.9.1";
+                        } else if (add.uid == "org.lwjgl3") {
+                            component->m_version = "3.1.2";
                         }
                     }
                     
