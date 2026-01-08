@@ -3,9 +3,11 @@ import re
 import sys
 from packaging import version as pversion
 from operator import attrgetter
-from typing import Collection
+from typing import Collection, Optional
+import hashlib
 
-from meta.common import ensure_component_dir, launcher_path, upstream_path
+
+from meta.common import ensure_component_dir, launcher_path, upstream_path, default_session
 from meta.common.forge import (
     FORGE_COMPONENT,
     INSTALLER_MANIFEST_DIR,
@@ -42,6 +44,36 @@ LAUNCHER_DIR = launcher_path()
 UPSTREAM_DIR = upstream_path()
 
 ensure_component_dir(FORGE_COMPONENT)
+
+sess = default_session()
+
+def update_library_info(lib: Library):
+    if not lib.downloads:
+        lib.downloads = MojangLibraryDownloads()
+    if not lib.downloads.artifact:
+        url = lib.url
+        if not url and lib.name:
+            url = f"https://maven.minecraftforge.net/{lib.name.path()}"
+        if url:
+             lib.downloads.artifact = MojangArtifact(url=url, sha1=None, size=None)
+
+    art = lib.downloads.artifact
+    if art and art.url:
+        try:
+            # Check/Fetch SHA1
+            if not art.sha1:
+                r = sess.get(art.url + ".sha1")
+                if r.status_code == 200:
+                    art.sha1 = r.text.strip()
+            
+            # Check/Fetch Size
+            if not art.size:
+                r = sess.head(art.url)
+                if r.status_code == 200 and 'Content-Length' in r.headers:
+                    art.size = int(r.headers['Content-Length'])
+        except Exception as e:
+            eprint(f"Failed to update info for {lib.name}: {e}")
+
 
 
 def eprint(*args, **kwargs):
@@ -246,7 +278,8 @@ def version_from_build_system_installer(
     v.requires = [Dependency(uid=MINECRAFT_COMPONENT, equals=version.mc_version_sane)]
     v.main_class = "io.github.zekerzhayard.forgewrapper.installer.Main"
 
-    # FIXME: Add the size and hash here
+    v.main_class = "io.github.zekerzhayard.forgewrapper.installer.Main"
+
     v.maven_files = []
 
     # load the locally cached installer file info and use it to add the installer entry in the json
@@ -278,6 +311,7 @@ def version_from_build_system_installer(
             forge_lib.downloads.artifact.url = (
                 "https://maven.minecraftforge.net/%s" % forge_lib.name.path()
             )
+        update_library_info(forge_lib)
         v.maven_files.append(forge_lib)
 
     v.libraries = []
