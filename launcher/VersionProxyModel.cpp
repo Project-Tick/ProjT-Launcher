@@ -131,7 +131,7 @@ QVariant VersionProxyModel::headerData(int section, Qt::Orientation orientation,
             case Name:
                 return tr("Version");
             case ParentVersion:
-                return tr("Minecraft");  // FIXME: this should come from metadata
+                return m_parentVersionName;  // From metadata
             case Branch:
                 return tr("Branch");
             case Type:
@@ -152,7 +152,7 @@ QVariant VersionProxyModel::headerData(int section, Qt::Orientation orientation,
             case Name:
                 return tr("The name of the version.");
             case ParentVersion:
-                return tr("Minecraft version");  // FIXME: this should come from metadata
+                return tr("%1 version").arg(m_parentVersionName);  // From metadata
             case Branch:
                 return tr("The version's branch");
             case Type:
@@ -323,6 +323,14 @@ void VersionProxyModel::setSourceModel(QAbstractItemModel* replacingRaw)
         roles.clear();
         filterModel->setSourceModel(replacing);
         return;
+    }
+
+    // Extract parent version name from metadata if available
+    auto versionList = dynamic_cast<Meta::VersionList*>(replacing);
+    if (versionList) {
+        m_parentVersionName = versionList->humanReadable();
+    } else {
+        m_parentVersionName = tr("Minecraft");  // Fallback
     }
 
     roles = replacing->providesRoles();

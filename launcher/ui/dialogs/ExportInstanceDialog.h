@@ -61,8 +61,8 @@
 #include <QDialog>
 #include <QModelIndex>
 #include <memory>
-#include "FastFileIconProvider.h"
-#include "FileIgnoreProxy.h"
+#include "ui/widgets/FastFileIconProvider.h"
+#include "ui/widgets/FileIgnoreProxy.h"
 
 class BaseInstance;
 using InstancePtr = std::shared_ptr<BaseInstance>;

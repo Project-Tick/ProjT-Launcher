@@ -190,11 +190,18 @@ bool FlameCreationTask::updateInstance()
 
         // We will remove all the previous overrides, to prevent duplicate files!
     // TODO: Şu anda 'overrides' güncellemede her şeyi ezmekte. Değişmeyen dosyalar korunmalı.
-    // FIXME: Disabled mod'lar için özel bir işlem yapılmalı.
+    // Handle disabled mods specially - preserve .disabled files
         auto old_overrides = Override::readOverrides("overrides", old_index_folder);
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())
                 continue;
+            
+            // Skip removal of .disabled files (user-disabled mods should be preserved)
+            if (entry.endsWith(".disabled", Qt::CaseInsensitive)) {
+                qDebug() << "Preserving disabled mod:" << entry;
+                continue;
+            }
+            
             qDebug() << "Scheduling" << entry << "for removal";
             m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry));
         }

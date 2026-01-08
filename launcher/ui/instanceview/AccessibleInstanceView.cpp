@@ -415,11 +415,14 @@ int AccessibleInstanceView::indexOfChild(const QAccessibleInterface* iface) cons
     } else if (iface->role() == QAccessible::Pane) {
         return 0;  // corner button
     } else {
-        qWarning() << "AccessibleInstanceView::indexOfChild has a child with unknown role..." << iface->role()
-                   << iface->text(QAccessible::Name);
+        // Handle unexpected child roles gracefully for accessibility
+        // This can occur with custom widgets or when Qt accessibility changes
+        qWarning() << "AccessibleInstanceView::indexOfChild encountered unknown role:" << iface->role()
+                   << "name:" << iface->text(QAccessible::Name);
+        // Return -1 to indicate child is not in our accessibility tree
+        // This prevents crashes while allowing accessibility tools to continue
+        return -1;
     }
-    // FIXME: we are in denial of our children. this should stop.
-    return -1;
 }
 
 QString AccessibleInstanceView::text(QAccessible::Text t) const

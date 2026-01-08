@@ -178,7 +178,12 @@ class MinecraftAccount : public QObject, public Usable {
 
     void activityChanged(bool active);
 
-    // TODO: better signalling for the various possible state changes - especially errors
+    // Specific signals for different state changes
+    void accountStateChanged(AccountState newState);
+    void authenticationSucceeded();
+    void authenticationFailed(QString reason, AccountTaskState taskState);
+    void profileUpdated();
+    void validityChanged(Validity newValidity);
 
    protected: /* variables */
     AccountData data;

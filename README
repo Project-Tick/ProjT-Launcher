@@ -1,11 +1,12 @@
 ProjT Launcher - Project Tick
 =============================
 
-NOTE: Infrastructure transition in progress
+Mailing List: projecttick-devel@mail.projecttick.org.tr
+  Subscribe: projecttick-devel+subscribe@mail.projecttick.org.tr
+  Unsubscribe: projecttick-devel+unsubscribe@mail.projecttick.org.tr
+  Help: projecttick-devel+help@mail.projecttick.org.tr
 
-ProjT Launcher is currently migrating its primary development
-infrastructure from GitHub to a self-hosted stack based on
-gitolite and cgit.
+Mailing List Archive: https://archive.projecttick.org.tr/projecttick-devel/
 
 GitHub repositories are used as mirrors and for transitional
 CI workflows only. The authoritative source of truth is:

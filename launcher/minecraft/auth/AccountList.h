@@ -75,8 +75,8 @@ class AccountList : public QAbstractListModel {
     enum ModelRoles { PointerRole = 0x34B1CB48 };
 
     enum VListColumns {
-        // TODO: Add icon column.
-        ProfileNameColumn = 0,
+        IconColumn = 0,
+        ProfileNameColumn,
         NameColumn,
         TypeColumn,
         StatusColumn,

@@ -128,8 +128,7 @@ QVariant VersionList::data(const QModelIndex& index, int role) const
             }
             return major;
         }
-        // FIXME: this should be determined in whatever view/proxy is used...
-        // case LatestRole: return version == getLatestStable();
+        // LatestRole determination is now handled in VersionProxyModel
         default:
             return QVariant();
     }

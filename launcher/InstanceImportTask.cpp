@@ -82,7 +82,7 @@
 #include <quazip/quazipdir.h>
 
 InstanceImportTask::InstanceImportTask(const QUrl& sourceUrl, QWidget* parent, QMap<QString, QString>&& extra_info)
-    : m_sourceUrl(sourceUrl), m_extra_info(extra_info), m_parent(parent)
+    : m_sourceUrl(sourceUrl), m_extra_info(extra_info)
 {}
 
 bool InstanceImportTask::abort()
@@ -321,10 +321,10 @@ void InstanceImportTask::processFlame()
             original_instance_id = original_instance_id_it.value();
 
         inst_creation_task =
-            makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, m_parent, pack_id, pack_version_id, original_instance_id);
+            makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id, original_instance_id);
     } else {
         // TODO: Doğrudan import edilen ZIP dosyalarından instance ID'leri alınabilmeli. Şu anda ID'ler eksik kalıyor.
-        inst_creation_task = makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, m_parent, QString(), QString());
+        inst_creation_task = makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, nullptr, QString(), QString());
     }
 
     inst_creation_task->setName(*this);
@@ -414,7 +414,7 @@ void InstanceImportTask::processModrinth()
             original_instance_id = original_instance_id_it.value();
 
         inst_creation_task =
-            makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, m_parent, pack_id, pack_version_id, original_instance_id);
+            makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id, original_instance_id);
     } else {
         QString pack_id;
         if (!m_sourceUrl.isEmpty()) {
@@ -423,7 +423,7 @@ void InstanceImportTask::processModrinth()
         }
 
         // TODO: Doğrudan import edilen ZIP dosyalarından instance ID'leri alınabilmeli. Şu anda ID'ler eksik kalıyor.
-        inst_creation_task = makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, m_parent, pack_id);
+        inst_creation_task = makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id);
     }
 
     inst_creation_task->setName(*this);

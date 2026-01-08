@@ -1053,9 +1053,16 @@ std::optional<ModPlatform::ModLoaderTypes> PackProfile::getSupportedModLoaders()
     if (!loadersOpt.has_value())
         return loadersOpt;
     auto loaders = loadersOpt.value();
-    // TODO: remove this or add version condition once Quilt drops official Fabric support
-    if (loaders & ModPlatform::Quilt)
-        loaders |= ModPlatform::Fabric;
+    // Quilt provides Fabric compatibility for Minecraft versions < 1.22
+    // This may change when Quilt drops official Fabric support in future versions
+    if (loaders & ModPlatform::Quilt) {
+        auto mcVersion = getComponentVersion("net.minecraft");
+        Version minecraftVer(mcVersion);
+        // Assume Quilt maintains Fabric compat for versions before 1.22
+        if (minecraftVer < Version("1.22")) {
+            loaders |= ModPlatform::Fabric;
+        }
+    }
     if (getComponentVersion("net.minecraft") == "1.20.1" && (loaders & ModPlatform::NeoForge))
         loaders |= ModPlatform::Forge;
     return loaders;
@@ -1070,9 +1077,15 @@ QList<ModPlatform::ModLoaderType> PackProfile::getModLoadersList()
         }
     }
 
-    // TODO: remove this or add version condition once Quilt drops official Fabric support
+    // Quilt provides Fabric compatibility for Minecraft versions < 1.22
+    // This may change when Quilt drops official Fabric support in future versions
     if (result.contains(ModPlatform::Quilt) && !result.contains(ModPlatform::Fabric)) {
-        result.append(ModPlatform::Fabric);
+        auto mcVersion = getComponentVersion("net.minecraft");
+        Version minecraftVer(mcVersion);
+        // Assume Quilt maintains Fabric compat for versions before 1.22
+        if (minecraftVer < Version("1.22")) {
+            result.append(ModPlatform::Fabric);
+        }
     }
     if (getComponentVersion("net.minecraft") == "1.20.1" && result.contains(ModPlatform::NeoForge) &&
         !result.contains(ModPlatform::Forge)) {

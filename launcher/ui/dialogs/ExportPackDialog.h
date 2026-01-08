@@ -42,8 +42,8 @@
 
 #include <QDialog>
 #include "BaseInstance.h"
-#include "FastFileIconProvider.h"
-#include "FileIgnoreProxy.h"
+#include "ui/widgets/FastFileIconProvider.h"
+#include "ui/widgets/FileIgnoreProxy.h"
 #include "minecraft/MinecraftInstance.h"
 #include "modplatform/ModIndex.h"
 

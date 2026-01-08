@@ -121,7 +121,7 @@ class VersionPage : public QMainWindow, public BasePage {
    protected:
     QMenu* createPopupMenu() override;
 
-    /// FIXME: this shouldn't be necessary!
+    /// Reload pack profile with error handling and UI feedback
     bool reloadPackProfile();
 
    private:

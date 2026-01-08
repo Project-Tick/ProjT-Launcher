@@ -75,4 +75,5 @@ class VersionProxyModel : public QAbstractProxyModel {
     bool hasRecommended = false;
     bool hasLatest = false;
     QString m_currentVersion;
+    QString m_parentVersionName = tr("Minecraft");  // Default, updated from metadata
 };
