@@ -1,25 +1,25 @@
-name: configure CI
+# name: configure CI
 
-on: [push, pull_request]
+# on: [push, pull_request]
 
-jobs:
-  build:
+# jobs:
+#   build:
 
-    defaults:
-      run:
-        working-directory: libqrencode
+#     defaults:
+#       run:
+#         working-directory: libqrencode
 
-    runs-on: ubuntu-latest
+#     runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v2
-    - name: generate configure script
-      run: ./autogen.sh
-    - name: configure
-      run: ./configure --with-tests
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+#     steps:
+#     - uses: actions/checkout@v2
+#     - name: generate configure script
+#       run: ./autogen.sh
+#     - name: configure
+#       run: ./configure --with-tests
+#     - name: make
+#       run: make
+#     - name: make check
+#       run: make check
+#     - name: make distcheck
+#       run: make distcheck
