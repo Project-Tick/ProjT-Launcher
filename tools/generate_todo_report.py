@@ -52,36 +52,45 @@ def classify(text: str) -> str:
 
 def scan(root: Path):
     results = []
+    excluded_dirs = {'.git', 'build', 'node_modules', '.venv', 'venv', 
+                     'docs', 'memory-bank', 'cmark', 'tomlplusplus', 
+                     'libnbtplusplus', 'quazip', 'bzip2', 'zlib', '_deps'}
+    
     for p in root.rglob('*'):
+        # Skip if any parent directory is in the excluded list
+        if any(part in excluded_dirs for part in p.parts):
+            continue
+            
         if p.is_dir():
-            if p.name in ('.git', 'build', 'node_modules', '.venv', 'venv'):
-                continue
-        else:
-            if not is_text_file(p):
-                continue
+            continue
+            
+        if not is_text_file(p):
+            continue
+            
+        try:
+            text = p.read_text(encoding='utf-8')
+        except Exception:
             try:
-                text = p.read_text(encoding='utf-8')
+                text = p.read_text(encoding='latin-1')
             except Exception:
-                try:
-                    text = p.read_text(encoding='latin-1')
-                except Exception:
-                    continue
-            lines = text.splitlines()
-            for i, line in enumerate(lines, start=1):
-                if PATTERN.search(line):
-                    before = '\n'.join(lines[max(0, i-3):i-1])
-                    after = '\n'.join(lines[i:i+2])
-                    whole = '\n'.join(lines[max(0, i-3):min(len(lines), i+2)])
-                    tag = PATTERN.search(line).group(1)
-                    cls = classify(line + ' ' + whole)
-                    results.append({
-                        'path': str(p.relative_to(root)),
-                        'line': i,
-                        'tag': tag,
-                        'text': line.strip(),
-                        'context': whole,
-                        'classification': cls,
-                    })
+                continue
+                
+        lines = text.splitlines()
+        for i, line in enumerate(lines, start=1):
+            if PATTERN.search(line):
+                before = '\n'.join(lines[max(0, i-3):i-1])
+                after = '\n'.join(lines[i:i+2])
+                whole = '\n'.join(lines[max(0, i-3):min(len(lines), i+2)])
+                tag = PATTERN.search(line).group(1)
+                cls = classify(line + ' ' + whole)
+                results.append({
+                    'path': str(p.relative_to(root)),
+                    'line': i,
+                    'tag': tag,
+                    'text': line.strip(),
+                    'context': whole,
+                    'classification': cls,
+                })
     return results
 
 def generate_md(results):
