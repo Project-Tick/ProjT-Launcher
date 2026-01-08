@@ -83,26 +83,6 @@ export default {
         return json({ ok: true, accepted: true, event: eventName, pr: prNumber }, 202);
       }
 
-      if (eventName === "merge_group") {
-        // Extract PR number from head_ref: gh-readonly-queue/develop/pr-164-sha
-        const headRef = payload?.merge_group?.head_ref || "";
-        const match = headRef.match(/pr-(\d+)-/);
-        const prNumber = match ? Number(match[1]) : null;
-
-        if (prNumber) {
-          ctx.waitUntil(
-            handlePullRequest({
-              owner: env.GITHUB_OWNER,
-              repo: env.GITHUB_REPO,
-              pullNumber: prNumber,
-              env,
-            })
-          );
-          return json({ ok: true, accepted: true, event: eventName, pr: prNumber }, 202);
-        }
-        return json({ ok: true, ignored: true, event: eventName, reason: "no-pr-in-ref", headRef }, 200);
-      }
-
       if (eventName === "workflow_run") {
         const runId = payload?.workflow_run?.id;
         if (typeof runId !== "number") {
@@ -478,7 +458,7 @@ function isBotIdentity({ name, email, login }) {
   if (combined.includes("project tick bot")) return true;
   if (combined.includes("projt-launcher-bot")) return true;
   if (lowerEmail.includes("@bot.")) return true;
-  if (lowerEmail.includes("bot.projecttick.org.tr")) return true;
+  if (lowerEmail.includes("bot.yongdohyun.org.tr")) return true;
 
   return false;
 }
@@ -611,13 +591,6 @@ const circuitBreaker = {
   failures: 0,
   openUntil: 0,
 };
-
-// Cache to prevent duplicate approvals in a short window
-const approvedRunsCache = new Set();
-// Clear cache every 10 minutes
-if (typeof setInterval !== "undefined") {
-  setInterval(() => approvedRunsCache.clear(), 10 * 60 * 1000);
-}
 
 function hasGitHubAuth(env) {
   if (env.GITHUB_TOKEN) return true;
@@ -887,29 +860,8 @@ async function handlePullRequest({ owner, repo, pullNumber, env, options = {} })
       return name === "automated-backport" || name.startsWith("backport/");
     });
 
-  const author = String(pullRequest?.user?.login ?? "").toLowerCase();
-
-  let ciSummary = null;
-  if (!light) {
-    try {
-      ciSummary = await updateCiSummaryComment({
-        owner,
-        repo,
-        pullNumber,
-        pullRequest,
-        env,
-        dryRun,
-      });
-    } catch (error) {
-      console.warn("CI summary update failed:", error?.message ?? error);
-      ciSummary = { ok: false, error: String(error?.message ?? error) };
-    }
-  } else {
-    ciSummary = { ok: false, skipped: "cron-light" };
-  }
-
   if (pullRequest.state !== "open") {
-    return { ok: true, changed: false, added: [], skipped: "closed", dryRun, ciSummary };
+    return { ok: true, changed: false, added: [], skipped: "closed", dryRun };
   }
 
   const files = await listPullRequestFiles({ owner, repo, pullNumber, env });
@@ -921,6 +873,7 @@ async function handlePullRequest({ owner, repo, pullNumber, env, options = {} })
   const currentLabels = new Set((pullRequest.labels ?? []).map((l) => l.name));
   const baseRef = pullRequest?.base?.sha ?? pullRequest?.base?.ref ?? null;
   const maintainers = light ? new Set() : await getMaintainers({ owner, repo, ref: baseRef, env });
+  const author = String(pullRequest?.user?.login ?? "").toLowerCase();
 
   for (const file of files) {
     const filename = file.filename;
@@ -1042,6 +995,25 @@ async function handlePullRequest({ owner, repo, pullNumber, env, options = {} })
 
   const newLabels = [...labelsToAdd].filter((l) => !currentLabels.has(l));
   const labelsToDelete = [...labelsToRemove].filter((l) => currentLabels.has(l));
+
+  let ciSummary = null;
+  if (!light) {
+    try {
+      ciSummary = await updateCiSummaryComment({
+        owner,
+        repo,
+        pullNumber,
+        pullRequest,
+        env,
+        dryRun,
+      });
+    } catch (error) {
+      console.warn("CI summary update failed:", error?.message ?? error);
+      ciSummary = { ok: false, error: String(error?.message ?? error) };
+    }
+  } else {
+    ciSummary = { ok: false, skipped: "cron-light" };
+  }
 
   try {
     if (!light && !isBackport) {
@@ -1201,55 +1173,50 @@ async function checkDcoForPullRequest({ owner, repo, pullNumber, env }) {
 
 async function findWorkflowRunForPR({ owner, repo, pullNumber, headSha, env }) {
   const workflow = CONFIG.ciSummary.workflowFile;
+  // Search without event filter to catch push, pull_request, etc.
   let runs = [];
   try {
     const { data } = await githubApi({
       env,
       method: "GET",
-      path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=50`,
+      path: `/repos/${owner}/${repo}/actions/workflows/${workflow}/runs?per_page=100`,
     });
     runs = Array.isArray(data?.workflow_runs) ? data.workflow_runs : [];
   } catch (err) {
     log("warn", "findWorkflowRunForPR: list runs failed", { workflow, error: String(err?.message ?? err) });
   }
 
-  const matches = runs.filter((run) => {
-    const prs = run.pull_requests ?? [];
-    const matchesPr = prs.some((p) => p.number === pullNumber);
-    const matchesSha = headSha && run.head_sha === headSha;
-    const isMergeGroup = run.event === "merge_group";
-    
-    // GitHub API uses 'head_branch' for the branch name in workflow runs
-    const headBranch = run.head_branch || "";
-    const matchesMergeQueue = isMergeGroup && headBranch.includes(`pr-${pullNumber}-`);
-
-    if (matchesPr || matchesMergeQueue || matchesSha) {
-      // If it's a normal PR run, we MUST match the SHA if provided
-      if (!isMergeGroup && run.event === "pull_request" && headSha && run.head_sha !== headSha) {
-        return false;
-      }
-      return true;
-    }
-    return false;
-  });
-
-  if (matches.length === 0) {
-    console.log(`[WorkflowRun] PR #${pullNumber}: No matching runs found (SHA=${headSha?.substring(0,7)})`);
-    return null;
+  if (runs.length === 0) {
+    console.log(`[WorkflowRun] PR #${pullNumber}: No runs found at all for workflow ${workflow}`);
   }
 
-  // Sort by ID descending (newest first)
-  matches.sort((a, b) => b.id - a.id);
+  return (
+    runs.find((run) => {
+      const prs = run.pull_requests ?? [];
+      const matchesPr = prs.some((pr) => pr.number === pullNumber);
+      
+      // If it's a push event in the same repo, pull_requests array might be empty in the run object
+      // but the head_sha will match.
+      const matchesSha = headSha && run.head_sha === headSha;
 
-  // Log candidates for debugging
-  matches.forEach(m => {
-    console.log(`[WorkflowRun] PR #${pullNumber} Candidate: ID=${m.id}, Event=${m.event}, Branch=${m.head_branch}, Status=${m.status}, Conclusion=${m.conclusion}`);
-  });
+      if (matchesPr) {
+        // Merge Queue (merge_group) runs have different SHAs, so we allow mismatch if it's a merge_group
+        const isMergeGroup = run.event === "merge_group";
+        if (!isMergeGroup && headSha && run.head_sha && run.head_sha !== headSha) {
+          console.log(`[WorkflowRun] PR #${pullNumber}: Found run ${run.id} by PR match, but SHA mismatch. PR=${headSha.substring(0,7)}, Run=${run.head_sha.substring(0,7)}`);
+          return false;
+        }
+        return true;
+      }
 
-  const best = matches[0];
-  console.log(`[WorkflowRun] PR #${pullNumber}: Selected run ${best.id} (Event=${best.event}, Status=${best.status}, Conclusion=${best.conclusion})`);
-  
-  return best;
+      if (matchesSha) {
+        console.log(`[WorkflowRun] PR #${pullNumber}: Found run ${run.id} by SHA match (${headSha.substring(0,7)})`);
+        return true;
+      }
+
+      return false;
+    }) ?? null
+  );
 }
 
 async function listJobsForRun({ owner, repo, runId, env }) {
@@ -1853,62 +1820,41 @@ async function handleIssueComment({ payload, env }) {
 }
 
 async function handleWorkflowRun({ owner, repo, payload, env }) {
+  if (!isAutoApproveEnabled(env)) return { ok: true, skipped: "disabled" };
+
   const run = payload?.workflow_run;
-  const action = payload?.action;
   if (!run) return { ok: false, error: "missing-workflow-run" };
+  if (run.event !== "pull_request") return { ok: true, skipped: "not-pr-event" };
+  if (run.status !== "waiting") return { ok: true, skipped: "not-waiting" };
 
-  // Extract PR number
-  let prNumber = Number(run.pull_requests?.[0]?.number);
-  if (!Number.isFinite(prNumber) && run.event === "merge_group" && run.head_ref) {
-    const match = run.head_ref.match(/\/pr-(\d+)-/);
-    if (match) prNumber = Number(match[1]);
-  }
+  const rule = findAutoApproveRule(run);
+  if (!rule) return { ok: true, skipped: "no-rule" };
 
-  // If we found a PR, trigger handlePullRequest to update labels and CI summary
-  if (Number.isFinite(prNumber) && action === "completed") {
-    console.log(`[WorkflowRun] Triggering handlePullRequest for PR #${prNumber} due to run ${run.id} completion`);
-    // We don't await here to avoid blocking, but we use ctx.waitUntil in the caller
-    handlePullRequest({ owner, repo, pullNumber: prNumber, env }).catch(err => 
-      console.error(`[WorkflowRun] Failed to update PR #${prNumber}:`, err?.message ?? err)
-    );
-  }
+  const prNumber = Number(run.pull_requests?.[0]?.number);
+  if (!Number.isFinite(prNumber)) return { ok: true, skipped: "no-pr-number" };
 
-  // Auto-approval logic
-  if (isAutoApproveEnabled(env) && run.event === "pull_request" && run.status === "waiting" && action === "requested") {
-    // Check cache to avoid double approval
-    if (approvedRunsCache.has(run.id)) {
-      console.log(`[WorkflowRun] Run ${run.id} already approved recently, skipping.`);
-      return { ok: true, skipped: "already-approved" };
-    }
+  const { data: pr } = await githubApi({
+    env,
+    method: "GET",
+    path: `/repos/${owner}/${repo}/pulls/${prNumber}`,
+  });
 
-    const rule = findAutoApproveRule(run);
-    if (rule && Number.isFinite(prNumber)) {
-      const { data: pr } = await githubApi({
-        env,
-        method: "GET",
-        path: `/repos/${owner}/${repo}/pulls/${prNumber}`,
-      });
+  const body = String(pr?.body ?? "");
+  const selectedOptions = getSelectedScopeOptions(body);
+  const selectedLabels = new Set((pr.labels ?? []).map((label) => label.name));
+  const scopes = Array.isArray(rule.scopes) ? rule.scopes : [];
+  const allowed =
+    scopes.length === 0 || scopes.some((scope) => isScopeSelected(scope, { selectedOptions, selectedLabels }));
 
-      const body = String(pr?.body ?? "");
-      const selectedOptions = getSelectedScopeOptions(body);
-      const selectedLabels = new Set((pr.labels ?? []).map((label) => label.name));
-      const scopes = Array.isArray(rule.scopes) ? rule.scopes : [];
-      const allowed =
-        scopes.length === 0 || scopes.some((scope) => isScopeSelected(scope, { selectedOptions, selectedLabels }));
+  if (!allowed) return { ok: true, skipped: "scope-not-selected" };
 
-      if (allowed) {
-        approvedRunsCache.add(run.id);
-        await githubApi({
-          env,
-          method: "POST",
-          path: `/repos/${owner}/${repo}/actions/runs/${run.id}/approve`,
-        });
-        console.log(`[WorkflowRun] Approved run ${run.id} for PR #${prNumber}`);
-      }
-    }
-  }
+  await githubApi({
+    env,
+    method: "POST",
+    path: `/repos/${owner}/${repo}/actions/runs/${run.id}/approve`,
+  });
 
-  return { ok: true };
+  return { ok: true, approved: true };
 }
 
 async function githubApi({ env, method, path, body }) {

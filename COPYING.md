@@ -1,5 +1,4 @@
-ProjT Launcher
---------------
+## ProjT Launcher
 
      ProjT Launcher - Minecraft Launcher
      Copyright (C) 2026 Project Tick
@@ -60,8 +59,7 @@ ProjT Launcher
          See the License for the specific language governing permissions and
          limitations under the License.
 
-MinGW-w64 runtime (Windows)
----------------------------
+## MinGW-w64 runtime (Windows)
 
     Copyright (c) 2009, 2010, 2011, 2012, 2013 by the mingw-w64 project
 
@@ -103,16 +101,14 @@ MinGW-w64 runtime (Windows)
 
     Information on third party licenses used in MinGW-w64 can be found in its COPYING.MinGW-w64-runtime.txt.
 
-Qt 6
-----
+## Qt 6
 
     Copyright (C) 2022 The Qt Company Ltd and other contributors.
     Contact: https://www.qt.io/licensing
 
     Licensed under LGPL v3
 
-rainbow (KGuiAddons)
---------------------
+## rainbow (KGuiAddons)
 
     Copyright (C) 2007 Matthew Woehlke <mw_triad@users.sourceforge.net>
     Copyright (C) 2007 Olaf Schmidt <ojschmidt@kde.org>
@@ -135,8 +131,7 @@ rainbow (KGuiAddons)
     the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
     Boston, MA 02110-1301, USA.
 
-Batch icon set
---------------
+## Batch icon set
 
     You are free to use Batch (the "icon set") or any part thereof (the "icons")
     in any personal, open-source or commercial work without obligation of payment
@@ -152,8 +147,7 @@ Batch icon set
     PUNITIVE OR EXEMPLARY DAMAGES ARISING OUT OF THE USE OF THE ICONS,
     EVEN IF LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
-Material Design Icons
----------------------
+## Material Design Icons
 
     Copyright (c) 2014, Austin Andrews (http://materialdesignicons.com/),
     with Reserved Font Name Material Design Icons.
@@ -164,8 +158,7 @@ Material Design Icons
     This license is copied below, and is also available with a FAQ at:
     http://scripts.sil.org/OFL
 
-lionshead
----------
+## lionshead
 
     Code has been taken from https://github.com/natefoo/lionshead and loosely
     translated to C++ laced with Qt.
@@ -192,8 +185,7 @@ lionshead
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-Gamemode
---------
+## Gamemode
 
     Copyright (c) 2017-2022, Feral Interactive
     All rights reserved.
@@ -222,8 +214,7 @@ Gamemode
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 
-Breeze icons
-------------
+## Breeze icons
 
     Copyright (C) 2014 Uri Herrera <uri_herrera@nitrux.in> and others
 
@@ -240,8 +231,7 @@ Breeze icons
     You should have received a copy of the GNU Lesser General Public
     License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
-Oxygen Icons
-------------
+## Oxygen Icons
 
     The Oxygen Icon Theme
         Copyright (C) 2007 Nuno Pinheiro <nuno@oxygen-icons.org>
@@ -266,8 +256,7 @@ Oxygen Icons
     You should have received a copy of the GNU Lesser General Public
     License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
-vcpkg (cmake/vcpkg-ports)
--------------------------
+## vcpkg (`cmake/vcpkg-ports`)
 
     MIT License
     
