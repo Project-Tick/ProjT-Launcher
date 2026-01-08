@@ -629,7 +629,7 @@ Qt::ItemFlags PackProfile::flags(const QModelIndex& index) const
         for (const auto& other : d->components) {
             if (other == patch)
                 continue;
-            auto& reqs = other->requiredSet();
+            auto& reqs = other->m_cachedRequires;
             if (reqs.contains(patchUid)) {
                 hasDependents = true;
                 break;
