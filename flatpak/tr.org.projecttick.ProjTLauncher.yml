@@ -3,7 +3,7 @@ runtime: org.kde.Platform
 runtime-version: '6.10'
 sdk: org.kde.Sdk
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.openjdk17
+  - org.freedesktop.Sdk.Extension.openjdk21
 
 command: projtlauncher
 finish-args:
@@ -85,32 +85,6 @@ modules:
       - /lib/pkgconfig
       - '*.a'
 
-  - name: cmark
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMARK_TESTS=OFF
-      - -DCMARK_SHARED=ON
-    sources:
-      - type: git
-        url: https://github.com/commonmark/cmark.git
-        tag: 0.31.1
-
-  - name: tomlplusplus
-    buildsystem: cmake-ninja
-    builddir: true
-    sources:
-      - type: git
-        url: https://github.com/marzer/tomlplusplus.git
-        tag: v3.4.0
-
-  - name: qrencode
-    buildsystem: autotools
-    sources:
-      - type: git
-        url: https://github.com/fukuchi/libqrencode.git
-        tag: v4.1.1
-
   - name: projtlauncher
     buildsystem: cmake-ninja
     builddir: true
@@ -129,7 +103,7 @@ modules:
       - install -Dm755 ../projtlauncher -t /app/bin
     sources:
       - type: git
-        url: https://git.projecttick.org.tr/projt-launcher.git
+        url: https://github.com/Project-Tick/ProjT-Launcher.git
         tag: 0.0.3-4
         commit: 261257701662e1f20550adc35ec4d78d75309ef5 # 0.0.3-4
       - type: file
