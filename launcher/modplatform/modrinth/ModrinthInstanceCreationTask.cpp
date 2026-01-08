@@ -283,7 +283,7 @@ bool ModrinthCreationTask::createInstance()
         QString filePath;
         QQueue<QString> remainingUrls;
         QByteArray hash;
-        Hashing::Algorithm hashAlgorithm;
+        QCryptographicHash::Algorithm hashAlgorithm;
     };
     QHash<Net::NetRequest*, FileDownloadInfo> alternativeUrls;
 
@@ -326,12 +326,12 @@ bool ModrinthCreationTask::createInstance()
             info.hashAlgorithm = file.hashAlgorithm;
             // Copy remaining URLs (skip the first one we're using now)
             for (int i = 1; i < file.downloads.size(); ++i) {
-                info.remainingUrls.enqueue(file.downloads[i]);
+                info.remainingUrls.enqueue(file.downloads[i].toString());
             }
             alternativeUrls[dl.get()] = info;
             
             // Connect to failed signal to try alternative URLs
-            connect(dl.get(), &Net::NetRequest::failed, this, [this, downloadMods, dl]() {
+            connect(dl.get(), &Net::NetRequest::failed, this, [this, downloadMods, dl, &alternativeUrls]() {
                 auto it = alternativeUrls.find(dl.get());
                 if (it == alternativeUrls.end() || it->remainingUrls.isEmpty()) {
                     return; // No alternatives left, let it fail normally
@@ -350,7 +350,7 @@ bool ModrinthCreationTask::createInstance()
                     alternativeUrls[newDl.get()] = info;
                     
                     // Recursively connect to the new download's failed signal
-                    connect(newDl.get(), &Net::NetRequest::failed, this, [this, downloadMods, newDl]() {
+                    connect(newDl.get(), &Net::NetRequest::failed, this, [downloadMods, newDl, &alternativeUrls]() {
                         auto it2 = alternativeUrls.find(newDl.get());
                         if (it2 == alternativeUrls.end() || it2->remainingUrls.isEmpty()) {
                             return;
@@ -364,9 +364,6 @@ bool ModrinthCreationTask::createInstance()
                 
                 // Add the new download to the job
                 downloadMods->addNetAction(newDl);
-                
-                // Mark the failed download as succeeded to prevent job failure
-                dl->setStatus(Task::Status::Succeeded);
             });
         }
         
