@@ -1,4 +1,4 @@
-name: ci
+name: ci-tomlplusplus
 
 on:
     push:
@@ -55,12 +55,13 @@ jobs:
                 working-directory: libqrencode
 
         steps:
+
+            - uses: actions/checkout@v3
+
             - name: Install base dependencies
               run: |
                   sudo apt -y update
                   sudo apt -y install --no-install-recommends git ninja-build libstdc++-${{ env.gcc_version }}-dev locales-all
-
-            - uses: actions/checkout@v3
 
             - name: Install python dependencies
               run: |
