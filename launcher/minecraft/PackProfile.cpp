@@ -629,11 +629,15 @@ Qt::ItemFlags PackProfile::flags(const QModelIndex& index) const
         for (const auto& other : d->components) {
             if (other == patch)
                 continue;
-            auto& reqs = other->m_cachedRequires;
-            if (reqs.contains(patchUid)) {
-                hasDependents = true;
-                break;
+            const auto& reqs = other->m_cachedRequires;
+            for (const auto& req : reqs) {
+                if (req.uid == patchUid) {
+                    hasDependents = true;
+                    break;
+                }
             }
+            if (hasDependents)
+                break;
         }
     }
     
