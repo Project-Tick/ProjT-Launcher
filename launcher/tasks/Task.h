@@ -221,9 +221,6 @@ class Task : public QObject, public QRunnable {
     int m_progress = 0;
     int m_progressTotal = 100;
 
-    // TODO: Nuke in favor of QLoggingCategory
-    bool m_show_debug = true;
-
    private:
     // Change using setAbortStatus
     bool m_can_abort = false;

@@ -58,6 +58,7 @@
  * ======================================================================== */
 
 #include "MinecraftInstance.h"
+#include "MinecraftInstanceLaunchMenu.h"
 #include "Application.h"
 #include "BuildConfig.h"
 #include "Commandline.h"
@@ -318,48 +319,10 @@ QSet<QString> MinecraftInstance::traits() const
     return profile->getTraits();
 }
 
-// TODO: move UI code out of MinecraftInstance
+// UI code extracted to MinecraftInstanceLaunchMenu helper class
 void MinecraftInstance::populateLaunchMenu(QMenu* menu)
 {
-    QAction* normalLaunch = menu->addAction(tr("&Launch"));
-    normalLaunch->setShortcut(QKeySequence::Open);
-    QAction* normalLaunchOffline = menu->addAction(tr("Launch &Offline"));
-    normalLaunchOffline->setShortcut(QKeySequence(tr("Ctrl+Shift+O")));
-    QAction* normalLaunchDemo = menu->addAction(tr("Launch &Demo"));
-    normalLaunchDemo->setShortcut(QKeySequence(tr("Ctrl+Alt+O")));
-
-    normalLaunchDemo->setEnabled(supportsDemo());
-
-    connect(normalLaunch, &QAction::triggered, [this] { APPLICATION->launch(shared_from_this()); });
-    connect(normalLaunchOffline, &QAction::triggered, [this] { APPLICATION->launch(shared_from_this(), false, false); });
-    connect(normalLaunchDemo, &QAction::triggered, [this] { APPLICATION->launch(shared_from_this(), false, true); });
-
-    QString profilersTitle = tr("Profilers");
-    menu->addSeparator()->setText(profilersTitle);
-
-    auto profilers = new QActionGroup(menu);
-    profilers->setExclusive(true);
-    connect(profilers, &QActionGroup::triggered, [this](QAction* action) {
-        settings()->set("Profiler", action->data());
-        emit profilerChanged();
-    });
-
-    QAction* noProfilerAction = menu->addAction(tr("&No Profiler"));
-    noProfilerAction->setData("");
-    noProfilerAction->setCheckable(true);
-    noProfilerAction->setChecked(true);
-    profilers->addAction(noProfilerAction);
-
-    for (auto profiler = APPLICATION->profilers().begin(); profiler != APPLICATION->profilers().end(); profiler++) {
-        QAction* profilerAction = menu->addAction(profiler.value()->name());
-        profilers->addAction(profilerAction);
-        profilerAction->setData(profiler.key());
-        profilerAction->setCheckable(true);
-        profilerAction->setChecked(settings()->get("Profiler").toString() == profiler.key());
-
-        QString error;
-        profilerAction->setEnabled(profiler.value()->check(&error));
-    }
+    MinecraftInstanceLaunchMenu::populate(this, menu);
 }
 
 QString MinecraftInstance::gameRoot() const

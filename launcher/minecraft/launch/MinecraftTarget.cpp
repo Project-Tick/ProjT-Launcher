@@ -36,17 +36,24 @@
 
 #include "MinecraftTarget.h"
 
+#include <QHostAddress>
 #include <QStringList>
 
-// FIXME: the way this is written, it can't ever do any sort of validation and can accept total junk
+// Parse Minecraft server address with validation
 MinecraftTarget MinecraftTarget::parse(const QString& fullAddress, bool useWorld)
 {
+    // Validate input - empty or whitespace-only addresses are invalid
+    QString trimmed = fullAddress.trimmed();
+    if (trimmed.isEmpty()) {
+        return MinecraftTarget{};  // Return empty target for invalid input
+    }
+    
     if (useWorld) {
         MinecraftTarget target;
-        target.world = fullAddress;
+        target.world = trimmed;
         return target;
     }
-    QStringList split = fullAddress.split(":");
+    QStringList split = trimmed.split(":");
 
     // The logic below replicates the exact logic minecraft uses for parsing server addresses.
     // While the conversion is not lossless and eats errors, it ensures the same behavior
@@ -67,17 +74,26 @@ MinecraftTarget MinecraftTarget::parse(const QString& fullAddress, bool useWorld
     }
 
     if (split.size() > 2) {
-        split = QStringList({ fullAddress });
+        split = QStringList({ trimmed });
     }
 
     QString realAddress = split[0];
+    
+    // Validate address is not empty after parsing
+    if (realAddress.isEmpty()) {
+        return MinecraftTarget{};  // Invalid address
+    }
 
     quint16 realPort = 25565;
     if (split.size() > 1) {
         bool ok;
-        realPort = split[1].toUInt(&ok);
+        uint portValue = split[1].toUInt(&ok);
 
-        if (!ok) {
+        // Validate port is in valid range (1-65535)
+        if (ok && portValue > 0 && portValue <= 65535) {
+            realPort = static_cast<quint16>(portValue);
+        } else {
+            // Invalid port, use default
             realPort = 25565;
         }
     }

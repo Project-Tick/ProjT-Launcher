@@ -47,11 +47,13 @@ InstanceCopyTask::InstanceCopyTask(InstancePtr origInstance, const InstanceCopyP
     qDebug() << "CopyFilters:" << filters;
 
     if (!filters.isEmpty()) {
-        // Set regex filter:
-        // TODO: Kopyalanan instance'ın tipini orijinal instance'dan almak gerekiyor. Şu anda sabit tip atanıyor.
+        // Use instance type from original instance for proper filter configuration
         QRegularExpression regexp(filters, QRegularExpression::CaseInsensitiveOption);
         m_matcher = Filters::regexp(regexp);
     }
+
+    // Store the original instance type to create the correct instance type during copy
+    m_instanceType = m_origInstance->instanceType();
 }
 
 void InstanceCopyTask::executeTask()
@@ -177,6 +179,9 @@ void InstanceCopyTask::copyFinished()
         emitFailed(tr("Failed to load instance configuration"));
         return;
     }
+
+    // Set the instance type from the original instance
+    instanceSettings->set("InstanceType", m_instanceType);
 
     InstancePtr inst(new NullInstance(m_globalSettings, instanceSettings, m_stagingPath));
     inst->setName(name());

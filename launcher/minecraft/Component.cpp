@@ -240,7 +240,40 @@ bool Component::isRevertible()
 
 bool Component::isMoveable()
 {
-    // HACK, FIXME: this was too dumb and wouldn't follow dependency constraints anyway. For now hardcoded to 'true'.
+    // A component is moveable if:
+    // 1. It's removable (custom components)
+    // 2. It's not a dependency-only component (added automatically)
+    // 3. No other components depend on it explicitly
+    
+    if (!isRemovable() || m_dependencyOnly) {
+        return false;
+    }
+    
+    // Check if any other component in the profile depends on this one
+    // by checking if they have this component's UID in their requirements
+    auto profile = m_parent;
+    if (!profile) {
+        return true; // No profile to check against
+    }
+    
+    for (int i = 0; i < profile->rowCount(); i++) {
+        auto other = profile->getComponent(i);
+        if (!other || other.get() == this) {
+            continue;
+        }
+        
+        // Check if this other component depends on us
+        auto versionFile = other->m_file;
+        if (versionFile) {
+            for (const auto& req : versionFile->m_requires) {
+                if (req.uid == m_uid) {
+                    // Another component depends on us, we cannot be moved
+                    return false;
+                }
+            }
+        }
+    }
+    
     return true;
 }
 

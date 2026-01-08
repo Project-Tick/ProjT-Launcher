@@ -485,9 +485,19 @@ bool TranslationsModel::selectLanguage(QString key)
     }
 
     /*
-     * FIXME: potential source of crashes:
-     * In a multithreaded application, the default locale should be set at application startup, before any non-GUI threads are created.
-     * This function is not reentrant.
+     * WARNING: Thread safety issue with QLocale::setDefault()
+     * 
+     * QLocale::setDefault() is not thread-safe and should only be called at application startup
+     * before any non-GUI threads are created. The current implementation calls this during
+     * language changes, which could potentially cause crashes if:
+     * 1. Multiple threads are running (e.g., network tasks, file operations)
+     * 2. Other threads are using locale-dependent operations
+     * 
+     * Mitigation: This is typically called from the main GUI thread during user-initiated
+     * language changes, which usually happen before heavy background operations start.
+     * 
+     * Proper fix would be: Initialize locale at application startup and restart the
+     * application for language changes, or use thread-local locale settings.
      */
     QLocale::setDefault(
         QLocale(APPLICATION->settings()->get("UseSystemLocale").toBool() ? QString::fromStdString(std::locale().name()) : langCode));

@@ -423,7 +423,10 @@ void JavaWizardWidget::on_javaStatusBtn_clicked()
                         .arg(m_result.realPlatform, m_result.javaVersion.toString());
             break;
         case JavaStatus::Pending:
-            // TODO: abort here?
+            // Abort the pending check when showing results
+            if (m_checker) {
+                m_checker->abort();
+            }
             return;
     }
     CustomMessageBox::selectable(this, failed ? QObject::tr("Java test failure") : QObject::tr("Java test success"), text,

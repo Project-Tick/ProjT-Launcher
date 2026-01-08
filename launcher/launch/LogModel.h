@@ -74,5 +74,6 @@ class LogModel : public QAbstractListModel {
     bool m_colorLines = true;
 
    private:
+    void updateOverflowMessage();
     Q_DISABLE_COPY(LogModel)
 };

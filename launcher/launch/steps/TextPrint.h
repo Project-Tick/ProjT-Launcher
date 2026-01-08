@@ -41,7 +41,8 @@
 #include <launch/LaunchStep.h>
 
 /*
- * FIXME: maybe do not export
+ * Launch step for printing text messages to the log.
+ * Used by MinecraftInstance and LaunchController for status messages.
  */
 
 class TextPrint : public LaunchStep {

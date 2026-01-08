@@ -264,8 +264,8 @@ void AccountList::onListChanged()
 {
     if (m_autosave) {
         if (!saveList()) {
-            qWarning() << "Failed to save account list automatically";
-            // TODO: Otomatik kaydetme başarısız olursa kullanıcıya bildirim gösterilmeli. Şu anda sadece loglanıyor.
+            qCritical() << "Failed to save account list automatically";
+            emit accountListSaveFailed(tr("Failed to save account list. Your changes may be lost."));
         }
     }
 
@@ -322,6 +322,8 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
     switch (role) {
         case Qt::DisplayRole:
             switch (index.column()) {
+                case IconColumn:
+                    return QVariant(); // Icons are handled by DecorationRole
                 case ProfileNameColumn:
                     return account->profileName();
                 case NameColumn:
@@ -346,6 +348,11 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
         case Qt::ToolTipRole:
             return account->accountDisplayString();
 
+        case Qt::DecorationRole:
+            if (index.column() == IconColumn)
+                return account->getFace();
+            return QVariant();
+
         case PointerRole:
             return QVariant::fromValue(account);
 
@@ -364,6 +371,8 @@ QVariant AccountList::headerData(int section, [[maybe_unused]] Qt::Orientation o
     switch (role) {
         case Qt::DisplayRole:
             switch (section) {
+                case IconColumn:
+                    return QVariant(); // No header text for icon column
                 case ProfileNameColumn:
                     return tr("Username");
                 case NameColumn:
@@ -378,6 +387,8 @@ QVariant AccountList::headerData(int section, [[maybe_unused]] Qt::Orientation o
 
         case Qt::ToolTipRole:
             switch (section) {
+                case IconColumn:
+                    return tr("Account icon");
                 case ProfileNameColumn:
                     return tr("Minecraft username associated with the account.");
                 case NameColumn:

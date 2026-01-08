@@ -66,6 +66,12 @@ class VersionProxyModel : public QAbstractProxyModel {
     void sourceRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
     void sourceRowsRemoved(const QModelIndex& parent, int first, int last);
 
+    void sourceRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast, const QModelIndex& destinationParent, int destinationRow);
+    void sourceRowsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
+
+    void sourceLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& sourceParents, QAbstractItemModel::LayoutChangeHint hint);
+    void sourceLayoutChanged(const QList<QPersistentModelIndex>& sourceParents, QAbstractItemModel::LayoutChangeHint hint);
+
    private:
     QList<Column> m_columns;
     FilterMap m_filters;
@@ -75,4 +81,5 @@ class VersionProxyModel : public QAbstractProxyModel {
     bool hasRecommended = false;
     bool hasLatest = false;
     QString m_currentVersion;
+    QString m_parentVersionName = tr("Minecraft");  // Default, updated from metadata
 };

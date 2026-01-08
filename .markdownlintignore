@@ -1,4 +1,4 @@
-nbtplusplus
+libnbtplusplus
 quazip
 _site
 node_modules
@@ -7,3 +7,9 @@ website/LICENSE
 website/_redirects
 website/favicon.ico
 README.md
+<!-- FIXME: HACK -->
+tomlplusplus
+libqrencode
+cmark
+extra-cmake-modules
+<!-- FIXME: HACK -->

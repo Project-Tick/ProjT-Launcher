@@ -955,17 +955,22 @@ class InstanceStaging : public Task {
 
     virtual ~InstanceStaging() {}
 
-    // FIXME/TODO: add ability to abort during instance commit retries
     bool abort() override
     {
         if (!canAbort())
             return false;
 
+        // Stop retry timer if it's running
+        if (m_backoffTimer.isActive()) {
+            m_backoffTimer.stop();
+            m_parent->destroyStagingPath(m_stagingPath);
+        }
+
         m_child->abort();
 
         return Task::abort();
     }
-    bool canAbort() const override { return (m_child && m_child->canAbort()); }
+    bool canAbort() const override { return (m_child && m_child->canAbort()) || m_backoffTimer.isActive(); }
 
    protected:
     virtual void executeTask() override

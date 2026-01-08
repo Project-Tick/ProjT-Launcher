@@ -270,8 +270,37 @@ void LaunchProfile::applyProblemSeverity(ProblemSeverity severity)
 
 const QList<PatchProblem> LaunchProfile::getProblems() const
 {
-    // FIXME: implement something that actually makes sense here
-    return {};
+    QList<PatchProblem> problems;
+    
+    // Check for critical configuration issues
+    if (m_mainClass.isEmpty() && m_appletClass.isEmpty()) {
+        problems.append({ProblemSeverity::Error, 
+                        QObject::tr("No main class or applet class specified")});
+    }
+    
+    if (m_minecraftVersion.isEmpty()) {
+        problems.append({ProblemSeverity::Error,
+                        QObject::tr("Minecraft version is not specified")});
+    }
+    
+    if (m_minecraftArguments.isEmpty() && m_minecraftVersionType != "snapshot" && m_minecraftVersionType != "old_alpha") {
+        problems.append({ProblemSeverity::Warning,
+                        QObject::tr("No game arguments specified (may be intentional)")});
+    }
+    
+    // Check for missing main jar
+    if (!m_mainJar) {
+        problems.append({ProblemSeverity::Error,
+                        QObject::tr("Main jar file is missing")});
+    }
+    
+    // Check if there are any libraries at all
+    if (m_libraries.isEmpty() && m_minecraftVersionType != "old_alpha") {
+        problems.append({ProblemSeverity::Warning,
+                        QObject::tr("No libraries specified (unusual for modern Minecraft)")});
+    }
+    
+    return problems;
 }
 
 QString LaunchProfile::getMinecraftVersion() const

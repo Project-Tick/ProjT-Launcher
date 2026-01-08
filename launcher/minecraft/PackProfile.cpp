@@ -621,8 +621,27 @@ Qt::ItemFlags PackProfile::flags(const QModelIndex& index) const
     }
 
     auto patch = d->components.at(row);
-    // TODO: this will need fine-tuning later...
-    if (patch->canBeDisabled() && !d->interactionDisabled) {
+    // Components can be checkable if they can be disabled AND not required by other components
+    // Check if any other component depends on this one
+    bool hasDependents = false;
+    if (patch->canBeDisabled()) {
+        QString patchUid = patch->getID();
+        for (const auto& other : d->components) {
+            if (other == patch)
+                continue;
+            const auto& reqs = other->m_cachedRequires;
+            for (const auto& req : reqs) {
+                if (req.uid == patchUid) {
+                    hasDependents = true;
+                    break;
+                }
+            }
+            if (hasDependents)
+                break;
+        }
+    }
+    
+    if (patch->canBeDisabled() && !d->interactionDisabled && !hasDependents) {
         outFlags |= Qt::ItemIsUserCheckable;
     }
     return outFlags;
@@ -1053,9 +1072,16 @@ std::optional<ModPlatform::ModLoaderTypes> PackProfile::getSupportedModLoaders()
     if (!loadersOpt.has_value())
         return loadersOpt;
     auto loaders = loadersOpt.value();
-    // TODO: remove this or add version condition once Quilt drops official Fabric support
-    if (loaders & ModPlatform::Quilt)
-        loaders |= ModPlatform::Fabric;
+    // Quilt provides Fabric compatibility for Minecraft versions < 1.22
+    // This may change when Quilt drops official Fabric support in future versions
+    if (loaders & ModPlatform::Quilt) {
+        auto mcVersion = getComponentVersion("net.minecraft");
+        Version minecraftVer(mcVersion);
+        // Assume Quilt maintains Fabric compat for versions before 1.22
+        if (minecraftVer < Version("1.22")) {
+            loaders |= ModPlatform::Fabric;
+        }
+    }
     if (getComponentVersion("net.minecraft") == "1.20.1" && (loaders & ModPlatform::NeoForge))
         loaders |= ModPlatform::Forge;
     return loaders;
@@ -1070,9 +1096,15 @@ QList<ModPlatform::ModLoaderType> PackProfile::getModLoadersList()
         }
     }
 
-    // TODO: remove this or add version condition once Quilt drops official Fabric support
+    // Quilt provides Fabric compatibility for Minecraft versions < 1.22
+    // This may change when Quilt drops official Fabric support in future versions
     if (result.contains(ModPlatform::Quilt) && !result.contains(ModPlatform::Fabric)) {
-        result.append(ModPlatform::Fabric);
+        auto mcVersion = getComponentVersion("net.minecraft");
+        Version minecraftVer(mcVersion);
+        // Assume Quilt maintains Fabric compat for versions before 1.22
+        if (minecraftVer < Version("1.22")) {
+            result.append(ModPlatform::Fabric);
+        }
     }
     if (getComponentVersion("net.minecraft") == "1.20.1" && result.contains(ModPlatform::NeoForge) &&
         !result.contains(ModPlatform::Forge)) {

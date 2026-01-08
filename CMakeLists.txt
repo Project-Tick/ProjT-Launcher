@@ -116,9 +116,14 @@ else()
 
         # -ffunction-sections and -fdata-sections help reduce binary size
         # -mguard=cf enables Control Flow Guard
-        # TODO: Look into -gc-sections to further reduce binary size
+        # -Wl,--gc-sections removes unused sections during linking
         foreach(lang C CXX)
             set("CMAKE_${lang}_FLAGS_RELEASE" "-ffunction-sections -fdata-sections -mguard=cf")
+        endforeach()
+        
+        # Add linker flag to remove unused sections
+        foreach(lang C CXX)
+            set("CMAKE_${lang}_LINKER_FLAGS_RELEASE" "${CMAKE_${lang}_LINKER_FLAGS_RELEASE} -Wl,--gc-sections")
         endforeach()
     endif()
 endif()
@@ -242,25 +247,17 @@ if(WIN32 AND NOT MINGW)
     endif()
 endif()
 
-# extra-cmake-modules (ECM)
-find_package(ECM QUIET NO_MODULE)
-if(NOT ECM_FOUND)
-    if(Launcher_ALLOW_ECM_FETCHCONTENT)
-        include(FetchContent)
-        FetchContent_Declare(ECM
-            URL https://github.com/KDE/extra-cmake-modules/archive/refs/tags/${ECM_VERSION}.zip
-        )
-        set(BUILD_HTML_DOCS OFF CACHE BOOL "" FORCE)
-        set(BUILD_MAN_DOCS OFF CACHE BOOL "" FORCE)
-        set(BUILD_QTHELP_DOCS OFF CACHE BOOL "" FORCE)
-        set(launcher_ecm_build_testing "${BUILD_TESTING}")
-        set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-        launcher_fetchcontent_makeavailable(ECM)
-        set(BUILD_TESTING "${launcher_ecm_build_testing}" CACHE BOOL "" FORCE)
-        unset(launcher_ecm_build_testing)
-        set(ECM_MODULE_PATH "${ecm_SOURCE_DIR}/modules")
-    else()
-        message(FATAL_ERROR "ECM not found on system. Please install extra-cmake-modules.")
+# extra-cmake-modules (ECM) - Using bundled fork
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/modules")
+    message(STATUS "Using bundled extra-cmake-modules")
+    set(ECM_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/modules")
+    set(ECM_MODULE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/modules")
+    # Add kde-modules for KDEInstallDirs and other KDE modules
+    list(APPEND ECM_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/kde-modules")
+else()
+    find_package(ECM QUIET NO_MODULE)
+    if(NOT ECM_FOUND)
+        message(FATAL_ERROR "ECM not found. extra-cmake-modules/ directory is missing.")
     endif()
 endif()
 set(CMAKE_MODULE_PATH "${ECM_MODULE_PATH};${CMAKE_MODULE_PATH}")
@@ -534,14 +531,14 @@ else()
     message(FATAL_ERROR "Bundled QuaZip not found")
 endif()
 
-find_package(tomlplusplus 3.2.0 QUIET)
-if(NOT tomlplusplus_FOUND)
-    if(Launcher_ALLOW_FETCHCONTENT)
-        include(FetchContent)
-        FetchContent_Declare(tomlplusplus URL https://github.com/marzer/tomlplusplus/archive/refs/tags/v3.4.0.zip)
-        launcher_fetchcontent_makeavailable(tomlplusplus)
-    else()
-        message(FATAL_ERROR "tomlplusplus not found on system. Please install tomlplusplus.")
+# tomlplusplus - Using bundled fork
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tomlplusplus/CMakeLists.txt")
+    message(STATUS "Using bundled tomlplusplus")
+    add_subdirectory(tomlplusplus)
+else()
+    find_package(tomlplusplus 3.2.0 QUIET)
+    if(NOT tomlplusplus_FOUND)
+        message(FATAL_ERROR "tomlplusplus not found. tomlplusplus/ directory is missing.")
     endif()
 endif()
 
@@ -566,15 +563,7 @@ else()
                 INTERFACE_INCLUDE_DIRECTORIES "${CMARK_INC}")
         endif()
     else()
-        message(STATUS "cmark not found, using FetchContent fallback")
-        include(FetchContent)
-        FetchContent_Declare(cmark URL https://github.com/commonmark/cmark/archive/refs/tags/0.31.1.zip)
-        set(CMARK_TESTS OFF CACHE BOOL "" FORCE)
-        set(CMARK_SHARED ON CACHE BOOL "" FORCE)
-        launcher_fetchcontent_makeavailable(cmark)
-        if(TARGET cmark AND NOT TARGET cmark::cmark)
-            add_library(cmark::cmark ALIAS cmark)
-        endif()
+        message(FATAL_ERROR "cmark not found. cmark/ directory is missing and system cmark not available.")
     endif()
 endif()
 
@@ -594,9 +583,7 @@ else()
             IMPORTED_LOCATION "${QRENCODE_LIB}"
             INTERFACE_INCLUDE_DIRECTORIES "${QRENCODE_INC}")
     else()
-        message(STATUS "qrencode not found, using FetchContent fallback")
-        include(FetchContent)
-        FetchContent_Declare(qrencode_repo URL https://github.com/fukuchi/libqrencode/archive/refs/tags/v4.1.1.zip)
+        message(STATUS "Using bundled libqrencode")
         # Set CMake policy version to avoid version compatibility error
         set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
         # Avoid optional tools/tests that require getopt/PNG on Windows.
@@ -617,7 +604,7 @@ else()
         endif()
         set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
         set(WITH_TESTS OFF CACHE BOOL "" FORCE)
-        launcher_fetchcontent_makeavailable(qrencode_repo)
+        add_subdirectory(libqrencode)
         if(WIN32)
             set(BUILD_SHARED_LIBS "${_qrencode_prev_build_shared_libs}" CACHE BOOL "" FORCE)
         endif()
@@ -636,14 +623,14 @@ else()
             get_target_property(_qr_inc qrencode INTERFACE_INCLUDE_DIRECTORIES)
             if(NOT _qr_inc)
                 target_include_directories(qrencode PUBLIC
-                    "${qrencode_repo_SOURCE_DIR}"
-                    "${qrencode_repo_SOURCE_DIR}/src"
-                    "${qrencode_repo_SOURCE_DIR}/lib"
-                    "${qrencode_repo_SOURCE_DIR}/include")
+                    "${CMAKE_CURRENT_SOURCE_DIR}/libqrencode"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/libqrencode/src"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/libqrencode/lib"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/libqrencode/include")
             endif()
         endif()
         if(NOT DEFINED QRENCODE_INC OR QRENCODE_INC STREQUAL "")
-            set(QRENCODE_INC "${qrencode_repo_SOURCE_DIR};${qrencode_repo_SOURCE_DIR}/include;${qrencode_repo_SOURCE_DIR}/lib" CACHE PATH "QRENCODE include dir" FORCE)
+            set(QRENCODE_INC "${CMAKE_CURRENT_SOURCE_DIR}/libqrencode;${CMAKE_CURRENT_SOURCE_DIR}/libqrencode/include;${CMAKE_CURRENT_SOURCE_DIR}/libqrencode/lib" CACHE PATH "QRENCODE include dir" FORCE)
         endif()
     endif()
 endif()

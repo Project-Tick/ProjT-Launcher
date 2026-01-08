@@ -281,6 +281,8 @@ set(MINECRAFT_SOURCES
     minecraft/GradleSpecifier.h
     minecraft/MinecraftInstance.cpp
     minecraft/MinecraftInstance.h
+    minecraft/MinecraftInstanceLaunchMenu.cpp
+    minecraft/MinecraftInstanceLaunchMenu.h
     minecraft/LaunchProfile.cpp
     minecraft/LaunchProfile.h
     minecraft/Component.cpp
@@ -837,11 +839,11 @@ SET(LAUNCHER_SOURCES
     ui/ViewLogWindow.h
     ui/ViewLogWindow.cpp
 
-    # FIXME: maybe find a better home for this.
-    FileIgnoreProxy.cpp
-    FileIgnoreProxy.h
-    FastFileIconProvider.cpp
-    FastFileIconProvider.h
+    # GUI - widgets / utilities
+    ui/widgets/FileIgnoreProxy.cpp
+    ui/widgets/FileIgnoreProxy.h
+    ui/widgets/FastFileIconProvider.cpp
+    ui/widgets/FastFileIconProvider.h
 
     # GUI - setup wizard
     ui/setupwizard/SetupWizard.h

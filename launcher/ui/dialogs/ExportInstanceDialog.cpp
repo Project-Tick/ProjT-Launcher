@@ -63,7 +63,7 @@
 #include <QFileDialog>
 #include <QFileSystemModel>
 #include <QMessageBox>
-#include "FileIgnoreProxy.h"
+#include "ui/widgets/FileIgnoreProxy.h"
 #include "QObjectPtr.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/ProgressDialog.h"

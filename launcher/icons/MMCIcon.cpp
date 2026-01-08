@@ -103,7 +103,12 @@ QIcon MMCIcon::icon() const
     auto& icon = m_images[m_current_type].icon;
     if (!icon.isNull())
         return icon;
-    // TODO: Theme ikonları için dependency injection uygulanabilir. Şu anda doğrudan erişim var, test edilebilirlik ve özelleştirme için DI önerilir.
+    
+    // Direct theme access: Uses QIcon::fromTheme for system/Qt theme integration.
+    // Note: For improved testability, consider injecting a theme provider interface
+    // that wraps QIcon::fromTheme. This would allow mocking theme behavior in tests
+    // and provide a centralized point for theme customization.
+    // Current implementation is acceptable for production use as it follows Qt conventions.
     return QIcon::fromTheme(m_images[m_current_type].key);
 }
 

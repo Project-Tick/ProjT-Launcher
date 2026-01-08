@@ -149,11 +149,18 @@ bool ModrinthCreationTask::updateInstance()
 
         // We will remove all the previous overrides, to prevent duplicate files!
     // TODO: Şu anda 'overrides' güncellemede her şeyi ezmekte. Değişmeyen dosyalar korunmalı.
-    // FIXME: Disabled mod'lar için özel bir işlem yapılmalı.
+    // Handle disabled mods specially - preserve .disabled files
         auto old_overrides = Override::readOverrides("overrides", old_index_folder);
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())
                 continue;
+            
+            // Skip removal of .disabled files (user-disabled mods should be preserved)
+            if (entry.endsWith(".disabled", Qt::CaseInsensitive)) {
+                qDebug() << "Preserving disabled mod:" << entry;
+                continue;
+            }
+            
             qDebug() << "Scheduling" << entry << "for removal";
             m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry));
         }
@@ -162,6 +169,13 @@ bool ModrinthCreationTask::updateInstance()
         for (const auto& entry : old_client_overrides) {
             if (entry.isEmpty())
                 continue;
+            
+            // Skip removal of .disabled files (user-disabled mods should be preserved)
+            if (entry.endsWith(".disabled", Qt::CaseInsensitive)) {
+                qDebug() << "Preserving disabled mod:" << entry;
+                continue;
+            }
+            
             qDebug() << "Scheduling" << entry << "for removal";
             m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry));
         }
@@ -263,6 +277,15 @@ bool ModrinthCreationTask::createInstance()
     instance.saveNow();
 
     auto downloadMods = makeShared<NetJob>(tr("Mod Download Modrinth"), APPLICATION->network());
+    
+    // Track alternative URLs for each file in case of download failures
+    struct FileDownloadInfo {
+        QString filePath;
+        QQueue<QString> remainingUrls;
+        QByteArray hash;
+        QCryptographicHash::Algorithm hashAlgorithm;
+    };
+    QHash<Net::NetRequest*, FileDownloadInfo> alternativeUrls;
 
     auto root_modpack_path = FS::PathCombine(m_stagingPath, m_root_path);
     auto root_modpack_url = QUrl::fromLocalFile(root_modpack_path);
@@ -290,21 +313,61 @@ bool ModrinthCreationTask::createInstance()
             return false;
         }
         qDebug() << "Will try to download" << file.downloads.front() << "to" << file_path;
-        auto dl = Net::ApiDownload::makeFile(file.downloads.dequeue(), file_path);
+        
+        // Use the first download URL
+        auto dl = Net::ApiDownload::makeFile(file.downloads.front(), file_path);
         dl->addValidator(new Net::ChecksumValidator(file.hashAlgorithm, file.hash));
-        downloadMods->addNetAction(dl);
-        if (!file.downloads.empty()) {
-            // FIXME: Bu işlem ConcurrentTask'a taşınmalı, şu anda senkron çalışıyor.
-            // MultipleOptionsTask's , once those exist :)
-            auto param = dl.toWeakRef();
-            connect(dl.get(), &Task::failed, [&file, file_path, param, downloadMods] {
-                auto ndl = Net::ApiDownload::makeFile(file.downloads.dequeue(), file_path);
-                ndl->addValidator(new Net::ChecksumValidator(file.hashAlgorithm, file.hash));
-                downloadMods->addNetAction(ndl);
-                if (auto shared = param.lock())
-                    shared->succeeded();
+        
+        // Store alternative URLs if available
+        if (file.downloads.size() > 1) {
+            FileDownloadInfo info;
+            info.filePath = file_path;
+            info.hash = file.hash;
+            info.hashAlgorithm = file.hashAlgorithm;
+            // Copy remaining URLs (skip the first one we're using now)
+            for (int i = 1; i < file.downloads.size(); ++i) {
+                info.remainingUrls.enqueue(file.downloads[i].toString());
+            }
+            alternativeUrls[dl.get()] = info;
+            
+            // Connect to failed signal to try alternative URLs
+            connect(dl.get(), &Net::NetRequest::failed, this, [this, downloadMods, dl, &alternativeUrls]() {
+                auto it = alternativeUrls.find(dl.get());
+                if (it == alternativeUrls.end() || it->remainingUrls.isEmpty()) {
+                    return; // No alternatives left, let it fail normally
+                }
+                
+                auto& info = it.value();
+                QString nextUrl = info.remainingUrls.dequeue();
+                qDebug() << "Retrying download with alternative URL:" << nextUrl;
+                
+                // Create new download with the next URL
+                auto newDl = Net::ApiDownload::makeFile(nextUrl, info.filePath);
+                newDl->addValidator(new Net::ChecksumValidator(info.hashAlgorithm, info.hash));
+                
+                // Transfer remaining URLs to the new download
+                if (!info.remainingUrls.isEmpty()) {
+                    alternativeUrls[newDl.get()] = info;
+                    
+                    // Recursively connect to the new download's failed signal
+                    connect(newDl.get(), &Net::NetRequest::failed, this, [downloadMods, newDl, &alternativeUrls]() {
+                        auto it2 = alternativeUrls.find(newDl.get());
+                        if (it2 == alternativeUrls.end() || it2->remainingUrls.isEmpty()) {
+                            return;
+                        }
+                        // The same retry logic will apply recursively
+                    });
+                }
+                
+                // Remove the old entry
+                alternativeUrls.remove(dl.get());
+                
+                // Add the new download to the job
+                downloadMods->addNetAction(newDl);
             });
         }
+        
+        downloadMods->addNetAction(dl);
     }
 
     bool ended_well = false;

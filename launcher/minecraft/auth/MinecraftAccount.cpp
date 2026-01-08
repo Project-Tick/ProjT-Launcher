@@ -170,13 +170,17 @@ shared_qobject_ptr<AuthFlow> MinecraftAccount::currentTask()
 void MinecraftAccount::authSucceeded()
 {
     m_currentTask.reset();
+    emit authenticationSucceeded();
     emit changed();
     emit activityChanged(false);
 }
 
 void MinecraftAccount::authFailed(QString reason)
 {
-    switch (m_currentTask->taskState()) {
+    auto taskState = m_currentTask->taskState();
+    emit authenticationFailed(reason, taskState);
+    
+    switch (taskState) {
         case AccountTaskState::STATE_OFFLINE:
         case AccountTaskState::STATE_DISABLED: {
             // NOTE: user will need to fix this themselves.
@@ -195,14 +199,17 @@ void MinecraftAccount::authFailed(QString reason)
                 data.yggdrasilToken.validity = Validity::None;
                 data.validity_ = Validity::None;
             }
+            emit validityChanged(Validity::None);
             emit changed();
         } break;
         case AccountTaskState::STATE_FAILED_GONE: {
             data.validity_ = Validity::None;
+            emit validityChanged(Validity::None);
             emit changed();
         } break;
         case AccountTaskState::STATE_WORKING: {
             data.accountState = AccountState::Unchecked;
+            emit accountStateChanged(AccountState::Unchecked);
         } break;
         case AccountTaskState::STATE_CREATED:
         case AccountTaskState::STATE_SUCCEEDED: {

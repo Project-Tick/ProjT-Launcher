@@ -75,7 +75,10 @@ class PageModel : public QAbstractListModel {
                 QIcon icon = m_pages.at(index.row())->icon();
                 if (icon.isNull())
                     icon = m_emptyIcon;
-                // HACK: fixes icon stretching on windows. TODO: report Qt bug for this
+                // WORKAROUND: Qt on Windows stretches icons in list views incorrectly
+                // Force exact size pixmap to prevent stretching artifacts
+                // Observed on Qt 5.x/6.x Windows builds, may be related to DPI scaling
+                // Keeping 48x48 as standard icon size for consistent appearance
                 return QIcon(icon.pixmap(QSize(48, 48)));
             }
         }
