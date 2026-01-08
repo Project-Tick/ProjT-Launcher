@@ -251,6 +251,7 @@ endif()
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/modules")
     message(STATUS "Using bundled extra-cmake-modules")
     set(ECM_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/modules")
+    set(ECM_MODULE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/modules")
     # Add kde-modules for KDEInstallDirs and other KDE modules
     list(APPEND ECM_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/kde-modules")
 else()
