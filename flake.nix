@@ -54,7 +54,8 @@
                       ! -path './vendor/*' \
                       ! -path './third_party/*' \
                       ! -path './extra-cmake-modules/*' \
-                      ! -path './libqrencode/*')
+                      ! -path './libqrencode/*' \
+                      ! -path './cmark/*')
 
                 echo "Running deadnix..."
                 deadnix --fail
