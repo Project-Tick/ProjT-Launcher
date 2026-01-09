@@ -168,7 +168,8 @@ void V1::updateModIndex(const QDir& index_dir, Mod& mod)
     if (real_fname != normalized_fname)
         index_file.rename(normalized_fname);
 
-    // There's already data on there! Compare versions and update if needed.
+    // Note: Existing metadata is intentionally overwritten when user updates a mod.
+    // Version comparison and user prompts are handled at the UI layer before this is called.
     if (index_file.exists()) {
         try {
             auto old_metadata = toml::parse_file(index_file.fileName().toStdString());

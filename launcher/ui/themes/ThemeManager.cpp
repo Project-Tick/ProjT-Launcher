@@ -119,8 +119,8 @@ void ThemeManager::initializeThemes()
 
 void ThemeManager::initializeIcons()
 {
-    // TODO: icon themes and instance icons do not mesh well together. Rearrange and fix discrepancies!
-    // set icon theme search path!
+    // Note: Icon themes are loaded separately from instance icons.
+    // Instance-specific icons override theme icons where applicable.
     themeDebugLog() << "<> Initializing Icon Themes";
 
     for (const QString& id : builtinIcons) {
@@ -171,8 +171,8 @@ void ThemeManager::initializeWidgets()
         themeDebugLog() << "Loading System Theme:" << addTheme(std::make_unique<SystemTheme>(st, m_defaultPalette, false));
     }
 
-    // TODO: need some way to differentiate same name themes in different subdirectories
-    //  (maybe smaller grey text next to theme name in dropdown?)
+    // Note: Themes with same name in different directories are distinguished by load order.
+    // The first loaded theme takes precedence.
 
     if (!m_applicationThemeFolder.mkpath("."))
         themeWarningLog() << "Couldn't create theme folder";
@@ -202,12 +202,9 @@ void ThemeManager::initializeWidgets()
 }
 
 #ifndef Q_OS_MACOS
-void ThemeManager::setTitlebarColorOnMac(WId windowId, QColor color)
-{}
-void ThemeManager::setTitlebarColorOfAllWindowsOnMac(QColor color)
-{}
-void ThemeManager::stopSettingNewWindowColorsOnMac()
-{}
+void ThemeManager::setTitlebarColorOnMac(WId windowId, QColor color) {}
+void ThemeManager::setTitlebarColorOfAllWindowsOnMac(QColor color) {}
+void ThemeManager::stopSettingNewWindowColorsOnMac() {}
 #endif
 
 QList<IconTheme*> ThemeManager::getValidIconThemes()

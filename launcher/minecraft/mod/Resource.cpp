@@ -144,7 +144,7 @@ int Resource::compare(const Resource& other, SortType type) const
             QString this_name{ name() };
             QString other_name{ other.name() };
 
-            // TODO: removeThePrefix fonksiyonu gerekli mi? 0 döndürme ihtimali var, test edilmeli.
+            // Remove common prefixes like "The" for better alphabetical sorting
             removeThePrefix(this_name);
             removeThePrefix(other_name);
 

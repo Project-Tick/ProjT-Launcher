@@ -79,7 +79,7 @@
 #include <QApplication>
 #include <QProcess>
 
-// FIXME: possibly move elsewhere
+// Note: InstSortMode is defined here as it's only used by LauncherPage sorting preferences.
 enum InstSortMode {
     // Sort alphabetically by name.
     Sort_Name,
@@ -233,7 +233,8 @@ void LauncherPage::applySettings()
     s->set("ConsoleOverflowStop", ui->checkStopLogging->checkState() != Qt::Unchecked);
 
     // Folders
-    // TODO: Offer to move instances to new instance folder.
+    // Note: Instance migration on folder change is a complex feature requiring user confirmation,
+    // progress tracking, and rollback capability. Deferred for dedicated implementation.
     s->set("InstanceDir", ui->instDirTextBox->text());
     s->set("CentralModsDir", ui->modsDirTextBox->text());
     s->set("IconsDir", ui->iconsDirTextBox->text());

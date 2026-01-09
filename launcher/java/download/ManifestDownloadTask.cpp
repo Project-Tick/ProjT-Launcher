@@ -114,7 +114,9 @@ void ManifestDownloadTask::downloadJava(const QJsonDocument& doc)
                 QFile::link(path, file);
             }
         } else if (type == "file") {
-            auto downloads = Json::ensureObject(meta, "downloads");
+            // Note: Java manifest also contains 'lzma' compressed versions, but raw is preferred
+            // for simplicity. Compressed download could save bandwidth but adds decompression complexity.
+            auto raw = Json::ensureObject(Json::ensureObject(meta, "downloads"), "raw");
             auto isExec = Json::ensureBoolean(meta, "executable", false);
             
             // Use raw downloads for now - compressed downloads would require decompression infrastructure

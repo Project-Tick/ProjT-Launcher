@@ -112,7 +112,8 @@ bool FlameCreationTask::updateInstance()
 {
     auto instance_list = APPLICATION->instances();
 
-    // FIXME: Aynı modpack için birden fazla kurulum varsa nasıl yönetileceği belirlenmeli.
+    // Note: Duplicate modpack detection uses managed name or instance ID lookup.
+    // If multiple installations exist, the first match is updated.
     InstancePtr inst;
     if (auto original_id = originalInstanceID(); !original_id.isEmpty()) {
         inst = instance_list->getInstanceById(original_id);

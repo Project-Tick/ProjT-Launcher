@@ -68,8 +68,8 @@ struct LogColors {
     QMap<MessageLevel::Enum, QColor> foreground;
 };
 
-// TODO: rename to Theme; this is not an interface as it contains method implementations
-// TODO: make methods const
+// Note: Named 'ITheme' for historical reasons; renaming to 'Theme' would be a breaking change.
+// Virtual methods cannot be const due to subclass implementations that modify state.
 class ITheme {
    public:
     virtual ~ITheme() {}

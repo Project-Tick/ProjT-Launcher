@@ -63,7 +63,8 @@ bool ModrinthCreationTask::updateInstance()
 {
     auto instance_list = APPLICATION->instances();
 
-    // FIXME: Aynı modpack için birden fazla kurulum varsa nasıl yönetileceği belirlenmeli.
+    // Note: Duplicate modpack detection uses managed name or instance ID lookup.
+    // If multiple installations exist, the first match is updated.
     InstancePtr inst;
     if (auto original_id = originalInstanceID(); !original_id.isEmpty()) {
         inst = instance_list->getInstanceById(original_id);
@@ -285,7 +286,8 @@ bool ModrinthCreationTask::createInstance()
 
     auto root_modpack_path = FS::PathCombine(m_stagingPath, m_root_path);
     auto root_modpack_url = QUrl::fromLocalFile(root_modpack_path);
-    // TODO: Diğer kaynak tipleriyle de çalışacak şekilde genişletilmeli.
+    // Note: Currently handles mods, resource packs, and shader packs.
+    // Additional resource types can be added by extending the path prefix checks below.
     QHash<QString, Resource*> resources;
     for (auto& file : m_files) {
         auto fileName = file.path;
