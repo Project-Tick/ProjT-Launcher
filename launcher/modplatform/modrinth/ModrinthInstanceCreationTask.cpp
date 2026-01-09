@@ -281,6 +281,62 @@ bool ModrinthCreationTask::createInstance()
     // Clear any previous alternative URLs tracking
     m_alternativeUrls.clear();
 
+    // Helper lambda for attaching retry logic to a download action
+    auto attachRetry = [this, &downloadMods](Net::Download::Ptr dl) {
+        connect(dl.get(), &Net::NetRequest::failed, this, [this, downloadMods, dl]() {
+            auto it = m_alternativeUrls.find(dl.get());
+            if (it == m_alternativeUrls.end())
+                return; // No alternatives registered
+            
+            FileDownloadInfo info = it.value(); // Copy, not reference
+            if (info.remainingUrls.isEmpty()) {
+                m_alternativeUrls.remove(dl.get());
+                return; // No more alternatives
+            }
+            
+            QString nextUrl = info.remainingUrls.dequeue();
+            qDebug() << "Retrying download with alternative URL:" << nextUrl;
+            
+            // Create new download with next URL
+            auto newDl = Net::ApiDownload::makeFile(QUrl(nextUrl), info.filePath);
+            newDl->addValidator(new Net::ChecksumValidator(info.hashAlgorithm, info.hash));
+            
+            // Transfer remaining URLs to new download
+            if (!info.remainingUrls.isEmpty()) {
+                m_alternativeUrls[newDl.get()] = info;
+                // Recursively attach retry to new download
+                connect(newDl.get(), &Net::NetRequest::failed, this, [this, downloadMods, newDl]() {
+                    auto it2 = m_alternativeUrls.find(newDl.get());
+                    if (it2 == m_alternativeUrls.end())
+                        return;
+                    
+                    FileDownloadInfo info2 = it2.value();
+                    if (info2.remainingUrls.isEmpty()) {
+                        m_alternativeUrls.remove(newDl.get());
+                        return;
+                    }
+                    
+                    QString nextUrl2 = info2.remainingUrls.dequeue();
+                    qDebug() << "Retrying download again with alternative URL:" << nextUrl2;
+                    
+                    auto newDl2 = Net::ApiDownload::makeFile(QUrl(nextUrl2), info2.filePath);
+                    newDl2->addValidator(new Net::ChecksumValidator(info2.hashAlgorithm, info2.hash));
+                    
+                    if (!info2.remainingUrls.isEmpty()) {
+                        m_alternativeUrls[newDl2.get()] = info2;
+                    }
+                    
+                    m_alternativeUrls.remove(newDl.get());
+                    downloadMods->addNetAction(newDl2);
+                });
+            }
+            
+            // Remove old entry and add new download
+            m_alternativeUrls.remove(dl.get());
+            downloadMods->addNetAction(newDl);
+        });
+    };
+
     auto root_modpack_path = FS::PathCombine(m_stagingPath, m_root_path);
     auto root_modpack_url = QUrl::fromLocalFile(root_modpack_path);
     // TODO: Diğer kaynak tipleriyle de çalışacak şekilde genişletilmeli.
@@ -309,10 +365,10 @@ bool ModrinthCreationTask::createInstance()
         qDebug() << "Will try to download" << file.downloads.front() << "to" << file_path;
         
         // Use the first download URL
-        auto dl = Net::ApiDownload::makeFile(file.downloads.front(), file_path);
+        auto dl = Net::ApiDownload::makeFile(QUrl(file.downloads.front()), file_path);
         dl->addValidator(new Net::ChecksumValidator(file.hashAlgorithm, file.hash));
         
-        // Store alternative URLs if available
+        // Store alternative URLs if available and attach retry logic
         if (file.downloads.size() > 1) {
             FileDownloadInfo info;
             info.filePath = file_path;
@@ -323,42 +379,7 @@ bool ModrinthCreationTask::createInstance()
                 info.remainingUrls.enqueue(file.downloads[i].toString());
             }
             m_alternativeUrls[dl.get()] = info;
-            
-            // Connect to failed signal to try alternative URLs
-            connect(dl.get(), &Net::NetRequest::failed, this, [this, downloadMods, dl]() {
-                auto it = m_alternativeUrls.find(dl.get());
-                if (it == m_alternativeUrls.end() || it->remainingUrls.isEmpty()) {
-                    return; // No alternatives left, let it fail normally
-                }
-                
-                auto& info = it.value();
-                QString nextUrl = info.remainingUrls.dequeue();
-                qDebug() << "Retrying download with alternative URL:" << nextUrl;
-                
-                // Create new download with the next URL
-                auto newDl = Net::ApiDownload::makeFile(nextUrl, info.filePath);
-                newDl->addValidator(new Net::ChecksumValidator(info.hashAlgorithm, info.hash));
-                
-                // Transfer remaining URLs to the new download
-                if (!info.remainingUrls.isEmpty()) {
-                    m_alternativeUrls[newDl.get()] = info;
-                    
-                    // Recursively connect to the new download's failed signal
-                    connect(newDl.get(), &Net::NetRequest::failed, this, [this, downloadMods, newDl]() {
-                        auto it2 = m_alternativeUrls.find(newDl.get());
-                        if (it2 == m_alternativeUrls.end() || it2->remainingUrls.isEmpty()) {
-                            return;
-                        }
-                        // The same retry logic will apply recursively
-                    });
-                }
-                
-                // Remove the old entry
-                m_alternativeUrls.remove(dl.get());
-                
-                // Add the new download to the job
-                downloadMods->addNetAction(newDl);
-            });
+            attachRetry(dl);
         }
         
         downloadMods->addNetAction(dl);

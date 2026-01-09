@@ -23,6 +23,7 @@
 
 #include <QByteArray>
 #include <QCryptographicHash>
+#include <QHash>
 #include <QQueue>
 #include <QString>
 #include <QUrl>
@@ -30,6 +31,10 @@
 
 #include "BaseInstance.h"
 #include "InstanceCreationTask.h"
+
+namespace Net {
+class NetRequest;
+}
 
 class ModrinthCreationTask final : public InstanceCreationTask {
     Q_OBJECT

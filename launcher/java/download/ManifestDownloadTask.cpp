@@ -126,6 +126,10 @@ void ManifestDownloadTask::downloadJava(const QJsonDocument& doc)
                 auto raw = Json::ensureObject(downloads, "raw");
                 url = Json::ensureString(raw, "url");
                 hash = QByteArray::fromHex(Json::ensureString(raw, "sha1").toLatin1());
+            } else {
+                qWarning() << "No raw download available for file:" << paths;
+                qWarning() << "Skipping file without raw download - decompression not yet supported";
+                continue;
             }
             
             if (!url.isEmpty() && QUrl(url).isValid()) {
