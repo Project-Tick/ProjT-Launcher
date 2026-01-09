@@ -68,11 +68,9 @@ struct LogColors {
     QMap<MessageLevel::Enum, QColor> foreground;
 };
 
-// Note: Named 'ITheme' for historical reasons; renaming to 'Theme' would be a breaking change.
-// Virtual methods cannot be const due to subclass implementations that modify state.
-class ITheme {
+class Theme {
    public:
-    virtual ~ITheme() {}
+    virtual ~Theme() {}
     virtual void apply(bool initial);
     virtual QString id() = 0;
     virtual QString name() = 0;

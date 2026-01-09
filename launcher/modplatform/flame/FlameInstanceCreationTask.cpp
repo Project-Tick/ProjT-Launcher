@@ -119,13 +119,25 @@ bool FlameCreationTask::updateInstance()
         inst = instance_list->getInstanceById(original_id);
         Q_ASSERT(inst);
     } else {
-        inst = instance_list->getInstanceByManagedName(originalName());
+        // Duplicate Detection: Check for duplicates before assuming
+        auto all_instances = instance_list->getAllInstancesByManagedName(originalName());
+
+        if (all_instances.size() > 1) {
+            emitFailed(tr(
+                "Multiple instances found for this modpack. Please update the specific instance you want to modify to avoid ambiguity."));
+            return false;
+        }
+
+        if (all_instances.size() == 1) {
+            inst = all_instances.first();
+        } else {
+            // Fallback to name-based lookup if not found by managed ID
+            inst = instance_list->getInstanceById(originalName());
+        }
 
         if (!inst) {
-            inst = instance_list->getInstanceById(originalName());
-
-            if (!inst)
-                return false;
+            // New instance creation flow continues...
+            return true;
         }
     }
 

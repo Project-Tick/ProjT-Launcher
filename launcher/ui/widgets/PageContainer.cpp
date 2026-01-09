@@ -172,9 +172,11 @@ void PageContainer::refreshContainer()
         if (index.isValid()) {
             m_pageList->setCurrentIndex(index);
         } else {
-            // FIXME: unhandled corner case: what to do when there's no page to select?
+            // No page to select - show the empty state
+            showPage(-1);
         }
     }
+}
 }
 
 void PageContainer::createUI()

@@ -125,6 +125,17 @@ else()
         endforeach()
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,--gc-sections ${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
         set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "-Wl,--gc-sections ${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
+    elseif(APPLE)
+        # macOS specific dead code stripping
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,-dead_strip ${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "-Wl,-dead_strip ${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
+    elseif(UNIX)
+        # Linux/BSD dead code stripping
+        foreach(lang C CXX)
+            set("CMAKE_${lang}_FLAGS_RELEASE" "-ffunction-sections -fdata-sections")
+        endforeach()
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,--gc-sections ${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "-Wl,--gc-sections ${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
     endif()
 endif()
 

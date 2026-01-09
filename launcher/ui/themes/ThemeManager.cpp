@@ -80,7 +80,7 @@ ThemeManager::~ThemeManager()
 /// @brief Adds the Theme to the list of themes
 /// @param theme The Theme to add
 /// @return Theme ID
-QString ThemeManager::addTheme(std::unique_ptr<ITheme> theme)
+QString ThemeManager::addTheme(std::unique_ptr<Theme> theme)
 {
     QString id = theme->id();
     if (m_themes.find(id) == m_themes.end())
@@ -93,7 +93,7 @@ QString ThemeManager::addTheme(std::unique_ptr<ITheme> theme)
 /// @brief Gets the Theme from the List via ID
 /// @param themeId Theme ID of theme to fetch
 /// @return Theme at themeId
-ITheme* ThemeManager::getTheme(QString themeId)
+Theme* ThemeManager::getTheme(QString themeId)
 {
     return m_themes[themeId].get();
 }

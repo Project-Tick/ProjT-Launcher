@@ -19,9 +19,9 @@
  */
 #pragma once
 
-#include "ITheme.h"
+#include "Theme.h"
 
-class FusionTheme : public ITheme {
+class FusionTheme : public Theme {
    public:
     virtual ~FusionTheme() {}
 

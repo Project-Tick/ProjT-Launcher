@@ -89,7 +89,7 @@ void SystemTheme::apply(bool initial)
         return;
     }
 
-    ITheme::apply(initial);
+    Theme::apply(initial);
 }
 
 QString SystemTheme::id()

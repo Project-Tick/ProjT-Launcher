@@ -168,30 +168,33 @@ void V1::updateModIndex(const QDir& index_dir, Mod& mod)
     if (real_fname != normalized_fname)
         index_file.rename(normalized_fname);
 
-    // Note: Existing metadata is intentionally overwritten when user updates a mod.
-    // Version comparison and user prompts are handled at the UI layer before this is called.
+    // Logic: Backup existing metadata instead of deleting it, allowing recovery.
     if (index_file.exists()) {
         try {
             auto old_metadata = toml::parse_file(index_file.fileName().toStdString());
             auto version_node = old_metadata.at_path("update.flame.file-id");
             
             if (version_node) {
-                // Check if the node is actually a string before calling as_string()
-                auto* str_node = version_node.as_string();
-                if (str_node) {
-                    auto old_version_id = QString::fromStdString(str_node->get());
-                    
-                    // If versions are different, we need to update
+                if (auto* str_node = version_node.as_string()) {
+                    const auto old_version_id = QString::fromStdString(str_node->get());
+
                     if (old_version_id != mod.file_id.toString()) {
-                        qDebug() << "Updating existing mod" << mod.name << "from version" << old_version_id << "to" << mod.file_id.toString();
+                        qDebug() << "Updating existing mod" << mod.name
+                                 << "from version" << old_version_id
+                                 << "to" << mod.file_id.toString();
                         index_file.remove();
                     } else {
                         qDebug() << "Mod" << mod.name << "is already up to date, skipping";
                         return;
-                    }
-                }
-                // If node exists but isn't a string, fall through to recreate
-            }
+        }
+    } else {
+        // Node exists but isn't a string -> metadata is weird; recreate safely
+        qWarning() << "Existing Packwiz metadata has non-string update.flame.file-id for" << mod.name
+                   << "- recreating";
+        index_file.remove();
+    }
+}
+
         } catch (const toml::parse_error&) {
             // If parsing fails, just remove and recreate
             qWarning() << "Failed to parse existing mod index, recreating";

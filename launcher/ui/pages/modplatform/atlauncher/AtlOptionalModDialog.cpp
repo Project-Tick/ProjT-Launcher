@@ -266,7 +266,8 @@ void AtlOptionalModListModel::toggleMod(const ATLauncher::VersionMod& mod, int i
         auto message = QString("%1<br><br>%2").arg(m_version.warnings[mod.warning], tr("Are you sure that you want to enable this mod?"));
 
         // fixme: avoid casting here
-        auto result = QMessageBox::warning((QWidget*)this->parent(), tr("Warning"), message, QMessageBox::Yes | QMessageBox::No);
+        auto result =
+            QMessageBox::warning(qobject_cast<QWidget*>(this->parent()), tr("Warning"), message, QMessageBox::Yes | QMessageBox::No);
         if (result != QMessageBox::Yes) {
             return;
         }

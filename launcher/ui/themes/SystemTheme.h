@@ -56,9 +56,9 @@
  * ======================================================================== */
 #pragma once
 
-#include "ITheme.h"
+#include "Theme.h"
 
-class SystemTheme : public ITheme {
+class SystemTheme : public Theme {
    public:
     SystemTheme(const QString& styleName, const QPalette& defaultPalette, bool isDefaultTheme);
     virtual ~SystemTheme() {}

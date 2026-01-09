@@ -129,6 +129,8 @@ class InstanceList : public QAbstractListModel {
     InstancePtr getInstanceById(QString id) const;
     /* O(n) */
     InstancePtr getInstanceByManagedName(const QString& managed_name) const;
+    /* O(n) */
+    QList<InstancePtr> getAllInstancesByManagedName(const QString& managed_name) const;
     QModelIndex getInstanceIndexById(const QString& id) const;
     QStringList getGroups();
     bool isGroupCollapsed(const QString& groupName);

@@ -506,7 +506,8 @@ void MinecraftSettingsWidget::openGlobalSettings()
 
     if (id == "javaPage")
         APPLICATION->ShowGlobalSettings(this, "java-settings");
-    else  // TODO select tab
+    else
+        // Default to minecraft-settings for all other tabs (General, Custom Commands, etc.)
         APPLICATION->ShowGlobalSettings(this, "minecraft-settings");
 }
 

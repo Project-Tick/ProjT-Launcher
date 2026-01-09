@@ -126,7 +126,7 @@
 #include "ui/instanceview/InstanceDelegate.h"
 #include "ui/instanceview/InstanceProxyModel.h"
 #include "ui/instanceview/InstanceView.h"
-#include "ui/themes/ITheme.h"
+#include "ui/themes/Theme.h"
 #include "ui/themes/ThemeManager.h"
 #include "ui/widgets/LabeledToolButton.h"
 

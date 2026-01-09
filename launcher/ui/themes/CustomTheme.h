@@ -58,11 +58,11 @@
 #pragma once
 
 #include <QFileInfo>
-#include "ITheme.h"
+#include "Theme.h"
 
-class CustomTheme : public ITheme {
+class CustomTheme : public Theme {
    public:
-    CustomTheme(ITheme* baseTheme, QFileInfo& file, bool isManifest);
+    CustomTheme(Theme* baseTheme, QFileInfo& file, bool isManifest);
     virtual ~CustomTheme() {}
 
     QString id() override;

@@ -46,7 +46,7 @@ def classify(text: str) -> str:
     if any(h in t for h in hints_complex):
         return 'complex'
     # Context-sensitive keyword matching for implementable items
-    implementable_keywords = ['should', 'maybe', 'add', 'implement', 'todo:', 'need', 'missing', 'want', 'consider', 'allow', 'support']
+    implementable_keywords = ['should', 'maybe', 'add', 'implement', 'todo:', 'need', 'missing', 'want', 'consider', 'allow', 'support', 'fixme', 'refactor', 'update', 'remove', 'bug']
     if any(k in t for k in implementable_keywords):
         return 'implementable'
     return 'unknown'

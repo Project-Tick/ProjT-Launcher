@@ -600,6 +600,17 @@ void InstanceList::removeDeadInstances(const QMap<InstanceId, InstanceLocator>& 
     }
 }
 
+QList<InstancePtr> InstanceList::getAllInstancesByManagedName(const QString& managed_name) const
+{
+    QList<InstancePtr> result;
+    for (auto instance : m_instances) {
+        if (instance->getManagedPackID() == managed_name) {
+            result.append(instance);
+        }
+    }
+    return result;
+}
+
 void InstanceList::updateTotalPlayTime()
 {
     totalPlayTime = 0;

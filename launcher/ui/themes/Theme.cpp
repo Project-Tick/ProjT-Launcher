@@ -55,14 +55,14 @@
  *      limitations under the License.
  *
  * ======================================================================== */
-#include "ITheme.h"
+#include "Theme.h"
 #include <QDir>
 #include <QStyleFactory>
 #include "Application.h"
 #include "HintOverrideProxyStyle.h"
 #include "rainbow.h"
 
-void ITheme::apply(bool)
+void Theme::apply(bool)
 {
     APPLICATION->setStyleSheet(QString());
     QApplication::setStyle(new HintOverrideProxyStyle(QStyleFactory::create(qtTheme())));
@@ -71,7 +71,7 @@ void ITheme::apply(bool)
     QDir::setSearchPaths("theme", searchPaths());
 }
 
-QPalette ITheme::fadeInactive(QPalette in, qreal bias, QColor color)
+QPalette Theme::fadeInactive(QPalette in, qreal bias, QColor color)
 {
     auto blend = [&in, bias, color](QPalette::ColorRole role) {
         QColor from = in.color(QPalette::Active, role);
@@ -94,7 +94,7 @@ QPalette ITheme::fadeInactive(QPalette in, qreal bias, QColor color)
     return in;
 }
 
-LogColors ITheme::defaultLogColors(const QPalette& palette)
+LogColors Theme::defaultLogColors(const QPalette& palette)
 {
     LogColors result;
 

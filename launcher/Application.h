@@ -88,7 +88,7 @@ class ExternalUpdater;
 class BaseProfilerFactory;
 class BaseDetachedToolFactory;
 class TranslationsModel;
-class ITheme;
+class Theme;
 class MCEditTool;
 class ThemeManager;
 class IconTheme;

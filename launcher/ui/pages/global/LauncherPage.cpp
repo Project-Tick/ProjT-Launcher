@@ -72,7 +72,7 @@
 #include "BuildConfig.h"
 #include "DesktopServices.h"
 #include "settings/SettingsObject.h"
-#include "ui/themes/ITheme.h"
+#include "ui/themes/Theme.h"
 #include "ui/themes/ThemeManager.h"
 #include "updater/ExternalUpdater.h"
 

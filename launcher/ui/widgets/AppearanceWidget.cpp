@@ -62,7 +62,7 @@
 #include <DesktopServices.h>
 #include <QGraphicsOpacityEffect>
 #include "BuildConfig.h"
-#include "ui/themes/ITheme.h"
+#include "ui/themes/Theme.h"
 #include "ui/themes/ThemeManager.h"
 
 AppearanceWidget::AppearanceWidget(bool themesOnly, QWidget* parent)
@@ -219,7 +219,7 @@ void AppearanceWidget::loadThemeSettings()
     const QString currentTheme = settings->get("ApplicationTheme").toString();
     auto themes = APPLICATION->themeManager()->getValidApplicationThemes();
     for (int i = 0; i < themes.count(); ++i) {
-        ITheme* theme = themes[i];
+        Theme* theme = themes[i];
 
         m_ui->widgetStyleComboBox->addItem(theme->name(), theme->id());
 
