@@ -41,7 +41,6 @@
  * @throw EINVAL invalid input object.
  * @throw ENOMEM unable to allocate memory for input objects.
  */
-extern int Split_splitStringToQRinput(const char *string, QRinput *input,
-		QRencodeMode hint, int casesensitive);
+extern int Split_splitStringToQRinput(const char* string, QRinput* input, QRencodeMode hint, int casesensitive);
 
 #endif /* SPLIT_H */
