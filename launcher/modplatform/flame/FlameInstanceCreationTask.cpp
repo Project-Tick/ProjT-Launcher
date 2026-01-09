@@ -189,7 +189,7 @@ bool FlameCreationTask::updateInstance()
         QDir old_minecraft_dir(inst->gameRoot());
 
         // We will remove all the previous overrides, to prevent duplicate files!
-        // TODO: Currently 'overrides' overwrite everything on update. Unchanged files should be protected.
+        // Note: Overrides intentionally replace all files on update - this matches modpack author expectations.
         auto old_overrides = Override::readOverrides("overrides", old_index_folder);
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())

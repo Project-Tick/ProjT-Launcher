@@ -36,10 +36,13 @@
 
 #include "MinecraftTarget.h"
 
-#include <QHostAddress>
+#include <QRegularExpression>
 #include <QStringList>
 
-// Parse Minecraft server address with validation
+// Note: This parser intentionally mirrors Minecraft's address parsing behavior exactly,
+// including its tolerance for malformed input. Invalid addresses resolve to unusable
+// targets, which Minecraft handles at connection time. The isValid() method can be
+// used by callers requiring validation.
 MinecraftTarget MinecraftTarget::parse(const QString& fullAddress, bool useWorld)
 {
     // Validate input - empty or whitespace-only addresses are invalid
@@ -53,16 +56,17 @@ MinecraftTarget MinecraftTarget::parse(const QString& fullAddress, bool useWorld
         target.world = trimmed;
         return target;
     }
+
     QStringList split = trimmed.split(":");
 
     // The logic below replicates the exact logic minecraft uses for parsing server addresses.
     // While the conversion is not lossless and eats errors, it ensures the same behavior
     // within Minecraft and ProjT Launcher when entering server addresses.
-    if (fullAddress.startsWith("[")) {
-        int bracket = fullAddress.indexOf("]");
+    if (trimmed.startsWith("[")) {
+        int bracket = trimmed.indexOf("]");
         if (bracket > 0) {
-            QString ipv6 = fullAddress.mid(1, bracket - 1);
-            QString port = fullAddress.mid(bracket + 1).trimmed();
+            QString ipv6 = trimmed.mid(1, bracket - 1);
+            QString port = trimmed.mid(bracket + 1).trimmed();
 
             if (port.startsWith(":") && !ipv6.isEmpty()) {
                 port = port.mid(1);

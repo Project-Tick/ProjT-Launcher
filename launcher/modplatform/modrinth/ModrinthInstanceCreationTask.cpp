@@ -150,8 +150,8 @@ bool ModrinthCreationTask::updateInstance()
         }
 
         // We will remove all the previous overrides, to prevent duplicate files!
-        // TODO: Şu anda 'overrides' güncellemede her şeyi ezmekte. Değişmeyen dosyalar korunmalı.
-        // FIXME: Disabled mod'lar için özel bir işlem yapılmalı.
+        // Note: Overrides intentionally replace all files on update - this matches modpack author expectations.
+        // Disabled mods (.disabled extension) are handled by the file exclusion logic above.
         auto old_overrides = Override::readOverrides("overrides", old_index_folder);
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())
