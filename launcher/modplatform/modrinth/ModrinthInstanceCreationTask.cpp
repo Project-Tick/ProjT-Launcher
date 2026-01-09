@@ -281,46 +281,6 @@ bool ModrinthCreationTask::createInstance()
     // Clear any previous alternative URLs tracking
     m_alternativeUrls.clear();
 
-    // Recursive retry helper using std::function to enable self-reference
-    std::function<void(Net::Download::Ptr)> attachRetry;
-    attachRetry = [this, downloadMods, &attachRetry](Net::Download::Ptr dl) {
-        // Connect to Task::failed signal (base class of Download)
-        connect(dl.get(), &Task::failed, this, [this, downloadMods, dl, &attachRetry](QString reason) {
-            Q_UNUSED(reason);
-            auto it = m_alternativeUrls.find(dl.get());
-            if (it == m_alternativeUrls.end()) {
-                return; // No alternatives registered
-            }
-            
-            FileDownloadInfo info = it.value(); // Copy value, not reference
-            if (info.remainingUrls.isEmpty()) {
-                m_alternativeUrls.remove(dl.get());
-                return; // No more alternatives
-            }
-            
-            QString nextUrl = info.remainingUrls.dequeue();
-            qDebug() << "Retrying download with alternative URL:" << nextUrl;
-            
-            // Create new download with next URL using correct API signature
-            auto newDl = Net::ApiDownload::makeFile(QUrl(nextUrl), info.filePath);
-            newDl->addValidator(new Net::ChecksumValidator(info.hashAlgorithm, info.hash));
-            
-            // Store updated info with remaining URLs for new download
-            if (!info.remainingUrls.isEmpty()) {
-                m_alternativeUrls[newDl.get()] = info;
-            }
-            
-            // Remove old entry
-            m_alternativeUrls.remove(dl.get());
-            
-            // Recursively attach retry handler to new download
-            attachRetry(newDl);
-            
-            // Add new download to the job
-            downloadMods->addNetAction(newDl);
-        });
-    };
-
     auto root_modpack_path = FS::PathCombine(m_stagingPath, m_root_path);
     auto root_modpack_url = QUrl::fromLocalFile(root_modpack_path);
     // TODO: Diğer kaynak tipleriyle de çalışacak şekilde genişletilmeli.
@@ -363,7 +323,7 @@ bool ModrinthCreationTask::createInstance()
                 info.remainingUrls.enqueue(file.downloads[i].toString());
             }
             m_alternativeUrls[dl.get()] = info;
-            attachRetry(dl);
+            attachRetryHandler(dl, downloadMods);
         }
         
         downloadMods->addNetAction(dl);
@@ -556,4 +516,52 @@ bool ModrinthCreationTask::parseManifest(const QString& index_path,
     }
 
     return true;
+}
+
+void ModrinthCreationTask::attachRetryHandler(Net::Download::Ptr dl, shared_qobject_ptr<NetJob> downloadMods)
+{
+    // Connect to Task::failed signal (Download inherits from NetRequest which inherits from Task)
+    // Task::failed is declared in launcher/tasks/Task.h line 166
+    // Qt5/6 connect syntax: connect(sender, signal, receiver, slot)
+    connect(dl.get(), &Task::failed, this, [this, downloadMods, dl](QString reason) {
+        Q_UNUSED(reason);
+        auto it = m_alternativeUrls.find(dl.get());
+        if (it == m_alternativeUrls.end()) {
+            return; // No alternatives registered
+        }
+        
+        FileDownloadInfo info = it.value(); // Copy value, not reference
+        if (info.remainingUrls.isEmpty()) {
+            m_alternativeUrls.remove(dl.get());
+            return; // No more alternatives
+        }
+        
+        QString nextUrl = info.remainingUrls.dequeue();
+        qDebug() << "Retrying download with alternative URL:" << nextUrl;
+        
+        // Create new download with next URL
+        // API signature from launcher/net/ApiDownload.h line 50:
+        //   Download::Ptr makeFile(QUrl url, QString path, Download::Options options = Download::Option::NoOptions)
+        auto newDl = Net::ApiDownload::makeFile(QUrl(nextUrl), info.filePath);
+        
+        // Add checksum validator
+        // Constructor from launcher/net/ChecksumValidator.h line 70:
+        //   ChecksumValidator(QCryptographicHash::Algorithm algorithm, QByteArray expected = QByteArray())
+        // addValidator takes ownership via std::shared_ptr (launcher/net/Sink.h line 82)
+        newDl->addValidator(new Net::ChecksumValidator(info.hashAlgorithm, info.hash));
+        
+        // Store updated info with remaining URLs for new download
+        if (!info.remainingUrls.isEmpty()) {
+            m_alternativeUrls[newDl.get()] = info;
+        }
+        
+        // Remove old entry
+        m_alternativeUrls.remove(dl.get());
+        
+        // Recursively attach retry handler to new download (N-alternative support)
+        attachRetryHandler(newDl, downloadMods);
+        
+        // Add new download to the job
+        downloadMods->addNetAction(newDl);
+    });
 }

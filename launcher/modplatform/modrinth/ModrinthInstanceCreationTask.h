@@ -19,6 +19,7 @@
  */
 #pragma once
 
+#include <functional>
 #include <optional>
 
 #include <QByteArray>
@@ -32,6 +33,8 @@
 #include "BaseInstance.h"
 #include "InstanceCreationTask.h"
 #include "net/Download.h"
+
+class NetJob;
 
 class ModrinthCreationTask final : public InstanceCreationTask {
     Q_OBJECT
@@ -66,6 +69,7 @@ class ModrinthCreationTask final : public InstanceCreationTask {
 
    private:
     bool parseManifest(const QString&, std::vector<File>&, bool set_internal_data = true, bool show_optional_dialog = true);
+    void attachRetryHandler(Net::Download::Ptr dl, shared_qobject_ptr<NetJob> downloadMods);
 
    private:
     QWidget* m_parent = nullptr;
