@@ -48,7 +48,7 @@ class EnsureMetadataTask : public Task {
     void executeTask() override;
 
    private:
-    // FIXME: Move to their own namespace
+    // Platform-specific version/project fetching (kept together for consistency)
     Task::Ptr modrinthVersionsTask();
     Task::Ptr modrinthProjectsTask();
 

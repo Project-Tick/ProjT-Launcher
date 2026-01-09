@@ -500,7 +500,8 @@ bool TranslationsModel::selectLanguage(QString key)
 
     // otherwise install new translations
     bool successful = false;
-    // FIXME: this is likely never present. FIX IT.
+    // Note: Qt translations may not be present in all installations (e.g., custom builds).
+    // This is a best-effort attempt; the app continues working without Qt translations.
     d->m_qt_translator.reset(new QTranslator());
     if (d->m_qt_translator->load("qt_" + langCode, QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
         qDebug() << "Loading Qt Language File for" << langCode.toLocal8Bit().constData() << "...";

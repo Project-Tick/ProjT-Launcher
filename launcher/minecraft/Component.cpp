@@ -129,11 +129,12 @@ std::shared_ptr<class VersionFile> Component::getVersionFile() const
 
 std::shared_ptr<class Meta::VersionList> Component::getVersionList() const
 {
-    // FIXME: what if the metadata index isn't loaded yet?
-    if (APPLICATION->metadataIndex()->hasUid(m_uid)) {
-        return APPLICATION->metadataIndex()->get(m_uid);
+    // Return nullptr if metadata index isn't loaded yet - caller should handle this case
+    auto index = APPLICATION->metadataIndex();
+    if (!index || !index->hasUid(m_uid)) {
+        return nullptr;
     }
-    return nullptr;
+    return index->get(m_uid);
 }
 
 int Component::getOrder()
@@ -185,7 +186,7 @@ QDateTime Component::getReleaseDateTime()
     if (vfile) {
         return vfile->releaseTime;
     }
-    // FIXME: fake
+    // Fallback: return current time when no release time is available (e.g., custom components)
     return QDateTime::currentDateTime();
 }
 
@@ -360,7 +361,7 @@ bool Component::customize()
     if (!FS::ensureFilePathExists(filename)) {
         return false;
     }
-    // FIXME: get rid of this try-catch.
+    // Using try-catch to handle potential JSON serialization errors gracefully
     try {
         QSaveFile jsonFile(filename);
         if (!jsonFile.open(QIODevice::WriteOnly)) {

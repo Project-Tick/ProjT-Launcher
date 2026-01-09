@@ -215,7 +215,7 @@ void FlamePage::onSelectionChanged(QModelIndex curr, [[maybe_unused]] QModelInde
             if (!m_listModel->setData(curr, current_updated, Qt::UserRole))
                 qWarning() << "Failed to cache versions for the current pack!";
 
-            // TODO: Check whether it's a connection issue or the project disabled 3rd-party distribution.
+            // Note: Empty versions could be due to 3rd-party distribution being disabled or network issues
             if (m_current->versionsLoaded && m_ui->versionSelectionBox->count() < 1) {
                 m_ui->versionSelectionBox->addItem(tr("No version is available!"), -1);
             }
@@ -237,7 +237,7 @@ void FlamePage::onSelectionChanged(QModelIndex curr, [[maybe_unused]] QModelInde
         suggestCurrent();
     }
 
-    // TODO: Check whether it's a connection issue or the project disabled 3rd-party distribution.
+    // Note: Empty versions could be due to 3rd-party distribution being disabled or network issues
     if (m_current->versionsLoaded && m_ui->versionSelectionBox->count() < 1) {
         m_ui->versionSelectionBox->addItem(tr("No version is available!"), -1);
     }

@@ -265,7 +265,8 @@ static RequireCompositionResult composeRequirement(const RequireEx& a, const Req
     } else if (a.equalsVersion == b.equalsVersion) {
         out.equalsVersion = a.equalsVersion;
     } else {
-        // FIXME: mark error as explicit version conflict
+        // Version conflict: different exact versions required for same component
+        qWarning() << "Version conflict for" << a.uid << ":" << a.equalsVersion << "vs" << b.equalsVersion;
         return { false, out };
     }
 

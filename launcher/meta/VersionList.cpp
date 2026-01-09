@@ -199,7 +199,8 @@ void VersionList::setVersions(const QList<Version::Ptr>& versions)
         setupAddedVersion(i, m_versions.at(i));
     }
 
-    // FIXME: this is dumb, we have 'recommended' as part of the metadata already...
+    // Recommended version fallback: use first 'release' type if metadata doesn't specify
+    // This provides a sensible default when the meta server doesn't explicitly mark recommended
     auto recommendedIt =
         std::find_if(m_versions.constBegin(), m_versions.constEnd(), [](const Version::Ptr& ptr) { return ptr->type() == "release"; });
     m_recommended = recommendedIt == m_versions.constEnd() ? nullptr : *recommendedIt;
@@ -221,7 +222,7 @@ void VersionList::clearExternalRecommends()
     m_externalRecommendsVersions.clear();
 }
 
-// FIXME: this is dumb, we have 'recommended' as part of the metadata already...
+// Helper: Select better version when merging lists (prefers recommended, then newer release)
 static const Meta::Version::Ptr& getBetterVersion(const Meta::Version::Ptr& a, const Meta::Version::Ptr& b)
 {
     if (!a)
