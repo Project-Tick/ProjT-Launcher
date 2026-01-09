@@ -31,10 +31,7 @@
 
 #include "BaseInstance.h"
 #include "InstanceCreationTask.h"
-
-namespace Net {
-class NetRequest;
-}
+#include "net/Download.h"
 
 class ModrinthCreationTask final : public InstanceCreationTask {
     Q_OBJECT
@@ -90,5 +87,5 @@ class ModrinthCreationTask final : public InstanceCreationTask {
         QByteArray hash;
         QCryptographicHash::Algorithm hashAlgorithm;
     };
-    QHash<Net::NetRequest*, FileDownloadInfo> m_alternativeUrls;
+    QHash<Net::Download*, FileDownloadInfo> m_alternativeUrls;
 };
