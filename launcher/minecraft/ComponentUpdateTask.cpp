@@ -139,32 +139,7 @@ static LoadResult loadComponent(ComponentPtr component, Task::Ptr& loadTask, Net
     return result;
 }
 
-// FIXME: dead code. determine if this can still be useful?
-/*
-static LoadResult loadPackProfile(ComponentPtr component, Task::Ptr& loadTask, Net::Mode netmode)
-{
-    if(component->m_loaded)
-    {
-        qDebug() << component->getName() << "is already loaded";
-        return LoadResult::LoadedLocal;
-    }
-
-    LoadResult result = LoadResult::Failed;
-    auto metaList = APPLICATION->metadataIndex()->get(component->m_uid);
-    if(metaList->isLoaded())
-    {
-        component->m_loaded = true;
-        result = LoadResult::LoadedLocal;
-    }
-    else
-    {
-        metaList->load(netmode);
-        loadTask = metaList->getCurrentTask();
-        result = LoadResult::RequiresRemote;
-    }
-    return result;
-}
-*/
+// Dead code removed: loadPackProfile was unused.
 
 }  // namespace
 

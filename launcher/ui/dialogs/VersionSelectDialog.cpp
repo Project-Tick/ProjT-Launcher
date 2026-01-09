@@ -73,6 +73,7 @@ VersionSelectDialog::VersionSelectDialog(BaseVersionList* vlist, QString title, 
 {
     setObjectName(QStringLiteral("VersionSelectDialog"));
     resize(400, 347);
+    m_title = title;  // Store title for retranslation
     m_verticalLayout = new QVBoxLayout(this);
     m_verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
 
@@ -116,8 +117,7 @@ VersionSelectDialog::VersionSelectDialog(BaseVersionList* vlist, QString title, 
 
 void VersionSelectDialog::retranslate()
 {
-    // FIXME: overrides custom title given in constructor!
-    setWindowTitle(tr("Choose Version"));
+    setWindowTitle(m_title.isEmpty() ? tr("Choose Version") : m_title);
     m_refreshButton->setToolTip(tr("Reloads the version list."));
     m_refreshButton->setText(tr("&Refresh"));
 }

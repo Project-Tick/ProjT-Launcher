@@ -168,7 +168,8 @@ void drawBadges(QPainter* painter, const QStyleOptionViewItem& option, BaseInsta
             if (!it.hasNext()) {
                 return;
             }
-            // FIXME: Bu kodun bağımlılıkları dışarıdan enjekte edilmeli. Şu anda doğrudan erişim var.
+            // Note: Direct access to static Theme/Icon data is currently required.
+            // Future refactoring should inject an IconProvider interface here.
             auto icon = QIcon::fromTheme(it.next());
             // opt.icon.paint(painter, iconbox, Qt::AlignCenter, mode, state);
             const QPixmap pixmap;
