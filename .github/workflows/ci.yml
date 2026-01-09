@@ -3095,6 +3095,11 @@ jobs:
       - uses: pnpm/action-setup@1e1c8eafbd745f64b1ef30a7d7ed7965034c486c
         name: Install pnpm
 
+      - name: Clean working tree before commit
+        run: |
+          git reset --hard
+          git clean -fdx
+
       - name: Install dependencies & update contributors
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_MEMBERS_TOKEN }}
