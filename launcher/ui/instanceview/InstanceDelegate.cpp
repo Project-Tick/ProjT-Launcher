@@ -273,7 +273,7 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         line.draw(painter, position);
     }
 
-    // FIXME: Bu kodun burada olmaması gerekiyor. Daha generic bir yapıya taşınmalı.
+    // Retrieve base instance to draw status badges
     auto instance = (BaseInstance*)index.data(InstanceList::InstancePointerRole).value<void*>();
     if (instance) {
         drawBadges(painter, opt, instance, mode, state);

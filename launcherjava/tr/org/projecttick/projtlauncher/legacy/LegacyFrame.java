@@ -178,9 +178,8 @@ final class LegacyFrame extends JFrame {
     private final class ForceExitHandler extends WindowAdapter {
         @Override
         public void windowClosing(WindowEvent event) {
-            // FIXME better solution
-
-            new Thread(new Runnable() {
+            // Force exit after 30 seconds if the application hangs on stop
+            Thread forceExitThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -189,10 +188,12 @@ final class LegacyFrame extends JFrame {
                         Log.error("Thread interrupted", e);
                     }
 
-                    Log.warning("Forcing exit");
+                    Log.warning("Forcing exit due to hang");
                     System.exit(0);
                 }
-            }).start();
+            }, "ForceExitThread");
+            forceExitThread.setDaemon(true);
+            forceExitThread.start();
 
             if (launcher != null) {
                 launcher.stop();

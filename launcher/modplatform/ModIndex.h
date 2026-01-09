@@ -150,7 +150,8 @@ struct IndexedVersion {
     bool is_preferred = true;
     QString changelog;
     QList<Dependency> dependencies;
-    Side side;  // this is for flame API
+    Side side;             // this is for flame API
+    QString relativePath;  // Generic target path override
 
     // For internal use, not provided by APIs
     bool is_currently_selected = false;

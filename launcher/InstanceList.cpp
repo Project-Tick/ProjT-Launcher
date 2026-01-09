@@ -295,7 +295,9 @@ void InstanceList::setInstanceGroup(const InstanceId& id, GroupId name)
 
 QStringList InstanceList::getGroups()
 {
-    return m_groupNameCache.keys();
+    QStringList keys = m_groupNameCache.keys();
+    keys.sort();
+    return keys;
 }
 
 void InstanceList::deleteGroup(const GroupId& name)
@@ -578,6 +580,7 @@ void InstanceList::removeDeadInstances(const QMap<InstanceId, InstanceLocator>& 
 
     for (auto& removedItem : deadList) {
         auto instPtr = removedItem.first;
+        m_instanceMap.remove(instPtr->id());
         instPtr->invalidate();
         currentItem = removedItem.second;
 
@@ -617,6 +620,7 @@ void InstanceList::add(const QList<InstancePtr>& t)
     beginInsertRows(QModelIndex(), m_instances.count(), m_instances.count() + t.size() - 1);
     m_instances.append(t);
     for (auto& ptr : t) {
+        m_instanceMap.insert(ptr->id(), ptr);
         connect(ptr.get(), &BaseInstance::propertiesChanged, this, &InstanceList::propertiesChanged);
     }
     endInsertRows();
@@ -651,12 +655,7 @@ InstancePtr InstanceList::getInstanceById(QString instId) const
 {
     if (instId.isEmpty())
         return InstancePtr();
-    for (auto& inst : m_instances) {
-        if (inst->id() == instId) {
-            return inst;
-        }
-    }
-    return InstancePtr();
+    return m_instanceMap.value(instId);
 }
 
 InstancePtr InstanceList::getInstanceByManagedName(const QString& managed_name) const

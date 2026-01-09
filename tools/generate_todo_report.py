@@ -63,6 +63,9 @@ def scan(root: Path):
             
         if p.is_dir():
             continue
+
+        if p.suffix in {'.patch', '.diff'}:
+            continue
             
         if not is_text_file(p):
             continue

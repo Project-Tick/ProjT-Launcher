@@ -57,6 +57,7 @@
 #pragma once
 
 #include <QAbstractListModel>
+#include <QHash>
 #include <QList>
 #include <QObject>
 #include <QPair>
@@ -208,7 +209,7 @@ class InstanceList : public QAbstractListModel {
 
     void increaseGroupCount(const QString& group);
     void decreaseGroupCount(const QString& group);
-    
+
     /// Removes instances that no longer exist on disk, optimizing for contiguous removals.
     /// @param deadInstances Map of instance IDs to their (pointer, index) pairs to be removed.
     void removeDeadInstances(const QMap<InstanceId, InstanceLocator>& deadInstances);
@@ -224,10 +225,11 @@ class InstanceList : public QAbstractListModel {
     SettingsObjectPtr m_globalSettings;
     QString m_instDir;
     QFileSystemWatcher* m_watcher;
-    // FIXME: this is so inefficient that looking at it is almost painful.
+    // NOTE: Optimized using QHash for cached lookups.
     QSet<QString> m_collapsedGroups;
-    QMap<InstanceId, GroupId> m_instanceGroupIndex;
+    QHash<InstanceId, GroupId> m_instanceGroupIndex;
     QSet<InstanceId> instanceSet;
+    QHash<InstanceId, InstancePtr> m_instanceMap;
     bool m_groupsLoaded = false;
     bool m_instancesProbed = false;
 
