@@ -77,4 +77,13 @@ class ModrinthCreationTask final : public InstanceCreationTask {
     std::optional<InstancePtr> m_instance;
 
     QString m_root_path = "minecraft";
+
+    // Alternative URLs tracking for download retry mechanism
+    struct FileDownloadInfo {
+        QString filePath;
+        QQueue<QString> remainingUrls;
+        QByteArray hash;
+        QCryptographicHash::Algorithm hashAlgorithm;
+    };
+    QHash<Net::NetRequest*, FileDownloadInfo> m_alternativeUrls;
 };

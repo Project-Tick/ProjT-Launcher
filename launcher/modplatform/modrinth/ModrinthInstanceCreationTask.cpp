@@ -278,14 +278,8 @@ bool ModrinthCreationTask::createInstance()
 
     auto downloadMods = makeShared<NetJob>(tr("Mod Download Modrinth"), APPLICATION->network());
     
-    // Track alternative URLs for each file in case of download failures
-    struct FileDownloadInfo {
-        QString filePath;
-        QQueue<QString> remainingUrls;
-        QByteArray hash;
-        QCryptographicHash::Algorithm hashAlgorithm;
-    };
-    QHash<Net::NetRequest*, FileDownloadInfo> alternativeUrls;
+    // Clear any previous alternative URLs tracking
+    m_alternativeUrls.clear();
 
     auto root_modpack_path = FS::PathCombine(m_stagingPath, m_root_path);
     auto root_modpack_url = QUrl::fromLocalFile(root_modpack_path);
@@ -328,12 +322,12 @@ bool ModrinthCreationTask::createInstance()
             for (int i = 1; i < file.downloads.size(); ++i) {
                 info.remainingUrls.enqueue(file.downloads[i].toString());
             }
-            alternativeUrls[dl.get()] = info;
+            m_alternativeUrls[dl.get()] = info;
             
             // Connect to failed signal to try alternative URLs
-            connect(dl.get(), &Net::NetRequest::failed, this, [this, downloadMods, dl, &alternativeUrls]() {
-                auto it = alternativeUrls.find(dl.get());
-                if (it == alternativeUrls.end() || it->remainingUrls.isEmpty()) {
+            connect(dl.get(), &Net::NetRequest::failed, this, [this, downloadMods, dl]() {
+                auto it = m_alternativeUrls.find(dl.get());
+                if (it == m_alternativeUrls.end() || it->remainingUrls.isEmpty()) {
                     return; // No alternatives left, let it fail normally
                 }
                 
@@ -347,12 +341,12 @@ bool ModrinthCreationTask::createInstance()
                 
                 // Transfer remaining URLs to the new download
                 if (!info.remainingUrls.isEmpty()) {
-                    alternativeUrls[newDl.get()] = info;
+                    m_alternativeUrls[newDl.get()] = info;
                     
                     // Recursively connect to the new download's failed signal
-                    connect(newDl.get(), &Net::NetRequest::failed, this, [downloadMods, newDl, &alternativeUrls]() {
-                        auto it2 = alternativeUrls.find(newDl.get());
-                        if (it2 == alternativeUrls.end() || it2->remainingUrls.isEmpty()) {
+                    connect(newDl.get(), &Net::NetRequest::failed, this, [this, downloadMods, newDl]() {
+                        auto it2 = m_alternativeUrls.find(newDl.get());
+                        if (it2 == m_alternativeUrls.end() || it2->remainingUrls.isEmpty()) {
                             return;
                         }
                         // The same retry logic will apply recursively
@@ -360,7 +354,7 @@ bool ModrinthCreationTask::createInstance()
                 }
                 
                 // Remove the old entry
-                alternativeUrls.remove(dl.get());
+                m_alternativeUrls.remove(dl.get());
                 
                 // Add the new download to the job
                 downloadMods->addNetAction(newDl);

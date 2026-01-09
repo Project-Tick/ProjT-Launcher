@@ -175,16 +175,21 @@ void V1::updateModIndex(const QDir& index_dir, Mod& mod)
             auto version_node = old_metadata.at_path("update.flame.file-id");
             
             if (version_node) {
-                auto old_version_id = QString::fromStdString(version_node.as_string()->get());
-                
-                // If versions are different, we need to update
-                if (old_version_id != mod.file_id.toString()) {
-                    qDebug() << "Updating existing mod" << mod.name << "from version" << old_version_id << "to" << mod.file_id.toString();
-                    index_file.remove();
-                } else {
-                    qDebug() << "Mod" << mod.name << "is already up to date, skipping";
-                    return;
+                // Check if the node is actually a string before calling as_string()
+                auto* str_node = version_node.as_string();
+                if (str_node) {
+                    auto old_version_id = QString::fromStdString(str_node->get());
+                    
+                    // If versions are different, we need to update
+                    if (old_version_id != mod.file_id.toString()) {
+                        qDebug() << "Updating existing mod" << mod.name << "from version" << old_version_id << "to" << mod.file_id.toString();
+                        index_file.remove();
+                    } else {
+                        qDebug() << "Mod" << mod.name << "is already up to date, skipping";
+                        return;
+                    }
                 }
+                // If node exists but isn't a string, fall through to recreate
             }
         } catch (const toml::parse_error&) {
             // If parsing fails, just remove and recreate
