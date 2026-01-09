@@ -1,0 +1,218 @@
+/* Modern Dark Theme - Premium Styling */
+
+/* Global Widget Styling */
+QWidget {
+    font-family: "Segoe UI", "Inter", "Roboto", sans-serif;
+    outline: none;
+}
+
+/* Tooltips */
+QToolTip {
+    border: 1px solid #cba6f7;
+    background-color: #181825;
+    color: #cdd6f4;
+    padding: 2px;
+    border-radius: 4px;
+    opacity: 230;
+}
+
+/* Buttons */
+QPushButton {
+    background-color: #313244;
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #cdd6f4;
+    font-weight: 600;
+}
+
+QPushButton:hover {
+    background-color: #45475a;
+    border-color: #585b70;
+}
+
+QPushButton:pressed {
+    background-color: #cba6f7;
+    color: #1e1e2e;
+    border-color: #cba6f7;
+}
+
+QPushButton:disabled {
+    background-color: #1e1e2e;
+    color: #6c7086;
+    border-color: #313244;
+}
+
+/* Line Edits & Text Inputs */
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox {
+    background-color: #181825;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    padding: 4px;
+    color: #cdd6f4;
+    selection-background-color: #cba6f7;
+    selection-color: #1e1e2e;
+}
+
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QSpinBox:focus {
+    border: 1px solid #cba6f7;
+}
+
+/* Lists and Trees */
+QListView, QTreeView, QTableView {
+    background-color: #181825;
+    alternate-background-color: #11111b;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    outline: none;
+}
+
+QListView::item, QTreeView::item {
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QListView::item:hover, QTreeView::item:hover {
+    background-color: #313244;
+}
+
+QListView::item:selected, QTreeView::item:selected {
+    background-color: #cba6f7;
+    color: #1e1e2e;
+}
+
+/* Scrollbars */
+QScrollBar:vertical {
+    border: none;
+    background: #1e1e2e;
+    width: 10px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #45475a;
+    min-height: 20px;
+    border-radius: 5px;
+    margin: 2px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #585b70;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+QScrollBar:horizontal {
+    border: none;
+    background: #1e1e2e;
+    height: 10px;
+    margin: 0;
+}
+
+QScrollBar::handle:horizontal {
+    background: #45475a;
+    min-width: 20px;
+    border-radius: 5px;
+    margin: 2px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #585b70;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+
+/* Tabs */
+QTabWidget::pane {
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    background: #1e1e2e;
+}
+
+QTabBar::tab {
+    background: #181825;
+    border: 1px solid #45475a;
+    border-bottom: none;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    padding: 6px 12px;
+    margin-right: 2px;
+    color: #a6adc8;
+}
+
+QTabBar::tab:selected {
+    background: #1e1e2e;
+    border-bottom: 2px solid #cba6f7;
+    color: #cdd6f4;
+    font-weight: bold;
+}
+
+QTabBar::tab:hover:!selected {
+    background: #313244;
+}
+
+/* Headers */
+QHeaderView::section {
+    background-color: #313244;
+    color: #cdd6f4;
+    padding: 4px;
+    border: none;
+    border-right: 1px solid #1e1e2e;
+    border-bottom: 1px solid #1e1e2e;
+}
+
+/* Menu Bar */
+QMenuBar {
+    background-color: #181825;
+    color: #cdd6f4;
+}
+
+QMenuBar::item {
+    background-color: transparent;
+    padding: 4px 8px;
+}
+
+QMenuBar::item:selected {
+    background-color: #313244;
+    border-radius: 4px;
+}
+
+QMenu {
+    background-color: #181825;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+QMenu::item {
+    padding: 4px 20px 4px 20px;
+    border-radius: 4px;
+}
+
+QMenu::item:selected {
+    background-color: #cba6f7;
+    color: #1e1e2e;
+}
+
+/* Progress Bar */
+QProgressBar {
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    text-align: center;
+    background-color: #181825;
+    color: #cdd6f4;
+}
+
+QProgressBar::chunk {
+    background-color: #cba6f7;
+    border-radius: 3px;
+}
+
+/* Fix for macOS focus ring artifacts if any remain */
+*:focus {
+    outline: none;
+}

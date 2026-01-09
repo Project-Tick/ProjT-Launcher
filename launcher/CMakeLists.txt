@@ -1657,3 +1657,10 @@ if(WIN32 OR (UNIX AND APPLE))
         ")
     endif()
 endif()
+
+# Copy ModernDark theme to build directory for testing (macOS only)
+if(APPLE)
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ui/themes/ModernDark" DESTINATION "${CMAKE_BINARY_DIR}/themes")
+    # Install ModernDark theme to bundle resources
+    install(DIRECTORY "ui/themes/ModernDark" DESTINATION "${RESOURCES_DEST_DIR}/themes" COMPONENT Runtime)
+endif()
