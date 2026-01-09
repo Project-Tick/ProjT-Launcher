@@ -23,6 +23,7 @@
 
 #include <QByteArray>
 #include <QCryptographicHash>
+#include <QHash>
 #include <QQueue>
 #include <QString>
 #include <QUrl>
@@ -30,6 +31,9 @@
 
 #include "BaseInstance.h"
 #include "InstanceCreationTask.h"
+#include "net/Download.h"
+
+class NetJob;
 
 class ModrinthCreationTask final : public InstanceCreationTask {
     Q_OBJECT
@@ -64,6 +68,7 @@ class ModrinthCreationTask final : public InstanceCreationTask {
 
    private:
     bool parseManifest(const QString&, std::vector<File>&, bool set_internal_data = true, bool show_optional_dialog = true);
+    void attachRetryHandler(Net::Download::Ptr dl, shared_qobject_ptr<NetJob> downloadMods);
 
    private:
     QWidget* m_parent = nullptr;
@@ -77,4 +82,13 @@ class ModrinthCreationTask final : public InstanceCreationTask {
     std::optional<InstancePtr> m_instance;
 
     QString m_root_path = "minecraft";
+
+    // Alternative URLs tracking for download retry mechanism
+    struct FileDownloadInfo {
+        QString filePath;
+        QQueue<QString> remainingUrls;
+        QByteArray hash;
+        QCryptographicHash::Algorithm hashAlgorithm;
+    };
+    QHash<Net::Download*, FileDownloadInfo> m_alternativeUrls;
 };

@@ -601,10 +601,11 @@ void ScreenshotsPage::on_actionRename_triggered()
         QString oldPath = info.absoluteFilePath();
         QString newPath = info.absolutePath() + "/" + newName + "." + extension;
         
-        if (QFile::rename(oldPath, newPath)) {
+        QFile file(oldPath);
+        if (file.rename(newPath)) {
             qDebug() << "Renamed" << oldPath << "to" << newPath;
         } else {
-            qWarning() << "Failed to rename" << oldPath;
+            qWarning() << "Failed to rename" << oldPath << "to" << newPath << ":" << file.errorString();
         }
     }
     

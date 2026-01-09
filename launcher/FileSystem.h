@@ -160,7 +160,8 @@ class copy : public QObject {
    signals:
     void fileCopied(const QString& relativeName);
     void copyFailed(const QString& relativeName);
-    void shouldCopy(const QString& relativeName, bool* shouldProceed);
+    // Note: removed unsafe shouldCopy signal with output parameter
+    // If filtering is needed, use matcher() method instead
 
    private:
     bool operator()(const QString& offset, bool dryRun = false);
