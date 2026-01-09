@@ -177,7 +177,6 @@ void PageContainer::refreshContainer()
         }
     }
 }
-}
 
 void PageContainer::createUI()
 {
