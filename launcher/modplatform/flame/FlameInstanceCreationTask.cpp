@@ -745,33 +745,32 @@ void FlameCreationTask::validateOtherResources(QEventLoop& loop)
                 break;
         }
     }
-    
-    // Create metadata for all supported resource types
-    auto task = makeShared<ConcurrentTask>("CreateResourceMetadata", APPLICATION->settings()->get("NumberOfConcurrentTasks").toInt());
+    // Generic metadata creation for supported resource types
+    auto task = makeShared<ConcurrentTask>("CreateModMetadata", APPLICATION->settings()->get("NumberOfConcurrentTasks").toInt());
     auto results = m_modIdResolver->getResults().files;
-    
+
     for (auto file : results) {
-        QString metadataFolder;
-        bool shouldCreateMetadata = false;
-        
-        // Determine metadata folder based on resource type
-        if (file.targetFolder == "mods" && (!file.version.fileName.endsWith(".zip") || zipMods.contains(file.version.fileName))) {
-            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "mods", ".index");
-            shouldCreateMetadata = true;
-        } else if (file.targetFolder == "resourcepacks") {
-            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "resourcepacks", ".index");
-            shouldCreateMetadata = true;
-        } else if (file.targetFolder == "shaderpacks") {
-            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "shaderpacks", ".index");
-            shouldCreateMetadata = true;
-        } else if (file.targetFolder == "datapacks") {
-            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "datapacks", ".index");
-            shouldCreateMetadata = true;
+        QString indexParent;
+        switch (file.resourceType) {
+            case ModPlatform::ResourceType::Mod:
+                // Skip if it looks like a zip but wasn't identified as a mod (e.g. valid resource pack that got confused, or invalid file)
+                if (file.version.fileName.endsWith(".zip") && !zipMods.contains(file.version.fileName)) {
+                    continue;
+                }
+                indexParent = "mods";
+                break;
+            case ModPlatform::ResourceType::ResourcePack:
+                indexParent = "resourcepacks";
+                break;
+            case ModPlatform::ResourceType::ShaderPack:
+                indexParent = "shaderpacks";
+                break;
+            default:
+                continue;
         }
-        
-        if (shouldCreateMetadata) {
-            task->addTask(makeShared<LocalResourceUpdateTask>(metadataFolder, file.pack, file.version));
-        }
+
+        auto folder = FS::PathCombine(m_stagingPath, "minecraft", indexParent, ".index");
+        task->addTask(makeShared<LocalResourceUpdateTask>(folder, file.pack, file.version));
     }
     
     connect(task.get(), &Task::finished, &loop, &QEventLoop::quit);

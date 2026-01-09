@@ -69,9 +69,13 @@ ResourceDownloadTask::ResourceDownloadTask(ModPlatform::IndexedPack::Ptr pack,
 
     QDir dir{ m_pack_model->dir() };
     {
-        // FIXME: Daha generic hale getirilmeli. IndexedVersion'a ek bilgi eklenmesi gerekebilir.
-        //        or adquiring a reference to the base instance.
-        if (!m_custom_target_folder.isEmpty()) {
+        // Use relative path from metadata if available (Generic approach)
+        if (!m_pack_version.relativePath.isEmpty()) {
+            dir.cdUp();  // Go to base (minecraft directory assumption)
+            dir = QDir(dir.absoluteFilePath(m_pack_version.relativePath));
+        }
+        // Legacy/Manual override
+        else if (!m_custom_target_folder.isEmpty()) {
             dir.cdUp();
             dir.cd(m_custom_target_folder);
         }

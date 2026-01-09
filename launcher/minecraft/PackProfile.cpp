@@ -317,7 +317,29 @@ PackProfile::Result PackProfile::load()
         qCritical() << d->m_instance->name() << "|" << "Failed to load the component config";
         return result;
     }
-    // FIXME: actually use fine-grained updates, not this...
+
+    // Optimization: check if there are any changes before resetting the model
+    bool changed = false;
+    if (d->components.size() != newComponents.size()) {
+        changed = true;
+    } else {
+        for (int i = 0; i < d->components.size(); ++i) {
+            const auto& oldC = d->components[i];
+            const auto& newC = newComponents[i];
+            if (oldC->getID() != newC->getID() || oldC->getVersion() != newC->getVersion() || oldC->m_important != newC->m_important ||
+                oldC->m_disabled != newC->m_disabled || oldC->m_dependencyOnly != newC->m_dependencyOnly) {
+                changed = true;
+                break;
+            }
+        }
+    }
+
+    if (!changed) {
+        d->loaded = true;
+        return Result::Success(false);
+    }
+
+    // NOTE: actually use fine-grained updates, not this...
     beginResetModel();
     // disconnect all the old components
     for (auto component : d->components) {
@@ -349,12 +371,15 @@ PackProfile::Result PackProfile::reload(Net::Mode netmode)
     // flush any scheduled saves to not lose state
     saveNow();
 
-    // FIXME: differentiate when a reapply is required by propagating state from components
-    invalidateLaunchProfile();
-
-    if (auto result = load(); !result) {
+    auto result = load();
+    if (!result) {
         return result;
     }
+
+    if (result.changed) {
+        invalidateLaunchProfile();
+    }
+
     resolve(netmode);
     return Result::Success();
 }
@@ -781,31 +806,41 @@ bool PackProfile::removeComponent_internal(ComponentPtr patch)
         }
     }
 
-    // FIXME: we need a generic way of removing local resources, not just jar mods...
-    auto preRemoveJarMod = [this](LibraryPtr jarMod) -> bool {
-        if (!jarMod->isLocal()) {
+    // Generic local resource removal
+    // Handles jar mods, mods, and local libraries
+    auto removeLocalLibrary = [this](LibraryPtr lib, const QString& overridePath = QString()) -> bool {
+        if (!lib->isLocal()) {
             return true;
         }
-        QStringList jar, temp1, temp2, temp3;
-        jarMod->getApplicableFiles(d->m_instance->runtimeContext(), jar, temp1, temp2, temp3, d->m_instance->jarmodsPath().absolutePath());
-        QFileInfo finfo(jar[0]);
-        if (finfo.exists()) {
-            QFile jarModFile(jar[0]);
-            if (!jarModFile.remove()) {
-                qCCritical(instanceProfileC) << d->m_instance->name() << "|" << "File" << jar[0]
-                                             << "could not be removed because:" << jarModFile.errorString();
+        QStringList output, temp1, temp2, temp3;
+        lib->getApplicableFiles(d->m_instance->runtimeContext(), output, temp1, temp2, temp3, overridePath);
+        for (const auto& file : output) {
+            QFile f(file);
+            if (f.exists() && !f.remove()) {
+                qCCritical(instanceProfileC) << d->m_instance->name() << "|" << "File" << file
+                                             << "could not be removed because:" << f.errorString();
                 return false;
             }
-            return true;
         }
         return true;
     };
 
     auto vFile = patch->getVersionFile();
     if (vFile) {
-        auto& jarMods = vFile->jarMods;
-        for (auto& jarmod : jarMods) {
-            ok &= preRemoveJarMod(jarmod);
+        // Jar Mods
+        for (auto& lib : vFile->jarMods) {
+            ok &= removeLocalLibrary(lib, d->m_instance->jarmodsPath().absolutePath());
+        }
+        // Mods (Loader mods, generic mods) - Assuming they reside in 'mods' folder
+        QString modsPath = FS::PathCombine(d->m_instance->instanceRoot(), "mods");
+        for (auto& lib : vFile->mods) {
+            ok &= removeLocalLibrary(lib, modsPath);
+        }
+        // Local Libraries (in libraries folder)
+        for (auto& lib : vFile->libraries) {
+            if (lib->isLocal()) {
+                ok &= removeLocalLibrary(lib);
+            }
         }
     }
     return ok;

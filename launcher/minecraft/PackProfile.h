@@ -84,14 +84,15 @@ class PackProfile : public QAbstractListModel {
     struct Result {
         bool success;
         QString error;
+        bool changed = true;
 
         // Implicit conversion to bool
         operator bool() const { return success; }
 
         // Factory methods for convenience
-        static Result Success() { return { true, "" }; }
+        static Result Success(bool changed = true) { return { true, "", changed }; }
 
-        static Result Error(const QString& errorMessage) { return { false, errorMessage }; }
+        static Result Error(const QString& errorMessage) { return { false, errorMessage, false }; }
     };
 
     explicit PackProfile(MinecraftInstance* instance);

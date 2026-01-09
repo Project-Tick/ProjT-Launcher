@@ -79,8 +79,8 @@ ResourceAPI::SearchArgs TexturePackResourceModel::createSearchArguments()
 
     if (s_availableVersions.empty()) {
         for (auto&& version : m_version_list->versions()) {
-            // FIXME: This duplicates the logic in meta for the 'texturepacks' trait. However, we don't have access to that
-            //        information from the index file alone. Also, downloading every version's file isn't a very good idea.
+            // NOTE: Logic duplicated from meta 'texturepacks' trait due to lack of index file access.
+            //        Avoiding download of every version file for check.
             if (auto ver = version->toComparableVersion(); ver <= maximumTexturePackVersion())
                 s_availableVersions.push_back(ver);
         }

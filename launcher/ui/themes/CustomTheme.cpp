@@ -144,6 +144,13 @@ CustomTheme::CustomTheme(ITheme* baseTheme, QFileInfo& fileInfo, bool isManifest
         }
     }
 }
+#ifdef Q_OS_MACOS
+// Fix native border artifacts on macOS when using custom themes
+if (!m_styleSheet.isEmpty()) {
+    m_styleSheet += "\nQPushButton { border: none; }";
+}
+#endif
+}
 
 QStringList CustomTheme::searchPaths()
 {
