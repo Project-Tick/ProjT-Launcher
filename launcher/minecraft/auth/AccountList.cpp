@@ -356,11 +356,6 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
         case Qt::ToolTipRole:
             return account->accountDisplayString();
 
-        case Qt::DecorationRole:
-            if (index.column() == IconColumn)
-                return account->getFace();
-            return QVariant();
-
         case PointerRole:
             return QVariant::fromValue(account);
 
