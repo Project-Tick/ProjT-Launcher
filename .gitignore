@@ -12,7 +12,8 @@ bzip2/lib*.dylib
 bzip2/lib*.so
 bzip2/lib*.so.*
 bzip2/lib*.a
-
+docs/TODO_FIXME_REPORT.md
+docs/TODO.md
 # example build directories
 bzip2/build
 bzip2/builddir
