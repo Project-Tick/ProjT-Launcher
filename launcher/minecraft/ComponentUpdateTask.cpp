@@ -527,17 +527,6 @@ void ComponentUpdateTask::resolveDependencies(bool checkOnly)
                             component->m_version = "3.1.2";
                         }
                     }
-                    
-                    // Fallback to hardcoded defaults only if metadata unavailable
-                    if (!versionSet) {
-                        if (add.uid == "org.lwjgl") {
-                            component->m_version = "2.9.1";  // Legacy LWJGL default
-                        } else if (add.uid == "org.lwjgl3") {
-                            component->m_version = "3.1.2";  // Modern LWJGL default
-                        }
-                        // For other components without metadata, leave version empty
-                        // The component will need manual version selection
-                    }
                 }
             }
             component->m_dependencyOnly = true;
