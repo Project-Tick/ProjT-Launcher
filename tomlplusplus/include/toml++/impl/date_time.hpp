@@ -5,6 +5,7 @@
 #pragma once
 
 #include "forward_declarations.hpp"
+#include "std_optional.hpp"
 #include "header_start.hpp"
 #include "print_to_stream.hpp"
 
