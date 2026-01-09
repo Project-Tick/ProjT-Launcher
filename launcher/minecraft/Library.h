@@ -84,7 +84,7 @@ class Library {
    public:
     Library() {}
     Library(const QString& name) { m_name = name; }
-    /// limited copy without some data. TODO: why?
+    /// Create a copy of the library.
     static LibraryPtr limitedCopy(LibraryPtr base)
     {
         auto newlib = std::make_shared<Library>();
@@ -98,6 +98,7 @@ class Library {
         newlib->m_storagePrefix = base->m_storagePrefix;
         newlib->m_mojangDownloads = base->m_mojangDownloads;
         newlib->m_filename = base->m_filename;
+        newlib->m_displayname = base->m_displayname;  // Full copy
         return newlib;
     }
 
@@ -140,7 +141,7 @@ class Library {
     /// Get the file name of the library
     QString filename(const RuntimeContext& runtimeContext) const;
 
-    // DEPRECATED: set a display name, used by jar mods only
+    // NOTE: Legacy support for Core Mods display cutoff (approx 1.4.7 era). Used by jar mods only
     void setDisplayName(const QString& displayName) { m_displayname = displayName; }
 
     /// Get the file name of the library

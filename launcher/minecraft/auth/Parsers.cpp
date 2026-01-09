@@ -86,7 +86,10 @@ bool getBool(QJsonValue value, bool& out)
    }
  }
 */
-// TODO: handle error responses ...
+// Error responses from Xbox Live are handled in parseXTokenResponse below.
+// Known error codes:
+// - 2148916233: Missing Xbox account
+// - 2148916238: Child account not linked to a family
 /*
 {
     "Identity":"0",
@@ -94,8 +97,6 @@ bool getBool(QJsonValue value, bool& out)
     "Message":"",
     "Redirect":"https://start.ui.xboxlive.com/AddChildToFamily"
 }
-// 2148916233 = missing XBox account
-// 2148916238 = child account not linked to a family
 */
 
 bool parseXTokenResponse(QByteArray& data, Token& output, QString name)

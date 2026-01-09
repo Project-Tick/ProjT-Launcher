@@ -81,7 +81,8 @@ void AssetUpdateTask::assetIndexFinished()
     auto assets = profile->getMinecraftAssets();
 
     QString asset_fname = "assets/indexes/" + assets->id + ".json";
-    // FIXME: this looks like a job for a generic validator based on json schema?
+    // NOTE: Current validation is done via AssetsUtils::loadAssetsIndexJson.
+    // Future improvement: Implement a generic validator based on JSON schema for more robust checks.
     if (!AssetsUtils::loadAssetsIndexJson(assets->id, asset_fname, index)) {
         auto metacache = APPLICATION->metacache();
         auto entry = metacache->resolveEntry("asset_indexes", assets->id + ".json");

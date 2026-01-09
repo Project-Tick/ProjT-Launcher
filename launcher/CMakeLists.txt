@@ -838,6 +838,8 @@ SET(LAUNCHER_SOURCES
     ui/InstanceWindow.cpp
     ui/ViewLogWindow.h
     ui/ViewLogWindow.cpp
+    ui/LaunchMenu.cpp
+    ui/LaunchMenu.h
 
     # GUI - widgets / utilities
     ui/widgets/FileIgnoreProxy.cpp

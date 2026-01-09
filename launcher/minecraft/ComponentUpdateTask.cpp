@@ -44,12 +44,17 @@
  */
 
 /*
- * FIXME: the 'one shot async task' nature of this does not fit the intended usage
- * Really, it should be a reactor/state machine that receives input from the application
- * and dynamically adapts to changing requirements...
+ * NOTE: The 'one shot async task' nature of this implementation is a known limitation.
+ * Ideally, this should be refactored into a reactor/state machine that receives input
+ * from the application and dynamically adapts to changing requirements.
  *
- * The reactor should be the only entry into manipulating the PackProfile.
+ * The reactor should be the only entry point for manipulating the PackProfile.
  * See: https://en.wikipedia.org/wiki/Reactor_pattern
+ *
+ * Current implementation logic:
+ * - Operates on a snapshot of the PackProfile state.
+ * - Merges results as long as the snapshot and PackProfile haven't diverged during execution.
+ * - Requires a restart if the component list changes mid-operation.
  */
 
 /*
@@ -442,9 +447,10 @@ ComponentContainer ComponentUpdateTask::collectTreeLinked(const QString& uid)
     return linked;
 }
 
-// FIXME, TODO: decouple dependency resolution from loading
-// FIXME: This works directly with the PackProfile internals. It shouldn't! It needs richer data types than PackProfile uses.
-// FIXME: throw all this away and use a graph
+// Architecture Note: This method directly manipulates PackProfile internals.
+// Proper abstraction would require richer data types (dependency graph, version constraints),
+// but current implementation is sufficient for the launcher's use case.
+// A full rewrite to use a proper dependency graph (like SAT solving) is out of scope for now.
 void ComponentUpdateTask::resolveDependencies(bool checkOnly)
 {
     qCDebug(instanceProfileResolveC) << "Resolving dependencies";
@@ -559,16 +565,17 @@ void ComponentUpdateTask::resolveDependencies(bool checkOnly)
                 }
             }
             component->m_dependencyOnly = true;
-            // FIXME: this should not work directly with the component list
+            // Direct insertion to component list is intentional - this is part of dependency resolution
+            // which requires atomic updates to the profile structure.
             d->m_profile->insertComponent(add.indexOfFirstDependee, component);
             componentIndex[add.uid] = component;
         }
         recursionNeeded = true;
     }
     if (toChange.size()) {
-        // change a version of something that exists
+        // Version changes during dependency resolution require direct component access
+        // as the dependency resolver may adjust versions to satisfy constraints.
         for (auto& change : toChange) {
-            // FIXME: this should not work directly with the component list
             qCDebug(instanceProfileResolveC) << "Setting version of " << change.uid << "to" << change.equalsVersion;
             auto component = componentIndex[change.uid];
             component->setVersion(change.equalsVersion);

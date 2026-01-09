@@ -357,7 +357,8 @@ bool MinecraftInstance::supportsDemo() const
 {
     Version instance_ver{ getPackProfile()->getComponentVersion("net.minecraft") };
     // Demo mode was introduced in 1.3.1: https://minecraft.wiki/w/Demo_mode#History
-    // Note: This check may not work correctly for non-release versions due to version string formatting. Demo support is based on release versions.
+    // Note: This check may not work correctly for non-release versions due to version string formatting. Demo support is based on release
+    // versions.
     return instance_ver >= Version("1.3.1");
 }
 

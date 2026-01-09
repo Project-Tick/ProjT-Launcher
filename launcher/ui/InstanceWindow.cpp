@@ -58,6 +58,7 @@
 
 #include "InstanceWindow.h"
 #include "Application.h"
+#include "ui/LaunchMenu.h"
 
 #include <qlayoutitem.h>
 #include <QCloseEvent>
@@ -186,7 +187,7 @@ void InstanceWindow::updateButtons()
         launchMenu->clear();
     else
         launchMenu = new QMenu(this);
-    m_instance->populateLaunchMenu(launchMenu);
+    LaunchMenu::populate(m_instance, launchMenu);
     m_launchButton->setMenu(launchMenu);
 }
 

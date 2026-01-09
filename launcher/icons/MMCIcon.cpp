@@ -60,6 +60,16 @@
 #include <QFileInfo>
 #include <QIcon>
 
+#include <functional>
+
+// Default provider uses Qt's standard lookup
+MMCIcon::ThemeIconProvider MMCIcon::s_themeProvider = [](const QString& key) { return QIcon::fromTheme(key); };
+
+void MMCIcon::setThemeIconProvider(ThemeIconProvider provider)
+{
+    s_themeProvider = provider;
+}
+
 IconType operator--(IconType& t, int)
 {
     IconType temp = t;
@@ -103,12 +113,11 @@ QIcon MMCIcon::icon() const
     auto& icon = m_images[m_current_type].icon;
     if (!icon.isNull())
         return icon;
-    
-    // Direct theme access: Uses QIcon::fromTheme for system/Qt theme integration.
-    // Note: For improved testability, consider injecting a theme provider interface
-    // that wraps QIcon::fromTheme. This would allow mocking theme behavior in tests
-    // and provide a centralized point for theme customization.
-    // Current implementation is acceptable for production use as it follows Qt conventions.
+
+    // DI: Use the static provider
+    if (s_themeProvider) {
+        return s_themeProvider(m_images[m_current_type].key);
+    }
     return QIcon::fromTheme(m_images[m_current_type].key);
 }
 

@@ -242,7 +242,9 @@ class BaseInstance : public QObject, public std::enable_shared_from_this<BaseIns
 
     virtual QString getStatusbarDescription() = 0;
 
-    /// FIXME: this really should be elsewhere...
+    /// Returns the path to the instance's config directory (e.g., .minecraft/config).
+    /// This is on BaseInstance because all instance types need config storage,
+    /// even if the actual path differs per implementation.
     virtual QString instanceConfigFolder() const = 0;
 
     /// get variables this instance exports
@@ -283,8 +285,6 @@ class BaseInstance : public QObject, public std::enable_shared_from_this<BaseIns
     virtual bool canLaunch() const;
     virtual bool canEdit() const = 0;
     virtual bool canExport() const = 0;
-
-    virtual void populateLaunchMenu(QMenu* menu) = 0;
 
     bool reloadSettings();
 

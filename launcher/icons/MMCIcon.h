@@ -83,4 +83,11 @@ struct MMCIcon {
     void replace(IconType new_type, const QString& key);
     bool isBuiltIn() const;
     QString getFilePath() const;
+
+    // Dependency Injection for Theme Icons
+    using ThemeIconProvider = std::function<QIcon(const QString&)>;
+    static void setThemeIconProvider(ThemeIconProvider provider);
+
+   private:
+    static ThemeIconProvider s_themeProvider;
 };

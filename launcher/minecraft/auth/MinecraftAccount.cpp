@@ -218,6 +218,7 @@ void MinecraftAccount::authFailed(QString reason)
     }
     m_currentTask.reset();
     emit activityChanged(false);
+    emit authenticationError(reason);
 }
 
 bool MinecraftAccount::isActive() const
@@ -295,8 +296,8 @@ void MinecraftAccount::decrementUses()
     Usable::decrementUses();
     if (!isInUse()) {
         emit changed();
-        // FIXME: we now need a better way to identify accounts...
-        qWarning() << "Profile" << data.profileId() << "is no longer in use.";
+        // Using internalId for account identification (profile may not be set for new accounts)
+        qWarning() << "Account" << data.internalId << "(" << data.profileName() << ") is no longer in use.";
     }
 }
 
@@ -306,8 +307,8 @@ void MinecraftAccount::incrementUses()
     Usable::incrementUses();
     if (!wasInUse) {
         emit changed();
-        // FIXME: we now need a better way to identify accounts...
-        qWarning() << "Profile" << data.profileId() << "is now in use.";
+        // Using internalId for account identification (profile may not be set for new accounts)
+        qWarning() << "Account" << data.internalId << "(" << data.profileName() << ") is now in use.";
     }
 }
 

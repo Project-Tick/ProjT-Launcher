@@ -84,7 +84,6 @@ class NullInstance : public BaseInstance {
     bool canExport() const override { return false; }
     bool canEdit() const override { return false; }
     bool canLaunch() const override { return false; }
-    void populateLaunchMenu(QMenu* menu) override {}
     QStringList verboseDescription(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin) override
     {
         QStringList out;

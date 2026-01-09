@@ -142,14 +142,13 @@ CustomTheme::CustomTheme(ITheme* baseTheme, QFileInfo& fileInfo, bool isManifest
             themeWarningLog() << "Couldn't load qss:" << e.cause() << "from" << path;
             m_styleSheet = baseTheme->appStyleSheet();
         }
-    }
-}
 #ifdef Q_OS_MACOS
-// Fix native border artifacts on macOS when using custom themes
-if (!m_styleSheet.isEmpty()) {
-    m_styleSheet += "\nQPushButton { border: none; }";
-}
+        // Fix native border artifacts on macOS when using custom themes
+        if (!m_styleSheet.isEmpty()) {
+            m_styleSheet += "\nQPushButton { border: none; }";
+        }
 #endif
+    }
 }
 
 QStringList CustomTheme::searchPaths()

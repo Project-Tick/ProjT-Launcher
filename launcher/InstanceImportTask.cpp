@@ -328,6 +328,7 @@ void InstanceImportTask::processFlame()
         inst_creation_task =
             makeShared<FlameCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id, original_instance_id);
     } else {
+        // Extract pack IDs from manifest.json for direct ZIP imports
         QString pack_id;
         QString pack_version_id;
 
@@ -478,11 +479,31 @@ void InstanceImportTask::processModrinth()
             }
         }
 
-        // 3) Create task
-        inst_creation_task = makeShared<ModrinthCreationTask>(
-            m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id
-        );
+        // Extract version ID from modrinth.index.json for direct ZIP imports
+        QString pack_version_id;
+        // Attempt to read modrinth.index.json for metadata if available
+        try {
+            QString indexFile = FS::PathCombine(m_stagingPath, "modrinth.index.json");
+            if (QFileInfo::exists(indexFile)) {
+                auto doc = Json::requireDocument(indexFile);
+                auto obj = doc.object();
+                // Valid Modrinth packs might not have projectID directly, but checking for it or 'name' matches
+                if (obj.contains("projectID")) {
+                    pack_id = QString::number(obj.value("projectID").toInt());
+                } else if (obj.contains("name") && pack_id.isEmpty()) {
+                    // Check if name contains ID-like pattern or use it as fallback?
+                    // For now just keep existing heuristic if not found.
+                }
+                // Version extraction
+                if (obj.contains("versionId")) {
+                    pack_version_id = obj.value("versionId").toString();
+                }
+            }
+        } catch (...) {
+            // Ignore format errors
+        }
 
+        inst_creation_task = makeShared<ModrinthCreationTask>(m_stagingPath, m_globalSettings, nullptr, pack_id, pack_version_id);
     }
 
     inst_creation_task->setName(*this);

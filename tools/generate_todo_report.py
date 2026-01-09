@@ -40,13 +40,14 @@ def classify(text: str) -> str:
         'memory', 'security', 'validate', 'schema', 'generic', 'nuke', 'inefficient',
         'algorithm', 'thread', 'blocking', 'async', 'validate', 'jwt', 'schema', 'hack'
     ]
-    hints_trivial = ['typo', 'wrap', 'link', 'format', 'docs', 'documentation', 'spell', 'grammar']
+    hints_trivial = ['typo', 'wrap', 'link', 'format', 'docs', 'documentation', 'spell', 'grammar', 'rename', 'cleanup', 'whitespace']
     if any(h in t for h in hints_trivial):
         return 'trivial'
     if any(h in t for h in hints_complex):
         return 'complex'
-    # if contains words like 'should' or 'maybe' consider implementable
-    if 'should' in t or 'maybe' in t or 'add' in t or 'implement' in t or 'todo:' in t:
+    # Context-sensitive keyword matching for implementable items
+    implementable_keywords = ['should', 'maybe', 'add', 'implement', 'todo:', 'need', 'missing', 'want', 'consider', 'allow', 'support']
+    if any(k in t for k in implementable_keywords):
         return 'implementable'
     return 'unknown'
 

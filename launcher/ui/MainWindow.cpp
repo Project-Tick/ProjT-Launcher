@@ -61,6 +61,7 @@
 #include "FileSystem.h"
 
 #include "MainWindow.h"
+#include "ui/LaunchMenu.h"
 #include "ui_MainWindow.h"
 
 #include <QDir>
@@ -622,7 +623,7 @@ void MainWindow::updateLaunchButton()
     else
         launchMenu = new QMenu(this);
     if (m_selectedInstance)
-        m_selectedInstance->populateLaunchMenu(launchMenu);
+        LaunchMenu::populate(m_selectedInstance, launchMenu);
     ui->actionLaunchInstance->setMenu(launchMenu);
 }
 

@@ -347,6 +347,12 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
                     return QVariant();
             }
 
+        case Qt::DecorationRole:
+            if (index.column() == IconColumn) {
+                return account->getFace();
+            }
+            return QVariant();
+
         case Qt::ToolTipRole:
             return account->accountDisplayString();
 
@@ -390,7 +396,7 @@ QVariant AccountList::headerData(int section, [[maybe_unused]] Qt::Orientation o
         case Qt::ToolTipRole:
             switch (section) {
                 case IconColumn:
-                    return tr("Account icon");
+                    return tr("Account avatar");
                 case ProfileNameColumn:
                     return tr("Minecraft username associated with the account.");
                 case NameColumn:

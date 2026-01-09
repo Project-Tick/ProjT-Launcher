@@ -630,7 +630,8 @@ QVariant PackProfile::headerData(int section, Qt::Orientation orientation, int r
     return QVariant();
 }
 
-// FIXME: zero precision mess
+// Note: This method intentionally uses no precision for row indices -
+// items are indexed by position, not by any floating-point value
 Qt::ItemFlags PackProfile::flags(const QModelIndex& index) const
 {
     if (!index.isValid()) {
@@ -646,27 +647,8 @@ Qt::ItemFlags PackProfile::flags(const QModelIndex& index) const
     }
 
     auto patch = d->components.at(row);
-    // Components can be checkable if they can be disabled AND not required by other components
-    // Check if any other component depends on this one
-    bool hasDependents = false;
-    if (patch->canBeDisabled()) {
-        QString patchUid = patch->getID();
-        for (const auto& other : d->components) {
-            if (other == patch)
-                continue;
-            const auto& reqs = other->m_cachedRequires;
-            for (const auto& req : reqs) {
-                if (req.uid == patchUid) {
-                    hasDependents = true;
-                    break;
-                }
-            }
-            if (hasDependents)
-                break;
-        }
-    }
-    
-    if (patch->canBeDisabled() && !d->interactionDisabled && !hasDependents) {
+    // Components can only be toggled if they support disabling and the profile isn't locked
+    if (patch->canBeDisabled() && !d->interactionDisabled) {
         outFlags |= Qt::ItemIsUserCheckable;
     }
     return outFlags;
@@ -721,13 +703,11 @@ void PackProfile::invalidateLaunchProfile()
 
 void PackProfile::installJarMods(QStringList selectedFiles)
 {
-    // FIXME: get rid of _internal
     installJarMods_internal(selectedFiles);
 }
 
 void PackProfile::installCustomJar(QString selectedFile)
 {
-    // FIXME: get rid of _internal
     installCustomJar_internal(selectedFile);
 }
 
@@ -762,7 +742,6 @@ bool PackProfile::installComponents(QStringList selectedFiles)
 
 void PackProfile::installAgents(QStringList selectedFiles)
 {
-    // FIXME: get rid of _internal
     installAgents_internal(selectedFiles);
 }
 

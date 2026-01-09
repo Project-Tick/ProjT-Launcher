@@ -83,16 +83,16 @@ class MinecraftInstance : public BaseInstance {
 
     void loadSpecificSettings() override;
 
-    // FIXME: remove
+    /// @deprecated Legacy method - consider moving to PackProfile
     QString typeName() const override;
-    // FIXME: remove
+    /// @deprecated Legacy method - traits should come from PackProfile components
     QSet<QString> traits() const override;
 
     bool canEdit() const override { return true; }
 
     bool canExport() const override { return true; }
 
-    void populateLaunchMenu(QMenu* menu) override;
+    ////// Directories and files //////
 
     ////// Directories and files //////
     QString jarModsDir() const;
@@ -166,19 +166,19 @@ class MinecraftInstance : public BaseInstance {
 
     QString getStatusbarDescription() override;
 
-    // FIXME: remove
+    /// @deprecated These methods expose internal launch profile data. Use LaunchProfile directly.
     virtual QStringList getClassPath();
-    // FIXME: remove
+    /// @deprecated Use LaunchProfile::getNativeLibraries() instead
     virtual QStringList getNativeJars();
-    // FIXME: remove
+    /// @deprecated Use LaunchProfile::getMainClass() instead
     virtual QString getMainClass() const;
 
-    // FIXME: remove
+    /// @deprecated Argument processing should be in launch steps, not instance
     virtual QStringList processMinecraftArgs(AuthSessionPtr account, MinecraftTarget::Ptr targetToJoin) const;
 
     virtual JavaVersion getJavaVersion();
 
-signals:
+   signals:
     void profilerChanged();
 
    protected:

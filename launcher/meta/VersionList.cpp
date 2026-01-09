@@ -125,7 +125,9 @@ QVariant VersionList::data(const QModelIndex& index, int role) const
             }
             return major;
         }
-        // LatestRole determination is now handled in VersionProxyModel
+        // LatestRole is handled by VersionProxyModel which has access to filter/sort context.
+        // Determining "latest" depends on version type filters which this model doesn't control.
+        // case LatestRole: return version == getLatestStable();
         default:
             return QVariant();
     }
@@ -253,7 +255,8 @@ void VersionList::merge(const VersionList::Ptr& other)
         m_sha256 = other->m_sha256;
     }
 
-    // TODO: do not reset the whole model. maybe?
+    // Full model reset is used because version merging can affect sort order.
+    // Incremental updates would require tracking which rows changed and their new positions.
     beginResetModel();
     if (other->m_versions.isEmpty()) {
         qWarning() << "Empty list loaded ...";

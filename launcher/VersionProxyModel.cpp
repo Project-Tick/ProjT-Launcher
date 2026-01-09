@@ -106,15 +106,23 @@ VersionProxyModel::VersionProxyModel(QObject* parent) : QAbstractProxyModel(pare
     connect(filterModel, &QAbstractItemModel::rowsInserted, this, &VersionProxyModel::sourceRowsInserted);
     connect(filterModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &VersionProxyModel::sourceRowsAboutToBeRemoved);
     connect(filterModel, &QAbstractItemModel::rowsRemoved, this, &VersionProxyModel::sourceRowsRemoved);
-    connect(filterModel, &QAbstractItemModel::rowsAboutToBeMoved, this, &VersionProxyModel::sourceRowsAboutToBeMoved);
-    connect(filterModel, &QAbstractItemModel::rowsMoved, this, &VersionProxyModel::sourceRowsMoved);
-    connect(filterModel, &QAbstractItemModel::layoutAboutToBeChanged, this, &VersionProxyModel::sourceLayoutAboutToBeChanged);
-    connect(filterModel, &QAbstractItemModel::layoutChanged, this, &VersionProxyModel::sourceLayoutChanged);
-    connect(filterModel, &QAbstractItemModel::modelAboutToBeReset, this, &VersionProxyModel::sourceAboutToBeReset);
-    connect(filterModel, &QAbstractItemModel::modelReset, this, &VersionProxyModel::sourceReset);
+    connect(filterModel,
+            QOverload<const QList<QPersistentModelIndex>&, QAbstractItemModel::LayoutChangeHint>::of(
+                &QAbstractItemModel::layoutAboutToBeChanged),
+            this,
+            &VersionProxyModel::sourceLayoutAboutToBeChanged);
 
-    QAbstractProxyModel::setSourceModel(filterModel);
-}
+    connect(filterModel,
+            QOverload<const QList<QPersistentModelIndex>&, QAbstractItemModel::LayoutChangeHint>::of(
+                &QAbstractItemModel::layoutChanged),
+            this,
+            &VersionProxyModel::sourceLayoutChanged);
+
+        connect(filterModel, &QAbstractItemModel::modelAboutToBeReset, this, &VersionProxyModel::sourceAboutToBeReset);
+        connect(filterModel, &QAbstractItemModel::modelReset, this, &VersionProxyModel::sourceReset);
+
+        QAbstractProxyModel::setSourceModel(filterModel);
+    }
 
 QVariant VersionProxyModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
@@ -461,22 +469,41 @@ void VersionProxyModel::sourceRowsRemoved([[maybe_unused]] const QModelIndex& pa
     endRemoveRows();
 }
 
-void VersionProxyModel::sourceRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast, const QModelIndex& destinationParent, int destinationRow)
+void VersionProxyModel::sourceRowsAboutToBeMoved(const QModelIndex& sourceParent,
+                                                 int sourceStart,
+                                                 int sourceEnd,
+                                                 const QModelIndex& destinationParent,
+                                                 int destinationRow)
 {
-    beginMoveRows(sourceParent, sourceFirst, sourceLast, destinationParent, destinationRow);
+    beginMoveRows(sourceParent, sourceStart, sourceEnd, destinationParent, destinationRow);
 }
 
-void VersionProxyModel::sourceRowsMoved([[maybe_unused]] const QModelIndex& parent, [[maybe_unused]] int start, [[maybe_unused]] int end, [[maybe_unused]] const QModelIndex& destination, [[maybe_unused]] int row)
+void VersionProxyModel::sourceRowsMoved(const QModelIndex& sourceParent,
+                                        int sourceStart,
+                                        int sourceEnd,
+                                        const QModelIndex& destinationParent,
+                                        int destinationRow)
+{
+    Q_UNUSED(sourceParent);
+    Q_UNUSED(sourceStart);
+    Q_UNUSED(sourceEnd);
+    Q_UNUSED(destinationParent);
+    Q_UNUSED(destinationRow);
+    endMoveRows();
+}
+
 {
     endMoveRows();
 }
 
-void VersionProxyModel::sourceLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& sourceParents, QAbstractItemModel::LayoutChangeHint hint)
+void VersionProxyModel::sourceLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& sourceParents,
+                                                     QAbstractItemModel::LayoutChangeHint hint)
 {
     emit layoutAboutToBeChanged(sourceParents, hint);
 }
 
-void VersionProxyModel::sourceLayoutChanged(const QList<QPersistentModelIndex>& sourceParents, QAbstractItemModel::LayoutChangeHint hint)
+void VersionProxyModel::sourceLayoutChanged(const QList<QPersistentModelIndex>& sourceParents,
+                                            QAbstractItemModel::LayoutChangeHint hint)
 {
     emit layoutChanged(sourceParents, hint);
 }

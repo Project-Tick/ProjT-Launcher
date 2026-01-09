@@ -184,6 +184,8 @@ class MinecraftAccount : public QObject, public Usable {
     void authenticationFailed(QString reason, AccountTaskState taskState);
     void profileUpdated();
     void validityChanged(Validity newValidity);
+    /// Emitted when an authentication error occurs
+    void authenticationError(QString errorMessage);
 
    protected: /* variables */
     AccountData data;

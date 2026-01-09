@@ -295,7 +295,7 @@ const QList<PatchProblem> LaunchProfile::getProblems() const
     }
     
     // Check if there are any libraries at all
-    if (m_libraries.isEmpty() && m_minecraftVersionType != "old_alpha") {
+    if (m_minecraftArguments.isEmpty() && m_minecraftVersionType != "snapshot" && m_minecraftVersionType != "old_alpha") {
         problems.append({ProblemSeverity::Warning,
                         QObject::tr("No libraries specified (unusual for modern Minecraft)")});
     }

@@ -9,6 +9,9 @@ endif()
 
 project(Launcher)
 
+# Force bzip2 to build static library (required for quazip)
+set(ENABLE_STATIC_LIB ON CACHE BOOL "Enable static lib for bzip2" FORCE)
+
 # Set default build type for single-config generators (Unix/macOS)
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
@@ -120,11 +123,8 @@ else()
         foreach(lang C CXX)
             set("CMAKE_${lang}_FLAGS_RELEASE" "-ffunction-sections -fdata-sections -mguard=cf")
         endforeach()
-        
-        # Add linker flag to remove unused sections
-        foreach(lang C CXX)
-            set("CMAKE_${lang}_LINKER_FLAGS_RELEASE" "${CMAKE_${lang}_LINKER_FLAGS_RELEASE} -Wl,--gc-sections")
-        endforeach()
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,--gc-sections ${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "-Wl,--gc-sections ${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
     endif()
 endif()
 

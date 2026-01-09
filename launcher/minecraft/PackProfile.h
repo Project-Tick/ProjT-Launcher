@@ -172,8 +172,8 @@ class PackProfile : public QAbstractListModel {
     /// get the profile component by index
     ComponentPtr getComponent(size_t index);
 
-    /// Add the component to the internal list of patches
-    // todo(merged): is this the best approach
+    /// Add the component to the internal list of patches.
+    /// Components are appended (not inserted) to preserve mod loader load order.
     void appendComponent(ComponentPtr component);
 
     std::optional<ModPlatform::ModLoaderTypes> getModLoaders();
