@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source srcset="/program_info/tr.org.yongdohyun.ProjTLauncher.logo-darkmode.svg">
-    <img alt="ProjT Launcher" src="/program_info/tr.org.yongdohyun.ProjTLauncher.logo.svg" width="40%">
+    <source srcset="/program_info/tr.org.projecttick.ProjTLauncher.logo-darkmode.svg">
+    <img alt="ProjT Launcher" src="/program_info/tr.org.projecttick.ProjTLauncher.logo.svg" width="40%">
   </picture>
 </p>
 
