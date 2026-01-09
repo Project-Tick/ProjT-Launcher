@@ -319,12 +319,6 @@ QSet<QString> MinecraftInstance::traits() const
     return profile->getTraits();
 }
 
-// UI code extracted to MinecraftInstanceLaunchMenu helper class
-void MinecraftInstance::populateLaunchMenu(QMenu* menu)
-{
-    MinecraftInstanceLaunchMenu::populate(this, menu);
-}
-
 QString MinecraftInstance::gameRoot() const
 {
     QFileInfo mcDir(FS::PathCombine(instanceRoot(), "minecraft"));
