@@ -217,9 +217,9 @@ QList<IconTheme*> ThemeManager::getValidIconThemes()
     return ret;
 }
 
-QList<ITheme*> ThemeManager::getValidApplicationThemes()
+QList<Theme*> ThemeManager::getValidApplicationThemes()
 {
-    QList<ITheme*> ret;
+    QList<Theme*> ret;
     ret.reserve(m_themes.size());
     for (auto&& [id, theme] : m_themes) {
         ret.append(theme.get());
