@@ -5,32 +5,29 @@
 
 // This example demonstrates how to use the toml::json_formatter to re-serialize TOML data as JSON.
 
-#include "examples.hpp"
 #include <toml++/toml.hpp>
+#include "examples.hpp"
 
 using namespace std::string_view_literals;
 
 int main(int argc, char** argv)
 {
-	const auto path = argc > 1 ? std::string_view{ argv[1] } : ""sv;
+    const auto path = argc > 1 ? std::string_view{ argv[1] } : ""sv;
 
-	toml::table table;
-	try
-	{
-		// read directly from stdin
-		if (path == "-"sv || path.empty())
-			table = toml::parse(std::cin, "stdin"sv);
+    toml::table table;
+    try {
+        // read directly from stdin
+        if (path == "-"sv || path.empty())
+            table = toml::parse(std::cin, "stdin"sv);
 
-		// read from a file
-		else
-			table = toml::parse_file(argv[1]);
-	}
-	catch (const toml::parse_error& err)
-	{
-		std::cerr << err << "\n";
-		return 1;
-	}
+        // read from a file
+        else
+            table = toml::parse_file(argv[1]);
+    } catch (const toml::parse_error& err) {
+        std::cerr << err << "\n";
+        return 1;
+    }
 
-	std::cout << toml::json_formatter{ table } << "\n";
-	return 0;
+    std::cout << toml::json_formatter{ table } << "\n";
+    return 0;
 }
