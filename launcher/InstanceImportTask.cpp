@@ -480,7 +480,7 @@ void InstanceImportTask::processModrinth()
         }
 
         // Extract version ID from modrinth.index.json for direct ZIP imports
-        QString pack_version_id;
+        // pack_version_id already declared above
         // Attempt to read modrinth.index.json for metadata if available
         try {
             QString indexFile = FS::PathCombine(m_stagingPath, "modrinth.index.json");
