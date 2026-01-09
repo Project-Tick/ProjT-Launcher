@@ -48,7 +48,11 @@
                 cd ${self}
 
                 echo "Running clang-format...."
-                clang-format --dry-run --style='file' --Werror */**.{c,cc,cpp,h,hh,hpp}
+                clang-format --dry-run --style='file' --Werror \
+                  $(find . -type f \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.h' -o -name '*.hh' -o -name '*.hpp' \) \
+                      ! -path './tomlplusplus/*' \
+                      ! -path './vendor/*' \
+                      ! -path './third_party/*')
 
                 echo "Running deadnix..."
                 deadnix --fail
