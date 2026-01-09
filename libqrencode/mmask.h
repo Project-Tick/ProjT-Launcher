@@ -22,6 +22,8 @@
 #ifndef MMASK_H
 #define MMASK_H
 
+#include "qrencode.h"
+
 extern unsigned char* MMask_makeMask(int version, unsigned char* frame, int mask, QRecLevel level);
 extern unsigned char* MMask_mask(int version, unsigned char* frame, QRecLevel level);
 
