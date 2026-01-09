@@ -67,7 +67,7 @@ const char* themeFile = "theme.json";
 /// @param baseTheme Base Theme
 /// @param fileInfo FileInfo object for file to load
 /// @param isManifest whether to load a theme manifest or a qss file
-CustomTheme::CustomTheme(ITheme* baseTheme, QFileInfo& fileInfo, bool isManifest)
+CustomTheme::CustomTheme(Theme* baseTheme, QFileInfo& fileInfo, bool isManifest)
 {
     if (isManifest) {
         m_id = fileInfo.dir().dirName();
