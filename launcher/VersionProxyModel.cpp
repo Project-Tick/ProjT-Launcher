@@ -492,10 +492,6 @@ void VersionProxyModel::sourceRowsMoved(const QModelIndex& sourceParent,
     endMoveRows();
 }
 
-{
-    endMoveRows();
-}
-
 void VersionProxyModel::sourceLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& sourceParents,
                                                      QAbstractItemModel::LayoutChangeHint hint)
 {
