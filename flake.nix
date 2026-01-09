@@ -52,7 +52,9 @@
                   $(find . -type f \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.h' -o -name '*.hh' -o -name '*.hpp' \) \
                       ! -path './tomlplusplus/*' \
                       ! -path './vendor/*' \
-                      ! -path './third_party/*')
+                      ! -path './third_party/*' \
+                      ! -path './extra-cmake-modules/*' \
+                      ! -path './libqrencode/*')
 
                 echo "Running deadnix..."
                 deadnix --fail
