@@ -1,81 +1,90 @@
-# Handle line endings automatically for files detected as text
+# =================================================
+# ProjT Launcher - Global defaults
+# =================================================
+# Let Git decide what is text, do not force LF globally
 * text=auto
 
-#
-# The above will handle all files NOT found below
-#
-
-# Files that should be left untouched (binary is macro for -text -diff)
+# =================================================
+# Binary / never-touch files
+# =================================================
 *.ref           binary
+*.pem           binary
 
-#
-# Exclude files from exporting
-#
+*.doc           binary
+*.docx          binary
+*.pdf           binary
+*.ai            binary
+*.bin           binary
+*.bmp           binary
+*.dat           binary
+*.gif           binary
+*.ico           binary
+*.jpeg          binary
+*.jpg           binary
+*.otf           binary
+*.png           binary
+*.psd           binary
+*.ttf           binary
+*.woff          binary
+*.woff2         binary
+*.xlsx          binary
+
+# =================================================
+# Git export hygiene
+# =================================================
 .gitattributes  export-ignore
 .gitignore      export-ignore
-*.pem -crlf
-**/testdata/** -text -diff
+.github/**      export-ignore
 
-# quazip subproject attributes (scoped to quazip/)
-# old Git versions
-quazip/*.h -crlf
-quazip/*.cpp -crlf
-quazip/*.c -crlf
-quazip/*.dox -crlf
-# NOT *.txt because NEWS.txt is in CRLF format for historic reasons
-quazip/CMakeLists.txt -crlf
-quazip/*.in -crlf
-quazip/*.cmakein -crlf
-quazip/*.symbols -crlf
-quazip/.editorconfig -crlf
+# =================================================
+# Test data must remain byte-exact
+# =================================================
+**/testdata/**  -text -diff
 
-# new Git versions
-quazip/*.h text eol=lf
-quazip/*.cpp text eol=lf
-quazip/*.c text eol=lf
-quazip/*.dox text eol=lf
-# NOT *.txt because NEWS.txt is in CRLF format for historic reasons
-quazip/CMakeLists.txt text eol=lf
-quazip/*.in text eol=lf
-quazip/*.cmakein text eol=lf
-quazip/*.symbols text eol=lf
-quazip/.editorconfig eol=lf
+# =================================================
+# quazip subproject (upstream-accurate behavior)
+# =================================================
+# Old Git compatibility (do not normalize)
+quazip/*.h              -crlf
+quazip/*.cpp            -crlf
+quazip/*.c              -crlf
+quazip/*.dox            -crlf
+quazip/CMakeLists.txt   -crlf
+quazip/*.in             -crlf
+quazip/*.cmakein        -crlf
+quazip/*.symbols        -crlf
+quazip/.editorconfig    -crlf
 
-*                  text         eol=lf      encoding=UTF-8
-*.hlsl             text         eol=crlf    encoding=UTF-8
-*.rc               text         eol=crlf    encoding=UTF-8
-*.sln              text         eol=crlf    encoding=UTF-8-BOM
-*.vcxproj          text         eol=crlf    encoding=UTF-8-BOM
-*.vcxproj.filters  text         eol=crlf    encoding=UTF-8-BOM
+# Modern Git behavior
+quazip/*.h              text eol=lf
+quazip/*.cpp            text eol=lf
+quazip/*.c              text eol=lf
+quazip/*.dox            text eol=lf
+quazip/CMakeLists.txt   text eol=lf
+quazip/*.in             text eol=lf
+quazip/*.cmakein        text eol=lf
+quazip/*.symbols        text eol=lf
+quazip/.editorconfig    eol=lf
 
-*.cs                eol=lf diff=csharp
+# =================================================
+# tomlplusplus (Windows toolchain aware)
+# =================================================
+# Visual Studio / Windows-native files
+tomlplusplus/*.sln              text eol=crlf encoding=UTF-8-BOM
+tomlplusplus/*.vcxproj          text eol=crlf encoding=UTF-8-BOM
+tomlplusplus/*.vcxproj.filters  text eol=crlf encoding=UTF-8-BOM
+tomlplusplus/*.rc               text eol=crlf encoding=UTF-8
+tomlplusplus/*.hlsl             text eol=crlf encoding=UTF-8
 
-*.dot               diff=astextplain
-*.DOT               diff=astextplain
-*.rtf               diff=astextplain
-*.RTF               diff=astextplain
+# Language-specific diffs
+tomlplusplus/*.cs               text eol=lf diff=csharp
+tomlplusplus/*.dot              diff=astextplain
+tomlplusplus/*.DOT              diff=astextplain
+tomlplusplus/*.rtf              diff=astextplain
+tomlplusplus/*.RTF              diff=astextplain
 
-*.doc               binary
-*.DOC               binary
-*.docx              binary
-*.DOCX              binary
-*.pdf               binary
-*.PDF               binary
-*.ai                binary
-*.bin               binary
-*.bmp               binary
-*.dat               binary
-*.gif               binary
-*.ico               binary
-*.jpeg              binary
-*.jpg               binary
-*.otf               binary
-*.png               binary
-*.psd               binary
-*.rc                binary
-*.ttf               binary
-*.woff              binary
-*.woff2             binary
-*.xlsx              binary
-
-vendor/* linguist-vendored
+# =================================================
+# Vendor / third-party code
+# =================================================
+vendor/**                linguist-vendored
+tomlplusplus/vendor/**   linguist-vendored
