@@ -9,10 +9,10 @@ cask "projtlauncher" do
 
   name "ProjT Launcher"
   desc "Minecraft launcher"
-  homepage "https://projtlauncher.projecttick.org.tr/"
+  homepage "https://projecttick.org.tr/projtlauncher/"
 
   livecheck do
-    url "https://projtlauncher.projecttick.org.tr/feed/appcast.xml"
+    url "https://projecttick.org.tr/projtlauncher/feed/appcast.xml"
     strategy :sparkle
   end
 

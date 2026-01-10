@@ -135,7 +135,7 @@ stdenv.mkDerivation {
       their own mods, texture packs, saves, etc) and helps you manage them and
       their associated options with a simple interface.
     '';
-    homepage = "https://projtlauncher.projecttick.org.tr/";
+    homepage = "https://projecttick.org.tr/projtlauncher/";
     license = lib.licenses.gpl3Only;
     maintainers = with lib.maintainers; [
       yongdohyun

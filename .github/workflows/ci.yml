@@ -2635,7 +2635,8 @@ jobs:
         with:
           config-file: ./.github/codeql/codeql-config.yml
           queries: security-and-quality
-          languages: c, cpp, java
+          languages: c-cpp, java
+          trap-caching: false
 
       - name: Setup dependencies
         uses: ./.github/actions/setup-dependencies
@@ -2669,6 +2670,8 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@f67ec12472e1b361f5e1e2085f5e6f85a57e3cd6
+        with:
+          category: "/language:c-cpp"
 
   build-zlib-ci-configure:
     timeout-minutes: 30

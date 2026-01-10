@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <img alt="ProjT Launcher Main Menu" src="https://projtlauncher.projecttick.org.tr/img/screenshots/projtlauncher_dark_main_window.png" width="80%">
+  <img alt="ProjT Launcher Main Menu" src="https://projecttick.org.tr/projtlauncher/img/screenshots/projtlauncher_dark_main_window.png" width="80%">
 </p>
 
 <p align="center">

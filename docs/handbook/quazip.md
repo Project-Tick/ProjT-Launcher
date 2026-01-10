@@ -11,7 +11,7 @@ QuaZip is the C++ wrapper for Gilles Vollant's ZIP/UNZIP package
 If you need to write files to a ZIP archive or read files from one
 using QIODevice API, QuaZip is exactly the kind of tool you need.
 
-See [the documentation](https://projtlauncher.projecttick.org.tr/wiki/) for details.
+See [the documentation](https://projecttick.org.tr/projtlauncher/wiki/) for details.
 
 Want to report a bug or ask for a feature? Open an [issue](https://github.com/Project-Tick/ProjT-Launcher/issues).
 
