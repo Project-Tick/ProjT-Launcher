@@ -20,6 +20,9 @@
 - [ ] JavaCheck
 - [ ] libnbtplusplus
 - [ ] Zlib
+- [ ] libqrencode
+- [ ] cmark
+- [ ] tomlplusplus
 - [ ] Packages
 - [ ] Other (describe):
 

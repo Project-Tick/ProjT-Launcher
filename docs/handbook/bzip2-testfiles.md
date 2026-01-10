@@ -1,4 +1,4 @@
-# BZ2 Test File Collection
+## BZ2 Test File Collection
 
 This is a collection of "interesting" `.bz2` files that can be used to
 test bzip2 works correctly. They come from different projects.
@@ -28,13 +28,13 @@ Each directory should contain:
   files. They are explicitly not intended to decompress correctly, but to catch
   errors in bzip2 trying to deal with bad data.
 
-## Running the Tests
+### Running the Tests
 
 The the files here are intended to be tested using the "Large Test Suite"
 integrated with BZip2's build system. For more details, see:
-https://gitlab.com/bzip2/bzip2/-/blob/master/tests/README.md
+https://github.com/Project-Tick/ProjT-Launcher/-/blob/develop/docs/handbook/bzip2-tests.md
 and
-https://gitlab.com/bzip2/bzip2/-/blob/master/COMPILING.md
+https://github.com/Project-Tick/ProjT-Launcher/-/blob/develop/docs/handbook/bzip2-compiling.md
 
 ## Adding Files to The Large Test Suite
 

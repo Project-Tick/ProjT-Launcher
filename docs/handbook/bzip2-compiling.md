@@ -1,5 +1,7 @@
 # Compiling bzip2
 
+Firstly, Please go to bzip2 folder
+
 The following build systems are available for Bzip2:
 
 * [Meson]: This is our preferred build system for Unix-like systems.

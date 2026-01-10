@@ -74,6 +74,9 @@ jobs:
       run-meta: ${{ steps.decide.outputs.run-meta }}
       run-branding: ${{ steps.decide.outputs.run-branding }}
       run-schedule: ${{ steps.decide.outputs.run-schedule }}
+      run-cmark: ${{ steps.decide.outputs.run-cmark }}
+      run-tomlplusplus: ${{ steps.decide.outputs.run-tomlplusplus }}
+      run-libqrencode: ${{ steps.decide.outputs.run-libqrencode }}
       dominant-scope: ${{ steps.decide.outputs.dominant-scope }}
       changed-files: ${{ steps.collect.outputs.changed-files }}
       base-ref: ${{ steps.base.outputs.base }}
@@ -202,6 +205,9 @@ jobs:
             "launcherjava": r"- \[[xX]\]\s+Launcher Java System\b",
             "javacheck": r"- \[[xX]\]\s+JavaCheck\b",
             "libnbtplusplus": r"- \[[xX]\]\s+libnbtplusplus\b",
+            "cmark": r"- \[[xX]\]\s+cmark\b",
+            "tomlplusplus": r"- \[[xX]\]\s+toml\+\+\b",
+            "libqrencode": r"- \[[xX]\]\s+libqrencode\b",
           }
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
@@ -237,6 +243,9 @@ jobs:
           SCOPE_LAUNCHERJAVA: ${{ steps.scope.outputs.launcherjava || 'false' }}
           SCOPE_JAVACHECK: ${{ steps.scope.outputs.javacheck || 'false' }}
           SCOPE_LIBNBT: ${{ steps.scope.outputs.libnbtplusplus || 'false' }}
+          SCOPE_CMARK: ${{ steps.scope.outputs.cmark || 'false' }}
+          SCOPE_TOMLPLUSPLUS: ${{ steps.scope.outputs.tomlplusplus || 'false' }}
+          SCOPE_LIBQRENCODE: ${{ steps.scope.outputs.libqrencode || 'false' }}
         run: |
           changed="$(cat changed.txt || true)"
 
@@ -250,7 +259,7 @@ jobs:
           }
 
           scope_selected=false
-          if [ "$IS_PR" = "true" ] && { [ "$SCOPE_LAUNCHER" = "true" ] || [ "$SCOPE_WEBSITE" = "true" ] || [ "$SCOPE_BOT" = "true" ] || [ "$SCOPE_META" = "true" ] || [ "$SCOPE_QUAZIP" = "true" ] || [ "$SCOPE_BZIP2" = "true" ] || [ "$SCOPE_ZLIB" = "true" ] || [ "$SCOPE_PACKAGES" = "true" ] || [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ] || [ "$SCOPE_CI" = "true" ] || [ "$SCOPE_BRANDING" = "true" ]; }; then
+          if [ "$IS_PR" = "true" ] && { [ "$SCOPE_LAUNCHER" = "true" ] || [ "$SCOPE_WEBSITE" = "true" ] || [ "$SCOPE_BOT" = "true" ] || [ "$SCOPE_META" = "true" ] || [ "$SCOPE_QUAZIP" = "true" ] || [ "$SCOPE_BZIP2" = "true" ] || [ "$SCOPE_ZLIB" = "true" ] || [ "$SCOPE_PACKAGES" = "true" ] || [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ] || [ "$SCOPE_CI" = "true" ] || [ "$SCOPE_BRANDING" = "true" ] || [ "$SCOPE_CMARK" = "true" ] || [ "$SCOPE_TOMLPLUSPLUS" = "true" ] || [ "$SCOPE_LIBQRENCODE" = "true" ]; }; then
             scope_selected=true
           fi
 
@@ -292,6 +301,9 @@ jobs:
           run_meta=false
           run_branding=false
           run_schedule=false
+          run_cmark=false
+          run_tomlplusplus=false
+          run_libqrencode=false
           build_type="Debug"
           run_release_build=false
           run_regular_build=false
@@ -308,6 +320,12 @@ jobs:
             dominant_scope="javacheck"
           elif [ "$SCOPE_LIBNBT" = "true" ]; then
             dominant_scope="libnbtplusplus"
+          elif [ "$SCOPE_CMARK" = "true" ]; then
+            dominant_scope="cmark"
+          elif [ "$SCOPE_TOMLPLUSPLUS" = "true" ]; then
+            dominant_scope="tomlplusplus"
+          elif [ "$SCOPE_LIBQRENCODE" = "true" ]; then
+            dominant_scope="libqrencode"
           elif [ "$SCOPE_ZLIB" = "true" ]; then
             dominant_scope="zlib"
           elif [ "$SCOPE_BZIP2" = "true" ]; then
@@ -347,9 +365,15 @@ jobs:
             run_bot=true
             run_meta=true
             run_branding=true
+            run_cmark=true
+            run_tomlplusplus=true
+            run_libqrencode=true
           elif [ "$IS_SCHEDULE" = "true" ]; then
             run_schedule=true
           elif [ "$IS_SCHEDULE" != "true" ]; then
+            match '^cmark/' && run_cmark=true
+            match '^tomlplusplus/' && run_tomlplusplus=true
+            match '^libqrencode/' && run_libqrencode=true
             match '^zlib/' && run_zlib=true
             match '^bzip2/' && run_bzip2=true
             match '^quazip/' && run_quazip=true
@@ -378,6 +402,9 @@ jobs:
               run_bot=true
               run_meta=true
               run_branding=true
+              run_cmark=true
+              run_tomlplusplus=true
+              run_libqrencode=true
               should_test=true
               should_build=true
             fi
@@ -409,6 +436,9 @@ jobs:
               run_bot=$([ "$SCOPE_BOT" = "true" ] && echo true || echo false)
               run_meta=$([ "$SCOPE_META" = "true" ] && echo true || echo false)
               run_branding=$([ "$SCOPE_BRANDING" = "true" ] && echo true || echo false)
+              run_cmark=$([ "$SCOPE_CMARK" = "true" ] && echo true || echo false)
+              run_tomlplusplus=$([ "$SCOPE_TOMLPLUSPLUS" = "true" ] && echo true || echo false)
+              run_libqrencode=$([ "$SCOPE_LIBQRENCODE" = "true" ] && echo true || echo false)
             fi
           fi
 
@@ -422,6 +452,12 @@ jobs:
           if [ "$dominant_scope" = "none" ]; then
             if [ "$run_regular_build" = "true" ]; then
               dominant_scope="launcher"
+            elif [ "$run_cmark" = "true" ]; then
+              dominant_scope="cmark"
+            elif [ "$run_tomlplusplus" = "true" ]; then
+              dominant_scope="tomlplusplus"
+            elif [ "$run_libqrencode" = "true" ]; then
+              dominant_scope="libqrencode"
             elif [ "$run_zlib" = "true" ]; then
               dominant_scope="zlib"
             elif [ "$run_bzip2" = "true" ]; then
@@ -452,6 +488,9 @@ jobs:
           echo "run-meta=$run_meta" >> "$GITHUB_OUTPUT"
           echo "run-branding=$run_branding" >> "$GITHUB_OUTPUT"
           echo "run-schedule=$run_schedule" >> "$GITHUB_OUTPUT"
+          echo "run-cmark=$run_cmark" >> "$GITHUB_OUTPUT"
+          echo "run-tomlplusplus=$run_tomlplusplus" >> "$GITHUB_OUTPUT"
+          echo "run-libqrencode=$run_libqrencode" >> "$GITHUB_OUTPUT"
           echo "build-type=$build_type" >> "$GITHUB_OUTPUT"
           echo "run-release-build=$run_release_build" >> "$GITHUB_OUTPUT"
           echo "run-regular-build=$run_regular_build" >> "$GITHUB_OUTPUT"
@@ -3156,6 +3195,300 @@ jobs:
           pr-labels: |
             41.changelog:omit
 
+  # cmark CI tests
+  cmark-linter:
+    if: needs.prepare.outputs.run-cmark == 'true'
+    needs: [prepare]
+    defaults:
+      run:
+        working-directory: cmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get install -y clang-tidy
+      - name: lint with clang-tidy
+        run: |
+          make lint
+        env:
+          CC: clang
+          CXX: clang++
+
+  cmark-posix:
+    if: needs.prepare.outputs.run-cmark == 'true'
+    needs: [prepare]
+    defaults:
+      run:
+        working-directory: cmark
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, macos]
+        cc: [clang, gcc]
+        build_type: [shared, static]
+        sanitizers: ['', ASan]
+        include:
+          - os: 'linux'
+            image: 'ubuntu-latest'
+          - os: 'macos'
+            image: 'macos-latest'
+          - cc: 'clang'
+            cxx: 'clang++'
+          - cc: 'gcc'
+            cxx: 'g++'
+          - build_type: 'shared'
+            cmake_shared: 'YES'
+          - build_type: 'static'
+            cmake_shared: 'NO'
+          - sanitizers: 'ASan'
+            san_cflags: '-fsanitize=address,undefined -fno-sanitize-recover=all'
+          - sanitizers: 'ASan'
+            os: 'linux'
+            cc: 'gcc'
+            build_type: 'shared'
+            test_env: 'LD_PRELOAD=$(gcc -print-file-name=libasan.so)'
+          - sanitizers: 'ASan'
+            os: 'linux'
+            cc: 'clang'
+            build_type: 'shared'
+            asan_cflags: '-shared-libasan'
+            test_env: 'LD_PRELOAD=$(clang -print-file-name=libclang_rt.asan-x86_64.so)'
+          - sanitizers: 'ASan'
+            build_type: 'shared'
+            asan_opts: 'detect_leaks=0'
+          - sanitizers: 'ASan'
+            cc: 'gcc'
+            build_type: 'static'
+            asan_cflags: '-static-libasan'
+        exclude:
+          - os: 'macos'
+            cc: 'gcc'
+          - os: 'macos'
+            sanitizers: 'ASan'
+            build_type: 'shared'
+    runs-on: ${{ matrix.image }}
+    env:
+       ASAN_OPTIONS: ${{ matrix.asan_opts }}
+       CC: ${{ matrix.cc }}
+       CXX: ${{ matrix.cxx }}
+       CFLAGS: '${{ matrix.san_cflags }} ${{ matrix.asan_cflags }}'
+       CXXFLAGS: '${{ matrix.san_cflags }} ${{ matrix.asan_cflags }}'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build and test
+        run: |
+           cmake \
+              -DBUILD_SHARED_LIBS=${{ matrix.cmake_shared }} \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -S . -B build
+           cmake --build build
+           ${{ matrix.test_env }} ctest --test-dir build --output-on-failure
+
+  cmark-windows:
+    if: needs.prepare.outputs.run-cmark == 'true'
+    needs: [prepare]
+    defaults:
+      run:
+        working-directory: cmark
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [shared, static]
+        include:
+          - build_type: 'shared'
+            cmake_shared: 'YES'
+          - build_type: 'static'
+            cmake_shared: 'NO'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Build and test
+        run: |
+          cmake ^
+              -DBUILD_SHARED_LIBS=${{ matrix.cmake_shared }} ^
+              -DCMAKE_BUILD_TYPE=Debug ^
+              -S . -B build
+          cmake --build build
+          ctest --test-dir build -C Debug --output-on-failure
+        shell: cmd
+      - name: Upload artifact
+        if: ${{ matrix.build_type == 'static' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: cmark windows ${{ matrix.build_type }}
+          path: build/src/Debug/cmark.exe
+          if-no-files-found: error
+
+  # toml++ CI tests
+  tomlplusplus-linux:
+    if: needs.prepare.outputs.run-tomlplusplus == 'true'
+    needs: [prepare]
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [clang, gcc]
+        linker: [lld]
+        type: [debug, release]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: tomlplusplus
+    env:
+      clang_version: "14"
+      gcc_version: "11"
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install base dependencies
+        run: |
+          sudo apt -y update
+          sudo apt -y install --no-install-recommends git ninja-build libstdc++-${{ env.gcc_version }}-dev locales-all
+      - name: Install python dependencies
+        run: |
+          pip3 install --user --no-cache-dir --upgrade meson
+          pip3 install --user --no-cache-dir --upgrade -r tools/requirements.txt
+      - name: Check toml.hpp
+        run: |
+          cd tools
+          python3 ci_single_header_check.py
+      - name: Install lld
+        if: ${{ startsWith(matrix.linker, 'lld') }}
+        run: |
+          sudo apt -y install --no-install-recommends lld-${{ env.clang_version }}
+          sudo update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-${{ env.clang_version }} 1000
+      - name: Install clang
+        if: ${{ startsWith(matrix.compiler, 'clang') }}
+        run: |
+          sudo apt -y install --no-install-recommends clang-${{ env.clang_version }}
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-${{ env.clang_version }} 1000
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-${{ env.clang_version }} 1000
+      - name: Install gcc
+        if: ${{ startsWith(matrix.compiler, 'gcc') }}
+        run: |
+          sudo apt -y install --no-install-recommends gcc-${{ env.gcc_version }} g++-${{ env.gcc_version }}
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-${{ env.gcc_version }} 1000
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${{ env.gcc_version }} 1000
+      - name: Configure locales
+        run: |
+          sudo locale-gen 'en_US.utf8' 'ja_JP.utf8' 'de_DE.utf8' 'it_IT.utf8' 'tr_TR.utf8' 'fi_FI.utf8' 'fr_FR.utf8' 'zh_CN.utf8'
+      - name: Configure Meson
+        run: |
+          CXX=c++ CXX_LD=${{ matrix.linker }} meson setup build --buildtype=${{ matrix.type }} -Ddevel=true -Db_lto=false
+      - name: Build
+        run: meson compile -C build
+      - name: Test
+        run: meson test -C build --verbose
+
+  tomlplusplus-windows:
+    if: needs.prepare.outputs.run-tomlplusplus == 'true'
+    needs: [prepare]
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [debug, release]
+        permissive: [false, true]
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: cmd
+        working-directory: tomlplusplus
+    steps:
+      - name: Install dependencies
+        run: |
+          python3 -m pip install -U pip
+          pip3 install meson ninja
+      - uses: actions/checkout@v3
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Configure Meson
+        run: meson setup build --vsenv --buildtype=${{ matrix.type }} -Ddevel=true -Db_lto=false -Dpermissive=${{ matrix.permissive }}
+      - name: Build
+        run: meson compile -C build
+      - name: Test
+        run: meson test -C build --verbose
+
+  # libqrencode configure CI
+  libqrencode-configure:
+    if: needs.prepare.outputs.run-libqrencode == 'true'
+    needs: [prepare]
+    defaults:
+      run:
+        working-directory: libqrencode
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: generate configure script
+        run: ./autogen.sh
+      - name: configure
+        run: ./configure --with-tests
+      - name: make
+        run: make
+      - name: make check
+        run: make check
+      - name: make distcheck
+        run: make distcheck
+
+  # libqrencode cmake Windows CI
+  libqrencode-cmake-windows:
+    if: needs.prepare.outputs.run-libqrencode == 'true'
+    needs: [prepare]
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: libqrencode
+    env:
+      BUILD_TYPE: Release
+    steps:
+      - uses: actions/checkout@v2
+      - name: run vcpkg
+        uses: lukka/run-vcpkg@v3
+        with:
+          vcpkgArguments: getopt:x64-windows libiconv:x64-windows libpng:x64-windows
+          vcpkgDirectory: '${{ github.workspace }}/libqrencode/vcpkg'
+          vcpkgGitCommitId: 'fca18ba3572f8aebe3b8158c359db62a7e26134e'
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{runner.workspace}}/build
+      - name: Configure CMake
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: cmake $GITHUB_WORKSPACE/libqrencode -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DWITH_TESTS=yes
+      - name: Build
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE
+      - name: Test
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: ctest -C $BUILD_TYPE
+
+  # libqrencode cmake Linux CI
+  libqrencode-cmake-linux:
+    if: needs.prepare.outputs.run-libqrencode == 'true'
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libqrencode
+    env:
+      BUILD_TYPE: Release
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{runner.workspace}}/build
+      - name: Configure CMake
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: cmake $GITHUB_WORKSPACE/libqrencode -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_TESTS=yes -DBUILD_SHARED_LIBS=on
+      - name: Build
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE
+      - name: Test
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: ctest -C $BUILD_TYPE
+
   unlock:
     if: (needs.prepare.outputs.is-merge-group == 'true' || needs.prepare.outputs.is-pr == 'true') && always()
     # Modify this list to add or remove jobs from required status checks.
@@ -3174,6 +3507,9 @@ jobs:
           RUN_BOT: ${{ needs.prepare.outputs.run-bot }}
           RUN_META: ${{ needs.prepare.outputs.run-meta }}
           RUN_BRANDING: ${{ needs.prepare.outputs.run-branding }}
+          RUN_CMARK: ${{ needs.prepare.outputs.run-cmark }}
+          RUN_TOMLPLUSPLUS: ${{ needs.prepare.outputs.run-tomlplusplus }}
+          RUN_LIBQRENCODE: ${{ needs.prepare.outputs.run-libqrencode }}
           RUN_RELEASE_BUILD: ${{ needs.prepare.outputs.run-release-build }}
           RUN_REGULAR_BUILD: ${{ needs.prepare.outputs.run-regular-build }}
           SHOULD_BUILD: ${{ needs.prepare.outputs.should-build }}
@@ -3199,6 +3535,9 @@ jobs:
               bot: process.env.RUN_BOT === 'true',
               meta: process.env.RUN_META === 'true',
               branding: process.env.RUN_BRANDING === 'true',
+              cmark: process.env.RUN_CMARK === 'true',
+              tomlplusplus: process.env.RUN_TOMLPLUSPLUS === 'true',
+              libqrencode: process.env.RUN_LIBQRENCODE === 'true',
               release_build: process.env.RUN_RELEASE_BUILD === 'true',
               regular_build: process.env.RUN_REGULAR_BUILD === 'true',
               should_build: process.env.SHOULD_BUILD === 'true',

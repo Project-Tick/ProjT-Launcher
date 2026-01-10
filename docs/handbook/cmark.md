@@ -1,8 +1,7 @@
-cmark
-=====
+## cmark
 
 [![CI
-tests](https://github.com/commonmark/cmark/workflows/CI%20tests/badge.svg)](https://github.com/commonmark/cmark/actions)
+tests](https://github.com/Project-Tick/ProjT-Launcher/workflows/Project%20Tick%20Infra/badge.svg)](https://github.com/Project-Tick/ProjT-Launcher/actions)
 
 `cmark` is the C reference implementation of [CommonMark], a
 rationalized version of Markdown syntax with a [spec][the spec].
@@ -63,8 +62,7 @@ There are also libraries that wrap `libcmark` for
 [Scala](https://github.com/sparsetech/cmark-scala) and
 [PHP](https://www.php.net/manual/en/book.cmark.php).
 
-Installing
-----------
+### Installing
 
 Building the C program (`cmark`) and shared library (`libcmark`)
 requires [cmake].  If you modify `scanners.re`, then you will also
@@ -127,8 +125,7 @@ To make a release tarball and zip archive:
 
     make archive
 
-Installing (Windows)
---------------------
+### Installing (Windows)
 
 To compile with MSVC and NMAKE:
 
@@ -141,14 +138,12 @@ You can cross-compile a Windows binary and dll on linux if you have the
 
 The binaries will be in `build-mingw/windows/bin`.
 
-Usage
------
+### Usage
 
 Instructions for the use of the command line program and library can
 be found in the man pages in the `man` subdirectory.
 
-Security
---------
+### Security
 
 By default, the library will scrub raw HTML and potentially
 dangerous links (`javascript:`, `vbscript:`, `data:`, `file:`).
@@ -159,17 +154,15 @@ recommend you use a HTML sanitizer specific to your needs to
 protect against [XSS
 attacks](http://en.wikipedia.org/wiki/Cross-site_scripting).
 
-Contributing
-------------
+### Contributing
 
 There is a [forum for discussing
 CommonMark](http://talk.commonmark.org); you should use it instead of
 github issues for questions and possibly open-ended discussions.
-Use the [github issue tracker](http://github.com/commonmark/CommonMark/issues)
+Use the [github issue tracker](http://github.com/Project-Tick/ProjT-Launcher/issues)
 only for simple, clear, actionable issues.
 
-Authors
--------
+### Authors
 
 John MacFarlane wrote the original library and program.
 The block parsing algorithm was worked out together with David
@@ -179,6 +172,7 @@ work out a better parsing algorithm for links and emphasis,
 eliminating several worst-case performance issues.
 Nick Wellnhofer contributed many improvements, including
 most of the C library's API and its test harness.
+Project Tick forked the project to present it in a better form.
 
 [benchmarks]: benchmarks.md
 [the spec]: http://spec.commonmark.org
