@@ -77,8 +77,8 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
-    qt6Packages.qtbase
-    qt6Packages.qtnetworkauth
+    kdePackages.qtbase
+    kdePackages.qtnetworkauth
     kdePackages.qt5compat
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_14 ]
