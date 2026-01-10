@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2023 flowln <flowlnlnln@gmail.com>

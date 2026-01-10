@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -271,35 +271,30 @@ void LaunchProfile::applyProblemSeverity(ProblemSeverity severity)
 const QList<PatchProblem> LaunchProfile::getProblems() const
 {
     QList<PatchProblem> problems;
-    
+
     // Check for critical configuration issues
     if (m_mainClass.isEmpty() && m_appletClass.isEmpty()) {
-        problems.append({ProblemSeverity::Error, 
-                        QObject::tr("No main class or applet class specified")});
+        problems.append({ ProblemSeverity::Error, QObject::tr("No main class or applet class specified") });
     }
-    
+
     if (m_minecraftVersion.isEmpty()) {
-        problems.append({ProblemSeverity::Error,
-                        QObject::tr("Minecraft version is not specified")});
+        problems.append({ ProblemSeverity::Error, QObject::tr("Minecraft version is not specified") });
     }
-    
+
     if (m_minecraftArguments.isEmpty() && m_minecraftVersionType != "snapshot" && m_minecraftVersionType != "old_alpha") {
-        problems.append({ProblemSeverity::Warning,
-                        QObject::tr("No game arguments specified (may be intentional)")});
+        problems.append({ ProblemSeverity::Warning, QObject::tr("No game arguments specified (may be intentional)") });
     }
-    
+
     // Check for missing main jar
     if (!m_mainJar) {
-        problems.append({ProblemSeverity::Error,
-                        QObject::tr("Main jar file is missing")});
+        problems.append({ ProblemSeverity::Error, QObject::tr("Main jar file is missing") });
     }
-    
+
     // Check if there are any libraries at all
-    if (m_libraries.isEmpty() && m_minecraftVersionType != "old_alpha") {
-        problems.append({ProblemSeverity::Warning,
-                        QObject::tr("No libraries specified (unusual for modern Minecraft)")});
+    if (m_minecraftArguments.isEmpty() && m_minecraftVersionType != "snapshot" && m_minecraftVersionType != "old_alpha") {
+        problems.append({ ProblemSeverity::Warning, QObject::tr("No libraries specified (unusual for modern Minecraft)") });
     }
-    
+
     return problems;
 }
 
@@ -400,7 +395,7 @@ void LaunchProfile::getLibraryFiles(const RuntimeContext& runtimeContext,
                                     QStringList& jars,
                                     QStringList& nativeJars,
                                     const QString& overridePath,
-                                    const QString& tempPath) const
+                                    const QString& moddedJarSearchResultPath) const
 {
     QStringList native32, native64;
     jars.clear();
@@ -410,10 +405,11 @@ void LaunchProfile::getLibraryFiles(const RuntimeContext& runtimeContext,
     }
     // NOTE: order is important here, add main jar last to the lists
     if (m_mainJar) {
-        // FIXME: HACK!! jar modding is weird and unsystematic!
-        if (m_jarMods.size()) {
-            QDir tempDir(tempPath);
-            jars.append(tempDir.absoluteFilePath("minecraft.jar"));
+        // NOTE: If we have jar mods, we use the modified jar allocated by ModMinecraftJar step
+        //       The modified jar is expected to be named "minecraft.jar" in the search path.
+        if (m_jarMods.size() && !moddedJarSearchResultPath.isEmpty()) {
+            QDir moddedJarDir(moddedJarSearchResultPath);
+            jars.append(moddedJarDir.absoluteFilePath("minecraft.jar"));
         } else {
             m_mainJar->getApplicableFiles(runtimeContext, jars, nativeJars, native32, native64, overridePath);
         }

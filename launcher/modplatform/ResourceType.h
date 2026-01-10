@@ -19,9 +19,9 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-FileCopyrightText: 2023 Rachel Powers <508861+Ryex@users.noreply.github.com>
- * //
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
+ *
+ *
  *
  *
  *  Prism Launcher - Minecraft Launcher
@@ -57,7 +57,7 @@ enum class ResourceType { Mod, ResourcePack, ShaderPack, Modpack, DataPack, Worl
 
 namespace ResourceTypeUtils {
 static const std::set<ResourceType> VALID_RESOURCES = { ResourceType::DataPack,   ResourceType::ResourcePack, ResourceType::TexturePack,
-                                                       ResourceType::ShaderPack, ResourceType::World,        ResourceType::Mod };
+                                                        ResourceType::ShaderPack, ResourceType::World,        ResourceType::Mod };
 QString getName(ResourceType type);
 }  // namespace ResourceTypeUtils
 }  // namespace ModPlatform

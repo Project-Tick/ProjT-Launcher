@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -172,7 +172,8 @@ void PageContainer::refreshContainer()
         if (index.isValid()) {
             m_pageList->setCurrentIndex(index);
         } else {
-            // FIXME: unhandled corner case: what to do when there's no page to select?
+            // No page to select - show the empty state
+            showPage(-1);
         }
     }
 }

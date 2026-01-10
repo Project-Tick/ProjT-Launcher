@@ -7,10 +7,20 @@ Produces: docs/TODO_FIXME_REPORT.md
 """
 import os
 import re
+import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+# Use PWD to match user's shell location (avoids resolving symlinks to Trash/cloud storage)
+import os
+root_path_str = os.getenv('PWD') or os.getcwd()
+ROOT = Path(root_path_str)
 OUT = ROOT / "docs" / "TODO_FIXME_REPORT.md"
+
+# Ensure docs directory exists
+if not OUT.parent.exists():
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+
 PATTERN = re.compile(r"\b(TODO|FIXME)\b", re.IGNORECASE)
 
 def is_text_file(path: Path) -> bool:
@@ -30,48 +40,61 @@ def classify(text: str) -> str:
         'memory', 'security', 'validate', 'schema', 'generic', 'nuke', 'inefficient',
         'algorithm', 'thread', 'blocking', 'async', 'validate', 'jwt', 'schema', 'hack'
     ]
-    hints_trivial = ['typo', 'wrap', 'link', 'format', 'docs', 'documentation', 'spell', 'grammar']
+    hints_trivial = ['typo', 'wrap', 'link', 'format', 'docs', 'documentation', 'spell', 'grammar', 'rename', 'cleanup', 'whitespace']
     if any(h in t for h in hints_trivial):
         return 'trivial'
     if any(h in t for h in hints_complex):
         return 'complex'
-    # if contains words like 'should' or 'maybe' consider implementable
-    if 'should' in t or 'maybe' in t or 'add' in t or 'implement' in t or 'todo:' in t:
+    # Context-sensitive keyword matching for implementable items
+    implementable_keywords = ['should', 'maybe', 'add', 'implement', 'todo:', 'need', 'missing', 'want', 'consider', 'allow', 'support', 'fixme', 'refactor', 'update', 'remove', 'bug']
+    if any(k in t for k in implementable_keywords):
         return 'implementable'
     return 'unknown'
 
 def scan(root: Path):
     results = []
+    excluded_dirs = {'.git', 'build', 'node_modules', '.venv', 'venv', 
+                     'docs', 'memory-bank', 'cmark', 'tomlplusplus', 
+                     'libnbtplusplus', 'quazip', 'bzip2', 'zlib', '_deps'}
+    
     for p in root.rglob('*'):
+        # Skip if any parent directory is in the excluded list
+        if any(part in excluded_dirs for part in p.parts):
+            continue
+            
         if p.is_dir():
-            if p.name in ('.git', 'build', 'node_modules', '.venv', 'venv'):
-                continue
-        else:
-            if not is_text_file(p):
-                continue
+            continue
+
+        if p.suffix in {'.patch', '.diff'}:
+            continue
+            
+        if not is_text_file(p):
+            continue
+            
+        try:
+            text = p.read_text(encoding='utf-8')
+        except Exception:
             try:
-                text = p.read_text(encoding='utf-8')
+                text = p.read_text(encoding='latin-1')
             except Exception:
-                try:
-                    text = p.read_text(encoding='latin-1')
-                except Exception:
-                    continue
-            lines = text.splitlines()
-            for i, line in enumerate(lines, start=1):
-                if PATTERN.search(line):
-                    before = '\n'.join(lines[max(0, i-3):i-1])
-                    after = '\n'.join(lines[i:i+2])
-                    whole = '\n'.join(lines[max(0, i-3):min(len(lines), i+2)])
-                    tag = PATTERN.search(line).group(1)
-                    cls = classify(line + ' ' + whole)
-                    results.append({
-                        'path': str(p.relative_to(root)),
-                        'line': i,
-                        'tag': tag,
-                        'text': line.strip(),
-                        'context': whole,
-                        'classification': cls,
-                    })
+                continue
+                
+        lines = text.splitlines()
+        for i, line in enumerate(lines, start=1):
+            if PATTERN.search(line):
+                before = '\n'.join(lines[max(0, i-3):i-1])
+                after = '\n'.join(lines[i:i+2])
+                whole = '\n'.join(lines[max(0, i-3):min(len(lines), i+2)])
+                tag = PATTERN.search(line).group(1)
+                cls = classify(line + ' ' + whole)
+                results.append({
+                    'path': str(p.relative_to(root)),
+                    'line': i,
+                    'tag': tag,
+                    'text': line.strip(),
+                    'context': whole,
+                    'classification': cls,
+                })
     return results
 
 def generate_md(results):

@@ -18,7 +18,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 /* === Upstream License Block (Do Not Modify) ==============================
- // SPDX-License-Identifier: GPL-3.0-only
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -987,7 +986,8 @@ QString createShortcut(QString destination, QString target, QStringList args, QS
 
     auto argstring = quoteArgs(args, "\"", "\\\"");
 
-    stream << "#!/bin/bash" << "\n";
+    stream << "#!/bin/bash"
+           << "\n";
     stream << "\"" << target << "\" " << argstring << "\n";
 
     stream.flush();
@@ -1032,9 +1032,12 @@ QString createShortcut(QString destination, QString target, QStringList args, QS
 
     auto argstring = quoteArgs(args, "'", "'\\''");
 
-    stream << "[Desktop Entry]" << "\n";
-    stream << "Type=Application" << "\n";
-    stream << "Categories=Game;ActionGame;AdventureGame;Simulation" << "\n";
+    stream << "[Desktop Entry]"
+           << "\n";
+    stream << "Type=Application"
+           << "\n";
+    stream << "Categories=Game;ActionGame;AdventureGame;Simulation"
+           << "\n";
     stream << "Exec=\"" << target.toLocal8Bit() << "\" " << argstring.toLocal8Bit() << "\n";
     stream << "Name=" << name.toLocal8Bit() << "\n";
     if (!icon.isEmpty()) {

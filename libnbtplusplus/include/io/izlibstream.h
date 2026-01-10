@@ -20,20 +20,18 @@
 #ifndef IZLIBSTREAM_H_INCLUDED
 #define IZLIBSTREAM_H_INCLUDED
 
-#include "io/zlib_streambuf.h"
-#include <istream>
 #include <zlib.h>
+#include <istream>
+#include "io/zlib_streambuf.h"
 
-namespace zlib
-{
+namespace zlib {
 
 /**
  * @brief Stream buffer used by zlib::izlibstream
  * @sa izlibstream
  */
-class NBT_EXPORT inflate_streambuf : public zlib_streambuf
-{
-public:
+class NBT_EXPORT inflate_streambuf : public zlib_streambuf {
+   public:
     /**
      * @param input the istream to wrap
      * @param bufsize the size of the internal buffers
@@ -51,7 +49,7 @@ public:
     ///@return the wrapped istream
     std::istream& get_istr() const { return is; }
 
-private:
+   private:
     std::istream& is;
     bool stream_end;
 
@@ -71,23 +69,20 @@ private:
  * after the end of the compressed data.
  * @sa inflate_streambuf
  */
-class NBT_EXPORT izlibstream : public std::istream
-{
-public:
+class NBT_EXPORT izlibstream : public std::istream {
+   public:
     /**
      * @param input the istream to wrap
      * @param bufsize the size of the internal buffers
      */
-    explicit izlibstream(std::istream& input, size_t bufsize = 32768):
-        std::istream(&buf), buf(input, bufsize)
-    {}
+    explicit izlibstream(std::istream& input, size_t bufsize = 32768) : std::istream(&buf), buf(input, bufsize) {}
     ///@return the wrapped istream
     std::istream& get_istr() const { return buf.get_istr(); }
 
-private:
+   private:
     inflate_streambuf buf;
 };
 
-}
+}  // namespace zlib
 
-#endif // IZLIBSTREAM_H_INCLUDED
+#endif  // IZLIBSTREAM_H_INCLUDED

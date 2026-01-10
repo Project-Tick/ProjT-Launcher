@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2022 Jamie Mansfield <jmansfield@cadixdev.org>
@@ -394,12 +394,12 @@ bool CoreModFolderPage::shouldDisplay() const
         if (!version || !version->getComponent("net.minecraftforge") || !version->getComponent("net.minecraft"))
             return false;
         auto minecraftCmp = version->getComponent("net.minecraft");
-        
+
         // Core mods are only supported in legacy Forge (Minecraft 1.6.2 and earlier)
         // After 1.6.2, Forge moved to a different mod loading system
         if (!minecraftCmp->m_loaded)
             return false;
-            
+
         // Check if this is a legacy version (before 2013-06-25, which is Minecraft 1.6.2)
         // We keep the date check for robustness with unusual version strings
         return minecraftCmp->getReleaseDateTime() < g_VersionFilterData.legacyCutoffDate;

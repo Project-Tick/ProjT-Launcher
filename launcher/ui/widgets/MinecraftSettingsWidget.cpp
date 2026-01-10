@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2022 Jamie Mansfield <jmansfield@cadixdev.org>
@@ -506,7 +506,8 @@ void MinecraftSettingsWidget::openGlobalSettings()
 
     if (id == "javaPage")
         APPLICATION->ShowGlobalSettings(this, "java-settings");
-    else  // TODO select tab
+    else
+        // Default to minecraft-settings for all other tabs (General, Custom Commands, etc.)
         APPLICATION->ShowGlobalSettings(this, "minecraft-settings");
 }
 

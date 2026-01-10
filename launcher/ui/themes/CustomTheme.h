@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2024 Tayou <git@tayou.org>
@@ -58,11 +58,11 @@
 #pragma once
 
 #include <QFileInfo>
-#include "ITheme.h"
+#include "Theme.h"
 
-class CustomTheme : public ITheme {
+class CustomTheme : public Theme {
    public:
-    CustomTheme(ITheme* baseTheme, QFileInfo& file, bool isManifest);
+    CustomTheme(Theme* baseTheme, QFileInfo& file, bool isManifest);
     virtual ~CustomTheme() {}
 
     QString id() override;

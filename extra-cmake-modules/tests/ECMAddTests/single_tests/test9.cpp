@@ -6,4 +6,3 @@ int main()
     int var = TEST_DEF;
     return var == 1 ? 0 : 1;
 }
-

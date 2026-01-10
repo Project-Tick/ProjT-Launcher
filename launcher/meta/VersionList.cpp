@@ -97,14 +97,11 @@ QVariant VersionList::data(const QModelIndex& index, int role) const
         case VersionIdRole:
             return version->version();
         case ParentVersionRole: {
-            // FIXME: HACK: this should be generic and be replaced by something else. Anything that is a hard 'equals' dep is a 'parent
-            // uid'.
-            auto& reqs = version->requiredSet();
-            auto iter = std::find_if(reqs.begin(), reqs.end(), [](const Require& req) { return req.uid == "net.minecraft"; });
-            if (iter != reqs.end()) {
-                return (*iter).equalsVersion;
+            auto parent = version->parentVersion();
+            if (parent.isEmpty()) {
+                return QVariant();
             }
-            return QVariant();
+            return parent;
         }
         case TypeRole:
             return version->type();
@@ -128,7 +125,9 @@ QVariant VersionList::data(const QModelIndex& index, int role) const
             }
             return major;
         }
-        // LatestRole determination is now handled in VersionProxyModel
+        // LatestRole is handled by VersionProxyModel which has access to filter/sort context.
+        // Determining "latest" depends on version type filters which this model doesn't control.
+        // case LatestRole: return version == getLatestStable();
         default:
             return QVariant();
     }
@@ -200,7 +199,8 @@ void VersionList::setVersions(const QList<Version::Ptr>& versions)
         setupAddedVersion(i, m_versions.at(i));
     }
 
-    // FIXME: this is dumb, we have 'recommended' as part of the metadata already...
+    // Recommended version fallback: use first 'release' type if metadata doesn't specify
+    // This provides a sensible default when the meta server doesn't explicitly mark recommended
     auto recommendedIt =
         std::find_if(m_versions.constBegin(), m_versions.constEnd(), [](const Version::Ptr& ptr) { return ptr->type() == "release"; });
     m_recommended = recommendedIt == m_versions.constEnd() ? nullptr : *recommendedIt;
@@ -222,7 +222,7 @@ void VersionList::clearExternalRecommends()
     m_externalRecommendsVersions.clear();
 }
 
-// FIXME: this is dumb, we have 'recommended' as part of the metadata already...
+// Helper: Select better version when merging lists (prefers recommended, then newer release)
 static const Meta::Version::Ptr& getBetterVersion(const Meta::Version::Ptr& a, const Meta::Version::Ptr& b)
 {
     if (!a)
@@ -256,7 +256,8 @@ void VersionList::merge(const VersionList::Ptr& other)
         m_sha256 = other->m_sha256;
     }
 
-    // TODO: do not reset the whole model. maybe?
+    // Full model reset is used because version merging can affect sort order.
+    // Incremental updates would require tracking which rows changed and their new positions.
     beginResetModel();
     if (other->m_versions.isEmpty()) {
         qWarning() << "Empty list loaded ...";

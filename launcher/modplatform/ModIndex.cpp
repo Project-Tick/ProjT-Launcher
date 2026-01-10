@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
@@ -53,9 +53,8 @@ static const QMap<QString, IndexedVersionType::VersionType> s_indexed_version_ty
     { "alpha", IndexedVersionType::VersionType::Alpha }
 };
 
-static const QList<ModLoaderType> loaderList = { NeoForge, Forge, Cauldron,     LiteLoader, Quilt, Fabric,
-                                                 Babric,   BTA,   LegacyFabric, Ornithe,    Rift,
-                                                 Risugami, StationLoader, ModLoaderMP, Optifine };
+static const QList<ModLoaderType> loaderList = { NeoForge,     Forge,   Cauldron, LiteLoader, Quilt,         Fabric,      Babric,  BTA,
+                                                 LegacyFabric, Ornithe, Rift,     Risugami,   StationLoader, ModLoaderMP, Optifine };
 
 QList<ModLoaderType> modLoaderTypesToList(ModLoaderTypes flags)
 {

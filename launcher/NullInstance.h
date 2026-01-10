@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -84,7 +84,6 @@ class NullInstance : public BaseInstance {
     bool canExport() const override { return false; }
     bool canEdit() const override { return false; }
     bool canLaunch() const override { return false; }
-    void populateLaunchMenu(QMenu* menu) override {}
     QStringList verboseDescription(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin) override
     {
         QStringList out;

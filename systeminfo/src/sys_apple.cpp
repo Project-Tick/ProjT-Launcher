@@ -1,5 +1,6 @@
 #include "sys.h"
 
+#include <sys/sysctl.h>
 #include <sys/utsname.h>
 
 #include <QDebug>
@@ -15,8 +16,16 @@ Sys::KernelInfo Sys::getKernelInfo()
     out.kernelName = buf.sysname;
     QString release = out.kernelVersion = buf.release;
 
-    // TODO: figure out how to detect cursed-ness (macOS emulated on linux via mad hacks and so on)
+    char cpu_brand[256];
+    size_t cpu_brand_len = sizeof(cpu_brand);
     out.isCursed = false;
+    if (sysctlbyname("machdep.cpu.brand_string", &cpu_brand, &cpu_brand_len, NULL, 0) == 0) {
+        QString brand = QString::fromLatin1(cpu_brand);
+        if (brand.contains("QEMU", Qt::CaseInsensitive) || brand.contains("Virtual", Qt::CaseInsensitive) ||
+            brand.contains("VMware", Qt::CaseInsensitive)) {
+            out.isCursed = true;
+        }
+    }
 
     out.kernelMajor = 0;
     out.kernelMinor = 0;
@@ -36,8 +45,6 @@ Sys::KernelInfo Sys::getKernelInfo()
     }
     return out;
 }
-
-#include <sys/sysctl.h>
 
 uint64_t Sys::getSystemRam()
 {

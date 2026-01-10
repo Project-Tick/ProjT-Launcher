@@ -95,7 +95,8 @@ class Component : public QObject, public ProblemProvider {
     bool isKnownModloader();
     QStringList knownConflictingComponents();
 
-    // DEPRECATED: explicit numeric order values, used for loading old non-component config. TODO: refactor and move to migration code
+    // DEPRECATED: explicit numeric order values, used for loading old non-component config.
+    // NOTE: Kept for legacy migration support.
     void setOrder(int order);
     int getOrder();
 
@@ -158,7 +159,8 @@ class Component : public QObject, public ProblemProvider {
     bool m_cachedVolatile = false;
     // END: persistent component list properties
 
-    // DEPRECATED: explicit numeric order values, used for loading old non-component config. TODO: refactor and move to migration code
+    // DEPRECATED: explicit numeric order values, used for loading old non-component config.
+    // NOTE: Kept for legacy migration support.
     bool m_orderOverride = false;
     int m_order = 0;
 

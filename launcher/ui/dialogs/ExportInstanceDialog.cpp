@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -63,10 +63,10 @@
 #include <QFileDialog>
 #include <QFileSystemModel>
 #include <QMessageBox>
-#include "ui/widgets/FileIgnoreProxy.h"
 #include "QObjectPtr.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/ProgressDialog.h"
+#include "ui/widgets/FileIgnoreProxy.h"
 #include "ui_ExportInstanceDialog.h"
 
 #include <FileSystem.h>

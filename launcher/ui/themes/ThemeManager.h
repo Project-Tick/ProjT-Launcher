@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2024 Tayou <git@tayou.org>
@@ -47,14 +47,12 @@
 
 #include "IconTheme.h"
 #include "ui/themes/CatPack.h"
-#include "ui/themes/ITheme.h"
+#include "ui/themes/Theme.h"
 
-inline auto themeDebugLog()
-{
+inline auto themeDebugLog() {
     return qDebug() << "[Theme]";
 }
-inline auto themeWarningLog()
-{
+inline auto themeWarningLog() {
     return qWarning() << "[Theme]";
 }
 
@@ -64,7 +62,7 @@ class ThemeManager {
     ~ThemeManager();
 
     QList<IconTheme*> getValidIconThemes();
-    QList<ITheme*> getValidApplicationThemes();
+    QList<Theme*> getValidApplicationThemes();
     bool isValidIconTheme(const QString& id);
     bool isValidApplicationTheme(const QString& id);
     QDir getIconThemesFolder();
@@ -85,11 +83,11 @@ class ThemeManager {
     void refresh();
 
    private:
-    std::map<QString, std::unique_ptr<ITheme>> m_themes;
+    std::map<QString, std::unique_ptr<Theme>> m_themes;
     std::map<QString, IconTheme> m_icons;
-    QDir m_iconThemeFolder{ "iconthemes" };
-    QDir m_applicationThemeFolder{ "themes" };
-    QDir m_catPacksFolder{ "catpacks" };
+    QDir m_iconThemeFolder{"iconthemes"};
+    QDir m_applicationThemeFolder{"themes"};
+    QDir m_catPacksFolder{"catpacks"};
     std::map<QString, std::unique_ptr<CatPack>> m_catPacks;
     QPalette m_defaultPalette;
     QString m_defaultStyle;
@@ -97,8 +95,8 @@ class ThemeManager {
 
     void initializeThemes();
     void initializeCatPacks();
-    QString addTheme(std::unique_ptr<ITheme> theme);
-    ITheme* getTheme(QString themeId);
+    QString addTheme(std::unique_ptr<Theme> theme);
+    Theme* getTheme(QString themeId);
     QString addIconTheme(IconTheme theme);
     QString addCatPack(std::unique_ptr<CatPack> catPack);
     void initializeIcons();
@@ -115,6 +113,6 @@ class ThemeManager {
     NSObject* m_windowTitlebarObserver = nullptr;
 #endif
 
-    const QStringList builtinIcons{ "pe_colored", "pe_light", "pe_dark", "pe_blue",    "breeze_light", "breeze_dark",
-                                    "OSX",        "iOS",      "flat",    "flat_white", "multimc" };
+    const QStringList builtinIcons{"pe_colored", "pe_light", "pe_dark", "pe_blue",    "breeze_light", "breeze_dark",
+                                   "OSX",        "iOS",      "flat",    "flat_white", "multimc"};
 };

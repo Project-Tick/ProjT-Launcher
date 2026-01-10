@@ -56,8 +56,7 @@ void probeProcCpuinfo(QStringList& log)
 
 void runLspci(QStringList& log)
 {
-    // FIXME: fixed size buffers...
-    char buff[512];
+    std::string line;
     int gpuline = -1;
     int cline = 0;
     FILE* lspci = popen("lspci -k", "r");
@@ -65,21 +64,24 @@ void runLspci(QStringList& log)
     if (!lspci)
         return;
 
-    while (fgets(buff, 512, lspci) != NULL) {
-        std::string str(buff);
-        if (str.length() < 9)
+    char* lineptr = nullptr;
+    size_t n = 0;
+    while (getline(&lineptr, &n, lspci) != -1) {
+        line = lineptr;
+        if (line.length() < 9)
             continue;
-        if (str.substr(8, 3) == "VGA") {
+        if (line.substr(8, 3) == "VGA") {
             gpuline = cline;
-            log << QString::fromStdString(str.substr(35, std::string::npos));
+            log << QString::fromStdString(line.substr(35, std::string::npos));
         }
         if (gpuline > -1 && gpuline != cline) {
             if (cline - gpuline < 3) {
-                log << QString::fromStdString(str.substr(1, std::string::npos));
+                log << QString::fromStdString(line.substr(1, std::string::npos));
             }
         }
         cline++;
     }
+    free(lineptr);
     pclose(lspci);
 }
 #elif defined(Q_OS_FREEBSD)
@@ -116,18 +118,19 @@ void runPciconf(QStringList& log)
 #endif
 void runGlxinfo(QStringList& log)
 {
-    // FIXME: fixed size buffers...
-    char buff[512];
     FILE* glxinfo = popen("glxinfo", "r");
     if (!glxinfo)
         return;
 
-    while (fgets(buff, 512, glxinfo) != NULL) {
-        if (strncmp(buff, "OpenGL version string:", 22) == 0) {
-            log << QString::fromUtf8(buff);
+    char* lineptr = nullptr;
+    size_t n = 0;
+    while (getline(&lineptr, &n, glxinfo) != -1) {
+        if (strncmp(lineptr, "OpenGL version string:", 22) == 0) {
+            log << QString::fromUtf8(lineptr);
             break;
         }
     }
+    free(lineptr);
     pclose(glxinfo);
 }
 

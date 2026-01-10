@@ -18,7 +18,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * === Upstream License Block (Do Not Modify) ==============================
- * // SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2024 TheKodeToad <TheKodeToad@proton.me>

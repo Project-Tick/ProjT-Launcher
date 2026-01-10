@@ -22,18 +22,16 @@
 
 #include "tagfwd.h"
 
-namespace nbt
-{
+namespace nbt {
 
 /**
  * @brief Base class for visitors of tags
  *
  * Implementing the Visitor pattern
  */
-class nbt_visitor
-{
-public:
-    virtual ~nbt_visitor() noexcept = 0; //Abstract class
+class nbt_visitor {
+   public:
+    virtual ~nbt_visitor() noexcept = 0;  // Abstract class
 
     virtual void visit(tag_byte&) {}
     virtual void visit(tag_short&) {}
@@ -54,10 +52,9 @@ public:
  *
  * Implementing the Visitor pattern
  */
-class const_nbt_visitor
-{
-public:
-    virtual ~const_nbt_visitor() noexcept = 0; //Abstract class
+class const_nbt_visitor {
+   public:
+    virtual ~const_nbt_visitor() noexcept = 0;  // Abstract class
 
     virtual void visit(const tag_byte&) {}
     virtual void visit(const tag_short&) {}
@@ -77,6 +74,6 @@ inline nbt_visitor::~nbt_visitor() noexcept {}
 
 inline const_nbt_visitor::~const_nbt_visitor() noexcept {}
 
-}
+}  // namespace nbt
 
-#endif // NBT_VISITOR_H_INCLUDED
+#endif  // NBT_VISITOR_H_INCLUDED

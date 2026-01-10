@@ -9,12 +9,11 @@
 
 #include <QtQml/QQmlExtensionPlugin>
 
-class QmlModule : public QQmlExtensionPlugin
-{
+class QmlModule : public QQmlExtensionPlugin {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
 
-public:
+   public:
     void registerTypes(const char* uri) override;
 };
 

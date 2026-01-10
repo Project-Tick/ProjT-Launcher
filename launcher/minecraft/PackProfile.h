@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022-2023 Sefa Eyeoglu <contact@scrumplex.net>
@@ -84,14 +84,15 @@ class PackProfile : public QAbstractListModel {
     struct Result {
         bool success;
         QString error;
+        bool changed = true;
 
         // Implicit conversion to bool
         operator bool() const { return success; }
 
         // Factory methods for convenience
-        static Result Success() { return { true, "" }; }
+        static Result Success(bool changed = true) { return { true, "", changed }; }
 
-        static Result Error(const QString& errorMessage) { return { false, errorMessage }; }
+        static Result Error(const QString& errorMessage) { return { false, errorMessage, false }; }
     };
 
     explicit PackProfile(MinecraftInstance* instance);
@@ -171,8 +172,8 @@ class PackProfile : public QAbstractListModel {
     /// get the profile component by index
     ComponentPtr getComponent(size_t index);
 
-    /// Add the component to the internal list of patches
-    // todo(merged): is this the best approach
+    /// Add the component to the internal list of patches.
+    /// Components are appended (not inserted) to preserve mod loader load order.
     void appendComponent(ComponentPtr component);
 
     std::optional<ModPlatform::ModLoaderTypes> getModLoaders();

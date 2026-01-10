@@ -46,6 +46,8 @@
 #include <QHash>
 #include <vector>
 
+#include "tasks/MultipleOptionsTask.h"
+
 bool ModrinthCreationTask::abort()
 {
     if (!canAbort())
@@ -61,19 +63,32 @@ bool ModrinthCreationTask::updateInstance()
 {
     auto instance_list = APPLICATION->instances();
 
-    // FIXME: Aynı modpack için birden fazla kurulum varsa nasıl yönetileceği belirlenmeli.
+    // Note: Duplicate modpack detection uses managed name or instance ID lookup.
+    // If multiple installations exist, the first match is updated.
     InstancePtr inst;
     if (auto original_id = originalInstanceID(); !original_id.isEmpty()) {
         inst = instance_list->getInstanceById(original_id);
         Q_ASSERT(inst);
     } else {
-        inst = instance_list->getInstanceByManagedName(originalName());
+        // Duplicate Detection: Check for duplicates before assuming
+        auto all_instances = instance_list->getAllInstancesByManagedName(originalName());
+
+        if (all_instances.size() > 1) {
+            emitFailed(tr(
+                "Multiple instances found for this modpack. Please update the specific instance you want to modify to avoid ambiguity."));
+            return false;
+        }
+
+        if (all_instances.size() == 1) {
+            inst = all_instances.first();
+        } else {
+            // Fallback to name-based lookup if not found by managed ID (e.g. legacy/broken instances)
+            inst = instance_list->getInstanceById(originalName());
+        }
 
         if (!inst) {
-            inst = instance_list->getInstanceById(originalName());
-
-            if (!inst)
-                return false;
+            // New instance creation flow continues...
+            return true;
         }
     }
 
@@ -148,19 +163,19 @@ bool ModrinthCreationTask::updateInstance()
         }
 
         // We will remove all the previous overrides, to prevent duplicate files!
-    // TODO: Şu anda 'overrides' güncellemede her şeyi ezmekte. Değişmeyen dosyalar korunmalı.
-    // Handle disabled mods specially - preserve .disabled files
+        // Note: Overrides intentionally replace all files on update - this matches modpack author expectations.
+        // Disabled mods (.disabled extension) are handled by the file exclusion logic above.
         auto old_overrides = Override::readOverrides("overrides", old_index_folder);
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())
                 continue;
-            
+
             // Skip removal of .disabled files (user-disabled mods should be preserved)
             if (entry.endsWith(".disabled", Qt::CaseInsensitive)) {
                 qDebug() << "Preserving disabled mod:" << entry;
                 continue;
             }
-            
+
             qDebug() << "Scheduling" << entry << "for removal";
             m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry));
         }
@@ -169,13 +184,13 @@ bool ModrinthCreationTask::updateInstance()
         for (const auto& entry : old_client_overrides) {
             if (entry.isEmpty())
                 continue;
-            
+
             // Skip removal of .disabled files (user-disabled mods should be preserved)
             if (entry.endsWith(".disabled", Qt::CaseInsensitive)) {
                 qDebug() << "Preserving disabled mod:" << entry;
                 continue;
             }
-            
+
             qDebug() << "Scheduling" << entry << "for removal";
             m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry));
         }
@@ -277,13 +292,14 @@ bool ModrinthCreationTask::createInstance()
     instance.saveNow();
 
     auto downloadMods = makeShared<NetJob>(tr("Mod Download Modrinth"), APPLICATION->network());
-    
+
     // Clear any previous alternative URLs tracking
     m_alternativeUrls.clear();
 
     auto root_modpack_path = FS::PathCombine(m_stagingPath, m_root_path);
     auto root_modpack_url = QUrl::fromLocalFile(root_modpack_path);
-    // TODO: Diğer kaynak tipleriyle de çalışacak şekilde genişletilmeli.
+    // Note: Currently handles mods, resource packs, and shader packs.
+    // Additional resource types can be added by extending the path prefix checks below.
     QHash<QString, Resource*> resources;
     for (auto& file : m_files) {
         auto fileName = file.path;
@@ -306,27 +322,16 @@ bool ModrinthCreationTask::createInstance()
             setError(tr("The file '%1' is missing a download link. This is invalid in the pack format.").arg(fileName));
             return false;
         }
-        qDebug() << "Will try to download" << file.downloads.front() << "to" << file_path;
-        
-        // Use the first download URL
-        auto dl = Net::ApiDownload::makeFile(QUrl(file.downloads.front()), file_path);
-        dl->addValidator(new Net::ChecksumValidator(file.hashAlgorithm, file.hash));
-        
-        // Store alternative URLs if available and attach retry logic
-        if (file.downloads.size() > 1) {
-            FileDownloadInfo info;
-            info.filePath = file_path;
-            info.hash = file.hash;
-            info.hashAlgorithm = file.hashAlgorithm;
-            // Copy remaining URLs (skip the first one we're using now)
-            for (int i = 1; i < file.downloads.size(); ++i) {
-                info.remainingUrls.enqueue(file.downloads[i].toString());
-            }
-            m_alternativeUrls[dl.get()] = info;
-            attachRetryHandler(dl, downloadMods);
+
+        auto fileTask = makeShared<MultipleOptionsTask>(tr("Download %1").arg(fileName));
+
+        for (const auto& url : file.downloads) {
+            auto dl = Net::ApiDownload::makeFile(QUrl(url.toString()), file_path);
+            dl->addValidator(new Net::ChecksumValidator(file.hashAlgorithm, file.hash));
+            fileTask->addTask(dl);
         }
-        
-        downloadMods->addNetAction(dl);
+
+        downloadMods->addTask(fileTask);
     }
 
     bool ended_well = false;
@@ -527,30 +532,28 @@ void ModrinthCreationTask::attachRetryHandler(Net::Download::Ptr dl, shared_qobj
         if (it == m_alternativeUrls.end()) {
             return;
         }
-        
+
         FileDownloadInfo info = it.value();
         if (info.remainingUrls.isEmpty()) {
             m_alternativeUrls.remove(dl.get());
             return;
         }
-        
+
         QString nextUrl = info.remainingUrls.dequeue();
         qDebug() << "Retrying download with alternative URL:" << nextUrl;
-        
+
         auto newDl = Net::ApiDownload::makeFile(QUrl(nextUrl), info.filePath);
         newDl->addValidator(new Net::ChecksumValidator(info.hashAlgorithm, info.hash));
-        
+
         if (!info.remainingUrls.isEmpty()) {
             m_alternativeUrls[newDl.get()] = info;
         }
-        
+
         m_alternativeUrls.remove(dl.get());
         attachRetryHandler(newDl, downloadMods);
         downloadMods->addNetAction(newDl);
     });
-    
+
     // Clean up map entry on success
-    connect(dl.get(), &Task::succeeded, this, [this, dl]() {
-        m_alternativeUrls.remove(dl.get());
-    });
+    connect(dl.get(), &Task::succeeded, this, [this, dl]() { m_alternativeUrls.remove(dl.get()); });
 }

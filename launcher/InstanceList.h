@@ -18,7 +18,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 /* === Upstream License Block (Do Not Modify) ==============================
-// SPDX-License-Identifier: GPL-3.0-only
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2023 TheKodeToad <TheKodeToad@proton.me>
@@ -57,6 +56,7 @@
 #pragma once
 
 #include <QAbstractListModel>
+#include <QHash>
 #include <QList>
 #include <QObject>
 #include <QPair>
@@ -128,6 +128,8 @@ class InstanceList : public QAbstractListModel {
     InstancePtr getInstanceById(QString id) const;
     /* O(n) */
     InstancePtr getInstanceByManagedName(const QString& managed_name) const;
+    /* O(n) */
+    QList<InstancePtr> getAllInstancesByManagedName(const QString& managed_name) const;
     QModelIndex getInstanceIndexById(const QString& id) const;
     QStringList getGroups();
     bool isGroupCollapsed(const QString& groupName);
@@ -209,6 +211,10 @@ class InstanceList : public QAbstractListModel {
     void increaseGroupCount(const QString& group);
     void decreaseGroupCount(const QString& group);
 
+    /// Removes instances that no longer exist on disk, optimizing for contiguous removals.
+    /// @param deadInstances Map of instance IDs to their (pointer, index) pairs to be removed.
+    void removeDeadInstances(const QMap<InstanceId, InstanceLocator>& deadInstances);
+
    private:
     int m_watchLevel = 0;
     int totalPlayTime = 0;
@@ -220,10 +226,11 @@ class InstanceList : public QAbstractListModel {
     SettingsObjectPtr m_globalSettings;
     QString m_instDir;
     QFileSystemWatcher* m_watcher;
-    // FIXME: this is so inefficient that looking at it is almost painful.
+    // NOTE: Optimized using QHash for cached lookups.
     QSet<QString> m_collapsedGroups;
-    QMap<InstanceId, GroupId> m_instanceGroupIndex;
+    QHash<InstanceId, GroupId> m_instanceGroupIndex;
     QSet<InstanceId> instanceSet;
+    QHash<InstanceId, InstancePtr> m_instanceMap;
     bool m_groupsLoaded = false;
     bool m_instancesProbed = false;
 

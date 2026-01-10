@@ -18,7 +18,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 /* === Upstream License Block (Do Not Modify) ==============================
-// SPDX-License-Identifier: GPL-3.0-only
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -295,7 +294,9 @@ void InstanceList::setInstanceGroup(const InstanceId& id, GroupId name)
 
 QStringList InstanceList::getGroups()
 {
-    return m_groupNameCache.keys();
+    QStringList keys = m_groupNameCache.keys();
+    keys.sort();
+    return keys;
 }
 
 void InstanceList::deleteGroup(const GroupId& name)
@@ -540,41 +541,9 @@ InstanceList::InstListError InstanceList::loadList()
         }
     }
 
-    // TODO: looks like a general algorithm with a few specifics inserted. Do something about it.
+    // Remove instances that no longer exist on disk
     if (!existingIds.isEmpty()) {
-        // get the list of removed instances and sort it by their original index, from last to first
-        auto deadList = existingIds.values();
-        auto orderSortPredicate = [](const InstanceLocator& a, const InstanceLocator& b) -> bool { return a.second > b.second; };
-        std::sort(deadList.begin(), deadList.end(), orderSortPredicate);
-        // remove the contiguous ranges of rows
-        int front_bookmark = -1;
-        int back_bookmark = -1;
-        int currentItem = -1;
-        auto removeNow = [this, &front_bookmark, &back_bookmark, &currentItem]() {
-            beginRemoveRows(QModelIndex(), front_bookmark, back_bookmark);
-            m_instances.erase(m_instances.begin() + front_bookmark, m_instances.begin() + back_bookmark + 1);
-            endRemoveRows();
-            front_bookmark = -1;
-            back_bookmark = currentItem;
-        };
-        for (auto& removedItem : deadList) {
-            auto instPtr = removedItem.first;
-            instPtr->invalidate();
-            currentItem = removedItem.second;
-            if (back_bookmark == -1) {
-                // no bookmark yet
-                back_bookmark = currentItem;
-            } else if (currentItem == front_bookmark - 1) {
-                // part of contiguous sequence, continue
-            } else {
-                // seam between previous and current item
-                removeNow();
-            }
-            front_bookmark = currentItem;
-        }
-        if (back_bookmark != -1) {
-            removeNow();
-        }
+        removeDeadInstances(existingIds);
     }
     if (newList.size()) {
         add(newList);
@@ -582,6 +551,63 @@ InstanceList::InstListError InstanceList::loadList()
     m_dirty = false;
     updateTotalPlayTime();
     return NoError;
+}
+
+void InstanceList::removeDeadInstances(const QMap<InstanceId, InstanceLocator>& deadInstances)
+{
+    if (deadInstances.isEmpty()) {
+        return;
+    }
+
+    // Sort by original index (descending) to remove from back to front
+    auto deadList = deadInstances.values();
+    auto orderSortPredicate = [](const InstanceLocator& a, const InstanceLocator& b) -> bool { return a.second > b.second; };
+    std::sort(deadList.begin(), deadList.end(), orderSortPredicate);
+
+    // Remove contiguous ranges efficiently with batch operations
+    int front_bookmark = -1;
+    int back_bookmark = -1;
+    int currentItem = -1;
+
+    auto removeNow = [this, &front_bookmark, &back_bookmark, &currentItem]() {
+        beginRemoveRows(QModelIndex(), front_bookmark, back_bookmark);
+        m_instances.erase(m_instances.begin() + front_bookmark, m_instances.begin() + back_bookmark + 1);
+        endRemoveRows();
+        front_bookmark = -1;
+        back_bookmark = currentItem;
+    };
+
+    for (auto& removedItem : deadList) {
+        auto instPtr = removedItem.first;
+        m_instanceMap.remove(instPtr->id());
+        instPtr->invalidate();
+        currentItem = removedItem.second;
+
+        if (back_bookmark == -1) {
+            back_bookmark = currentItem;
+        } else if (currentItem == front_bookmark - 1) {
+            // Part of contiguous sequence, continue
+        } else {
+            // Seam between previous and current item
+            removeNow();
+        }
+        front_bookmark = currentItem;
+    }
+
+    if (back_bookmark != -1) {
+        removeNow();
+    }
+}
+
+QList<InstancePtr> InstanceList::getAllInstancesByManagedName(const QString& managed_name) const
+{
+    QList<InstancePtr> result;
+    for (auto instance : m_instances) {
+        if (instance->getManagedPackID() == managed_name) {
+            result.append(instance);
+        }
+    }
+    return result;
 }
 
 void InstanceList::updateTotalPlayTime()
@@ -604,6 +630,7 @@ void InstanceList::add(const QList<InstancePtr>& t)
     beginInsertRows(QModelIndex(), m_instances.count(), m_instances.count() + t.size() - 1);
     m_instances.append(t);
     for (auto& ptr : t) {
+        m_instanceMap.insert(ptr->id(), ptr);
         connect(ptr.get(), &BaseInstance::propertiesChanged, this, &InstanceList::propertiesChanged);
     }
     endInsertRows();
@@ -638,12 +665,7 @@ InstancePtr InstanceList::getInstanceById(QString instId) const
 {
     if (instId.isEmpty())
         return InstancePtr();
-    for (auto& inst : m_instances) {
-        if (inst->id() == instId) {
-            return inst;
-        }
-    }
-    return InstancePtr();
+    return m_instanceMap.value(instId);
 }
 
 InstancePtr InstanceList::getInstanceByManagedName(const QString& managed_name) const
@@ -955,22 +977,21 @@ class InstanceStaging : public Task {
 
     virtual ~InstanceStaging() {}
 
+    // Abort can now stop both the child task and any pending retries
     bool abort() override
     {
-        if (!canAbort())
-            return false;
+        m_aborted = true;
+        m_backoffTimer.stop();
 
-        // Stop retry timer if it's running
-        if (m_backoffTimer.isActive()) {
-            m_backoffTimer.stop();
-            m_parent->destroyStagingPath(m_stagingPath);
+        if (m_child && m_child->canAbort()) {
+            m_child->abort();
         }
 
-        m_child->abort();
+        m_parent->destroyStagingPath(m_stagingPath);
 
         return Task::abort();
     }
-    bool canAbort() const override { return (m_child && m_child->canAbort()) || m_backoffTimer.isActive(); }
+    bool canAbort() const override { return true; }  // Always allow abort, even during retries
 
    protected:
     virtual void executeTask() override
@@ -1023,6 +1044,7 @@ class InstanceStaging : public Task {
     QString m_stagingPath;
     unique_qobject_ptr<InstanceTask> m_child;
     QTimer m_backoffTimer;
+    bool m_aborted = false;  // Flag to track abort during backoff retries
 };
 
 Task* InstanceList::wrapInstanceTask(InstanceTask* task)

@@ -19,9 +19,9 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-FileCopyrightText: 2023 flowln <flowlnlnln@gmail.com>
- * //
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
+ *
+ *
  *
  * ======================================================================== */
 
@@ -130,9 +130,8 @@ class GenericManagedPackPage final : public ManagedPackPage {
     {}
     ~GenericManagedPackPage() override = default;
 
-    // Show basic information about the instance
-    bool shouldDisplay() const override { return true; };
-    QString displayName() const override { return tr("Instance Info"); }
+    // NOTE: Hidden page, reserved for future use.
+    bool shouldDisplay() const override { return false; };
 };
 
 class ModrinthManagedPackPage final : public ManagedPackPage {

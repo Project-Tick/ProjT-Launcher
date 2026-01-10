@@ -154,7 +154,9 @@ def main():
     )
     r.raise_for_status()
     promotions_json = r.json()
-    assert type(promotions_json) == dict
+    promotions_json = r.json()
+    if not isinstance(promotions_json, dict) or "promos" not in promotions_json or not isinstance(promotions_json["promos"], dict):
+        raise ValueError("Invalid promotions_slim.json format: expected a dict with 'promos' object")
 
     promoted_key_expression = re.compile(
         "(?P<mc>[^-]+)-(?P<promotion>(latest)|(recommended))(-(?P<branch>[a-zA-Z0-9\\.]+))?"
@@ -164,7 +166,6 @@ def main():
 
     new_index = DerivedForgeIndex()
 
-    # FIXME: does not fully validate that the file has not changed format
     # NOTE: For some insane reason, the format of the versions here is special. It having a branch at the end means it
     #           affects that particular branch.
     #       We don't care about Forge having branches.

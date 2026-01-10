@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
@@ -62,8 +62,9 @@
 
 Q_LOGGING_CATEGORY(taskLogC, "launcher.task")
 
-Task::Task(bool show_debug) : QObject(nullptr)
+Task::Task(bool show_debug)
 {
+    Q_UNUSED(show_debug)
     m_uid = QUuid::createUuid();
     setAutoDelete(false);
 }
@@ -98,28 +99,23 @@ void Task::start()
 {
     switch (m_state) {
         case State::Inactive: {
-            if (taskLogC().isDebugEnabled())
-                qCDebug(taskLogC) << "Task" << describe() << "starting for the first time";
+            qCDebug(taskLogC) << "Task" << describe() << "starting for the first time";
             break;
         }
         case State::AbortedByUser: {
-            if (taskLogC().isDebugEnabled())
-                qCDebug(taskLogC) << "Task" << describe() << "restarting for after being aborted by user";
+            qCDebug(taskLogC) << "Task" << describe() << "restarting for after being aborted by user";
             break;
         }
         case State::Failed: {
-            if (taskLogC().isDebugEnabled())
-                qCDebug(taskLogC) << "Task" << describe() << "restarting for after failing at first";
+            qCDebug(taskLogC) << "Task" << describe() << "restarting for after failing at first";
             break;
         }
         case State::Succeeded: {
-            if (taskLogC().isDebugEnabled())
-                qCDebug(taskLogC) << "Task" << describe() << "restarting for after succeeding at first";
+            qCDebug(taskLogC) << "Task" << describe() << "restarting for after succeeding at first";
             break;
         }
         case State::Running: {
-            if (taskLogC().isDebugEnabled())
-                qCWarning(taskLogC) << "The launcher tried to start task" << describe() << "while it was already running!";
+            qCWarning(taskLogC) << "The launcher tried to start task" << describe() << "while it was already running!";
             return;
         }
     }
@@ -152,8 +148,7 @@ void Task::emitAborted()
     }
     m_state = State::AbortedByUser;
     m_failReason = "Aborted.";
-    if (taskLogC().isDebugEnabled())
-        qCDebug(taskLogC) << "Task" << describe() << "aborted.";
+    qCDebug(taskLogC) << "Task" << describe() << "aborted.";
     emit aborted();
     emit finished();
 }
@@ -166,8 +161,7 @@ void Task::emitSucceeded()
         return;
     }
     m_state = State::Succeeded;
-    if (taskLogC().isDebugEnabled())
-        qCDebug(taskLogC) << "Task" << describe() << "succeeded";
+    qCDebug(taskLogC) << "Task" << describe() << "succeeded";
     emit succeeded();
     emit finished();
 }

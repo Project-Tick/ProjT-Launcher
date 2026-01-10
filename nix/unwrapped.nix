@@ -2,17 +2,14 @@
   lib,
   stdenv,
   cmake,
-  cmark,
   apple-sdk_14,
   extra-cmake-modules,
   gamemode,
   jdk17,
   kdePackages,
-  qrencode,
   ninja,
   self,
   stripJavaArchivesHook,
-  tomlplusplus,
   msaClientID ? null,
   gamemodeSupport ? stdenv.hostPlatform.isLinux,
 }:
@@ -47,26 +44,51 @@ stdenv.mkDerivation {
     root = ../.;
     fileset = lib.fileset.unions [
       ../CMakeLists.txt
+      ../CMakePresets.json
       ../COPYING.md
-      ../libnbtplusplus
+      ../LICENSE
+      ../bot
       ../buildconfig
+      ../bzip2
+      ../caches
+      ../ci
       ../cmake
-      ../javacheck
-      ../LocalPeer
+      ../cmark
+      ../docs
+      ../extra-cmake-modules
+      ../flatpak
+      ../fuzz
       ../gamemode
+      ../javacheck
       ../launcher
       ../launcherjava
+      ../libnbtplusplus
+      ../libqrencode
+      ../LICENSES
+      ../LocalPeer
+      ../meta
       ../murmur2
+      ../nix
       ../program_info
+      ../public
       ../qdcss
+      ../quazip
       ../rainbow
+      ../scripts
       ../systeminfo
       ../tests
-      ../quazip
-      ../bzip2
+      ../tomlplusplus
+      ../tools
+      ../website
       ../zlib
     ];
   };
+
+  postPatch = ''
+    # Fix cmark executable name collision with cmark directory in Nix build
+    substituteInPlace cmark/src/CMakeLists.txt \
+      --replace-fail 'OUTPUT_NAME "cmark"' 'OUTPUT_NAME "cmark-bin"'
+  '';
 
   nativeBuildInputs = [
     cmake
@@ -77,12 +99,9 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
-    cmark
     kdePackages.qtbase
     kdePackages.qtnetworkauth
-    kdePackages.quazip
-    tomlplusplus
-    qrencode
+    kdePackages.qt5compat
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_14 ]
   ++ lib.optional gamemodeSupport gamemode;

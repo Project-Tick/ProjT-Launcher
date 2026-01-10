@@ -19,8 +19,8 @@
  */
 #pragma once
 
-#include <RWStorage.h>
 #include <modplatform/legacy_ftb/PackHelpers.h>
+#include "RWStorage.h"
 
 #include <QAbstractListModel>
 #include <QIcon>

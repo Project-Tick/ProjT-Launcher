@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -140,7 +140,7 @@ class AccountList : public QAbstractListModel {
     void listActivityChanged();
     void defaultAccountChanged();
     void activityChanged(bool active);
-    void accountListSaveFailed(const QString& errorMessage);
+    void fileSaveFailed(QString path);
 
    public slots:
     /**

@@ -18,44 +18,35 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cxxtest/TestSuite.h>
-#include "endian_str.h"
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
+#include "endian_str.h"
 
 using namespace endian;
 
-class endian_str_test : public CxxTest::TestSuite
-{
-public:
+class endian_str_test : public CxxTest::TestSuite {
+   public:
     void test_uint()
     {
         std::stringstream str(std::ios::in | std::ios::out | std::ios::binary);
 
-        write_little(str, uint8_t (0x01));
+        write_little(str, uint8_t(0x01));
         write_little(str, uint16_t(0x0102));
-        write       (str, uint32_t(0x01020304), little);
+        write(str, uint32_t(0x01020304), little);
         write_little(str, uint64_t(0x0102030405060708));
 
-        write_big   (str, uint8_t (0x09));
-        write_big   (str, uint16_t(0x090A));
-        write_big   (str, uint32_t(0x090A0B0C));
-        write       (str, uint64_t(0x090A0B0C0D0E0F10), big);
+        write_big(str, uint8_t(0x09));
+        write_big(str, uint16_t(0x090A));
+        write_big(str, uint32_t(0x090A0B0C));
+        write(str, uint64_t(0x090A0B0C0D0E0F10), big);
 
-        std::string expected{
-            1,
-            2, 1,
-            4, 3, 2, 1,
-            8, 7, 6, 5, 4, 3, 2, 1,
+        std::string expected{ 1, 2, 1,  4, 3,  2,  1,  8, 7,  6,  5,  4,  3,  2,  1,
 
-            9,
-            9, 10,
-            9, 10, 11, 12,
-            9, 10, 11, 12, 13, 14, 15, 16
-        };
+                              9, 9, 10, 9, 10, 11, 12, 9, 10, 11, 12, 13, 14, 15, 16 };
         TS_ASSERT_EQUALS(str.str(), expected);
 
-        uint8_t  u8;
+        uint8_t u8;
         uint16_t u16;
         uint32_t u32;
         uint64_t u64;
@@ -78,37 +69,32 @@ public:
         read_big(str, u64);
         TS_ASSERT_EQUALS(u64, 0x090A0B0C0D0E0F10u);
 
-        TS_ASSERT(str); //Check if stream has failed
+        TS_ASSERT(str);  // Check if stream has failed
     }
 
     void test_sint()
     {
         std::stringstream str(std::ios::in | std::ios::out | std::ios::binary);
 
-        write_little(str, int8_t (-0x01));
+        write_little(str, int8_t(-0x01));
         write_little(str, int16_t(-0x0102));
         write_little(str, int32_t(-0x01020304));
-        write       (str, int64_t(-0x0102030405060708), little);
+        write(str, int64_t(-0x0102030405060708), little);
 
-        write_big   (str, int8_t (-0x09));
-        write_big   (str, int16_t(-0x090A));
-        write       (str, int32_t(-0x090A0B0C), big);
-        write_big   (str, int64_t(-0x090A0B0C0D0E0F10));
+        write_big(str, int8_t(-0x09));
+        write_big(str, int16_t(-0x090A));
+        write(str, int32_t(-0x090A0B0C), big);
+        write_big(str, int64_t(-0x090A0B0C0D0E0F10));
 
-        std::string expected{ //meh, stupid narrowing conversions
-            '\xFF',
-            '\xFE', '\xFE',
-            '\xFC', '\xFC', '\xFD', '\xFE',
-            '\xF8', '\xF8', '\xF9', '\xFA', '\xFB', '\xFC', '\xFD', '\xFE',
+        std::string expected{
+            // meh, stupid narrowing conversions
+            '\xFF', '\xFE', '\xFE', '\xFC', '\xFC', '\xFD', '\xFE', '\xF8', '\xF8', '\xF9', '\xFA', '\xFB', '\xFC', '\xFD', '\xFE',
 
-            '\xF7',
-            '\xF6', '\xF6',
-            '\xF6', '\xF5', '\xF4', '\xF4',
-            '\xF6', '\xF5', '\xF4', '\xF3', '\xF2', '\xF1', '\xF0', '\xF0'
+            '\xF7', '\xF6', '\xF6', '\xF6', '\xF5', '\xF4', '\xF4', '\xF6', '\xF5', '\xF4', '\xF3', '\xF2', '\xF1', '\xF0', '\xF0'
         };
         TS_ASSERT_EQUALS(str.str(), expected);
 
-        int8_t  i8;
+        int8_t i8;
         int16_t i16;
         int32_t i32;
         int64_t i64;
@@ -131,30 +117,26 @@ public:
         read(str, i64, big);
         TS_ASSERT_EQUALS(i64, -0x090A0B0C0D0E0F10);
 
-        TS_ASSERT(str); //Check if stream has failed
+        TS_ASSERT(str);  // Check if stream has failed
     }
 
     void test_float()
     {
         std::stringstream str(std::ios::in | std::ios::out | std::ios::binary);
 
-        //C99 has hexadecimal floating point literals, C++ doesn't...
-        const float fconst = std::stof("-0xCDEF01p-63"); //-1.46325e-012
-        const double dconst = std::stod("-0x1DEF0102030405p-375"); //-1.09484e-097
-        //We will be assuming IEEE 754 here
+        // C99 has hexadecimal floating point literals, C++ doesn't...
+        const float fconst = std::stof("-0xCDEF01p-63");            //-1.46325e-012
+        const double dconst = std::stod("-0x1DEF0102030405p-375");  //-1.09484e-097
+        // We will be assuming IEEE 754 here
 
         write_little(str, fconst);
         write_little(str, dconst);
-        write_big   (str, fconst);
-        write_big   (str, dconst);
+        write_big(str, fconst);
+        write_big(str, dconst);
 
-        std::string expected{
-            '\x01', '\xEF', '\xCD', '\xAB',
-            '\x05', '\x04', '\x03', '\x02', '\x01', '\xEF', '\xCD', '\xAB',
+        std::string expected{ '\x01', '\xEF', '\xCD', '\xAB', '\x05', '\x04', '\x03', '\x02', '\x01', '\xEF', '\xCD', '\xAB',
 
-            '\xAB', '\xCD', '\xEF', '\x01',
-            '\xAB', '\xCD', '\xEF', '\x01', '\x02', '\x03', '\x04', '\x05'
-        };
+                              '\xAB', '\xCD', '\xEF', '\x01', '\xAB', '\xCD', '\xEF', '\x01', '\x02', '\x03', '\x04', '\x05' };
         TS_ASSERT_EQUALS(str.str(), expected);
 
         float f;
@@ -170,6 +152,6 @@ public:
         read_big(str, d);
         TS_ASSERT_EQUALS(d, dconst);
 
-        TS_ASSERT(str); //Check if stream has failed
+        TS_ASSERT(str);  // Check if stream has failed
     }
 };

@@ -838,6 +838,8 @@ SET(LAUNCHER_SOURCES
     ui/InstanceWindow.cpp
     ui/ViewLogWindow.h
     ui/ViewLogWindow.cpp
+    ui/LaunchMenu.cpp
+    ui/LaunchMenu.h
 
     # GUI - widgets / utilities
     ui/widgets/FileIgnoreProxy.cpp
@@ -870,8 +872,8 @@ SET(LAUNCHER_SOURCES
     ui/themes/CustomTheme.h
     ui/themes/DarkTheme.cpp
     ui/themes/DarkTheme.h
-    ui/themes/ITheme.cpp
-    ui/themes/ITheme.h
+    ui/themes/Theme.cpp
+    ui/themes/Theme.h
     ui/themes/HintOverrideProxyStyle.cpp
     ui/themes/HintOverrideProxyStyle.h
     ui/themes/SystemTheme.cpp
@@ -1656,4 +1658,11 @@ if(WIN32 OR (UNIX AND APPLE))
             endforeach()
         ")
     endif()
+endif()
+
+# Copy ModernDark theme to build directory for testing (macOS only)
+if(APPLE)
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ui/themes/ModernDark" DESTINATION "${CMAKE_BINARY_DIR}/themes")
+    # Install ModernDark theme to bundle resources
+    install(DIRECTORY "ui/themes/ModernDark" DESTINATION "${RESOURCES_DEST_DIR}/themes" COMPONENT Runtime)
 endif()

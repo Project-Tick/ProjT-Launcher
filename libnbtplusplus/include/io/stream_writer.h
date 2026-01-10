@@ -20,15 +20,13 @@
 #ifndef STREAM_WRITER_H_INCLUDED
 #define STREAM_WRITER_H_INCLUDED
 
-#include "tag.h"
-#include "endian_str.h"
 #include <iosfwd>
 #include <string>
+#include "endian_str.h"
+#include "tag.h"
 
-namespace nbt
-{
-namespace io
-{
+namespace nbt {
+namespace io {
 
 /* Not sure if that is even needed
 ///Exception that gets thrown when writing is not successful
@@ -52,12 +50,11 @@ NBT_EXPORT void write_tag(const std::string& key, const tag& t, std::ostream& os
  *
  * Can be reused to write multiple tags
  */
-class NBT_EXPORT stream_writer
-{
-public:
-    ///Maximum length of an NBT string (16 bit unsigned)
+class NBT_EXPORT stream_writer {
+   public:
+    /// Maximum length of an NBT string (16 bit unsigned)
     static constexpr size_t max_string_len = UINT16_MAX;
-    ///Maximum length of an NBT list or array (32 bit signed)
+    /// Maximum length of an NBT list or array (32 bit signed)
     static constexpr uint32_t max_array_len = INT32_MAX;
 
     /**
@@ -65,13 +62,11 @@ public:
      * @param e the byte order of the written data. The Java edition
      * of Minecraft uses Big Endian, the Pocket edition uses Little Endian
      */
-    explicit stream_writer(std::ostream& os, endian::endian e = endian::big) noexcept:
-        os(os), endian(e)
-    {}
+    explicit stream_writer(std::ostream& os, endian::endian e = endian::big) noexcept : os(os), endian(e) {}
 
-    ///Returns the stream
+    /// Returns the stream
     std::ostream& get_ostr() const { return os; }
-    ///Returns the byte order
+    /// Returns the byte order
     endian::endian get_endian() const { return endian; }
 
     /**
@@ -92,7 +87,7 @@ public:
     /**
      * @brief Writes a binary number to the stream
      */
-    template<class T>
+    template <class T>
     void write_num(T x);
 
     /**
@@ -104,18 +99,18 @@ public:
      */
     void write_string(const std::string& str);
 
-private:
+   private:
     std::ostream& os;
     const endian::endian endian;
 };
 
-template<class T>
+template <class T>
 void stream_writer::write_num(T x)
 {
     endian::write(os, x, endian);
 }
 
-}
-}
+}  // namespace io
+}  // namespace nbt
 
-#endif // STREAM_WRITER_H_INCLUDED
+#endif  // STREAM_WRITER_H_INCLUDED

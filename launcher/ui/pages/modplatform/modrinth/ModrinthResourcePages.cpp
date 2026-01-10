@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
 // SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -19,9 +19,9 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-FileCopyrightText: 2023 flowln <flowlnlnln@gmail.com>
- * //
- * // SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+ *
+ *
+ *
  *
  *
  *  Prism Launcher - Minecraft Launcher

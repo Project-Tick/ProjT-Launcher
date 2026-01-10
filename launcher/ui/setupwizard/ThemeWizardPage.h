@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Tayou <git@tayou.org>
@@ -64,5 +64,5 @@ class ThemeWizardPage : public BaseWizardPage {
     void retranslate() override { widget.retranslateUi(); }
 
    private:
-    AppearanceWidget widget{true};
+    AppearanceWidget widget{ true };
 };

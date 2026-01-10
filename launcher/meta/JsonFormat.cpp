@@ -36,7 +36,6 @@
 
 #include "JsonFormat.h"
 
-// FIXME: remove this from here... somehow
 #include "Json.h"
 #include "minecraft/OneSixVersionFormat.h"
 

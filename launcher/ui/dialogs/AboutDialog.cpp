@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -74,8 +74,8 @@ QString getCreditsHtml()
 
     QString fileContent = QString::fromUtf8(dataFile.readAll());
 
-    return fileContent.arg(QObject::tr("%1 Developers").arg(BuildConfig.LAUNCHER_DISPLAYNAME), QObject::tr("Prism Launcher Developers"), QObject::tr("MultiMC Developers"),
-                           QObject::tr("With special thanks to"));
+    return fileContent.arg(QObject::tr("%1 Developers").arg(BuildConfig.LAUNCHER_DISPLAYNAME), QObject::tr("Prism Launcher Developers"),
+                           QObject::tr("MultiMC Developers"), QObject::tr("With special thanks to"));
 }
 
 QString getLicenseHtml()

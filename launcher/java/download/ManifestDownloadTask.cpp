@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2023-2024 Trial97 <alexandru.tripon97@gmail.com>
@@ -114,14 +114,16 @@ void ManifestDownloadTask::downloadJava(const QJsonDocument& doc)
                 QFile::link(path, file);
             }
         } else if (type == "file") {
+            // Note: Java manifest also contains 'lzma' compressed versions, but raw is preferred
+            // for simplicity. Compressed download could save bandwidth but adds decompression complexity.
             auto downloads = Json::ensureObject(meta, "downloads");
             auto isExec = Json::ensureBoolean(meta, "executable", false);
-            
+
             // Use raw downloads for now - compressed downloads would require decompression infrastructure
             // TODO: Implement decompression support for lzma/lz4 to enable faster downloads
             QString url;
             QByteArray hash;
-            
+
             if (downloads.contains("raw")) {
                 auto raw = Json::ensureObject(downloads, "raw");
                 url = Json::ensureString(raw, "url");
@@ -131,7 +133,7 @@ void ManifestDownloadTask::downloadJava(const QJsonDocument& doc)
                 qWarning() << "Skipping file without raw download - decompression not yet supported";
                 continue;
             }
-            
+
             if (!url.isEmpty() && QUrl(url).isValid()) {
                 auto f = File{ file, url, hash, isExec };
                 toDownload.push_back(f);

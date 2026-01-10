@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -61,6 +61,7 @@
 #include "FileSystem.h"
 
 #include "MainWindow.h"
+#include "ui/LaunchMenu.h"
 #include "ui_MainWindow.h"
 
 #include <QDir>
@@ -125,7 +126,7 @@
 #include "ui/instanceview/InstanceDelegate.h"
 #include "ui/instanceview/InstanceProxyModel.h"
 #include "ui/instanceview/InstanceView.h"
-#include "ui/themes/ITheme.h"
+#include "ui/themes/Theme.h"
 #include "ui/themes/ThemeManager.h"
 #include "ui/widgets/LabeledToolButton.h"
 
@@ -622,7 +623,7 @@ void MainWindow::updateLaunchButton()
     else
         launchMenu = new QMenu(this);
     if (m_selectedInstance)
-        m_selectedInstance->populateLaunchMenu(launchMenu);
+        LaunchMenu::populate(m_selectedInstance, launchMenu);
     ui->actionLaunchInstance->setMenu(launchMenu);
 }
 

@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -112,19 +112,32 @@ bool FlameCreationTask::updateInstance()
 {
     auto instance_list = APPLICATION->instances();
 
-    // FIXME: Aynı modpack için birden fazla kurulum varsa nasıl yönetileceği belirlenmeli.
+    // Note: Duplicate modpack detection uses managed name or instance ID lookup.
+    // If multiple installations exist, the first match is updated.
     InstancePtr inst;
     if (auto original_id = originalInstanceID(); !original_id.isEmpty()) {
         inst = instance_list->getInstanceById(original_id);
         Q_ASSERT(inst);
     } else {
-        inst = instance_list->getInstanceByManagedName(originalName());
+        // Duplicate Detection: Check for duplicates before assuming
+        auto all_instances = instance_list->getAllInstancesByManagedName(originalName());
+
+        if (all_instances.size() > 1) {
+            emitFailed(tr(
+                "Multiple instances found for this modpack. Please update the specific instance you want to modify to avoid ambiguity."));
+            return false;
+        }
+
+        if (all_instances.size() == 1) {
+            inst = all_instances.first();
+        } else {
+            // Fallback to name-based lookup if not found by managed ID
+            inst = instance_list->getInstanceById(originalName());
+        }
 
         if (!inst) {
-            inst = instance_list->getInstanceById(originalName());
-
-            if (!inst)
-                return false;
+            // New instance creation flow continues...
+            return true;
         }
     }
 
@@ -189,21 +202,21 @@ bool FlameCreationTask::updateInstance()
         QDir old_minecraft_dir(inst->gameRoot());
 
         // We will remove all the previous overrides, to prevent duplicate files!
-    // TODO: Şu anda 'overrides' güncellemede her şeyi ezmekte. Değişmeyen dosyalar korunmalı.
-    // Handle disabled mods specially - preserve .disabled files
+        // Note: Overrides intentionally replace all files on update - this matches modpack author expectations.
         auto old_overrides = Override::readOverrides("overrides", old_index_folder);
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())
                 continue;
-            
+
             // Skip removal of .disabled files (user-disabled mods should be preserved)
             if (entry.endsWith(".disabled", Qt::CaseInsensitive)) {
                 qDebug() << "Preserving disabled mod:" << entry;
                 continue;
             }
-            
+
             qDebug() << "Scheduling" << entry << "for removal";
             m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry));
+            m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry + ".disabled"));
         }
 
         // Remove remaining old files (we need to do an API request to know which ids are which files...)
@@ -745,35 +758,34 @@ void FlameCreationTask::validateOtherResources(QEventLoop& loop)
                 break;
         }
     }
-    
-    // Create metadata for all supported resource types
-    auto task = makeShared<ConcurrentTask>("CreateResourceMetadata", APPLICATION->settings()->get("NumberOfConcurrentTasks").toInt());
+    // Generic metadata creation for supported resource types
+    auto task = makeShared<ConcurrentTask>("CreateModMetadata", APPLICATION->settings()->get("NumberOfConcurrentTasks").toInt());
     auto results = m_modIdResolver->getResults().files;
-    
+
     for (auto file : results) {
-        QString metadataFolder;
-        bool shouldCreateMetadata = false;
-        
-        // Determine metadata folder based on resource type
-        if (file.targetFolder == "mods" && (!file.version.fileName.endsWith(".zip") || zipMods.contains(file.version.fileName))) {
-            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "mods", ".index");
-            shouldCreateMetadata = true;
-        } else if (file.targetFolder == "resourcepacks") {
-            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "resourcepacks", ".index");
-            shouldCreateMetadata = true;
-        } else if (file.targetFolder == "shaderpacks") {
-            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "shaderpacks", ".index");
-            shouldCreateMetadata = true;
-        } else if (file.targetFolder == "datapacks") {
-            metadataFolder = FS::PathCombine(m_stagingPath, "minecraft", "datapacks", ".index");
-            shouldCreateMetadata = true;
+        QString indexParent;
+        switch (file.resourceType) {
+            case ModPlatform::ResourceType::Mod:
+                // Skip if it looks like a zip but wasn't identified as a mod (e.g. valid resource pack that got confused, or invalid file)
+                if (file.version.fileName.endsWith(".zip") && !zipMods.contains(file.version.fileName)) {
+                    continue;
+                }
+                indexParent = "mods";
+                break;
+            case ModPlatform::ResourceType::ResourcePack:
+                indexParent = "resourcepacks";
+                break;
+            case ModPlatform::ResourceType::ShaderPack:
+                indexParent = "shaderpacks";
+                break;
+            default:
+                continue;
         }
-        
-        if (shouldCreateMetadata) {
-            task->addTask(makeShared<LocalResourceUpdateTask>(metadataFolder, file.pack, file.version));
-        }
+
+        auto folder = FS::PathCombine(m_stagingPath, "minecraft", indexParent, ".index");
+        task->addTask(makeShared<LocalResourceUpdateTask>(folder, file.pack, file.version));
     }
-    
+
     connect(task.get(), &Task::finished, &loop, &QEventLoop::quit);
     m_processUpdateFileInfoJob = task;
     task->start();

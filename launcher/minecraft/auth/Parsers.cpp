@@ -86,7 +86,10 @@ bool getBool(QJsonValue value, bool& out)
    }
  }
 */
-// TODO: handle error responses ...
+// Error responses from Xbox Live are handled in parseXTokenResponse below.
+// Known error codes:
+// - 2148916233: Missing Xbox account
+// - 2148916238: Child account not linked to a family
 /*
 {
     "Identity":"0",
@@ -94,8 +97,6 @@ bool getBool(QJsonValue value, bool& out)
     "Message":"",
     "Redirect":"https://start.ui.xboxlive.com/AddChildToFamily"
 }
-// 2148916233 = missing XBox account
-// 2148916238 = child account not linked to a family
 */
 
 bool parseXTokenResponse(QByteArray& data, Token& output, QString name)
@@ -502,11 +503,18 @@ bool parseMojangResponse(QByteArray& data, Token& output)
         return false;
     }
 
-    // TODO: it's a JWT... validate it?
-    if (!getString(obj.value("access_token"), output.token)) {
+    // Basic JWT structure validation: JWTs have 3 dot-separated parts (header.payload.signature)
+    QString accessToken;
+    if (!getString(obj.value("access_token"), accessToken)) {
         qWarning() << "access_token is not valid";
         return false;
     }
+    auto parts = accessToken.split('.');
+    if (parts.size() != 3) {
+        qWarning() << "access_token is not a valid JWT (expected 3 parts, got" << parts.size() << ")";
+        return false;
+    }
+    output.token = accessToken;
     output.validity = Validity::Certain;
     qDebug() << "Mojang response is valid.";
     return true;

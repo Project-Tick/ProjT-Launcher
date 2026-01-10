@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -184,6 +184,8 @@ class MinecraftAccount : public QObject, public Usable {
     void authenticationFailed(QString reason, AccountTaskState taskState);
     void profileUpdated();
     void validityChanged(Validity newValidity);
+    /// Emitted when an authentication error occurs
+    void authenticationError(QString errorMessage);
 
    protected: /* variables */
     AccountData data;

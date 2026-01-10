@@ -18,7 +18,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * === Upstream License Block (Do Not Modify) ==============================
-  // SPDX-License-Identifier: GPL-3.0-only
  *
  *  PrismLauncher - Minecraft Launcher
  *  Copyright (C) 2023 Joshua Goins <josh@redstrate.com>

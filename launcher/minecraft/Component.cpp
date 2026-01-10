@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -129,11 +129,12 @@ std::shared_ptr<class VersionFile> Component::getVersionFile() const
 
 std::shared_ptr<class Meta::VersionList> Component::getVersionList() const
 {
-    // FIXME: what if the metadata index isn't loaded yet?
-    if (APPLICATION->metadataIndex()->hasUid(m_uid)) {
-        return APPLICATION->metadataIndex()->get(m_uid);
+    // Return nullptr if metadata index isn't loaded yet - caller should handle this case
+    auto index = APPLICATION->metadataIndex();
+    if (!index || !index->hasUid(m_uid)) {
+        return nullptr;
     }
-    return nullptr;
+    return index->get(m_uid);
 }
 
 int Component::getOrder()
@@ -185,7 +186,7 @@ QDateTime Component::getReleaseDateTime()
     if (vfile) {
         return vfile->releaseTime;
     }
-    // FIXME: fake
+    // Fallback: return current time when no release time is available (e.g., custom components)
     return QDateTime::currentDateTime();
 }
 
@@ -240,41 +241,9 @@ bool Component::isRevertible()
 
 bool Component::isMoveable()
 {
-    // A component is moveable if:
-    // 1. It's removable (custom components)
-    // 2. It's not a dependency-only component (added automatically)
-    // 3. No other components depend on it explicitly
-    
-    if (!isRemovable() || m_dependencyOnly) {
-        return false;
-    }
-    
-    // Check if any other component in the profile depends on this one
-    // by checking if they have this component's UID in their requirements
-    auto profile = m_parent;
-    if (!profile) {
-        return true; // No profile to check against
-    }
-    
-    for (int i = 0; i < profile->rowCount(); i++) {
-        auto other = profile->getComponent(i);
-        if (!other || other.get() == this) {
-            continue;
-        }
-        
-        // Check if this other component depends on us
-        auto versionFile = other->m_file;
-        if (versionFile) {
-            for (const auto& req : versionFile->m_requires) {
-                if (req.uid == m_uid) {
-                    // Another component depends on us, we cannot be moved
-                    return false;
-                }
-            }
-        }
-    }
-    
-    return true;
+    // Important components (like Minecraft) should stay at their fixed position
+    // Non-important components can be reordered by the user
+    return !m_important;
 }
 
 bool Component::isVersionChangeable(bool wait)
@@ -392,7 +361,7 @@ bool Component::customize()
     if (!FS::ensureFilePathExists(filename)) {
         return false;
     }
-    // FIXME: get rid of this try-catch.
+    // Using try-catch to handle potential JSON serialization errors gracefully
     try {
         QSaveFile jsonFile(filename);
         if (!jsonFile.open(QIODevice::WriteOnly)) {

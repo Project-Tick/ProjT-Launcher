@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -58,11 +58,11 @@
  * ======================================================================== */
 
 #include "MinecraftInstance.h"
-#include "MinecraftInstanceLaunchMenu.h"
 #include "Application.h"
 #include "BuildConfig.h"
 #include "Commandline.h"
 #include "Json.h"
+#include "MinecraftInstanceLaunchMenu.h"
 #include "QObjectPtr.h"
 #include "minecraft/launch/AutoInstallJava.h"
 #include "minecraft/launch/CreateGameFolders.h"
@@ -319,12 +319,6 @@ QSet<QString> MinecraftInstance::traits() const
     return profile->getTraits();
 }
 
-// UI code extracted to MinecraftInstanceLaunchMenu helper class
-void MinecraftInstance::populateLaunchMenu(QMenu* menu)
-{
-    MinecraftInstanceLaunchMenu::populate(this, menu);
-}
-
 QString MinecraftInstance::gameRoot() const
 {
     QFileInfo mcDir(FS::PathCombine(instanceRoot(), "minecraft"));
@@ -357,7 +351,8 @@ bool MinecraftInstance::supportsDemo() const
 {
     Version instance_ver{ getPackProfile()->getComponentVersion("net.minecraft") };
     // Demo mode was introduced in 1.3.1: https://minecraft.wiki/w/Demo_mode#History
-    // Note: This check may not work correctly for non-release versions due to version string formatting. Demo support is based on release versions.
+    // Note: This check may not work correctly for non-release versions due to version string formatting. Demo support is based on release
+    // versions.
     return instance_ver >= Version("1.3.1");
 }
 
@@ -570,7 +565,8 @@ QStringList MinecraftInstance::javaArguments()
 
     if (javaVersion.isModular() && shouldApplyOnlineFixes())
         // allow reflective access to java.net - required by the skin fix
-        args << "--add-opens" << "java.base/java.net=ALL-UNNAMED";
+        args << "--add-opens"
+             << "java.base/java.net=ALL-UNNAMED";
 
     return args;
 }
@@ -870,8 +866,10 @@ QString MinecraftInstance::createLaunchScript(AuthSessionPtr session, MinecraftT
 QStringList MinecraftInstance::verboseDescription(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin)
 {
     QStringList out;
-    out << "Main Class:" << "  " + getMainClass() << "";
-    out << "Native path:" << "  " + getNativePath() << "";
+    out << "Main Class:"
+        << "  " + getMainClass() << "";
+    out << "Native path:"
+        << "  " + getNativePath() << "";
 
     auto profile = m_components->getProfile();
 

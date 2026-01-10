@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -135,12 +135,12 @@ void LabeledToolButton::resetIcon()
 {
     constexpr int MAX_ICON_WIDTH = 160;
     constexpr int MAX_ICON_HEIGHT = 80;
-    
+
     auto iconSz = m_icon.actualSize(QSize(MAX_ICON_WIDTH, MAX_ICON_HEIGHT));
     float w = iconSz.width();
     float h = iconSz.height();
     float ar = w / h;
-    
+
     int newW = MAX_ICON_HEIGHT * ar;
     if (newW > MAX_ICON_WIDTH)
         newW = MAX_ICON_WIDTH;

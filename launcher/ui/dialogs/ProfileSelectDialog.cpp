@@ -56,7 +56,7 @@ ProfileSelectDialog::ProfileSelectDialog(const QString& message, int flags, QWid
     // view->hideColumn(AccountList::ActiveColumn);
     view->setColumnCount(1);
     view->setRootIsDecorated(false);
-    // FIXME: use a real model, not this
+    // Note: Manually populating QTreeWidget for custom rendering, pending refactor to QListView + Delegate.
     if (QTreeWidgetItem* header = view->headerItem()) {
         header->setText(0, tr("Name"));
     } else {

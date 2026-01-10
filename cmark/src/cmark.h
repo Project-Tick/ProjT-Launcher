@@ -1,10 +1,10 @@
 #ifndef CMARK_H
 #define CMARK_H
 
-#include <stdio.h>
-#include <stdbool.h>
 #include <cmark_export.h>
 #include <cmark_version.h>
+#include <stdbool.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,44 +26,44 @@ extern "C" {
  * to free the returned buffer.
  */
 CMARK_EXPORT
-char *cmark_markdown_to_html(const char *text, size_t len, int options);
+char* cmark_markdown_to_html(const char* text, size_t len, int options);
 
 /** ## Node Structure
  */
 
 typedef enum {
-  /* Error status */
-  CMARK_NODE_NONE,
+    /* Error status */
+    CMARK_NODE_NONE,
 
-  /* Block */
-  CMARK_NODE_DOCUMENT,
-  CMARK_NODE_BLOCK_QUOTE,
-  CMARK_NODE_LIST,
-  CMARK_NODE_ITEM,
-  CMARK_NODE_CODE_BLOCK,
-  CMARK_NODE_HTML_BLOCK,
-  CMARK_NODE_CUSTOM_BLOCK,
-  CMARK_NODE_PARAGRAPH,
-  CMARK_NODE_HEADING,
-  CMARK_NODE_THEMATIC_BREAK,
+    /* Block */
+    CMARK_NODE_DOCUMENT,
+    CMARK_NODE_BLOCK_QUOTE,
+    CMARK_NODE_LIST,
+    CMARK_NODE_ITEM,
+    CMARK_NODE_CODE_BLOCK,
+    CMARK_NODE_HTML_BLOCK,
+    CMARK_NODE_CUSTOM_BLOCK,
+    CMARK_NODE_PARAGRAPH,
+    CMARK_NODE_HEADING,
+    CMARK_NODE_THEMATIC_BREAK,
 
-  CMARK_NODE_FIRST_BLOCK = CMARK_NODE_DOCUMENT,
-  CMARK_NODE_LAST_BLOCK = CMARK_NODE_THEMATIC_BREAK,
+    CMARK_NODE_FIRST_BLOCK = CMARK_NODE_DOCUMENT,
+    CMARK_NODE_LAST_BLOCK = CMARK_NODE_THEMATIC_BREAK,
 
-  /* Inline */
-  CMARK_NODE_TEXT,
-  CMARK_NODE_SOFTBREAK,
-  CMARK_NODE_LINEBREAK,
-  CMARK_NODE_CODE,
-  CMARK_NODE_HTML_INLINE,
-  CMARK_NODE_CUSTOM_INLINE,
-  CMARK_NODE_EMPH,
-  CMARK_NODE_STRONG,
-  CMARK_NODE_LINK,
-  CMARK_NODE_IMAGE,
+    /* Inline */
+    CMARK_NODE_TEXT,
+    CMARK_NODE_SOFTBREAK,
+    CMARK_NODE_LINEBREAK,
+    CMARK_NODE_CODE,
+    CMARK_NODE_HTML_INLINE,
+    CMARK_NODE_CUSTOM_INLINE,
+    CMARK_NODE_EMPH,
+    CMARK_NODE_STRONG,
+    CMARK_NODE_LINK,
+    CMARK_NODE_IMAGE,
 
-  CMARK_NODE_FIRST_INLINE = CMARK_NODE_TEXT,
-  CMARK_NODE_LAST_INLINE = CMARK_NODE_IMAGE
+    CMARK_NODE_FIRST_INLINE = CMARK_NODE_TEXT,
+    CMARK_NODE_LAST_INLINE = CMARK_NODE_IMAGE
 } cmark_node_type;
 
 /* For backwards compatibility: */
@@ -72,17 +72,9 @@ typedef enum {
 #define CMARK_NODE_HTML CMARK_NODE_HTML_BLOCK
 #define CMARK_NODE_INLINE_HTML CMARK_NODE_HTML_INLINE
 
-typedef enum {
-  CMARK_NO_LIST,
-  CMARK_BULLET_LIST,
-  CMARK_ORDERED_LIST
-} cmark_list_type;
+typedef enum { CMARK_NO_LIST, CMARK_BULLET_LIST, CMARK_ORDERED_LIST } cmark_list_type;
 
-typedef enum {
-  CMARK_NO_DELIM,
-  CMARK_PERIOD_DELIM,
-  CMARK_PAREN_DELIM
-} cmark_delim_type;
+typedef enum { CMARK_NO_DELIM, CMARK_PERIOD_DELIM, CMARK_PAREN_DELIM } cmark_delim_type;
 
 typedef struct cmark_node cmark_node;
 typedef struct cmark_parser cmark_parser;
@@ -96,31 +88,31 @@ typedef struct cmark_iter cmark_iter;
  * when parsing and allocating a document tree
  */
 typedef struct cmark_mem {
-  void *(*calloc)(size_t, size_t);
-  void *(*realloc)(void *, size_t);
-  void (*free)(void *);
+    void* (*calloc)(size_t, size_t);
+    void* (*realloc)(void*, size_t);
+    void (*free)(void*);
 } cmark_mem;
 
 /** Returns a pointer to the default memory allocator.
  */
-CMARK_EXPORT cmark_mem *cmark_get_default_mem_allocator(void);
+CMARK_EXPORT cmark_mem* cmark_get_default_mem_allocator(void);
 
 /**
  * ## Classifying nodes
  */
 
 /** Returns true if the node is a block node.
-  */
-CMARK_EXPORT bool cmark_node_is_block(cmark_node *node);
+ */
+CMARK_EXPORT bool cmark_node_is_block(cmark_node* node);
 
 /** Returns true if the node is an inline node.
-  */
-CMARK_EXPORT bool cmark_node_is_inline(cmark_node *node);
+ */
+CMARK_EXPORT bool cmark_node_is_inline(cmark_node* node);
 
 /** Returns true if the node is a leaf node (a node that cannot
     contain children).
   */
-CMARK_EXPORT bool cmark_node_is_leaf(cmark_node *node);
+CMARK_EXPORT bool cmark_node_is_leaf(cmark_node* node);
 
 /**
  * ## Creating and Destroying Nodes
@@ -130,18 +122,17 @@ CMARK_EXPORT bool cmark_node_is_leaf(cmark_node *node);
  * other required properties, which it is the caller's responsibility
  * to assign.
  */
-CMARK_EXPORT cmark_node *cmark_node_new(cmark_node_type type);
+CMARK_EXPORT cmark_node* cmark_node_new(cmark_node_type type);
 
 /** Same as `cmark_node_new`, but explicitly listing the memory
  * allocator used to allocate the node.  Note:  be sure to use the same
  * allocator for every node in a tree, or bad things can happen.
  */
-CMARK_EXPORT cmark_node *cmark_node_new_with_mem(cmark_node_type type,
-                                                 cmark_mem *mem);
+CMARK_EXPORT cmark_node* cmark_node_new_with_mem(cmark_node_type type, cmark_mem* mem);
 
 /** Frees the memory allocated for a node and any children.
  */
-CMARK_EXPORT void cmark_node_free(cmark_node *node);
+CMARK_EXPORT void cmark_node_free(cmark_node* node);
 
 /**
  * ## Tree Traversal
@@ -150,24 +141,24 @@ CMARK_EXPORT void cmark_node_free(cmark_node *node);
 /** Returns the next node in the sequence after 'node', or NULL if
  * there is none.
  */
-CMARK_EXPORT cmark_node *cmark_node_next(cmark_node *node);
+CMARK_EXPORT cmark_node* cmark_node_next(cmark_node* node);
 
 /** Returns the previous node in the sequence after 'node', or NULL if
  * there is none.
  */
-CMARK_EXPORT cmark_node *cmark_node_previous(cmark_node *node);
+CMARK_EXPORT cmark_node* cmark_node_previous(cmark_node* node);
 
 /** Returns the parent of 'node', or NULL if there is none.
  */
-CMARK_EXPORT cmark_node *cmark_node_parent(cmark_node *node);
+CMARK_EXPORT cmark_node* cmark_node_parent(cmark_node* node);
 
 /** Returns the first child of 'node', or NULL if 'node' has no children.
  */
-CMARK_EXPORT cmark_node *cmark_node_first_child(cmark_node *node);
+CMARK_EXPORT cmark_node* cmark_node_first_child(cmark_node* node);
 
 /** Returns the last child of 'node', or NULL if 'node' has no children.
  */
-CMARK_EXPORT cmark_node *cmark_node_last_child(cmark_node *node);
+CMARK_EXPORT cmark_node* cmark_node_last_child(cmark_node* node);
 
 /**
  * ## Iterator
@@ -214,12 +205,7 @@ CMARK_EXPORT cmark_node *cmark_node_last_child(cmark_node *node);
  * leaf nodes.
  */
 
-typedef enum {
-  CMARK_EVENT_NONE,
-  CMARK_EVENT_DONE,
-  CMARK_EVENT_ENTER,
-  CMARK_EVENT_EXIT
-} cmark_event_type;
+typedef enum { CMARK_EVENT_NONE, CMARK_EVENT_DONE, CMARK_EVENT_ENTER, CMARK_EVENT_EXIT } cmark_event_type;
 
 /** Creates a new iterator starting at 'root'.  The current node and event
  * type are undefined until 'cmark_iter_next' is called for the first time.
@@ -227,41 +213,40 @@ typedef enum {
  * 'cmark_iter_free' when it is no longer needed.
  */
 CMARK_EXPORT
-cmark_iter *cmark_iter_new(cmark_node *root);
+cmark_iter* cmark_iter_new(cmark_node* root);
 
 /** Frees the memory allocated for an iterator.
  */
 CMARK_EXPORT
-void cmark_iter_free(cmark_iter *iter);
+void cmark_iter_free(cmark_iter* iter);
 
 /** Advances to the next node and returns the event type (`CMARK_EVENT_ENTER`,
  * `CMARK_EVENT_EXIT` or `CMARK_EVENT_DONE`).
  */
 CMARK_EXPORT
-cmark_event_type cmark_iter_next(cmark_iter *iter);
+cmark_event_type cmark_iter_next(cmark_iter* iter);
 
 /** Returns the current node.
  */
 CMARK_EXPORT
-cmark_node *cmark_iter_get_node(cmark_iter *iter);
+cmark_node* cmark_iter_get_node(cmark_iter* iter);
 
 /** Returns the current event type.
  */
 CMARK_EXPORT
-cmark_event_type cmark_iter_get_event_type(cmark_iter *iter);
+cmark_event_type cmark_iter_get_event_type(cmark_iter* iter);
 
 /** Returns the root node.
  */
 CMARK_EXPORT
-cmark_node *cmark_iter_get_root(cmark_iter *iter);
+cmark_node* cmark_iter_get_root(cmark_iter* iter);
 
 /** Resets the iterator so that the current node is 'current' and
  * the event type is 'event_type'.  The new current node must be a
  * descendant of the root node or the root node itself.
  */
 CMARK_EXPORT
-void cmark_iter_reset(cmark_iter *iter, cmark_node *current,
-                      cmark_event_type event_type);
+void cmark_iter_reset(cmark_iter* iter, cmark_node* current, cmark_event_type event_type);
 
 /**
  * ## Accessors
@@ -269,37 +254,37 @@ void cmark_iter_reset(cmark_iter *iter, cmark_node *current,
 
 /** Returns the user data of 'node'.
  */
-CMARK_EXPORT void *cmark_node_get_user_data(cmark_node *node);
+CMARK_EXPORT void* cmark_node_get_user_data(cmark_node* node);
 
 /** Sets arbitrary user data for 'node'.  Returns 1 on success,
  * 0 on failure.
  */
-CMARK_EXPORT int cmark_node_set_user_data(cmark_node *node, void *user_data);
+CMARK_EXPORT int cmark_node_set_user_data(cmark_node* node, void* user_data);
 
 /** Returns the type of 'node', or `CMARK_NODE_NONE` on error.
  */
-CMARK_EXPORT cmark_node_type cmark_node_get_type(cmark_node *node);
+CMARK_EXPORT cmark_node_type cmark_node_get_type(cmark_node* node);
 
 /** Like 'cmark_node_get_type', but returns a string representation
     of the type, or `"<unknown>"`.
  */
 CMARK_EXPORT
-const char *cmark_node_get_type_string(cmark_node *node);
+const char* cmark_node_get_type_string(cmark_node* node);
 
 /** Returns the string contents of 'node', or an empty
     string if none is set.  Returns NULL if called on a
     node that does not have string content.
  */
-CMARK_EXPORT const char *cmark_node_get_literal(cmark_node *node);
+CMARK_EXPORT const char* cmark_node_get_literal(cmark_node* node);
 
 /** Sets the string contents of 'node'.  Returns 1 on success,
  * 0 on failure.
  */
-CMARK_EXPORT int cmark_node_set_literal(cmark_node *node, const char *content);
+CMARK_EXPORT int cmark_node_set_literal(cmark_node* node, const char* content);
 
 /** Returns the heading level of 'node', or 0 if 'node' is not a heading.
  */
-CMARK_EXPORT int cmark_node_get_heading_level(cmark_node *node);
+CMARK_EXPORT int cmark_node_get_heading_level(cmark_node* node);
 
 /* For backwards compatibility */
 #define cmark_node_get_header_level cmark_node_get_heading_level
@@ -307,117 +292,114 @@ CMARK_EXPORT int cmark_node_get_heading_level(cmark_node *node);
 
 /** Sets the heading level of 'node', returning 1 on success and 0 on error.
  */
-CMARK_EXPORT int cmark_node_set_heading_level(cmark_node *node, int level);
+CMARK_EXPORT int cmark_node_set_heading_level(cmark_node* node, int level);
 
 /** Returns the list type of 'node', or `CMARK_NO_LIST` if 'node'
  * is not a list.
  */
-CMARK_EXPORT cmark_list_type cmark_node_get_list_type(cmark_node *node);
+CMARK_EXPORT cmark_list_type cmark_node_get_list_type(cmark_node* node);
 
 /** Sets the list type of 'node', returning 1 on success and 0 on error.
  */
-CMARK_EXPORT int cmark_node_set_list_type(cmark_node *node,
-                                          cmark_list_type type);
+CMARK_EXPORT int cmark_node_set_list_type(cmark_node* node, cmark_list_type type);
 
 /** Returns the list delimiter type of 'node', or `CMARK_NO_DELIM` if 'node'
  * is not a list.
  */
-CMARK_EXPORT cmark_delim_type cmark_node_get_list_delim(cmark_node *node);
+CMARK_EXPORT cmark_delim_type cmark_node_get_list_delim(cmark_node* node);
 
 /** Sets the list delimiter type of 'node', returning 1 on success and 0
  * on error.
  */
-CMARK_EXPORT int cmark_node_set_list_delim(cmark_node *node,
-                                           cmark_delim_type delim);
+CMARK_EXPORT int cmark_node_set_list_delim(cmark_node* node, cmark_delim_type delim);
 
 /** Returns starting number of 'node', if it is an ordered list, otherwise 0.
  */
-CMARK_EXPORT int cmark_node_get_list_start(cmark_node *node);
+CMARK_EXPORT int cmark_node_get_list_start(cmark_node* node);
 
 /** Sets starting number of 'node', if it is an ordered list. Returns 1
  * on success, 0 on failure.
  */
-CMARK_EXPORT int cmark_node_set_list_start(cmark_node *node, int start);
+CMARK_EXPORT int cmark_node_set_list_start(cmark_node* node, int start);
 
 /** Returns 1 if 'node' is a tight list, 0 otherwise.
  */
-CMARK_EXPORT int cmark_node_get_list_tight(cmark_node *node);
+CMARK_EXPORT int cmark_node_get_list_tight(cmark_node* node);
 
 /** Sets the "tightness" of a list.  Returns 1 on success, 0 on failure.
  */
-CMARK_EXPORT int cmark_node_set_list_tight(cmark_node *node, int tight);
+CMARK_EXPORT int cmark_node_set_list_tight(cmark_node* node, int tight);
 
 /** Returns the info string from a fenced code block.
  */
-CMARK_EXPORT const char *cmark_node_get_fence_info(cmark_node *node);
+CMARK_EXPORT const char* cmark_node_get_fence_info(cmark_node* node);
 
 /** Sets the info string in a fenced code block, returning 1 on
  * success and 0 on failure.
  */
-CMARK_EXPORT int cmark_node_set_fence_info(cmark_node *node, const char *info);
+CMARK_EXPORT int cmark_node_set_fence_info(cmark_node* node, const char* info);
 
 /** Returns the URL of a link or image 'node', or an empty string
     if no URL is set.  Returns NULL if called on a node that is
     not a link or image.
  */
-CMARK_EXPORT const char *cmark_node_get_url(cmark_node *node);
+CMARK_EXPORT const char* cmark_node_get_url(cmark_node* node);
 
 /** Sets the URL of a link or image 'node'. Returns 1 on success,
  * 0 on failure.
  */
-CMARK_EXPORT int cmark_node_set_url(cmark_node *node, const char *url);
+CMARK_EXPORT int cmark_node_set_url(cmark_node* node, const char* url);
 
 /** Returns the title of a link or image 'node', or an empty
     string if no title is set.  Returns NULL if called on a node
     that is not a link or image.
  */
-CMARK_EXPORT const char *cmark_node_get_title(cmark_node *node);
+CMARK_EXPORT const char* cmark_node_get_title(cmark_node* node);
 
 /** Sets the title of a link or image 'node'. Returns 1 on success,
  * 0 on failure.
  */
-CMARK_EXPORT int cmark_node_set_title(cmark_node *node, const char *title);
+CMARK_EXPORT int cmark_node_set_title(cmark_node* node, const char* title);
 
 /** Returns the literal "on enter" text for a custom 'node', or
     an empty string if no on_enter is set.  Returns NULL if called
     on a non-custom node.
  */
-CMARK_EXPORT const char *cmark_node_get_on_enter(cmark_node *node);
+CMARK_EXPORT const char* cmark_node_get_on_enter(cmark_node* node);
 
 /** Sets the literal text to render "on enter" for a custom 'node'.
     Any children of the node will be rendered after this text.
     Returns 1 on success 0 on failure.
  */
-CMARK_EXPORT int cmark_node_set_on_enter(cmark_node *node,
-                                         const char *on_enter);
+CMARK_EXPORT int cmark_node_set_on_enter(cmark_node* node, const char* on_enter);
 
 /** Returns the literal "on exit" text for a custom 'node', or
     an empty string if no on_exit is set.  Returns NULL if
     called on a non-custom node.
  */
-CMARK_EXPORT const char *cmark_node_get_on_exit(cmark_node *node);
+CMARK_EXPORT const char* cmark_node_get_on_exit(cmark_node* node);
 
 /** Sets the literal text to render "on exit" for a custom 'node'.
     Any children of the node will be rendered before this text.
     Returns 1 on success 0 on failure.
  */
-CMARK_EXPORT int cmark_node_set_on_exit(cmark_node *node, const char *on_exit);
+CMARK_EXPORT int cmark_node_set_on_exit(cmark_node* node, const char* on_exit);
 
 /** Returns the line on which 'node' begins.
  */
-CMARK_EXPORT int cmark_node_get_start_line(cmark_node *node);
+CMARK_EXPORT int cmark_node_get_start_line(cmark_node* node);
 
 /** Returns the column at which 'node' begins.
  */
-CMARK_EXPORT int cmark_node_get_start_column(cmark_node *node);
+CMARK_EXPORT int cmark_node_get_start_column(cmark_node* node);
 
 /** Returns the line on which 'node' ends.
  */
-CMARK_EXPORT int cmark_node_get_end_line(cmark_node *node);
+CMARK_EXPORT int cmark_node_get_end_line(cmark_node* node);
 
 /** Returns the column at which 'node' ends.
  */
-CMARK_EXPORT int cmark_node_get_end_column(cmark_node *node);
+CMARK_EXPORT int cmark_node_get_end_column(cmark_node* node);
 
 /**
  * ## Tree Manipulation
@@ -426,36 +408,35 @@ CMARK_EXPORT int cmark_node_get_end_column(cmark_node *node);
 /** Unlinks a 'node', removing it from the tree, but not freeing its
  * memory.  (Use 'cmark_node_free' for that.)
  */
-CMARK_EXPORT void cmark_node_unlink(cmark_node *node);
+CMARK_EXPORT void cmark_node_unlink(cmark_node* node);
 
 /** Inserts 'sibling' before 'node'.  Returns 1 on success, 0 on failure.
  */
-CMARK_EXPORT int cmark_node_insert_before(cmark_node *node,
-                                          cmark_node *sibling);
+CMARK_EXPORT int cmark_node_insert_before(cmark_node* node, cmark_node* sibling);
 
 /** Inserts 'sibling' after 'node'. Returns 1 on success, 0 on failure.
  */
-CMARK_EXPORT int cmark_node_insert_after(cmark_node *node, cmark_node *sibling);
+CMARK_EXPORT int cmark_node_insert_after(cmark_node* node, cmark_node* sibling);
 
 /** Replaces 'oldnode' with 'newnode' and unlinks 'oldnode' (but does
  * not free its memory).
  * Returns 1 on success, 0 on failure.
  */
-CMARK_EXPORT int cmark_node_replace(cmark_node *oldnode, cmark_node *newnode);
+CMARK_EXPORT int cmark_node_replace(cmark_node* oldnode, cmark_node* newnode);
 
 /** Adds 'child' to the beginning of the children of 'node'.
  * Returns 1 on success, 0 on failure.
  */
-CMARK_EXPORT int cmark_node_prepend_child(cmark_node *node, cmark_node *child);
+CMARK_EXPORT int cmark_node_prepend_child(cmark_node* node, cmark_node* child);
 
 /** Adds 'child' to the end of the children of 'node'.
  * Returns 1 on success, 0 on failure.
  */
-CMARK_EXPORT int cmark_node_append_child(cmark_node *node, cmark_node *child);
+CMARK_EXPORT int cmark_node_append_child(cmark_node* node, cmark_node* child);
 
 /** Consolidates adjacent text nodes.
  */
-CMARK_EXPORT void cmark_consolidate_text_nodes(cmark_node *root);
+CMARK_EXPORT void cmark_consolidate_text_nodes(cmark_node* root);
 
 /**
  * ## Parsing
@@ -482,7 +463,7 @@ CMARK_EXPORT void cmark_consolidate_text_nodes(cmark_node *root);
 /** Creates a new parser object.
  */
 CMARK_EXPORT
-cmark_parser *cmark_parser_new(int options);
+cmark_parser* cmark_parser_new(int options);
 
 /** Creates a new parser object with the given memory allocator
  *
@@ -496,7 +477,7 @@ cmark_parser *cmark_parser_new(int options);
  * ```
  */
 CMARK_EXPORT
-cmark_parser *cmark_parser_new_with_mem(int options, cmark_mem *mem);
+cmark_parser* cmark_parser_new_with_mem(int options, cmark_mem* mem);
 
 /** Creates a new parser object with the given node to use as the root
  * node of the parsed AST.
@@ -518,23 +499,22 @@ cmark_parser *cmark_parser_new_with_mem(int options, cmark_mem *mem);
  * document fragments.
  */
 CMARK_EXPORT
-cmark_parser *cmark_parser_new_with_mem_into_root(
-    int options, cmark_mem *mem, cmark_node *root);
+cmark_parser* cmark_parser_new_with_mem_into_root(int options, cmark_mem* mem, cmark_node* root);
 
 /** Frees memory allocated for a parser object.
  */
 CMARK_EXPORT
-void cmark_parser_free(cmark_parser *parser);
+void cmark_parser_free(cmark_parser* parser);
 
 /** Feeds a string of length 'len' to 'parser'.
  */
 CMARK_EXPORT
-void cmark_parser_feed(cmark_parser *parser, const char *buffer, size_t len);
+void cmark_parser_feed(cmark_parser* parser, const char* buffer, size_t len);
 
 /** Finish parsing and return a pointer to a tree of nodes.
  */
 CMARK_EXPORT
-cmark_node *cmark_parser_finish(cmark_parser *parser);
+cmark_node* cmark_parser_finish(cmark_parser* parser);
 
 /** Parse a CommonMark document in 'buffer' of length 'len'.
  * Returns a pointer to a tree of nodes.  The memory allocated for
@@ -542,14 +522,14 @@ cmark_node *cmark_parser_finish(cmark_parser *parser);
  * when it is no longer needed.
  */
 CMARK_EXPORT
-cmark_node *cmark_parse_document(const char *buffer, size_t len, int options);
+cmark_node* cmark_parse_document(const char* buffer, size_t len, int options);
 
 /** Parse a CommonMark document in file 'f', returning a pointer to
  * a tree of nodes.  The memory allocated for the node tree should be
  * released using 'cmark_node_free' when it is no longer needed.
  */
 CMARK_EXPORT
-cmark_node *cmark_parse_file(FILE *f, int options);
+cmark_node* cmark_parse_file(FILE* f, int options);
 
 /**
  * ## Rendering
@@ -559,32 +539,32 @@ cmark_node *cmark_parse_file(FILE *f, int options);
  * to free the returned buffer.
  */
 CMARK_EXPORT
-char *cmark_render_xml(cmark_node *root, int options);
+char* cmark_render_xml(cmark_node* root, int options);
 
 /** Render a 'node' tree as an HTML fragment.  It is up to the user
  * to add an appropriate header and footer. It is the caller's
  * responsibility to free the returned buffer.
  */
 CMARK_EXPORT
-char *cmark_render_html(cmark_node *root, int options);
+char* cmark_render_html(cmark_node* root, int options);
 
 /** Render a 'node' tree as a groff man page, without the header.
  * It is the caller's responsibility to free the returned buffer.
  */
 CMARK_EXPORT
-char *cmark_render_man(cmark_node *root, int options, int width);
+char* cmark_render_man(cmark_node* root, int options, int width);
 
 /** Render a 'node' tree as a commonmark document.
  * It is the caller's responsibility to free the returned buffer.
  */
 CMARK_EXPORT
-char *cmark_render_commonmark(cmark_node *root, int options, int width);
+char* cmark_render_commonmark(cmark_node* root, int options, int width);
 
 /** Render a 'node' tree as a LaTeX document.
  * It is the caller's responsibility to free the returned buffer.
  */
 CMARK_EXPORT
-char *cmark_render_latex(cmark_node *root, int options, int width);
+char* cmark_render_latex(cmark_node* root, int options, int width);
 
 /**
  * ## Options
@@ -661,7 +641,7 @@ int cmark_version(void);
  * macro CMARK_VERSION_STRING for compile time checks.
  */
 CMARK_EXPORT
-const char *cmark_version_string(void);
+const char* cmark_version_string(void);
 
 /** # AUTHORS
  *

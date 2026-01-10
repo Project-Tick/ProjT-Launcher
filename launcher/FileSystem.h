@@ -18,7 +18,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 /* === Upstream License Block (Do Not Modify) ==============================
- // SPDX-License-Identifier: GPL-3.0-only
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -160,8 +159,7 @@ class copy : public QObject {
    signals:
     void fileCopied(const QString& relativeName);
     void copyFailed(const QString& relativeName);
-    // Note: removed unsafe shouldCopy signal with output parameter
-    // If filtering is needed, use matcher() method instead
+    // NOTE: A 'shouldCopy' signal could be added here in the future for granular control.
 
    private:
     bool operator()(const QString& offset, bool dryRun = false);

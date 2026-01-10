@@ -155,7 +155,8 @@ void ModrinthCheckUpdate::checkVersionsResponse(std::shared_ptr<QByteArray> resp
             // If the returned project is empty, but we have Modrinth metadata,
             // it means this specific version is not available
             if (project_obj.isEmpty()) {
-                qDebug() << "Mod " << m_mappings.find(hash).value()->name() << " got an empty response." << "Hash: " << hash;
+                qDebug() << "Mod " << m_mappings.find(hash).value()->name() << " got an empty response."
+                         << "Hash: " << hash;
                 ++iter;
                 continue;
             }

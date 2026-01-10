@@ -21,17 +21,13 @@
 #include "io/stream_reader.h"
 #include "io/stream_writer.h"
 
-namespace nbt
-{
+namespace nbt {
 
 void tag_string::read_payload(io::stream_reader& reader)
 {
-    try
-    {
+    try {
         value = reader.read_string();
-    }
-    catch(io::input_error& ex)
-    {
+    } catch (io::input_error& ex) {
         throw io::input_error("Error reading tag_string");
     }
 }
@@ -41,4 +37,4 @@ void tag_string::write_payload(io::stream_writer& writer) const
     writer.write_string(value);
 }
 
-}
+}  // namespace nbt

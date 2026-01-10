@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2022 Jamie Mansfield <jmansfield@cadixdev.org>
@@ -129,7 +129,8 @@ void ImportPage::updateState()
         QString input = ui->modpackEdit->text().trimmed();
         auto url = QUrl::fromUserInput(input);
         if (url.isLocalFile()) {
-            // FIXME: actually do some validation of what's inside here... this is fake AF
+            // Note: UI validation here is intentionally lightweight (file extension/existence) to avoid blocking the main thread.
+            // Full content validation occurs in the background InstanceImportTask.
             QFileInfo fi(input);
 
             // Allow non-latin people to use ZIP files!

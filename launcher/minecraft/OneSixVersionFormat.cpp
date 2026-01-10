@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -123,8 +123,8 @@ VersionFilePtr OneSixVersionFormat::versionFileFromJson(const QJsonDocument& doc
         if (root.contains("order")) {
             out->order = requireInteger(root.value("order"));
         } else {
-            // FIXME: evaluate if we don't want to throw exceptions here instead
-            qCritical() << filename << "doesn't contain an order field";
+            // Order is required but missing - this is an error condition
+            throw JSONValidationError(filename + " requires an order field but doesn't contain one.");
         }
     }
 
@@ -147,9 +147,6 @@ VersionFilePtr OneSixVersionFormat::versionFileFromJson(const QJsonDocument& doc
     out->version = root.value("version").toString();
 
     MojangVersionFormat::readVersionProperties(root, out.get());
-
-    // added for legacy Minecraft window embedding, TODO: remove
-    readString(root, "appletClass", out->appletClass);
 
     if (root.contains("+tweakers")) {
         for (auto tweakerVal : requireArray(root.value("+tweakers"))) {

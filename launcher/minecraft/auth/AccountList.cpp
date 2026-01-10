@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -66,6 +66,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QObject>
+#include <QString>
 #include <QTextStream>
 #include <QTimer>
 
@@ -264,8 +266,8 @@ void AccountList::onListChanged()
 {
     if (m_autosave) {
         if (!saveList()) {
-            qCritical() << "Failed to save account list automatically";
-            emit accountListSaveFailed(tr("Failed to save account list. Your changes may be lost."));
+            qWarning() << "Failed to save account list automatically";
+            emit fileSaveFailed(m_listFilePath);
         }
     }
 
@@ -323,7 +325,7 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
         case Qt::DisplayRole:
             switch (index.column()) {
                 case IconColumn:
-                    return QVariant(); // Icons are handled by DecorationRole
+                    return QVariant();  // Icons are handled by DecorationRole
                 case ProfileNameColumn:
                     return account->profileName();
                 case NameColumn:
@@ -345,13 +347,14 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
                     return QVariant();
             }
 
+        case Qt::DecorationRole:
+            if (index.column() == IconColumn) {
+                return account->getFace();
+            }
+            return QVariant();
+
         case Qt::ToolTipRole:
             return account->accountDisplayString();
-
-        case Qt::DecorationRole:
-            if (index.column() == IconColumn)
-                return account->getFace();
-            return QVariant();
 
         case PointerRole:
             return QVariant::fromValue(account);
@@ -372,7 +375,7 @@ QVariant AccountList::headerData(int section, [[maybe_unused]] Qt::Orientation o
         case Qt::DisplayRole:
             switch (section) {
                 case IconColumn:
-                    return QVariant(); // No header text for icon column
+                    return QVariant();  // No header text for icon column
                 case ProfileNameColumn:
                     return tr("Username");
                 case NameColumn:
@@ -388,7 +391,7 @@ QVariant AccountList::headerData(int section, [[maybe_unused]] Qt::Orientation o
         case Qt::ToolTipRole:
             switch (section) {
                 case IconColumn:
-                    return tr("Account icon");
+                    return tr("Account avatar");
                 case ProfileNameColumn:
                     return tr("Minecraft username associated with the account.");
                 case NameColumn:

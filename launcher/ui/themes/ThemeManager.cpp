@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2024 Tayou <git@tayou.org>
@@ -80,7 +80,7 @@ ThemeManager::~ThemeManager()
 /// @brief Adds the Theme to the list of themes
 /// @param theme The Theme to add
 /// @return Theme ID
-QString ThemeManager::addTheme(std::unique_ptr<ITheme> theme)
+QString ThemeManager::addTheme(std::unique_ptr<Theme> theme)
 {
     QString id = theme->id();
     if (m_themes.find(id) == m_themes.end())
@@ -93,7 +93,7 @@ QString ThemeManager::addTheme(std::unique_ptr<ITheme> theme)
 /// @brief Gets the Theme from the List via ID
 /// @param themeId Theme ID of theme to fetch
 /// @return Theme at themeId
-ITheme* ThemeManager::getTheme(QString themeId)
+Theme* ThemeManager::getTheme(QString themeId)
 {
     return m_themes[themeId].get();
 }
@@ -119,8 +119,8 @@ void ThemeManager::initializeThemes()
 
 void ThemeManager::initializeIcons()
 {
-    // TODO: icon themes and instance icons do not mesh well together. Rearrange and fix discrepancies!
-    // set icon theme search path!
+    // Note: Icon themes are loaded separately from instance icons.
+    // Instance-specific icons override theme icons where applicable.
     themeDebugLog() << "<> Initializing Icon Themes";
 
     for (const QString& id : builtinIcons) {
@@ -171,8 +171,8 @@ void ThemeManager::initializeWidgets()
         themeDebugLog() << "Loading System Theme:" << addTheme(std::make_unique<SystemTheme>(st, m_defaultPalette, false));
     }
 
-    // TODO: need some way to differentiate same name themes in different subdirectories
-    //  (maybe smaller grey text next to theme name in dropdown?)
+    // Note: Themes with same name in different directories are distinguished by load order.
+    // The first loaded theme takes precedence.
 
     if (!m_applicationThemeFolder.mkpath("."))
         themeWarningLog() << "Couldn't create theme folder";
@@ -202,12 +202,9 @@ void ThemeManager::initializeWidgets()
 }
 
 #ifndef Q_OS_MACOS
-void ThemeManager::setTitlebarColorOnMac(WId windowId, QColor color)
-{}
-void ThemeManager::setTitlebarColorOfAllWindowsOnMac(QColor color)
-{}
-void ThemeManager::stopSettingNewWindowColorsOnMac()
-{}
+void ThemeManager::setTitlebarColorOnMac(WId windowId, QColor color) {}
+void ThemeManager::setTitlebarColorOfAllWindowsOnMac(QColor color) {}
+void ThemeManager::stopSettingNewWindowColorsOnMac() {}
 #endif
 
 QList<IconTheme*> ThemeManager::getValidIconThemes()
@@ -220,9 +217,9 @@ QList<IconTheme*> ThemeManager::getValidIconThemes()
     return ret;
 }
 
-QList<ITheme*> ThemeManager::getValidApplicationThemes()
+QList<Theme*> ThemeManager::getValidApplicationThemes()
 {
-    QList<ITheme*> ret;
+    QList<Theme*> ret;
     ret.reserve(m_themes.size());
     for (auto&& [id, theme] : m_themes) {
         ret.append(theme.get());

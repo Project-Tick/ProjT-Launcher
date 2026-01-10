@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -109,7 +109,7 @@ class LaunchProfile : public ProblemProvider {
                          QStringList& jars,
                          QStringList& nativeJars,
                          const QString& overridePath,
-                         const QString& tempPath) const;
+                         const QString& moddedJarSearchResultPath) const;
     bool hasTrait(const QString& trait) const;
     ProblemSeverity getProblemSeverity() const override;
     const QList<PatchProblem> getProblems() const override;

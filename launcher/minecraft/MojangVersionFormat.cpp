@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -338,8 +338,8 @@ LibraryPtr MojangVersionFormat::libraryFromJson(ProblemContainer& problems, cons
             }
             // Skip unknown platforms
             QString platform = it.key();
-            if (platform != "linux" && platform != "windows" && platform != "osx" && platform != "macos" && 
-                platform != "freebsd" && platform != "openbsd" && platform != "netbsd") {
+            if (platform != "linux" && platform != "windows" && platform != "osx" && platform != "macos" && platform != "freebsd" &&
+                platform != "openbsd" && platform != "netbsd") {
                 qWarning() << filename << "contains unknown platform" << platform << "(skipping)";
                 continue;
             }

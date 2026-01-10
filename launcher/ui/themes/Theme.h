@@ -19,7 +19,7 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- * // SPDX-License-Identifier: GPL-3.0-only
+ *
  *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Tayou <git@tayou.org>
@@ -55,68 +55,35 @@
  *      limitations under the License.
  *
  * ======================================================================== */
-#include "ITheme.h"
-#include <QDir>
-#include <QStyleFactory>
-#include "Application.h"
-#include "HintOverrideProxyStyle.h"
-#include "rainbow.h"
+#pragma once
+#include <MessageLevel.h>
+#include <QMap>
+#include <QPalette>
+#include <QString>
 
-void ITheme::apply(bool)
-{
-    APPLICATION->setStyleSheet(QString());
-    QApplication::setStyle(new HintOverrideProxyStyle(QStyleFactory::create(qtTheme())));
-    QApplication::setPalette(colorScheme());
-    APPLICATION->setStyleSheet(appStyleSheet());
-    QDir::setSearchPaths("theme", searchPaths());
-}
+class QStyle;
 
-QPalette ITheme::fadeInactive(QPalette in, qreal bias, QColor color)
-{
-    auto blend = [&in, bias, color](QPalette::ColorRole role) {
-        QColor from = in.color(QPalette::Active, role);
-        QColor blended = Rainbow::mix(from, color, bias);
-        in.setColor(QPalette::Disabled, role, blended);
-    };
-    blend(QPalette::Window);
-    blend(QPalette::WindowText);
-    blend(QPalette::Base);
-    blend(QPalette::AlternateBase);
-    blend(QPalette::ToolTipBase);
-    blend(QPalette::ToolTipText);
-    blend(QPalette::Text);
-    blend(QPalette::Button);
-    blend(QPalette::ButtonText);
-    blend(QPalette::BrightText);
-    blend(QPalette::Link);
-    blend(QPalette::Highlight);
-    blend(QPalette::HighlightedText);
-    return in;
-}
+struct LogColors {
+    QMap<MessageLevel::Enum, QColor> background;
+    QMap<MessageLevel::Enum, QColor> foreground;
+};
 
-LogColors ITheme::defaultLogColors(const QPalette& palette)
-{
-    LogColors result;
+class Theme {
+   public:
+    virtual ~Theme() {}
+    virtual void apply(bool initial);
+    virtual QString id() = 0;
+    virtual QString name() = 0;
+    virtual QString tooltip() = 0;
+    virtual bool hasStyleSheet() = 0;
+    virtual QString appStyleSheet() = 0;
+    virtual QString qtTheme() = 0;
+    virtual QPalette colorScheme() = 0;
+    virtual QColor fadeColor() = 0;
+    virtual double fadeAmount() = 0;
+    virtual LogColors logColorScheme() { return defaultLogColors(colorScheme()); }
+    virtual QStringList searchPaths() { return {}; }
 
-    const QColor& bg = palette.color(QPalette::Base);
-    const QColor& fg = palette.color(QPalette::Text);
-
-    auto blend = [bg, fg](QColor color) {
-        if (Rainbow::luma(fg) > Rainbow::luma(bg)) {
-            // for dark color schemes, produce a fitting color first
-            color = Rainbow::tint(fg, color, 0.5);
-        }
-        // adapt contrast
-        return Rainbow::mix(fg, color, 1);
-    };
-
-    result.background[MessageLevel::Fatal] = Qt::black;
-
-    result.foreground[MessageLevel::Launcher] = blend(QColor("purple"));
-    result.foreground[MessageLevel::Debug] = blend(QColor("green"));
-    result.foreground[MessageLevel::Warning] = blend(QColor("orange"));
-    result.foreground[MessageLevel::Error] = blend(QColor("red"));
-    result.foreground[MessageLevel::Fatal] = blend(QColor("red"));
-
-    return result;
-}
+    static QPalette fadeInactive(QPalette in, qreal bias, QColor color);
+    static LogColors defaultLogColors(const QPalette& palette);
+};

@@ -20,56 +20,64 @@
 #ifndef TAG_PRIMITIVE_H_INCLUDED
 #define TAG_PRIMITIVE_H_INCLUDED
 
-#include "crtp_tag.h"
-#include "primitive_detail.h"
-#include "io/stream_reader.h"
-#include "io/stream_writer.h"
 #include <istream>
 #include <sstream>
+#include "crtp_tag.h"
+#include "io/stream_reader.h"
+#include "io/stream_writer.h"
+#include "primitive_detail.h"
 
-namespace nbt
-{
+namespace nbt {
 
 /**
  * @brief Tag that contains an integral or floating-point value
  *
  * Common class for tag_byte, tag_short, tag_int, tag_long, tag_float and tag_double.
  */
-template<class T>
-class tag_primitive final : public detail::crtp_tag<tag_primitive<T>>
-{
-public:
-    ///The type of the value
+template <class T>
+class tag_primitive final : public detail::crtp_tag<tag_primitive<T>> {
+   public:
+    /// The type of the value
     typedef T value_type;
 
-    ///The type of the tag
+    /// The type of the tag
     static constexpr tag_type type = detail::get_primitive_type<T>::value;
 
-    //Constructor
-    constexpr tag_primitive(T val = 0) noexcept: value(val) {}
+    // Constructor
+    constexpr tag_primitive(T val = 0) noexcept : value(val) {}
 
-    //Getters
+    // Getters
     operator T&() { return value; }
     constexpr operator T() const { return value; }
     constexpr T get() const { return value; }
 
-    //Setters
-    tag_primitive& operator=(T val) { value = val; return *this; }
+    // Setters
+    tag_primitive& operator=(T val)
+    {
+        value = val;
+        return *this;
+    }
     void set(T val) { value = val; }
 
     void read_payload(io::stream_reader& reader) override;
     void write_payload(io::stream_writer& writer) const override;
 
-private:
+   private:
     T value;
 };
 
-template<class T> bool operator==(const tag_primitive<T>& lhs, const tag_primitive<T>& rhs)
-{ return lhs.get() == rhs.get(); }
-template<class T> bool operator!=(const tag_primitive<T>& lhs, const tag_primitive<T>& rhs)
-{ return !(lhs == rhs); }
+template <class T>
+bool operator==(const tag_primitive<T>& lhs, const tag_primitive<T>& rhs)
+{
+    return lhs.get() == rhs.get();
+}
+template <class T>
+bool operator!=(const tag_primitive<T>& lhs, const tag_primitive<T>& rhs)
+{
+    return !(lhs == rhs);
+}
 
-//Typedefs that should be used instead of the template tag_primitive.
+// Typedefs that should be used instead of the template tag_primitive.
 typedef tag_primitive<int8_t> tag_byte;
 typedef tag_primitive<int16_t> tag_short;
 typedef tag_primitive<int32_t> tag_int;
@@ -77,7 +85,7 @@ typedef tag_primitive<int64_t> tag_long;
 typedef tag_primitive<float> tag_float;
 typedef tag_primitive<double> tag_double;
 
-//Explicit instantiations
+// Explicit instantiations
 template class NBT_EXPORT tag_primitive<int8_t>;
 template class NBT_EXPORT tag_primitive<int16_t>;
 template class NBT_EXPORT tag_primitive<int32_t>;
@@ -85,24 +93,23 @@ template class NBT_EXPORT tag_primitive<int64_t>;
 template class NBT_EXPORT tag_primitive<float>;
 template class NBT_EXPORT tag_primitive<double>;
 
-template<class T>
+template <class T>
 void tag_primitive<T>::read_payload(io::stream_reader& reader)
 {
     reader.read_num(value);
-    if(!reader.get_istr())
-    {
+    if (!reader.get_istr()) {
         std::ostringstream str;
         str << "Error reading tag_" << type;
         throw io::input_error(str.str());
     }
 }
 
-template<class T>
+template <class T>
 void tag_primitive<T>::write_payload(io::stream_writer& writer) const
 {
     writer.write_num(value);
 }
 
-}
+}  // namespace nbt
 
-#endif // TAG_PRIMITIVE_H_INCLUDED
+#endif  // TAG_PRIMITIVE_H_INCLUDED

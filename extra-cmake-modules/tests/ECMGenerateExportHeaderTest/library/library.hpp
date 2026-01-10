@@ -25,7 +25,7 @@ void function_deprecatedAt2_12();
 LIBRARY_EXPORT void function_not_deprecated();
 
 class LIBRARY_EXPORT Class {
-public:
+   public:
 #if LIBRARY_BUILD_DEPRECATED_SINCE(2, 0)
     LIBRARY_DEPRECATED_VERSION(2, 0, "Deprecated at 2.0")
     virtual void method_deprecatedAt2_0();
