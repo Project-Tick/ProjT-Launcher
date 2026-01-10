@@ -84,6 +84,12 @@ stdenv.mkDerivation {
     ];
   };
 
+  postPatch = ''
+    # Fix cmark executable name collision with cmark directory in Nix build
+    substituteInPlace cmark/src/CMakeLists.txt \
+      --replace-fail 'OUTPUT_NAME "cmark"' 'OUTPUT_NAME "cmark-bin"'
+  '';
+
   nativeBuildInputs = [
     cmake
     ninja
