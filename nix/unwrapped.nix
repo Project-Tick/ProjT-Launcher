@@ -74,7 +74,6 @@ stdenv.mkDerivation {
       ../quazip
       ../rainbow
       ../scripts
-      ../spdx
       ../systeminfo
       ../tests
       ../tomlplusplus
