@@ -1,0 +1,88 @@
+## Bot (Cloudflare Workers) `bot/`
+
+This directory contains a Cloudflare Worker that can auto-label GitHub pull requests (similar to the CI bot).
+
+### Endpoints
+
+- `GET /` or `GET /healthz`: health check
+- `POST /github/webhook`: GitHub webhook receiver (requires signature)
+- `POST /run` or `GET /run`: manual run (requires `Authorization: Bearer <ADMIN_TOKEN>`)
+- `issue_comment` webhook: `bot rerun` / `bot labels` (or `/bot rerun`) triggers re-label for that PR (author association must be owner/member/collaborator by default). Set `BOT_COMMENT_ON_COMMAND=true` to let the bot reply with a short summary.
+
+### Required secrets (Cloudflare)
+
+Set these as Worker secrets (choose ONE auth method):
+
+PAT (simple):
+
+- `GITHUB_TOKEN`: token with permission to add/create labels (repo access as needed)
+
+GitHub App (recommended for non-personal auth):
+
+- `GITHUB_APP_ID`
+- `GITHUB_APP_INSTALLATION_ID`
+- `GITHUB_APP_PRIVATE_KEY` (PKCS#8 PEM; use `\n` for newlines when pasting)
+- `BOT_LOGIN` (optional): set to your app slug so the bot can recognize/update its own comments
+
+Common secrets:
+
+- `GITHUB_WEBHOOK_SECRET`: the webhook secret configured in GitHub
+- `ADMIN_TOKEN`: (optional but recommended) protects `/run`
+- `BOT_COMMENT_ON_COMMAND`: (optional) `true` to comment after handling `issue_comment` commands
+- `BOT_ALLOWED_ASSOCIATIONS`: (optional) comma-separated GitHub author_association values allowed to run commands (default: `OWNER,MEMBER,COLLABORATOR`)
+- `BOT_ALWAYS_REVIEWERS`: (optional) comma-separated GitHub usernames to always request as reviewers (in addition to maintainers from `ci/eval/compare/maintainers.nix`)
+- `BOT_CRON_MAX_PRS`: (optional) max PRs to scan per cron run (useful on tight CPU plans)
+- `BOT_CRON_LIGHT`: (optional) `true` to skip DCO checks, CI summaries, reviewer requests, and auto-merge during cron runs
+
+Example (local):
+
+```bash
+cd bot
+wrangler secret put GITHUB_TOKEN
+wrangler secret put GITHUB_WEBHOOK_SECRET
+wrangler secret put ADMIN_TOKEN
+```
+
+### Local smoke test
+
+```bash
+cd bot
+wrangler dev
+curl -sS http://localhost:8787/healthz
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:8787/run?pr=123"
+```
+
+### Config vars
+
+Defined in `bot/wrangler.json`:
+
+- `GITHUB_OWNER` (default: `Project-Tick`)
+- `GITHUB_REPO` (default: `ProjT-Launcher`)
+- `BOT_DRY_RUN` (`true`/`false`)
+- `BOT_CRON_MAX_PRS` (optional, numeric limit for scheduled runs)
+- `BOT_CRON_LIGHT` (optional, reduce work in scheduled runs)
+
+### DCO check
+
+The bot validates that each non-bot commit in a PR includes `Signed-off-by:`. If any are missing, it applies the `status:dco-missing` label (created automatically if needed). Bot commits (`[bot]`, `Project Tick Bot`, or `*@bot.*`) are exempt.
+
+### Scope labels (PR template)
+
+If a PR checks any options in the **Scope** section of `.github/pull_request_template.md`, the bot adds corresponding `31.scope:*` labels (created automatically if needed).
+
+### CI summary comment
+
+The bot posts or updates a `PR CI Summary` comment based on the latest `pull-request-target.yml` run for the PR. It requires `actions:read` in addition to issues/labels write access.
+
+### GitHub webhook setup
+
+Create a GitHub webhook pointing to:
+
+- Payload URL: `https://<your-worker-domain>/github/webhook`
+- Content type: `application/json`
+- Secret: same as `GITHUB_WEBHOOK_SECRET`
+- Events: `Pull requests` (at minimum)
+
+### Deploy
+
+Cloudflare handles deploys via the existing webhook/automation pipeline, so no GitHub Actions workflow is required in this repo. Use `wrangler deploy` locally only for manual smoke tests.

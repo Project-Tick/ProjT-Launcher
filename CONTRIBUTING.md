@@ -2,7 +2,7 @@
 
 > **ProjT Launcher**  
 > Copyright (C) 2026 Project Tick  
-> Licensed under multiple licenses (Launcher: GPL-3.0-only, Website: AGPL-3.0-only, Metadata generator: MS-PL, Zlib: Zlib license, Quazip: LGPL-2.1-or-later, bzip2: bzip2 license, libnbt++ 3: GPL-3.0-only). See `LICENSE` and `COPYING`.
+> Licensed under multiple licenses (Launcher: GPL-3.0-only, Website: AGPL-3.0-only, Metadata generator: MS-PL, Zlib: Zlib license, Quazip: LGPL-2.1-or-later, bzip2: bzip2 license, libnbt++ 3: GPL-3.0-only, cmark: BSD-2-Clause, MIT, CC-BY-SA-4.0; extra-cmake-modules:  ). See `LICENSE` and `COPYING`.
 
 ## 🧭 Project Areas
 
@@ -12,8 +12,9 @@
 - **Metadata generator (Python)**: `meta/`, `pyproject.toml`
 - **Documentation**: `docs/`
 - **CI/Tools**: `ci/`, `.github/`, `scripts/`, `tools/`
-- **Forked Libraries**: `quazip/`, `zlib/`, `bzip2`, `libnbtplusplus/`
-- **Non fork Libraries**: `launcherjava/`
+- **Forked Libraries**: `quazip/`, `zlib/`, `bzip2`, `libnbtplusplus/`, `libqrencode/`, `tomlplusplus/`, `extra-cmake-modules/`, `cmark/`
+- **Forked Libraries Test Modules**: `bzip2/tests/input/bzip2-testfiles/`
+- **Internal libraries**: `launcherjava/`
 - **Vendored Libraries**: `gamemode/`, `LocalPeer/`, `murmur2/`, `qdcss/`, `rainbow/`, `systeminfo/`
 
 ## 🛠 Engineering Standards
