@@ -3088,6 +3088,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      
+      - name: Configure Git
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
 
       - name: Use Node.js
         uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
