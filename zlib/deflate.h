@@ -10,6 +10,10 @@
 
 /* @(#) $Id$ */
 
+/* Ensure internal code table type is available when this header is
+    included on its own. */
+#include "inftrees.h"
+
 #ifndef DEFLATE_H
 #define DEFLATE_H
 
