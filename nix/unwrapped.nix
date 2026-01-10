@@ -2,17 +2,14 @@
   lib,
   stdenv,
   cmake,
-  cmark,
   apple-sdk_14,
   extra-cmake-modules,
   gamemode,
   jdk17,
   kdePackages,
-  qrencode,
   ninja,
   self,
   stripJavaArchivesHook,
-  tomlplusplus,
   msaClientID ? null,
   gamemodeSupport ? stdenv.hostPlatform.isLinux,
 }:
@@ -65,6 +62,9 @@ stdenv.mkDerivation {
       ../quazip
       ../bzip2
       ../zlib
+      ../tomlplusplus
+      ../cmark
+      ../extra-cmake-modules
     ];
   };
 
