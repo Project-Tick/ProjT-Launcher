@@ -20,31 +20,29 @@
 #ifndef TAG_COMPOUND_H_INCLUDED
 #define TAG_COMPOUND_H_INCLUDED
 
-#include "crtp_tag.h"
-#include "value_initializer.h"
 #include <map>
 #include <string>
+#include "crtp_tag.h"
+#include "value_initializer.h"
 
-namespace nbt
-{
+namespace nbt {
 
-///Tag that contains multiple unordered named tags of arbitrary types
-class NBT_EXPORT tag_compound final : public detail::crtp_tag<tag_compound>
-{
+/// Tag that contains multiple unordered named tags of arbitrary types
+class NBT_EXPORT tag_compound final : public detail::crtp_tag<tag_compound> {
     typedef std::map<std::string, value> map_t_;
 
-public:
-    //Iterator types
+   public:
+    // Iterator types
     typedef map_t_::iterator iterator;
     typedef map_t_::const_iterator const_iterator;
 
-    ///The type of the tag
+    /// The type of the tag
     static constexpr tag_type type = tag_type::Compound;
 
-    ///Constructs an empty compound
+    /// Constructs an empty compound
     tag_compound() {}
 
-    ///Constructs a compound with the given key-value pairs
+    /// Constructs a compound with the given key-value pairs
     tag_compound(std::initializer_list<std::pair<std::string, value_initializer>> init);
 
     /**
@@ -91,7 +89,7 @@ public:
      * @return a pair of the iterator to the value and a bool indicating
      * whether the key did not exist
      */
-    template<class T, class... Args>
+    template <class T, class... Args>
     std::pair<iterator, bool> emplace(const std::string& key, Args&&... args);
 
     /**
@@ -100,43 +98,41 @@ public:
      */
     bool erase(const std::string& key);
 
-    ///Returns true if the given key exists in the compound
+    /// Returns true if the given key exists in the compound
     bool has_key(const std::string& key) const;
-    ///Returns true if the given key exists and the tag has the given type
+    /// Returns true if the given key exists and the tag has the given type
     bool has_key(const std::string& key, tag_type type) const;
 
-    ///Returns the number of tags in the compound
+    /// Returns the number of tags in the compound
     size_t size() const { return tags.size(); }
 
-    ///Erases all tags from the compound
+    /// Erases all tags from the compound
     void clear() { tags.clear(); }
 
-    //Iterators
+    // Iterators
     iterator begin() { return tags.begin(); }
-    iterator end()   { return tags.end(); }
-    const_iterator begin() const  { return tags.begin(); }
-    const_iterator end() const    { return tags.end(); }
+    iterator end() { return tags.end(); }
+    const_iterator begin() const { return tags.begin(); }
+    const_iterator end() const { return tags.end(); }
     const_iterator cbegin() const { return tags.cbegin(); }
-    const_iterator cend() const   { return tags.cend(); }
+    const_iterator cend() const { return tags.cend(); }
 
     void read_payload(io::stream_reader& reader) override;
     void write_payload(io::stream_writer& writer) const override;
 
-    friend bool operator==(const tag_compound& lhs, const tag_compound& rhs)
-    { return lhs.tags == rhs.tags; }
-    friend bool operator!=(const tag_compound& lhs, const tag_compound& rhs)
-    { return !(lhs == rhs); }
+    friend bool operator==(const tag_compound& lhs, const tag_compound& rhs) { return lhs.tags == rhs.tags; }
+    friend bool operator!=(const tag_compound& lhs, const tag_compound& rhs) { return !(lhs == rhs); }
 
-private:
+   private:
     map_t_ tags;
 };
 
-template<class T, class... Args>
+template <class T, class... Args>
 std::pair<tag_compound::iterator, bool> tag_compound::emplace(const std::string& key, Args&&... args)
 {
     return put(key, value(make_unique<T>(std::forward<Args>(args)...)));
 }
 
-}
+}  // namespace nbt
 
-#endif // TAG_COMPOUND_H_INCLUDED
+#endif  // TAG_COMPOUND_H_INCLUDED

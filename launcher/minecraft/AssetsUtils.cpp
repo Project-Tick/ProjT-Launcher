@@ -84,7 +84,8 @@ struct AssetDirs {
     QDir virtualDir;
 };
 
-AssetDirs getAssetDirectories() {
+AssetDirs getAssetDirectories()
+{
     AssetDirs dirs;
     dirs.assets = QDir("assets/");
     dirs.indexes = QDir(FS::PathCombine(dirs.assets.path(), "indexes"));
@@ -301,7 +302,7 @@ bool reconstructAssets(QString assetsId, QString resourcesFolder)
             }
         }
 
-    // Consider adding a function to update the .lastused file with the current timestamp for asset usage tracking.
+        // Consider adding a function to update the .lastused file with the current timestamp for asset usage tracking.
         if (removeLeftovers) {
             for (auto& file : presentFiles) {
                 qDebug() << "Would remove" << file;

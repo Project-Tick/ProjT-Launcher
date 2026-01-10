@@ -67,9 +67,10 @@ class ModrinthAPI : public ResourceAPI {
     static auto getModLoaderStrings(const ModPlatform::ModLoaderTypes types) -> const QStringList
     {
         QStringList l;
-        for (auto loader : { ModPlatform::NeoForge, ModPlatform::Forge, ModPlatform::Fabric, ModPlatform::Quilt, ModPlatform::LiteLoader,
-                             ModPlatform::DataPack, ModPlatform::Babric, ModPlatform::BTA, ModPlatform::LegacyFabric, ModPlatform::Ornithe,
-                             ModPlatform::Rift, ModPlatform::Risugami, ModPlatform::StationLoader, ModPlatform::ModLoaderMP, ModPlatform::Optifine }) {
+        for (auto loader :
+             { ModPlatform::NeoForge, ModPlatform::Forge, ModPlatform::Fabric, ModPlatform::Quilt, ModPlatform::LiteLoader,
+               ModPlatform::DataPack, ModPlatform::Babric, ModPlatform::BTA, ModPlatform::LegacyFabric, ModPlatform::Ornithe,
+               ModPlatform::Rift, ModPlatform::Risugami, ModPlatform::StationLoader, ModPlatform::ModLoaderMP, ModPlatform::Optifine }) {
             if (types & loader) {
                 l << getModLoaderAsString(loader);
             }
@@ -227,10 +228,10 @@ class ModrinthAPI : public ResourceAPI {
 
     static inline auto validateModLoaders(ModPlatform::ModLoaderTypes loaders) -> bool
     {
-        return loaders & (ModPlatform::NeoForge | ModPlatform::Forge | ModPlatform::Fabric | ModPlatform::Quilt | ModPlatform::LiteLoader |
-                  ModPlatform::DataPack | ModPlatform::Babric | ModPlatform::BTA | ModPlatform::LegacyFabric |
-                  ModPlatform::Ornithe | ModPlatform::Rift | ModPlatform::Risugami | ModPlatform::StationLoader |
-                  ModPlatform::ModLoaderMP | ModPlatform::Optifine);
+        return loaders &
+               (ModPlatform::NeoForge | ModPlatform::Forge | ModPlatform::Fabric | ModPlatform::Quilt | ModPlatform::LiteLoader |
+                ModPlatform::DataPack | ModPlatform::Babric | ModPlatform::BTA | ModPlatform::LegacyFabric | ModPlatform::Ornithe |
+                ModPlatform::Rift | ModPlatform::Risugami | ModPlatform::StationLoader | ModPlatform::ModLoaderMP | ModPlatform::Optifine);
     }
 
     std::optional<QString> getDependencyURL(DependencySearchArgs const& args) const override

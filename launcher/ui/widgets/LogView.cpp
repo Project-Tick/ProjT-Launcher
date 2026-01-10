@@ -191,7 +191,7 @@ void LogView::rowsRemoved(const QModelIndex& parent, int first, int last)
     Q_UNUSED(parent)
     Q_UNUSED(first)
     Q_UNUSED(last)
-    
+
     // If we were scrolled to the bottom, stay at the bottom after rows are removed
     // This ensures the user doesn't lose their position when log lines are removed
     if (m_scrolling) {

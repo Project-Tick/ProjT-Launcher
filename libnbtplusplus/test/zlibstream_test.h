@@ -18,21 +18,20 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cxxtest/TestSuite.h>
-#include "io/izlibstream.h"
-#include "io/ozlibstream.h"
 #include <fstream>
 #include <sstream>
+#include "io/izlibstream.h"
+#include "io/ozlibstream.h"
 
 #include "data.h"
 
 using namespace zlib;
 
-class zlibstream_test : public CxxTest::TestSuite
-{
-private:
+class zlibstream_test : public CxxTest::TestSuite {
+   private:
     std::string bigtest;
 
-public:
+   public:
     zlibstream_test()
     {
         std::string input(__binary_bigtest_uncompr_start, __binary_bigtest_uncompr_end);
@@ -40,7 +39,7 @@ public:
         std::stringbuf bigtest_b;
         bigtest_f >> &bigtest_b;
         bigtest = bigtest_b.str();
-        if(!bigtest_f || bigtest.size() == 0)
+        if (!bigtest_f || bigtest.size() == 0)
             throw std::runtime_error("Could not read bigtest_uncompr file");
     }
 
@@ -51,7 +50,7 @@ public:
         TS_ASSERT(gzip_in);
 
         std::stringbuf data;
-        //Small buffer so not all fits at once (the compressed file is 561 bytes)
+        // Small buffer so not all fits at once (the compressed file is 561 bytes)
         {
             izlibstream igzs(gzip_in, 256);
             igzs.exceptions(std::ios::failbit | std::ios::badbit);
@@ -63,11 +62,11 @@ public:
             TS_ASSERT_EQUALS(data.str(), bigtest);
         }
 
-        //Clear and reuse buffers
+        // Clear and reuse buffers
         data.str("");
         gzip_in.clear();
         gzip_in.seekg(0);
-        //Now try the same with larger buffer (but not large enough for all output, uncompressed size 1561 bytes)
+        // Now try the same with larger buffer (but not large enough for all output, uncompressed size 1561 bytes)
         {
             izlibstream igzs(gzip_in, 1000);
             igzs.exceptions(std::ios::failbit | std::ios::badbit);
@@ -82,7 +81,7 @@ public:
         data.str("");
         gzip_in.clear();
         gzip_in.seekg(0);
-        //Now with large buffer
+        // Now with large buffer
         {
             izlibstream igzs(gzip_in, 4000);
             igzs.exceptions(std::ios::failbit | std::ios::badbit);
@@ -140,7 +139,7 @@ public:
 
     void test_inflate_trailing()
     {
-        //This file contains additional uncompressed data after the zlib-compressed data
+        // This file contains additional uncompressed data after the zlib-compressed data
         std::string input(__binary_trailing_data_zlib_start, __binary_trailing_data_zlib_end);
         std::istringstream file(input, std::ios::binary);
         izlibstream izls(file, 32);
@@ -152,7 +151,7 @@ public:
         TS_ASSERT(izls.eof());
         TS_ASSERT_EQUALS(str, "foobar");
 
-        //Now read the uncompressed data
+        // Now read the uncompressed data
         TS_ASSERT(file);
         TS_ASSERT(!file.eof());
         file >> str;
@@ -162,10 +161,10 @@ public:
 
     void test_deflate_zlib()
     {
-        //Here we assume that inflating works and has already been tested
+        // Here we assume that inflating works and has already been tested
         std::stringstream str;
         std::stringbuf output;
-        //Small buffer
+        // Small buffer
         {
             ozlibstream ozls(str, -1, false, 256);
             ozls.exceptions(std::ios::failbit | std::ios::badbit);
@@ -182,16 +181,17 @@ public:
         }
         TS_ASSERT_EQUALS(output.str(), bigtest);
 
-        str.clear(); str.str("");
+        str.clear();
+        str.str("");
         output.str("");
-        //Medium sized buffer
-        //Write first half, then flush and write second half
+        // Medium sized buffer
+        // Write first half, then flush and write second half
         {
             ozlibstream ozls(str, 9, false, 512);
             ozls.exceptions(std::ios::failbit | std::ios::badbit);
 
-            std::string half1 = bigtest.substr(0, bigtest.size()/2);
-            std::string half2 = bigtest.substr(bigtest.size()/2);
+            std::string half1 = bigtest.substr(0, bigtest.size() / 2);
+            std::string half2 = bigtest.substr(bigtest.size() / 2);
             TS_ASSERT_THROWS_NOTHING(ozls << half1 << std::flush << half2);
             TS_ASSERT(ozls.good());
             TS_ASSERT_THROWS_NOTHING(ozls.close());
@@ -205,16 +205,17 @@ public:
         }
         TS_ASSERT_EQUALS(output.str(), bigtest);
 
-        str.clear(); str.str("");
+        str.clear();
+        str.str("");
         output.str("");
-        //Large buffer
+        // Large buffer
         {
             ozlibstream ozls(str, 1, false, 4000);
             ozls.exceptions(std::ios::failbit | std::ios::badbit);
             TS_ASSERT_THROWS_NOTHING(ozls << bigtest);
             TS_ASSERT(ozls.good());
             TS_ASSERT_THROWS_NOTHING(ozls.close());
-            TS_ASSERT_THROWS_NOTHING(ozls.close()); //closing twice shouldn't be a problem
+            TS_ASSERT_THROWS_NOTHING(ozls.close());  // closing twice shouldn't be a problem
             TS_ASSERT(ozls.good());
         }
         TS_ASSERT(str.good());
@@ -264,7 +265,7 @@ public:
         str.seekp(0);
         {
             ozlibstream ozls(str);
-            //this time without exceptions
+            // this time without exceptions
             TS_ASSERT_THROWS_NOTHING(ozls << bigtest);
             TS_ASSERT_THROWS_NOTHING(ozls.close());
             TS_ASSERT_THROWS_NOTHING(ozls << "foo" << std::flush);

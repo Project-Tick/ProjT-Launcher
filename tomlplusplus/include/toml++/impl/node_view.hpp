@@ -619,28 +619,19 @@ TOML_NAMESPACE_START
         /// \returns	A view of the selected node if this node represented a table and it contained a
         /// 			value at the given key, or an empty view.
         TOML_NODISCARD
-        node_view operator[](const toml::path& path) const noexcept
-        {
-            return node_ ? node_->at_path(path) : node_view{};
-        }
+        node_view operator[](const toml::path& path) const noexcept { return node_ ? node_->at_path(path) : node_view{}; }
 
         /// \brief Returns a view of the subnode matching a fully-qualified "TOML path".
         ///
         /// \see #toml::node::at_path(std::string_view)
         TOML_NODISCARD
-        node_view at_path(std::string_view path) const noexcept
-        {
-            return node_ ? node_->at_path(path) : node_view{};
-        }
+        node_view at_path(std::string_view path) const noexcept { return node_ ? node_->at_path(path) : node_view{}; }
 
         /// \brief Returns a view of the subnode matching a fully-qualified "TOML path".
         ///
         /// \see #toml::node::at_path(const toml::path&)
         TOML_NODISCARD
-        node_view at_path(const toml::path& path) const noexcept
-        {
-            return node_ ? node_->at_path(path) : node_view{};
-        }
+        node_view at_path(const toml::path& path) const noexcept { return node_ ? node_->at_path(path) : node_view{}; }
 
 #if TOML_ENABLE_WINDOWS_COMPAT
 
@@ -666,10 +657,7 @@ TOML_NAMESPACE_START
         ///
         /// \see #toml::node::at_path(std::string_view)
         TOML_NODISCARD
-        node_view at_path(std::wstring_view path) const
-        {
-            return node_ ? node_->at_path(path) : node_view{};
-        }
+        node_view at_path(std::wstring_view path) const { return node_ ? node_->at_path(path) : node_view{}; }
 
 #endif  // TOML_ENABLE_WINDOWS_COMPAT
 

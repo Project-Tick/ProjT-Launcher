@@ -58,11 +58,11 @@
  * ======================================================================== */
 
 #include "MinecraftInstance.h"
-#include "MinecraftInstanceLaunchMenu.h"
 #include "Application.h"
 #include "BuildConfig.h"
 #include "Commandline.h"
 #include "Json.h"
+#include "MinecraftInstanceLaunchMenu.h"
 #include "QObjectPtr.h"
 #include "minecraft/launch/AutoInstallJava.h"
 #include "minecraft/launch/CreateGameFolders.h"
@@ -565,7 +565,8 @@ QStringList MinecraftInstance::javaArguments()
 
     if (javaVersion.isModular() && shouldApplyOnlineFixes())
         // allow reflective access to java.net - required by the skin fix
-        args << "--add-opens" << "java.base/java.net=ALL-UNNAMED";
+        args << "--add-opens"
+             << "java.base/java.net=ALL-UNNAMED";
 
     return args;
 }
@@ -865,8 +866,10 @@ QString MinecraftInstance::createLaunchScript(AuthSessionPtr session, MinecraftT
 QStringList MinecraftInstance::verboseDescription(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin)
 {
     QStringList out;
-    out << "Main Class:" << "  " + getMainClass() << "";
-    out << "Native path:" << "  " + getNativePath() << "";
+    out << "Main Class:"
+        << "  " + getMainClass() << "";
+    out << "Native path:"
+        << "  " + getNativePath() << "";
 
     auto profile = m_components->getProfile();
 

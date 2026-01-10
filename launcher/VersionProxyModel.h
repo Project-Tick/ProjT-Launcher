@@ -77,10 +77,8 @@ class VersionProxyModel : public QAbstractProxyModel {
                          const QModelIndex& destinationParent,
                          int destinationRow);
 
-    void sourceLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& sourceParents,
-                                      QAbstractItemModel::LayoutChangeHint hint);
-    void sourceLayoutChanged(const QList<QPersistentModelIndex>& sourceParents,
-                             QAbstractItemModel::LayoutChangeHint hint);
+    void sourceLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& sourceParents, QAbstractItemModel::LayoutChangeHint hint);
+    void sourceLayoutChanged(const QList<QPersistentModelIndex>& sourceParents, QAbstractItemModel::LayoutChangeHint hint);
 
    private:
     QList<Column> m_columns;

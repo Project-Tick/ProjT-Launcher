@@ -18,17 +18,16 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "tag_compound.h"
-#include "io/stream_reader.h"
-#include "io/stream_writer.h"
 #include <istream>
 #include <sstream>
+#include "io/stream_reader.h"
+#include "io/stream_writer.h"
 
-namespace nbt
-{
+namespace nbt {
 
 tag_compound::tag_compound(std::initializer_list<std::pair<std::string, value_initializer>> init)
 {
-    for(const auto& pair: init)
+    for (const auto& pair : init)
         tags.emplace(std::move(pair.first), std::move(pair.second));
 }
 
@@ -45,13 +44,10 @@ const value& tag_compound::at(const std::string& key) const
 std::pair<tag_compound::iterator, bool> tag_compound::put(const std::string& key, value_initializer&& val)
 {
     auto it = tags.find(key);
-    if(it != tags.end())
-    {
+    if (it != tags.end()) {
         it->second = std::move(val);
-        return {it, false};
-    }
-    else
-    {
+        return { it, false };
+    } else {
         return tags.emplace(key, std::move(val));
     }
 }
@@ -81,15 +77,11 @@ void tag_compound::read_payload(io::stream_reader& reader)
 {
     clear();
     tag_type tt;
-    while((tt = reader.read_type(true)) != tag_type::End)
-    {
+    while ((tt = reader.read_type(true)) != tag_type::End) {
         std::string key;
-        try
-        {
+        try {
             key = reader.read_string();
-        }
-        catch(io::input_error& ex)
-        {
+        } catch (io::input_error& ex) {
             std::ostringstream str;
             str << "Error reading key of tag_" << tt;
             throw io::input_error(str.str());
@@ -101,9 +93,9 @@ void tag_compound::read_payload(io::stream_reader& reader)
 
 void tag_compound::write_payload(io::stream_writer& writer) const
 {
-    for(const auto& pair: tags)
+    for (const auto& pair : tags)
         writer.write_tag(pair.first, pair.second);
     writer.write_type(tag_type::End);
 }
 
-}
+}  // namespace nbt

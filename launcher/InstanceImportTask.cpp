@@ -473,7 +473,7 @@ void InstanceImportTask::processModrinth()
                 static const QRegularExpression s_regex(R"(data\/([^\/]*)\/versions)");
                 auto match = s_regex.match(m_sourceUrl.toString());
                 if (match.hasMatch()) {
-                   pack_id = match.captured(1);
+                    pack_id = match.captured(1);
                 }
             }
         }

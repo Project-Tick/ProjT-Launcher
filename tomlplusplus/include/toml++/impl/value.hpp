@@ -307,10 +307,7 @@ TOML_NAMESPACE_START
         }
 
 #if TOML_LIFETIME_HOOKS
-        ~value() noexcept
-        {
-            TOML_VALUE_DESTROYED;
-        }
+        ~value() noexcept { TOML_VALUE_DESTROYED; }
 #endif
 
         /// \name Type checks
@@ -327,10 +324,7 @@ TOML_NAMESPACE_START
         /// 			- node_type::time
         /// 			- node_type::date_time
         TOML_CONST_INLINE_GETTER
-        node_type type() const noexcept final
-        {
-            return impl::node_type_of<value_type>;
-        }
+        node_type type() const noexcept final { return impl::node_type_of<value_type>; }
 
         TOML_PURE_GETTER
         bool is_homogeneous(node_type ntype) const noexcept final
@@ -376,87 +370,51 @@ TOML_NAMESPACE_START
 
         /// \brief Returns `false`.
         TOML_CONST_INLINE_GETTER
-        bool is_table() const noexcept final
-        {
-            return false;
-        }
+        bool is_table() const noexcept final { return false; }
 
         /// \brief Returns `false`.
         TOML_CONST_INLINE_GETTER
-        bool is_array() const noexcept final
-        {
-            return false;
-        }
+        bool is_array() const noexcept final { return false; }
 
         /// \brief Returns `false`.
         TOML_CONST_INLINE_GETTER
-        bool is_array_of_tables() const noexcept final
-        {
-            return false;
-        }
+        bool is_array_of_tables() const noexcept final { return false; }
 
         /// \brief Returns `true`.
         TOML_CONST_INLINE_GETTER
-        bool is_value() const noexcept final
-        {
-            return true;
-        }
+        bool is_value() const noexcept final { return true; }
 
         /// \brief Returns `true` if the #value_type is std::string.
         TOML_CONST_INLINE_GETTER
-        bool is_string() const noexcept final
-        {
-            return std::is_same_v<value_type, std::string>;
-        }
+        bool is_string() const noexcept final { return std::is_same_v<value_type, std::string>; }
 
         /// \brief Returns `true` if the #value_type is int64_t.
         TOML_CONST_INLINE_GETTER
-        bool is_integer() const noexcept final
-        {
-            return std::is_same_v<value_type, int64_t>;
-        }
+        bool is_integer() const noexcept final { return std::is_same_v<value_type, int64_t>; }
 
         /// \brief Returns `true` if the #value_type is `double`.
         TOML_CONST_INLINE_GETTER
-        bool is_floating_point() const noexcept final
-        {
-            return std::is_same_v<value_type, double>;
-        }
+        bool is_floating_point() const noexcept final { return std::is_same_v<value_type, double>; }
 
         /// \brief Returns `true` if the #value_type is int64_t or `double`.
         TOML_CONST_INLINE_GETTER
-        bool is_number() const noexcept final
-        {
-            return impl::is_one_of<value_type, int64_t, double>;
-        }
+        bool is_number() const noexcept final { return impl::is_one_of<value_type, int64_t, double>; }
 
         /// \brief Returns `true` if the #value_type is `bool`.
         TOML_CONST_INLINE_GETTER
-        bool is_boolean() const noexcept final
-        {
-            return std::is_same_v<value_type, bool>;
-        }
+        bool is_boolean() const noexcept final { return std::is_same_v<value_type, bool>; }
 
         /// \brief Returns `true` if the #value_type is toml::date.
         TOML_CONST_INLINE_GETTER
-        bool is_date() const noexcept final
-        {
-            return std::is_same_v<value_type, date>;
-        }
+        bool is_date() const noexcept final { return std::is_same_v<value_type, date>; }
 
         /// \brief Returns `true` if the #value_type is toml::time.
         TOML_CONST_INLINE_GETTER
-        bool is_time() const noexcept final
-        {
-            return std::is_same_v<value_type, time>;
-        }
+        bool is_time() const noexcept final { return std::is_same_v<value_type, time>; }
 
         /// \brief Returns `true` if the #value_type is toml_date_time.
         TOML_CONST_INLINE_GETTER
-        bool is_date_time() const noexcept final
-        {
-            return std::is_same_v<value_type, date_time>;
-        }
+        bool is_date_time() const noexcept final { return std::is_same_v<value_type, date_time>; }
 
         /// @}
 
@@ -465,129 +423,75 @@ TOML_NAMESPACE_START
 
         /// \brief Returns `nullptr`.
         TOML_CONST_INLINE_GETTER
-        table* as_table() noexcept final
-        {
-            return nullptr;
-        }
+        table* as_table() noexcept final { return nullptr; }
 
         /// \brief Returns `nullptr`.
         TOML_CONST_INLINE_GETTER
-        array* as_array() noexcept final
-        {
-            return nullptr;
-        }
+        array* as_array() noexcept final { return nullptr; }
 
         /// \brief Returns a pointer to the value if it is a value<std::string>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        value<std::string>* as_string() noexcept final
-        {
-            return as_value<std::string>(this);
-        }
+        value<std::string>* as_string() noexcept final { return as_value<std::string>(this); }
 
         /// \brief Returns a pointer to the value if it is a value<int64_t>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        value<int64_t>* as_integer() noexcept final
-        {
-            return as_value<int64_t>(this);
-        }
+        value<int64_t>* as_integer() noexcept final { return as_value<int64_t>(this); }
 
         /// \brief Returns a pointer to the value if it is a value<double>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        value<double>* as_floating_point() noexcept final
-        {
-            return as_value<double>(this);
-        }
+        value<double>* as_floating_point() noexcept final { return as_value<double>(this); }
 
         /// \brief Returns a pointer to the value if it is a value<bool>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        value<bool>* as_boolean() noexcept final
-        {
-            return as_value<bool>(this);
-        }
+        value<bool>* as_boolean() noexcept final { return as_value<bool>(this); }
 
         /// \brief Returns a pointer to the value if it is a value<date>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        value<date>* as_date() noexcept final
-        {
-            return as_value<date>(this);
-        }
+        value<date>* as_date() noexcept final { return as_value<date>(this); }
 
         /// \brief Returns a pointer to the value if it is a value<time>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        value<time>* as_time() noexcept final
-        {
-            return as_value<time>(this);
-        }
+        value<time>* as_time() noexcept final { return as_value<time>(this); }
 
         /// \brief Returns a pointer to the value if it is a value<date_time>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        value<date_time>* as_date_time() noexcept final
-        {
-            return as_value<date_time>(this);
-        }
+        value<date_time>* as_date_time() noexcept final { return as_value<date_time>(this); }
 
         /// \brief Returns `nullptr`.
         TOML_CONST_INLINE_GETTER
-        const table* as_table() const noexcept final
-        {
-            return nullptr;
-        }
+        const table* as_table() const noexcept final { return nullptr; }
 
         /// \brief Returns `nullptr`.
         TOML_CONST_INLINE_GETTER
-        const array* as_array() const noexcept final
-        {
-            return nullptr;
-        }
+        const array* as_array() const noexcept final { return nullptr; }
 
         /// \brief Returns a const-qualified pointer to the value if it is a value<std::string>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        const value<std::string>* as_string() const noexcept final
-        {
-            return as_value<std::string>(this);
-        }
+        const value<std::string>* as_string() const noexcept final { return as_value<std::string>(this); }
 
         /// \brief Returns a const-qualified pointer to the value if it is a value<int64_t>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        const value<int64_t>* as_integer() const noexcept final
-        {
-            return as_value<int64_t>(this);
-        }
+        const value<int64_t>* as_integer() const noexcept final { return as_value<int64_t>(this); }
 
         /// \brief Returns a const-qualified pointer to the value if it is a value<double>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        const value<double>* as_floating_point() const noexcept final
-        {
-            return as_value<double>(this);
-        }
+        const value<double>* as_floating_point() const noexcept final { return as_value<double>(this); }
 
         /// \brief Returns a const-qualified pointer to the value if it is a value<bool>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        const value<bool>* as_boolean() const noexcept final
-        {
-            return as_value<bool>(this);
-        }
+        const value<bool>* as_boolean() const noexcept final { return as_value<bool>(this); }
 
         /// \brief Returns a const-qualified pointer to the value if it is a value<date>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        const value<date>* as_date() const noexcept final
-        {
-            return as_value<date>(this);
-        }
+        const value<date>* as_date() const noexcept final { return as_value<date>(this); }
 
         /// \brief Returns a const-qualified pointer to the value if it is a value<time>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        const value<time>* as_time() const noexcept final
-        {
-            return as_value<time>(this);
-        }
+        const value<time>* as_time() const noexcept final { return as_value<time>(this); }
 
         /// \brief Returns a const-qualified pointer to the value if it is a value<date_time>, otherwise `nullptr`.
         TOML_CONST_INLINE_GETTER
-        const value<date_time>* as_date_time() const noexcept final
-        {
-            return as_value<date_time>(this);
-        }
+        const value<date_time>* as_date_time() const noexcept final { return as_value<date_time>(this); }
 
         /// @}
 
@@ -596,107 +500,65 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns a reference to the underlying value.
         TOML_PURE_INLINE_GETTER
-        value_type& get() & noexcept
-        {
-            return val_;
-        }
+        value_type& get() & noexcept { return val_; }
 
         /// \brief	Returns a reference to the underlying value (rvalue overload).
         TOML_PURE_INLINE_GETTER
-        value_type&& get() && noexcept
-        {
-            return static_cast<value_type&&>(val_);
-        }
+        value_type&& get() && noexcept { return static_cast<value_type&&>(val_); }
 
         /// \brief	Returns a reference to the underlying value (const overload).
         TOML_PURE_INLINE_GETTER
-        const value_type& get() const& noexcept
-        {
-            return val_;
-        }
+        const value_type& get() const& noexcept { return val_; }
 
         /// \brief	Returns a reference to the underlying value (const rvalue overload).
         TOML_PURE_INLINE_GETTER
-        const value_type&& get() const&& noexcept
-        {
-            return static_cast<const value_type&&>(val_);
-        }
+        const value_type&& get() const&& noexcept { return static_cast<const value_type&&>(val_); }
 
         /// \brief	Returns a reference to the underlying value.
         TOML_PURE_INLINE_GETTER
-        value_type& operator*() & noexcept
-        {
-            return val_;
-        }
+        value_type& operator*() & noexcept { return val_; }
 
         /// \brief	Returns a reference to the underlying value (rvalue overload).
         TOML_PURE_INLINE_GETTER
-        value_type&& operator*() && noexcept
-        {
-            return static_cast<value_type&&>(val_);
-        }
+        value_type&& operator*() && noexcept { return static_cast<value_type&&>(val_); }
 
         /// \brief	Returns a reference to the underlying value (const overload).
         TOML_PURE_INLINE_GETTER
-        const value_type& operator*() const& noexcept
-        {
-            return val_;
-        }
+        const value_type& operator*() const& noexcept { return val_; }
 
         /// \brief	Returns a reference to the underlying value (const rvalue overload).
         TOML_PURE_INLINE_GETTER
-        const value_type&& operator*() const&& noexcept
-        {
-            return static_cast<const value_type&&>(val_);
-        }
+        const value_type&& operator*() const&& noexcept { return static_cast<const value_type&&>(val_); }
 
         /// \brief	Returns a reference to the underlying value.
         TOML_PURE_INLINE_GETTER
-        explicit operator value_type&() & noexcept
-        {
-            return val_;
-        }
+        explicit operator value_type&() & noexcept { return val_; }
 
         /// \brief	Returns a reference to the underlying value (rvalue overload).
         TOML_PURE_INLINE_GETTER
-        explicit operator value_type&&() && noexcept
-        {
-            return static_cast<value_type&&>(val_);
-        }
+        explicit operator value_type&&() && noexcept { return static_cast<value_type&&>(val_); }
 
         /// \brief	Returns a reference to the underlying value (const overload).
         TOML_PURE_INLINE_GETTER
-        explicit operator const value_type&() const& noexcept
-        {
-            return val_;
-        }
+        explicit operator const value_type&() const& noexcept { return val_; }
 
         /// \brief	Returns a reference to the underlying value (const rvalue overload).
         TOML_PURE_INLINE_GETTER
-        explicit operator const value_type&&() && noexcept
-        {
-            return static_cast<const value_type&&>(val_);
-        }
+        explicit operator const value_type&&() && noexcept { return static_cast<const value_type&&>(val_); }
 
         /// \brief	Returns a pointer to the underlying value.
         ///
         /// \availability This operator is only available when #value_type is a class/struct.
         TOML_HIDDEN_CONSTRAINT(std::is_class_v<T>, typename T = value_type)
         TOML_PURE_INLINE_GETTER
-        value_type* operator->() noexcept
-        {
-            return &val_;
-        }
+        value_type* operator->() noexcept { return &val_; }
 
         /// \brief	Returns a pointer to the underlying value (const overload).
         ///
         /// \availability This operator is only available when #value_type is a class/struct.
         TOML_HIDDEN_CONSTRAINT(std::is_class_v<T>, typename T = value_type)
         TOML_PURE_INLINE_GETTER
-        const value_type* operator->() const noexcept
-        {
-            return &val_;
-        }
+        const value_type* operator->() const noexcept { return &val_; }
 
         /// @}
 
@@ -705,10 +567,7 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns the metadata flags associated with this value.
         TOML_NODISCARD
-        value_flags flags() const noexcept
-        {
-            return flags_;
-        }
+        value_flags flags() const noexcept { return flags_; }
 
         /// \brief	Sets the metadata flags associated with this value.
         /// \returns A reference to the value object.
@@ -758,59 +617,35 @@ TOML_NAMESPACE_START
 
         /// \brief	Value less-than operator.
         TOML_PURE_GETTER
-        friend bool operator<(const value& lhs, value_arg rhs) noexcept
-        {
-            return lhs.val_ < rhs;
-        }
+        friend bool operator<(const value& lhs, value_arg rhs) noexcept { return lhs.val_ < rhs; }
 
         /// \brief	Value less-than operator.
         TOML_PURE_GETTER
-        friend bool operator<(value_arg lhs, const value& rhs) noexcept
-        {
-            return lhs < rhs.val_;
-        }
+        friend bool operator<(value_arg lhs, const value& rhs) noexcept { return lhs < rhs.val_; }
 
         /// \brief	Value less-than-or-equal-to operator.
         TOML_PURE_GETTER
-        friend bool operator<=(const value& lhs, value_arg rhs) noexcept
-        {
-            return lhs.val_ <= rhs;
-        }
+        friend bool operator<=(const value& lhs, value_arg rhs) noexcept { return lhs.val_ <= rhs; }
 
         /// \brief	Value less-than-or-equal-to operator.
         TOML_PURE_GETTER
-        friend bool operator<=(value_arg lhs, const value& rhs) noexcept
-        {
-            return lhs <= rhs.val_;
-        }
+        friend bool operator<=(value_arg lhs, const value& rhs) noexcept { return lhs <= rhs.val_; }
 
         /// \brief	Value greater-than operator.
         TOML_PURE_GETTER
-        friend bool operator>(const value& lhs, value_arg rhs) noexcept
-        {
-            return lhs.val_ > rhs;
-        }
+        friend bool operator>(const value& lhs, value_arg rhs) noexcept { return lhs.val_ > rhs; }
 
         /// \brief	Value greater-than operator.
         TOML_PURE_GETTER
-        friend bool operator>(value_arg lhs, const value& rhs) noexcept
-        {
-            return lhs > rhs.val_;
-        }
+        friend bool operator>(value_arg lhs, const value& rhs) noexcept { return lhs > rhs.val_; }
 
         /// \brief	Value greater-than-or-equal-to operator.
         TOML_PURE_GETTER
-        friend bool operator>=(const value& lhs, value_arg rhs) noexcept
-        {
-            return lhs.val_ >= rhs;
-        }
+        friend bool operator>=(const value& lhs, value_arg rhs) noexcept { return lhs.val_ >= rhs; }
 
         /// \brief	Value greater-than-or-equal-to operator.
         TOML_PURE_GETTER
-        friend bool operator>=(value_arg lhs, const value& rhs) noexcept
-        {
-            return lhs >= rhs.val_;
-        }
+        friend bool operator>=(value_arg lhs, const value& rhs) noexcept { return lhs >= rhs.val_; }
 
         /// \brief	Equality operator.
         ///
@@ -987,11 +822,11 @@ TOML_NAMESPACE_START
                       "Retrieving values as wide-character strings with node::value_exact() is only "
                       "supported on Windows with TOML_ENABLE_WINDOWS_COMPAT enabled.");
 
-        static_assert((is_native<T> || can_represent_native<T>)&&!is_cvref<T>,
+        static_assert((is_native<T> || can_represent_native<T>) && !is_cvref<T>,
                       TOML_SA_VALUE_EXACT_FUNC_MESSAGE("return type of node::value_exact()"));
 
         // prevent additional compiler error spam when the static_assert fails by gating behind if constexpr
-        if constexpr ((is_native<T> || can_represent_native<T>)&&!is_cvref<T>) {
+        if constexpr ((is_native<T> || can_represent_native<T>) && !is_cvref<T>) {
             if (type() == node_type_of<T>)
                 return { this->get_value_exact<T>() };
             else
@@ -1007,7 +842,7 @@ TOML_NAMESPACE_START
         static_assert(!is_wide_string<T> || TOML_ENABLE_WINDOWS_COMPAT,
                       "Retrieving values as wide-character strings with node::value() is only "
                       "supported on Windows with TOML_ENABLE_WINDOWS_COMPAT enabled.");
-        static_assert((is_native<T> || can_represent_native<T> || can_partially_represent_native<T>)&&!is_cvref<T>,
+        static_assert((is_native<T> || can_represent_native<T> || can_partially_represent_native<T>) && !is_cvref<T>,
                       TOML_SA_VALUE_FUNC_MESSAGE("return type of node::value()"));
 
         // when asking for strings, dates, times and date_times there's no 'fuzzy' conversion

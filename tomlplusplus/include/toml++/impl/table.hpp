@@ -534,10 +534,7 @@ TOML_NAMESPACE_START
         ///
         /// \returns	A pointer to the node at the specified key, or nullptr.
         TOML_NODISCARD
-        const node* get(std::wstring_view key) const
-        {
-            return const_cast<table&>(*this).get(key);
-        }
+        const node* get(std::wstring_view key) const { return const_cast<table&>(*this).get(key); }
 
 #endif  // TOML_ENABLE_WINDOWS_COMPAT
 
@@ -621,10 +618,7 @@ TOML_NAMESPACE_START
 
         /// \brief	Gets a reference to the element at a specific key, throwing `std::out_of_range` if none existed.
         TOML_NODISCARD
-        const node& at(std::string_view key) const
-        {
-            return const_cast<table&>(*this).at(key);
-        }
+        const node& at(std::string_view key) const { return const_cast<table&>(*this).at(key); }
 
 #if TOML_ENABLE_WINDOWS_COMPAT
 
@@ -632,19 +626,13 @@ TOML_NAMESPACE_START
         ///
         /// \availability This overload is only available when #TOML_ENABLE_WINDOWS_COMPAT is enabled.
         TOML_NODISCARD
-        node& at(std::wstring_view key)
-        {
-            return at(impl::narrow(key));
-        }
+        node& at(std::wstring_view key) { return at(impl::narrow(key)); }
 
         /// \brief	Gets a reference to the element at a specific key, throwing `std::out_of_range` if none existed.
         ///
         /// \availability This overload is only available when #TOML_ENABLE_WINDOWS_COMPAT is enabled.
         TOML_NODISCARD
-        const node& at(std::wstring_view key) const
-        {
-            return const_cast<table&>(*this).at(key);
-        }
+        const node& at(std::wstring_view key) const { return const_cast<table&>(*this).at(key); }
 
 #endif  // TOML_ENABLE_WINDOWS_COMPAT
 
@@ -661,45 +649,27 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns an iterator to the first key-value pair.
         TOML_PURE_INLINE_GETTER
-        iterator begin() noexcept
-        {
-            return iterator{ map_.begin() };
-        }
+        iterator begin() noexcept { return iterator{ map_.begin() }; }
 
         /// \brief	Returns an iterator to the first key-value pair.
         TOML_PURE_INLINE_GETTER
-        const_iterator begin() const noexcept
-        {
-            return const_iterator{ map_.cbegin() };
-        }
+        const_iterator begin() const noexcept { return const_iterator{ map_.cbegin() }; }
 
         /// \brief	Returns an iterator to the first key-value pair.
         TOML_PURE_INLINE_GETTER
-        const_iterator cbegin() const noexcept
-        {
-            return const_iterator{ map_.cbegin() };
-        }
+        const_iterator cbegin() const noexcept { return const_iterator{ map_.cbegin() }; }
 
         /// \brief	Returns an iterator to one-past-the-last key-value pair.
         TOML_PURE_INLINE_GETTER
-        iterator end() noexcept
-        {
-            return iterator{ map_.end() };
-        }
+        iterator end() noexcept { return iterator{ map_.end() }; }
 
         /// \brief	Returns an iterator to one-past-the-last key-value pair.
         TOML_PURE_INLINE_GETTER
-        const_iterator end() const noexcept
-        {
-            return const_iterator{ map_.cend() };
-        }
+        const_iterator end() const noexcept { return const_iterator{ map_.cend() }; }
 
         /// \brief	Returns an iterator to one-past-the-last key-value pair.
         TOML_PURE_INLINE_GETTER
-        const_iterator cend() const noexcept
-        {
-            return const_iterator{ map_.cend() };
-        }
+        const_iterator cend() const noexcept { return const_iterator{ map_.cend() }; }
 
        private:
         /// \cond
@@ -848,8 +818,8 @@ TOML_NAMESPACE_START
         ///					Where:
         ///					<ul>
         ///					<li> `key` will recieve a const reference to a toml::key
-        ///					<li> `val` will recieve the value as it's concrete type with cvref-qualifications matching the
-        ///table
+        ///					<li> `val` will recieve the value as it's concrete type with cvref-qualifications matching
+        /// the table
         ///					</ul>
         ///					Visitors returning `bool` (or something convertible to `bool`) will cause iteration to
         ///					stop if they return `false`.
@@ -962,17 +932,11 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns true if the table is empty.
         TOML_PURE_INLINE_GETTER
-        bool empty() const noexcept
-        {
-            return map_.empty();
-        }
+        bool empty() const noexcept { return map_.empty(); }
 
         /// \brief	Returns the number of key-value pairs in the table.
         TOML_PURE_INLINE_GETTER
-        size_t size() const noexcept
-        {
-            return map_.size();
-        }
+        size_t size() const noexcept { return map_.size(); }
 
         /// @}
 
@@ -993,10 +957,7 @@ TOML_NAMESPACE_START
         ///
         /// \returns	An iterator to the first matching key-value pair, or #end().
         TOML_PURE_GETTER
-        iterator lower_bound(std::string_view key) noexcept
-        {
-            return iterator{ get_lower_bound(key) };
-        }
+        iterator lower_bound(std::string_view key) noexcept { return iterator{ get_lower_bound(key) }; }
 
         /// \brief Returns a const iterator to the first key-value pair with key that is _not less_ than the given key.
         ///
@@ -1059,10 +1020,7 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns true if the table contains a node at the given key.
         TOML_PURE_GETTER
-        bool contains(std::string_view key) const noexcept
-        {
-            return get(key) != nullptr;
-        }
+        bool contains(std::string_view key) const noexcept { return get(key) != nullptr; }
 
 #if TOML_ENABLE_WINDOWS_COMPAT
 
@@ -1090,19 +1048,13 @@ TOML_NAMESPACE_START
         ///
         /// \returns	A const iterator to the node at the specified key, or cend().
         TOML_NODISCARD
-        const_iterator find(std::wstring_view key) const
-        {
-            return find(impl::narrow(key));
-        }
+        const_iterator find(std::wstring_view key) const { return find(impl::narrow(key)); }
 
         /// \brief	Returns true if the table contains a node at the given key.
         ///
         /// \availability This overload is only available when #TOML_ENABLE_WINDOWS_COMPAT is enabled.
         TOML_NODISCARD
-        bool contains(std::wstring_view key) const
-        {
-            return contains(impl::narrow(key));
-        }
+        bool contains(std::wstring_view key) const { return contains(impl::narrow(key)); }
 
 #endif  // TOML_ENABLE_WINDOWS_COMPAT
 
@@ -1145,10 +1097,7 @@ TOML_NAMESPACE_START
         /// \param 	pos		Iterator to the key-value pair being erased.
         ///
         /// \returns Iterator to the first key-value pair immediately following the removed key-value pair.
-        iterator erase(iterator pos) noexcept
-        {
-            return iterator{ erase(const_map_iterator{ pos }) };
-        }
+        iterator erase(iterator pos) noexcept { return iterator{ erase(const_map_iterator{ pos }) }; }
 
         /// \brief	Removes the specified key-value pair from the table (const iterator overload).
         ///
@@ -1172,10 +1121,7 @@ TOML_NAMESPACE_START
         /// \param 	pos		Iterator to the key-value pair being erased.
         ///
         /// \returns Iterator to the first key-value pair immediately following the removed key-value pair.
-        iterator erase(const_iterator pos) noexcept
-        {
-            return iterator{ erase(const_map_iterator{ pos }) };
-        }
+        iterator erase(const_iterator pos) noexcept { return iterator{ erase(const_map_iterator{ pos }) }; }
 
         /// \brief	Removes the key-value pairs in the range [first, last) from the table.
         ///
@@ -1280,10 +1226,7 @@ TOML_NAMESPACE_START
         /// \param recursive Should child arrays and tables themselves be pruned?
         ///
         /// \returns An rvalue reference to the table.
-        table&& prune(bool recursive = true) && noexcept
-        {
-            return static_cast<toml::table&&>(this->prune(recursive));
-        }
+        table&& prune(bool recursive = true) && noexcept { return static_cast<toml::table&&>(this->prune(recursive)); }
 
         /// \brief	Removes all key-value pairs from the table.
         TOML_EXPORTED_MEMBER_FUNCTION
@@ -1684,10 +1627,7 @@ TOML_NAMESPACE_START
         ///
         /// \see toml::node_view
         TOML_NODISCARD
-        node_view<node> operator[](std::string_view key) noexcept
-        {
-            return node_view<node>{ get(key) };
-        }
+        node_view<node> operator[](std::string_view key) noexcept { return node_view<node>{ get(key) }; }
 
         /// \brief	Gets a node_view for the selected value (const overload).
         ///
@@ -1701,10 +1641,7 @@ TOML_NAMESPACE_START
         ///
         /// \see toml::node_view
         TOML_NODISCARD
-        node_view<const node> operator[](std::string_view key) const noexcept
-        {
-            return node_view<const node>{ get(key) };
-        }
+        node_view<const node> operator[](std::string_view key) const noexcept { return node_view<const node>{ get(key) }; }
 
 #if TOML_ENABLE_WINDOWS_COMPAT
 
@@ -1722,10 +1659,7 @@ TOML_NAMESPACE_START
         ///
         /// \see toml::node_view
         TOML_NODISCARD
-        node_view<node> operator[](std::wstring_view key)
-        {
-            return node_view<node>{ get(key) };
-        }
+        node_view<node> operator[](std::wstring_view key) { return node_view<node>{ get(key) }; }
 
         /// \brief	Gets a node_view for the selected value (const overload).
         ///
@@ -1741,10 +1675,7 @@ TOML_NAMESPACE_START
         ///
         /// \see toml::node_view
         TOML_NODISCARD
-        node_view<const node> operator[](std::wstring_view key) const
-        {
-            return node_view<const node>{ get(key) };
-        }
+        node_view<const node> operator[](std::wstring_view key) const { return node_view<const node>{ get(key) }; }
 
 #endif  // TOML_ENABLE_WINDOWS_COMPAT
 
@@ -1769,10 +1700,7 @@ TOML_NAMESPACE_START
         ///
         /// \returns	True if the tables contained the same keys and map.
         TOML_NODISCARD
-        friend bool operator==(const table& lhs, const table& rhs) noexcept
-        {
-            return equal(lhs, rhs);
-        }
+        friend bool operator==(const table& lhs, const table& rhs) noexcept { return equal(lhs, rhs); }
 
         /// \brief	Inequality operator.
         ///
@@ -1781,10 +1709,7 @@ TOML_NAMESPACE_START
         ///
         /// \returns	True if the tables did not contain the same keys and map.
         TOML_NODISCARD
-        friend bool operator!=(const table& lhs, const table& rhs) noexcept
-        {
-            return !equal(lhs, rhs);
-        }
+        friend bool operator!=(const table& lhs, const table& rhs) noexcept { return !equal(lhs, rhs); }
 
         /// @}
 

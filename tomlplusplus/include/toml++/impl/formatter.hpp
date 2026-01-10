@@ -47,91 +47,46 @@ TOML_IMPL_NAMESPACE_START
 
        protected:
         TOML_PURE_INLINE_GETTER
-        const node& source() const noexcept
-        {
-            return *source_;
-        }
+        const node& source() const noexcept { return *source_; }
 
         TOML_PURE_INLINE_GETTER
-        std::ostream& stream() const noexcept
-        {
-            return *stream_;
-        }
+        std::ostream& stream() const noexcept { return *stream_; }
 
         TOML_PURE_INLINE_GETTER
-        int indent() const noexcept
-        {
-            return indent_;
-        }
+        int indent() const noexcept { return indent_; }
 
-        void indent(int level) noexcept
-        {
-            indent_ = level;
-        }
+        void indent(int level) noexcept { indent_ = level; }
 
-        void increase_indent() noexcept
-        {
-            indent_++;
-        }
+        void increase_indent() noexcept { indent_++; }
 
-        void decrease_indent() noexcept
-        {
-            indent_--;
-        }
+        void decrease_indent() noexcept { indent_--; }
 
         TOML_PURE_INLINE_GETTER
-        size_t indent_columns() const noexcept
-        {
-            return indent_columns_;
-        }
+        size_t indent_columns() const noexcept { return indent_columns_; }
 
         TOML_PURE_INLINE_GETTER
-        bool indent_array_elements() const noexcept
-        {
-            return !!(config_.flags & format_flags::indent_array_elements);
-        }
+        bool indent_array_elements() const noexcept { return !!(config_.flags & format_flags::indent_array_elements); }
 
         TOML_PURE_INLINE_GETTER
-        bool indent_sub_tables() const noexcept
-        {
-            return !!(config_.flags & format_flags::indent_sub_tables);
-        }
+        bool indent_sub_tables() const noexcept { return !!(config_.flags & format_flags::indent_sub_tables); }
 
         TOML_PURE_INLINE_GETTER
-        bool literal_strings_allowed() const noexcept
-        {
-            return !!(config_.flags & format_flags::allow_literal_strings);
-        }
+        bool literal_strings_allowed() const noexcept { return !!(config_.flags & format_flags::allow_literal_strings); }
 
         TOML_PURE_INLINE_GETTER
-        bool multi_line_strings_allowed() const noexcept
-        {
-            return !!(config_.flags & format_flags::allow_multi_line_strings);
-        }
+        bool multi_line_strings_allowed() const noexcept { return !!(config_.flags & format_flags::allow_multi_line_strings); }
 
         TOML_PURE_INLINE_GETTER
-        bool real_tabs_in_strings_allowed() const noexcept
-        {
-            return !!(config_.flags & format_flags::allow_real_tabs_in_strings);
-        }
+        bool real_tabs_in_strings_allowed() const noexcept { return !!(config_.flags & format_flags::allow_real_tabs_in_strings); }
 
         TOML_PURE_INLINE_GETTER
-        bool unicode_strings_allowed() const noexcept
-        {
-            return !!(config_.flags & format_flags::allow_unicode_strings);
-        }
+        bool unicode_strings_allowed() const noexcept { return !!(config_.flags & format_flags::allow_unicode_strings); }
 
         TOML_PURE_INLINE_GETTER
-        bool terse_kvps() const noexcept
-        {
-            return !!(config_.flags & format_flags::terse_key_value_pairs);
-        }
+        bool terse_kvps() const noexcept { return !!(config_.flags & format_flags::terse_key_value_pairs); }
 
         TOML_PURE_INLINE_GETTER
-        bool force_multiline_arrays() const noexcept
-        {
-            return !!(config_.flags & format_flags::force_multiline_arrays);
-        }
+        bool force_multiline_arrays() const noexcept { return !!(config_.flags & format_flags::force_multiline_arrays); }
 
         TOML_EXPORTED_MEMBER_FUNCTION
         void attach(std::ostream& stream) noexcept;

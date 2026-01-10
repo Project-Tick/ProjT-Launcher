@@ -22,8 +22,7 @@
 
 #include "value.h"
 
-namespace nbt
-{
+namespace nbt {
 
 /**
  * @brief Helper class for implicitly constructing value objects
@@ -41,13 +40,12 @@ namespace nbt
  * As value_initializer objects are in no way different than value objects,
  * they can just be converted to value after construction.
  */
-class NBT_EXPORT value_initializer : public value
-{
-public:
-    value_initializer(std::unique_ptr<tag>&& t) noexcept: value(std::move(t)) {}
-    value_initializer(std::nullptr_t) noexcept          : value(nullptr) {}
-    value_initializer(value&& val) noexcept             : value(std::move(val)) {}
-    value_initializer(tag&& t)                          : value(std::move(t)) {}
+class NBT_EXPORT value_initializer : public value {
+   public:
+    value_initializer(std::unique_ptr<tag>&& t) noexcept : value(std::move(t)) {}
+    value_initializer(std::nullptr_t) noexcept : value(nullptr) {}
+    value_initializer(value&& val) noexcept : value(std::move(val)) {}
+    value_initializer(tag&& t) : value(std::move(t)) {}
 
     value_initializer(int8_t val);
     value_initializer(int16_t val);
@@ -60,6 +58,6 @@ public:
     value_initializer(const char* str);
 };
 
-}
+}  // namespace nbt
 
-#endif // VALUE_INITIALIZER_H_INCLUDED
+#endif  // VALUE_INITIALIZER_H_INCLUDED

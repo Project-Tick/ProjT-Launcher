@@ -40,7 +40,7 @@ bufsize_t _scan_scheme(const unsigned char* p)
             goto yy3;
     yy1:
         ++p;
-    yy2 : {
+    yy2: {
         return 0;
     }
     yy3:
@@ -782,7 +782,7 @@ bufsize_t _scan_autolink_uri(const unsigned char* p)
             goto yy12;
     yy10:
         ++p;
-    yy11 : {
+    yy11: {
         return 0;
     }
     yy12:
@@ -1559,7 +1559,7 @@ bufsize_t _scan_autolink_email(const unsigned char* p)
         }
     yy21:
         ++p;
-    yy22 : {
+    yy22: {
         return 0;
     }
     yy23:
@@ -4806,7 +4806,7 @@ bufsize_t _scan_html_tag(const unsigned char* p)
         }
     yy153:
         ++p;
-    yy154 : {
+    yy154: {
         return 0;
     }
     yy155:
@@ -5110,7 +5110,7 @@ bufsize_t _scan_html_comment(const unsigned char* p)
         if (yych == '-')
             goto yy174;
         ++p;
-    yy173 : {
+    yy173: {
         return 0;
     }
     yy174:
@@ -5173,7 +5173,7 @@ bufsize_t _scan_html_pi(const unsigned char* p)
         if (yych >= 0x01)
             goto yy182;
         ++p;
-    yy179 : {
+    yy179: {
         return 0;
     }
     yy180:
@@ -5183,7 +5183,7 @@ bufsize_t _scan_html_pi(const unsigned char* p)
         }
         if (yych >= 0x01)
             goto yy183;
-    yy181 : {
+    yy181: {
         return (bufsize_t)(p - start);
     }
     yy182:
@@ -5278,7 +5278,7 @@ bufsize_t _scan_html_cdata(const unsigned char* p)
         if (yych == 'c')
             goto yy190;
         ++p;
-    yy189 : {
+    yy189: {
         return 0;
     }
     yy190:
@@ -5325,7 +5325,7 @@ bufsize_t _scan_html_cdata(const unsigned char* p)
         }
         if (yych >= 0x01)
             goto yy198;
-    yy197 : {
+    yy197: {
         return (bufsize_t)(p - start);
     }
     yy198:
@@ -5357,7 +5357,7 @@ bufsize_t _scan_html_block_start(const unsigned char* p)
         if (yych == '<')
             goto yy201;
         ++p;
-    yy200 : {
+    yy200: {
         return 0;
     }
     yy201:
@@ -7171,7 +7171,7 @@ bufsize_t _scan_html_block_start_7(const unsigned char* p)
         if (yych == '<')
             goto yy364;
         ++p;
-    yy363 : {
+    yy363: {
         return 0;
     }
     yy364:
@@ -7376,7 +7376,7 @@ bufsize_t _scan_html_block_start_7(const unsigned char* p)
             goto yy374;
         if (yych <= '\r')
             goto yy375;
-    yy374 : {
+    yy374: {
         return 7;
     }
     yy375:
@@ -7513,7 +7513,7 @@ bufsize_t _scan_html_block_end_1(const unsigned char* p)
         }
     yy383:
         ++p;
-    yy384 : {
+    yy384: {
         return 0;
     }
     yy385:
@@ -7819,7 +7819,7 @@ bufsize_t _scan_html_block_end_1(const unsigned char* p)
         }
         if (yych >= '\v')
             goto yy390;
-    yy404 : {
+    yy404: {
         return (bufsize_t)(p - start);
     }
     yy405:
@@ -7963,7 +7963,7 @@ bufsize_t _scan_html_block_end_2(const unsigned char* p)
         }
     yy412:
         ++p;
-    yy413 : {
+    yy413: {
         return 0;
     }
     yy414:
@@ -8027,7 +8027,7 @@ bufsize_t _scan_html_block_end_2(const unsigned char* p)
         }
         if (yych >= '\v')
             goto yy419;
-    yy421 : {
+    yy421: {
         return (bufsize_t)(p - start);
     }
     }
@@ -8065,7 +8065,7 @@ bufsize_t _scan_html_block_end_3(const unsigned char* p)
         }
     yy423:
         ++p;
-    yy424 : {
+    yy424: {
         return 0;
     }
     yy425:
@@ -8128,7 +8128,7 @@ bufsize_t _scan_html_block_end_3(const unsigned char* p)
         }
         if (yych >= '\v')
             goto yy430;
-    yy432 : {
+    yy432: {
         return (bufsize_t)(p - start);
     }
     }
@@ -8166,7 +8166,7 @@ bufsize_t _scan_html_block_end_4(const unsigned char* p)
             goto yy436;
     yy434:
         ++p;
-    yy435 : {
+    yy435: {
         return 0;
     }
     yy436:
@@ -8185,7 +8185,7 @@ bufsize_t _scan_html_block_end_4(const unsigned char* p)
         }
         if (yych >= '\v')
             goto yy437;
-    yy438 : {
+    yy438: {
         return (bufsize_t)(p - start);
     }
     yy439:
@@ -8237,7 +8237,7 @@ bufsize_t _scan_html_block_end_5(const unsigned char* p)
         }
     yy442:
         ++p;
-    yy443 : {
+    yy443: {
         return 0;
     }
     yy444:
@@ -8301,7 +8301,7 @@ bufsize_t _scan_html_block_end_5(const unsigned char* p)
         }
         if (yych >= '\v')
             goto yy449;
-    yy451 : {
+    yy451: {
         return (bufsize_t)(p - start);
     }
     }
@@ -8342,7 +8342,7 @@ bufsize_t _scan_link_title(const unsigned char* p)
                 goto yy456;
         }
         ++p;
-    yy453 : {
+    yy453: {
         return 0;
     }
     yy454:
@@ -8393,7 +8393,7 @@ bufsize_t _scan_link_title(const unsigned char* p)
         }
     yy460:
         ++p;
-    yy461 : {
+    yy461: {
         return (bufsize_t)(p - start);
     }
     yy462:
@@ -8418,7 +8418,7 @@ bufsize_t _scan_link_title(const unsigned char* p)
             goto yy467;
     yy465:
         ++p;
-    yy466 : {
+    yy466: {
         return (bufsize_t)(p - start);
     }
     yy467:
@@ -8443,7 +8443,7 @@ bufsize_t _scan_link_title(const unsigned char* p)
             goto yy472;
     yy470:
         ++p;
-    yy471 : {
+    yy471: {
         return (bufsize_t)(p - start);
     }
     yy472:
@@ -8551,7 +8551,7 @@ bufsize_t _scan_atx_heading_start(const unsigned char* p)
         if (yych == '#')
             goto yy480;
         ++p;
-    yy479 : {
+    yy479: {
         return 0;
     }
     yy480:
@@ -8577,7 +8577,7 @@ bufsize_t _scan_atx_heading_start(const unsigned char* p)
         if (yybm[0 + yych] & 128) {
             goto yy481;
         }
-    yy482 : {
+    yy482: {
         return (bufsize_t)(p - start);
     }
     yy483:
@@ -8688,7 +8688,7 @@ bufsize_t _scan_setext_heading_line(const unsigned char* p)
         if (yych == '=')
             goto yy490;
         ++p;
-    yy488 : {
+    yy488: {
         return 0;
     }
     yy489:
@@ -8837,7 +8837,7 @@ bufsize_t _scan_open_code_fence(const unsigned char* p)
         if (yych == '~')
             goto yy503;
         ++p;
-    yy501 : {
+    yy501: {
         return 0;
     }
     yy502:
@@ -8962,7 +8962,7 @@ bufsize_t _scan_close_code_fence(const unsigned char* p)
         if (yych == '~')
             goto yy516;
         ++p;
-    yy514 : {
+    yy514: {
         return 0;
     }
     yy515:
@@ -9127,7 +9127,7 @@ bufsize_t _scan_dangerous_url(const unsigned char* p)
             }
         }
         ++p;
-    yy527 : {
+    yy527: {
         return 0;
     }
     yy528:
@@ -9248,7 +9248,7 @@ bufsize_t _scan_dangerous_url(const unsigned char* p)
             goto yy548;
         if (yych == 'i')
             goto yy548;
-    yy545 : {
+    yy545: {
         return (bufsize_t)(p - start);
     }
     yy546:

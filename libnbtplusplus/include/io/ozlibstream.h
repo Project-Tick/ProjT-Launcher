@@ -20,20 +20,18 @@
 #ifndef OZLIBSTREAM_H_INCLUDED
 #define OZLIBSTREAM_H_INCLUDED
 
-#include "io/zlib_streambuf.h"
-#include <ostream>
 #include <zlib.h>
+#include <ostream>
+#include "io/zlib_streambuf.h"
 
-namespace zlib
-{
+namespace zlib {
 
 /**
  * @brief Stream buffer used by zlib::ozlibstream
  * @sa ozlibstream
  */
-class NBT_EXPORT deflate_streambuf : public zlib_streambuf
-{
-public:
+class NBT_EXPORT deflate_streambuf : public zlib_streambuf {
+   public:
     /**
      * @param output the ostream to wrap
      * @param bufsize the size of the internal buffers
@@ -43,15 +41,21 @@ public:
      *
      * @throw zlib_error if zlib encounters a problem during initialization
      */
-    explicit deflate_streambuf(std::ostream& output, size_t bufsize = 32768, int level = Z_DEFAULT_COMPRESSION, int window_bits = 15, int mem_level = 8, int strategy = Z_DEFAULT_STRATEGY);
+    explicit deflate_streambuf(std::ostream& output,
+                               size_t bufsize = 32768,
+                               int level = Z_DEFAULT_COMPRESSION,
+                               int window_bits = 15,
+                               int mem_level = 8,
+                               int strategy = Z_DEFAULT_STRATEGY);
     ~deflate_streambuf() noexcept;
 
     ///@return the wrapped ostream
     std::ostream& get_ostr() const { return os; }
 
-    ///Finishes compression and writes all pending data to the output
+    /// Finishes compression and writes all pending data to the output
     void close();
-private:
+
+   private:
     std::ostream& os;
 
     void deflate_chunk(int flush = Z_NO_FLUSH);
@@ -68,28 +72,28 @@ private:
  *
  * @sa deflate_streambuf
  */
-class NBT_EXPORT ozlibstream : public std::ostream
-{
-public:
+class NBT_EXPORT ozlibstream : public std::ostream {
+   public:
     /**
      * @param output the ostream to wrap
      * @param level the compression level, ranges from 0 to 9, or -1 for default
      * @param gzip if true, the output will be in gzip format rather than zlib
      * @param bufsize the size of the internal buffers
      */
-    explicit ozlibstream(std::ostream& output, int level = Z_DEFAULT_COMPRESSION, bool gzip = false, size_t bufsize = 32768):
-        std::ostream(&buf), buf(output, bufsize, level, 15 + (gzip ? 16 : 0))
+    explicit ozlibstream(std::ostream& output, int level = Z_DEFAULT_COMPRESSION, bool gzip = false, size_t bufsize = 32768)
+        : std::ostream(&buf), buf(output, bufsize, level, 15 + (gzip ? 16 : 0))
     {}
 
     ///@return the wrapped ostream
     std::ostream& get_ostr() const { return buf.get_ostr(); }
 
-    ///Finishes compression and writes all pending data to the output
+    /// Finishes compression and writes all pending data to the output
     void close();
-private:
+
+   private:
     deflate_streambuf buf;
 };
 
-}
+}  // namespace zlib
 
-#endif // OZLIBSTREAM_H_INCLUDED
+#endif  // OZLIBSTREAM_H_INCLUDED

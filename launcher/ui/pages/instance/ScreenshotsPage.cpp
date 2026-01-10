@@ -560,47 +560,43 @@ void ScreenshotsPage::on_actionRename_triggered()
     auto selection = ui->listView->selectionModel()->selectedIndexes();
     if (selection.isEmpty())
         return;
-    
+
     // Single rename - just edit in place
     if (selection.size() == 1) {
         ui->listView->edit(selection[0]);
         return;
     }
-    
+
     // Mass renaming - ask for pattern
     bool ok;
     QString pattern = QInputDialog::getText(
-        this,
-        tr("Rename Screenshots"),
+        this, tr("Rename Screenshots"),
         tr("Enter a name pattern.\nUse {n} for number, {date} for date, {time} for time.\nExample: Screenshot_{n} or MyGame_{date}"),
-        QLineEdit::Normal,
-        "Screenshot_{n}",
-        &ok
-    );
-    
+        QLineEdit::Normal, "Screenshot_{n}", &ok);
+
     if (!ok || pattern.isEmpty())
         return;
-    
+
     // Apply pattern to selected items
     int counter = 1;
     for (const auto& index : selection) {
         if (!index.isValid())
             continue;
-            
+
         auto info = m_model->fileInfo(index);
         QString baseName = info.completeBaseName();
         QString extension = info.suffix();
-        
+
         // Replace placeholders
         QString newName = pattern;
         newName.replace("{n}", QString::number(counter++));
         newName.replace("{date}", QDateTime::currentDateTime().toString("yyyyMMdd"));
         newName.replace("{time}", QDateTime::currentDateTime().toString("HHmmss"));
-        
+
         // Rename file
         QString oldPath = info.absoluteFilePath();
         QString newPath = info.absolutePath() + "/" + newName + "." + extension;
-        
+
         QFile file(oldPath);
         if (file.rename(newPath)) {
             qDebug() << "Renamed" << oldPath << "to" << newPath;
@@ -608,7 +604,7 @@ void ScreenshotsPage::on_actionRename_triggered()
             qWarning() << "Failed to rename" << oldPath << "to" << newPath << ":" << file.errorString();
         }
     }
-    
+
     // Refresh the view
     m_model->setRootPath(m_folder);
 }

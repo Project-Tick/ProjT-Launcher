@@ -99,38 +99,23 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns a view of the key's underlying string.
         TOML_PURE_INLINE_GETTER
-        std::string_view str() const noexcept
-        {
-            return std::string_view{ key_ };
-        }
+        std::string_view str() const noexcept { return std::string_view{ key_ }; }
 
         /// \brief	Returns a view of the key's underlying string.
         TOML_PURE_INLINE_GETTER
-        /*implicit*/ operator std::string_view() const noexcept
-        {
-            return str();
-        }
+        /*implicit*/ operator std::string_view() const noexcept { return str(); }
 
         /// \brief	Returns true if the key's underlying string is empty.
         TOML_PURE_INLINE_GETTER
-        bool empty() const noexcept
-        {
-            return key_.empty();
-        }
+        bool empty() const noexcept { return key_.empty(); }
 
         /// \brief	Returns a pointer to the start of the key's underlying string.
         TOML_PURE_INLINE_GETTER
-        const char* data() const noexcept
-        {
-            return key_.data();
-        }
+        const char* data() const noexcept { return key_.data(); }
 
         /// \brief	Returns the length of the key's underlying string.
         TOML_PURE_INLINE_GETTER
-        size_t length() const noexcept
-        {
-            return key_.length();
-        }
+        size_t length() const noexcept { return key_.length(); }
 
         /// @}
 
@@ -139,10 +124,7 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns the source region responsible for specifying this key during parsing.
         TOML_PURE_INLINE_GETTER
-        const source_region& source() const noexcept
-        {
-            return source_;
-        }
+        const source_region& source() const noexcept { return source_; }
 
         /// @}
 
@@ -152,129 +134,75 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns true if `lhs.str() == rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator==(const key& lhs, const key& rhs) noexcept
-        {
-            return lhs.key_ == rhs.key_;
-        }
+        friend bool operator==(const key& lhs, const key& rhs) noexcept { return lhs.key_ == rhs.key_; }
 
         /// \brief	Returns true if `lhs.str() != rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator!=(const key& lhs, const key& rhs) noexcept
-        {
-            return lhs.key_ != rhs.key_;
-        }
+        friend bool operator!=(const key& lhs, const key& rhs) noexcept { return lhs.key_ != rhs.key_; }
 
         /// \brief	Returns true if `lhs.str() < rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator<(const key& lhs, const key& rhs) noexcept
-        {
-            return lhs.key_ < rhs.key_;
-        }
+        friend bool operator<(const key& lhs, const key& rhs) noexcept { return lhs.key_ < rhs.key_; }
 
         /// \brief	Returns true if `lhs.str() <= rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator<=(const key& lhs, const key& rhs) noexcept
-        {
-            return lhs.key_ <= rhs.key_;
-        }
+        friend bool operator<=(const key& lhs, const key& rhs) noexcept { return lhs.key_ <= rhs.key_; }
 
         /// \brief	Returns true if `lhs.str() > rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator>(const key& lhs, const key& rhs) noexcept
-        {
-            return lhs.key_ > rhs.key_;
-        }
+        friend bool operator>(const key& lhs, const key& rhs) noexcept { return lhs.key_ > rhs.key_; }
 
         /// \brief	Returns true if `lhs.str() >= rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator>=(const key& lhs, const key& rhs) noexcept
-        {
-            return lhs.key_ >= rhs.key_;
-        }
+        friend bool operator>=(const key& lhs, const key& rhs) noexcept { return lhs.key_ >= rhs.key_; }
 
         /// \brief	Returns true if `lhs.str() == rhs`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator==(const key& lhs, std::string_view rhs) noexcept
-        {
-            return lhs.key_ == rhs;
-        }
+        friend bool operator==(const key& lhs, std::string_view rhs) noexcept { return lhs.key_ == rhs; }
 
         /// \brief	Returns true if `lhs.str() != rhs`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator!=(const key& lhs, std::string_view rhs) noexcept
-        {
-            return lhs.key_ != rhs;
-        }
+        friend bool operator!=(const key& lhs, std::string_view rhs) noexcept { return lhs.key_ != rhs; }
 
         /// \brief	Returns true if `lhs.str() < rhs`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator<(const key& lhs, std::string_view rhs) noexcept
-        {
-            return lhs.key_ < rhs;
-        }
+        friend bool operator<(const key& lhs, std::string_view rhs) noexcept { return lhs.key_ < rhs; }
 
         /// \brief	Returns true if `lhs.str() <= rhs`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator<=(const key& lhs, std::string_view rhs) noexcept
-        {
-            return lhs.key_ <= rhs;
-        }
+        friend bool operator<=(const key& lhs, std::string_view rhs) noexcept { return lhs.key_ <= rhs; }
 
         /// \brief	Returns true if `lhs.str() > rhs`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator>(const key& lhs, std::string_view rhs) noexcept
-        {
-            return lhs.key_ > rhs;
-        }
+        friend bool operator>(const key& lhs, std::string_view rhs) noexcept { return lhs.key_ > rhs; }
 
         /// \brief	Returns true if `lhs.str() >= rhs`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator>=(const key& lhs, std::string_view rhs) noexcept
-        {
-            return lhs.key_ >= rhs;
-        }
+        friend bool operator>=(const key& lhs, std::string_view rhs) noexcept { return lhs.key_ >= rhs; }
 
         /// \brief	Returns true if `lhs == rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator==(std::string_view lhs, const key& rhs) noexcept
-        {
-            return lhs == rhs.key_;
-        }
+        friend bool operator==(std::string_view lhs, const key& rhs) noexcept { return lhs == rhs.key_; }
 
         /// \brief	Returns true if `lhs != rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator!=(std::string_view lhs, const key& rhs) noexcept
-        {
-            return lhs != rhs.key_;
-        }
+        friend bool operator!=(std::string_view lhs, const key& rhs) noexcept { return lhs != rhs.key_; }
 
         /// \brief	Returns true if `lhs < rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator<(std::string_view lhs, const key& rhs) noexcept
-        {
-            return lhs < rhs.key_;
-        }
+        friend bool operator<(std::string_view lhs, const key& rhs) noexcept { return lhs < rhs.key_; }
 
         /// \brief	Returns true if `lhs <= rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator<=(std::string_view lhs, const key& rhs) noexcept
-        {
-            return lhs <= rhs.key_;
-        }
+        friend bool operator<=(std::string_view lhs, const key& rhs) noexcept { return lhs <= rhs.key_; }
 
         /// \brief	Returns true if `lhs > rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator>(std::string_view lhs, const key& rhs) noexcept
-        {
-            return lhs > rhs.key_;
-        }
+        friend bool operator>(std::string_view lhs, const key& rhs) noexcept { return lhs > rhs.key_; }
 
         /// \brief	Returns true if `lhs >= rhs.str()`.
         TOML_PURE_INLINE_GETTER
-        friend bool operator>=(std::string_view lhs, const key& rhs) noexcept
-        {
-            return lhs >= rhs.key_;
-        }
+        friend bool operator>=(std::string_view lhs, const key& rhs) noexcept { return lhs >= rhs.key_; }
 
         /// @}
 
@@ -289,17 +217,11 @@ TOML_NAMESPACE_START
 
         /// \brief Returns an iterator to the first character in the key's backing string.
         TOML_PURE_INLINE_GETTER
-        const_iterator begin() const noexcept
-        {
-            return key_.data();
-        }
+        const_iterator begin() const noexcept { return key_.data(); }
 
         /// \brief Returns an iterator to one-past-the-last character in the key's backing string.
         TOML_PURE_INLINE_GETTER
-        const_iterator end() const noexcept
-        {
-            return key_.data() + key_.length();
-        }
+        const_iterator end() const noexcept { return key_.data() + key_.length(); }
 
         /// @}
 

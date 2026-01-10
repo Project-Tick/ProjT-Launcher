@@ -42,10 +42,10 @@
 
 #include <QDialog>
 #include "BaseInstance.h"
-#include "ui/widgets/FastFileIconProvider.h"
-#include "ui/widgets/FileIgnoreProxy.h"
 #include "minecraft/MinecraftInstance.h"
 #include "modplatform/ModIndex.h"
+#include "ui/widgets/FastFileIconProvider.h"
+#include "ui/widgets/FileIgnoreProxy.h"
 
 namespace Ui {
 class ExportPackDialog;

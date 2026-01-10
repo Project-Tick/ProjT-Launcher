@@ -109,20 +109,17 @@ VersionProxyModel::VersionProxyModel(QObject* parent) : QAbstractProxyModel(pare
     connect(filterModel,
             QOverload<const QList<QPersistentModelIndex>&, QAbstractItemModel::LayoutChangeHint>::of(
                 &QAbstractItemModel::layoutAboutToBeChanged),
-            this,
-            &VersionProxyModel::sourceLayoutAboutToBeChanged);
+            this, &VersionProxyModel::sourceLayoutAboutToBeChanged);
 
     connect(filterModel,
-            QOverload<const QList<QPersistentModelIndex>&, QAbstractItemModel::LayoutChangeHint>::of(
-                &QAbstractItemModel::layoutChanged),
-            this,
-            &VersionProxyModel::sourceLayoutChanged);
+            QOverload<const QList<QPersistentModelIndex>&, QAbstractItemModel::LayoutChangeHint>::of(&QAbstractItemModel::layoutChanged),
+            this, &VersionProxyModel::sourceLayoutChanged);
 
-        connect(filterModel, &QAbstractItemModel::modelAboutToBeReset, this, &VersionProxyModel::sourceAboutToBeReset);
-        connect(filterModel, &QAbstractItemModel::modelReset, this, &VersionProxyModel::sourceReset);
+    connect(filterModel, &QAbstractItemModel::modelAboutToBeReset, this, &VersionProxyModel::sourceAboutToBeReset);
+    connect(filterModel, &QAbstractItemModel::modelReset, this, &VersionProxyModel::sourceReset);
 
-        QAbstractProxyModel::setSourceModel(filterModel);
-    }
+    QAbstractProxyModel::setSourceModel(filterModel);
+}
 
 QVariant VersionProxyModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
@@ -498,8 +495,7 @@ void VersionProxyModel::sourceLayoutAboutToBeChanged(const QList<QPersistentMode
     emit layoutAboutToBeChanged(sourceParents, hint);
 }
 
-void VersionProxyModel::sourceLayoutChanged(const QList<QPersistentModelIndex>& sourceParents,
-                                            QAbstractItemModel::LayoutChangeHint hint)
+void VersionProxyModel::sourceLayoutChanged(const QList<QPersistentModelIndex>& sourceParents, QAbstractItemModel::LayoutChangeHint hint)
 {
     emit layoutChanged(sourceParents, hint);
 }

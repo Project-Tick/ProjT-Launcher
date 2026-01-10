@@ -59,7 +59,7 @@
 // #=====================================================================================================================
 
 #ifndef TOML_MAKE_VERSION
-#define TOML_MAKE_VERSION(major, minor, patch) (((major)*10000) + ((minor)*100) + ((patch)))
+#define TOML_MAKE_VERSION(major, minor, patch) (((major) * 10000) + ((minor) * 100) + ((patch)))
 #endif
 
 #ifndef TOML_INTELLISENSE
@@ -594,7 +594,7 @@
         return static_cast<T>(static_cast<under>(lhs) op static_cast<under>(rhs)); \
     }                                                                              \
                                                                                    \
-    linkage constexpr T& operator TOML_CONCAT(op, =)(T& lhs, T rhs) noexcept       \
+    linkage constexpr T& operator TOML_CONCAT(op, =)(T & lhs, T rhs) noexcept      \
     {                                                                              \
         return lhs = (lhs op rhs);                                                 \
     }                                                                              \

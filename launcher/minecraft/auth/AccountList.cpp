@@ -325,7 +325,7 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
         case Qt::DisplayRole:
             switch (index.column()) {
                 case IconColumn:
-                    return QVariant(); // Icons are handled by DecorationRole
+                    return QVariant();  // Icons are handled by DecorationRole
                 case ProfileNameColumn:
                     return account->profileName();
                 case NameColumn:
@@ -375,7 +375,7 @@ QVariant AccountList::headerData(int section, [[maybe_unused]] Qt::Orientation o
         case Qt::DisplayRole:
             switch (section) {
                 case IconColumn:
-                    return QVariant(); // No header text for icon column
+                    return QVariant();  // No header text for icon column
                 case ProfileNameColumn:
                     return tr("Username");
                 case NameColumn:

@@ -8,10 +8,7 @@
 #include "cmark.h"
 #include "cmark_ctype.h"
 
-#define CMARK_CHUNK_EMPTY \
-    {                     \
-        NULL, 0           \
-    }
+#define CMARK_CHUNK_EMPTY { NULL, 0 }
 
 typedef struct {
     const unsigned char* data;

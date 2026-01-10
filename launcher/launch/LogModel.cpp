@@ -199,7 +199,7 @@ MessageLevel::Enum LogModel::previousLevel()
 void LogModel::updateOverflowMessage()
 {
     m_overflowMessage = tr("Stopped watching the game log because the log length surpassed %1 lines.\n"
-                          "You may have to fix your mods because the game is still logging to files and"
-                          " likely wasting harddrive space at an alarming rate!")
-                           .arg(m_maxLines);
+                           "You may have to fix your mods because the game is still logging to files and"
+                           " likely wasting harddrive space at an alarming rate!")
+                            .arg(m_maxLines);
 }

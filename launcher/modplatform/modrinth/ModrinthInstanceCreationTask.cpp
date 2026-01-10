@@ -169,13 +169,13 @@ bool ModrinthCreationTask::updateInstance()
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())
                 continue;
-            
+
             // Skip removal of .disabled files (user-disabled mods should be preserved)
             if (entry.endsWith(".disabled", Qt::CaseInsensitive)) {
                 qDebug() << "Preserving disabled mod:" << entry;
                 continue;
             }
-            
+
             qDebug() << "Scheduling" << entry << "for removal";
             m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry));
         }
@@ -184,13 +184,13 @@ bool ModrinthCreationTask::updateInstance()
         for (const auto& entry : old_client_overrides) {
             if (entry.isEmpty())
                 continue;
-            
+
             // Skip removal of .disabled files (user-disabled mods should be preserved)
             if (entry.endsWith(".disabled", Qt::CaseInsensitive)) {
                 qDebug() << "Preserving disabled mod:" << entry;
                 continue;
             }
-            
+
             qDebug() << "Scheduling" << entry << "for removal";
             m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry));
         }
@@ -292,7 +292,7 @@ bool ModrinthCreationTask::createInstance()
     instance.saveNow();
 
     auto downloadMods = makeShared<NetJob>(tr("Mod Download Modrinth"), APPLICATION->network());
-    
+
     // Clear any previous alternative URLs tracking
     m_alternativeUrls.clear();
 
@@ -532,30 +532,28 @@ void ModrinthCreationTask::attachRetryHandler(Net::Download::Ptr dl, shared_qobj
         if (it == m_alternativeUrls.end()) {
             return;
         }
-        
+
         FileDownloadInfo info = it.value();
         if (info.remainingUrls.isEmpty()) {
             m_alternativeUrls.remove(dl.get());
             return;
         }
-        
+
         QString nextUrl = info.remainingUrls.dequeue();
         qDebug() << "Retrying download with alternative URL:" << nextUrl;
-        
+
         auto newDl = Net::ApiDownload::makeFile(QUrl(nextUrl), info.filePath);
         newDl->addValidator(new Net::ChecksumValidator(info.hashAlgorithm, info.hash));
-        
+
         if (!info.remainingUrls.isEmpty()) {
             m_alternativeUrls[newDl.get()] = info;
         }
-        
+
         m_alternativeUrls.remove(dl.get());
         attachRetryHandler(newDl, downloadMods);
         downloadMods->addNetAction(newDl);
     });
-    
+
     // Clean up map entry on success
-    connect(dl.get(), &Task::succeeded, this, [this, dl]() {
-        m_alternativeUrls.remove(dl.get());
-    });
+    connect(dl.get(), &Task::succeeded, this, [this, dl]() { m_alternativeUrls.remove(dl.get()); });
 }

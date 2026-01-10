@@ -313,10 +313,7 @@ TOML_NAMESPACE_START
         ///
         /// \see #toml::node::at_path(std::string_view)
         TOML_NODISCARD
-        node_view<node> at_path(std::wstring_view path)
-        {
-            return err_ ? node_view<node>{} : table().at_path(path);
-        }
+        node_view<node> at_path(std::wstring_view path) { return err_ ? node_view<node>{} : table().at_path(path); }
 
         /// \brief Returns a const view of the subnode matching a fully-qualified "TOML path".
         ///
@@ -324,10 +321,7 @@ TOML_NAMESPACE_START
         ///
         /// \see #toml::node::at_path(std::string_view)
         TOML_NODISCARD
-        node_view<const node> at_path(std::wstring_view path) const
-        {
-            return err_ ? node_view<const node>{} : table().at_path(path);
-        }
+        node_view<const node> at_path(std::wstring_view path) const { return err_ ? node_view<const node>{} : table().at_path(path); }
 
 #endif
 
@@ -335,19 +329,13 @@ TOML_NAMESPACE_START
         ///
         /// \see #toml::node::operator[](const toml::path&)
         TOML_NODISCARD
-        node_view<node> operator[](const toml::path& path) noexcept
-        {
-            return err_ ? node_view<node>{} : table()[path];
-        }
+        node_view<node> operator[](const toml::path& path) noexcept { return err_ ? node_view<node>{} : table()[path]; }
 
         /// \brief Returns a const view of the subnode matching a fully-qualified "TOML path".
         ///
         /// \see #toml::node::operator[](const toml::path&)
         TOML_NODISCARD
-        node_view<const node> operator[](const toml::path& path) const noexcept
-        {
-            return err_ ? node_view<const node>{} : table()[path];
-        }
+        node_view<const node> operator[](const toml::path& path) const noexcept { return err_ ? node_view<const node>{} : table()[path]; }
 
         /// \brief	Gets a node_view for the selected key-value pair in the wrapped table.
         ///
@@ -358,10 +346,7 @@ TOML_NAMESPACE_START
         ///
         /// \see toml::node_view
         TOML_NODISCARD
-        node_view<node> operator[](std::string_view key) noexcept
-        {
-            return err_ ? node_view<node>{} : table()[key];
-        }
+        node_view<node> operator[](std::string_view key) noexcept { return err_ ? node_view<node>{} : table()[key]; }
 
         /// \brief	Gets a node_view for the selected key-value pair in the wrapped table (const overload).
         ///
@@ -372,10 +357,7 @@ TOML_NAMESPACE_START
         ///
         /// \see toml::node_view
         TOML_NODISCARD
-        node_view<const node> operator[](std::string_view key) const noexcept
-        {
-            return err_ ? node_view<const node>{} : table()[key];
-        }
+        node_view<const node> operator[](std::string_view key) const noexcept { return err_ ? node_view<const node>{} : table()[key]; }
 
 #if TOML_ENABLE_WINDOWS_COMPAT
 
@@ -390,10 +372,7 @@ TOML_NAMESPACE_START
         ///
         /// \see toml::node_view
         TOML_NODISCARD
-        node_view<node> operator[](std::wstring_view key)
-        {
-            return err_ ? node_view<node>{} : table()[key];
-        }
+        node_view<node> operator[](std::wstring_view key) { return err_ ? node_view<node>{} : table()[key]; }
 
         /// \brief	Gets a node_view for the selected key-value pair in the wrapped table (const overload).
         ///
@@ -406,10 +385,7 @@ TOML_NAMESPACE_START
         ///
         /// \see toml::node_view
         TOML_NODISCARD
-        node_view<const node> operator[](std::wstring_view key) const
-        {
-            return err_ ? node_view<const node>{} : table()[key];
-        }
+        node_view<const node> operator[](std::wstring_view key) const { return err_ ? node_view<const node>{} : table()[key]; }
 
 #endif  // TOML_ENABLE_WINDOWS_COMPAT
 

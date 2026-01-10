@@ -20,12 +20,11 @@
 #ifndef TAG_REF_PROXY_H_INCLUDED
 #define TAG_REF_PROXY_H_INCLUDED
 
-#include "tag.h"
 #include <string>
 #include <type_traits>
+#include "tag.h"
 
-namespace nbt
-{
+namespace nbt {
 
 /**
  * @brief Contains an NBT value of fixed type
@@ -57,19 +56,18 @@ namespace nbt
  * This is why all the syntactic sugar for tags is contained in the value class
  * while the tag class only contains common operations for all tag types.
  */
-class NBT_EXPORT value
-{
-public:
-    //Constructors
+class NBT_EXPORT value {
+   public:
+    // Constructors
     value() noexcept {}
-    explicit value(std::unique_ptr<tag>&& t) noexcept: tag_(std::move(t)) {}
+    explicit value(std::unique_ptr<tag>&& t) noexcept : tag_(std::move(t)) {}
     explicit value(tag&& t);
 
-    //Moving
+    // Moving
     value(value&&) noexcept = default;
     value& operator=(value&&) noexcept = default;
 
-    //Copying
+    // Copying
     explicit value(const value& rhs);
     value& operator=(const value& rhs);
 
@@ -81,7 +79,7 @@ public:
     value& operator=(tag&& t);
     void set(tag&& t);
 
-    //Conversion to tag
+    // Conversion to tag
     /**
      * @brief Returns the contained tag
      *
@@ -96,12 +94,12 @@ public:
      * @brief Returns a reference to the contained tag as an instance of T
      * @throw std::bad_cast if the tag is not of type T
      */
-    template<class T>
+    template <class T>
     T& as();
-    template<class T>
+    template <class T>
     const T& as() const;
 
-    //Assignment of primitives and string
+    // Assignment of primitives and string
     /**
      * @brief Assigns the given value to the tag if the type is compatible
      * @throw std::bad_cast if the value is not convertible to the tag type
@@ -121,7 +119,7 @@ public:
     value& operator=(const std::string& str);
     value& operator=(std::string&& str);
 
-    //Conversions to primitives and string
+    // Conversions to primitives and string
     /**
      * @brief Returns the contained value if the type is compatible
      * @throw std::bad_cast if the tag type is not convertible to the desired
@@ -142,7 +140,7 @@ public:
      */
     explicit operator const std::string&() const;
 
-    ///Returns true if the value is not uninitialized
+    /// Returns true if the value is not uninitialized
     explicit operator bool() const { return tag_ != nullptr; }
 
     /**
@@ -164,7 +162,7 @@ public:
      * @sa tag_compound::operator[]
      */
     value& operator[](const std::string& key);
-    value& operator[](const char* key); //need this overload because of conflict with built-in operator[]
+    value& operator[](const char* key);  // need this overload because of conflict with built-in operator[]
 
     /**
      * @brief In case of a tag_list, accesses a tag by index with bounds checking
@@ -188,10 +186,10 @@ public:
     value& operator[](size_t i);
     const value& operator[](size_t i) const;
 
-    ///Returns a reference to the underlying std::unique_ptr<tag>
+    /// Returns a reference to the underlying std::unique_ptr<tag>
     std::unique_ptr<tag>& get_ptr() { return tag_; }
     const std::unique_ptr<tag>& get_ptr() const { return tag_; }
-    ///Resets the underlying std::unique_ptr<tag> to a different value
+    /// Resets the underlying std::unique_ptr<tag> to a different value
     void set_ptr(std::unique_ptr<tag>&& t) { tag_ = std::move(t); }
 
     ///@sa tag::get_type
@@ -200,22 +198,22 @@ public:
     friend NBT_EXPORT bool operator==(const value& lhs, const value& rhs);
     friend NBT_EXPORT bool operator!=(const value& lhs, const value& rhs);
 
-private:
+   private:
     std::unique_ptr<tag> tag_;
 };
 
-template<class T>
+template <class T>
 T& value::as()
 {
     return tag_->as<T>();
 }
 
-template<class T>
+template <class T>
 const T& value::as() const
 {
     return tag_->as<T>();
 }
 
-}
+}  // namespace nbt
 
-#endif // TAG_REF_PROXY_H_INCLUDED
+#endif  // TAG_REF_PROXY_H_INCLUDED

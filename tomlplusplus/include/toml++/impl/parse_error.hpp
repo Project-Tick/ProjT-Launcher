@@ -87,10 +87,7 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns the region of the source document responsible for the error.
         TOML_NODISCARD
-        const source_region& source() const noexcept
-        {
-            return source_;
-        }
+        const source_region& source() const noexcept { return source_; }
 
         /// \brief	Prints a parse_error to a stream.
         ///

@@ -20,10 +20,8 @@
 #include "io/stream_writer.h"
 #include <sstream>
 
-namespace nbt
-{
-namespace io
-{
+namespace nbt {
+namespace io {
 
 void write_tag(const std::string& key, const tag& t, std::ostream& os, endian::endian e)
 {
@@ -39,8 +37,7 @@ void stream_writer::write_tag(const std::string& key, const tag& t)
 
 void stream_writer::write_string(const std::string& str)
 {
-    if(str.size() > max_string_len)
-    {
+    if (str.size() > max_string_len) {
         os.setstate(std::ios::failbit);
         std::ostringstream sstr;
         sstr << "String is too long for NBT (" << str.size() << " > " << max_string_len << ")";
@@ -50,5 +47,5 @@ void stream_writer::write_string(const std::string& str)
     os.write(str.data(), str.size());
 }
 
-}
-}
+}  // namespace io
+}  // namespace nbt

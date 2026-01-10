@@ -128,10 +128,7 @@ TOML_NAMESPACE_START
 #endif
 
         /// \brief	Destructor.
-        ~path_component() noexcept
-        {
-            destroy();
-        }
+        ~path_component() noexcept { destroy(); }
 
         /// \name Array index accessors
         /// \warning It is undefined behaviour to call these functions when the path component does not represent an array index.
@@ -148,10 +145,7 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns the array index (const lvalue).
         TOML_PURE_INLINE_GETTER
-        explicit operator size_t() const noexcept
-        {
-            return index();
-        }
+        explicit operator size_t() const noexcept { return index(); }
 
         /// @}
 
@@ -170,36 +164,24 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns the key string.
         TOML_PURE_INLINE_GETTER
-        explicit operator const std::string&() const noexcept
-        {
-            return key();
-        }
+        explicit operator const std::string&() const noexcept { return key(); }
 
         /// @}
 
         /// \brief Retrieve the type of this path component, either path_component::key or path_component::array_index
         TOML_PURE_INLINE_GETTER
-        path_component_type type() const noexcept
-        {
-            return type_;
-        }
+        path_component_type type() const noexcept { return type_; }
 
         /// \name Equality
         /// @{
 
         /// \brief	Returns true if two path components represent the same key or array index.
         TOML_PURE_INLINE_GETTER
-        friend bool operator==(const path_component& lhs, const path_component& rhs) noexcept
-        {
-            return equal(lhs, rhs);
-        }
+        friend bool operator==(const path_component& lhs, const path_component& rhs) noexcept { return equal(lhs, rhs); }
 
         /// \brief	Returns true if two path components do not represent the same key or array index.
         TOML_PURE_INLINE_GETTER
-        friend bool operator!=(const path_component& lhs, const path_component& rhs) noexcept
-        {
-            return !equal(lhs, rhs);
-        }
+        friend bool operator!=(const path_component& lhs, const path_component& rhs) noexcept { return !equal(lhs, rhs); }
 
         /// @}
     };
@@ -272,24 +254,15 @@ TOML_NAMESPACE_START
 
         /// \brief Returns the number of components in the path.
         TOML_PURE_INLINE_GETTER
-        size_t size() const noexcept
-        {
-            return components_.size();
-        }
+        size_t size() const noexcept { return components_.size(); }
 
         /// \brief Returns true if the path has one or more components.
         TOML_PURE_INLINE_GETTER
-        explicit operator bool() const noexcept
-        {
-            return !components_.empty();
-        }
+        explicit operator bool() const noexcept { return !components_.empty(); }
 
         /// \brief Whether (true) or not (false) the path is empty
         TOML_PURE_INLINE_GETTER
-        bool empty() const noexcept
-        {
-            return components_.empty();
-        }
+        bool empty() const noexcept { return components_.empty(); }
 
         /// \brief Fetch a path component by index.
         TOML_PURE_INLINE_GETTER
@@ -332,24 +305,15 @@ TOML_NAMESPACE_START
 
         /// \brief	Replaces the contents of the path with that of another.
         TOML_ALWAYS_INLINE
-        path& assign(const path& p)
-        {
-            return *this = p;
-        }
+        path& assign(const path& p) { return *this = p; }
 
         /// \brief	Replaces the contents of the path with that of another.
         TOML_ALWAYS_INLINE
-        path& assign(path&& p) noexcept
-        {
-            return *this = std::move(p);
-        }
+        path& assign(path&& p) noexcept { return *this = std::move(p); }
 
         /// \brief	Replaces the contents of the path object by a new path
         TOML_ALWAYS_INLINE
-        path& assign(std::string_view str)
-        {
-            return *this = str;
-        }
+        path& assign(std::string_view str) { return *this = str; }
 
 #if TOML_ENABLE_WINDOWS_COMPAT
 
@@ -357,10 +321,7 @@ TOML_NAMESPACE_START
         ///
         /// \availability This overload is only available when #TOML_ENABLE_WINDOWS_COMPAT is enabled.
         TOML_ALWAYS_INLINE
-        path& assign(std::wstring_view str)
-        {
-            return *this = str;
-        }
+        path& assign(std::wstring_view str) { return *this = str; }
 
 #endif
 
@@ -393,24 +354,15 @@ TOML_NAMESPACE_START
 
         /// \brief	Appends another path onto the end of this one.
         TOML_ALWAYS_INLINE
-        path& append(const path& p)
-        {
-            return *this += p;
-        }
+        path& append(const path& p) { return *this += p; }
 
         /// \brief	Appends another path onto the end of this one.
         TOML_ALWAYS_INLINE
-        path& append(path&& p)
-        {
-            return *this += std::move(p);
-        }
+        path& append(path&& p) { return *this += std::move(p); }
 
         /// \brief	Parses a path and appends it onto the end of this one.
         TOML_ALWAYS_INLINE
-        path& append(std::string_view str)
-        {
-            return *this += str;
-        }
+        path& append(std::string_view str) { return *this += str; }
 
 #if TOML_ENABLE_WINDOWS_COMPAT
 
@@ -418,10 +370,7 @@ TOML_NAMESPACE_START
         ///
         /// \availability This overload is only available when #TOML_ENABLE_WINDOWS_COMPAT is enabled.
         TOML_ALWAYS_INLINE
-        path& append(std::wstring_view str)
-        {
-            return *this += str;
-        }
+        path& append(std::wstring_view str) { return *this += str; }
 
 #endif
 
@@ -531,10 +480,7 @@ TOML_NAMESPACE_START
         /// \brief Returns a string representation of this path.
         TOML_NODISCARD
         TOML_ALWAYS_INLINE
-        explicit operator std::string() const
-        {
-            return str();
-        }
+        explicit operator std::string() const { return str(); }
 
 #if TOML_ENABLE_WINDOWS_COMPAT
 
@@ -550,10 +496,7 @@ TOML_NAMESPACE_START
         /// \availability This overload is only available when #TOML_ENABLE_WINDOWS_COMPAT is enabled.
         TOML_NODISCARD
         TOML_ALWAYS_INLINE
-        explicit operator std::wstring() const
-        {
-            return wide_str();
-        }
+        explicit operator std::wstring() const { return wide_str(); }
 
 #endif
 
@@ -564,49 +507,31 @@ TOML_NAMESPACE_START
 
         /// \brief Returns whether two paths are the same.
         TOML_PURE_INLINE_GETTER
-        friend bool operator==(const path& lhs, const path& rhs) noexcept
-        {
-            return equal(lhs, rhs);
-        }
+        friend bool operator==(const path& lhs, const path& rhs) noexcept { return equal(lhs, rhs); }
 
         /// \brief Returns whether two paths are not the same.
         TOML_PURE_INLINE_GETTER
-        friend bool operator!=(const path& lhs, const path& rhs) noexcept
-        {
-            return !equal(lhs, rhs);
-        }
+        friend bool operator!=(const path& lhs, const path& rhs) noexcept { return !equal(lhs, rhs); }
 
         /// \brief Returns whether two paths are the same.
         TOML_NODISCARD
         TOML_ALWAYS_INLINE
-        friend bool operator==(const path& lhs, std::string_view rhs)
-        {
-            return lhs == path{ rhs };
-        }
+        friend bool operator==(const path& lhs, std::string_view rhs) { return lhs == path{ rhs }; }
 
         /// \brief Returns whether two paths are the same.
         TOML_NODISCARD
         TOML_ALWAYS_INLINE
-        friend bool operator==(std::string_view lhs, const path& rhs)
-        {
-            return rhs == lhs;
-        }
+        friend bool operator==(std::string_view lhs, const path& rhs) { return rhs == lhs; }
 
         /// \brief Returns whether two paths are not the same.
         TOML_NODISCARD
         TOML_ALWAYS_INLINE
-        friend bool operator!=(const path& lhs, std::string_view rhs)
-        {
-            return lhs != path{ rhs };
-        }
+        friend bool operator!=(const path& lhs, std::string_view rhs) { return lhs != path{ rhs }; }
 
         /// \brief Returns whether two paths are not the same.
         TOML_NODISCARD
         TOML_ALWAYS_INLINE
-        friend bool operator!=(std::string_view lhs, const path& rhs)
-        {
-            return rhs != lhs;
-        }
+        friend bool operator!=(std::string_view lhs, const path& rhs) { return rhs != lhs; }
 
 #if TOML_ENABLE_WINDOWS_COMPAT
 
@@ -615,40 +540,28 @@ TOML_NAMESPACE_START
         /// \availability This overload is only available when #TOML_ENABLE_WINDOWS_COMPAT is enabled.
         TOML_NODISCARD
         TOML_ALWAYS_INLINE
-        friend bool operator==(const path& lhs, std::wstring_view rhs)
-        {
-            return lhs == path{ rhs };
-        }
+        friend bool operator==(const path& lhs, std::wstring_view rhs) { return lhs == path{ rhs }; }
 
         /// \brief Returns whether two paths are the same.
         ///
         /// \availability This overload is only available when #TOML_ENABLE_WINDOWS_COMPAT is enabled.
         TOML_NODISCARD
         TOML_ALWAYS_INLINE
-        friend bool operator==(std::wstring_view lhs, const path& rhs)
-        {
-            return rhs == lhs;
-        }
+        friend bool operator==(std::wstring_view lhs, const path& rhs) { return rhs == lhs; }
 
         /// \brief Returns whether two paths are not the same.
         ///
         /// \availability This overload is only available when #TOML_ENABLE_WINDOWS_COMPAT is enabled.
         TOML_NODISCARD
         TOML_ALWAYS_INLINE
-        friend bool operator!=(const path& lhs, std::wstring_view rhs)
-        {
-            return lhs != path{ rhs };
-        }
+        friend bool operator!=(const path& lhs, std::wstring_view rhs) { return lhs != path{ rhs }; }
 
         /// \brief Returns whether two paths are not the same.
         ///
         /// \availability This overload is only available when #TOML_ENABLE_WINDOWS_COMPAT is enabled.
         TOML_NODISCARD
         TOML_ALWAYS_INLINE
-        friend bool operator!=(std::wstring_view lhs, const path& rhs)
-        {
-            return rhs != lhs;
-        }
+        friend bool operator!=(std::wstring_view lhs, const path& rhs) { return rhs != lhs; }
 
 #endif  // TOML_ENABLE_WINDOWS_COMPAT
 
@@ -668,50 +581,32 @@ TOML_NAMESPACE_START
         /// \brief  Returns an iterator to the first component in the path.
         /// \see #toml::path_component
         TOML_PURE_INLINE_GETTER
-        iterator begin() noexcept
-        {
-            return components_.begin();
-        }
+        iterator begin() noexcept { return components_.begin(); }
 
         /// \brief  Returns an iterator to one-past-the-last component in the path.
         /// \see #toml::path_component
         TOML_PURE_INLINE_GETTER
-        iterator end() noexcept
-        {
-            return components_.end();
-        }
+        iterator end() noexcept { return components_.end(); }
 
         /// \brief  Returns a const iterator to the first component in the path.
         /// \see #toml::path_component
         TOML_PURE_INLINE_GETTER
-        const_iterator begin() const noexcept
-        {
-            return components_.begin();
-        }
+        const_iterator begin() const noexcept { return components_.begin(); }
 
         /// \brief  Returns a const iterator to one-past-the-last component in the path.
         /// \see #toml::path_component
         TOML_PURE_INLINE_GETTER
-        const_iterator end() const noexcept
-        {
-            return components_.end();
-        }
+        const_iterator end() const noexcept { return components_.end(); }
 
         /// \brief  Returns a const iterator to the first component in the path.
         /// \see #toml::path_component
         TOML_PURE_INLINE_GETTER
-        const_iterator cbegin() const noexcept
-        {
-            return components_.begin();
-        }
+        const_iterator cbegin() const noexcept { return components_.begin(); }
 
         /// \brief  Returns a const iterator to one-past-the-last component in the path.
         /// \see #toml::path_component
         TOML_PURE_INLINE_GETTER
-        const_iterator cend() const noexcept
-        {
-            return components_.end();
-        }
+        const_iterator cend() const noexcept { return components_.end(); }
 
         /// @}
 

@@ -20,7 +20,7 @@ extern "C" {
 #define _isdigit(c) ((c) >= '0' && (c) <= '9')
 #endif
 
-#define HOUDINI_ESCAPED_SIZE(x) (((x)*12) / 10)
+#define HOUDINI_ESCAPED_SIZE(x) (((x) * 12) / 10)
 #define HOUDINI_UNESCAPED_SIZE(x) (x)
 
 bufsize_t houdini_unescape_ent(cmark_strbuf* ob, const uint8_t* src, bufsize_t size);

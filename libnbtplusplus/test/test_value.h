@@ -4,9 +4,8 @@
 
 using namespace nbt;
 
-class value_assignment_test : public CxxTest::TestSuite
-{
-public:
+class value_assignment_test : public CxxTest::TestSuite {
+   public:
     void test_numeric_assignments()
     {
         value v;

@@ -820,8 +820,8 @@ TOML_NAMESPACE_START
         ///					</ul>
         ///					Where:
         ///					<ul>
-        ///					<li> `elem` will recieve the element as it's concrete type with cvref-qualifications matching the
-        ///array 					<li> `index` will recieve a `size_t` indicating the element's index
+        ///					<li> `elem` will recieve the element as it's concrete type with cvref-qualifications
+        /// matching the array 					<li> `index` will recieve a `size_t` indicating the element's index
         ///					</ul>
         ///					Visitors returning `bool` (or something convertible to `bool`) will cause iteration to
         ///					stop if they return `false`.
@@ -912,31 +912,19 @@ TOML_NAMESPACE_START
 
         /// \brief	Returns true if the array is empty.
         TOML_NODISCARD
-        bool empty() const noexcept
-        {
-            return elems_.empty();
-        }
+        bool empty() const noexcept { return elems_.empty(); }
 
         /// \brief	Returns the number of elements in the array.
         TOML_NODISCARD
-        size_t size() const noexcept
-        {
-            return elems_.size();
-        }
+        size_t size() const noexcept { return elems_.size(); }
 
         /// \brief	Returns the maximum number of elements that can be stored in an array on the current platform.
         TOML_NODISCARD
-        size_t max_size() const noexcept
-        {
-            return elems_.max_size();
-        }
+        size_t max_size() const noexcept { return elems_.max_size(); }
 
         /// \brief	Returns the current max number of elements that may be held in the array's internal storage.
         TOML_NODISCARD
-        size_t capacity() const noexcept
-        {
-            return elems_.capacity();
-        }
+        size_t capacity() const noexcept { return elems_.capacity(); }
 
         /// \brief	Reserves internal storage capacity up to a pre-determined number of elements.
         TOML_EXPORTED_MEMBER_FUNCTION
@@ -1082,10 +1070,7 @@ TOML_NAMESPACE_START
         array& flatten() &;
 
         /// \brief	 Flattens this array, recursively hoisting the contents of child arrays up into itself (rvalue overload).
-        array&& flatten() &&
-        {
-            return static_cast<toml::array&&>(this->flatten());
-        }
+        array&& flatten() && { return static_cast<toml::array&&>(this->flatten()); }
 
         /// \brief	Removes empty child arrays and tables.
         ///
@@ -1114,10 +1099,7 @@ TOML_NAMESPACE_START
         /// \param recursive Should child arrays and tables themselves be pruned?
         ///
         /// \returns An rvalue reference to the array.
-        array&& prune(bool recursive = true) && noexcept
-        {
-            return static_cast<toml::array&&>(this->prune(recursive));
-        }
+        array&& prune(bool recursive = true) && noexcept { return static_cast<toml::array&&>(this->prune(recursive)); }
 
         /// \brief	Removes the last element from the array.
         TOML_EXPORTED_MEMBER_FUNCTION
@@ -1496,10 +1478,7 @@ TOML_NAMESPACE_START
         ///
         /// \returns	True if the arrays contained the same elements.
         TOML_NODISCARD
-        friend bool operator==(const array& lhs, const array& rhs) noexcept
-        {
-            return equal(lhs, rhs);
-        }
+        friend bool operator==(const array& lhs, const array& rhs) noexcept { return equal(lhs, rhs); }
 
         /// \brief	Inequality operator.
         ///
@@ -1508,10 +1487,7 @@ TOML_NAMESPACE_START
         ///
         /// \returns	True if the arrays did not contain the same elements.
         TOML_NODISCARD
-        friend bool operator!=(const array& lhs, const array& rhs) noexcept
-        {
-            return !equal(lhs, rhs);
-        }
+        friend bool operator!=(const array& lhs, const array& rhs) noexcept { return !equal(lhs, rhs); }
 
         /// \brief	Initializer list equality operator.
         template <typename T>

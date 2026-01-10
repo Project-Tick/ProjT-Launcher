@@ -207,13 +207,13 @@ bool FlameCreationTask::updateInstance()
         for (const auto& entry : old_overrides) {
             if (entry.isEmpty())
                 continue;
-            
+
             // Skip removal of .disabled files (user-disabled mods should be preserved)
             if (entry.endsWith(".disabled", Qt::CaseInsensitive)) {
                 qDebug() << "Preserving disabled mod:" << entry;
                 continue;
             }
-            
+
             qDebug() << "Scheduling" << entry << "for removal";
             m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry));
             m_files_to_remove.append(old_minecraft_dir.absoluteFilePath(entry + ".disabled"));
@@ -785,7 +785,7 @@ void FlameCreationTask::validateOtherResources(QEventLoop& loop)
         auto folder = FS::PathCombine(m_stagingPath, "minecraft", indexParent, ".index");
         task->addTask(makeShared<LocalResourceUpdateTask>(folder, file.pack, file.version));
     }
-    
+
     connect(task.get(), &Task::finished, &loop, &QEventLoop::quit);
     m_processUpdateFileInfoJob = task;
     task->start();

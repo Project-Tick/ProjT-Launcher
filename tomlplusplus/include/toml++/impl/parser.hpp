@@ -381,7 +381,7 @@ TOML_NAMESPACE_START
 #endif  // TOML_HAS_CHAR8
 
     TOML_ABI_NAMESPACE_END;  // TOML_EXCEPTIONS
-    }                        // namespace literals
+    }  // namespace literals
 }
 TOML_NAMESPACE_END;
 

@@ -179,7 +179,7 @@ void MinecraftAccount::authFailed(QString reason)
 {
     auto taskState = m_currentTask->taskState();
     emit authenticationFailed(reason, taskState);
-    
+
     switch (taskState) {
         case AccountTaskState::STATE_OFFLINE:
         case AccountTaskState::STATE_DISABLED: {

@@ -18,17 +18,16 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cxxtest/TestSuite.h>
-#include "nbt_tags.h"
-#include "nbt_visitor.h"
 #include <algorithm>
 #include <set>
 #include <stdexcept>
+#include "nbt_tags.h"
+#include "nbt_visitor.h"
 
 using namespace nbt;
 
-class nbttest : public CxxTest::TestSuite
-{
-public:
+class nbttest : public CxxTest::TestSuite {
+   public:
     void test_tag()
     {
         TS_ASSERT(!is_valid_type(-1));
@@ -40,7 +39,7 @@ public:
         TS_ASSERT(is_valid_type(12));
         TS_ASSERT(!is_valid_type(13));
 
-        //looks like TS_ASSERT_EQUALS can't handle abstract classes...
+        // looks like TS_ASSERT_EQUALS can't handle abstract classes...
         TS_ASSERT(*tag::create(tag_type::Byte) == tag_byte());
         TS_ASSERT_THROWS(tag::create(tag_type::Null), std::invalid_argument);
         TS_ASSERT_THROWS(tag::create(tag_type::End), std::invalid_argument);
@@ -67,17 +66,17 @@ public:
 
     void test_get_type()
     {
-        TS_ASSERT_EQUALS(tag_byte().get_type()      , tag_type::Byte);
-        TS_ASSERT_EQUALS(tag_short().get_type()     , tag_type::Short);
-        TS_ASSERT_EQUALS(tag_int().get_type()       , tag_type::Int);
-        TS_ASSERT_EQUALS(tag_long().get_type()      , tag_type::Long);
-        TS_ASSERT_EQUALS(tag_float().get_type()     , tag_type::Float);
-        TS_ASSERT_EQUALS(tag_double().get_type()    , tag_type::Double);
+        TS_ASSERT_EQUALS(tag_byte().get_type(), tag_type::Byte);
+        TS_ASSERT_EQUALS(tag_short().get_type(), tag_type::Short);
+        TS_ASSERT_EQUALS(tag_int().get_type(), tag_type::Int);
+        TS_ASSERT_EQUALS(tag_long().get_type(), tag_type::Long);
+        TS_ASSERT_EQUALS(tag_float().get_type(), tag_type::Float);
+        TS_ASSERT_EQUALS(tag_double().get_type(), tag_type::Double);
         TS_ASSERT_EQUALS(tag_byte_array().get_type(), tag_type::Byte_Array);
-        TS_ASSERT_EQUALS(tag_string().get_type()    , tag_type::String);
-        TS_ASSERT_EQUALS(tag_list().get_type()      , tag_type::List);
-        TS_ASSERT_EQUALS(tag_compound().get_type()  , tag_type::Compound);
-        TS_ASSERT_EQUALS(tag_int_array().get_type() , tag_type::Int_Array);
+        TS_ASSERT_EQUALS(tag_string().get_type(), tag_type::String);
+        TS_ASSERT_EQUALS(tag_list().get_type(), tag_type::List);
+        TS_ASSERT_EQUALS(tag_compound().get_type(), tag_type::Compound);
+        TS_ASSERT_EQUALS(tag_int_array().get_type(), tag_type::Int_Array);
         TS_ASSERT_EQUALS(tag_long_array().get_type(), tag_type::Long_Array);
     }
 
@@ -124,7 +123,7 @@ public:
         TS_ASSERT_EQUALS("quux", static_cast<std::string>(tag));
         std::string str("foo");
         tag = str;
-        TS_ASSERT_EQUALS(tag.get(),str);
+        TS_ASSERT_EQUALS(tag.get(), str);
 
         TS_ASSERT_EQUALS(tag_string(str).get(), "foo");
         TS_ASSERT_EQUALS(tag_string().get(), "");
@@ -132,14 +131,9 @@ public:
 
     void test_tag_compound()
     {
-        tag_compound comp{
-            {"foo", int16_t(12)},
-            {"bar", "baz"},
-            {"baz", -2.0},
-            {"list", tag_list{16, 17}}
-        };
+        tag_compound comp{ { "foo", int16_t(12) }, { "bar", "baz" }, { "baz", -2.0 }, { "list", tag_list{ 16, 17 } } };
 
-        //Test assignments and conversions, and exceptions on bad conversions
+        // Test assignments and conversions, and exceptions on bad conversions
         TS_ASSERT_EQUALS(comp["foo"].get_type(), tag_type::Short);
         TS_ASSERT_EQUALS(static_cast<int32_t>(comp["foo"]), 12);
         TS_ASSERT_EQUALS(static_cast<int16_t>(comp.at("foo")), int16_t(12));
@@ -163,8 +157,8 @@ public:
         TS_ASSERT_EQUALS(static_cast<double>(comp["baz"]), -2.0);
         TS_ASSERT_THROWS(static_cast<float>(comp["baz"]), std::bad_cast);
 
-        //Test nested access
-        comp["quux"] = tag_compound{{"Hello", "World"}, {"zero", 0}};
+        // Test nested access
+        comp["quux"] = tag_compound{ { "Hello", "World" }, { "zero", 0 } };
         TS_ASSERT_EQUALS(comp.at("quux").get_type(), tag_type::Compound);
         TS_ASSERT_EQUALS(static_cast<std::string>(comp["quux"].at("Hello")), "World");
         TS_ASSERT_EQUALS(static_cast<std::string>(comp["quux"]["Hello"]), "World");
@@ -172,26 +166,23 @@ public:
 
         TS_ASSERT_THROWS(comp.at("nothing"), std::out_of_range);
 
-        //Test equality comparisons
-        tag_compound comp2{
-            {"foo", int16_t(32)},
-            {"bar", "barbaz"},
-            {"baz", -2.0},
-            {"quux", tag_compound{{"Hello", "World"}, {"zero", 0}}},
-            {"list", tag_list{16, 17}}
-        };
+        // Test equality comparisons
+        tag_compound comp2{ { "foo", int16_t(32) },
+                            { "bar", "barbaz" },
+                            { "baz", -2.0 },
+                            { "quux", tag_compound{ { "Hello", "World" }, { "zero", 0 } } },
+                            { "list", tag_list{ 16, 17 } } };
         TS_ASSERT(comp == comp2);
         TS_ASSERT(comp != dynamic_cast<const tag_compound&>(comp2["quux"].get()));
         TS_ASSERT(comp != comp2["quux"]);
         TS_ASSERT(dynamic_cast<const tag_compound&>(comp["quux"].get()) == comp2["quux"]);
 
-        //Test whether begin() through end() goes through all the keys and their
-        //values.  The order of iteration is irrelevant there.
-        std::set<std::string> keys{"bar", "baz", "foo", "list", "quux"};
+        // Test whether begin() through end() goes through all the keys and their
+        // values.  The order of iteration is irrelevant there.
+        std::set<std::string> keys{ "bar", "baz", "foo", "list", "quux" };
         TS_ASSERT_EQUALS(comp2.size(), keys.size());
         unsigned int i = 0;
-        for(const std::pair<const std::string, value>& val: comp2)
-        {
+        for (const std::pair<const std::string, value>& val : comp2) {
             TS_ASSERT_LESS_THAN(i, comp2.size());
             TS_ASSERT(keys.count(val.first));
             TS_ASSERT(val.second == comp2[val.first]);
@@ -199,7 +190,7 @@ public:
         }
         TS_ASSERT_EQUALS(i, comp2.size());
 
-        //Test erasing and has_key
+        // Test erasing and has_key
         TS_ASSERT_EQUALS(comp.erase("nothing"), false);
         TS_ASSERT(comp.has_key("quux"));
         TS_ASSERT(comp.has_key("quux", tag_type::Compound));
@@ -214,18 +205,14 @@ public:
         comp.clear();
         TS_ASSERT(comp == tag_compound{});
 
-        //Test inserting values
+        // Test inserting values
         TS_ASSERT_EQUALS(comp.put("abc", tag_double(6.0)).second, true);
         TS_ASSERT_EQUALS(comp.put("abc", tag_long(-28)).second, false);
         TS_ASSERT_EQUALS(comp.insert("ghi", tag_string("world")).second, true);
         TS_ASSERT_EQUALS(comp.insert("abc", tag_string("hello")).second, false);
         TS_ASSERT_EQUALS(comp.emplace<tag_string>("def", "ghi").second, true);
         TS_ASSERT_EQUALS(comp.emplace<tag_byte>("def", 4).second, false);
-        TS_ASSERT((comp == tag_compound{
-            {"abc", tag_long(-28)},
-            {"def", tag_byte(4)},
-            {"ghi", tag_string("world")}
-        }));
+        TS_ASSERT((comp == tag_compound{ { "abc", tag_long(-28) }, { "def", tag_byte(4) }, { "ghi", tag_string("world") } }));
     }
 
     void test_value()
@@ -315,7 +302,7 @@ public:
         TS_ASSERT_THROWS(list.push_back(tag_int(42)), std::invalid_argument);
         TS_ASSERT_THROWS(list.emplace_back<tag_compound>(), std::invalid_argument);
 
-        TS_ASSERT((list == tag_list{"foo", "bar"}));
+        TS_ASSERT((list == tag_list{ "foo", "bar" }));
         TS_ASSERT(list[0] == tag_string("foo"));
         TS_ASSERT_EQUALS(static_cast<std::string>(list.at(1)), "bar");
 
@@ -329,15 +316,15 @@ public:
         TS_ASSERT_EQUALS(static_cast<std::string>(list[1]), "baz");
 
         TS_ASSERT_EQUALS(list.size(), 2u);
-        tag_string values[] = {"foo", "baz"};
+        tag_string values[] = { "foo", "baz" };
         TS_ASSERT_EQUALS(list.end() - list.begin(), int(list.size()));
         TS_ASSERT(std::equal(list.begin(), list.end(), values));
 
         list.pop_back();
-        TS_ASSERT(list == tag_list{"foo"});
-        TS_ASSERT(list == tag_list::of<tag_string>({"foo"}));
-        TS_ASSERT(tag_list::of<tag_string>({"foo"}) == tag_list{"foo"});
-        TS_ASSERT((list != tag_list{2, 3, 5, 7}));
+        TS_ASSERT(list == tag_list{ "foo" });
+        TS_ASSERT(list == tag_list::of<tag_string>({ "foo" }));
+        TS_ASSERT(tag_list::of<tag_string>({ "foo" }) == tag_list{ "foo" });
+        TS_ASSERT((list != tag_list{ 2, 3, 5, 7 }));
 
         list.clear();
         TS_ASSERT_EQUALS(list.size(), 0u);
@@ -353,30 +340,30 @@ public:
         list.reset(tag_type::Float);
         TS_ASSERT_EQUALS(list.el_type(), tag_type::Float);
         list.emplace_back<tag_float>(17.0f);
-        TS_ASSERT(list == tag_list({17.0f}));
+        TS_ASSERT(list == tag_list({ 17.0f }));
 
         TS_ASSERT(tag_list() != tag_list(tag_type::Int));
         TS_ASSERT(tag_list() == tag_list());
         TS_ASSERT(tag_list(tag_type::Short) != tag_list(tag_type::Int));
         TS_ASSERT(tag_list(tag_type::Short) == tag_list(tag_type::Short));
 
-        tag_list short_list = tag_list::of<tag_short>({25, 36});
+        tag_list short_list = tag_list::of<tag_short>({ 25, 36 });
         TS_ASSERT_EQUALS(short_list.el_type(), tag_type::Short);
-        TS_ASSERT((short_list == tag_list{int16_t(25), int16_t(36)}));
-        TS_ASSERT((short_list != tag_list{25, 36}));
-        TS_ASSERT((short_list == tag_list{value(tag_short(25)), value(tag_short(36))}));
+        TS_ASSERT((short_list == tag_list{ int16_t(25), int16_t(36) }));
+        TS_ASSERT((short_list != tag_list{ 25, 36 }));
+        TS_ASSERT((short_list == tag_list{ value(tag_short(25)), value(tag_short(36)) }));
 
-        TS_ASSERT_THROWS((tag_list{value(tag_byte(4)), value(tag_int(5))}), std::invalid_argument);
-        TS_ASSERT_THROWS((tag_list{value(nullptr), value(tag_int(6))}), std::invalid_argument);
-        TS_ASSERT_THROWS((tag_list{value(tag_int(7)), value(tag_int(8)), value(nullptr)}), std::invalid_argument);
+        TS_ASSERT_THROWS((tag_list{ value(tag_byte(4)), value(tag_int(5)) }), std::invalid_argument);
+        TS_ASSERT_THROWS((tag_list{ value(nullptr), value(tag_int(6)) }), std::invalid_argument);
+        TS_ASSERT_THROWS((tag_list{ value(tag_int(7)), value(tag_int(8)), value(nullptr) }), std::invalid_argument);
         TS_ASSERT_EQUALS((tag_list(std::initializer_list<value>{})).el_type(), tag_type::Null);
-        TS_ASSERT_EQUALS((tag_list{2, 3, 5, 7}).el_type(), tag_type::Int);
+        TS_ASSERT_EQUALS((tag_list{ 2, 3, 5, 7 }).el_type(), tag_type::Int);
     }
 
     void test_tag_byte_array()
     {
-        std::vector<int8_t> vec{1, 2, 127, -128};
-        tag_byte_array arr{1, 2, 127, -128};
+        std::vector<int8_t> vec{ 1, 2, 127, -128 };
+        tag_byte_array arr{ 1, 2, 127, -128 };
         TS_ASSERT_EQUALS(arr.size(), 4u);
         TS_ASSERT(arr.at(0) == 1 && arr[1] == 2 && arr[2] == 127 && arr.at(3) == -128);
         TS_ASSERT_THROWS(arr.at(-1), std::out_of_range);
@@ -395,10 +382,10 @@ public:
         arr.pop_back();
         arr.pop_back();
         TS_ASSERT_EQUALS(arr.size(), 3u);
-        TS_ASSERT((arr == tag_byte_array{1, 2, 127}));
-        TS_ASSERT((arr != tag_int_array{1, 2, 127}));
-        TS_ASSERT((arr != tag_long_array{1, 2, 127}));
-        TS_ASSERT((arr != tag_byte_array{1, 2, -1}));
+        TS_ASSERT((arr == tag_byte_array{ 1, 2, 127 }));
+        TS_ASSERT((arr != tag_int_array{ 1, 2, 127 }));
+        TS_ASSERT((arr != tag_long_array{ 1, 2, 127 }));
+        TS_ASSERT((arr != tag_byte_array{ 1, 2, -1 }));
 
         arr.clear();
         TS_ASSERT(arr == tag_byte_array());
@@ -406,8 +393,8 @@ public:
 
     void test_tag_int_array()
     {
-        std::vector<int32_t> vec{100, 200, INT32_MAX, INT32_MIN};
-        tag_int_array arr{100, 200, INT32_MAX, INT32_MIN};
+        std::vector<int32_t> vec{ 100, 200, INT32_MAX, INT32_MIN };
+        tag_int_array arr{ 100, 200, INT32_MAX, INT32_MIN };
         TS_ASSERT_EQUALS(arr.size(), 4u);
         TS_ASSERT(arr.at(0) == 100 && arr[1] == 200 && arr[2] == INT32_MAX && arr.at(3) == INT32_MIN);
         TS_ASSERT_THROWS(arr.at(-1), std::out_of_range);
@@ -426,8 +413,8 @@ public:
         arr.pop_back();
         arr.pop_back();
         TS_ASSERT_EQUALS(arr.size(), 3u);
-        TS_ASSERT((arr == tag_int_array{100, 200, INT32_MAX}));
-        TS_ASSERT((arr != tag_int_array{100, -56, -1}));
+        TS_ASSERT((arr == tag_int_array{ 100, 200, INT32_MAX }));
+        TS_ASSERT((arr != tag_int_array{ 100, -56, -1 }));
 
         arr.clear();
         TS_ASSERT(arr == tag_int_array());
@@ -435,8 +422,8 @@ public:
 
     void test_tag_long_array()
     {
-        std::vector<int64_t> vec{100, 200, INT64_MAX, INT64_MIN};
-        tag_long_array arr{100, 200, INT64_MAX, INT64_MIN};
+        std::vector<int64_t> vec{ 100, 200, INT64_MAX, INT64_MIN };
+        tag_long_array arr{ 100, 200, INT64_MAX, INT64_MIN };
         TS_ASSERT_EQUALS(arr.size(), 4u);
         TS_ASSERT(arr.at(0) == 100 && arr[1] == 200 && arr[2] == INT64_MAX && arr.at(3) == INT64_MIN);
         TS_ASSERT_THROWS(arr.at(-1), std::out_of_range);
@@ -455,8 +442,8 @@ public:
         arr.pop_back();
         arr.pop_back();
         TS_ASSERT_EQUALS(arr.size(), 3u);
-        TS_ASSERT((arr == tag_long_array{100, 200, INT64_MAX}));
-        TS_ASSERT((arr != tag_long_array{100, -56, -1}));
+        TS_ASSERT((arr == tag_long_array{ 100, 200, INT64_MAX }));
+        TS_ASSERT((arr != tag_long_array{ 100, -56, -1 }));
 
         arr.clear();
         TS_ASSERT(arr == tag_long_array());
@@ -464,35 +451,58 @@ public:
 
     void test_visitor()
     {
-        struct : public nbt_visitor
-        {
+        struct : public nbt_visitor {
             tag* visited = nullptr;
 
-            void visit(tag_byte& tag)       { visited = &tag; }
-            void visit(tag_short& tag)      { visited = &tag; }
-            void visit(tag_int& tag)        { visited = &tag; }
-            void visit(tag_long& tag)       { visited = &tag; }
-            void visit(tag_float& tag)      { visited = &tag; }
-            void visit(tag_double& tag)     { visited = &tag; }
+            void visit(tag_byte& tag) { visited = &tag; }
+            void visit(tag_short& tag) { visited = &tag; }
+            void visit(tag_int& tag) { visited = &tag; }
+            void visit(tag_long& tag) { visited = &tag; }
+            void visit(tag_float& tag) { visited = &tag; }
+            void visit(tag_double& tag) { visited = &tag; }
             void visit(tag_byte_array& tag) { visited = &tag; }
-            void visit(tag_string& tag)     { visited = &tag; }
-            void visit(tag_list& tag)       { visited = &tag; }
-            void visit(tag_compound& tag)   { visited = &tag; }
-            void visit(tag_int_array& tag)  { visited = &tag; }
+            void visit(tag_string& tag) { visited = &tag; }
+            void visit(tag_list& tag) { visited = &tag; }
+            void visit(tag_compound& tag) { visited = &tag; }
+            void visit(tag_int_array& tag) { visited = &tag; }
             void visit(tag_long_array& tag) { visited = &tag; }
         } v;
 
-        tag_byte       b;   b.accept(v); TS_ASSERT_EQUALS(v.visited, &b);
-        tag_short      s;   s.accept(v); TS_ASSERT_EQUALS(v.visited, &s);
-        tag_int        i;   i.accept(v); TS_ASSERT_EQUALS(v.visited, &i);
-        tag_long       l;   l.accept(v); TS_ASSERT_EQUALS(v.visited, &l);
-        tag_float      f;   f.accept(v); TS_ASSERT_EQUALS(v.visited, &f);
-        tag_double     d;   d.accept(v); TS_ASSERT_EQUALS(v.visited, &d);
-        tag_byte_array ba; ba.accept(v); TS_ASSERT_EQUALS(v.visited, &ba);
-        tag_string     st; st.accept(v); TS_ASSERT_EQUALS(v.visited, &st);
-        tag_list       ls; ls.accept(v); TS_ASSERT_EQUALS(v.visited, &ls);
-        tag_compound   c;   c.accept(v); TS_ASSERT_EQUALS(v.visited, &c);
-        tag_int_array  ia; ia.accept(v); TS_ASSERT_EQUALS(v.visited, &ia);
-        tag_long_array la; la.accept(v); TS_ASSERT_EQUALS(v.visited, &la);
+        tag_byte b;
+        b.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &b);
+        tag_short s;
+        s.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &s);
+        tag_int i;
+        i.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &i);
+        tag_long l;
+        l.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &l);
+        tag_float f;
+        f.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &f);
+        tag_double d;
+        d.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &d);
+        tag_byte_array ba;
+        ba.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &ba);
+        tag_string st;
+        st.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &st);
+        tag_list ls;
+        ls.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &ls);
+        tag_compound c;
+        c.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &c);
+        tag_int_array ia;
+        ia.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &ia);
+        tag_long_array la;
+        la.accept(v);
+        TS_ASSERT_EQUALS(v.visited, &la);
     }
 };

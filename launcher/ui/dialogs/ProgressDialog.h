@@ -84,9 +84,8 @@ class ProgressDialog : public QDialog {
     void updateSize(bool recenterParent = false);
 
     // Deprecated: Use unique_ptr overloads instead for better ownership semantics
-    [[deprecated("Use execWithTask(std::unique_ptr<Task>&&) instead")]]
-    int execWithTask(Task* task);
-    
+    [[deprecated("Use execWithTask(std::unique_ptr<Task>&&) instead")]] int execWithTask(Task* task);
+
     // Preferred: Takes ownership of the task
     int execWithTask(std::unique_ptr<Task>&& task);
     int execWithTask(std::unique_ptr<Task>& task);

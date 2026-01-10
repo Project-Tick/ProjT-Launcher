@@ -25,12 +25,10 @@
 #include <memory>
 #include "nbt_export.h"
 
-namespace nbt
-{
+namespace nbt {
 
-///Tag type values used in the binary format
-enum class tag_type : int8_t
-{
+/// Tag type values used in the binary format
+enum class tag_type : int8_t {
     End = 0,
     Byte = 1,
     Short = 2,
@@ -44,7 +42,7 @@ enum class tag_type : int8_t
     Compound = 10,
     Int_Array = 11,
     Long_Array = 12,
-    Null = -1   ///< Used to denote empty @ref value s
+    Null = -1  ///< Used to denote empty @ref value s
 };
 
 /**
@@ -53,26 +51,24 @@ enum class tag_type : int8_t
  */
 NBT_EXPORT bool is_valid_type(int type, bool allow_end = false);
 
-//Forward declarations
+// Forward declarations
 class nbt_visitor;
 class const_nbt_visitor;
-namespace io
-{
-    class stream_reader;
-    class stream_writer;
-}
+namespace io {
+class stream_reader;
+class stream_writer;
+}  // namespace io
 
-///Base class for all NBT tag classes
-class NBT_EXPORT tag
-{
-public:
-    //Virtual destructor
+/// Base class for all NBT tag classes
+class NBT_EXPORT tag {
+   public:
+    // Virtual destructor
     virtual ~tag() noexcept {}
 
-    ///Returns the type of the tag
+    /// Returns the type of the tag
     virtual tag_type get_type() const noexcept = 0;
 
-    //Polymorphic clone methods
+    // Polymorphic clone methods
     virtual std::unique_ptr<tag> clone() const& = 0;
     virtual std::unique_ptr<tag> move_clone() && = 0;
     std::unique_ptr<tag> clone() &&;
@@ -81,9 +77,9 @@ public:
      * @brief Returns a reference to the tag as an instance of T
      * @throw std::bad_cast if the tag is not of type T
      */
-    template<class T>
+    template <class T>
     T& as();
-    template<class T>
+    template <class T>
     const T& as() const;
 
     /**
@@ -131,7 +127,7 @@ public:
     friend NBT_EXPORT bool operator==(const tag& lhs, const tag& rhs);
     friend NBT_EXPORT bool operator!=(const tag& lhs, const tag& rhs);
 
-private:
+   private:
     /**
      * @brief Checks for equality to a tag of the same type
      * @param rhs an instance of the same class as @c *this
@@ -139,7 +135,7 @@ private:
     virtual bool equals(const tag& rhs) const = 0;
 };
 
-///Output operator for tag types
+/// Output operator for tag types
 NBT_EXPORT std::ostream& operator<<(std::ostream& os, tag_type tt);
 
 /**
@@ -150,20 +146,20 @@ NBT_EXPORT std::ostream& operator<<(std::ostream& os, tag_type tt);
  */
 NBT_EXPORT std::ostream& operator<<(std::ostream& os, const tag& t);
 
-template<class T>
+template <class T>
 T& tag::as()
 {
     static_assert(std::is_base_of<tag, T>::value, "T must be a subclass of tag");
     return dynamic_cast<T&>(*this);
 }
 
-template<class T>
+template <class T>
 const T& tag::as() const
 {
     static_assert(std::is_base_of<tag, T>::value, "T must be a subclass of tag");
     return dynamic_cast<const T&>(*this);
 }
 
-}
+}  // namespace nbt
 
-#endif // TAG_H_INCLUDED
+#endif  // TAG_H_INCLUDED

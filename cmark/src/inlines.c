@@ -945,7 +945,7 @@ static cmark_node* handle_pointy_brace(subject* subj, int options)
                     if (matchlen > 0) {
                         matchlen += 1;  // prefix "<"
                     } else {            // no match through end of input: set a flag so
-                              // we don't reparse looking for -->:
+                                        // we don't reparse looking for -->:
                         subj->flags |= FLAG_SKIP_HTML_COMMENT;
                     }
                 }

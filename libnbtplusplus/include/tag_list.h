@@ -20,14 +20,13 @@
 #ifndef TAG_LIST_H_INCLUDED
 #define TAG_LIST_H_INCLUDED
 
+#include <stdexcept>
+#include <vector>
 #include "crtp_tag.h"
 #include "tagfwd.h"
 #include "value_initializer.h"
-#include <stdexcept>
-#include <vector>
 
-namespace nbt
-{
+namespace nbt {
 
 /**
  * @brief Tag that contains multiple unnamed tags of the same type
@@ -40,14 +39,13 @@ namespace nbt
  * will return tag_type::Null. The type will then be set when the first tag
  * is added to the list.
  */
-class NBT_EXPORT tag_list final : public detail::crtp_tag<tag_list>
-{
-public:
-    //Iterator types
+class NBT_EXPORT tag_list final : public detail::crtp_tag<tag_list> {
+   public:
+    // Iterator types
     typedef std::vector<value>::iterator iterator;
     typedef std::vector<value>::const_iterator const_iterator;
 
-    ///The type of the tag
+    /// The type of the tag
     static constexpr tag_type type = tag_type::List;
 
     /**
@@ -56,7 +54,7 @@ public:
      * Example: @code tag_list::of<tag_byte>({3, 4, 5}) @endcode
      * @param init list of values from which the elements are constructed
      */
-    template<class T>
+    template <class T>
     static tag_list of(std::initializer_list<T> init);
 
     /**
@@ -64,12 +62,12 @@ public:
      *
      * The content type is determined when the first tag is added.
      */
-    tag_list(): tag_list(tag_type::Null) {}
+    tag_list() : tag_list(tag_type::Null) {}
 
-    ///Constructs an empty list with the given content type
-    explicit tag_list(tag_type type): el_type_(type) {}
+    /// Constructs an empty list with the given content type
+    explicit tag_list(tag_type type) : el_type_(type) {}
 
-    ///Constructs a list with the given contents
+    /// Constructs a list with the given contents
     tag_list(std::initializer_list<int8_t> init);
     tag_list(std::initializer_list<int16_t> init);
     tag_list(std::initializer_list<int32_t> init);
@@ -128,19 +126,19 @@ public:
      * @throw std::invalid_argument if the type of the tag does not match the list's
      * content type
      */
-    template<class T, class... Args>
+    template <class T, class... Args>
     void emplace_back(Args&&... args);
 
-    ///Removes the last element of the list
+    /// Removes the last element of the list
     void pop_back() { tags.pop_back(); }
 
-    ///Returns the content type of the list, or tag_type::Null if undetermined
+    /// Returns the content type of the list, or tag_type::Null if undetermined
     tag_type el_type() const { return el_type_; }
 
-    ///Returns the number of tags in the list
+    /// Returns the number of tags in the list
     size_t size() const { return tags.size(); }
 
-    ///Erases all tags from the list. Preserves the content type.
+    /// Erases all tags from the list. Preserves the content type.
     void clear() { tags.clear(); }
 
     /**
@@ -149,13 +147,13 @@ public:
      */
     void reset(tag_type type = tag_type::Null);
 
-    //Iterators
+    // Iterators
     iterator begin() { return tags.begin(); }
-    iterator end()   { return tags.end(); }
-    const_iterator begin() const  { return tags.begin(); }
-    const_iterator end() const    { return tags.end(); }
+    iterator end() { return tags.end(); }
+    const_iterator begin() const { return tags.begin(); }
+    const_iterator end() const { return tags.end(); }
     const_iterator cbegin() const { return tags.cbegin(); }
-    const_iterator cend() const   { return tags.cend(); }
+    const_iterator cend() const { return tags.cend(); }
 
     /**
      * @inheritdoc
@@ -178,7 +176,7 @@ public:
     friend NBT_EXPORT bool operator==(const tag_list& lhs, const tag_list& rhs);
     friend NBT_EXPORT bool operator!=(const tag_list& lhs, const tag_list& rhs);
 
-private:
+   private:
     std::vector<value> tags;
     tag_type el_type_;
 
@@ -187,11 +185,11 @@ private:
      * tags of type T, with the constructor arguments of each T given by il.
      * @param il list of values that are, one by one, given to a constructor of T
      */
-    template<class T, class Arg>
+    template <class T, class Arg>
     void init(std::initializer_list<Arg> il);
 };
 
-template<class T>
+template <class T>
 tag_list tag_list::of(std::initializer_list<T> il)
 {
     tag_list result;
@@ -199,25 +197,25 @@ tag_list tag_list::of(std::initializer_list<T> il)
     return result;
 }
 
-template<class T, class... Args>
+template <class T, class... Args>
 void tag_list::emplace_back(Args&&... args)
 {
-    if(el_type_ == tag_type::Null) //set content type if undetermined
+    if (el_type_ == tag_type::Null)  // set content type if undetermined
         el_type_ = T::type;
-    else if(el_type_ != T::type)
+    else if (el_type_ != T::type)
         throw std::invalid_argument("The tag type does not match the list's content type");
     tags.emplace_back(make_unique<T>(std::forward<Args>(args)...));
 }
 
-template<class T, class Arg>
+template <class T, class Arg>
 void tag_list::init(std::initializer_list<Arg> init)
 {
     el_type_ = T::type;
     tags.reserve(init.size());
-    for(const Arg& arg: init)
+    for (const Arg& arg : init)
         tags.emplace_back(nbt::make_unique<T>(arg));
 }
 
-}
+}  // namespace nbt
 
-#endif // TAG_LIST_H_INCLUDED
+#endif  // TAG_LIST_H_INCLUDED

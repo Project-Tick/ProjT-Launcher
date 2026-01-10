@@ -50,7 +50,7 @@ MinecraftTarget MinecraftTarget::parse(const QString& fullAddress, bool useWorld
     if (trimmed.isEmpty()) {
         return MinecraftTarget{};  // Return empty target for invalid input
     }
-    
+
     if (useWorld) {
         MinecraftTarget target;
         target.world = trimmed;
@@ -82,7 +82,7 @@ MinecraftTarget MinecraftTarget::parse(const QString& fullAddress, bool useWorld
     }
 
     QString realAddress = split[0];
-    
+
     // Validate address is not empty after parsing
     if (realAddress.isEmpty()) {
         return MinecraftTarget{};  // Invalid address

@@ -20,22 +20,19 @@
 #ifndef STREAM_READER_H_INCLUDED
 #define STREAM_READER_H_INCLUDED
 
-#include "endian_str.h"
-#include "tag.h"
-#include "tag_compound.h"
 #include <iosfwd>
 #include <memory>
 #include <stdexcept>
 #include <utility>
+#include "endian_str.h"
+#include "tag.h"
+#include "tag_compound.h"
 
-namespace nbt
-{
-namespace io
-{
+namespace nbt {
+namespace io {
 
-///Exception that gets thrown when reading is not successful
-class NBT_EXPORT input_error : public std::runtime_error
-{
+/// Exception that gets thrown when reading is not successful
+class NBT_EXPORT input_error : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
@@ -62,9 +59,8 @@ NBT_EXPORT std::pair<std::string, std::unique_ptr<tag>> read_tag(std::istream& i
  *
  * Can be reused to read multiple tags
  */
-class NBT_EXPORT stream_reader
-{
-public:
+class NBT_EXPORT stream_reader {
+   public:
     /**
      * @param is the stream to read from
      * @param e the byte order of the source data. The Java edition
@@ -72,9 +68,9 @@ public:
      */
     explicit stream_reader(std::istream& is, endian::endian e = endian::big) noexcept;
 
-    ///Returns the stream
+    /// Returns the stream
     std::istream& get_istr() const;
-    ///Returns the byte order
+    /// Returns the byte order
     endian::endian get_endian() const;
 
     /**
@@ -107,7 +103,7 @@ public:
      *
      * On failure, will set the failbit on the stream.
      */
-    template<class T>
+    template <class T>
     void read_num(T& x);
 
     /**
@@ -119,19 +115,19 @@ public:
      */
     std::string read_string();
 
-private:
+   private:
     std::istream& is;
     int depth = 0;
     const endian::endian endian;
 };
 
-template<class T>
+template <class T>
 void stream_reader::read_num(T& x)
 {
     endian::read(is, x, endian);
 }
 
-}
-}
+}  // namespace io
+}  // namespace nbt
 
-#endif // STREAM_READER_H_INCLUDED
+#endif  // STREAM_READER_H_INCLUDED

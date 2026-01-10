@@ -9,25 +9,19 @@
 #include <QMetaObject>
 #include <QThread>
 
-class Thread : public QThread
-{
+class Thread : public QThread {
     Q_OBJECT
 
-    QLibrary *m_lib;
+    QLibrary* m_lib;
 
-public:
-    Thread()
-        : m_lib(0)
-    {}
-    ~Thread()
-    {
-        delete m_lib;
-    }
+   public:
+    Thread() : m_lib(0) {}
+    ~Thread() { delete m_lib; }
 
-Q_SIGNALS:
+   Q_SIGNALS:
     void libraryLoaded();
 
-public Q_SLOTS:
+   public Q_SLOTS:
     void printStrings()
     {
         Q_ASSERT(QThread::currentThread() == QCoreApplication::instance()->thread());
@@ -41,7 +35,8 @@ public Q_SLOTS:
 
         QCoreApplication::instance()->quit();
     }
-protected:
+
+   protected:
     void run()
     {
         m_lib = new QLibrary(MODULE_PATH);
