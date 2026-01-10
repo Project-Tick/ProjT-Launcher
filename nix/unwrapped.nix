@@ -63,6 +63,7 @@ stdenv.mkDerivation {
       ../launcher
       ../launcherjava
       ../libnbtplusplus
+      ../libqrencode
       ../LICENSES
       ../LocalPeer
       ../meta
