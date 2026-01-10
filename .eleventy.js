@@ -9,6 +9,8 @@ const Image = require("@11ty/eleventy-img");
 
 const DIRS = {
   input: "website",
+  inputRoot: "website-root",
+  inputProjtLauncher: "website/projtlauncher",
   output: "_site",
   imagesBuilt: "img/built",
 };
@@ -92,11 +94,24 @@ module.exports = async function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("website/favicon.ico");
   eleventyConfig.addPassthroughCopy("website/.well-known");
   eleventyConfig.addPassthroughCopy("website/_redirects"); // Netlify redirects
+  
+  // Root site passthrough
+  eleventyConfig.addPassthroughCopy({ "website-root/css": "css" });
+  eleventyConfig.addPassthroughCopy({ "website-root/img": "img" });
+  
+  // ProjT Launcher site passthrough with prefix
+  eleventyConfig.addPassthroughCopy({ "website/projtlauncher/img": "projtlauncher/img" });
+  eleventyConfig.addPassthroughCopy({ "website/projtlauncher/js": "projtlauncher/js" });
+  eleventyConfig.addPassthroughCopy({ "website/projtlauncher/favicon.ico": "projtlauncher/favicon.ico" });
+  eleventyConfig.addPassthroughCopy({ "website/projtlauncher/admin": "projtlauncher/admin" });
+  eleventyConfig.addPassthroughCopy({ "website/projtlauncher/.well-known": "projtlauncher/.well-known" });
+  eleventyConfig.addPassthroughCopy({ "website/projtlauncher/_redirects": "projtlauncher/_redirects" });
+  
   eleventyConfig.addPassthroughCopy({
     "node_modules/@fontsource/inter": "assets/fonts/inter",
   });
   eleventyConfig.addPassthroughCopy({
-    "website/_includes/components/forkawesome": "assets/forkawesome",
+    "website/projtlauncher/_includes/components/forkawesome": "assets/forkawesome",
   });
   
 
@@ -167,6 +182,15 @@ module.exports = async function (eleventyConfig) {
     return filterTagList([...tagSet]);
   });
 
+  // Add collections for different sites
+  eleventyConfig.addCollection("projtlauncher", function(collectionApi) {
+    return collectionApi.getFilteredByGlob("website/projtlauncher/**/*.md");
+  });
+  
+  eleventyConfig.addCollection("rootSite", function(collectionApi) {
+    return collectionApi.getFilteredByGlob("website-root/**/*.md");
+  });
+
   // Customize Markdown library and settings:
   let markdownLibrary = markdownIt({
     html: true,
@@ -195,9 +219,9 @@ module.exports = async function (eleventyConfig) {
     htmlTemplateEngine: "njk",
 
     dir: {
-      input: DIRS.input,
-      includes: "_includes",
-      data: "_data",
+      input: ".",
+      includes: "website/projtlauncher/_includes",
+      data: "website/projtlauncher/_data",
       output: DIRS.output,
     },
   };

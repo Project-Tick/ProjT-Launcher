@@ -1,7 +1,7 @@
 {
   "name": "projtlauncher",
-  "version": "0.0.3-4",
-  "description": "Official ProjT Launcher website",
+  "version": "0.0.4-1",
+  "description": "Project Tick - Official websites for ProjT Launcher, toml++ and more",
   "scripts": {
     "build": "npm run build:tomlplusplus && eleventy && npm run copy:tomlplusplus",
     "build:tomlplusplus": "node ./scripts/build-tomlplusplus.mjs",
