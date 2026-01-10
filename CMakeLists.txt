@@ -468,6 +468,11 @@ if(NOT ZLIB_FOUND)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
         message(STATUS "Using bundled zlib")
         set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
+        # For fuzzing builds, disable shared library to avoid sanitizer symbol conflicts
+        if(BUILD_FUZZERS)
+            set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+            message(STATUS "Fuzzing build: Building zlib as static library only")
+        endif()
         # Disable instrumentation for external dependencies to avoid linker issues
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
