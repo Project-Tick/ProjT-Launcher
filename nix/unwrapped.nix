@@ -77,12 +77,8 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
-    cmark
     kdePackages.qtbase
     kdePackages.qtnetworkauth
-    kdePackages.quazip
-    tomlplusplus
-    qrencode
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_14 ]
   ++ lib.optional gamemodeSupport gamemode;
