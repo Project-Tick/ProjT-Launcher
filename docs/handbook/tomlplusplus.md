@@ -10,7 +10,7 @@
 ## toml++ homepage
 
 <p align="center">
-    <strong>✨&#xFE0F; This README is fine, but the <a href="https://marzer.github.io/tomlplusplus/">toml++ homepage</a> is better. ✨&#xFE0F;</strong>
+    <strong>✨&#xFE0F; This README is fine, but the <a href="https://projecttick.org.tr/tomlplusplus/">toml++ homepage</a> is better. ✨&#xFE0F;</strong>
 </p>
 
 <br>

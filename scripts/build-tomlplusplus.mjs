@@ -5,7 +5,7 @@
  */
 
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -34,59 +34,8 @@ function commandExists(command) {
   }
 }
 
-function syncFeaturesToMainPage() {
-  log('\n📋 Syncing features from handbook...', colors.blue);
-  
-  const handbookPath = join(projectRoot, 'docs', 'handbook', 'tomlplusplus.md');
-  const mainPagePath = join(projectRoot, 'website', 'tomlplusplus', 'pages', 'main_page.md');
-  
-  if (!existsSync(handbookPath) || !existsSync(mainPagePath)) {
-    log('⚠️  Files not found, skipping sync', colors.yellow);
-    return;
-  }
-  
-  try {
-    const handbook = readFileSync(handbookPath, 'utf-8');
-    const mainPage = readFileSync(mainPagePath, 'utf-8');
-    
-    // Extract Library features section from handbook
-    const featuresMatch = handbook.match(/## Library features\s*\n\n([\s\S]*?)(?=\n\n##|$)/);
-    if (!featuresMatch) {
-      log('⚠️  Could not find Library features in handbook', colors.yellow);
-      return;
-    }
-    
-    const handbookFeatures = featuresMatch[1].trim();
-    
-    // Convert to Doxygen list format
-    const doxygenFeatures = handbookFeatures
-      .split('\n')
-      .map(line => line.replace(/^- /, '-   '))
-      .join('\n');
-    
-    // Replace features in main_page.md
-    const updatedMainPage = mainPage.replace(
-      /@section mainpage-features Features\s*\n\n([\s\S]*?)(?=\n<!-- -+|$)/,
-      `@section mainpage-features Features\n\n${doxygenFeatures}\n`
-    );
-    
-    if (updatedMainPage !== mainPage) {
-      writeFileSync(mainPagePath, updatedMainPage, 'utf-8');
-      log('✅ Updated features in main_page.md from handbook', colors.green);
-    } else {
-      log('ℹ️  Features are already in sync', colors.blue);
-    }
-  } catch (error) {
-    log(`❌ Sync failed: ${error.message}`, colors.red);
-  }
-}
-
 async function buildTomlPlusPlusDocs() {
   log('\n🔨 Building toml++ documentation...', colors.blue);
-  
-  // Sync only the features list from handbook to main_page
-  // This keeps main_page.md's detailed API docs while updating basic info
-  syncFeaturesToMainPage();
   
   // Check if dependencies exist
   if (!commandExists('doxygen')) {
