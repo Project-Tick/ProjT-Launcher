@@ -44,27 +44,43 @@ stdenv.mkDerivation {
     root = ../.;
     fileset = lib.fileset.unions [
       ../CMakeLists.txt
+      ../CMakePresets.json
       ../COPYING.md
-      ../libnbtplusplus
+      ../LICENSE
+      ../bot
       ../buildconfig
+      ../bzip2
+      ../caches
+      ../ci
       ../cmake
-      ../javacheck
-      ../LocalPeer
+      ../cmark
+      ../docs
+      ../extra-cmake-modules
+      ../flatpak
+      ../fuzz
       ../gamemode
+      ../javacheck
       ../launcher
       ../launcherjava
+      ../libnbtplusplus
+      ../LICENSES
+      ../LocalPeer
+      ../meta
       ../murmur2
+      ../nix
       ../program_info
+      ../public
       ../qdcss
+      ../quazip
       ../rainbow
+      ../scripts
+      ../spdx
       ../systeminfo
       ../tests
-      ../quazip
-      ../bzip2
-      ../zlib
       ../tomlplusplus
-      ../cmark
-      ../extra-cmake-modules
+      ../tools
+      ../website
+      ../zlib
     ];
   };
 
