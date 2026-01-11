@@ -92,18 +92,18 @@
 
 PackProfile::PackProfile(MinecraftInstance* instance) : QAbstractListModel()
 {
-    d.reset(new PackProfileData);
-    d->m_instance = instance;
-    d->m_saveTimer.setSingleShot(true);
-    d->m_saveTimer.setInterval(5000);
-    d->interactionDisabled = instance->isRunning();
-    connect(d->m_instance, &BaseInstance::runningStatusChanged, this, &PackProfile::disableInteraction);
-    connect(&d->m_saveTimer, &QTimer::timeout, this, &PackProfile::save_internal);
+	d.reset(new PackProfileData);
+	d->m_instance = instance;
+	d->m_saveTimer.setSingleShot(true);
+	d->m_saveTimer.setInterval(5000);
+	d->interactionDisabled = instance->isRunning();
+	connect(d->m_instance, &BaseInstance::runningStatusChanged, this, &PackProfile::disableInteraction);
+	connect(&d->m_saveTimer, &QTimer::timeout, this, &PackProfile::save_internal);
 }
 
 PackProfile::~PackProfile()
 {
-    saveNow();
+	saveNow();
 }
 
 // BEGIN: component file format
@@ -112,135 +112,160 @@ static const int currentComponentsFileVersion = 1;
 
 static QJsonObject componentToJsonV1(ComponentPtr component)
 {
-    QJsonObject obj;
-    // critical
-    obj.insert("uid", component->m_uid);
-    if (!component->m_version.isEmpty()) {
-        obj.insert("version", component->m_version);
-    }
-    if (component->m_dependencyOnly) {
-        obj.insert("dependencyOnly", true);
-    }
-    if (component->m_important) {
-        obj.insert("important", true);
-    }
-    if (component->m_disabled) {
-        obj.insert("disabled", true);
-    }
+	QJsonObject obj;
+	// critical
+	obj.insert("uid", component->m_uid);
+	if (!component->m_version.isEmpty())
+	{
+		obj.insert("version", component->m_version);
+	}
+	if (component->m_dependencyOnly)
+	{
+		obj.insert("dependencyOnly", true);
+	}
+	if (component->m_important)
+	{
+		obj.insert("important", true);
+	}
+	if (component->m_disabled)
+	{
+		obj.insert("disabled", true);
+	}
 
-    // cached
-    if (!component->m_cachedVersion.isEmpty()) {
-        obj.insert("cachedVersion", component->m_cachedVersion);
-    }
-    if (!component->m_cachedName.isEmpty()) {
-        obj.insert("cachedName", component->m_cachedName);
-    }
-    Meta::serializeRequires(obj, &component->m_cachedRequires, "cachedRequires");
-    Meta::serializeRequires(obj, &component->m_cachedConflicts, "cachedConflicts");
-    if (component->m_cachedVolatile) {
-        obj.insert("cachedVolatile", true);
-    }
-    return obj;
+	// cached
+	if (!component->m_cachedVersion.isEmpty())
+	{
+		obj.insert("cachedVersion", component->m_cachedVersion);
+	}
+	if (!component->m_cachedName.isEmpty())
+	{
+		obj.insert("cachedName", component->m_cachedName);
+	}
+	Meta::serializeRequires(obj, &component->m_cachedRequires, "cachedRequires");
+	Meta::serializeRequires(obj, &component->m_cachedConflicts, "cachedConflicts");
+	if (component->m_cachedVolatile)
+	{
+		obj.insert("cachedVolatile", true);
+	}
+	return obj;
 }
 
-static ComponentPtr componentFromJsonV1(PackProfile* parent, const QString& componentJsonPattern, const QJsonObject& obj)
+static ComponentPtr componentFromJsonV1(PackProfile* parent,
+										const QString& componentJsonPattern,
+										const QJsonObject& obj)
 {
-    // critical
-    auto uid = Json::requireString(obj.value("uid"));
-    auto filePath = componentJsonPattern.arg(uid);
-    auto component = makeShared<Component>(parent, uid);
-    component->m_version = Json::ensureString(obj.value("version"));
-    component->m_dependencyOnly = Json::ensureBoolean(obj.value("dependencyOnly"), false);
-    component->m_important = Json::ensureBoolean(obj.value("important"), false);
+	// critical
+	auto uid					= Json::requireString(obj.value("uid"));
+	auto filePath				= componentJsonPattern.arg(uid);
+	auto component				= makeShared<Component>(parent, uid);
+	component->m_version		= Json::ensureString(obj.value("version"));
+	component->m_dependencyOnly = Json::ensureBoolean(obj.value("dependencyOnly"), false);
+	component->m_important		= Json::ensureBoolean(obj.value("important"), false);
 
-    // cached
-    // TODO @RESILIENCE: ignore invalid values/structure here?
-    component->m_cachedVersion = Json::ensureString(obj.value("cachedVersion"));
-    component->m_cachedName = Json::ensureString(obj.value("cachedName"));
-    Meta::parseRequires(obj, &component->m_cachedRequires, "cachedRequires");
-    Meta::parseRequires(obj, &component->m_cachedConflicts, "cachedConflicts");
-    component->m_cachedVolatile = Json::ensureBoolean(obj.value("volatile"), false);
-    bool disabled = Json::ensureBoolean(obj.value("disabled"), false);
-    component->setEnabled(!disabled);
-    return component;
+	// cached
+	// TODO @RESILIENCE: ignore invalid values/structure here?
+	component->m_cachedVersion = Json::ensureString(obj.value("cachedVersion"));
+	component->m_cachedName	   = Json::ensureString(obj.value("cachedName"));
+	Meta::parseRequires(obj, &component->m_cachedRequires, "cachedRequires");
+	Meta::parseRequires(obj, &component->m_cachedConflicts, "cachedConflicts");
+	component->m_cachedVolatile = Json::ensureBoolean(obj.value("volatile"), false);
+	bool disabled				= Json::ensureBoolean(obj.value("disabled"), false);
+	component->setEnabled(!disabled);
+	return component;
 }
 
 // Save the given component container data to a file
 static bool savePackProfile(const QString& filename, const ComponentContainer& container)
 {
-    QJsonObject obj;
-    obj.insert("formatVersion", currentComponentsFileVersion);
-    QJsonArray orderArray;
-    for (auto component : container) {
-        orderArray.append(componentToJsonV1(component));
-    }
-    obj.insert("components", orderArray);
-    QSaveFile outFile(filename);
-    if (!outFile.open(QFile::WriteOnly)) {
-        qCCritical(instanceProfileC) << "Couldn't open" << outFile.fileName() << "for writing:" << outFile.errorString();
-        return false;
-    }
-    auto data = QJsonDocument(obj).toJson(QJsonDocument::Indented);
-    if (outFile.write(data) != data.size()) {
-        qCCritical(instanceProfileC) << "Couldn't write all the data into" << outFile.fileName() << "because:" << outFile.errorString();
-        return false;
-    }
-    if (!outFile.commit()) {
-        qCCritical(instanceProfileC) << "Couldn't save" << outFile.fileName() << "because:" << outFile.errorString();
-    }
-    return true;
+	QJsonObject obj;
+	obj.insert("formatVersion", currentComponentsFileVersion);
+	QJsonArray orderArray;
+	for (auto component : container)
+	{
+		orderArray.append(componentToJsonV1(component));
+	}
+	obj.insert("components", orderArray);
+	QSaveFile outFile(filename);
+	if (!outFile.open(QFile::WriteOnly))
+	{
+		qCCritical(instanceProfileC) << "Couldn't open" << outFile.fileName()
+									 << "for writing:" << outFile.errorString();
+		return false;
+	}
+	auto data = QJsonDocument(obj).toJson(QJsonDocument::Indented);
+	if (outFile.write(data) != data.size())
+	{
+		qCCritical(instanceProfileC) << "Couldn't write all the data into" << outFile.fileName()
+									 << "because:" << outFile.errorString();
+		return false;
+	}
+	if (!outFile.commit())
+	{
+		qCCritical(instanceProfileC) << "Couldn't save" << outFile.fileName() << "because:" << outFile.errorString();
+	}
+	return true;
 }
 
 // Read the given file into component containers
 static PackProfile::Result loadPackProfile(PackProfile* parent,
-                                           const QString& filename,
-                                           const QString& componentJsonPattern,
-                                           ComponentContainer& container)
+										   const QString& filename,
+										   const QString& componentJsonPattern,
+										   ComponentContainer& container)
 {
-    QFile componentsFile(filename);
-    if (!componentsFile.exists()) {
-        auto message = QObject::tr("Components file %1 doesn't exist. This should never happen.").arg(filename);
-        qCWarning(instanceProfileC) << message;
-        return PackProfile::Result::Error(message);
-    }
-    if (!componentsFile.open(QFile::ReadOnly)) {
-        auto message = QObject::tr("Couldn't open %1 for reading: %2").arg(componentsFile.fileName(), componentsFile.errorString());
-        qCCritical(instanceProfileC) << message;
-        qCWarning(instanceProfileC) << "Ignoring overridden order";
-        return PackProfile::Result::Error(message);
-    }
+	QFile componentsFile(filename);
+	if (!componentsFile.exists())
+	{
+		auto message = QObject::tr("Components file %1 doesn't exist. This should never happen.").arg(filename);
+		qCWarning(instanceProfileC) << message;
+		return PackProfile::Result::Error(message);
+	}
+	if (!componentsFile.open(QFile::ReadOnly))
+	{
+		auto message = QObject::tr("Couldn't open %1 for reading: %2")
+						   .arg(componentsFile.fileName(), componentsFile.errorString());
+		qCCritical(instanceProfileC) << message;
+		qCWarning(instanceProfileC) << "Ignoring overridden order";
+		return PackProfile::Result::Error(message);
+	}
 
-    // and it's valid JSON
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(componentsFile.readAll(), &error);
-    if (error.error != QJsonParseError::NoError) {
-        auto message = QObject::tr("Couldn't parse %1 as json: %2").arg(componentsFile.fileName(), error.errorString());
-        qCCritical(instanceProfileC) << message;
-        qCWarning(instanceProfileC) << "Ignoring overridden order";
-        return PackProfile::Result::Error(message);
-    }
+	// and it's valid JSON
+	QJsonParseError error;
+	QJsonDocument doc = QJsonDocument::fromJson(componentsFile.readAll(), &error);
+	if (error.error != QJsonParseError::NoError)
+	{
+		auto message = QObject::tr("Couldn't parse %1 as json: %2").arg(componentsFile.fileName(), error.errorString());
+		qCCritical(instanceProfileC) << message;
+		qCWarning(instanceProfileC) << "Ignoring overridden order";
+		return PackProfile::Result::Error(message);
+	}
 
-    // and then read it and process it if all above is true.
-    try {
-        auto obj = Json::requireObject(doc);
-        // check order file version.
-        auto version = Json::requireInteger(obj.value("formatVersion"));
-        if (version != currentComponentsFileVersion) {
-            throw JSONValidationError(QObject::tr("Invalid component file version, expected %1").arg(currentComponentsFileVersion));
-        }
-        auto orderArray = Json::requireArray(obj.value("components"));
-        for (auto item : orderArray) {
-            auto comp_obj = Json::requireObject(item, "Component must be an object.");
-            container.append(componentFromJsonV1(parent, componentJsonPattern, comp_obj));
-        }
-    } catch ([[maybe_unused]] const JSONValidationError& err) {
-        auto message = QObject::tr("Couldn't parse %1 : bad file format").arg(componentsFile.fileName());
-        qCCritical(instanceProfileC) << message;
-        qCWarning(instanceProfileC) << "error:" << err.what();
-        container.clear();
-        return PackProfile::Result::Error(message);
-    }
-    return PackProfile::Result::Success();
+	// and then read it and process it if all above is true.
+	try
+	{
+		auto obj = Json::requireObject(doc);
+		// check order file version.
+		auto version = Json::requireInteger(obj.value("formatVersion"));
+		if (version != currentComponentsFileVersion)
+		{
+			throw JSONValidationError(
+				QObject::tr("Invalid component file version, expected %1").arg(currentComponentsFileVersion));
+		}
+		auto orderArray = Json::requireArray(obj.value("components"));
+		for (auto item : orderArray)
+		{
+			auto comp_obj = Json::requireObject(item, "Component must be an object.");
+			container.append(componentFromJsonV1(parent, componentJsonPattern, comp_obj));
+		}
+	}
+	catch ([[maybe_unused]] const JSONValidationError& err)
+	{
+		auto message = QObject::tr("Couldn't parse %1 : bad file format").arg(componentsFile.fileName());
+		qCCritical(instanceProfileC) << message;
+		qCWarning(instanceProfileC) << "error:" << err.what();
+		container.clear();
+		return PackProfile::Result::Error(message);
+	}
+	return PackProfile::Result::Success();
 }
 
 // END: component file format
@@ -249,891 +274,990 @@ static PackProfile::Result loadPackProfile(PackProfile* parent,
 
 void PackProfile::saveNow()
 {
-    if (saveIsScheduled()) {
-        d->m_saveTimer.stop();
-        save_internal();
-    }
+	if (saveIsScheduled())
+	{
+		d->m_saveTimer.stop();
+		save_internal();
+	}
 }
 
 bool PackProfile::saveIsScheduled() const
 {
-    return d->dirty;
+	return d->dirty;
 }
 
 void PackProfile::buildingFromScratch()
 {
-    d->loaded = true;
-    d->dirty = true;
+	d->loaded = true;
+	d->dirty  = true;
 }
 
 void PackProfile::scheduleSave()
 {
-    if (!d->loaded) {
-        qDebug() << d->m_instance->name() << "|"
-                 << "Component list should never save if it didn't successfully load";
-        return;
-    }
-    if (!d->dirty) {
-        d->dirty = true;
-        qDebug() << d->m_instance->name() << "|"
-                 << "Component list save is scheduled";
-    }
-    d->m_saveTimer.start();
+	if (!d->loaded)
+	{
+		qDebug() << d->m_instance->name() << "|"
+				 << "Component list should never save if it didn't successfully load";
+		return;
+	}
+	if (!d->dirty)
+	{
+		d->dirty = true;
+		qDebug() << d->m_instance->name() << "|"
+				 << "Component list save is scheduled";
+	}
+	d->m_saveTimer.start();
 }
 
 RuntimeContext PackProfile::runtimeContext()
 {
-    return d->m_instance->runtimeContext();
+	return d->m_instance->runtimeContext();
 }
 
 QString PackProfile::componentsFilePath() const
 {
-    return FS::PathCombine(d->m_instance->instanceRoot(), "mmc-pack.json");
+	return FS::PathCombine(d->m_instance->instanceRoot(), "mmc-pack.json");
 }
 
 QString PackProfile::patchesPattern() const
 {
-    return FS::PathCombine(d->m_instance->instanceRoot(), "patches", "%1.json");
+	return FS::PathCombine(d->m_instance->instanceRoot(), "patches", "%1.json");
 }
 
 QString PackProfile::patchFilePathForUid(const QString& uid) const
 {
-    return patchesPattern().arg(uid);
+	return patchesPattern().arg(uid);
 }
 
 void PackProfile::save_internal()
 {
-    qDebug() << d->m_instance->name() << "|"
-             << "Component list save performed now";
-    auto filename = componentsFilePath();
-    savePackProfile(filename, d->components);
-    d->dirty = false;
+	qDebug() << d->m_instance->name() << "|"
+			 << "Component list save performed now";
+	auto filename = componentsFilePath();
+	savePackProfile(filename, d->components);
+	d->dirty = false;
 }
 
 PackProfile::Result PackProfile::load()
 {
-    auto filename = componentsFilePath();
+	auto filename = componentsFilePath();
 
-    // load the new component list and swap it with the current one...
-    ComponentContainer newComponents;
-    if (auto result = loadPackProfile(this, filename, patchesPattern(), newComponents); !result) {
-        qCritical() << d->m_instance->name() << "|"
-                    << "Failed to load the component config";
-        return result;
-    }
+	// load the new component list and swap it with the current one...
+	ComponentContainer newComponents;
+	if (auto result = loadPackProfile(this, filename, patchesPattern(), newComponents); !result)
+	{
+		qCritical() << d->m_instance->name() << "|"
+					<< "Failed to load the component config";
+		return result;
+	}
 
-    // Optimization: check if there are any changes before resetting the model
-    bool changed = false;
-    if (d->components.size() != newComponents.size()) {
-        changed = true;
-    } else {
-        for (int i = 0; i < d->components.size(); ++i) {
-            const auto& oldC = d->components[i];
-            const auto& newC = newComponents[i];
-            if (oldC->getID() != newC->getID() || oldC->getVersion() != newC->getVersion() || oldC->m_important != newC->m_important ||
-                oldC->m_disabled != newC->m_disabled || oldC->m_dependencyOnly != newC->m_dependencyOnly) {
-                changed = true;
-                break;
-            }
-        }
-    }
+	// Optimization: check if there are any changes before resetting the model
+	bool changed = false;
+	if (d->components.size() != newComponents.size())
+	{
+		changed = true;
+	}
+	else
+	{
+		for (int i = 0; i < d->components.size(); ++i)
+		{
+			const auto& oldC = d->components[i];
+			const auto& newC = newComponents[i];
+			if (oldC->getID() != newC->getID() || oldC->getVersion() != newC->getVersion()
+				|| oldC->m_important != newC->m_important || oldC->m_disabled != newC->m_disabled
+				|| oldC->m_dependencyOnly != newC->m_dependencyOnly)
+			{
+				changed = true;
+				break;
+			}
+		}
+	}
 
-    if (!changed) {
-        d->loaded = true;
-        return Result::Success(false);
-    }
+	if (!changed)
+	{
+		d->loaded = true;
+		return Result::Success(false);
+	}
 
-    // NOTE: actually use fine-grained updates, not this...
-    beginResetModel();
-    // disconnect all the old components
-    for (auto component : d->components) {
-        disconnect(component.get(), &Component::dataChanged, this, &PackProfile::componentDataChanged);
-    }
-    d->components.clear();
-    d->componentIndex.clear();
-    for (auto component : newComponents) {
-        if (d->componentIndex.contains(component->m_uid)) {
-            qWarning() << d->m_instance->name() << "|"
-                       << "Ignoring duplicate component entry" << component->m_uid;
-            continue;
-        }
-        connect(component.get(), &Component::dataChanged, this, &PackProfile::componentDataChanged);
-        d->components.append(component);
-        d->componentIndex[component->m_uid] = component;
-    }
-    endResetModel();
-    d->loaded = true;
-    return Result::Success();
+	// NOTE: actually use fine-grained updates, not this...
+	beginResetModel();
+	// disconnect all the old components
+	for (auto component : d->components)
+	{
+		disconnect(component.get(), &Component::dataChanged, this, &PackProfile::componentDataChanged);
+	}
+	d->components.clear();
+	d->componentIndex.clear();
+	for (auto component : newComponents)
+	{
+		if (d->componentIndex.contains(component->m_uid))
+		{
+			qWarning() << d->m_instance->name() << "|"
+					   << "Ignoring duplicate component entry" << component->m_uid;
+			continue;
+		}
+		connect(component.get(), &Component::dataChanged, this, &PackProfile::componentDataChanged);
+		d->components.append(component);
+		d->componentIndex[component->m_uid] = component;
+	}
+	endResetModel();
+	d->loaded = true;
+	return Result::Success();
 }
 
 PackProfile::Result PackProfile::reload(Net::Mode netmode)
 {
-    // Do not reload when the update/resolve task is running. It is in control.
-    if (d->m_updateTask) {
-        return Result::Success();
-    }
+	// Do not reload when the update/resolve task is running. It is in control.
+	if (d->m_updateTask)
+	{
+		return Result::Success();
+	}
 
-    // flush any scheduled saves to not lose state
-    saveNow();
+	// flush any scheduled saves to not lose state
+	saveNow();
 
-    auto result = load();
-    if (!result) {
-        return result;
-    }
+	auto result = load();
+	if (!result)
+	{
+		return result;
+	}
 
-    if (result.changed) {
-        invalidateLaunchProfile();
-    }
+	if (result.changed)
+	{
+		invalidateLaunchProfile();
+	}
 
-    resolve(netmode);
-    return Result::Success();
+	resolve(netmode);
+	return Result::Success();
 }
 
 Task::Ptr PackProfile::getCurrentTask()
 {
-    return d->m_updateTask;
+	return d->m_updateTask;
 }
 
 void PackProfile::resolve(Net::Mode netmode)
 {
-    auto updateTask = new ComponentUpdateTask(ComponentUpdateTask::Mode::Resolution, netmode, this);
-    d->m_updateTask.reset(updateTask);
-    connect(updateTask, &ComponentUpdateTask::succeeded, this, &PackProfile::updateSucceeded);
-    connect(updateTask, &ComponentUpdateTask::failed, this, &PackProfile::updateFailed);
-    connect(updateTask, &ComponentUpdateTask::aborted, this, [this] { updateFailed(tr("Aborted")); });
-    d->m_updateTask->start();
+	auto updateTask = new ComponentUpdateTask(ComponentUpdateTask::Mode::Resolution, netmode, this);
+	d->m_updateTask.reset(updateTask);
+	connect(updateTask, &ComponentUpdateTask::succeeded, this, &PackProfile::updateSucceeded);
+	connect(updateTask, &ComponentUpdateTask::failed, this, &PackProfile::updateFailed);
+	connect(updateTask, &ComponentUpdateTask::aborted, this, [this] { updateFailed(tr("Aborted")); });
+	d->m_updateTask->start();
 }
 
 void PackProfile::updateSucceeded()
 {
-    qCDebug(instanceProfileC) << d->m_instance->name() << "|"
-                              << "Component list update/resolve task succeeded";
-    d->m_updateTask.reset();
-    invalidateLaunchProfile();
+	qCDebug(instanceProfileC) << d->m_instance->name() << "|"
+							  << "Component list update/resolve task succeeded";
+	d->m_updateTask.reset();
+	invalidateLaunchProfile();
 }
 
 void PackProfile::updateFailed(const QString& error)
 {
-    qCDebug(instanceProfileC) << d->m_instance->name() << "|"
-                              << "Component list update/resolve task failed "
-                              << "Reason:" << error;
-    d->m_updateTask.reset();
-    invalidateLaunchProfile();
+	qCDebug(instanceProfileC) << d->m_instance->name() << "|"
+							  << "Component list update/resolve task failed "
+							  << "Reason:" << error;
+	d->m_updateTask.reset();
+	invalidateLaunchProfile();
 }
 
 // END: save/load
 
 void PackProfile::appendComponent(ComponentPtr component)
 {
-    insertComponent(d->components.size(), component);
+	insertComponent(d->components.size(), component);
 }
 
 void PackProfile::insertComponent(size_t index, ComponentPtr component)
 {
-    auto id = component->getID();
-    if (id.isEmpty()) {
-        qCWarning(instanceProfileC) << d->m_instance->name() << "|"
-                                    << "Attempt to add a component with empty ID!";
-        return;
-    }
-    if (d->componentIndex.contains(id)) {
-        qCWarning(instanceProfileC) << d->m_instance->name() << "|"
-                                    << "Attempt to add a component that is already present!";
-        return;
-    }
-    beginInsertRows(QModelIndex(), static_cast<int>(index), static_cast<int>(index));
-    d->components.insert(index, component);
-    d->componentIndex[id] = component;
-    endInsertRows();
-    connect(component.get(), &Component::dataChanged, this, &PackProfile::componentDataChanged);
-    scheduleSave();
+	auto id = component->getID();
+	if (id.isEmpty())
+	{
+		qCWarning(instanceProfileC) << d->m_instance->name() << "|"
+									<< "Attempt to add a component with empty ID!";
+		return;
+	}
+	if (d->componentIndex.contains(id))
+	{
+		qCWarning(instanceProfileC) << d->m_instance->name() << "|"
+									<< "Attempt to add a component that is already present!";
+		return;
+	}
+	beginInsertRows(QModelIndex(), static_cast<int>(index), static_cast<int>(index));
+	d->components.insert(index, component);
+	d->componentIndex[id] = component;
+	endInsertRows();
+	connect(component.get(), &Component::dataChanged, this, &PackProfile::componentDataChanged);
+	scheduleSave();
 }
 
 void PackProfile::componentDataChanged()
 {
-    auto objPtr = qobject_cast<Component*>(sender());
-    if (!objPtr) {
-        qCWarning(instanceProfileC) << d->m_instance->name() << "|"
-                                    << "PackProfile got dataChanged signal from a non-Component!";
-        return;
-    }
-    if (objPtr->getID() == "net.minecraft") {
-        emit minecraftChanged();
-    }
-    // figure out which one is it... in a seriously dumb way.
-    int index = 0;
-    for (auto component : d->components) {
-        if (component.get() == objPtr) {
-            emit dataChanged(createIndex(index, 0), createIndex(index, columnCount(QModelIndex()) - 1));
-            scheduleSave();
-            return;
-        }
-        index++;
-    }
-    qCWarning(instanceProfileC) << d->m_instance->name() << "|"
-                                << "PackProfile got dataChanged signal from a Component which does not belong to it!";
+	auto objPtr = qobject_cast<Component*>(sender());
+	if (!objPtr)
+	{
+		qCWarning(instanceProfileC) << d->m_instance->name() << "|"
+									<< "PackProfile got dataChanged signal from a non-Component!";
+		return;
+	}
+	if (objPtr->getID() == "net.minecraft")
+	{
+		emit minecraftChanged();
+	}
+	// figure out which one is it... in a seriously dumb way.
+	int index = 0;
+	for (auto component : d->components)
+	{
+		if (component.get() == objPtr)
+		{
+			emit dataChanged(createIndex(index, 0), createIndex(index, columnCount(QModelIndex()) - 1));
+			scheduleSave();
+			return;
+		}
+		index++;
+	}
+	qCWarning(instanceProfileC) << d->m_instance->name() << "|"
+								<< "PackProfile got dataChanged signal from a Component which does not belong to it!";
 }
 
 bool PackProfile::remove(const int index)
 {
-    auto patch = getComponent(index);
-    if (!patch->isRemovable()) {
-        qCWarning(instanceProfileC) << d->m_instance->name() << "|"
-                                    << "Patch" << patch->getID() << "is non-removable";
-        return false;
-    }
+	auto patch = getComponent(index);
+	if (!patch->isRemovable())
+	{
+		qCWarning(instanceProfileC) << d->m_instance->name() << "|"
+									<< "Patch" << patch->getID() << "is non-removable";
+		return false;
+	}
 
-    if (!removeComponent_internal(patch)) {
-        qCCritical(instanceProfileC) << d->m_instance->name() << "|"
-                                     << "Patch" << patch->getID() << "could not be removed";
-        return false;
-    }
+	if (!removeComponent_internal(patch))
+	{
+		qCCritical(instanceProfileC) << d->m_instance->name() << "|"
+									 << "Patch" << patch->getID() << "could not be removed";
+		return false;
+	}
 
-    beginRemoveRows(QModelIndex(), index, index);
-    d->components.removeAt(index);
-    d->componentIndex.remove(patch->getID());
-    endRemoveRows();
-    invalidateLaunchProfile();
-    scheduleSave();
-    return true;
+	beginRemoveRows(QModelIndex(), index, index);
+	d->components.removeAt(index);
+	d->componentIndex.remove(patch->getID());
+	endRemoveRows();
+	invalidateLaunchProfile();
+	scheduleSave();
+	return true;
 }
 
 bool PackProfile::remove(const QString& id)
 {
-    int i = 0;
-    for (auto patch : d->components) {
-        if (patch->getID() == id) {
-            return remove(i);
-        }
-        i++;
-    }
-    return false;
+	int i = 0;
+	for (auto patch : d->components)
+	{
+		if (patch->getID() == id)
+		{
+			return remove(i);
+		}
+		i++;
+	}
+	return false;
 }
 
 bool PackProfile::customize(int index)
 {
-    auto patch = getComponent(index);
-    if (!patch->isCustomizable()) {
-        qCDebug(instanceProfileC) << d->m_instance->name() << "|"
-                                  << "Patch" << patch->getID() << "is not customizable";
-        return false;
-    }
-    if (!patch->customize()) {
-        qCCritical(instanceProfileC) << d->m_instance->name() << "|"
-                                     << "Patch" << patch->getID() << "could not be customized";
-        return false;
-    }
-    invalidateLaunchProfile();
-    scheduleSave();
-    return true;
+	auto patch = getComponent(index);
+	if (!patch->isCustomizable())
+	{
+		qCDebug(instanceProfileC) << d->m_instance->name() << "|"
+								  << "Patch" << patch->getID() << "is not customizable";
+		return false;
+	}
+	if (!patch->customize())
+	{
+		qCCritical(instanceProfileC) << d->m_instance->name() << "|"
+									 << "Patch" << patch->getID() << "could not be customized";
+		return false;
+	}
+	invalidateLaunchProfile();
+	scheduleSave();
+	return true;
 }
 
 bool PackProfile::revertToBase(int index)
 {
-    auto patch = getComponent(index);
-    if (!patch->isRevertible()) {
-        qCDebug(instanceProfileC) << d->m_instance->name() << "|"
-                                  << "Patch" << patch->getID() << "is not revertible";
-        return false;
-    }
-    if (!patch->revert()) {
-        qCCritical(instanceProfileC) << d->m_instance->name() << "|"
-                                     << "Patch" << patch->getID() << "could not be reverted";
-        return false;
-    }
-    invalidateLaunchProfile();
-    scheduleSave();
-    return true;
+	auto patch = getComponent(index);
+	if (!patch->isRevertible())
+	{
+		qCDebug(instanceProfileC) << d->m_instance->name() << "|"
+								  << "Patch" << patch->getID() << "is not revertible";
+		return false;
+	}
+	if (!patch->revert())
+	{
+		qCCritical(instanceProfileC) << d->m_instance->name() << "|"
+									 << "Patch" << patch->getID() << "could not be reverted";
+		return false;
+	}
+	invalidateLaunchProfile();
+	scheduleSave();
+	return true;
 }
 
 ComponentPtr PackProfile::getComponent(const QString& id)
 {
-    auto iter = d->componentIndex.find(id);
-    if (iter == d->componentIndex.end()) {
-        return nullptr;
-    }
-    return (*iter);
+	auto iter = d->componentIndex.find(id);
+	if (iter == d->componentIndex.end())
+	{
+		return nullptr;
+	}
+	return (*iter);
 }
 
 ComponentPtr PackProfile::getComponent(size_t index)
 {
-    if (index >= static_cast<size_t>(d->components.size())) {
-        return nullptr;
-    }
-    return d->components[index];
+	if (index >= static_cast<size_t>(d->components.size()))
+	{
+		return nullptr;
+	}
+	return d->components[index];
 }
 
 QVariant PackProfile::data(const QModelIndex& index, int role) const
 {
-    if (!index.isValid())
-        return QVariant();
+	if (!index.isValid())
+		return QVariant();
 
-    int row = index.row();
-    int column = index.column();
+	int row	   = index.row();
+	int column = index.column();
 
-    if (row < 0 || row >= d->components.size())
-        return QVariant();
+	if (row < 0 || row >= d->components.size())
+		return QVariant();
 
-    auto patch = d->components.at(row);
+	auto patch = d->components.at(row);
 
-    switch (role) {
-        case Qt::CheckStateRole: {
-            if (column == NameColumn)
-                return patch->isEnabled() ? Qt::Checked : Qt::Unchecked;
-            return QVariant();
-        }
-        case Qt::DisplayRole: {
-            switch (column) {
-                case NameColumn:
-                    return patch->getName();
-                case VersionColumn: {
-                    if (patch->isCustom()) {
-                        return QString("%1 (Custom)").arg(patch->getVersion());
-                    } else {
-                        return patch->getVersion();
-                    }
-                }
-                default:
-                    return QVariant();
-            }
-        }
-        case Qt::DecorationRole: {
-            if (column == NameColumn) {
-                auto severity = patch->getProblemSeverity();
-                switch (severity) {
-                    case ProblemSeverity::Warning:
-                        return "warning";
-                    case ProblemSeverity::Error:
-                        return "error";
-                    default:
-                        return QVariant();
-                }
-            }
-            return QVariant();
-        }
-    }
-    return QVariant();
+	switch (role)
+	{
+		case Qt::CheckStateRole:
+		{
+			if (column == NameColumn)
+				return patch->isEnabled() ? Qt::Checked : Qt::Unchecked;
+			return QVariant();
+		}
+		case Qt::DisplayRole:
+		{
+			switch (column)
+			{
+				case NameColumn: return patch->getName();
+				case VersionColumn:
+				{
+					if (patch->isCustom())
+					{
+						return QString("%1 (Custom)").arg(patch->getVersion());
+					}
+					else
+					{
+						return patch->getVersion();
+					}
+				}
+				default: return QVariant();
+			}
+		}
+		case Qt::DecorationRole:
+		{
+			if (column == NameColumn)
+			{
+				auto severity = patch->getProblemSeverity();
+				switch (severity)
+				{
+					case ProblemSeverity::Warning: return "warning";
+					case ProblemSeverity::Error: return "error";
+					default: return QVariant();
+				}
+			}
+			return QVariant();
+		}
+	}
+	return QVariant();
 }
 
 bool PackProfile::setData(const QModelIndex& index, [[maybe_unused]] const QVariant& value, int role)
 {
-    if (!index.isValid() || index.row() < 0 || index.row() >= rowCount(index.parent())) {
-        return false;
-    }
+	if (!index.isValid() || index.row() < 0 || index.row() >= rowCount(index.parent()))
+	{
+		return false;
+	}
 
-    if (role == Qt::CheckStateRole) {
-        auto component = d->components[index.row()];
-        if (component->setEnabled(!component->isEnabled())) {
-            return true;
-        }
-    }
-    return false;
+	if (role == Qt::CheckStateRole)
+	{
+		auto component = d->components[index.row()];
+		if (component->setEnabled(!component->isEnabled()))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 QVariant PackProfile::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (orientation == Qt::Horizontal) {
-        if (role == Qt::DisplayRole) {
-            switch (section) {
-                case NameColumn:
-                    return tr("Name");
-                case VersionColumn:
-                    return tr("Version");
-                default:
-                    return QVariant();
-            }
-        }
-    }
-    return QVariant();
+	if (orientation == Qt::Horizontal)
+	{
+		if (role == Qt::DisplayRole)
+		{
+			switch (section)
+			{
+				case NameColumn: return tr("Name");
+				case VersionColumn: return tr("Version");
+				default: return QVariant();
+			}
+		}
+	}
+	return QVariant();
 }
 
 // Note: This method intentionally uses no precision for row indices -
 // items are indexed by position, not by any floating-point value
 Qt::ItemFlags PackProfile::flags(const QModelIndex& index) const
 {
-    if (!index.isValid()) {
-        return Qt::NoItemFlags;
-    }
+	if (!index.isValid())
+	{
+		return Qt::NoItemFlags;
+	}
 
-    Qt::ItemFlags outFlags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
+	Qt::ItemFlags outFlags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
 
-    int row = index.row();
+	int row = index.row();
 
-    if (row < 0 || row >= d->components.size()) {
-        return Qt::NoItemFlags;
-    }
+	if (row < 0 || row >= d->components.size())
+	{
+		return Qt::NoItemFlags;
+	}
 
-    auto patch = d->components.at(row);
-    // Components can only be toggled if they support disabling and the profile isn't locked
-    if (patch->canBeDisabled() && !d->interactionDisabled) {
-        outFlags |= Qt::ItemIsUserCheckable;
-    }
-    return outFlags;
+	auto patch = d->components.at(row);
+	// Components can only be toggled if they support disabling and the profile isn't locked
+	if (patch->canBeDisabled() && !d->interactionDisabled)
+	{
+		outFlags |= Qt::ItemIsUserCheckable;
+	}
+	return outFlags;
 }
 
 int PackProfile::rowCount(const QModelIndex& parent) const
 {
-    return parent.isValid() ? 0 : d->components.size();
+	return parent.isValid() ? 0 : d->components.size();
 }
 
 int PackProfile::columnCount(const QModelIndex& parent) const
 {
-    return parent.isValid() ? 0 : NUM_COLUMNS;
+	return parent.isValid() ? 0 : NUM_COLUMNS;
 }
 
 void PackProfile::move(const int index, const MoveDirection direction)
 {
-    int theirIndex;
-    if (direction == MoveUp) {
-        theirIndex = index - 1;
-    } else {
-        theirIndex = index + 1;
-    }
+	int theirIndex;
+	if (direction == MoveUp)
+	{
+		theirIndex = index - 1;
+	}
+	else
+	{
+		theirIndex = index + 1;
+	}
 
-    if (index < 0 || index >= d->components.size())
-        return;
-    if (theirIndex >= rowCount())
-        theirIndex = rowCount() - 1;
-    if (theirIndex == -1)
-        theirIndex = rowCount() - 1;
-    if (index == theirIndex)
-        return;
-    int togap = theirIndex > index ? theirIndex + 1 : theirIndex;
+	if (index < 0 || index >= d->components.size())
+		return;
+	if (theirIndex >= rowCount())
+		theirIndex = rowCount() - 1;
+	if (theirIndex == -1)
+		theirIndex = rowCount() - 1;
+	if (index == theirIndex)
+		return;
+	int togap = theirIndex > index ? theirIndex + 1 : theirIndex;
 
-    auto from = getComponent(index);
-    auto to = getComponent(theirIndex);
+	auto from = getComponent(index);
+	auto to	  = getComponent(theirIndex);
 
-    if (!from || !to || !to->isMoveable() || !from->isMoveable()) {
-        return;
-    }
-    beginMoveRows(QModelIndex(), index, index, QModelIndex(), togap);
-    d->components.swapItemsAt(index, theirIndex);
-    endMoveRows();
-    invalidateLaunchProfile();
-    scheduleSave();
+	if (!from || !to || !to->isMoveable() || !from->isMoveable())
+	{
+		return;
+	}
+	beginMoveRows(QModelIndex(), index, index, QModelIndex(), togap);
+	d->components.swapItemsAt(index, theirIndex);
+	endMoveRows();
+	invalidateLaunchProfile();
+	scheduleSave();
 }
 
 void PackProfile::invalidateLaunchProfile()
 {
-    d->m_profile.reset();
+	d->m_profile.reset();
 }
 
 void PackProfile::installJarMods(QStringList selectedFiles)
 {
-    installJarMods_internal(selectedFiles);
+	installJarMods_internal(selectedFiles);
 }
 
 void PackProfile::installCustomJar(QString selectedFile)
 {
-    installCustomJar_internal(selectedFile);
+	installCustomJar_internal(selectedFile);
 }
 
 bool PackProfile::installComponents(QStringList selectedFiles)
 {
-    const QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
-    if (!FS::ensureFolderPathExists(patchDir))
-        return false;
+	const QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
+	if (!FS::ensureFolderPathExists(patchDir))
+		return false;
 
-    bool result = true;
-    for (const QString& source : selectedFiles) {
-        const QFileInfo sourceInfo(source);
+	bool result = true;
+	for (const QString& source : selectedFiles)
+	{
+		const QFileInfo sourceInfo(source);
 
-        auto versionFile = ProfileUtils::parseJsonFile(sourceInfo, false);
-        const QString target = FS::PathCombine(patchDir, versionFile->uid + ".json");
+		auto versionFile	 = ProfileUtils::parseJsonFile(sourceInfo, false);
+		const QString target = FS::PathCombine(patchDir, versionFile->uid + ".json");
 
-        if (!QFile::copy(source, target)) {
-            qCWarning(instanceProfileC) << d->m_instance->name() << "|"
-                                        << "Component" << source << "could not be copied to target" << target;
-            result = false;
-            continue;
-        }
+		if (!QFile::copy(source, target))
+		{
+			qCWarning(instanceProfileC) << d->m_instance->name() << "|"
+										<< "Component" << source << "could not be copied to target" << target;
+			result = false;
+			continue;
+		}
 
-        appendComponent(makeShared<Component>(this, versionFile->uid, versionFile));
-    }
+		appendComponent(makeShared<Component>(this, versionFile->uid, versionFile));
+	}
 
-    scheduleSave();
-    invalidateLaunchProfile();
+	scheduleSave();
+	invalidateLaunchProfile();
 
-    return result;
+	return result;
 }
 
 void PackProfile::installAgents(QStringList selectedFiles)
 {
-    installAgents_internal(selectedFiles);
+	installAgents_internal(selectedFiles);
 }
 
 bool PackProfile::installEmpty(const QString& uid, const QString& name)
 {
-    QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
-    if (!FS::ensureFolderPathExists(patchDir)) {
-        return false;
-    }
-    auto f = std::make_shared<VersionFile>();
-    f->name = name;
-    f->uid = uid;
-    f->version = "1";
-    QString patchFileName = FS::PathCombine(patchDir, uid + ".json");
-    QFile file(patchFileName);
-    if (!file.open(QFile::WriteOnly)) {
-        qCCritical(instanceProfileC) << d->m_instance->name() << "|"
-                                     << "Error opening" << file.fileName() << "for reading:" << file.errorString();
-        return false;
-    }
-    file.write(OneSixVersionFormat::versionFileToJson(f).toJson());
-    file.close();
+	QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
+	if (!FS::ensureFolderPathExists(patchDir))
+	{
+		return false;
+	}
+	auto f				  = std::make_shared<VersionFile>();
+	f->name				  = name;
+	f->uid				  = uid;
+	f->version			  = "1";
+	QString patchFileName = FS::PathCombine(patchDir, uid + ".json");
+	QFile file(patchFileName);
+	if (!file.open(QFile::WriteOnly))
+	{
+		qCCritical(instanceProfileC) << d->m_instance->name() << "|"
+									 << "Error opening" << file.fileName() << "for reading:" << file.errorString();
+		return false;
+	}
+	file.write(OneSixVersionFormat::versionFileToJson(f).toJson());
+	file.close();
 
-    appendComponent(makeShared<Component>(this, f->uid, f));
-    scheduleSave();
-    invalidateLaunchProfile();
-    return true;
+	appendComponent(makeShared<Component>(this, f->uid, f));
+	scheduleSave();
+	invalidateLaunchProfile();
+	return true;
 }
 
 bool PackProfile::removeComponent_internal(ComponentPtr patch)
 {
-    bool ok = true;
-    // first, remove the patch file. this ensures it's not used anymore
-    auto fileName = patch->getFilename();
-    if (fileName.size()) {
-        QFile patchFile(fileName);
-        if (patchFile.exists() && !patchFile.remove()) {
-            qCCritical(instanceProfileC) << d->m_instance->name() << "|"
-                                         << "File" << fileName << "could not be removed because:" << patchFile.errorString();
-            return false;
-        }
-    }
+	bool ok = true;
+	// first, remove the patch file. this ensures it's not used anymore
+	auto fileName = patch->getFilename();
+	if (fileName.size())
+	{
+		QFile patchFile(fileName);
+		if (patchFile.exists() && !patchFile.remove())
+		{
+			qCCritical(instanceProfileC) << d->m_instance->name() << "|"
+										 << "File" << fileName
+										 << "could not be removed because:" << patchFile.errorString();
+			return false;
+		}
+	}
 
-    // Generic local resource removal
-    // Handles jar mods, mods, and local libraries
-    auto removeLocalLibrary = [this](LibraryPtr lib, const QString& overridePath = QString()) -> bool {
-        if (!lib->isLocal()) {
-            return true;
-        }
-        QStringList output, temp1, temp2, temp3;
-        lib->getApplicableFiles(d->m_instance->runtimeContext(), output, temp1, temp2, temp3, overridePath);
-        for (const auto& file : output) {
-            QFile f(file);
-            if (f.exists() && !f.remove()) {
-                qCCritical(instanceProfileC) << d->m_instance->name() << "|"
-                                             << "File" << file << "could not be removed because:" << f.errorString();
-                return false;
-            }
-        }
-        return true;
-    };
+	// Generic local resource removal
+	// Handles jar mods, mods, and local libraries
+	auto removeLocalLibrary = [this](LibraryPtr lib, const QString& overridePath = QString()) -> bool
+	{
+		if (!lib->isLocal())
+		{
+			return true;
+		}
+		QStringList output, temp1, temp2, temp3;
+		lib->getApplicableFiles(d->m_instance->runtimeContext(), output, temp1, temp2, temp3, overridePath);
+		for (const auto& file : output)
+		{
+			QFile f(file);
+			if (f.exists() && !f.remove())
+			{
+				qCCritical(instanceProfileC) << d->m_instance->name() << "|"
+											 << "File" << file << "could not be removed because:" << f.errorString();
+				return false;
+			}
+		}
+		return true;
+	};
 
-    auto vFile = patch->getVersionFile();
-    if (vFile) {
-        // Jar Mods
-        for (auto& lib : vFile->jarMods) {
-            ok &= removeLocalLibrary(lib, d->m_instance->jarmodsPath().absolutePath());
-        }
-        // Mods (Loader mods, generic mods) - Assuming they reside in 'mods' folder
-        QString modsPath = FS::PathCombine(d->m_instance->instanceRoot(), "mods");
-        for (auto& lib : vFile->mods) {
-            ok &= removeLocalLibrary(lib, modsPath);
-        }
-        // Local Libraries (in libraries folder)
-        for (auto& lib : vFile->libraries) {
-            if (lib->isLocal()) {
-                ok &= removeLocalLibrary(lib);
-            }
-        }
-    }
-    return ok;
+	auto vFile = patch->getVersionFile();
+	if (vFile)
+	{
+		// Jar Mods
+		for (auto& lib : vFile->jarMods)
+		{
+			ok &= removeLocalLibrary(lib, d->m_instance->jarmodsPath().absolutePath());
+		}
+		// Mods (Loader mods, generic mods) - Assuming they reside in 'mods' folder
+		QString modsPath = FS::PathCombine(d->m_instance->instanceRoot(), "mods");
+		for (auto& lib : vFile->mods)
+		{
+			ok &= removeLocalLibrary(lib, modsPath);
+		}
+		// Local Libraries (in libraries folder)
+		for (auto& lib : vFile->libraries)
+		{
+			if (lib->isLocal())
+			{
+				ok &= removeLocalLibrary(lib);
+			}
+		}
+	}
+	return ok;
 }
 
 bool PackProfile::installJarMods_internal(QStringList filepaths)
 {
-    QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
-    if (!FS::ensureFolderPathExists(patchDir)) {
-        return false;
-    }
+	QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
+	if (!FS::ensureFolderPathExists(patchDir))
+	{
+		return false;
+	}
 
-    if (!FS::ensureFolderPathExists(d->m_instance->jarModsDir())) {
-        return false;
-    }
+	if (!FS::ensureFolderPathExists(d->m_instance->jarModsDir()))
+	{
+		return false;
+	}
 
-    for (auto filepath : filepaths) {
-        QFileInfo sourceInfo(filepath);
-        QString id = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        QString target_filename = id + ".jar";
-        QString target_id = "custom.jarmod." + id;
-        QString target_name = sourceInfo.completeBaseName() + " (jar mod)";
-        QString finalPath = FS::PathCombine(d->m_instance->jarModsDir(), target_filename);
+	for (auto filepath : filepaths)
+	{
+		QFileInfo sourceInfo(filepath);
+		QString id				= QUuid::createUuid().toString(QUuid::WithoutBraces);
+		QString target_filename = id + ".jar";
+		QString target_id		= "custom.jarmod." + id;
+		QString target_name		= sourceInfo.completeBaseName() + " (jar mod)";
+		QString finalPath		= FS::PathCombine(d->m_instance->jarModsDir(), target_filename);
 
-        QFileInfo targetInfo(finalPath);
-        Q_ASSERT(!targetInfo.exists());
+		QFileInfo targetInfo(finalPath);
+		Q_ASSERT(!targetInfo.exists());
 
-        if (!QFile::copy(sourceInfo.absoluteFilePath(), QFileInfo(finalPath).absoluteFilePath())) {
-            return false;
-        }
+		if (!QFile::copy(sourceInfo.absoluteFilePath(), QFileInfo(finalPath).absoluteFilePath()))
+		{
+			return false;
+		}
 
-        auto f = std::make_shared<VersionFile>();
-        auto jarMod = std::make_shared<Library>();
-        jarMod->setRawName(GradleSpecifier("custom.jarmods:" + id + ":1"));
-        jarMod->setFilename(target_filename);
-        jarMod->setDisplayName(sourceInfo.completeBaseName());
-        jarMod->setHint("local");
-        f->jarMods.append(jarMod);
-        f->name = target_name;
-        f->uid = target_id;
-        QString patchFileName = FS::PathCombine(patchDir, target_id + ".json");
+		auto f		= std::make_shared<VersionFile>();
+		auto jarMod = std::make_shared<Library>();
+		jarMod->setRawName(GradleSpecifier("custom.jarmods:" + id + ":1"));
+		jarMod->setFilename(target_filename);
+		jarMod->setDisplayName(sourceInfo.completeBaseName());
+		jarMod->setHint("local");
+		f->jarMods.append(jarMod);
+		f->name				  = target_name;
+		f->uid				  = target_id;
+		QString patchFileName = FS::PathCombine(patchDir, target_id + ".json");
 
-        QFile file(patchFileName);
-        if (!file.open(QFile::WriteOnly)) {
-            qCCritical(instanceProfileC) << d->m_instance->name() << "|"
-                                         << "Error opening" << file.fileName() << "for reading:" << file.errorString();
-            return false;
-        }
-        file.write(OneSixVersionFormat::versionFileToJson(f).toJson());
-        file.close();
+		QFile file(patchFileName);
+		if (!file.open(QFile::WriteOnly))
+		{
+			qCCritical(instanceProfileC) << d->m_instance->name() << "|"
+										 << "Error opening" << file.fileName() << "for reading:" << file.errorString();
+			return false;
+		}
+		file.write(OneSixVersionFormat::versionFileToJson(f).toJson());
+		file.close();
 
-        appendComponent(makeShared<Component>(this, f->uid, f));
-    }
-    scheduleSave();
-    invalidateLaunchProfile();
-    return true;
+		appendComponent(makeShared<Component>(this, f->uid, f));
+	}
+	scheduleSave();
+	invalidateLaunchProfile();
+	return true;
 }
 
 bool PackProfile::installCustomJar_internal(QString filepath)
 {
-    QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
-    if (!FS::ensureFolderPathExists(patchDir)) {
-        return false;
-    }
+	QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
+	if (!FS::ensureFolderPathExists(patchDir))
+	{
+		return false;
+	}
 
-    QString libDir = d->m_instance->getLocalLibraryPath();
-    if (!FS::ensureFolderPathExists(libDir)) {
-        return false;
-    }
+	QString libDir = d->m_instance->getLocalLibraryPath();
+	if (!FS::ensureFolderPathExists(libDir))
+	{
+		return false;
+	}
 
-    auto specifier = GradleSpecifier("custom:customjar:1");
-    QFileInfo sourceInfo(filepath);
-    QString target_filename = specifier.getFileName();
-    QString target_id = specifier.artifactId();
-    QString target_name = sourceInfo.completeBaseName() + " (custom jar)";
-    QString finalPath = FS::PathCombine(libDir, target_filename);
+	auto specifier = GradleSpecifier("custom:customjar:1");
+	QFileInfo sourceInfo(filepath);
+	QString target_filename = specifier.getFileName();
+	QString target_id		= specifier.artifactId();
+	QString target_name		= sourceInfo.completeBaseName() + " (custom jar)";
+	QString finalPath		= FS::PathCombine(libDir, target_filename);
 
-    QFileInfo jarInfo(finalPath);
-    if (jarInfo.exists()) {
-        if (!FS::deletePath(finalPath)) {
-            return false;
-        }
-    }
-    if (!QFile::copy(filepath, finalPath)) {
-        return false;
-    }
+	QFileInfo jarInfo(finalPath);
+	if (jarInfo.exists())
+	{
+		if (!FS::deletePath(finalPath))
+		{
+			return false;
+		}
+	}
+	if (!QFile::copy(filepath, finalPath))
+	{
+		return false;
+	}
 
-    auto f = std::make_shared<VersionFile>();
-    auto jarMod = std::make_shared<Library>();
-    jarMod->setRawName(specifier);
-    jarMod->setDisplayName(sourceInfo.completeBaseName());
-    jarMod->setHint("local");
-    f->mainJar = jarMod;
-    f->name = target_name;
-    f->uid = target_id;
-    QString patchFileName = FS::PathCombine(patchDir, target_id + ".json");
+	auto f		= std::make_shared<VersionFile>();
+	auto jarMod = std::make_shared<Library>();
+	jarMod->setRawName(specifier);
+	jarMod->setDisplayName(sourceInfo.completeBaseName());
+	jarMod->setHint("local");
+	f->mainJar			  = jarMod;
+	f->name				  = target_name;
+	f->uid				  = target_id;
+	QString patchFileName = FS::PathCombine(patchDir, target_id + ".json");
 
-    QFile file(patchFileName);
-    if (!file.open(QFile::WriteOnly)) {
-        qCCritical(instanceProfileC) << d->m_instance->name() << "|"
-                                     << "Error opening" << file.fileName() << "for reading:" << file.errorString();
-        return false;
-    }
-    file.write(OneSixVersionFormat::versionFileToJson(f).toJson());
-    file.close();
+	QFile file(patchFileName);
+	if (!file.open(QFile::WriteOnly))
+	{
+		qCCritical(instanceProfileC) << d->m_instance->name() << "|"
+									 << "Error opening" << file.fileName() << "for reading:" << file.errorString();
+		return false;
+	}
+	file.write(OneSixVersionFormat::versionFileToJson(f).toJson());
+	file.close();
 
-    appendComponent(makeShared<Component>(this, f->uid, f));
+	appendComponent(makeShared<Component>(this, f->uid, f));
 
-    scheduleSave();
-    invalidateLaunchProfile();
-    return true;
+	scheduleSave();
+	invalidateLaunchProfile();
+	return true;
 }
 
 bool PackProfile::installAgents_internal(QStringList filepaths)
 {
-    // FIXME code duplication
-    const QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
-    if (!FS::ensureFolderPathExists(patchDir))
-        return false;
+	// FIXME code duplication
+	const QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
+	if (!FS::ensureFolderPathExists(patchDir))
+		return false;
 
-    const QString libDir = d->m_instance->getLocalLibraryPath();
-    if (!FS::ensureFolderPathExists(libDir))
-        return false;
+	const QString libDir = d->m_instance->getLocalLibraryPath();
+	if (!FS::ensureFolderPathExists(libDir))
+		return false;
 
-    for (const QString& source : filepaths) {
-        const QFileInfo sourceInfo(source);
-        const QString id = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        const QString targetBaseName = id + ".jar";
-        const QString targetId = "custom.agent." + id;
-        const QString targetName = sourceInfo.completeBaseName() + " (agent)";
-        const QString target = FS::PathCombine(d->m_instance->getLocalLibraryPath(), targetBaseName);
+	for (const QString& source : filepaths)
+	{
+		const QFileInfo sourceInfo(source);
+		const QString id			 = QUuid::createUuid().toString(QUuid::WithoutBraces);
+		const QString targetBaseName = id + ".jar";
+		const QString targetId		 = "custom.agent." + id;
+		const QString targetName	 = sourceInfo.completeBaseName() + " (agent)";
+		const QString target		 = FS::PathCombine(d->m_instance->getLocalLibraryPath(), targetBaseName);
 
-        const QFileInfo targetInfo(target);
-        Q_ASSERT(!targetInfo.exists());
+		const QFileInfo targetInfo(target);
+		Q_ASSERT(!targetInfo.exists());
 
-        if (!QFile::copy(source, target))
-            return false;
+		if (!QFile::copy(source, target))
+			return false;
 
-        auto versionFile = std::make_shared<VersionFile>();
+		auto versionFile = std::make_shared<VersionFile>();
 
-        auto agent = std::make_shared<Library>();
+		auto agent = std::make_shared<Library>();
 
-        agent->setRawName("custom.agents:" + id + ":1");
-        agent->setFilename(targetBaseName);
-        agent->setDisplayName(sourceInfo.completeBaseName());
-        agent->setHint("local");
+		agent->setRawName("custom.agents:" + id + ":1");
+		agent->setFilename(targetBaseName);
+		agent->setDisplayName(sourceInfo.completeBaseName());
+		agent->setHint("local");
 
-        versionFile->agents.append(std::make_shared<Agent>(agent, QString()));
+		versionFile->agents.append(std::make_shared<Agent>(agent, QString()));
 
-        versionFile->name = targetName;
-        versionFile->uid = targetId;
+		versionFile->name = targetName;
+		versionFile->uid  = targetId;
 
-        QFile patchFile(FS::PathCombine(patchDir, targetId + ".json"));
+		QFile patchFile(FS::PathCombine(patchDir, targetId + ".json"));
 
-        if (!patchFile.open(QFile::WriteOnly)) {
-            qCCritical(instanceProfileC) << d->m_instance->name() << "|"
-                                         << "Error opening" << patchFile.fileName() << "for reading:" << patchFile.errorString();
-            return false;
-        }
+		if (!patchFile.open(QFile::WriteOnly))
+		{
+			qCCritical(instanceProfileC) << d->m_instance->name() << "|"
+										 << "Error opening" << patchFile.fileName()
+										 << "for reading:" << patchFile.errorString();
+			return false;
+		}
 
-        patchFile.write(OneSixVersionFormat::versionFileToJson(versionFile).toJson());
-        patchFile.close();
+		patchFile.write(OneSixVersionFormat::versionFileToJson(versionFile).toJson());
+		patchFile.close();
 
-        appendComponent(makeShared<Component>(this, versionFile->uid, versionFile));
-    }
+		appendComponent(makeShared<Component>(this, versionFile->uid, versionFile));
+	}
 
-    scheduleSave();
-    invalidateLaunchProfile();
+	scheduleSave();
+	invalidateLaunchProfile();
 
-    return true;
+	return true;
 }
 
 std::shared_ptr<LaunchProfile> PackProfile::getProfile() const
 {
-    if (!d->m_profile) {
-        try {
-            auto profile = std::make_shared<LaunchProfile>();
-            for (auto file : d->components) {
-                qCDebug(instanceProfileC) << d->m_instance->name() << "|"
-                                          << "Applying" << file->getID()
-                                          << (file->getProblemSeverity() == ProblemSeverity::Error ? "ERROR" : "GOOD");
-                file->applyTo(profile.get());
-            }
-            d->m_profile = profile;
-        } catch (const Exception& error) {
-            qCWarning(instanceProfileC) << d->m_instance->name() << "|"
-                                        << "Couldn't apply profile patches because: " << error.cause();
-        }
-    }
-    return d->m_profile;
+	if (!d->m_profile)
+	{
+		try
+		{
+			auto profile = std::make_shared<LaunchProfile>();
+			for (auto file : d->components)
+			{
+				qCDebug(instanceProfileC) << d->m_instance->name() << "|"
+										  << "Applying" << file->getID()
+										  << (file->getProblemSeverity() == ProblemSeverity::Error ? "ERROR" : "GOOD");
+				file->applyTo(profile.get());
+			}
+			d->m_profile = profile;
+		}
+		catch (const Exception& error)
+		{
+			qCWarning(instanceProfileC) << d->m_instance->name() << "|"
+										<< "Couldn't apply profile patches because: " << error.cause();
+		}
+	}
+	return d->m_profile;
 }
 
 bool PackProfile::setComponentVersion(const QString& uid, const QString& version, bool important)
 {
-    auto iter = d->componentIndex.find(uid);
-    if (iter != d->componentIndex.end()) {
-        ComponentPtr component = *iter;
-        // set existing
-        if (component->revert()) {
-            // set new version
-            auto oldVersion = component->getVersion();
-            component->setVersion(version);
-            component->setImportant(important);
+	auto iter = d->componentIndex.find(uid);
+	if (iter != d->componentIndex.end())
+	{
+		ComponentPtr component = *iter;
+		// set existing
+		if (component->revert())
+		{
+			// set new version
+			auto oldVersion = component->getVersion();
+			component->setVersion(version);
+			component->setImportant(important);
 
-            if (important) {
-                component->setUpdateAction(UpdateAction{ UpdateActionImportantChanged{ oldVersion } });
-                resolve(Net::Mode::Online);
-            }
+			if (important)
+			{
+				component->setUpdateAction(UpdateAction{ UpdateActionImportantChanged{ oldVersion } });
+				resolve(Net::Mode::Online);
+			}
 
-            return true;
-        }
-        return false;
-    } else {
-        // add new
-        auto component = makeShared<Component>(this, uid);
-        component->m_version = version;
-        component->m_important = important;
-        appendComponent(component);
-        return true;
-    }
+			return true;
+		}
+		return false;
+	}
+	else
+	{
+		// add new
+		auto component		   = makeShared<Component>(this, uid);
+		component->m_version   = version;
+		component->m_important = important;
+		appendComponent(component);
+		return true;
+	}
 }
 
 QString PackProfile::getComponentVersion(const QString& uid) const
 {
-    const auto iter = d->componentIndex.find(uid);
-    if (iter != d->componentIndex.end()) {
-        return (*iter)->getVersion();
-    }
-    return QString();
+	const auto iter = d->componentIndex.find(uid);
+	if (iter != d->componentIndex.end())
+	{
+		return (*iter)->getVersion();
+	}
+	return QString();
 }
 
 void PackProfile::disableInteraction(bool disable)
 {
-    if (d->interactionDisabled != disable) {
-        d->interactionDisabled = disable;
-        auto size = d->components.size();
-        if (size) {
-            emit dataChanged(index(0), index(size - 1));
-        }
-    }
+	if (d->interactionDisabled != disable)
+	{
+		d->interactionDisabled = disable;
+		auto size			   = d->components.size();
+		if (size)
+		{
+			emit dataChanged(index(0), index(size - 1));
+		}
+	}
 }
 
 std::optional<ModPlatform::ModLoaderTypes> PackProfile::getModLoaders()
 {
-    ModPlatform::ModLoaderTypes result;
-    bool has_any_loader = false;
+	ModPlatform::ModLoaderTypes result;
+	bool has_any_loader = false;
 
-    QMapIterator<QString, ModloaderMapEntry> i(Component::KNOWN_MODLOADERS);
+	QMapIterator<QString, ModloaderMapEntry> i(Component::KNOWN_MODLOADERS);
 
-    while (i.hasNext()) {
-        i.next();
-        if (auto c = getComponent(i.key()); c != nullptr && c->isEnabled()) {
-            result |= i.value().type;
-            has_any_loader = true;
-        }
-    }
+	while (i.hasNext())
+	{
+		i.next();
+		if (auto c = getComponent(i.key()); c != nullptr && c->isEnabled())
+		{
+			result |= i.value().type;
+			has_any_loader = true;
+		}
+	}
 
-    if (!has_any_loader)
-        return {};
-    return result;
+	if (!has_any_loader)
+		return {};
+	return result;
 }
 
 std::optional<ModPlatform::ModLoaderTypes> PackProfile::getSupportedModLoaders()
 {
-    auto loadersOpt = getModLoaders();
-    if (!loadersOpt.has_value())
-        return loadersOpt;
-    auto loaders = loadersOpt.value();
-    if (loaders & ModPlatform::Quilt)
-        loaders |= ModPlatform::Fabric;
-    if (getComponentVersion("net.minecraft") == "1.20.1" && (loaders & ModPlatform::NeoForge))
-        loaders |= ModPlatform::Forge;
-    return loaders;
+	auto loadersOpt = getModLoaders();
+	if (!loadersOpt.has_value())
+		return loadersOpt;
+	auto loaders = loadersOpt.value();
+	if (loaders & ModPlatform::Quilt)
+		loaders |= ModPlatform::Fabric;
+	if (getComponentVersion("net.minecraft") == "1.20.1" && (loaders & ModPlatform::NeoForge))
+		loaders |= ModPlatform::Forge;
+	return loaders;
 }
 
 QList<ModPlatform::ModLoaderType> PackProfile::getModLoadersList()
 {
-    QList<ModPlatform::ModLoaderType> result;
-    for (auto c : d->components) {
-        if (c->isEnabled() && Component::KNOWN_MODLOADERS.contains(c->getID())) {
-            result.append(Component::KNOWN_MODLOADERS[c->getID()].type);
-        }
-    }
+	QList<ModPlatform::ModLoaderType> result;
+	for (auto c : d->components)
+	{
+		if (c->isEnabled() && Component::KNOWN_MODLOADERS.contains(c->getID()))
+		{
+			result.append(Component::KNOWN_MODLOADERS[c->getID()].type);
+		}
+	}
 
-    // Quilt provides Fabric compatibility for Minecraft versions < 1.22
-    // This may change when Quilt drops official Fabric support in future versions
-    if (result.contains(ModPlatform::Quilt) && !result.contains(ModPlatform::Fabric)) {
-        auto mcVersion = getComponentVersion("net.minecraft");
-        Version minecraftVer(mcVersion);
-        // Assume Quilt maintains Fabric compat for versions before 1.22
-        if (minecraftVer < Version("1.22")) {
-            result.append(ModPlatform::Fabric);
-        }
-    }
-    if (getComponentVersion("net.minecraft") == "1.20.1" && result.contains(ModPlatform::NeoForge) &&
-        !result.contains(ModPlatform::Forge)) {
-        result.append(ModPlatform::Forge);
-    }
-    return result;
+	// Quilt provides Fabric compatibility for Minecraft versions < 1.22
+	// This may change when Quilt drops official Fabric support in future versions
+	if (result.contains(ModPlatform::Quilt) && !result.contains(ModPlatform::Fabric))
+	{
+		auto mcVersion = getComponentVersion("net.minecraft");
+		Version minecraftVer(mcVersion);
+		// Assume Quilt maintains Fabric compat for versions before 1.22
+		if (minecraftVer < Version("1.22"))
+		{
+			result.append(ModPlatform::Fabric);
+		}
+	}
+	if (getComponentVersion("net.minecraft") == "1.20.1" && result.contains(ModPlatform::NeoForge)
+		&& !result.contains(ModPlatform::Forge))
+	{
+		result.append(ModPlatform::Forge);
+	}
+	return result;
 }

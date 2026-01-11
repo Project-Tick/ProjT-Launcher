@@ -21,23 +21,25 @@
 #include <QWidget>
 #include "BaseWizardPage.h"
 
-namespace Ui {
-class LoginWizardPage;
+namespace Ui
+{
+	class LoginWizardPage;
 }
 
-class LoginWizardPage : public BaseWizardPage {
-    Q_OBJECT
+class LoginWizardPage : public BaseWizardPage
+{
+	Q_OBJECT
 
-   public:
-    explicit LoginWizardPage(QWidget* parent = nullptr);
-    ~LoginWizardPage();
+  public:
+	explicit LoginWizardPage(QWidget* parent = nullptr);
+	~LoginWizardPage();
 
-    void initializePage() override;
-    bool validatePage() override;
-    void retranslate() override;
-   private slots:
-    void on_pushButton_clicked();
+	void initializePage() override;
+	bool validatePage() override;
+	void retranslate() override;
+  private slots:
+	void on_pushButton_clicked();
 
-   private:
-    Ui::LoginWizardPage* ui;
+  private:
+	Ui::LoginWizardPage* ui;
 };

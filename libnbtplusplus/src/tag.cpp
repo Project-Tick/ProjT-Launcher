@@ -25,161 +25,131 @@
 #include "nbt_tags.h"
 #include "text/json_formatter.h"
 
-namespace nbt {
-
-static_assert(std::numeric_limits<float>::is_iec559 && std::numeric_limits<double>::is_iec559,
-              "The floating point values for NBT must conform to IEC 559/IEEE 754");
-
-bool is_valid_type(int type, bool allow_end)
+namespace nbt
 {
-    return (allow_end ? 0 : 1) <= type && type <= 12;
-}
 
-std::unique_ptr<tag> tag::clone() &&
-{
-    return std::move(*this).move_clone();
-}
+	static_assert(std::numeric_limits<float>::is_iec559 && std::numeric_limits<double>::is_iec559,
+				  "The floating point values for NBT must conform to IEC 559/IEEE 754");
 
-namespace {
-template <typename T>
-std::unique_ptr<tag> create_numeric_tag(tag_type type, T val)
-{
-    switch (type) {
-        case tag_type::Byte:
-            return make_unique<tag_byte>(static_cast<int8_t>(val));
-        case tag_type::Short:
-            return make_unique<tag_short>(static_cast<int16_t>(val));
-        case tag_type::Int:
-            return make_unique<tag_int>(static_cast<int32_t>(val));
-        case tag_type::Long:
-            return make_unique<tag_long>(static_cast<int64_t>(val));
-        case tag_type::Float:
-            return make_unique<tag_float>(static_cast<float>(val));
-        case tag_type::Double:
-            return make_unique<tag_double>(static_cast<double>(val));
-        default:
-            throw std::invalid_argument("Invalid numeric tag type");
-    }
-}
-}  // namespace
+	bool is_valid_type(int type, bool allow_end)
+	{
+		return (allow_end ? 0 : 1) <= type && type <= 12;
+	}
 
-std::unique_ptr<tag> tag::create(tag_type type)
-{
-    switch (type) {
-        case tag_type::Byte:
-            return make_unique<tag_byte>();
-        case tag_type::Short:
-            return make_unique<tag_short>();
-        case tag_type::Int:
-            return make_unique<tag_int>();
-        case tag_type::Long:
-            return make_unique<tag_long>();
-        case tag_type::Float:
-            return make_unique<tag_float>();
-        case tag_type::Double:
-            return make_unique<tag_double>();
-        case tag_type::Byte_Array:
-            return make_unique<tag_byte_array>();
-        case tag_type::String:
-            return make_unique<tag_string>();
-        case tag_type::List:
-            return make_unique<tag_list>();
-        case tag_type::Compound:
-            return make_unique<tag_compound>();
-        case tag_type::Int_Array:
-            return make_unique<tag_int_array>();
-        case tag_type::Long_Array:
-            return make_unique<tag_long_array>();
+	std::unique_ptr<tag> tag::clone() &&
+	{
+		return std::move(*this).move_clone();
+	}
 
-        default:
-            throw std::invalid_argument("Invalid tag type");
-    }
-}
+	namespace
+	{
+		template <typename T>
+		std::unique_ptr<tag> create_numeric_tag(tag_type type, T val)
+		{
+			switch (type)
+			{
+				case tag_type::Byte: return make_unique<tag_byte>(static_cast<int8_t>(val));
+				case tag_type::Short: return make_unique<tag_short>(static_cast<int16_t>(val));
+				case tag_type::Int: return make_unique<tag_int>(static_cast<int32_t>(val));
+				case tag_type::Long: return make_unique<tag_long>(static_cast<int64_t>(val));
+				case tag_type::Float: return make_unique<tag_float>(static_cast<float>(val));
+				case tag_type::Double: return make_unique<tag_double>(static_cast<double>(val));
+				default: throw std::invalid_argument("Invalid numeric tag type");
+			}
+		}
+	} // namespace
 
-std::unique_ptr<tag> tag::create(tag_type type, int8_t val)
-{
-    return create_numeric_tag(type, val);
-}
+	std::unique_ptr<tag> tag::create(tag_type type)
+	{
+		switch (type)
+		{
+			case tag_type::Byte: return make_unique<tag_byte>();
+			case tag_type::Short: return make_unique<tag_short>();
+			case tag_type::Int: return make_unique<tag_int>();
+			case tag_type::Long: return make_unique<tag_long>();
+			case tag_type::Float: return make_unique<tag_float>();
+			case tag_type::Double: return make_unique<tag_double>();
+			case tag_type::Byte_Array: return make_unique<tag_byte_array>();
+			case tag_type::String: return make_unique<tag_string>();
+			case tag_type::List: return make_unique<tag_list>();
+			case tag_type::Compound: return make_unique<tag_compound>();
+			case tag_type::Int_Array: return make_unique<tag_int_array>();
+			case tag_type::Long_Array: return make_unique<tag_long_array>();
 
-std::unique_ptr<tag> tag::create(tag_type type, int16_t val)
-{
-    return create_numeric_tag(type, val);
-}
+			default: throw std::invalid_argument("Invalid tag type");
+		}
+	}
 
-std::unique_ptr<tag> tag::create(tag_type type, int32_t val)
-{
-    return create_numeric_tag(type, val);
-}
+	std::unique_ptr<tag> tag::create(tag_type type, int8_t val)
+	{
+		return create_numeric_tag(type, val);
+	}
 
-std::unique_ptr<tag> tag::create(tag_type type, int64_t val)
-{
-    return create_numeric_tag(type, val);
-}
+	std::unique_ptr<tag> tag::create(tag_type type, int16_t val)
+	{
+		return create_numeric_tag(type, val);
+	}
 
-std::unique_ptr<tag> tag::create(tag_type type, float val)
-{
-    return create_numeric_tag(type, val);
-}
+	std::unique_ptr<tag> tag::create(tag_type type, int32_t val)
+	{
+		return create_numeric_tag(type, val);
+	}
 
-std::unique_ptr<tag> tag::create(tag_type type, double val)
-{
-    return create_numeric_tag(type, val);
-}
+	std::unique_ptr<tag> tag::create(tag_type type, int64_t val)
+	{
+		return create_numeric_tag(type, val);
+	}
 
-bool operator==(const tag& lhs, const tag& rhs)
-{
-    if (typeid(lhs) != typeid(rhs))
-        return false;
-    return lhs.equals(rhs);
-}
+	std::unique_ptr<tag> tag::create(tag_type type, float val)
+	{
+		return create_numeric_tag(type, val);
+	}
 
-bool operator!=(const tag& lhs, const tag& rhs)
-{
-    return !(lhs == rhs);
-}
+	std::unique_ptr<tag> tag::create(tag_type type, double val)
+	{
+		return create_numeric_tag(type, val);
+	}
 
-std::ostream& operator<<(std::ostream& os, tag_type tt)
-{
-    switch (tt) {
-        case tag_type::End:
-            return os << "end";
-        case tag_type::Byte:
-            return os << "byte";
-        case tag_type::Short:
-            return os << "short";
-        case tag_type::Int:
-            return os << "int";
-        case tag_type::Long:
-            return os << "long";
-        case tag_type::Float:
-            return os << "float";
-        case tag_type::Double:
-            return os << "double";
-        case tag_type::Byte_Array:
-            return os << "byte_array";
-        case tag_type::String:
-            return os << "string";
-        case tag_type::List:
-            return os << "list";
-        case tag_type::Compound:
-            return os << "compound";
-        case tag_type::Int_Array:
-            return os << "int_array";
-        case tag_type::Long_Array:
-            return os << "long_array";
-        case tag_type::Null:
-            return os << "null";
+	bool operator==(const tag& lhs, const tag& rhs)
+	{
+		if (typeid(lhs) != typeid(rhs))
+			return false;
+		return lhs.equals(rhs);
+	}
 
-        default:
-            return os << "invalid";
-    }
-}
+	bool operator!=(const tag& lhs, const tag& rhs)
+	{
+		return !(lhs == rhs);
+	}
 
-std::ostream& operator<<(std::ostream& os, const tag& t)
-{
-    static const text::json_formatter formatter;
-    formatter.print(os, t);
-    return os;
-}
+	std::ostream& operator<<(std::ostream& os, tag_type tt)
+	{
+		switch (tt)
+		{
+			case tag_type::End: return os << "end";
+			case tag_type::Byte: return os << "byte";
+			case tag_type::Short: return os << "short";
+			case tag_type::Int: return os << "int";
+			case tag_type::Long: return os << "long";
+			case tag_type::Float: return os << "float";
+			case tag_type::Double: return os << "double";
+			case tag_type::Byte_Array: return os << "byte_array";
+			case tag_type::String: return os << "string";
+			case tag_type::List: return os << "list";
+			case tag_type::Compound: return os << "compound";
+			case tag_type::Int_Array: return os << "int_array";
+			case tag_type::Long_Array: return os << "long_array";
+			case tag_type::Null: return os << "null";
 
-}  // namespace nbt
+			default: return os << "invalid";
+		}
+	}
+
+	std::ostream& operator<<(std::ostream& os, const tag& t)
+	{
+		static const text::json_formatter formatter;
+		formatter.print(os, t);
+		return os;
+	}
+
+} // namespace nbt

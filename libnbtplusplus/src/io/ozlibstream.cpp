@@ -20,86 +20,103 @@
 #include "io/ozlibstream.h"
 #include "io/zlib_streambuf.h"
 
-namespace zlib {
-
-deflate_streambuf::deflate_streambuf(std::ostream& output, size_t bufsize, int level, int window_bits, int mem_level, int strategy)
-    : zlib_streambuf(bufsize), os(output)
+namespace zlib
 {
-    int ret = deflateInit2(&zstr, level, Z_DEFLATED, window_bits, mem_level, strategy);
-    if (ret != Z_OK)
-        throw zlib_error(zstr.msg, ret);
 
-    setp(in.data(), in.data() + in.size());
-}
+	deflate_streambuf::deflate_streambuf(std::ostream& output,
+										 size_t bufsize,
+										 int level,
+										 int window_bits,
+										 int mem_level,
+										 int strategy)
+		: zlib_streambuf(bufsize),
+		  os(output)
+	{
+		int ret = deflateInit2(&zstr, level, Z_DEFLATED, window_bits, mem_level, strategy);
+		if (ret != Z_OK)
+			throw zlib_error(zstr.msg, ret);
 
-deflate_streambuf::~deflate_streambuf() noexcept
-{
-    try {
-        close();
-    } catch (...) {
-        // ignore as we can't do anything about it
-    }
-    deflateEnd(&zstr);
-}
+		setp(in.data(), in.data() + in.size());
+	}
 
-void deflate_streambuf::close()
-{
-    deflate_chunk(Z_FINISH);
-}
+	deflate_streambuf::~deflate_streambuf() noexcept
+	{
+		try
+		{
+			close();
+		}
+		catch (...)
+		{
+			// ignore as we can't do anything about it
+		}
+		deflateEnd(&zstr);
+	}
 
-void deflate_streambuf::deflate_chunk(int flush)
-{
-    zstr.next_in = reinterpret_cast<Bytef*>(pbase());
-    zstr.avail_in = pptr() - pbase();
-    do {
-        zstr.next_out = reinterpret_cast<Bytef*>(out.data());
-        zstr.avail_out = out.size();
-        int ret = deflate(&zstr, flush);
-        if (ret != Z_OK && ret != Z_STREAM_END) {
-            os.setstate(std::ios_base::failbit);
-            throw zlib_error(zstr.msg, ret);
-        }
-        int have = out.size() - zstr.avail_out;
-        if (!os.write(out.data(), have))
-            throw std::ios_base::failure("Could not write to the output stream");
-    } while (zstr.avail_out == 0);
-    setp(in.data(), in.data() + in.size());
-}
+	void deflate_streambuf::close()
+	{
+		deflate_chunk(Z_FINISH);
+	}
 
-deflate_streambuf::int_type deflate_streambuf::overflow(int_type ch)
-{
-    deflate_chunk();
-    if (ch != traits_type::eof()) {
-        *pptr() = ch;
-        pbump(1);
-    }
-    return ch;
-}
+	void deflate_streambuf::deflate_chunk(int flush)
+	{
+		zstr.next_in  = reinterpret_cast<Bytef*>(pbase());
+		zstr.avail_in = pptr() - pbase();
+		do
+		{
+			zstr.next_out  = reinterpret_cast<Bytef*>(out.data());
+			zstr.avail_out = out.size();
+			int ret		   = deflate(&zstr, flush);
+			if (ret != Z_OK && ret != Z_STREAM_END)
+			{
+				os.setstate(std::ios_base::failbit);
+				throw zlib_error(zstr.msg, ret);
+			}
+			int have = out.size() - zstr.avail_out;
+			if (!os.write(out.data(), have))
+				throw std::ios_base::failure("Could not write to the output stream");
+		}
+		while (zstr.avail_out == 0);
+		setp(in.data(), in.data() + in.size());
+	}
 
-int deflate_streambuf::sync()
-{
-    deflate_chunk();
-    return 0;
-}
+	deflate_streambuf::int_type deflate_streambuf::overflow(int_type ch)
+	{
+		deflate_chunk();
+		if (ch != traits_type::eof())
+		{
+			*pptr() = ch;
+			pbump(1);
+		}
+		return ch;
+	}
 
-void ozlibstream::close()
-{
-    // Capture the exception mask so we can restore it if close() fails.
-    std::ios_base::iostate old_ex = exceptions();
-    try {
-        buf.close();
-        return;
-    } catch (...) {
-        // fall through to mark the stream as bad
-    }
+	int deflate_streambuf::sync()
+	{
+		deflate_chunk();
+		return 0;
+	}
 
-    // Setting the stream state while exceptions are enabled may cause
-    // `setstate` to throw an `ios_base::failure` which would replace
-    // the original exception. Temporarily disable exceptions on this
-    // stream, set the `badbit`, then restore the exception mask.
-    exceptions(std::ios_base::goodbit);
-    setstate(std::ios_base::badbit);
-    exceptions(old_ex);
-}
+	void ozlibstream::close()
+	{
+		// Capture the exception mask so we can restore it if close() fails.
+		std::ios_base::iostate old_ex = exceptions();
+		try
+		{
+			buf.close();
+			return;
+		}
+		catch (...)
+		{
+			// fall through to mark the stream as bad
+		}
 
-}  // namespace zlib
+		// Setting the stream state while exceptions are enabled may cause
+		// `setstate` to throw an `ios_base::failure` which would replace
+		// the original exception. Temporarily disable exceptions on this
+		// stream, set the `badbit`, then restore the exception mask.
+		exceptions(std::ios_base::goodbit);
+		setstate(std::ios_base::badbit);
+		exceptions(old_ex);
+	}
+
+} // namespace zlib

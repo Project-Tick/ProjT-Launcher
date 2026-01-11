@@ -71,130 +71,142 @@
 
 AtlPage::AtlPage(NewInstanceDialog* dialog, QWidget* parent) : QWidget(parent), ui(new Ui::AtlPage), dialog(dialog)
 {
-    ui->setupUi(this);
+	ui->setupUi(this);
 
-    filterModel = new Atl::FilterModel(this);
-    listModel = new Atl::ListModel(this);
-    filterModel->setSourceModel(listModel);
-    ui->packView->setModel(filterModel);
-    ui->packView->setSortingEnabled(true);
+	filterModel = new Atl::FilterModel(this);
+	listModel	= new Atl::ListModel(this);
+	filterModel->setSourceModel(listModel);
+	ui->packView->setModel(filterModel);
+	ui->packView->setSortingEnabled(true);
 
-    ui->packView->header()->hide();
-    ui->packView->setIndentation(0);
+	ui->packView->header()->hide();
+	ui->packView->setIndentation(0);
 
-    ui->versionSelectionBox->view()->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    ui->versionSelectionBox->view()->parentWidget()->setMaximumHeight(300);
+	ui->versionSelectionBox->view()->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	ui->versionSelectionBox->view()->parentWidget()->setMaximumHeight(300);
 
-    for (int i = 0; i < filterModel->getAvailableSortings().size(); i++) {
-        ui->sortByBox->addItem(filterModel->getAvailableSortings().keys().at(i));
-    }
-    ui->sortByBox->setCurrentText(filterModel->translateCurrentSorting());
+	for (int i = 0; i < filterModel->getAvailableSortings().size(); i++)
+	{
+		ui->sortByBox->addItem(filterModel->getAvailableSortings().keys().at(i));
+	}
+	ui->sortByBox->setCurrentText(filterModel->translateCurrentSorting());
 
-    connect(ui->searchEdit, &QLineEdit::textChanged, this, &AtlPage::triggerSearch);
-    connect(ui->sortByBox, &QComboBox::currentTextChanged, this, &AtlPage::onSortingSelectionChanged);
-    connect(ui->packView->selectionModel(), &QItemSelectionModel::currentChanged, this, &AtlPage::onSelectionChanged);
-    connect(ui->versionSelectionBox, &QComboBox::currentTextChanged, this, &AtlPage::onVersionSelectionChanged);
+	connect(ui->searchEdit, &QLineEdit::textChanged, this, &AtlPage::triggerSearch);
+	connect(ui->sortByBox, &QComboBox::currentTextChanged, this, &AtlPage::onSortingSelectionChanged);
+	connect(ui->packView->selectionModel(), &QItemSelectionModel::currentChanged, this, &AtlPage::onSelectionChanged);
+	connect(ui->versionSelectionBox, &QComboBox::currentTextChanged, this, &AtlPage::onVersionSelectionChanged);
 
-    ui->packView->setItemDelegate(new ProjectItemDelegate(this));
+	ui->packView->setItemDelegate(new ProjectItemDelegate(this));
 }
 
 AtlPage::~AtlPage()
 {
-    delete ui;
+	delete ui;
 }
 
 bool AtlPage::shouldDisplay() const
 {
-    return true;
+	return true;
 }
 
 void AtlPage::retranslate()
 {
-    ui->retranslateUi(this);
+	ui->retranslateUi(this);
 }
 
 void AtlPage::openedImpl()
 {
-    if (!initialized) {
-        listModel->request();
-        initialized = true;
-    }
+	if (!initialized)
+	{
+		listModel->request();
+		initialized = true;
+	}
 
-    suggestCurrent();
+	suggestCurrent();
 }
 
 void AtlPage::suggestCurrent()
 {
-    if (!isOpened) {
-        return;
-    }
+	if (!isOpened)
+	{
+		return;
+	}
 
-    if (selectedVersion.isEmpty()) {
-        dialog->setSuggestedPack();
-        return;
-    }
+	if (selectedVersion.isEmpty())
+	{
+		dialog->setSuggestedPack();
+		return;
+	}
 
-    auto uiSupport = new AtlUserInteractionSupportImpl(this);
-    dialog->setSuggestedPack(selected.name, selectedVersion, new ATLauncher::PackInstallTask(uiSupport, selected.name, selectedVersion));
+	auto uiSupport = new AtlUserInteractionSupportImpl(this);
+	dialog->setSuggestedPack(selected.name,
+							 selectedVersion,
+							 new ATLauncher::PackInstallTask(uiSupport, selected.name, selectedVersion));
 
-    auto editedLogoName = "atl_" + selected.safeName;
-    auto url = QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1").arg(selected.safeName);
-    listModel->getLogo(selected.safeName, url,
-                       [this, editedLogoName](QString logo) { dialog->setSuggestedIconFromFile(logo, editedLogoName); });
+	auto editedLogoName = "atl_" + selected.safeName;
+	auto url			= QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL + "launcher/images/%1").arg(selected.safeName);
+	listModel->getLogo(selected.safeName,
+					   url,
+					   [this, editedLogoName](QString logo)
+					   { dialog->setSuggestedIconFromFile(logo, editedLogoName); });
 }
 
 void AtlPage::triggerSearch()
 {
-    filterModel->setSearchTerm(ui->searchEdit->text());
+	filterModel->setSearchTerm(ui->searchEdit->text());
 }
 
 void AtlPage::onSortingSelectionChanged(QString sort)
 {
-    auto toSet = filterModel->getAvailableSortings().value(sort);
-    filterModel->setSorting(toSet);
+	auto toSet = filterModel->getAvailableSortings().value(sort);
+	filterModel->setSorting(toSet);
 }
 
 void AtlPage::onSelectionChanged(QModelIndex first, [[maybe_unused]] QModelIndex second)
 {
-    ui->versionSelectionBox->clear();
+	ui->versionSelectionBox->clear();
 
-    if (!first.isValid()) {
-        if (isOpened) {
-            dialog->setSuggestedPack();
-        }
-        return;
-    }
+	if (!first.isValid())
+	{
+		if (isOpened)
+		{
+			dialog->setSuggestedPack();
+		}
+		return;
+	}
 
-    QVariant raw = filterModel->data(first, Qt::UserRole);
-    Q_ASSERT(raw.canConvert<ATLauncher::IndexedPack>());
-    selected = raw.value<ATLauncher::IndexedPack>();
+	QVariant raw = filterModel->data(first, Qt::UserRole);
+	Q_ASSERT(raw.canConvert<ATLauncher::IndexedPack>());
+	selected = raw.value<ATLauncher::IndexedPack>();
 
-    ui->packDescription->setHtml(StringUtils::htmlListPatch(selected.description.replace("\n", "<br>")));
+	ui->packDescription->setHtml(StringUtils::htmlListPatch(selected.description.replace("\n", "<br>")));
 
-    for (const auto& version : selected.versions) {
-        ui->versionSelectionBox->addItem(version.version);
-    }
+	for (const auto& version : selected.versions)
+	{
+		ui->versionSelectionBox->addItem(version.version);
+	}
 
-    suggestCurrent();
+	suggestCurrent();
 }
 
 void AtlPage::onVersionSelectionChanged(QString version)
 {
-    if (version.isNull() || version.isEmpty()) {
-        selectedVersion = "";
-        return;
-    }
+	if (version.isNull() || version.isEmpty())
+	{
+		selectedVersion = "";
+		return;
+	}
 
-    selectedVersion = version;
-    suggestCurrent();
+	selectedVersion = version;
+	suggestCurrent();
 }
 
 void AtlPage::setSearchTerm(QString term)
 {
-    ui->searchEdit->setText(term);
+	ui->searchEdit->setText(term);
 }
 
 QString AtlPage::getSerachTerm() const
 {
-    return ui->searchEdit->text();
+	return ui->searchEdit->text();
 }

@@ -22,42 +22,48 @@
 
 #include "value.h"
 
-namespace nbt {
+namespace nbt
+{
 
-/**
- * @brief Helper class for implicitly constructing value objects
- *
- * This type is a subclass of @ref value. However the only difference to value
- * is that this class has additional constructors which allow implicit
- * conversion of various types to value objects. These constructors are not
- * part of the value class itself because implicit conversions like this
- * (especially from @c tag&& to @c value) can cause problems and ambiguities
- * in some cases.
- *
- * value_initializer is especially useful as function parameter type, it will
- * allow convenient conversion of various values to tags on function call.
- *
- * As value_initializer objects are in no way different than value objects,
- * they can just be converted to value after construction.
- */
-class NBT_EXPORT value_initializer : public value {
-   public:
-    value_initializer(std::unique_ptr<tag>&& t) noexcept : value(std::move(t)) {}
-    value_initializer(std::nullptr_t) noexcept : value(nullptr) {}
-    value_initializer(value&& val) noexcept : value(std::move(val)) {}
-    value_initializer(tag&& t) : value(std::move(t)) {}
+	/**
+	 * @brief Helper class for implicitly constructing value objects
+	 *
+	 * This type is a subclass of @ref value. However the only difference to value
+	 * is that this class has additional constructors which allow implicit
+	 * conversion of various types to value objects. These constructors are not
+	 * part of the value class itself because implicit conversions like this
+	 * (especially from @c tag&& to @c value) can cause problems and ambiguities
+	 * in some cases.
+	 *
+	 * value_initializer is especially useful as function parameter type, it will
+	 * allow convenient conversion of various values to tags on function call.
+	 *
+	 * As value_initializer objects are in no way different than value objects,
+	 * they can just be converted to value after construction.
+	 */
+	class NBT_EXPORT value_initializer : public value
+	{
+	  public:
+		value_initializer(std::unique_ptr<tag>&& t) noexcept : value(std::move(t))
+		{}
+		value_initializer(std::nullptr_t) noexcept : value(nullptr)
+		{}
+		value_initializer(value&& val) noexcept : value(std::move(val))
+		{}
+		value_initializer(tag&& t) : value(std::move(t))
+		{}
 
-    value_initializer(int8_t val);
-    value_initializer(int16_t val);
-    value_initializer(int32_t val);
-    value_initializer(int64_t val);
-    value_initializer(float val);
-    value_initializer(double val);
-    value_initializer(const std::string& str);
-    value_initializer(std::string&& str);
-    value_initializer(const char* str);
-};
+		value_initializer(int8_t val);
+		value_initializer(int16_t val);
+		value_initializer(int32_t val);
+		value_initializer(int64_t val);
+		value_initializer(float val);
+		value_initializer(double val);
+		value_initializer(const std::string& str);
+		value_initializer(std::string&& str);
+		value_initializer(const char* str);
+	};
 
-}  // namespace nbt
+} // namespace nbt
 
-#endif  // VALUE_INITIALIZER_H_INCLUDED
+#endif // VALUE_INITIALIZER_H_INCLUDED

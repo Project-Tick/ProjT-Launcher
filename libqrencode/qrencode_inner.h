@@ -30,23 +30,25 @@
  * Raw code
  *****************************************************************************/
 
-typedef struct {
-    int dataLength;
-    int eccLength;
-    unsigned char* data;
-    unsigned char* ecc;
+typedef struct
+{
+	int dataLength;
+	int eccLength;
+	unsigned char* data;
+	unsigned char* ecc;
 } RSblock;
 
-typedef struct {
-    int version;
-    int dataLength;
-    int eccLength;
-    unsigned char* datacode;
-    unsigned char* ecccode;
-    int b1;
-    int blocks;
-    RSblock* rsblock;
-    int count;
+typedef struct
+{
+	int version;
+	int dataLength;
+	int eccLength;
+	unsigned char* datacode;
+	unsigned char* ecccode;
+	int b1;
+	int blocks;
+	RSblock* rsblock;
+	int count;
 } QRRawCode;
 
 extern QRRawCode* QRraw_new(QRinput* input);
@@ -57,15 +59,16 @@ extern void QRraw_free(QRRawCode* raw);
  * Raw code for Micro QR Code
  *****************************************************************************/
 
-typedef struct {
-    int version;
-    int dataLength;
-    int eccLength;
-    unsigned char* datacode;
-    unsigned char* ecccode;
-    RSblock* rsblock;
-    int oddbits;
-    int count;
+typedef struct
+{
+	int version;
+	int dataLength;
+	int eccLength;
+	unsigned char* datacode;
+	unsigned char* ecccode;
+	RSblock* rsblock;
+	int oddbits;
+	int count;
 } MQRRawCode;
 
 extern MQRRawCode* MQRraw_new(QRinput* input);

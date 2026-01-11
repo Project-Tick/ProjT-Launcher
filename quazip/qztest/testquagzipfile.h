@@ -27,12 +27,13 @@ see quazip/(un)zip.h files for details. Basically it's the zlib license.
 
 #include <QtCore/QObject>
 
-class TestQuaGzipFile : public QObject {
-    Q_OBJECT
-   private slots:
-    void read();
-    void write();
-    void constructorDestructor();
+class TestQuaGzipFile : public QObject
+{
+	Q_OBJECT
+  private slots:
+	void read();
+	void write();
+	void constructorDestructor();
 };
 
-#endif  // QUAZIP_TEST_QUAGZIPFILE_H
+#endif // QUAZIP_TEST_QUAGZIPFILE_H

@@ -66,83 +66,112 @@
 class ModPage;
 class Version;
 
-namespace Modrinth {
+namespace Modrinth
+{
 
-using LogoMap = QMap<QString, QIcon>;
-using LogoCallback = std::function<void(QString)>;
+	using LogoMap	   = QMap<QString, QIcon>;
+	using LogoCallback = std::function<void(QString)>;
 
-class ModpackListModel : public QAbstractListModel {
-    Q_OBJECT
+	class ModpackListModel : public QAbstractListModel
+	{
+		Q_OBJECT
 
-   public:
-    ModpackListModel(ModrinthPage* parent);
-    ~ModpackListModel() override = default;
+	  public:
+		ModpackListModel(ModrinthPage* parent);
+		~ModpackListModel() override = default;
 
-    inline auto rowCount(const QModelIndex& parent) const -> int override { return parent.isValid() ? 0 : m_modpacks.size(); };
-    inline auto columnCount(const QModelIndex& parent) const -> int override { return parent.isValid() ? 0 : 1; };
-    inline auto flags(const QModelIndex& index) const -> Qt::ItemFlags override { return QAbstractListModel::flags(index); };
+		inline auto rowCount(const QModelIndex& parent) const -> int override
+		{
+			return parent.isValid() ? 0 : m_modpacks.size();
+		};
+		inline auto columnCount(const QModelIndex& parent) const -> int override
+		{
+			return parent.isValid() ? 0 : 1;
+		};
+		inline auto flags(const QModelIndex& index) const -> Qt::ItemFlags override
+		{
+			return QAbstractListModel::flags(index);
+		};
 
-    auto debugName() const -> QString;
+		auto debugName() const -> QString;
 
-    /* Retrieve information from the model at a given index with the given role */
-    auto data(const QModelIndex& index, int role) const -> QVariant override;
-    bool setData(const QModelIndex& index, const QVariant& value, int role) override;
+		/* Retrieve information from the model at a given index with the given role */
+		auto data(const QModelIndex& index, int role) const -> QVariant override;
+		bool setData(const QModelIndex& index, const QVariant& value, int role) override;
 
-    inline void setActiveJob(NetJob::Ptr ptr) { m_jobPtr = ptr; }
+		inline void setActiveJob(NetJob::Ptr ptr)
+		{
+			m_jobPtr = ptr;
+		}
 
-    /* Ask the API for more information */
-    void fetchMore(const QModelIndex& parent) override;
-    void refresh();
-    void searchWithTerm(const QString& term, int sort, std::shared_ptr<ModFilterWidget::Filter> filter, bool filterChanged);
+		/* Ask the API for more information */
+		void fetchMore(const QModelIndex& parent) override;
+		void refresh();
+		void searchWithTerm(const QString& term,
+							int sort,
+							std::shared_ptr<ModFilterWidget::Filter> filter,
+							bool filterChanged);
 
-    bool hasActiveSearchJob() const { return m_jobPtr && m_jobPtr->isRunning(); }
-    Task::Ptr activeSearchJob() { return hasActiveSearchJob() ? m_jobPtr : nullptr; }
+		bool hasActiveSearchJob() const
+		{
+			return m_jobPtr && m_jobPtr->isRunning();
+		}
+		Task::Ptr activeSearchJob()
+		{
+			return hasActiveSearchJob() ? m_jobPtr : nullptr;
+		}
 
-    void getLogo(const QString& logo, const QString& logoUrl, LogoCallback callback);
+		void getLogo(const QString& logo, const QString& logoUrl, LogoCallback callback);
 
-    inline auto canFetchMore(const QModelIndex& parent) const -> bool override
-    {
-        return parent.isValid() ? false : m_searchState == CanPossiblyFetchMore;
-    };
+		inline auto canFetchMore(const QModelIndex& parent) const -> bool override
+		{
+			return parent.isValid() ? false : m_searchState == CanPossiblyFetchMore;
+		};
 
-   public slots:
-    void searchRequestFinished(QList<ModPlatform::IndexedPack::Ptr>& doc_all);
-    void searchRequestFailed(QString reason);
-    void searchRequestForOneSucceeded(ModPlatform::IndexedPack::Ptr);
+	  public slots:
+		void searchRequestFinished(QList<ModPlatform::IndexedPack::Ptr>& doc_all);
+		void searchRequestFailed(QString reason);
+		void searchRequestForOneSucceeded(ModPlatform::IndexedPack::Ptr);
 
-   protected slots:
+	  protected slots:
 
-    void logoFailed(QString logo);
-    void logoLoaded(QString logo, QIcon out);
+		void logoFailed(QString logo);
+		void logoLoaded(QString logo, QIcon out);
 
-    void performPaginatedSearch();
+		void performPaginatedSearch();
 
-   protected:
-    void requestLogo(QString file, QString url);
+	  protected:
+		void requestLogo(QString file, QString url);
 
-    inline auto getMineVersions() const -> std::list<Version>;
+		inline auto getMineVersions() const -> std::list<Version>;
 
-   protected:
-    ModrinthPage* m_parent;
+	  protected:
+		ModrinthPage* m_parent;
 
-    QList<ModPlatform::IndexedPack::Ptr> m_modpacks;
+		QList<ModPlatform::IndexedPack::Ptr> m_modpacks;
 
-    LogoMap m_logoMap;
-    QMap<QString, LogoCallback> m_waitingCallbacks;
-    QStringList m_failedLogos;
-    QStringList m_loadingLogos;
+		LogoMap m_logoMap;
+		QMap<QString, LogoCallback> m_waitingCallbacks;
+		QStringList m_failedLogos;
+		QStringList m_loadingLogos;
 
-    QString m_currentSearchTerm;
-    QString m_currentSort;
-    std::shared_ptr<ModFilterWidget::Filter> m_filter;
-    int m_nextSearchOffset = 0;
-    enum SearchState { None, CanPossiblyFetchMore, ResetRequested, Finished } m_searchState = None;
+		QString m_currentSearchTerm;
+		QString m_currentSort;
+		std::shared_ptr<ModFilterWidget::Filter> m_filter;
+		int m_nextSearchOffset = 0;
+		enum SearchState
+		{
+			None,
+			CanPossiblyFetchMore,
+			ResetRequested,
+			Finished
+		} m_searchState = None;
 
-    Task::Ptr m_jobPtr;
+		Task::Ptr m_jobPtr;
 
-    std::shared_ptr<QByteArray> m_allResponse = std::make_shared<QByteArray>();
-    QByteArray m_specific_response;
+		std::shared_ptr<QByteArray> m_allResponse = std::make_shared<QByteArray>();
+		QByteArray m_specific_response;
 
-    int m_modpacks_per_page = 20;
-};
-}  // namespace Modrinth
+		int m_modpacks_per_page = 20;
+	};
+} // namespace Modrinth

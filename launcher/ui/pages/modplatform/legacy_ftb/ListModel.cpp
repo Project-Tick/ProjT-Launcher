@@ -75,259 +75,285 @@
 
 #include <BuildConfig.h>
 
-namespace LegacyFTB {
-
-const QColor COLOR_BROKEN(255, 0, 50);
-const QColor COLOR_BUGGED(244, 229, 66);
-
-FilterModel::FilterModel(QObject* parent) : QSortFilterProxyModel(parent)
+namespace LegacyFTB
 {
-    currentSorting = Sorting::ByGameVersion;
-    sortings.insert(tr("Sort by Name"), Sorting::ByName);
-    sortings.insert(tr("Sort by Game Version"), Sorting::ByGameVersion);
-}
 
-bool FilterModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
-{
-    QVariant leftRaw = sourceModel()->data(left, Qt::UserRole);
-    Q_ASSERT(leftRaw.canConvert<Modpack>());
-    auto leftPack = leftRaw.value<Modpack>();
-    QVariant rightRaw = sourceModel()->data(right, Qt::UserRole);
-    Q_ASSERT(rightRaw.canConvert<Modpack>());
-    auto rightPack = rightRaw.value<Modpack>();
+	const QColor COLOR_BROKEN(255, 0, 50);
+	const QColor COLOR_BUGGED(244, 229, 66);
 
-    if (currentSorting == Sorting::ByGameVersion) {
-        Version lv(leftPack.mcVersion);
-        Version rv(rightPack.mcVersion);
-        return lv < rv;
+	FilterModel::FilterModel(QObject* parent) : QSortFilterProxyModel(parent)
+	{
+		currentSorting = Sorting::ByGameVersion;
+		sortings.insert(tr("Sort by Name"), Sorting::ByName);
+		sortings.insert(tr("Sort by Game Version"), Sorting::ByGameVersion);
+	}
 
-    } else if (currentSorting == Sorting::ByName) {
-        return StringUtils::naturalCompare(leftPack.name, rightPack.name, Qt::CaseSensitive) >= 0;
-    }
+	bool FilterModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
+	{
+		QVariant leftRaw = sourceModel()->data(left, Qt::UserRole);
+		Q_ASSERT(leftRaw.canConvert<Modpack>());
+		auto leftPack	  = leftRaw.value<Modpack>();
+		QVariant rightRaw = sourceModel()->data(right, Qt::UserRole);
+		Q_ASSERT(rightRaw.canConvert<Modpack>());
+		auto rightPack = rightRaw.value<Modpack>();
 
-    // UHM, some inavlid value set?!
-    qWarning() << "Invalid sorting set!";
-    return true;
-}
+		if (currentSorting == Sorting::ByGameVersion)
+		{
+			Version lv(leftPack.mcVersion);
+			Version rv(rightPack.mcVersion);
+			return lv < rv;
+		}
+		else if (currentSorting == Sorting::ByName)
+		{
+			return StringUtils::naturalCompare(leftPack.name, rightPack.name, Qt::CaseSensitive) >= 0;
+		}
 
-bool FilterModel::filterAcceptsRow([[maybe_unused]] int sourceRow, [[maybe_unused]] const QModelIndex& sourceParent) const
-{
-    if (searchTerm.isEmpty()) {
-        return true;
-    }
-    QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
-    QVariant raw = sourceModel()->data(index, Qt::UserRole);
-    Q_ASSERT(raw.canConvert<Modpack>());
-    auto pack = raw.value<Modpack>();
-    if (searchTerm.startsWith("#"))
-        return pack.packCode == searchTerm.mid(1);
-    return pack.name.contains(searchTerm, Qt::CaseInsensitive);
-}
+		// UHM, some inavlid value set?!
+		qWarning() << "Invalid sorting set!";
+		return true;
+	}
 
-void FilterModel::setSearchTerm(const QString term)
-{
-    searchTerm = term.trimmed();
-    invalidate();
-}
+	bool FilterModel::filterAcceptsRow([[maybe_unused]] int sourceRow,
+									   [[maybe_unused]] const QModelIndex& sourceParent) const
+	{
+		if (searchTerm.isEmpty())
+		{
+			return true;
+		}
+		QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
+		QVariant raw	  = sourceModel()->data(index, Qt::UserRole);
+		Q_ASSERT(raw.canConvert<Modpack>());
+		auto pack = raw.value<Modpack>();
+		if (searchTerm.startsWith("#"))
+			return pack.packCode == searchTerm.mid(1);
+		return pack.name.contains(searchTerm, Qt::CaseInsensitive);
+	}
 
-const QMap<QString, FilterModel::Sorting> FilterModel::getAvailableSortings()
-{
-    return sortings;
-}
+	void FilterModel::setSearchTerm(const QString term)
+	{
+		searchTerm = term.trimmed();
+		invalidate();
+	}
 
-QString FilterModel::translateCurrentSorting()
-{
-    return sortings.key(currentSorting);
-}
+	const QMap<QString, FilterModel::Sorting> FilterModel::getAvailableSortings()
+	{
+		return sortings;
+	}
 
-void FilterModel::setSorting(Sorting s)
-{
-    currentSorting = s;
-    invalidate();
-}
+	QString FilterModel::translateCurrentSorting()
+	{
+		return sortings.key(currentSorting);
+	}
 
-FilterModel::Sorting FilterModel::getCurrentSorting()
-{
-    return currentSorting;
-}
+	void FilterModel::setSorting(Sorting s)
+	{
+		currentSorting = s;
+		invalidate();
+	}
 
-ListModel::ListModel(QObject* parent) : QAbstractListModel(parent) {}
+	FilterModel::Sorting FilterModel::getCurrentSorting()
+	{
+		return currentSorting;
+	}
 
-ListModel::~ListModel() {}
+	ListModel::ListModel(QObject* parent) : QAbstractListModel(parent)
+	{}
 
-QString ListModel::translatePackType(PackType type) const
-{
-    switch (type) {
-        case PackType::Public:
-            return tr("Public Modpack");
-        case PackType::ThirdParty:
-            return tr("Third Party Modpack");
-        case PackType::Private:
-            return tr("Private Modpack");
-    }
-    qWarning() << "Unknown FTB modpack type:" << int(type);
-    return QString();
-}
+	ListModel::~ListModel()
+	{}
 
-int ListModel::rowCount(const QModelIndex& parent) const
-{
-    return parent.isValid() ? 0 : modpacks.size();
-}
+	QString ListModel::translatePackType(PackType type) const
+	{
+		switch (type)
+		{
+			case PackType::Public: return tr("Public Modpack");
+			case PackType::ThirdParty: return tr("Third Party Modpack");
+			case PackType::Private: return tr("Private Modpack");
+		}
+		qWarning() << "Unknown FTB modpack type:" << int(type);
+		return QString();
+	}
 
-int ListModel::columnCount(const QModelIndex& parent) const
-{
-    return parent.isValid() ? 0 : 1;
-}
+	int ListModel::rowCount(const QModelIndex& parent) const
+	{
+		return parent.isValid() ? 0 : modpacks.size();
+	}
 
-QVariant ListModel::data(const QModelIndex& index, int role) const
-{
-    int pos = index.row();
-    if (pos >= modpacks.size() || pos < 0 || !index.isValid()) {
-        return QString("INVALID INDEX %1").arg(pos);
-    }
+	int ListModel::columnCount(const QModelIndex& parent) const
+	{
+		return parent.isValid() ? 0 : 1;
+	}
 
-    Modpack pack = modpacks.at(pos);
-    switch (role) {
-        case Qt::ToolTipRole: {
-            if (pack.description.length() > 100) {
-                // some magic to prevent to long tooltips and replace html linebreaks
-                QString edit = pack.description.left(97);
-                edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
-                return edit;
-            }
-            return pack.description;
-        }
-        case Qt::DecorationRole: {
-            if (m_logoMap.contains(pack.logo)) {
-                return (m_logoMap.value(pack.logo));
-            }
-            QIcon icon = QIcon::fromTheme("screenshot-placeholder");
-            ((ListModel*)this)->requestLogo(pack.logo);
-            return icon;
-        }
-        case Qt::UserRole: {
-            QVariant v;
-            v.setValue(pack);
-            return v;
-        }
-        case Qt::ForegroundRole: {
-            if (pack.broken) {
-                return COLOR_BROKEN;
-            } else if (pack.bugged) {
-                // bugged pack, currently only indicates bugged xml
-                return COLOR_BUGGED;
-            }
-        }
-        case Qt::DisplayRole:
-            return pack.name;
-        case Qt::SizeHintRole:
-            return QSize(0, 58);
-        // Custom data
-        case UserDataTypes::TITLE:
-            return pack.name;
-        case UserDataTypes::DESCRIPTION:
-            return pack.description;
-        case UserDataTypes::INSTALLED:
-            return false;
-        default:
-            break;
-    }
+	QVariant ListModel::data(const QModelIndex& index, int role) const
+	{
+		int pos = index.row();
+		if (pos >= modpacks.size() || pos < 0 || !index.isValid())
+		{
+			return QString("INVALID INDEX %1").arg(pos);
+		}
 
-    return {};
-}
+		Modpack pack = modpacks.at(pos);
+		switch (role)
+		{
+			case Qt::ToolTipRole:
+			{
+				if (pack.description.length() > 100)
+				{
+					// some magic to prevent to long tooltips and replace html linebreaks
+					QString edit = pack.description.left(97);
+					edit		 = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
+					return edit;
+				}
+				return pack.description;
+			}
+			case Qt::DecorationRole:
+			{
+				if (m_logoMap.contains(pack.logo))
+				{
+					return (m_logoMap.value(pack.logo));
+				}
+				QIcon icon = QIcon::fromTheme("screenshot-placeholder");
+				((ListModel*)this)->requestLogo(pack.logo);
+				return icon;
+			}
+			case Qt::UserRole:
+			{
+				QVariant v;
+				v.setValue(pack);
+				return v;
+			}
+			case Qt::ForegroundRole:
+			{
+				if (pack.broken)
+				{
+					return COLOR_BROKEN;
+				}
+				else if (pack.bugged)
+				{
+					// bugged pack, currently only indicates bugged xml
+					return COLOR_BUGGED;
+				}
+			}
+			case Qt::DisplayRole: return pack.name;
+			case Qt::SizeHintRole: return QSize(0, 58);
+			// Custom data
+			case UserDataTypes::TITLE: return pack.name;
+			case UserDataTypes::DESCRIPTION: return pack.description;
+			case UserDataTypes::INSTALLED: return false;
+			default: break;
+		}
 
-void ListModel::fill(ModpackList modpacks_)
-{
-    beginResetModel();
-    this->modpacks = modpacks_;
-    endResetModel();
-}
+		return {};
+	}
 
-void ListModel::addPack(const Modpack& modpack)
-{
-    beginResetModel();
-    this->modpacks.append(modpack);
-    endResetModel();
-}
+	void ListModel::fill(ModpackList modpacks_)
+	{
+		beginResetModel();
+		this->modpacks = modpacks_;
+		endResetModel();
+	}
 
-void ListModel::clear()
-{
-    beginResetModel();
-    modpacks.clear();
-    endResetModel();
-}
+	void ListModel::addPack(const Modpack& modpack)
+	{
+		beginResetModel();
+		this->modpacks.append(modpack);
+		endResetModel();
+	}
 
-Modpack ListModel::at(int row)
-{
-    return modpacks.at(row);
-}
+	void ListModel::clear()
+	{
+		beginResetModel();
+		modpacks.clear();
+		endResetModel();
+	}
 
-void ListModel::remove(int row)
-{
-    if (row < 0 || row >= modpacks.size()) {
-        qWarning() << "Attempt to remove FTB modpacks with invalid row" << row;
-        return;
-    }
-    beginRemoveRows(QModelIndex(), row, row);
-    modpacks.removeAt(row);
-    endRemoveRows();
-}
+	Modpack ListModel::at(int row)
+	{
+		return modpacks.at(row);
+	}
 
-void ListModel::logoLoaded(QString logo, QIcon out)
-{
-    m_loadingLogos.removeAll(logo);
-    m_logoMap.insert(logo, out);
-    emit dataChanged(createIndex(0, 0), createIndex(1, 0));
-}
+	void ListModel::remove(int row)
+	{
+		if (row < 0 || row >= modpacks.size())
+		{
+			qWarning() << "Attempt to remove FTB modpacks with invalid row" << row;
+			return;
+		}
+		beginRemoveRows(QModelIndex(), row, row);
+		modpacks.removeAt(row);
+		endRemoveRows();
+	}
 
-void ListModel::logoFailed(QString logo)
-{
-    m_failedLogos.append(logo);
-    m_loadingLogos.removeAll(logo);
-}
+	void ListModel::logoLoaded(QString logo, QIcon out)
+	{
+		m_loadingLogos.removeAll(logo);
+		m_logoMap.insert(logo, out);
+		emit dataChanged(createIndex(0, 0), createIndex(1, 0));
+	}
 
-void ListModel::requestLogo(QString file)
-{
-    if (m_loadingLogos.contains(file) || m_failedLogos.contains(file)) {
-        return;
-    }
+	void ListModel::logoFailed(QString logo)
+	{
+		m_failedLogos.append(logo);
+		m_loadingLogos.removeAll(logo);
+	}
 
-    MetaEntryPtr entry = APPLICATION->metacache()->resolveEntry("FTBPacks", QString("logos/%1").arg(file));
-    NetJob* job = new NetJob(QString("FTB Icon Download for %1").arg(file), APPLICATION->network());
-    job->setAskRetry(false);
-    job->addNetAction(Net::ApiDownload::makeCached(QUrl(QString(BuildConfig.LEGACY_FTB_CDN_BASE_URL + "static/%1").arg(file)), entry));
+	void ListModel::requestLogo(QString file)
+	{
+		if (m_loadingLogos.contains(file) || m_failedLogos.contains(file))
+		{
+			return;
+		}
 
-    auto fullPath = entry->getFullPath();
-    connect(job, &NetJob::finished, this, [this, file, fullPath, job] {
-        job->deleteLater();
-        emit logoLoaded(file, QIcon(fullPath));
-        if (waitingCallbacks.contains(file)) {
-            waitingCallbacks.value(file)(fullPath);
-        }
-    });
+		MetaEntryPtr entry = APPLICATION->metacache()->resolveEntry("FTBPacks", QString("logos/%1").arg(file));
+		NetJob* job		   = new NetJob(QString("FTB Icon Download for %1").arg(file), APPLICATION->network());
+		job->setAskRetry(false);
+		job->addNetAction(
+			Net::ApiDownload::makeCached(QUrl(QString(BuildConfig.LEGACY_FTB_CDN_BASE_URL + "static/%1").arg(file)),
+										 entry));
 
-    connect(job, &NetJob::failed, this, [this, file, job] {
-        job->deleteLater();
-        emit logoFailed(file);
-    });
+		auto fullPath = entry->getFullPath();
+		connect(job,
+				&NetJob::finished,
+				this,
+				[this, file, fullPath, job]
+				{
+					job->deleteLater();
+					emit logoLoaded(file, QIcon(fullPath));
+					if (waitingCallbacks.contains(file))
+					{
+						waitingCallbacks.value(file)(fullPath);
+					}
+				});
 
-    job->start();
+		connect(job,
+				&NetJob::failed,
+				this,
+				[this, file, job]
+				{
+					job->deleteLater();
+					emit logoFailed(file);
+				});
 
-    m_loadingLogos.append(file);
-}
+		job->start();
 
-void ListModel::getLogo(const QString& logo, LogoCallback callback)
-{
-    if (m_logoMap.contains(logo)) {
-        callback(APPLICATION->metacache()->resolveEntry("FTBPacks", QString("logos/%1").arg(logo))->getFullPath());
-    } else {
-        requestLogo(logo);
-    }
-}
+		m_loadingLogos.append(file);
+	}
 
-Qt::ItemFlags ListModel::flags(const QModelIndex& index) const
-{
-    return QAbstractListModel::flags(index);
-}
+	void ListModel::getLogo(const QString& logo, LogoCallback callback)
+	{
+		if (m_logoMap.contains(logo))
+		{
+			callback(APPLICATION->metacache()->resolveEntry("FTBPacks", QString("logos/%1").arg(logo))->getFullPath());
+		}
+		else
+		{
+			requestLogo(logo);
+		}
+	}
 
-}  // namespace LegacyFTB
+	Qt::ItemFlags ListModel::flags(const QModelIndex& index) const
+	{
+		return QAbstractListModel::flags(index);
+	}
+
+} // namespace LegacyFTB

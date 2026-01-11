@@ -35,18 +35,19 @@ see quazip/(un)zip.h files for details. Basically it's the zlib license.
  * This class wrappers the adler32 function with the QuaChecksum32 interface.
  * See QuaChecksum32 for more info.
  */
-class QUAZIP_EXPORT QuaAdler32 : public QuaChecksum32 {
-   public:
-    QuaAdler32();
+class QUAZIP_EXPORT QuaAdler32 : public QuaChecksum32
+{
+  public:
+	QuaAdler32();
 
-    quint32 calculate(const QByteArray& data) override;
+	quint32 calculate(const QByteArray& data) override;
 
-    void reset() override;
-    void update(const QByteArray& buf) override;
-    quint32 value() override;
+	void reset() override;
+	void update(const QByteArray& buf) override;
+	quint32 value() override;
 
-   private:
-    quint32 checksum;
+  private:
+	quint32 checksum;
 };
 
-#endif  // QUAADLER32_H
+#endif // QUAADLER32_H

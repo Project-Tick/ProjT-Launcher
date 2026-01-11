@@ -43,5 +43,5 @@
 
 void QuitAfterGameStop::executeTask()
 {
-    APPLICATION->quit();
+	APPLICATION->quit();
 }

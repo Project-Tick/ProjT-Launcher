@@ -42,30 +42,38 @@
 #include "PackManifest.h"
 #include "tasks/Task.h"
 
-namespace Flame {
-class FileResolvingTask : public Task {
-    Q_OBJECT
-   public:
-    explicit FileResolvingTask(Flame::Manifest& toProcess);
-    virtual ~FileResolvingTask() = default;
+namespace Flame
+{
+	class FileResolvingTask : public Task
+	{
+		Q_OBJECT
+	  public:
+		explicit FileResolvingTask(Flame::Manifest& toProcess);
+		virtual ~FileResolvingTask() = default;
 
-    bool canAbort() const override { return true; }
-    bool abort() override;
+		bool canAbort() const override
+		{
+			return true;
+		}
+		bool abort() override;
 
-    const Flame::Manifest& getResults() const { return m_manifest; }
+		const Flame::Manifest& getResults() const
+		{
+			return m_manifest;
+		}
 
-   protected:
-    virtual void executeTask() override;
+	  protected:
+		virtual void executeTask() override;
 
-   protected slots:
-    void netJobFinished();
+	  protected slots:
+		void netJobFinished();
 
-   private:
-    void getFlameProjects();
+	  private:
+		void getFlameProjects();
 
-   private: /* data */
-    Flame::Manifest m_manifest;
-    std::shared_ptr<QByteArray> m_result;
-    Task::Ptr m_task;
-};
-}  // namespace Flame
+	  private: /* data */
+		Flame::Manifest m_manifest;
+		std::shared_ptr<QByteArray> m_result;
+		Task::Ptr m_task;
+	};
+} // namespace Flame

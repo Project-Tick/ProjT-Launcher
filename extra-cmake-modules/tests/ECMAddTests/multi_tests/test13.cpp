@@ -2,6 +2,6 @@
 
 int main()
 {
-    make_test_file("test13.txt");
-    return 0;
+	make_test_file("test13.txt");
+	return 0;
 }

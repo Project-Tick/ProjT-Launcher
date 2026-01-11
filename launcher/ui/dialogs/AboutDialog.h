@@ -38,17 +38,19 @@
 
 #include <QDialog>
 
-namespace Ui {
-class AboutDialog;
+namespace Ui
+{
+	class AboutDialog;
 }
 
-class AboutDialog : public QDialog {
-    Q_OBJECT
+class AboutDialog : public QDialog
+{
+	Q_OBJECT
 
-   public:
-    explicit AboutDialog(QWidget* parent = 0);
-    ~AboutDialog();
+  public:
+	explicit AboutDialog(QWidget* parent = 0);
+	~AboutDialog();
 
-   private:
-    Ui::AboutDialog* ui;
+  private:
+	Ui::AboutDialog* ui;
 };

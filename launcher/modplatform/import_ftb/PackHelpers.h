@@ -46,33 +46,35 @@
 #include <QVariant>
 #include "modplatform/ResourceAPI.h"
 
-namespace FTBImportAPP {
+namespace FTBImportAPP
+{
 
-struct Modpack {
-    QString path;
+	struct Modpack
+	{
+		QString path;
 
-    // json data
-    QString uuid;
-    int id;
-    int versionId;
-    QString name;
-    QString version;
-    QString mcVersion;
-    int totalPlayTime;
-    // not needed for instance creation
-    QVariant jvmArgs;
+		// json data
+		QString uuid;
+		int id;
+		int versionId;
+		QString name;
+		QString version;
+		QString mcVersion;
+		int totalPlayTime;
+		// not needed for instance creation
+		QVariant jvmArgs;
 
-    std::optional<ModPlatform::ModLoaderType> loaderType;
-    QString loaderVersion;
+		std::optional<ModPlatform::ModLoaderType> loaderType;
+		QString loaderVersion;
 
-    QIcon icon;
-};
+		QIcon icon;
+	};
 
-using ModpackList = QList<Modpack>;
+	using ModpackList = QList<Modpack>;
 
-Modpack parseDirectory(QString path);
+	Modpack parseDirectory(QString path);
 
-}  // namespace FTBImportAPP
+} // namespace FTBImportAPP
 
 // We need it for the proxy model
 Q_DECLARE_METATYPE(FTBImportAPP::Modpack)

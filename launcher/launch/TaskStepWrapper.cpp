@@ -39,50 +39,56 @@
 
 void TaskStepWrapper::executeTask()
 {
-    if (m_state == Task::State::AbortedByUser) {
-        emitFailed(tr("Task aborted."));
-        return;
-    }
-    connect(m_task.get(), &Task::finished, this, &TaskStepWrapper::updateFinished);
-    connect(m_task.get(), &Task::progress, this, &TaskStepWrapper::setProgress);
-    connect(m_task.get(), &Task::stepProgress, this, &TaskStepWrapper::propagateStepProgress);
-    connect(m_task.get(), &Task::status, this, &TaskStepWrapper::setStatus);
-    connect(m_task.get(), &Task::details, this, &TaskStepWrapper::setDetails);
-    emit progressReportingRequest();
+	if (m_state == Task::State::AbortedByUser)
+	{
+		emitFailed(tr("Task aborted."));
+		return;
+	}
+	connect(m_task.get(), &Task::finished, this, &TaskStepWrapper::updateFinished);
+	connect(m_task.get(), &Task::progress, this, &TaskStepWrapper::setProgress);
+	connect(m_task.get(), &Task::stepProgress, this, &TaskStepWrapper::propagateStepProgress);
+	connect(m_task.get(), &Task::status, this, &TaskStepWrapper::setStatus);
+	connect(m_task.get(), &Task::details, this, &TaskStepWrapper::setDetails);
+	emit progressReportingRequest();
 }
 
 void TaskStepWrapper::proceed()
 {
-    m_task->start();
+	m_task->start();
 }
 
 void TaskStepWrapper::updateFinished()
 {
-    if (m_task->wasSuccessful()) {
-        m_task.reset();
-        emitSucceeded();
-    } else {
-        QString reason = tr("Instance update failed because: %1\n\n").arg(m_task->failReason());
-        m_task.reset();
-        emit logLine(reason, MessageLevel::Fatal);
-        emitFailed(reason);
-    }
+	if (m_task->wasSuccessful())
+	{
+		m_task.reset();
+		emitSucceeded();
+	}
+	else
+	{
+		QString reason = tr("Instance update failed because: %1\n\n").arg(m_task->failReason());
+		m_task.reset();
+		emit logLine(reason, MessageLevel::Fatal);
+		emitFailed(reason);
+	}
 }
 
 bool TaskStepWrapper::canAbort() const
 {
-    if (m_task) {
-        return m_task->canAbort();
-    }
-    return true;
+	if (m_task)
+	{
+		return m_task->canAbort();
+	}
+	return true;
 }
 
 bool TaskStepWrapper::abort()
 {
-    if (m_task && m_task->canAbort()) {
-        auto status = m_task->abort();
-        emitFailed("Aborted.");
-        return status;
-    }
-    return Task::abort();
+	if (m_task && m_task->canAbort())
+	{
+		auto status = m_task->abort();
+		emitFailed("Aborted.");
+		return status;
+	}
+	return Task::abort();
 }

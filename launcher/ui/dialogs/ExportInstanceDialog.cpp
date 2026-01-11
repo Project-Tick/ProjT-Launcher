@@ -82,134 +82,157 @@
 #include "SeparatorPrefixTree.h"
 
 ExportInstanceDialog::ExportInstanceDialog(InstancePtr instance, QWidget* parent)
-    : QDialog(parent), m_ui(new Ui::ExportInstanceDialog), m_instance(instance)
+	: QDialog(parent),
+	  m_ui(new Ui::ExportInstanceDialog),
+	  m_instance(instance)
 {
-    m_ui->setupUi(this);
-    auto model = new QFileSystemModel(this);
-    model->setIconProvider(&m_icons);
-    auto root = instance->instanceRoot();
-    m_proxyModel = new FileIgnoreProxy(root, this);
-    m_proxyModel->setSourceModel(model);
-    auto prefix = QDir(instance->instanceRoot()).relativeFilePath(instance->gameRoot());
-    for (auto path : { "logs", "crash-reports", ".cache", ".fabric", ".quilt" }) {
-        m_proxyModel->ignoreFilesWithPath().insert(FS::PathCombine(prefix, path));
-    }
-    m_proxyModel->ignoreFilesWithName().append({ ".DS_Store", "thumbs.db", "Thumbs.db" });
-    m_proxyModel->loadBlockedPathsFromFile(ignoreFileName());
+	m_ui->setupUi(this);
+	auto model = new QFileSystemModel(this);
+	model->setIconProvider(&m_icons);
+	auto root	 = instance->instanceRoot();
+	m_proxyModel = new FileIgnoreProxy(root, this);
+	m_proxyModel->setSourceModel(model);
+	auto prefix = QDir(instance->instanceRoot()).relativeFilePath(instance->gameRoot());
+	for (auto path : { "logs", "crash-reports", ".cache", ".fabric", ".quilt" })
+	{
+		m_proxyModel->ignoreFilesWithPath().insert(FS::PathCombine(prefix, path));
+	}
+	m_proxyModel->ignoreFilesWithName().append({ ".DS_Store", "thumbs.db", "Thumbs.db" });
+	m_proxyModel->loadBlockedPathsFromFile(ignoreFileName());
 
-    m_ui->treeView->setModel(m_proxyModel);
-    m_ui->treeView->setRootIndex(m_proxyModel->mapFromSource(model->index(root)));
-    m_ui->treeView->sortByColumn(0, Qt::AscendingOrder);
+	m_ui->treeView->setModel(m_proxyModel);
+	m_ui->treeView->setRootIndex(m_proxyModel->mapFromSource(model->index(root)));
+	m_ui->treeView->sortByColumn(0, Qt::AscendingOrder);
 
-    connect(m_proxyModel, &QAbstractItemModel::rowsInserted, this, &ExportInstanceDialog::rowsInserted);
+	connect(m_proxyModel, &QAbstractItemModel::rowsInserted, this, &ExportInstanceDialog::rowsInserted);
 
-    model->setFilter(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::AllDirs | QDir::Hidden);
-    model->setRootPath(root);
-    auto headerView = m_ui->treeView->header();
-    headerView->setSectionResizeMode(QHeaderView::ResizeToContents);
-    headerView->setSectionResizeMode(0, QHeaderView::Stretch);
+	model->setFilter(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::AllDirs | QDir::Hidden);
+	model->setRootPath(root);
+	auto headerView = m_ui->treeView->header();
+	headerView->setSectionResizeMode(QHeaderView::ResizeToContents);
+	headerView->setSectionResizeMode(0, QHeaderView::Stretch);
 
-    m_ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
-    m_ui->buttonBox->button(QDialogButtonBox::Ok)->setText(tr("OK"));
+	m_ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
+	m_ui->buttonBox->button(QDialogButtonBox::Ok)->setText(tr("OK"));
 }
 
 ExportInstanceDialog::~ExportInstanceDialog()
 {
-    delete m_ui;
+	delete m_ui;
 }
 
 /// Save icon to instance's folder is needed
 void SaveIcon(InstancePtr m_instance)
 {
-    auto iconKey = m_instance->iconKey();
-    auto iconList = APPLICATION->icons();
-    auto mmcIcon = iconList->icon(iconKey);
-    if (!mmcIcon || mmcIcon->isBuiltIn()) {
-        return;
-    }
-    auto path = mmcIcon->getFilePath();
-    if (!path.isNull()) {
-        QFileInfo inInfo(path);
-        FS::copy(path, FS::PathCombine(m_instance->instanceRoot(), inInfo.fileName()))();
-        return;
-    }
-    auto& image = mmcIcon->m_images[mmcIcon->type()];
-    auto& icon = image.icon;
-    auto sizes = icon.availableSizes();
-    if (sizes.size() == 0) {
-        return;
-    }
-    auto areaOf = [](QSize size) { return size.width() * size.height(); };
-    QSize largest = sizes[0];
-    // find variant with largest area
-    for (auto size : sizes) {
-        if (areaOf(largest) < areaOf(size)) {
-            largest = size;
-        }
-    }
-    auto pixmap = icon.pixmap(largest);
-    pixmap.save(FS::PathCombine(m_instance->instanceRoot(), iconKey + ".png"));
+	auto iconKey  = m_instance->iconKey();
+	auto iconList = APPLICATION->icons();
+	auto mmcIcon  = iconList->icon(iconKey);
+	if (!mmcIcon || mmcIcon->isBuiltIn())
+	{
+		return;
+	}
+	auto path = mmcIcon->getFilePath();
+	if (!path.isNull())
+	{
+		QFileInfo inInfo(path);
+		FS::copy(path, FS::PathCombine(m_instance->instanceRoot(), inInfo.fileName()))();
+		return;
+	}
+	auto& image = mmcIcon->m_images[mmcIcon->type()];
+	auto& icon	= image.icon;
+	auto sizes	= icon.availableSizes();
+	if (sizes.size() == 0)
+	{
+		return;
+	}
+	auto areaOf	  = [](QSize size) { return size.width() * size.height(); };
+	QSize largest = sizes[0];
+	// find variant with largest area
+	for (auto size : sizes)
+	{
+		if (areaOf(largest) < areaOf(size))
+		{
+			largest = size;
+		}
+	}
+	auto pixmap = icon.pixmap(largest);
+	pixmap.save(FS::PathCombine(m_instance->instanceRoot(), iconKey + ".png"));
 }
 
 void ExportInstanceDialog::doExport()
 {
-    auto name = FS::RemoveInvalidFilenameChars(m_instance->name());
+	auto name = FS::RemoveInvalidFilenameChars(m_instance->name());
 
-    const QString output = QFileDialog::getSaveFileName(this, tr("Export %1").arg(m_instance->name()),
-                                                        FS::PathCombine(QDir::homePath(), name + ".zip"), "Zip (*.zip)", nullptr);
-    if (output.isEmpty()) {
-        QDialog::done(QDialog::Rejected);
-        return;
-    }
+	const QString output = QFileDialog::getSaveFileName(this,
+														tr("Export %1").arg(m_instance->name()),
+														FS::PathCombine(QDir::homePath(), name + ".zip"),
+														"Zip (*.zip)",
+														nullptr);
+	if (output.isEmpty())
+	{
+		QDialog::done(QDialog::Rejected);
+		return;
+	}
 
-    SaveIcon(m_instance);
+	SaveIcon(m_instance);
 
-    auto files = QFileInfoList();
-    if (!MMCZip::collectFileListRecursively(m_instance->instanceRoot(), nullptr, &files,
-                                            std::bind(&FileIgnoreProxy::filterFile, m_proxyModel, std::placeholders::_1))) {
-        QMessageBox::warning(this, tr("Error"), tr("Unable to export instance"));
-        QDialog::done(QDialog::Rejected);
-        return;
-    }
+	auto files = QFileInfoList();
+	if (!MMCZip::collectFileListRecursively(
+			m_instance->instanceRoot(),
+			nullptr,
+			&files,
+			std::bind(&FileIgnoreProxy::filterFile, m_proxyModel, std::placeholders::_1)))
+	{
+		QMessageBox::warning(this, tr("Error"), tr("Unable to export instance"));
+		QDialog::done(QDialog::Rejected);
+		return;
+	}
 
-    auto task = makeShared<MMCZip::ExportToZipTask>(output, m_instance->instanceRoot(), files, "", true, true);
+	auto task = makeShared<MMCZip::ExportToZipTask>(output, m_instance->instanceRoot(), files, "", true, true);
 
-    connect(task.get(), &Task::failed, this,
-            [this, output](QString reason) { CustomMessageBox::selectable(this, tr("Error"), reason, QMessageBox::Critical)->show(); });
-    connect(task.get(), &Task::finished, this, [task] { task->deleteLater(); });
+	connect(task.get(),
+			&Task::failed,
+			this,
+			[this, output](QString reason)
+			{ CustomMessageBox::selectable(this, tr("Error"), reason, QMessageBox::Critical)->show(); });
+	connect(task.get(), &Task::finished, this, [task] { task->deleteLater(); });
 
-    ProgressDialog progress(this);
-    progress.setSkipButton(true, tr("Abort"));
-    auto result = progress.execWithTask(task.get());
-    QDialog::done(result);
+	ProgressDialog progress(this);
+	progress.setSkipButton(true, tr("Abort"));
+	auto result = progress.execWithTask(task.get());
+	QDialog::done(result);
 }
 
 void ExportInstanceDialog::done(int result)
 {
-    m_proxyModel->saveBlockedPathsToFile(ignoreFileName());
-    if (result == QDialog::Accepted) {
-        doExport();
-        return;
-    }
-    QDialog::done(result);
+	m_proxyModel->saveBlockedPathsToFile(ignoreFileName());
+	if (result == QDialog::Accepted)
+	{
+		doExport();
+		return;
+	}
+	QDialog::done(result);
 }
 
 void ExportInstanceDialog::rowsInserted(QModelIndex parent, int top, int bottom)
 {
-    // WARNING: possible off-by-one?
-    for (int i = top; i < bottom; i++) {
-        auto node = m_proxyModel->index(i, 0, parent);
-        if (m_proxyModel->shouldExpand(node)) {
-            auto expNode = node.parent();
-            if (!expNode.isValid()) {
-                continue;
-            }
-            m_ui->treeView->expand(node);
-        }
-    }
+	// WARNING: possible off-by-one?
+	for (int i = top; i < bottom; i++)
+	{
+		auto node = m_proxyModel->index(i, 0, parent);
+		if (m_proxyModel->shouldExpand(node))
+		{
+			auto expNode = node.parent();
+			if (!expNode.isValid())
+			{
+				continue;
+			}
+			m_ui->treeView->expand(node);
+		}
+	}
 }
 
 QString ExportInstanceDialog::ignoreFileName()
 {
-    return FS::PathCombine(m_instance->instanceRoot(), ".packignore");
+	return FS::PathCombine(m_instance->instanceRoot(), ".packignore");
 }

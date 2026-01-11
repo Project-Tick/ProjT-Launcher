@@ -72,85 +72,95 @@
 
 class MinecraftInstance;
 
-namespace Ui {
-class ModFilterWidget;
+namespace Ui
+{
+	class ModFilterWidget;
 }
 
-class ModFilterWidget : public QTabWidget {
-    Q_OBJECT
-   public:
-    struct Filter {
-        std::list<Version> versions;
-        std::list<ModPlatform::IndexedVersionType> releases;
-        ModPlatform::ModLoaderTypes loaders;
-        ModPlatform::Side side;
-        bool hideInstalled;
-        QStringList categoryIds;
-        bool openSource;
+class ModFilterWidget : public QTabWidget
+{
+	Q_OBJECT
+  public:
+	struct Filter
+	{
+		std::list<Version> versions;
+		std::list<ModPlatform::IndexedVersionType> releases;
+		ModPlatform::ModLoaderTypes loaders;
+		ModPlatform::Side side;
+		bool hideInstalled;
+		QStringList categoryIds;
+		bool openSource;
 
-        bool operator==(const Filter& other) const
-        {
-            return hideInstalled == other.hideInstalled && side == other.side && loaders == other.loaders && versions == other.versions &&
-                   releases == other.releases && categoryIds == other.categoryIds && openSource == other.openSource;
-        }
-        bool operator!=(const Filter& other) const { return !(*this == other); }
+		bool operator==(const Filter& other) const
+		{
+			return hideInstalled == other.hideInstalled && side == other.side && loaders == other.loaders
+				&& versions == other.versions && releases == other.releases && categoryIds == other.categoryIds
+				&& openSource == other.openSource;
+		}
+		bool operator!=(const Filter& other) const
+		{
+			return !(*this == other);
+		}
 
-        bool checkMcVersions(QStringList value)
-        {
-            for (auto mcVersion : versions)
-                if (value.contains(mcVersion.toString()))
-                    return true;
+		bool checkMcVersions(QStringList value)
+		{
+			for (auto mcVersion : versions)
+				if (value.contains(mcVersion.toString()))
+					return true;
 
-            return versions.empty();
-        }
+			return versions.empty();
+		}
 
-        bool checkModpackFilters(const ModPlatform::IndexedVersion& v)
-        {
-            return ((!loaders || !v.loaders || loaders & v.loaders) &&  // loaders
-                    (releases.empty() ||                                // releases
-                     std::find(releases.cbegin(), releases.cend(), v.version_type) != releases.cend()) &&
-                    checkMcVersions({ v.mcVersion }));  // gameVersion}
-        }
-    };
+		bool checkModpackFilters(const ModPlatform::IndexedVersion& v)
+		{
+			return ((!loaders || !v.loaders || loaders & v.loaders) && // loaders
+					(releases.empty() ||							   // releases
+					 std::find(releases.cbegin(), releases.cend(), v.version_type) != releases.cend())
+					&& checkMcVersions({ v.mcVersion })); // gameVersion}
+		}
+	};
 
-    static std::unique_ptr<ModFilterWidget> create(MinecraftInstance* instance, bool extended);
-    virtual ~ModFilterWidget();
+	static std::unique_ptr<ModFilterWidget> create(MinecraftInstance* instance, bool extended);
+	virtual ~ModFilterWidget();
 
-    auto getFilter() -> std::shared_ptr<Filter>;
-    auto changed() const -> bool { return m_filter_changed; }
+	auto getFilter() -> std::shared_ptr<Filter>;
+	auto changed() const -> bool
+	{
+		return m_filter_changed;
+	}
 
-   signals:
-    void filterChanged();
+  signals:
+	void filterChanged();
 
-   public slots:
-    void setCategories(const QList<ModPlatform::Category>&);
+  public slots:
+	void setCategories(const QList<ModPlatform::Category>&);
 
-   private:
-    ModFilterWidget(MinecraftInstance* instance, bool extendedSupport);
+  private:
+	ModFilterWidget(MinecraftInstance* instance, bool extendedSupport);
 
-    void loadVersionList();
-    void prepareBasicFilter();
+	void loadVersionList();
+	void prepareBasicFilter();
 
-   private slots:
-    void onVersionFilterChanged(int);
-    void onVersionFilterTextChanged(const QString& version);
-    void onLoadersFilterChanged();
-    void onSideFilterChanged();
-    void onHideInstalledFilterChanged();
-    void onShowAllVersionsChanged();
-    void onOpenSourceFilterChanged();
-    void onReleaseFilterChanged();
-    void onShowMoreClicked();
+  private slots:
+	void onVersionFilterChanged(int);
+	void onVersionFilterTextChanged(const QString& version);
+	void onLoadersFilterChanged();
+	void onSideFilterChanged();
+	void onHideInstalledFilterChanged();
+	void onShowAllVersionsChanged();
+	void onOpenSourceFilterChanged();
+	void onReleaseFilterChanged();
+	void onShowMoreClicked();
 
-   private:
-    Ui::ModFilterWidget* ui;
+  private:
+	Ui::ModFilterWidget* ui;
 
-    MinecraftInstance* m_instance = nullptr;
-    std::shared_ptr<Filter> m_filter;
-    bool m_filter_changed = false;
+	MinecraftInstance* m_instance = nullptr;
+	std::shared_ptr<Filter> m_filter;
+	bool m_filter_changed = false;
 
-    Meta::VersionList::Ptr m_version_list;
-    VersionProxyModel* m_versions_proxy = nullptr;
+	Meta::VersionList::Ptr m_version_list;
+	VersionProxyModel* m_versions_proxy = nullptr;
 
-    QList<ModPlatform::Category> m_categories;
+	QList<ModPlatform::Category> m_categories;
 };

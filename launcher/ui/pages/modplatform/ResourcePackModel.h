@@ -37,31 +37,39 @@
 
 class Version;
 
-namespace ResourceDownload {
+namespace ResourceDownload
+{
 
-class ResourcePackResourceModel : public ResourceModel {
-    Q_OBJECT
+	class ResourcePackResourceModel : public ResourceModel
+	{
+		Q_OBJECT
 
-   public:
-    ResourcePackResourceModel(BaseInstance const&, ResourceAPI*, QString debugName, QString metaEntryBase);
+	  public:
+		ResourcePackResourceModel(BaseInstance const&, ResourceAPI*, QString debugName, QString metaEntryBase);
 
-    /* Ask the API for more information */
-    void searchWithTerm(const QString& term, unsigned int sort);
+		/* Ask the API for more information */
+		void searchWithTerm(const QString& term, unsigned int sort);
 
-    [[nodiscard]] QString debugName() const override { return m_debugName; }
-    [[nodiscard]] QString metaEntryBase() const override { return m_metaEntryBase; }
+		[[nodiscard]] QString debugName() const override
+		{
+			return m_debugName;
+		}
+		[[nodiscard]] QString metaEntryBase() const override
+		{
+			return m_metaEntryBase;
+		}
 
-   public slots:
-    ResourceAPI::SearchArgs createSearchArguments() override;
-    ResourceAPI::VersionSearchArgs createVersionsArguments(const QModelIndex&) override;
-    ResourceAPI::ProjectInfoArgs createInfoArguments(const QModelIndex&) override;
+	  public slots:
+		ResourceAPI::SearchArgs createSearchArguments() override;
+		ResourceAPI::VersionSearchArgs createVersionsArguments(const QModelIndex&) override;
+		ResourceAPI::ProjectInfoArgs createInfoArguments(const QModelIndex&) override;
 
-   protected:
-    const BaseInstance& m_base_instance;
+	  protected:
+		const BaseInstance& m_base_instance;
 
-   private:
-    QString m_debugName;
-    QString m_metaEntryBase;
-};
+	  private:
+		QString m_debugName;
+		QString m_metaEntryBase;
+	};
 
-}  // namespace ResourceDownload
+} // namespace ResourceDownload

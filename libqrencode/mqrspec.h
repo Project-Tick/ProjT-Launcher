@@ -142,9 +142,9 @@ extern unsigned char* MQRspec_newFrame(int version);
 /**
  * Mode indicator. See Table 2 in Appendix 1 of JIS X0510:2004, pp.107.
  */
-#define MQRSPEC_MODEID_NUM 0
-#define MQRSPEC_MODEID_AN 1
-#define MQRSPEC_MODEID_8 2
+#define MQRSPEC_MODEID_NUM	 0
+#define MQRSPEC_MODEID_AN	 1
+#define MQRSPEC_MODEID_8	 2
 #define MQRSPEC_MODEID_KANJI 3
 
 #endif /* MQRSPEC_H */

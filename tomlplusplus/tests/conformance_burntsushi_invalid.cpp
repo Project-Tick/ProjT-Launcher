@@ -323,15 +323,15 @@ key""" = 1)"sv;
 
 #endif // !TOML_LANG_UNRELEASED && UNICODE_LITERALS_OK
 
-	static constexpr auto local_date_mday_over	= R"(# date-mday       = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on
+	static constexpr auto local_date_mday_over	 = R"(# date-mday       = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on
 #                           ; month/year
 d = 2006-01-32)"sv;
-	static constexpr auto local_date_mday_under = R"(# date-mday       = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on
+	static constexpr auto local_date_mday_under	 = R"(# date-mday       = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on
 #                           ; month/year
 d = 2006-01-00)"sv;
-	static constexpr auto local_date_month_over = R"(# date-month      = 2DIGIT  ; 01-12
+	static constexpr auto local_date_month_over	 = R"(# date-month      = 2DIGIT  ; 01-12
 d = 2006-13-01)"sv;
-	static constexpr auto local_date_month_under		 = R"(# date-month      = 2DIGIT  ; 01-12
+	static constexpr auto local_date_month_under = R"(# date-month      = 2DIGIT  ; 01-12
 d = 2007-00-01)"sv;
 	static constexpr auto local_date_no_leads_with_milli = R"(# Day "5" instead of "05"; the leading zero is required.
 with-milli = 1987-07-5)"sv;
@@ -565,16 +565,16 @@ zyx = 42)"sv;
 zyx = 42)"sv;
 	static constexpr auto table_quoted_no_close				= R"(["where will it end]
 name = value)"sv;
-	static constexpr auto table_redefine		 = R"(# Define b as int, and try to use it as a table: error
+	static constexpr auto table_redefine					= R"(# Define b as int, and try to use it as a table: error
 [a]
 b = 1
 
 [a.b]
 c = 2)"sv;
-	static constexpr auto table_rrbrace			 = R"([[table] ])"sv;
-	static constexpr auto table_text_after_table = R"([error] this shouldn't be here)"sv;
-	static constexpr auto table_whitespace		 = R"([invalid key])"sv;
-	static constexpr auto table_with_pound		 = R"([key#group]
+	static constexpr auto table_rrbrace						= R"([[table] ])"sv;
+	static constexpr auto table_text_after_table			= R"([error] this shouldn't be here)"sv;
+	static constexpr auto table_whitespace					= R"([invalid key])"sv;
+	static constexpr auto table_with_pound					= R"([key#group]
 answer = 42)"sv;
 }
 

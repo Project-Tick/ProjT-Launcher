@@ -32,21 +32,23 @@
 #include <cstdio>
 #endif
 
-namespace console {
-
-inline bool isConsole()
+namespace console
 {
-#if defined Q_OS_WIN32
-    DWORD procIDs[2];
-    DWORD maxCount = 2;
-    DWORD result = GetConsoleProcessList((LPDWORD)procIDs, maxCount);
-    return result > 1;
-#else
-    if (isatty(fileno(stdout))) {
-        return true;
-    }
-    return false;
-#endif
-}
 
-}  // namespace console
+	inline bool isConsole()
+	{
+#if defined Q_OS_WIN32
+		DWORD procIDs[2];
+		DWORD maxCount = 2;
+		DWORD result   = GetConsoleProcessList((LPDWORD)procIDs, maxCount);
+		return result > 1;
+#else
+		if (isatty(fileno(stdout)))
+		{
+			return true;
+		}
+		return false;
+#endif
+	}
+
+} // namespace console

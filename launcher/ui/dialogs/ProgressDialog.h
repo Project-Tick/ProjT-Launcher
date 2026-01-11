@@ -70,57 +70,59 @@
 class Task;
 class SequentialTask;
 
-namespace Ui {
-class ProgressDialog;
+namespace Ui
+{
+	class ProgressDialog;
 }
 
-class ProgressDialog : public QDialog {
-    Q_OBJECT
+class ProgressDialog : public QDialog
+{
+	Q_OBJECT
 
-   public:
-    explicit ProgressDialog(QWidget* parent = 0);
-    ~ProgressDialog();
+  public:
+	explicit ProgressDialog(QWidget* parent = 0);
+	~ProgressDialog();
 
-    void updateSize(bool recenterParent = false);
+	void updateSize(bool recenterParent = false);
 
-    // Deprecated: Use unique_ptr overloads instead for better ownership semantics
-    [[deprecated("Use execWithTask(std::unique_ptr<Task>&&) instead")]] int execWithTask(Task* task);
+	// Deprecated: Use unique_ptr overloads instead for better ownership semantics
+	[[deprecated("Use execWithTask(std::unique_ptr<Task>&&) instead")]] int execWithTask(Task* task);
 
-    // Preferred: Takes ownership of the task
-    int execWithTask(std::unique_ptr<Task>&& task);
-    int execWithTask(std::unique_ptr<Task>& task);
+	// Preferred: Takes ownership of the task
+	int execWithTask(std::unique_ptr<Task>&& task);
+	int execWithTask(std::unique_ptr<Task>& task);
 
-    void setSkipButton(bool present, QString label = QString());
+	void setSkipButton(bool present, QString label = QString());
 
-    Task* getTask();
+	Task* getTask();
 
-   public slots:
-    void onTaskStarted();
-    void onTaskFailed(QString failure);
-    void onTaskSucceeded();
+  public slots:
+	void onTaskStarted();
+	void onTaskFailed(QString failure);
+	void onTaskSucceeded();
 
-    void changeStatus(const QString& status);
-    void changeProgress(qint64 current, qint64 total);
-    void changeStepProgress(TaskStepProgress const& task_progress);
+	void changeStatus(const QString& status);
+	void changeProgress(qint64 current, qint64 total);
+	void changeStepProgress(TaskStepProgress const& task_progress);
 
-   private slots:
-    void on_skipButton_clicked(bool checked);
+  private slots:
+	void on_skipButton_clicked(bool checked);
 
-   protected:
-    virtual void keyPressEvent(QKeyEvent* e);
-    virtual void closeEvent(QCloseEvent* e);
+  protected:
+	virtual void keyPressEvent(QKeyEvent* e);
+	virtual void closeEvent(QCloseEvent* e);
 
-   private:
-    bool handleImmediateResult(QDialog::DialogCode& result);
-    void addTaskProgress(TaskStepProgress const& progress);
+  private:
+	bool handleImmediateResult(QDialog::DialogCode& result);
+	void addTaskProgress(TaskStepProgress const& progress);
 
-   private:
-    Ui::ProgressDialog* ui;
+  private:
+	Ui::ProgressDialog* ui;
 
-    Task* m_task;
+	Task* m_task;
 
-    QList<QMetaObject::Connection> m_taskConnections;
+	QList<QMetaObject::Connection> m_taskConnections;
 
-    bool m_is_multi_step = false;
-    QHash<QUuid, SubTaskProgressBar*> taskProgress;
+	bool m_is_multi_step = false;
+	QHash<QUuid, SubTaskProgressBar*> taskProgress;
 };

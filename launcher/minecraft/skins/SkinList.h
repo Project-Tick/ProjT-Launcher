@@ -48,55 +48,66 @@
 #include "SkinModel.h"
 #include "minecraft/auth/MinecraftAccount.h"
 
-class SkinList : public QAbstractListModel {
-    Q_OBJECT
-   public:
-    explicit SkinList(QObject* parent, QString path, MinecraftAccountPtr acct);
-    virtual ~SkinList() { save(); };
+class SkinList : public QAbstractListModel
+{
+	Q_OBJECT
+  public:
+	explicit SkinList(QObject* parent, QString path, MinecraftAccountPtr acct);
+	virtual ~SkinList()
+	{
+		save();
+	};
 
-    int getSkinIndex(const QString& key) const;
+	int getSkinIndex(const QString& key) const;
 
-    virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    bool setData(const QModelIndex& idx, const QVariant& value, int role) override;
-    virtual int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+	virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+	bool setData(const QModelIndex& idx, const QVariant& value, int role) override;
+	virtual int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 
-    virtual QStringList mimeTypes() const override;
-    virtual Qt::DropActions supportedDropActions() const override;
-    virtual bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
-    virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
+	virtual QStringList mimeTypes() const override;
+	virtual Qt::DropActions supportedDropActions() const override;
+	virtual bool dropMimeData(const QMimeData* data,
+							  Qt::DropAction action,
+							  int row,
+							  int column,
+							  const QModelIndex& parent) override;
+	virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
 
-    bool deleteSkin(const QString& key, bool trash);
+	bool deleteSkin(const QString& key, bool trash);
 
-    void installSkins(const QStringList& iconFiles);
-    QString installSkin(const QString& file, const QString& name = {});
+	void installSkins(const QStringList& iconFiles);
+	QString installSkin(const QString& file, const QString& name = {});
 
-    const SkinModel* skin(const QString& key) const;
-    SkinModel* skin(const QString& key);
+	const SkinModel* skin(const QString& key) const;
+	SkinModel* skin(const QString& key);
 
-    void startWatching();
-    void stopWatching();
+	void startWatching();
+	void stopWatching();
 
-    QString getDir() const { return m_dir.absolutePath(); }
-    void save();
-    int getSelectedAccountSkin();
+	QString getDir() const
+	{
+		return m_dir.absolutePath();
+	}
+	void save();
+	int getSelectedAccountSkin();
 
-    void updateSkin(SkinModel* s);
+	void updateSkin(SkinModel* s);
 
-   private:
-    // hide copy constructor
-    SkinList(const SkinList&) = delete;
-    // hide assign op
-    SkinList& operator=(const SkinList&) = delete;
+  private:
+	// hide copy constructor
+	SkinList(const SkinList&) = delete;
+	// hide assign op
+	SkinList& operator=(const SkinList&) = delete;
 
-   protected slots:
-    void directoryChanged(const QString& path);
-    void fileChanged(const QString& path);
-    bool update();
+  protected slots:
+	void directoryChanged(const QString& path);
+	void fileChanged(const QString& path);
+	bool update();
 
-   private:
-    shared_qobject_ptr<QFileSystemWatcher> m_watcher;
-    bool m_isWatching;
-    QList<SkinModel> m_skinList;
-    QDir m_dir;
-    MinecraftAccountPtr m_acct;
+  private:
+	shared_qobject_ptr<QFileSystemWatcher> m_watcher;
+	bool m_isWatching;
+	QList<SkinModel> m_skinList;
+	QDir m_dir;
+	MinecraftAccountPtr m_acct;
 };

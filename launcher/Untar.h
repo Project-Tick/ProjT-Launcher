@@ -59,10 +59,12 @@
 
 // this is a hack used for the java downloader (feel free to remove it in favor of a library)
 // both extract functions will extract the first folder inside dest(disregarding the prefix)
-namespace Tar {
-bool extract(QIODevice* in, QString dst);
+namespace Tar
+{
+	bool extract(QIODevice* in, QString dst);
 }
 
-namespace GZTar {
-bool extract(QString src, QString dst);
+namespace GZTar
+{
+	bool extract(QString src, QString dst);
 }

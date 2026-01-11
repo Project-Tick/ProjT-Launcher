@@ -23,22 +23,23 @@
 
 class LanguageSelectionWidget;
 
-class LanguageWizardPage : public BaseWizardPage {
-    Q_OBJECT
-   public:
-    explicit LanguageWizardPage(QWidget* parent = Q_NULLPTR);
+class LanguageWizardPage : public BaseWizardPage
+{
+	Q_OBJECT
+  public:
+	explicit LanguageWizardPage(QWidget* parent = Q_NULLPTR);
 
-    virtual ~LanguageWizardPage();
+	virtual ~LanguageWizardPage();
 
-    bool wantsRefreshButton() override;
+	bool wantsRefreshButton() override;
 
-    void refresh() override;
+	void refresh() override;
 
-    bool validatePage() override;
+	bool validatePage() override;
 
-   protected:
-    void retranslate() override;
+  protected:
+	void retranslate() override;
 
-   private:
-    LanguageSelectionWidget* mainWidget = nullptr;
+  private:
+	LanguageSelectionWidget* mainWidget = nullptr;
 };

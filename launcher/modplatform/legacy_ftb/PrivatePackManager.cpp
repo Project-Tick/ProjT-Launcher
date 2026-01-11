@@ -61,33 +61,41 @@
 
 #include "FileSystem.h"
 
-namespace LegacyFTB {
-
-void PrivatePackManager::load()
+namespace LegacyFTB
 {
-    try {
-        auto foo = QString::fromUtf8(FS::read(m_filename)).split('\n', Qt::SkipEmptyParts);
-        currentPacks = QSet<QString>(foo.begin(), foo.end());
 
-        dirty = false;
-    } catch (...) {
-        currentPacks = {};
-        qWarning() << "Failed to read third party FTB pack codes from" << m_filename;
-    }
-}
+	void PrivatePackManager::load()
+	{
+		try
+		{
+			auto foo	 = QString::fromUtf8(FS::read(m_filename)).split('\n', Qt::SkipEmptyParts);
+			currentPacks = QSet<QString>(foo.begin(), foo.end());
 
-void PrivatePackManager::save() const
-{
-    if (!dirty) {
-        return;
-    }
-    try {
-        QStringList list = currentPacks.values();
-        FS::write(m_filename, list.join('\n').toUtf8());
-        dirty = false;
-    } catch (...) {
-        qWarning() << "Failed to write third party FTB pack codes to" << m_filename;
-    }
-}
+			dirty = false;
+		}
+		catch (...)
+		{
+			currentPacks = {};
+			qWarning() << "Failed to read third party FTB pack codes from" << m_filename;
+		}
+	}
 
-}  // namespace LegacyFTB
+	void PrivatePackManager::save() const
+	{
+		if (!dirty)
+		{
+			return;
+		}
+		try
+		{
+			QStringList list = currentPacks.values();
+			FS::write(m_filename, list.join('\n').toUtf8());
+			dirty = false;
+		}
+		catch (...)
+		{
+			qWarning() << "Failed to write third party FTB pack codes to" << m_filename;
+		}
+	}
+
+} // namespace LegacyFTB

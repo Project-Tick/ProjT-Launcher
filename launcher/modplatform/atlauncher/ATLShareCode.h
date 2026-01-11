@@ -44,26 +44,30 @@
 #include <QList>
 #include <QString>
 
-namespace ATLauncher {
+namespace ATLauncher
+{
 
-struct ShareCodeMod {
-    bool selected;
-    QString name;
-};
+	struct ShareCodeMod
+	{
+		bool selected;
+		QString name;
+	};
 
-struct ShareCode {
-    QString pack;
-    QString version;
-    QList<ShareCodeMod> mods;
-};
+	struct ShareCode
+	{
+		QString pack;
+		QString version;
+		QList<ShareCodeMod> mods;
+	};
 
-struct ShareCodeResponse {
-    bool error;
-    int code;
-    QString message;
-    ShareCode data;
-};
+	struct ShareCodeResponse
+	{
+		bool error;
+		int code;
+		QString message;
+		ShareCode data;
+	};
 
-void loadShareCodeResponse(ShareCodeResponse& r, QJsonObject& obj);
+	void loadShareCodeResponse(ShareCodeResponse& r, QJsonObject& obj);
 
-}  // namespace ATLauncher
+} // namespace ATLauncher

@@ -75,285 +75,323 @@
 #include "Application.h"
 #include "net/NetRequest.h"
 
-namespace {
-// Helper function to get standard asset directory structure
-struct AssetDirs {
-    QDir assets;
-    QDir indexes;
-    QDir objects;
-    QDir virtualDir;
-};
-
-AssetDirs getAssetDirectories()
+namespace
 {
-    AssetDirs dirs;
-    dirs.assets = QDir("assets/");
-    dirs.indexes = QDir(FS::PathCombine(dirs.assets.path(), "indexes"));
-    dirs.objects = QDir(FS::PathCombine(dirs.assets.path(), "objects"));
-    dirs.virtualDir = QDir(FS::PathCombine(dirs.assets.path(), "virtual"));
-    return dirs;
-}
+	// Helper function to get standard asset directory structure
+	struct AssetDirs
+	{
+		QDir assets;
+		QDir indexes;
+		QDir objects;
+		QDir virtualDir;
+	};
 
-QSet<QString> collectPathsFromDir(QString dirPath)
+	AssetDirs getAssetDirectories()
+	{
+		AssetDirs dirs;
+		dirs.assets		= QDir("assets/");
+		dirs.indexes	= QDir(FS::PathCombine(dirs.assets.path(), "indexes"));
+		dirs.objects	= QDir(FS::PathCombine(dirs.assets.path(), "objects"));
+		dirs.virtualDir = QDir(FS::PathCombine(dirs.assets.path(), "virtual"));
+		return dirs;
+	}
+
+	QSet<QString> collectPathsFromDir(QString dirPath)
+	{
+		QFileInfo dirInfo(dirPath);
+
+		if (!dirInfo.exists())
+		{
+			return {};
+		}
+
+		QSet<QString> out;
+
+		QDirIterator iter(dirPath, QDirIterator::Subdirectories);
+		while (iter.hasNext())
+		{
+			QString value = iter.next();
+			QFileInfo info(value);
+			if (info.isFile())
+			{
+				out.insert(value);
+				qDebug() << value;
+			}
+		}
+		return out;
+	}
+} // namespace
+
+namespace AssetsUtils
 {
-    QFileInfo dirInfo(dirPath);
 
-    if (!dirInfo.exists()) {
-        return {};
-    }
+	/*
+	 * Returns true on success, with index populated
+	 * index is undefined otherwise
+	 */
+	bool loadAssetsIndexJson(const QString& assetsId, const QString& path, AssetsIndex& index)
+	{
+		/*
+		{
+		  "objects": {
+			"icons/icon_16x16.png": {
+			  "hash": "bdf48ef6b5d0d23bbb02e17d04865216179f510a",
+			  "size": 3665
+			},
+			...
+			}
+		  }
+		}
+		*/
 
-    QSet<QString> out;
+		QFile file(path);
 
-    QDirIterator iter(dirPath, QDirIterator::Subdirectories);
-    while (iter.hasNext()) {
-        QString value = iter.next();
-        QFileInfo info(value);
-        if (info.isFile()) {
-            out.insert(value);
-            qDebug() << value;
-        }
-    }
-    return out;
-}
-}  // namespace
+		// Try to open the file and fail if we can't.
+		if (!file.open(QIODevice::ReadOnly))
+		{
+			qCritical() << "Failed to read assets index file" << path << ":" << file.errorString();
+			return false;
+		}
+		index.id = assetsId;
 
-namespace AssetsUtils {
+		// Read the file and close it.
+		QByteArray jsonData = file.readAll();
+		file.close();
 
-/*
- * Returns true on success, with index populated
- * index is undefined otherwise
- */
-bool loadAssetsIndexJson(const QString& assetsId, const QString& path, AssetsIndex& index)
-{
-    /*
-    {
-      "objects": {
-        "icons/icon_16x16.png": {
-          "hash": "bdf48ef6b5d0d23bbb02e17d04865216179f510a",
-          "size": 3665
-        },
-        ...
-        }
-      }
-    }
-    */
+		QJsonParseError parseError;
+		QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
 
-    QFile file(path);
+		// Fail if the JSON is invalid.
+		if (parseError.error != QJsonParseError::NoError)
+		{
+			qCritical() << "Failed to parse assets index file:" << parseError.errorString() << "at offset "
+						<< QString::number(parseError.offset);
+			return false;
+		}
 
-    // Try to open the file and fail if we can't.
-    if (!file.open(QIODevice::ReadOnly)) {
-        qCritical() << "Failed to read assets index file" << path << ":" << file.errorString();
-        return false;
-    }
-    index.id = assetsId;
+		// Make sure the root is an object.
+		if (!jsonDoc.isObject())
+		{
+			qCritical() << "Invalid assets index JSON: Root should be an array.";
+			return false;
+		}
 
-    // Read the file and close it.
-    QByteArray jsonData = file.readAll();
-    file.close();
+		QJsonObject root = jsonDoc.object();
 
-    QJsonParseError parseError;
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
+		QJsonValue isVirtual = root.value("virtual");
+		if (!isVirtual.isUndefined())
+		{
+			index.isVirtual = isVirtual.toBool(false);
+		}
 
-    // Fail if the JSON is invalid.
-    if (parseError.error != QJsonParseError::NoError) {
-        qCritical() << "Failed to parse assets index file:" << parseError.errorString() << "at offset "
-                    << QString::number(parseError.offset);
-        return false;
-    }
+		QJsonValue mapToResources = root.value("map_to_resources");
+		if (!mapToResources.isUndefined())
+		{
+			index.mapToResources = mapToResources.toBool(false);
+		}
 
-    // Make sure the root is an object.
-    if (!jsonDoc.isObject()) {
-        qCritical() << "Invalid assets index JSON: Root should be an array.";
-        return false;
-    }
+		QJsonValue objects = root.value("objects");
+		QVariantMap map	   = objects.toVariant().toMap();
 
-    QJsonObject root = jsonDoc.object();
+		for (QVariantMap::const_iterator iter = map.begin(); iter != map.end(); ++iter)
+		{
+			// qDebug() << iter.key();
 
-    QJsonValue isVirtual = root.value("virtual");
-    if (!isVirtual.isUndefined()) {
-        index.isVirtual = isVirtual.toBool(false);
-    }
+			QVariant variant		   = iter.value();
+			QVariantMap nested_objects = variant.toMap();
 
-    QJsonValue mapToResources = root.value("map_to_resources");
-    if (!mapToResources.isUndefined()) {
-        index.mapToResources = mapToResources.toBool(false);
-    }
+			AssetObject object;
 
-    QJsonValue objects = root.value("objects");
-    QVariantMap map = objects.toVariant().toMap();
+			for (QVariantMap::const_iterator nested_iter = nested_objects.begin(); nested_iter != nested_objects.end();
+				 ++nested_iter)
+			{
+				// qDebug() << nested_iter.key() << nested_iter.value().toString();
+				QString key	   = nested_iter.key();
+				QVariant value = nested_iter.value();
 
-    for (QVariantMap::const_iterator iter = map.begin(); iter != map.end(); ++iter) {
-        // qDebug() << iter.key();
+				if (key == "hash")
+				{
+					object.hash = value.toString();
+				}
+				else if (key == "size")
+				{
+					object.size = value.toLongLong();
+				}
+			}
 
-        QVariant variant = iter.value();
-        QVariantMap nested_objects = variant.toMap();
+			index.objects.insert(iter.key(), object);
+		}
 
-        AssetObject object;
+		return true;
+	}
 
-        for (QVariantMap::const_iterator nested_iter = nested_objects.begin(); nested_iter != nested_objects.end(); ++nested_iter) {
-            // qDebug() << nested_iter.key() << nested_iter.value().toString();
-            QString key = nested_iter.key();
-            QVariant value = nested_iter.value();
+	QDir getAssetsDir(const QString& assetsId, const QString& resourcesFolder)
+	{
+		auto dirs		= getAssetDirectories();
+		QDir indexDir	= dirs.indexes;
+		QDir objectDir	= dirs.objects;
+		QDir virtualDir = dirs.virtualDir;
 
-            if (key == "hash") {
-                object.hash = value.toString();
-            } else if (key == "size") {
-                object.size = value.toLongLong();
-            }
-        }
+		QString indexPath = FS::PathCombine(indexDir.path(), assetsId + ".json");
+		QFile indexFile(indexPath);
+		QDir virtualRoot(FS::PathCombine(virtualDir.path(), assetsId));
 
-        index.objects.insert(iter.key(), object);
-    }
+		if (!indexFile.exists())
+		{
+			qCritical() << "No assets index file" << indexPath << "; can't determine assets path!";
+			return virtualRoot;
+		}
 
-    return true;
-}
+		AssetsIndex index;
+		if (!AssetsUtils::loadAssetsIndexJson(assetsId, indexPath, index))
+		{
+			qCritical() << "Failed to load asset index file" << indexPath << "; can't determine assets path!";
+			return virtualRoot;
+		}
 
-QDir getAssetsDir(const QString& assetsId, const QString& resourcesFolder)
-{
-    auto dirs = getAssetDirectories();
-    QDir indexDir = dirs.indexes;
-    QDir objectDir = dirs.objects;
-    QDir virtualDir = dirs.virtualDir;
+		QString targetPath;
+		if (index.isVirtual)
+		{
+			return virtualRoot;
+		}
+		else if (index.mapToResources)
+		{
+			return QDir(resourcesFolder);
+		}
+		return virtualRoot;
+	}
 
-    QString indexPath = FS::PathCombine(indexDir.path(), assetsId + ".json");
-    QFile indexFile(indexPath);
-    QDir virtualRoot(FS::PathCombine(virtualDir.path(), assetsId));
+	bool reconstructAssets(QString assetsId, QString resourcesFolder)
+	{
+		auto dirs		= getAssetDirectories();
+		QDir indexDir	= dirs.indexes;
+		QDir objectDir	= dirs.objects;
+		QDir virtualDir = QDir(FS::PathCombine(dirs.assets.path(), "virtual"));
 
-    if (!indexFile.exists()) {
-        qCritical() << "No assets index file" << indexPath << "; can't determine assets path!";
-        return virtualRoot;
-    }
+		QString indexPath = FS::PathCombine(indexDir.path(), assetsId + ".json");
+		QFile indexFile(indexPath);
+		QDir virtualRoot(FS::PathCombine(virtualDir.path(), assetsId));
 
-    AssetsIndex index;
-    if (!AssetsUtils::loadAssetsIndexJson(assetsId, indexPath, index)) {
-        qCritical() << "Failed to load asset index file" << indexPath << "; can't determine assets path!";
-        return virtualRoot;
-    }
+		if (!indexFile.exists())
+		{
+			qCritical() << "No assets index file" << indexPath << "; can't reconstruct assets!";
+			return false;
+		}
 
-    QString targetPath;
-    if (index.isVirtual) {
-        return virtualRoot;
-    } else if (index.mapToResources) {
-        return QDir(resourcesFolder);
-    }
-    return virtualRoot;
-}
+		qDebug() << "reconstructAssets" << dirs.assets.path() << indexDir.path() << objectDir.path()
+				 << virtualDir.path() << virtualRoot.path();
 
-bool reconstructAssets(QString assetsId, QString resourcesFolder)
-{
-    auto dirs = getAssetDirectories();
-    QDir indexDir = dirs.indexes;
-    QDir objectDir = dirs.objects;
-    QDir virtualDir = QDir(FS::PathCombine(dirs.assets.path(), "virtual"));
+		AssetsIndex index;
+		if (!AssetsUtils::loadAssetsIndexJson(assetsId, indexPath, index))
+		{
+			qCritical() << "Failed to load asset index file" << indexPath << "; can't reconstruct assets!";
+			return false;
+		}
 
-    QString indexPath = FS::PathCombine(indexDir.path(), assetsId + ".json");
-    QFile indexFile(indexPath);
-    QDir virtualRoot(FS::PathCombine(virtualDir.path(), assetsId));
+		QString targetPath;
+		bool removeLeftovers = false;
+		if (index.isVirtual)
+		{
+			targetPath		= virtualRoot.path();
+			removeLeftovers = true;
+			qDebug() << "Reconstructing virtual assets folder at" << targetPath;
+		}
+		else if (index.mapToResources)
+		{
+			targetPath = resourcesFolder;
+			qDebug() << "Reconstructing resources folder at" << targetPath;
+		}
 
-    if (!indexFile.exists()) {
-        qCritical() << "No assets index file" << indexPath << "; can't reconstruct assets!";
-        return false;
-    }
+		if (!targetPath.isNull())
+		{
+			auto presentFiles = collectPathsFromDir(targetPath);
+			for (QString map : index.objects.keys())
+			{
+				AssetObject asset_object = index.objects.value(map);
+				QString target_path		 = FS::PathCombine(targetPath, map);
+				QFile target(target_path);
 
-    qDebug() << "reconstructAssets" << dirs.assets.path() << indexDir.path() << objectDir.path() << virtualDir.path() << virtualRoot.path();
+				QString tlk = asset_object.hash.left(2);
 
-    AssetsIndex index;
-    if (!AssetsUtils::loadAssetsIndexJson(assetsId, indexPath, index)) {
-        qCritical() << "Failed to load asset index file" << indexPath << "; can't reconstruct assets!";
-        return false;
-    }
+				QString original_path = FS::PathCombine(objectDir.path(), tlk, asset_object.hash);
+				QFile original(original_path);
+				if (!original.exists())
+					continue;
 
-    QString targetPath;
-    bool removeLeftovers = false;
-    if (index.isVirtual) {
-        targetPath = virtualRoot.path();
-        removeLeftovers = true;
-        qDebug() << "Reconstructing virtual assets folder at" << targetPath;
-    } else if (index.mapToResources) {
-        targetPath = resourcesFolder;
-        qDebug() << "Reconstructing resources folder at" << targetPath;
-    }
+				presentFiles.remove(target_path);
 
-    if (!targetPath.isNull()) {
-        auto presentFiles = collectPathsFromDir(targetPath);
-        for (QString map : index.objects.keys()) {
-            AssetObject asset_object = index.objects.value(map);
-            QString target_path = FS::PathCombine(targetPath, map);
-            QFile target(target_path);
+				if (!target.exists())
+				{
+					QFileInfo info(target_path);
+					QDir target_dir = info.dir();
 
-            QString tlk = asset_object.hash.left(2);
+					qDebug() << target_dir.path();
+					FS::ensureFolderPathExists(target_dir.path());
 
-            QString original_path = FS::PathCombine(objectDir.path(), tlk, asset_object.hash);
-            QFile original(original_path);
-            if (!original.exists())
-                continue;
+					bool couldCopy = original.copy(target_path);
+					qDebug() << " Copying" << original_path << "to" << target_path << QString::number(couldCopy);
+				}
+			}
 
-            presentFiles.remove(target_path);
+			// Consider adding a function to update the .lastused file with the current timestamp for asset usage
+			// tracking.
+			if (removeLeftovers)
+			{
+				for (auto& file : presentFiles)
+				{
+					qDebug() << "Would remove" << file;
+				}
+			}
+		}
+		return true;
+	}
 
-            if (!target.exists()) {
-                QFileInfo info(target_path);
-                QDir target_dir = info.dir();
-
-                qDebug() << target_dir.path();
-                FS::ensureFolderPathExists(target_dir.path());
-
-                bool couldCopy = original.copy(target_path);
-                qDebug() << " Copying" << original_path << "to" << target_path << QString::number(couldCopy);
-            }
-        }
-
-        // Consider adding a function to update the .lastused file with the current timestamp for asset usage tracking.
-        if (removeLeftovers) {
-            for (auto& file : presentFiles) {
-                qDebug() << "Would remove" << file;
-            }
-        }
-    }
-    return true;
-}
-
-}  // namespace AssetsUtils
+} // namespace AssetsUtils
 
 Net::NetRequest::Ptr AssetObject::getDownloadAction()
 {
-    QFileInfo objectFile(getLocalPath());
-    if ((!objectFile.isFile()) || (objectFile.size() != size)) {
-        auto objectDL = Net::ApiDownload::makeFile(getUrl(), objectFile.filePath());
-        if (hash.size()) {
-            objectDL->addValidator(new Net::ChecksumValidator(QCryptographicHash::Sha1, hash));
-        }
-        objectDL->setProgress(objectDL->getProgress(), size);
-        return objectDL;
-    }
-    return nullptr;
+	QFileInfo objectFile(getLocalPath());
+	if ((!objectFile.isFile()) || (objectFile.size() != size))
+	{
+		auto objectDL = Net::ApiDownload::makeFile(getUrl(), objectFile.filePath());
+		if (hash.size())
+		{
+			objectDL->addValidator(new Net::ChecksumValidator(QCryptographicHash::Sha1, hash));
+		}
+		objectDL->setProgress(objectDL->getProgress(), size);
+		return objectDL;
+	}
+	return nullptr;
 }
 
 QString AssetObject::getLocalPath()
 {
-    return "assets/objects/" + getRelPath();
+	return "assets/objects/" + getRelPath();
 }
 
 QUrl AssetObject::getUrl()
 {
-    auto resourceURL = APPLICATION->settings()->get("ResourceURL").toString();
-    return resourceURL + getRelPath();
+	auto resourceURL = APPLICATION->settings()->get("ResourceURL").toString();
+	return resourceURL + getRelPath();
 }
 
 QString AssetObject::getRelPath()
 {
-    return hash.left(2) + "/" + hash;
+	return hash.left(2) + "/" + hash;
 }
 
 NetJob::Ptr AssetsIndex::getDownloadJob()
 {
-    auto job = makeShared<NetJob>(QObject::tr("Assets for %1").arg(id), APPLICATION->network());
-    for (auto& object : objects.values()) {
-        auto dl = object.getDownloadAction();
-        if (dl) {
-            job->addNetAction(dl);
-        }
-    }
-    if (job->size())
-        return job;
-    return nullptr;
+	auto job = makeShared<NetJob>(QObject::tr("Assets for %1").arg(id), APPLICATION->network());
+	for (auto& object : objects.values())
+	{
+		auto dl = object.getDownloadAction();
+		if (dl)
+		{
+			job->addNetAction(dl);
+		}
+	}
+	if (job->size())
+		return job;
+	return nullptr;
 }

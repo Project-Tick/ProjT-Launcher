@@ -47,29 +47,31 @@
 #include "ui/widgets/FastFileIconProvider.h"
 #include "ui/widgets/FileIgnoreProxy.h"
 
-namespace Ui {
-class ExportPackDialog;
+namespace Ui
+{
+	class ExportPackDialog;
 }
 
-class ExportPackDialog : public QDialog {
-    Q_OBJECT
+class ExportPackDialog : public QDialog
+{
+	Q_OBJECT
 
-   public:
-    explicit ExportPackDialog(MinecraftInstancePtr instance,
-                              QWidget* parent = nullptr,
-                              ModPlatform::ResourceProvider provider = ModPlatform::ResourceProvider::MODRINTH);
-    ~ExportPackDialog();
+  public:
+	explicit ExportPackDialog(MinecraftInstancePtr instance,
+							  QWidget* parent						 = nullptr,
+							  ModPlatform::ResourceProvider provider = ModPlatform::ResourceProvider::MODRINTH);
+	~ExportPackDialog();
 
-    void done(int result) override;
-    void validate();
+	void done(int result) override;
+	void validate();
 
-   private:
-    QString ignoreFileName();
+  private:
+	QString ignoreFileName();
 
-   private:
-    const MinecraftInstancePtr m_instance;
-    Ui::ExportPackDialog* m_ui;
-    FileIgnoreProxy* m_proxy;
-    FastFileIconProvider m_icons;
-    const ModPlatform::ResourceProvider m_provider;
+  private:
+	const MinecraftInstancePtr m_instance;
+	Ui::ExportPackDialog* m_ui;
+	FileIgnoreProxy* m_proxy;
+	FastFileIconProvider m_icons;
+	const ModPlatform::ResourceProvider m_provider;
 };

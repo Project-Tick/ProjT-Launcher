@@ -32,38 +32,49 @@
 #include "ui/pages/modplatform/TexturePackModel.h"
 #include "ui_ResourcePage.h"
 
-namespace Ui {
-class ResourcePage;
+namespace Ui
+{
+	class ResourcePage;
 }
 
-namespace ResourceDownload {
+namespace ResourceDownload
+{
 
-class TexturePackDownloadDialog;
+	class TexturePackDownloadDialog;
 
-class TexturePackResourcePage : public ResourcePackResourcePage {
-    Q_OBJECT
+	class TexturePackResourcePage : public ResourcePackResourcePage
+	{
+		Q_OBJECT
 
-   public:
-    template <typename T>
-    static T* create(TexturePackDownloadDialog* dialog, BaseInstance& instance)
-    {
-        auto page = new T(dialog, instance);
-        auto model = static_cast<TexturePackResourceModel*>(page->getModel());
+	  public:
+		template <typename T>
+		static T* create(TexturePackDownloadDialog* dialog, BaseInstance& instance)
+		{
+			auto page  = new T(dialog, instance);
+			auto model = static_cast<TexturePackResourceModel*>(page->getModel());
 
-        connect(model, &ResourceModel::versionListUpdated, page, &ResourcePage::versionListUpdated);
-        connect(model, &ResourceModel::projectInfoUpdated, page, &ResourcePage::updateUi);
-        connect(model, &QAbstractListModel::modelReset, page, &ResourcePage::modelReset);
+			connect(model, &ResourceModel::versionListUpdated, page, &ResourcePage::versionListUpdated);
+			connect(model, &ResourceModel::projectInfoUpdated, page, &ResourcePage::updateUi);
+			connect(model, &QAbstractListModel::modelReset, page, &ResourcePage::modelReset);
 
-        return page;
-    }
+			return page;
+		}
 
-    //: The plural version of 'texture pack'
-    inline QString resourcesString() const override { return tr("texture packs"); }
-    //: The singular version of 'texture packs'
-    inline QString resourceString() const override { return tr("texture pack"); }
+		//: The plural version of 'texture pack'
+		inline QString resourcesString() const override
+		{
+			return tr("texture packs");
+		}
+		//: The singular version of 'texture packs'
+		inline QString resourceString() const override
+		{
+			return tr("texture pack");
+		}
 
-   protected:
-    TexturePackResourcePage(TexturePackDownloadDialog* dialog, BaseInstance& instance) : ResourcePackResourcePage(dialog, instance) {}
-};
+	  protected:
+		TexturePackResourcePage(TexturePackDownloadDialog* dialog, BaseInstance& instance)
+			: ResourcePackResourcePage(dialog, instance)
+		{}
+	};
 
-}  // namespace ResourceDownload
+} // namespace ResourceDownload

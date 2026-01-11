@@ -44,12 +44,12 @@
 
 void ShaderPack::setPackFormat(ShaderPackFormat new_format)
 {
-    QMutexLocker locker(&m_data_lock);
+	QMutexLocker locker(&m_data_lock);
 
-    m_pack_format = new_format;
+	m_pack_format = new_format;
 }
 
 bool ShaderPack::valid() const
 {
-    return m_pack_format != ShaderPackFormat::INVALID;
+	return m_pack_format != ShaderPackFormat::INVALID;
 }

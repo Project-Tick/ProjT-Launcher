@@ -74,140 +74,160 @@ class MinecraftInstance;
 struct PackProfileData;
 class ComponentUpdateTask;
 
-class PackProfile : public QAbstractListModel {
-    Q_OBJECT
-    friend ComponentUpdateTask;
+class PackProfile : public QAbstractListModel
+{
+	Q_OBJECT
+	friend ComponentUpdateTask;
 
-   public:
-    enum Columns { NameColumn = 0, VersionColumn, NUM_COLUMNS };
+  public:
+	enum Columns
+	{
+		NameColumn = 0,
+		VersionColumn,
+		NUM_COLUMNS
+	};
 
-    struct Result {
-        bool success;
-        QString error;
-        bool changed = true;
+	struct Result
+	{
+		bool success;
+		QString error;
+		bool changed = true;
 
-        // Implicit conversion to bool
-        operator bool() const { return success; }
+		// Implicit conversion to bool
+		operator bool() const
+		{
+			return success;
+		}
 
-        // Factory methods for convenience
-        static Result Success(bool changed = true) { return { true, "", changed }; }
+		// Factory methods for convenience
+		static Result Success(bool changed = true)
+		{
+			return { true, "", changed };
+		}
 
-        static Result Error(const QString& errorMessage) { return { false, errorMessage, false }; }
-    };
+		static Result Error(const QString& errorMessage)
+		{
+			return { false, errorMessage, false };
+		}
+	};
 
-    explicit PackProfile(MinecraftInstance* instance);
-    virtual ~PackProfile();
+	explicit PackProfile(MinecraftInstance* instance);
+	virtual ~PackProfile();
 
-    virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    virtual bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
-    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-    virtual int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-    virtual int columnCount(const QModelIndex& parent) const override;
-    virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
+	virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+	virtual bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
+	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+	virtual int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+	virtual int columnCount(const QModelIndex& parent) const override;
+	virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
 
-    /// call this to explicitly mark the component list as loaded - this is used to build a new component list from scratch.
-    void buildingFromScratch();
+	/// call this to explicitly mark the component list as loaded - this is used to build a new component list from scratch.
+	void buildingFromScratch();
 
-    /// install more jar mods
-    void installJarMods(QStringList selectedFiles);
+	/// install more jar mods
+	void installJarMods(QStringList selectedFiles);
 
-    /// install a jar/zip as a replacement for the main jar
-    void installCustomJar(QString selectedFile);
+	/// install a jar/zip as a replacement for the main jar
+	void installCustomJar(QString selectedFile);
 
-    /// install MMC/Prism component files
-    bool installComponents(QStringList selectedFiles);
+	/// install MMC/Prism component files
+	bool installComponents(QStringList selectedFiles);
 
-    /// install Java agent files
-    void installAgents(QStringList selectedFiles);
+	/// install Java agent files
+	void installAgents(QStringList selectedFiles);
 
-    enum MoveDirection { MoveUp, MoveDown };
-    /// move component file # up or down the list
-    void move(int index, MoveDirection direction);
+	enum MoveDirection
+	{
+		MoveUp,
+		MoveDown
+	};
+	/// move component file # up or down the list
+	void move(int index, MoveDirection direction);
 
-    /// remove component file # - including files/records
-    bool remove(int index);
+	/// remove component file # - including files/records
+	bool remove(int index);
 
-    /// remove component file by id - including files/records
-    bool remove(const QString& id);
+	/// remove component file by id - including files/records
+	bool remove(const QString& id);
 
-    bool customize(int index);
+	bool customize(int index);
 
-    bool revertToBase(int index);
+	bool revertToBase(int index);
 
-    /// reload the list, reload all components, resolve dependencies
-    Result reload(Net::Mode netmode);
+	/// reload the list, reload all components, resolve dependencies
+	Result reload(Net::Mode netmode);
 
-    // reload all components, resolve dependencies
-    void resolve(Net::Mode netmode);
+	// reload all components, resolve dependencies
+	void resolve(Net::Mode netmode);
 
-    /// get current running task...
-    Task::Ptr getCurrentTask();
+	/// get current running task...
+	Task::Ptr getCurrentTask();
 
-    std::shared_ptr<LaunchProfile> getProfile() const;
+	std::shared_ptr<LaunchProfile> getProfile() const;
 
-    // NOTE: used ONLY by MinecraftInstance to provide legacy version mappings from instance config
-    void setOldConfigVersion(const QString& uid, const QString& version);
+	// NOTE: used ONLY by MinecraftInstance to provide legacy version mappings from instance config
+	void setOldConfigVersion(const QString& uid, const QString& version);
 
-    QString getComponentVersion(const QString& uid) const;
+	QString getComponentVersion(const QString& uid) const;
 
-    bool setComponentVersion(const QString& uid, const QString& version, bool important = false);
+	bool setComponentVersion(const QString& uid, const QString& version, bool important = false);
 
-    bool installEmpty(const QString& uid, const QString& name);
+	bool installEmpty(const QString& uid, const QString& name);
 
-    QString patchFilePathForUid(const QString& uid) const;
+	QString patchFilePathForUid(const QString& uid) const;
 
-    /// if there is a save scheduled, do it now.
-    void saveNow();
+	/// if there is a save scheduled, do it now.
+	void saveNow();
 
-    /// helper method, returns RuntimeContext of instance
-    RuntimeContext runtimeContext();
+	/// helper method, returns RuntimeContext of instance
+	RuntimeContext runtimeContext();
 
-   signals:
-    void minecraftChanged();
+  signals:
+	void minecraftChanged();
 
-   public:
-    /// get the profile component by id
-    ComponentPtr getComponent(const QString& id);
+  public:
+	/// get the profile component by id
+	ComponentPtr getComponent(const QString& id);
 
-    /// get the profile component by index
-    ComponentPtr getComponent(size_t index);
+	/// get the profile component by index
+	ComponentPtr getComponent(size_t index);
 
-    /// Add the component to the internal list of patches.
-    /// Components are appended (not inserted) to preserve mod loader load order.
-    void appendComponent(ComponentPtr component);
+	/// Add the component to the internal list of patches.
+	/// Components are appended (not inserted) to preserve mod loader load order.
+	void appendComponent(ComponentPtr component);
 
-    std::optional<ModPlatform::ModLoaderTypes> getModLoaders();
-    // this returns aditional loaders(Quilt supports fabric and NeoForge supports Forge)
-    std::optional<ModPlatform::ModLoaderTypes> getSupportedModLoaders();
-    QList<ModPlatform::ModLoaderType> getModLoadersList();
+	std::optional<ModPlatform::ModLoaderTypes> getModLoaders();
+	// this returns aditional loaders(Quilt supports fabric and NeoForge supports Forge)
+	std::optional<ModPlatform::ModLoaderTypes> getSupportedModLoaders();
+	QList<ModPlatform::ModLoaderType> getModLoadersList();
 
-    /// apply the component patches. Catches all the errors and returns true/false for success/failure
-    void invalidateLaunchProfile();
+	/// apply the component patches. Catches all the errors and returns true/false for success/failure
+	void invalidateLaunchProfile();
 
-   private:
-    void scheduleSave();
-    bool saveIsScheduled() const;
+  private:
+	void scheduleSave();
+	bool saveIsScheduled() const;
 
-    /// insert component so that its index is ideally the specified one (returns real index)
-    void insertComponent(size_t index, ComponentPtr component);
+	/// insert component so that its index is ideally the specified one (returns real index)
+	void insertComponent(size_t index, ComponentPtr component);
 
-    QString componentsFilePath() const;
-    QString patchesPattern() const;
+	QString componentsFilePath() const;
+	QString patchesPattern() const;
 
-   private slots:
-    void save_internal();
-    void updateSucceeded();
-    void updateFailed(const QString& error);
-    void componentDataChanged();
-    void disableInteraction(bool disable);
+  private slots:
+	void save_internal();
+	void updateSucceeded();
+	void updateFailed(const QString& error);
+	void componentDataChanged();
+	void disableInteraction(bool disable);
 
-   private:
-    Result load();
-    bool installJarMods_internal(QStringList filepaths);
-    bool installCustomJar_internal(QString filepath);
-    bool installAgents_internal(QStringList filepaths);
-    bool removeComponent_internal(ComponentPtr patch);
+  private:
+	Result load();
+	bool installJarMods_internal(QStringList filepaths);
+	bool installCustomJar_internal(QString filepath);
+	bool installAgents_internal(QStringList filepaths);
+	bool removeComponent_internal(ComponentPtr patch);
 
-   private: /* data */
-    std::unique_ptr<PackProfileData> d;
+  private: /* data */
+	std::unique_ptr<PackProfileData> d;
 };

@@ -69,150 +69,247 @@
 #include "ui/pages/modplatform/ShaderPackPage.h"
 #include "ui/pages/modplatform/TexturePackPage.h"
 
-namespace ResourceDownload {
-
-namespace Modrinth {
-static inline QString displayName()
+namespace ResourceDownload
 {
-    return "Modrinth";
-}
-static inline QIcon icon()
-{
-    return QIcon::fromTheme("modrinth");
-}
-static inline QString id()
-{
-    return "modrinth";
-}
-static inline QString debugName()
-{
-    return "Modrinth";
-}
-static inline QString metaEntryBase()
-{
-    return "ModrinthPacks";
-}
-}  // namespace Modrinth
 
-class ModrinthModPage : public ModPage {
-    Q_OBJECT
+	namespace Modrinth
+	{
+		static inline QString displayName()
+		{
+			return "Modrinth";
+		}
+		static inline QIcon icon()
+		{
+			return QIcon::fromTheme("modrinth");
+		}
+		static inline QString id()
+		{
+			return "modrinth";
+		}
+		static inline QString debugName()
+		{
+			return "Modrinth";
+		}
+		static inline QString metaEntryBase()
+		{
+			return "ModrinthPacks";
+		}
+	} // namespace Modrinth
 
-   public:
-    static ModrinthModPage* create(ModDownloadDialog* dialog, BaseInstance& instance)
-    {
-        return ModPage::create<ModrinthModPage>(dialog, instance);
-    }
+	class ModrinthModPage : public ModPage
+	{
+		Q_OBJECT
 
-    ModrinthModPage(ModDownloadDialog* dialog, BaseInstance& instance);
-    ~ModrinthModPage() override = default;
+	  public:
+		static ModrinthModPage* create(ModDownloadDialog* dialog, BaseInstance& instance)
+		{
+			return ModPage::create<ModrinthModPage>(dialog, instance);
+		}
 
-    bool shouldDisplay() const override;
+		ModrinthModPage(ModDownloadDialog* dialog, BaseInstance& instance);
+		~ModrinthModPage() override = default;
 
-    inline auto displayName() const -> QString override { return Modrinth::displayName(); }
-    inline auto icon() const -> QIcon override { return Modrinth::icon(); }
-    inline auto id() const -> QString override { return Modrinth::id(); }
-    inline auto debugName() const -> QString override { return Modrinth::debugName(); }
-    inline auto metaEntryBase() const -> QString override { return Modrinth::metaEntryBase(); }
+		bool shouldDisplay() const override;
 
-    inline auto helpPage() const -> QString override { return "Mod-platform"; }
+		inline auto displayName() const -> QString override
+		{
+			return Modrinth::displayName();
+		}
+		inline auto icon() const -> QIcon override
+		{
+			return Modrinth::icon();
+		}
+		inline auto id() const -> QString override
+		{
+			return Modrinth::id();
+		}
+		inline auto debugName() const -> QString override
+		{
+			return Modrinth::debugName();
+		}
+		inline auto metaEntryBase() const -> QString override
+		{
+			return Modrinth::metaEntryBase();
+		}
 
-    std::unique_ptr<ModFilterWidget> createFilterWidget() override;
+		inline auto helpPage() const -> QString override
+		{
+			return "Mod-platform";
+		}
 
-   protected:
-    virtual void prepareProviderCategories() override;
-    Task::Ptr m_categoriesTask;
-};
+		std::unique_ptr<ModFilterWidget> createFilterWidget() override;
 
-class ModrinthResourcePackPage : public ResourcePackResourcePage {
-    Q_OBJECT
+	  protected:
+		virtual void prepareProviderCategories() override;
+		Task::Ptr m_categoriesTask;
+	};
 
-   public:
-    static ModrinthResourcePackPage* create(ResourcePackDownloadDialog* dialog, BaseInstance& instance)
-    {
-        return ResourcePackResourcePage::create<ModrinthResourcePackPage>(dialog, instance);
-    }
+	class ModrinthResourcePackPage : public ResourcePackResourcePage
+	{
+		Q_OBJECT
 
-    ModrinthResourcePackPage(ResourcePackDownloadDialog* dialog, BaseInstance& instance);
-    ~ModrinthResourcePackPage() override = default;
+	  public:
+		static ModrinthResourcePackPage* create(ResourcePackDownloadDialog* dialog, BaseInstance& instance)
+		{
+			return ResourcePackResourcePage::create<ModrinthResourcePackPage>(dialog, instance);
+		}
 
-    bool shouldDisplay() const override;
+		ModrinthResourcePackPage(ResourcePackDownloadDialog* dialog, BaseInstance& instance);
+		~ModrinthResourcePackPage() override = default;
 
-    inline auto displayName() const -> QString override { return Modrinth::displayName(); }
-    inline auto icon() const -> QIcon override { return Modrinth::icon(); }
-    inline auto id() const -> QString override { return Modrinth::id(); }
-    inline auto debugName() const -> QString override { return Modrinth::debugName(); }
-    inline auto metaEntryBase() const -> QString override { return Modrinth::metaEntryBase(); }
+		bool shouldDisplay() const override;
 
-    inline auto helpPage() const -> QString override { return ""; }
-};
+		inline auto displayName() const -> QString override
+		{
+			return Modrinth::displayName();
+		}
+		inline auto icon() const -> QIcon override
+		{
+			return Modrinth::icon();
+		}
+		inline auto id() const -> QString override
+		{
+			return Modrinth::id();
+		}
+		inline auto debugName() const -> QString override
+		{
+			return Modrinth::debugName();
+		}
+		inline auto metaEntryBase() const -> QString override
+		{
+			return Modrinth::metaEntryBase();
+		}
 
-class ModrinthTexturePackPage : public TexturePackResourcePage {
-    Q_OBJECT
+		inline auto helpPage() const -> QString override
+		{
+			return "";
+		}
+	};
 
-   public:
-    static ModrinthTexturePackPage* create(TexturePackDownloadDialog* dialog, BaseInstance& instance)
-    {
-        return TexturePackResourcePage::create<ModrinthTexturePackPage>(dialog, instance);
-    }
+	class ModrinthTexturePackPage : public TexturePackResourcePage
+	{
+		Q_OBJECT
 
-    ModrinthTexturePackPage(TexturePackDownloadDialog* dialog, BaseInstance& instance);
-    ~ModrinthTexturePackPage() override = default;
+	  public:
+		static ModrinthTexturePackPage* create(TexturePackDownloadDialog* dialog, BaseInstance& instance)
+		{
+			return TexturePackResourcePage::create<ModrinthTexturePackPage>(dialog, instance);
+		}
 
-    bool shouldDisplay() const override;
+		ModrinthTexturePackPage(TexturePackDownloadDialog* dialog, BaseInstance& instance);
+		~ModrinthTexturePackPage() override = default;
 
-    inline auto displayName() const -> QString override { return Modrinth::displayName(); }
-    inline auto icon() const -> QIcon override { return Modrinth::icon(); }
-    inline auto id() const -> QString override { return Modrinth::id(); }
-    inline auto debugName() const -> QString override { return Modrinth::debugName(); }
-    inline auto metaEntryBase() const -> QString override { return Modrinth::metaEntryBase(); }
+		bool shouldDisplay() const override;
 
-    inline auto helpPage() const -> QString override { return ""; }
-};
+		inline auto displayName() const -> QString override
+		{
+			return Modrinth::displayName();
+		}
+		inline auto icon() const -> QIcon override
+		{
+			return Modrinth::icon();
+		}
+		inline auto id() const -> QString override
+		{
+			return Modrinth::id();
+		}
+		inline auto debugName() const -> QString override
+		{
+			return Modrinth::debugName();
+		}
+		inline auto metaEntryBase() const -> QString override
+		{
+			return Modrinth::metaEntryBase();
+		}
 
-class ModrinthShaderPackPage : public ShaderPackResourcePage {
-    Q_OBJECT
+		inline auto helpPage() const -> QString override
+		{
+			return "";
+		}
+	};
 
-   public:
-    static ModrinthShaderPackPage* create(ShaderPackDownloadDialog* dialog, BaseInstance& instance)
-    {
-        return ShaderPackResourcePage::create<ModrinthShaderPackPage>(dialog, instance);
-    }
+	class ModrinthShaderPackPage : public ShaderPackResourcePage
+	{
+		Q_OBJECT
 
-    ModrinthShaderPackPage(ShaderPackDownloadDialog* dialog, BaseInstance& instance);
-    ~ModrinthShaderPackPage() override = default;
+	  public:
+		static ModrinthShaderPackPage* create(ShaderPackDownloadDialog* dialog, BaseInstance& instance)
+		{
+			return ShaderPackResourcePage::create<ModrinthShaderPackPage>(dialog, instance);
+		}
 
-    bool shouldDisplay() const override;
+		ModrinthShaderPackPage(ShaderPackDownloadDialog* dialog, BaseInstance& instance);
+		~ModrinthShaderPackPage() override = default;
 
-    inline auto displayName() const -> QString override { return Modrinth::displayName(); }
-    inline auto icon() const -> QIcon override { return Modrinth::icon(); }
-    inline auto id() const -> QString override { return Modrinth::id(); }
-    inline auto debugName() const -> QString override { return Modrinth::debugName(); }
-    inline auto metaEntryBase() const -> QString override { return Modrinth::metaEntryBase(); }
+		bool shouldDisplay() const override;
 
-    inline auto helpPage() const -> QString override { return ""; }
-};
+		inline auto displayName() const -> QString override
+		{
+			return Modrinth::displayName();
+		}
+		inline auto icon() const -> QIcon override
+		{
+			return Modrinth::icon();
+		}
+		inline auto id() const -> QString override
+		{
+			return Modrinth::id();
+		}
+		inline auto debugName() const -> QString override
+		{
+			return Modrinth::debugName();
+		}
+		inline auto metaEntryBase() const -> QString override
+		{
+			return Modrinth::metaEntryBase();
+		}
 
-class ModrinthDataPackPage : public DataPackResourcePage {
-    Q_OBJECT
+		inline auto helpPage() const -> QString override
+		{
+			return "";
+		}
+	};
 
-   public:
-    static ModrinthDataPackPage* create(DataPackDownloadDialog* dialog, BaseInstance& instance)
-    {
-        return DataPackResourcePage::create<ModrinthDataPackPage>(dialog, instance);
-    }
+	class ModrinthDataPackPage : public DataPackResourcePage
+	{
+		Q_OBJECT
 
-    ModrinthDataPackPage(DataPackDownloadDialog* dialog, BaseInstance& instance);
-    ~ModrinthDataPackPage() override = default;
+	  public:
+		static ModrinthDataPackPage* create(DataPackDownloadDialog* dialog, BaseInstance& instance)
+		{
+			return DataPackResourcePage::create<ModrinthDataPackPage>(dialog, instance);
+		}
 
-    bool shouldDisplay() const override;
+		ModrinthDataPackPage(DataPackDownloadDialog* dialog, BaseInstance& instance);
+		~ModrinthDataPackPage() override = default;
 
-    inline auto displayName() const -> QString override { return Modrinth::displayName(); }
-    inline auto icon() const -> QIcon override { return Modrinth::icon(); }
-    inline auto id() const -> QString override { return Modrinth::id(); }
-    inline auto debugName() const -> QString override { return Modrinth::debugName(); }
-    inline auto metaEntryBase() const -> QString override { return Modrinth::metaEntryBase(); }
+		bool shouldDisplay() const override;
 
-    inline auto helpPage() const -> QString override { return ""; }
-};
+		inline auto displayName() const -> QString override
+		{
+			return Modrinth::displayName();
+		}
+		inline auto icon() const -> QIcon override
+		{
+			return Modrinth::icon();
+		}
+		inline auto id() const -> QString override
+		{
+			return Modrinth::id();
+		}
+		inline auto debugName() const -> QString override
+		{
+			return Modrinth::debugName();
+		}
+		inline auto metaEntryBase() const -> QString override
+		{
+			return Modrinth::metaEntryBase();
+		}
 
-}  // namespace ResourceDownload
+		inline auto helpPage() const -> QString override
+		{
+			return "";
+		}
+	};
+
+} // namespace ResourceDownload

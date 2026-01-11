@@ -43,19 +43,21 @@
 #include <QAbstractListModel>
 #include <QDialog>
 
-namespace Ui {
-class OptionalModDialog;
+namespace Ui
+{
+	class OptionalModDialog;
 }
 
-class OptionalModDialog : public QDialog {
-    Q_OBJECT
+class OptionalModDialog : public QDialog
+{
+	Q_OBJECT
 
-   public:
-    OptionalModDialog(QWidget* parent, const QStringList& mods);
-    ~OptionalModDialog() override;
+  public:
+	OptionalModDialog(QWidget* parent, const QStringList& mods);
+	~OptionalModDialog() override;
 
-    QStringList getResult();
+	QStringList getResult();
 
-   private:
-    Ui::OptionalModDialog* ui;
+  private:
+	Ui::OptionalModDialog* ui;
 };

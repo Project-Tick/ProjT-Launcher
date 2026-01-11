@@ -26,45 +26,59 @@
 #include "minecraft/MinecraftInstance.h"
 #include "ui/pages/BasePage.h"
 
-namespace Ui {
-class BackupDialog;
+namespace Ui
+{
+	class BackupDialog;
 }
 
-class BackupPage : public QWidget, public BasePage {
-    Q_OBJECT
+class BackupPage : public QWidget, public BasePage
+{
+	Q_OBJECT
 
-   public:
-    explicit BackupPage(MinecraftInstance* inst, QWidget* parent = nullptr);
-    ~BackupPage() override;
+  public:
+	explicit BackupPage(MinecraftInstance* inst, QWidget* parent = nullptr);
+	~BackupPage() override;
 
-    QString displayName() const override { return tr("Backups"); }
-    QIcon icon() const override;
-    QString id() const override { return "backups"; }
-    QString helpPage() const override { return "Backup-management"; }
-    bool apply() override { return true; }
+	QString displayName() const override
+	{
+		return tr("Backups");
+	}
+	QIcon icon() const override;
+	QString id() const override
+	{
+		return "backups";
+	}
+	QString helpPage() const override
+	{
+		return "Backup-management";
+	}
+	bool apply() override
+	{
+		return true;
+	}
 
-    void retranslate() override;
-    void openedImpl() override;
-    void closedImpl() override;
+	void retranslate() override;
+	void openedImpl() override;
+	void closedImpl() override;
 
-   private slots:
-    void on_createButton_clicked();
-    void on_restoreButton_clicked();
-    void on_deleteButton_clicked();
-    void on_backupList_currentRowChanged(int currentRow);
-    void on_addCustomPathButton_clicked();
-    void on_removeCustomPathButton_clicked();
+  private slots:
+	void on_createButton_clicked();
+	void on_restoreButton_clicked();
+	void on_deleteButton_clicked();
+	void on_backupList_currentRowChanged(int currentRow);
+	void on_addCustomPathButton_clicked();
+	void on_removeCustomPathButton_clicked();
 
-    void refreshBackupList();
-    void updateBackupDetails();
-    void updateEstimatedSize();
+	void refreshBackupList();
+	void updateBackupDetails();
+	void updateEstimatedSize();
 
-   private:
-    BackupOptions getSelectedOptions() const;
-    void setupConnections();
+  private:
+	BackupOptions getSelectedOptions() const;
+	void setupConnections();
 
-    Ui::BackupDialog* ui;
-    MinecraftInstance* m_instance;
-    BackupManager* m_backupManager;
-    QList<InstanceBackup> m_backups;
+	Ui::BackupDialog* ui;
+	MinecraftInstance* m_instance;
+	BackupManager* m_backupManager;
+	QList<InstanceBackup> m_backups;
 };

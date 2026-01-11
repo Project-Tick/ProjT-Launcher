@@ -33,107 +33,124 @@
 #include <MessageLevel.h>
 #include <logs/LogParser.h>
 
-class XmlLogParseTest : public QObject {
-    Q_OBJECT
+class XmlLogParseTest : public QObject
+{
+	Q_OBJECT
 
-   private slots:
+  private slots:
 
-    void parseXml_data()
-    {
-        QString source = QFINDTESTDATA("testdata/TestLogs");
+	void parseXml_data()
+	{
+		QString source = QFINDTESTDATA("testdata/TestLogs");
 
-        QString shortXml = QString::fromUtf8(FS::read(FS::PathCombine(source, "vanilla-1.21.5.xml.log")));
-        QString shortText = QString::fromUtf8(FS::read(FS::PathCombine(source, "vanilla-1.21.5.text.log")));
-        QStringList shortTextLevels_s = QString::fromUtf8(FS::read(FS::PathCombine(source, "vanilla-1.21.5-levels.txt")))
-                                            .split(QRegularExpression("\n|\r\n|\r"), Qt::SkipEmptyParts);
+		QString shortXml  = QString::fromUtf8(FS::read(FS::PathCombine(source, "vanilla-1.21.5.xml.log")));
+		QString shortText = QString::fromUtf8(FS::read(FS::PathCombine(source, "vanilla-1.21.5.text.log")));
+		QStringList shortTextLevels_s =
+			QString::fromUtf8(FS::read(FS::PathCombine(source, "vanilla-1.21.5-levels.txt")))
+				.split(QRegularExpression("\n|\r\n|\r"), Qt::SkipEmptyParts);
 
-        QList<MessageLevel::Enum> shortTextLevels;
-        shortTextLevels.reserve(24);
-        std::transform(shortTextLevels_s.cbegin(), shortTextLevels_s.cend(), std::back_inserter(shortTextLevels),
-                       [](const QString& line) { return MessageLevel::getLevel(line.trimmed()); });
+		QList<MessageLevel::Enum> shortTextLevels;
+		shortTextLevels.reserve(24);
+		std::transform(shortTextLevels_s.cbegin(),
+					   shortTextLevels_s.cend(),
+					   std::back_inserter(shortTextLevels),
+					   [](const QString& line) { return MessageLevel::getLevel(line.trimmed()); });
 
-        QString longXml = QString::fromUtf8(FS::read(FS::PathCombine(source, "TerraFirmaGreg-Modern-forge.xml.log")));
-        QString longText = QString::fromUtf8(FS::read(FS::PathCombine(source, "TerraFirmaGreg-Modern-forge.text.log")));
-        QStringList longTextLevels_s = QString::fromUtf8(FS::read(FS::PathCombine(source, "TerraFirmaGreg-Modern-levels.txt")))
-                                           .split(QRegularExpression("\n|\r\n|\r"), Qt::SkipEmptyParts);
-        QStringList longTextLevelsXml_s = QString::fromUtf8(FS::read(FS::PathCombine(source, "TerraFirmaGreg-Modern-xml-levels.txt")))
-                                              .split(QRegularExpression("\n|\r\n|\r"), Qt::SkipEmptyParts);
+		QString longXml	 = QString::fromUtf8(FS::read(FS::PathCombine(source, "TerraFirmaGreg-Modern-forge.xml.log")));
+		QString longText = QString::fromUtf8(FS::read(FS::PathCombine(source, "TerraFirmaGreg-Modern-forge.text.log")));
+		QStringList longTextLevels_s =
+			QString::fromUtf8(FS::read(FS::PathCombine(source, "TerraFirmaGreg-Modern-levels.txt")))
+				.split(QRegularExpression("\n|\r\n|\r"), Qt::SkipEmptyParts);
+		QStringList longTextLevelsXml_s =
+			QString::fromUtf8(FS::read(FS::PathCombine(source, "TerraFirmaGreg-Modern-xml-levels.txt")))
+				.split(QRegularExpression("\n|\r\n|\r"), Qt::SkipEmptyParts);
 
-        QList<MessageLevel::Enum> longTextLevelsPlain;
-        longTextLevelsPlain.reserve(974);
-        std::transform(longTextLevels_s.cbegin(), longTextLevels_s.cend(), std::back_inserter(longTextLevelsPlain),
-                       [](const QString& line) { return MessageLevel::getLevel(line.trimmed()); });
-        QList<MessageLevel::Enum> longTextLevelsXml;
-        longTextLevelsXml.reserve(896);
-        std::transform(longTextLevelsXml_s.cbegin(), longTextLevelsXml_s.cend(), std::back_inserter(longTextLevelsXml),
-                       [](const QString& line) { return MessageLevel::getLevel(line.trimmed()); });
+		QList<MessageLevel::Enum> longTextLevelsPlain;
+		longTextLevelsPlain.reserve(974);
+		std::transform(longTextLevels_s.cbegin(),
+					   longTextLevels_s.cend(),
+					   std::back_inserter(longTextLevelsPlain),
+					   [](const QString& line) { return MessageLevel::getLevel(line.trimmed()); });
+		QList<MessageLevel::Enum> longTextLevelsXml;
+		longTextLevelsXml.reserve(896);
+		std::transform(longTextLevelsXml_s.cbegin(),
+					   longTextLevelsXml_s.cend(),
+					   std::back_inserter(longTextLevelsXml),
+					   [](const QString& line) { return MessageLevel::getLevel(line.trimmed()); });
 
-        QTest::addColumn<QString>("log");
-        QTest::addColumn<int>("num_entries");
-        QTest::addColumn<QList<MessageLevel::Enum>>("entry_levels");
+		QTest::addColumn<QString>("log");
+		QTest::addColumn<int>("num_entries");
+		QTest::addColumn<QList<MessageLevel::Enum>>("entry_levels");
 
-        QTest::newRow("short-vanilla-plain") << shortText << 25 << shortTextLevels;
-        QTest::newRow("short-vanilla-xml") << shortXml << 25 << shortTextLevels;
-        QTest::newRow("long-forge-plain") << longText << 945 << longTextLevelsPlain;
-        QTest::newRow("long-forge-xml") << longXml << 869 << longTextLevelsXml;
-    }
+		QTest::newRow("short-vanilla-plain") << shortText << 25 << shortTextLevels;
+		QTest::newRow("short-vanilla-xml") << shortXml << 25 << shortTextLevels;
+		QTest::newRow("long-forge-plain") << longText << 945 << longTextLevelsPlain;
+		QTest::newRow("long-forge-xml") << longXml << 869 << longTextLevelsXml;
+	}
 
-    void parseXml()
-    {
-        QFETCH(QString, log);
-        QFETCH(int, num_entries);
-        QFETCH(QList<MessageLevel::Enum>, entry_levels);
+	void parseXml()
+	{
+		QFETCH(QString, log);
+		QFETCH(int, num_entries);
+		QFETCH(QList<MessageLevel::Enum>, entry_levels);
 
-        QList<std::pair<MessageLevel::Enum, QString>> entries = {};
+		QList<std::pair<MessageLevel::Enum, QString>> entries = {};
 
-        QBENCHMARK
-        {
-            entries = parseLines(log.split(QRegularExpression("\n|\r\n|\r")));
-        }
+		QBENCHMARK
+		{
+			entries = parseLines(log.split(QRegularExpression("\n|\r\n|\r")));
+		}
 
-        QCOMPARE(entries.length(), num_entries);
+		QCOMPARE(entries.length(), num_entries);
 
-        QList<MessageLevel::Enum> levels = {};
+		QList<MessageLevel::Enum> levels = {};
 
-        std::transform(entries.cbegin(), entries.cend(), std::back_inserter(levels),
-                       [](std::pair<MessageLevel::Enum, QString> entry) { return entry.first; });
+		std::transform(entries.cbegin(),
+					   entries.cend(),
+					   std::back_inserter(levels),
+					   [](std::pair<MessageLevel::Enum, QString> entry) { return entry.first; });
 
-        QCOMPARE(levels, entry_levels);
-    }
+		QCOMPARE(levels, entry_levels);
+	}
 
-   private:
-    LogParser m_parser;
+  private:
+	LogParser m_parser;
 
-    QList<std::pair<MessageLevel::Enum, QString>> parseLines(const QStringList& lines)
-    {
-        QList<std::pair<MessageLevel::Enum, QString>> out;
-        MessageLevel::Enum last = MessageLevel::Unknown;
+	QList<std::pair<MessageLevel::Enum, QString>> parseLines(const QStringList& lines)
+	{
+		QList<std::pair<MessageLevel::Enum, QString>> out;
+		MessageLevel::Enum last = MessageLevel::Unknown;
 
-        for (const auto& line : lines) {
-            m_parser.appendLine(line);
+		for (const auto& line : lines)
+		{
+			m_parser.appendLine(line);
 
-            auto items = m_parser.parseAvailable();
-            for (const auto& item : items) {
-                if (std::holds_alternative<LogParser::LogEntry>(item)) {
-                    auto entry = std::get<LogParser::LogEntry>(item);
-                    auto msg = QString("[%1] [%2/%3] [%4]: %5")
-                                   .arg(entry.timestamp.toString("HH:mm:ss"))
-                                   .arg(entry.thread)
-                                   .arg(entry.levelText)
-                                   .arg(entry.logger)
-                                   .arg(entry.message);
-                    out.append(std::make_pair(entry.level, msg));
-                    last = entry.level;
-                } else if (std::holds_alternative<LogParser::PlainText>(item)) {
-                    auto msg = std::get<LogParser::PlainText>(item).message;
-                    auto level = LogParser::guessLevel(msg, last);
-                    out.append(std::make_pair(level, msg));
-                    last = level;
-                }
-            }
-        }
-        return out;
-    }
+			auto items = m_parser.parseAvailable();
+			for (const auto& item : items)
+			{
+				if (std::holds_alternative<LogParser::LogEntry>(item))
+				{
+					auto entry = std::get<LogParser::LogEntry>(item);
+					auto msg   = QString("[%1] [%2/%3] [%4]: %5")
+								   .arg(entry.timestamp.toString("HH:mm:ss"))
+								   .arg(entry.thread)
+								   .arg(entry.levelText)
+								   .arg(entry.logger)
+								   .arg(entry.message);
+					out.append(std::make_pair(entry.level, msg));
+					last = entry.level;
+				}
+				else if (std::holds_alternative<LogParser::PlainText>(item))
+				{
+					auto msg   = std::get<LogParser::PlainText>(item).message;
+					auto level = LogParser::guessLevel(msg, last);
+					out.append(std::make_pair(level, msg));
+					last = level;
+				}
+			}
+		}
+		return out;
+	}
 };
 
 QTEST_GUILESS_MAIN(XmlLogParseTest)

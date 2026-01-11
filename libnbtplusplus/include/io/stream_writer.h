@@ -25,92 +25,111 @@
 #include "endian_str.h"
 #include "tag.h"
 
-namespace nbt {
-namespace io {
-
-/* Not sure if that is even needed
-///Exception that gets thrown when writing is not successful
-class output_error : public std::runtime_error
+namespace nbt
 {
-    using std::runtime_error::runtime_error;
-};*/
+	namespace io
+	{
 
-/**
- * @brief Writes a named tag into the stream, including the tag type
- * @param key the name of the tag
- * @param t the tag
- * @param os the stream to write to
- * @param e the byte order of the written data. The Java edition
- * of Minecraft uses Big Endian, the Pocket edition uses Little Endian
- */
-NBT_EXPORT void write_tag(const std::string& key, const tag& t, std::ostream& os, endian::endian e = endian::big);
+		/* Not sure if that is even needed
+		///Exception that gets thrown when writing is not successful
+		class output_error : public std::runtime_error
+		{
+			using std::runtime_error::runtime_error;
+		};*/
 
-/**
- * @brief Helper class for writing NBT tags to output streams
- *
- * Can be reused to write multiple tags
- */
-class NBT_EXPORT stream_writer {
-   public:
-    /// Maximum length of an NBT string (16 bit unsigned)
-    static constexpr size_t max_string_len = UINT16_MAX;
-    /// Maximum length of an NBT list or array (32 bit signed)
-    static constexpr uint32_t max_array_len = INT32_MAX;
+		/**
+		 * @brief Writes a named tag into the stream, including the tag type
+		 * @param key the name of the tag
+		 * @param t the tag
+		 * @param os the stream to write to
+		 * @param e the byte order of the written data. The Java edition
+		 * of Minecraft uses Big Endian, the Pocket edition uses Little Endian
+		 */
+		NBT_EXPORT void write_tag(const std::string& key,
+								  const tag& t,
+								  std::ostream& os,
+								  endian::endian e = endian::big);
 
-    /**
-     * @param os the stream to write to
-     * @param e the byte order of the written data. The Java edition
-     * of Minecraft uses Big Endian, the Pocket edition uses Little Endian
-     */
-    explicit stream_writer(std::ostream& os, endian::endian e = endian::big) noexcept : os(os), endian(e) {}
+		/**
+		 * @brief Helper class for writing NBT tags to output streams
+		 *
+		 * Can be reused to write multiple tags
+		 */
+		class NBT_EXPORT stream_writer
+		{
+		  public:
+			/// Maximum length of an NBT string (16 bit unsigned)
+			static constexpr size_t max_string_len = UINT16_MAX;
+			/// Maximum length of an NBT list or array (32 bit signed)
+			static constexpr uint32_t max_array_len = INT32_MAX;
 
-    /// Returns the stream
-    std::ostream& get_ostr() const { return os; }
-    /// Returns the byte order
-    endian::endian get_endian() const { return endian; }
+			/**
+			 * @param os the stream to write to
+			 * @param e the byte order of the written data. The Java edition
+			 * of Minecraft uses Big Endian, the Pocket edition uses Little Endian
+			 */
+			explicit stream_writer(std::ostream& os, endian::endian e = endian::big) noexcept : os(os), endian(e)
+			{}
 
-    /**
-     * @brief Writes a named tag into the stream, including the tag type
-     */
-    void write_tag(const std::string& key, const tag& t);
+			/// Returns the stream
+			std::ostream& get_ostr() const
+			{
+				return os;
+			}
+			/// Returns the byte order
+			endian::endian get_endian() const
+			{
+				return endian;
+			}
 
-    /**
-     * @brief Writes the given tag's payload into the stream
-     */
-    void write_payload(const tag& t) { t.write_payload(*this); }
+			/**
+			 * @brief Writes a named tag into the stream, including the tag type
+			 */
+			void write_tag(const std::string& key, const tag& t);
 
-    /**
-     * @brief Writes a tag type to the stream
-     */
-    void write_type(tag_type tt) { write_num(static_cast<int8_t>(tt)); }
+			/**
+			 * @brief Writes the given tag's payload into the stream
+			 */
+			void write_payload(const tag& t)
+			{
+				t.write_payload(*this);
+			}
 
-    /**
-     * @brief Writes a binary number to the stream
-     */
-    template <class T>
-    void write_num(T x);
+			/**
+			 * @brief Writes a tag type to the stream
+			 */
+			void write_type(tag_type tt)
+			{
+				write_num(static_cast<int8_t>(tt));
+			}
 
-    /**
-     * @brief Writes an NBT string to the stream
-     *
-     * An NBT string consists of two bytes indicating the length, followed by
-     * the characters encoded in modified UTF-8.
-     * @throw std::length_error if the string is too long for NBT
-     */
-    void write_string(const std::string& str);
+			/**
+			 * @brief Writes a binary number to the stream
+			 */
+			template <class T>
+			void write_num(T x);
 
-   private:
-    std::ostream& os;
-    const endian::endian endian;
-};
+			/**
+			 * @brief Writes an NBT string to the stream
+			 *
+			 * An NBT string consists of two bytes indicating the length, followed by
+			 * the characters encoded in modified UTF-8.
+			 * @throw std::length_error if the string is too long for NBT
+			 */
+			void write_string(const std::string& str);
 
-template <class T>
-void stream_writer::write_num(T x)
-{
-    endian::write(os, x, endian);
-}
+		  private:
+			std::ostream& os;
+			const endian::endian endian;
+		};
 
-}  // namespace io
-}  // namespace nbt
+		template <class T>
+		void stream_writer::write_num(T x)
+		{
+			endian::write(os, x, endian);
+		}
 
-#endif  // STREAM_WRITER_H_INCLUDED
+	} // namespace io
+} // namespace nbt
+
+#endif // STREAM_WRITER_H_INCLUDED

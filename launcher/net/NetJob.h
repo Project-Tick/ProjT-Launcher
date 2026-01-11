@@ -68,40 +68,41 @@
 #include "net/Download.h"
 #include "net/HttpMetaCache.h"
 
-class NetJob : public ConcurrentTask {
-    Q_OBJECT
+class NetJob : public ConcurrentTask
+{
+	Q_OBJECT
 
-   public:
-    using Ptr = shared_qobject_ptr<NetJob>;
+  public:
+	using Ptr = shared_qobject_ptr<NetJob>;
 
-    explicit NetJob(QString job_name, shared_qobject_ptr<QNetworkAccessManager> network, int max_concurrent = -1);
-    ~NetJob() override = default;
+	explicit NetJob(QString job_name, shared_qobject_ptr<QNetworkAccessManager> network, int max_concurrent = -1);
+	~NetJob() override = default;
 
-    auto size() const -> int;
+	auto size() const -> int;
 
-    auto canAbort() const -> bool override;
-    auto addNetAction(Net::NetRequest::Ptr action) -> bool;
+	auto canAbort() const -> bool override;
+	auto addNetAction(Net::NetRequest::Ptr action) -> bool;
 
-    auto getFailedActions() -> QList<Net::NetRequest*>;
-    auto getFailedFiles() -> QList<QString>;
-    void setAskRetry(bool askRetry);
+	auto getFailedActions() -> QList<Net::NetRequest*>;
+	auto getFailedFiles() -> QList<QString>;
+	void setAskRetry(bool askRetry);
 
-   public slots:
-    // Qt can't handle auto at the start for some reason?
-    bool abort() override;
-    void emitFailed(QString reason) override;
+  public slots:
+	// Qt can't handle auto at the start for some reason?
+	bool abort() override;
+	void emitFailed(QString reason) override;
 
-   protected slots:
-    void executeNextSubTask() override;
+  protected slots:
+	void executeNextSubTask() override;
 
-   protected:
-    void updateState() override;
-    bool isOnline();
+  protected:
+	void updateState() override;
+	bool isOnline();
 
-   private:
-    shared_qobject_ptr<QNetworkAccessManager> m_network;
+  private:
+	shared_qobject_ptr<QNetworkAccessManager> m_network;
 
-    int m_try = 1;
-    bool m_ask_retry = true;
-    int m_manual_try = 0;
+	int m_try		 = 1;
+	bool m_ask_retry = true;
+	int m_manual_try = 0;
 };

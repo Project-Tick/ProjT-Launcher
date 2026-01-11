@@ -60,49 +60,54 @@
 
 CustomCommands::~CustomCommands()
 {
-    delete ui;
+	delete ui;
 }
 
 CustomCommands::CustomCommands(QWidget* parent) : QWidget(parent), ui(new Ui::CustomCommands)
 {
-    ui->setupUi(this);
-    connect(ui->overrideCheckBox, &QCheckBox::toggled, ui->customCommandsWidget, &QWidget::setEnabled);
+	ui->setupUi(this);
+	connect(ui->overrideCheckBox, &QCheckBox::toggled, ui->customCommandsWidget, &QWidget::setEnabled);
 }
 
-void CustomCommands::initialize(bool checkable, bool checked, const QString& prelaunch, const QString& wrapper, const QString& postexit)
+void CustomCommands::initialize(bool checkable,
+								bool checked,
+								const QString& prelaunch,
+								const QString& wrapper,
+								const QString& postexit)
 {
-    ui->overrideCheckBox->setVisible(checkable);
-    if (checkable) {
-        ui->overrideCheckBox->setChecked(checked);
-    }
-    ui->preLaunchCmdTextBox->setText(prelaunch);
-    ui->wrapperCmdTextBox->setText(wrapper);
-    ui->postExitCmdTextBox->setText(postexit);
+	ui->overrideCheckBox->setVisible(checkable);
+	if (checkable)
+	{
+		ui->overrideCheckBox->setChecked(checked);
+	}
+	ui->preLaunchCmdTextBox->setText(prelaunch);
+	ui->wrapperCmdTextBox->setText(wrapper);
+	ui->postExitCmdTextBox->setText(postexit);
 }
 
 void CustomCommands::retranslate()
 {
-    ui->retranslateUi(this);
+	ui->retranslateUi(this);
 }
 
 bool CustomCommands::checked() const
 {
-    if (!ui->overrideCheckBox->isVisible())
-        return true;
-    return ui->overrideCheckBox->isChecked();
+	if (!ui->overrideCheckBox->isVisible())
+		return true;
+	return ui->overrideCheckBox->isChecked();
 }
 
 QString CustomCommands::prelaunchCommand() const
 {
-    return ui->preLaunchCmdTextBox->text();
+	return ui->preLaunchCmdTextBox->text();
 }
 
 QString CustomCommands::wrapperCommand() const
 {
-    return ui->wrapperCmdTextBox->text();
+	return ui->wrapperCmdTextBox->text();
 }
 
 QString CustomCommands::postexitCommand() const
 {
-    return ui->postExitCmdTextBox->text();
+	return ui->postExitCmdTextBox->text();
 }

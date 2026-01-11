@@ -43,40 +43,42 @@ Q_DECLARE_METATYPE(JlCompress::Options::CompressionStrategy)
  */
 void TestJlCpCompress::compressFileOptions_data()
 {
-    QTest::addColumn<QString>("zipName");
-    QTest::addColumn<QString>("fileName");
-    QTest::addColumn<JlCompress::Options::CompressionStrategy>("strategy");
-    QTest::newRow("simple") << "jlsimplefile.zip"
-                            << "test0.txt" << JlCompress::Options::Default;
-    QTest::newRow("simple-storage") << "jlsimplefile-storage.zip"
-                                    << "test0.txt" << JlCompress::Options::Storage;
-    QTest::newRow("simple-best") << "jlsimplefile-best.zip"
-                                 << "test0.txt" << JlCompress::Options::Best;
+	QTest::addColumn<QString>("zipName");
+	QTest::addColumn<QString>("fileName");
+	QTest::addColumn<JlCompress::Options::CompressionStrategy>("strategy");
+	QTest::newRow("simple") << "jlsimplefile.zip"
+							<< "test0.txt" << JlCompress::Options::Default;
+	QTest::newRow("simple-storage") << "jlsimplefile-storage.zip"
+									<< "test0.txt" << JlCompress::Options::Storage;
+	QTest::newRow("simple-best") << "jlsimplefile-best.zip"
+								 << "test0.txt" << JlCompress::Options::Best;
 }
 
 void TestJlCpCompress::compressFileOptions()
 {
-    QFETCH(QString, zipName);
-    QFETCH(QString, fileName);
-    QFETCH(JlCompress::Options::CompressionStrategy, strategy);
-    QDir curDir;
-    if (curDir.exists(zipName)) {
-        if (!curDir.remove(zipName))
-            QFAIL("Can't remove zip file");
-    }
-    if (!createTestFiles(QStringList() << fileName)) {
-        QFAIL("Can't create test file");
-    }
+	QFETCH(QString, zipName);
+	QFETCH(QString, fileName);
+	QFETCH(JlCompress::Options::CompressionStrategy, strategy);
+	QDir curDir;
+	if (curDir.exists(zipName))
+	{
+		if (!curDir.remove(zipName))
+			QFAIL("Can't remove zip file");
+	}
+	if (!createTestFiles(QStringList() << fileName))
+	{
+		QFAIL("Can't create test file");
+	}
 
-    const JlCompress::Options options(strategy);
-    QVERIFY(JlCompress::compressFile(zipName, "tmp/" + fileName, options));
+	const JlCompress::Options options(strategy);
+	QVERIFY(JlCompress::compressFile(zipName, "tmp/" + fileName, options));
 
-    removeTestFiles(QStringList() << fileName);
+	removeTestFiles(QStringList() << fileName);
 
-    archivesToBundle << zipName;
+	archivesToBundle << zipName;
 }
 
 void TestJlCpCompress::createBundle()
 {
-    QVERIFY(JlCompress::compressFiles("cp.zip", archivesToBundle));
+	QVERIFY(JlCompress::compressFiles("cp.zip", archivesToBundle));
 }

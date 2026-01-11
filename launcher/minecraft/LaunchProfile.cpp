@@ -60,366 +60,400 @@
 
 void LaunchProfile::clear()
 {
-    m_minecraftVersion.clear();
-    m_minecraftVersionType.clear();
-    m_minecraftAssets.reset();
-    m_minecraftArguments.clear();
-    m_addnJvmArguments.clear();
-    m_tweakers.clear();
-    m_mainClass.clear();
-    m_appletClass.clear();
-    m_libraries.clear();
-    m_mavenFiles.clear();
-    m_agents.clear();
-    m_traits.clear();
-    m_jarMods.clear();
-    m_mainJar.reset();
-    m_problemSeverity = ProblemSeverity::None;
+	m_minecraftVersion.clear();
+	m_minecraftVersionType.clear();
+	m_minecraftAssets.reset();
+	m_minecraftArguments.clear();
+	m_addnJvmArguments.clear();
+	m_tweakers.clear();
+	m_mainClass.clear();
+	m_appletClass.clear();
+	m_libraries.clear();
+	m_mavenFiles.clear();
+	m_agents.clear();
+	m_traits.clear();
+	m_jarMods.clear();
+	m_mainJar.reset();
+	m_problemSeverity = ProblemSeverity::None;
 }
 
 static void applyString(const QString& from, QString& to)
 {
-    if (from.isEmpty())
-        return;
-    to = from;
+	if (from.isEmpty())
+		return;
+	to = from;
 }
 
 void LaunchProfile::applyMinecraftVersion(const QString& id)
 {
-    applyString(id, this->m_minecraftVersion);
+	applyString(id, this->m_minecraftVersion);
 }
 
 void LaunchProfile::applyAppletClass(const QString& appletClass)
 {
-    applyString(appletClass, this->m_appletClass);
+	applyString(appletClass, this->m_appletClass);
 }
 
 void LaunchProfile::applyMainClass(const QString& mainClass)
 {
-    applyString(mainClass, this->m_mainClass);
+	applyString(mainClass, this->m_mainClass);
 }
 
 void LaunchProfile::applyMinecraftArguments(const QString& minecraftArguments)
 {
-    applyString(minecraftArguments, this->m_minecraftArguments);
+	applyString(minecraftArguments, this->m_minecraftArguments);
 }
 
 void LaunchProfile::applyAddnJvmArguments(const QStringList& addnJvmArguments)
 {
-    this->m_addnJvmArguments.append(addnJvmArguments);
+	this->m_addnJvmArguments.append(addnJvmArguments);
 }
 
 void LaunchProfile::applyMinecraftVersionType(const QString& type)
 {
-    applyString(type, this->m_minecraftVersionType);
+	applyString(type, this->m_minecraftVersionType);
 }
 
 void LaunchProfile::applyMinecraftAssets(MojangAssetIndexInfo::Ptr assets)
 {
-    if (assets) {
-        m_minecraftAssets = assets;
-    }
+	if (assets)
+	{
+		m_minecraftAssets = assets;
+	}
 }
 
 void LaunchProfile::applyTraits(const QSet<QString>& traits)
 {
-    this->m_traits.unite(traits);
+	this->m_traits.unite(traits);
 }
 
 void LaunchProfile::applyTweakers(const QStringList& tweakers)
 {
-    // if the applied tweakers override an existing one, skip it. this effectively moves it later in the sequence
-    QStringList newTweakers;
-    for (auto& tweaker : m_tweakers) {
-        if (tweakers.contains(tweaker)) {
-            continue;
-        }
-        newTweakers.append(tweaker);
-    }
-    // then just append the new tweakers (or moved original ones)
-    newTweakers += tweakers;
-    m_tweakers = newTweakers;
+	// if the applied tweakers override an existing one, skip it. this effectively moves it later in the sequence
+	QStringList newTweakers;
+	for (auto& tweaker : m_tweakers)
+	{
+		if (tweakers.contains(tweaker))
+		{
+			continue;
+		}
+		newTweakers.append(tweaker);
+	}
+	// then just append the new tweakers (or moved original ones)
+	newTweakers += tweakers;
+	m_tweakers = newTweakers;
 }
 
 void LaunchProfile::applyJarMods(const QList<LibraryPtr>& jarMods)
 {
-    this->m_jarMods.append(jarMods);
+	this->m_jarMods.append(jarMods);
 }
 
 static int findLibraryByName(QList<LibraryPtr>* haystack, const GradleSpecifier& needle)
 {
-    int retval = -1;
-    for (int i = 0; i < haystack->size(); ++i) {
-        if (haystack->at(i)->rawName().matchName(needle)) {
-            // only one is allowed.
-            if (retval != -1)
-                return -1;
-            retval = i;
-        }
-    }
-    return retval;
+	int retval = -1;
+	for (int i = 0; i < haystack->size(); ++i)
+	{
+		if (haystack->at(i)->rawName().matchName(needle))
+		{
+			// only one is allowed.
+			if (retval != -1)
+				return -1;
+			retval = i;
+		}
+	}
+	return retval;
 }
 
 void LaunchProfile::applyMods(const QList<LibraryPtr>& mods)
 {
-    QList<LibraryPtr>* list = &m_mods;
-    for (auto& mod : mods) {
-        auto modCopy = Library::limitedCopy(mod);
+	QList<LibraryPtr>* list = &m_mods;
+	for (auto& mod : mods)
+	{
+		auto modCopy = Library::limitedCopy(mod);
 
-        // find the mod by name.
-        const int index = findLibraryByName(list, mod->rawName());
-        // mod not found? just add it.
-        if (index < 0) {
-            list->append(modCopy);
-            return;
-        }
+		// find the mod by name.
+		const int index = findLibraryByName(list, mod->rawName());
+		// mod not found? just add it.
+		if (index < 0)
+		{
+			list->append(modCopy);
+			return;
+		}
 
-        auto existingLibrary = list->at(index);
-        // if we are higher it means we should update
-        if (Version(mod->version()) > Version(existingLibrary->version())) {
-            list->replace(index, modCopy);
-        }
-    }
+		auto existingLibrary = list->at(index);
+		// if we are higher it means we should update
+		if (Version(mod->version()) > Version(existingLibrary->version()))
+		{
+			list->replace(index, modCopy);
+		}
+	}
 }
 
 void LaunchProfile::applyCompatibleJavaMajors(QList<int>& javaMajor)
 {
-    m_compatibleJavaMajors.append(javaMajor);
+	m_compatibleJavaMajors.append(javaMajor);
 }
 
 void LaunchProfile::applyCompatibleJavaName(QString javaName)
 {
-    if (!javaName.isEmpty())
-        m_compatibleJavaName = javaName;
+	if (!javaName.isEmpty())
+		m_compatibleJavaName = javaName;
 }
 
 void LaunchProfile::applyLibrary(LibraryPtr library, const RuntimeContext& runtimeContext)
 {
-    if (!library->isActive(runtimeContext)) {
-        return;
-    }
+	if (!library->isActive(runtimeContext))
+	{
+		return;
+	}
 
-    QList<LibraryPtr>* list = &m_libraries;
-    if (library->isNative()) {
-        list = &m_nativeLibraries;
-    }
+	QList<LibraryPtr>* list = &m_libraries;
+	if (library->isNative())
+	{
+		list = &m_nativeLibraries;
+	}
 
-    auto libraryCopy = Library::limitedCopy(library);
+	auto libraryCopy = Library::limitedCopy(library);
 
-    // find the library by name.
-    const int index = findLibraryByName(list, library->rawName());
-    // library not found? just add it.
-    if (index < 0) {
-        list->append(libraryCopy);
-        return;
-    }
+	// find the library by name.
+	const int index = findLibraryByName(list, library->rawName());
+	// library not found? just add it.
+	if (index < 0)
+	{
+		list->append(libraryCopy);
+		return;
+	}
 
-    auto existingLibrary = list->at(index);
-    // if we are higher it means we should update
-    if (Version(library->version()) > Version(existingLibrary->version())) {
-        list->replace(index, libraryCopy);
-    }
+	auto existingLibrary = list->at(index);
+	// if we are higher it means we should update
+	if (Version(library->version()) > Version(existingLibrary->version()))
+	{
+		list->replace(index, libraryCopy);
+	}
 }
 
 void LaunchProfile::applyMavenFile(LibraryPtr mavenFile, const RuntimeContext& runtimeContext)
 {
-    if (!mavenFile->isActive(runtimeContext)) {
-        return;
-    }
+	if (!mavenFile->isActive(runtimeContext))
+	{
+		return;
+	}
 
-    if (mavenFile->isNative()) {
-        return;
-    }
+	if (mavenFile->isNative())
+	{
+		return;
+	}
 
-    // unlike libraries, we do not keep only one version or try to dedupe them
-    m_mavenFiles.append(Library::limitedCopy(mavenFile));
+	// unlike libraries, we do not keep only one version or try to dedupe them
+	m_mavenFiles.append(Library::limitedCopy(mavenFile));
 }
 
 void LaunchProfile::applyAgent(AgentPtr agent, const RuntimeContext& runtimeContext)
 {
-    auto lib = agent->library();
-    if (!lib->isActive(runtimeContext)) {
-        return;
-    }
+	auto lib = agent->library();
+	if (!lib->isActive(runtimeContext))
+	{
+		return;
+	}
 
-    if (lib->isNative()) {
-        return;
-    }
+	if (lib->isNative())
+	{
+		return;
+	}
 
-    m_agents.append(agent);
+	m_agents.append(agent);
 }
 
 const LibraryPtr LaunchProfile::getMainJar() const
 {
-    return m_mainJar;
+	return m_mainJar;
 }
 
 void LaunchProfile::applyMainJar(LibraryPtr jar)
 {
-    if (jar) {
-        m_mainJar = jar;
-    }
+	if (jar)
+	{
+		m_mainJar = jar;
+	}
 }
 
 void LaunchProfile::applyProblemSeverity(ProblemSeverity severity)
 {
-    if (m_problemSeverity < severity) {
-        m_problemSeverity = severity;
-    }
+	if (m_problemSeverity < severity)
+	{
+		m_problemSeverity = severity;
+	}
 }
 
 const QList<PatchProblem> LaunchProfile::getProblems() const
 {
-    QList<PatchProblem> problems;
+	QList<PatchProblem> problems;
 
-    // Check for critical configuration issues
-    if (m_mainClass.isEmpty() && m_appletClass.isEmpty()) {
-        problems.append({ ProblemSeverity::Error, QObject::tr("No main class or applet class specified") });
-    }
+	// Check for critical configuration issues
+	if (m_mainClass.isEmpty() && m_appletClass.isEmpty())
+	{
+		problems.append({ ProblemSeverity::Error, QObject::tr("No main class or applet class specified") });
+	}
 
-    if (m_minecraftVersion.isEmpty()) {
-        problems.append({ ProblemSeverity::Error, QObject::tr("Minecraft version is not specified") });
-    }
+	if (m_minecraftVersion.isEmpty())
+	{
+		problems.append({ ProblemSeverity::Error, QObject::tr("Minecraft version is not specified") });
+	}
 
-    if (m_minecraftArguments.isEmpty() && m_minecraftVersionType != "snapshot" && m_minecraftVersionType != "old_alpha") {
-        problems.append({ ProblemSeverity::Warning, QObject::tr("No game arguments specified (may be intentional)") });
-    }
+	if (m_minecraftArguments.isEmpty() && m_minecraftVersionType != "snapshot" && m_minecraftVersionType != "old_alpha")
+	{
+		problems.append({ ProblemSeverity::Warning, QObject::tr("No game arguments specified (may be intentional)") });
+	}
 
-    // Check for missing main jar
-    if (!m_mainJar) {
-        problems.append({ ProblemSeverity::Error, QObject::tr("Main jar file is missing") });
-    }
+	// Check for missing main jar
+	if (!m_mainJar)
+	{
+		problems.append({ ProblemSeverity::Error, QObject::tr("Main jar file is missing") });
+	}
 
-    // Check if there are any libraries at all
-    if (m_minecraftArguments.isEmpty() && m_minecraftVersionType != "snapshot" && m_minecraftVersionType != "old_alpha") {
-        problems.append({ ProblemSeverity::Warning, QObject::tr("No libraries specified (unusual for modern Minecraft)") });
-    }
+	// Check if there are any libraries at all
+	if (m_minecraftArguments.isEmpty() && m_minecraftVersionType != "snapshot" && m_minecraftVersionType != "old_alpha")
+	{
+		problems.append(
+			{ ProblemSeverity::Warning, QObject::tr("No libraries specified (unusual for modern Minecraft)") });
+	}
 
-    return problems;
+	return problems;
 }
 
 QString LaunchProfile::getMinecraftVersion() const
 {
-    return m_minecraftVersion;
+	return m_minecraftVersion;
 }
 
 QString LaunchProfile::getAppletClass() const
 {
-    return m_appletClass;
+	return m_appletClass;
 }
 
 QString LaunchProfile::getMainClass() const
 {
-    return m_mainClass;
+	return m_mainClass;
 }
 
 const QSet<QString>& LaunchProfile::getTraits() const
 {
-    return m_traits;
+	return m_traits;
 }
 
 const QStringList& LaunchProfile::getTweakers() const
 {
-    return m_tweakers;
+	return m_tweakers;
 }
 
 bool LaunchProfile::hasTrait(const QString& trait) const
 {
-    return m_traits.contains(trait);
+	return m_traits.contains(trait);
 }
 
 ProblemSeverity LaunchProfile::getProblemSeverity() const
 {
-    return m_problemSeverity;
+	return m_problemSeverity;
 }
 
 QString LaunchProfile::getMinecraftVersionType() const
 {
-    return m_minecraftVersionType;
+	return m_minecraftVersionType;
 }
 
 std::shared_ptr<MojangAssetIndexInfo> LaunchProfile::getMinecraftAssets() const
 {
-    if (!m_minecraftAssets) {
-        return std::make_shared<MojangAssetIndexInfo>("legacy");
-    }
-    return m_minecraftAssets;
+	if (!m_minecraftAssets)
+	{
+		return std::make_shared<MojangAssetIndexInfo>("legacy");
+	}
+	return m_minecraftAssets;
 }
 
 QString LaunchProfile::getMinecraftArguments() const
 {
-    return m_minecraftArguments;
+	return m_minecraftArguments;
 }
 
 const QStringList& LaunchProfile::getAddnJvmArguments() const
 {
-    return m_addnJvmArguments;
+	return m_addnJvmArguments;
 }
 
 const QList<LibraryPtr>& LaunchProfile::getJarMods() const
 {
-    return m_jarMods;
+	return m_jarMods;
 }
 
 const QList<LibraryPtr>& LaunchProfile::getLibraries() const
 {
-    return m_libraries;
+	return m_libraries;
 }
 
 const QList<LibraryPtr>& LaunchProfile::getNativeLibraries() const
 {
-    return m_nativeLibraries;
+	return m_nativeLibraries;
 }
 
 const QList<LibraryPtr>& LaunchProfile::getMavenFiles() const
 {
-    return m_mavenFiles;
+	return m_mavenFiles;
 }
 
 const QList<AgentPtr>& LaunchProfile::getAgents() const
 {
-    return m_agents;
+	return m_agents;
 }
 
 const QList<int>& LaunchProfile::getCompatibleJavaMajors() const
 {
-    return m_compatibleJavaMajors;
+	return m_compatibleJavaMajors;
 }
 
 const QString LaunchProfile::getCompatibleJavaName() const
 {
-    return m_compatibleJavaName;
+	return m_compatibleJavaName;
 }
 
 void LaunchProfile::getLibraryFiles(const RuntimeContext& runtimeContext,
-                                    QStringList& jars,
-                                    QStringList& nativeJars,
-                                    const QString& overridePath,
-                                    const QString& moddedJarSearchResultPath) const
+									QStringList& jars,
+									QStringList& nativeJars,
+									const QString& overridePath,
+									const QString& moddedJarSearchResultPath) const
 {
-    QStringList native32, native64;
-    jars.clear();
-    nativeJars.clear();
-    for (auto lib : getLibraries()) {
-        lib->getApplicableFiles(runtimeContext, jars, nativeJars, native32, native64, overridePath);
-    }
-    // NOTE: order is important here, add main jar last to the lists
-    if (m_mainJar) {
-        // NOTE: If we have jar mods, we use the modified jar allocated by ModMinecraftJar step
-        //       The modified jar is expected to be named "minecraft.jar" in the search path.
-        if (m_jarMods.size() && !moddedJarSearchResultPath.isEmpty()) {
-            QDir moddedJarDir(moddedJarSearchResultPath);
-            jars.append(moddedJarDir.absoluteFilePath("minecraft.jar"));
-        } else {
-            m_mainJar->getApplicableFiles(runtimeContext, jars, nativeJars, native32, native64, overridePath);
-        }
-    }
-    for (auto lib : getNativeLibraries()) {
-        lib->getApplicableFiles(runtimeContext, jars, nativeJars, native32, native64, overridePath);
-    }
-    if (runtimeContext.javaArchitecture == "32") {
-        nativeJars.append(native32);
-    } else if (runtimeContext.javaArchitecture == "64") {
-        nativeJars.append(native64);
-    }
+	QStringList native32, native64;
+	jars.clear();
+	nativeJars.clear();
+	for (auto lib : getLibraries())
+	{
+		lib->getApplicableFiles(runtimeContext, jars, nativeJars, native32, native64, overridePath);
+	}
+	// NOTE: order is important here, add main jar last to the lists
+	if (m_mainJar)
+	{
+		// NOTE: If we have jar mods, we use the modified jar allocated by ModMinecraftJar step
+		//       The modified jar is expected to be named "minecraft.jar" in the search path.
+		if (m_jarMods.size() && !moddedJarSearchResultPath.isEmpty())
+		{
+			QDir moddedJarDir(moddedJarSearchResultPath);
+			jars.append(moddedJarDir.absoluteFilePath("minecraft.jar"));
+		}
+		else
+		{
+			m_mainJar->getApplicableFiles(runtimeContext, jars, nativeJars, native32, native64, overridePath);
+		}
+	}
+	for (auto lib : getNativeLibraries())
+	{
+		lib->getApplicableFiles(runtimeContext, jars, nativeJars, native32, native64, overridePath);
+	}
+	if (runtimeContext.javaArchitecture == "32")
+	{
+		nativeJars.append(native32);
+	}
+	else if (runtimeContext.javaArchitecture == "64")
+	{
+		nativeJars.append(native64);
+	}
 }

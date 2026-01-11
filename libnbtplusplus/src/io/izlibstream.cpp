@@ -20,74 +20,80 @@
 #include "io/izlibstream.h"
 #include "io/zlib_streambuf.h"
 
-namespace zlib {
-
-inflate_streambuf::inflate_streambuf(std::istream& input, size_t bufsize, int window_bits)
-    : zlib_streambuf(bufsize), is(input), stream_end(false)
+namespace zlib
 {
-    zstr.next_in = Z_NULL;
-    zstr.avail_in = 0;
-    int ret = inflateInit2(&zstr, window_bits);
-    if (ret != Z_OK)
-        throw zlib_error(zstr.msg, ret);
 
-    char* end = out.data() + out.size();
-    setg(end, end, end);
-}
+	inflate_streambuf::inflate_streambuf(std::istream& input, size_t bufsize, int window_bits)
+		: zlib_streambuf(bufsize),
+		  is(input),
+		  stream_end(false)
+	{
+		zstr.next_in  = Z_NULL;
+		zstr.avail_in = 0;
+		int ret		  = inflateInit2(&zstr, window_bits);
+		if (ret != Z_OK)
+			throw zlib_error(zstr.msg, ret);
 
-inflate_streambuf::~inflate_streambuf() noexcept
-{
-    inflateEnd(&zstr);
-}
+		char* end = out.data() + out.size();
+		setg(end, end, end);
+	}
 
-inflate_streambuf::int_type inflate_streambuf::underflow()
-{
-    if (gptr() < egptr())
-        return traits_type::to_int_type(*gptr());
+	inflate_streambuf::~inflate_streambuf() noexcept
+	{
+		inflateEnd(&zstr);
+	}
 
-    size_t have;
-    do {
-        // Read if input buffer is empty
-        if (zstr.avail_in <= 0) {
-            is.read(in.data(), in.size());
-            if (is.bad())
-                throw std::ios_base::failure("Input stream is bad");
-            size_t count = is.gcount();
-            if (count == 0 && !stream_end)
-                throw zlib_error("Unexpected end of stream", Z_DATA_ERROR);
+	inflate_streambuf::int_type inflate_streambuf::underflow()
+	{
+		if (gptr() < egptr())
+			return traits_type::to_int_type(*gptr());
 
-            zstr.next_in = reinterpret_cast<Bytef*>(in.data());
-            zstr.avail_in = count;
-        }
+		size_t have;
+		do
+		{
+			// Read if input buffer is empty
+			if (zstr.avail_in <= 0)
+			{
+				is.read(in.data(), in.size());
+				if (is.bad())
+					throw std::ios_base::failure("Input stream is bad");
+				size_t count = is.gcount();
+				if (count == 0 && !stream_end)
+					throw zlib_error("Unexpected end of stream", Z_DATA_ERROR);
 
-        zstr.next_out = reinterpret_cast<Bytef*>(out.data());
-        zstr.avail_out = out.size();
+				zstr.next_in  = reinterpret_cast<Bytef*>(in.data());
+				zstr.avail_in = count;
+			}
 
-        int ret = inflate(&zstr, Z_NO_FLUSH);
-        have = out.size() - zstr.avail_out;
-        switch (ret) {
-            case Z_NEED_DICT:
-            case Z_DATA_ERROR:
-                throw zlib_error(zstr.msg, ret);
+			zstr.next_out  = reinterpret_cast<Bytef*>(out.data());
+			zstr.avail_out = out.size();
 
-            case Z_MEM_ERROR:
-                throw std::bad_alloc();
+			int ret = inflate(&zstr, Z_NO_FLUSH);
+			have	= out.size() - zstr.avail_out;
+			switch (ret)
+			{
+				case Z_NEED_DICT:
+				case Z_DATA_ERROR: throw zlib_error(zstr.msg, ret);
 
-            case Z_STREAM_END:
-                if (!stream_end) {
-                    stream_end = true;
-                    // In case we consumed too much, we have to rewind the input stream
-                    is.clear();
-                    is.seekg(-static_cast<std::streamoff>(zstr.avail_in), std::ios_base::cur);
-                }
-                if (have == 0)
-                    return traits_type::eof();
-                break;
-        }
-    } while (have == 0);
+				case Z_MEM_ERROR: throw std::bad_alloc();
 
-    setg(out.data(), out.data(), out.data() + have);
-    return traits_type::to_int_type(*gptr());
-}
+				case Z_STREAM_END:
+					if (!stream_end)
+					{
+						stream_end = true;
+						// In case we consumed too much, we have to rewind the input stream
+						is.clear();
+						is.seekg(-static_cast<std::streamoff>(zstr.avail_in), std::ios_base::cur);
+					}
+					if (have == 0)
+						return traits_type::eof();
+					break;
+			}
+		}
+		while (have == 0);
 
-}  // namespace zlib
+		setg(out.data(), out.data(), out.data() + have);
+		return traits_type::to_int_type(*gptr());
+	}
+
+} // namespace zlib

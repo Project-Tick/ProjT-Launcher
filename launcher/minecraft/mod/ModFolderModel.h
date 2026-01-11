@@ -76,39 +76,51 @@ class QFileSystemWatcher;
  * A legacy mod list.
  * Backed by a folder.
  */
-class ModFolderModel : public ResourceFolderModel {
-    Q_OBJECT
-   public:
-    enum Columns {
-        ActiveColumn = 0,
-        ImageColumn,
-        NameColumn,
-        VersionColumn,
-        DateColumn,
-        ProviderColumn,
-        SizeColumn,
-        SideColumn,
-        LoadersColumn,
-        McVersionsColumn,
-        ReleaseTypeColumn,
-        NUM_COLUMNS
-    };
-    ModFolderModel(const QDir& dir, BaseInstance* instance, bool is_indexed, bool create_dir, QObject* parent = nullptr);
+class ModFolderModel : public ResourceFolderModel
+{
+	Q_OBJECT
+  public:
+	enum Columns
+	{
+		ActiveColumn = 0,
+		ImageColumn,
+		NameColumn,
+		VersionColumn,
+		DateColumn,
+		ProviderColumn,
+		SizeColumn,
+		SideColumn,
+		LoadersColumn,
+		McVersionsColumn,
+		ReleaseTypeColumn,
+		NUM_COLUMNS
+	};
+	ModFolderModel(const QDir& dir,
+				   BaseInstance* instance,
+				   bool is_indexed,
+				   bool create_dir,
+				   QObject* parent = nullptr);
 
-    virtual QString id() const override { return "mods"; }
+	virtual QString id() const override
+	{
+		return "mods";
+	}
 
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-    int columnCount(const QModelIndex& parent) const override;
+	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+	int columnCount(const QModelIndex& parent) const override;
 
-    [[nodiscard]] Resource* createResource(const QFileInfo& file) override { return new Mod(file); }
-    [[nodiscard]] Task* createParseTask(Resource&) override;
+	[[nodiscard]] Resource* createResource(const QFileInfo& file) override
+	{
+		return new Mod(file);
+	}
+	[[nodiscard]] Task* createParseTask(Resource&) override;
 
-    bool isValid();
+	bool isValid();
 
-    RESOURCE_HELPERS(Mod)
+	RESOURCE_HELPERS(Mod)
 
-   private slots:
-    void onParseSucceeded(int ticket, QString resource_id) override;
+  private slots:
+	void onParseSucceeded(int ticket, QString resource_id) override;
 };

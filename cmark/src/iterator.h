@@ -2,22 +2,25 @@
 #define CMARK_ITERATOR_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "cmark.h"
 
-typedef struct {
-    cmark_event_type ev_type;
-    cmark_node* node;
-} cmark_iter_state;
+	typedef struct
+	{
+		cmark_event_type ev_type;
+		cmark_node* node;
+	} cmark_iter_state;
 
-struct cmark_iter {
-    cmark_mem* mem;
-    cmark_node* root;
-    cmark_iter_state cur;
-    cmark_iter_state next;
-};
+	struct cmark_iter
+	{
+		cmark_mem* mem;
+		cmark_node* root;
+		cmark_iter_state cur;
+		cmark_iter_state next;
+	};
 
 #ifdef __cplusplus
 }

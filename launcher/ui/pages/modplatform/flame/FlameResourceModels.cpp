@@ -33,43 +33,44 @@
 #include "modplatform/flame/FlameAPI.h"
 #include "ui/pages/modplatform/flame/FlameResourcePages.h"
 
-namespace ResourceDownload {
-
-static bool isOptedOut(const ModPlatform::IndexedVersion& ver)
+namespace ResourceDownload
 {
-    return ver.downloadUrl.isEmpty();
-}
 
-FlameTexturePackModel::FlameTexturePackModel(const BaseInstance& base)
-    : TexturePackResourceModel(base, new FlameAPI, Flame::debugName(), Flame::metaEntryBase())
-{}
+	static bool isOptedOut(const ModPlatform::IndexedVersion& ver)
+	{
+		return ver.downloadUrl.isEmpty();
+	}
 
-ResourceAPI::SearchArgs FlameTexturePackModel::createSearchArguments()
-{
-    auto args = TexturePackResourceModel::createSearchArguments();
+	FlameTexturePackModel::FlameTexturePackModel(const BaseInstance& base)
+		: TexturePackResourceModel(base, new FlameAPI, Flame::debugName(), Flame::metaEntryBase())
+	{}
 
-    auto profile = static_cast<const MinecraftInstance&>(m_base_instance).getPackProfile();
-    QString instance_minecraft_version = profile->getComponentVersion("net.minecraft");
+	ResourceAPI::SearchArgs FlameTexturePackModel::createSearchArguments()
+	{
+		auto args = TexturePackResourceModel::createSearchArguments();
 
-    // Bypass the texture pack logic, because we can't do multiple versions in the API query
-    args.versions = { instance_minecraft_version };
+		auto profile					   = static_cast<const MinecraftInstance&>(m_base_instance).getPackProfile();
+		QString instance_minecraft_version = profile->getComponentVersion("net.minecraft");
 
-    return args;
-}
+		// Bypass the texture pack logic, because we can't do multiple versions in the API query
+		args.versions = { instance_minecraft_version };
 
-ResourceAPI::VersionSearchArgs FlameTexturePackModel::createVersionsArguments(const QModelIndex& entry)
-{
-    auto args = TexturePackResourceModel::createVersionsArguments(entry);
+		return args;
+	}
 
-    // Bypass the texture pack logic, because we can't do multiple versions in the API query
-    args.mcVersions = {};
+	ResourceAPI::VersionSearchArgs FlameTexturePackModel::createVersionsArguments(const QModelIndex& entry)
+	{
+		auto args = TexturePackResourceModel::createVersionsArguments(entry);
 
-    return args;
-}
+		// Bypass the texture pack logic, because we can't do multiple versions in the API query
+		args.mcVersions = {};
 
-bool FlameTexturePackModel::optedOut(const ModPlatform::IndexedVersion& ver) const
-{
-    return isOptedOut(ver);
-}
+		return args;
+	}
 
-}  // namespace ResourceDownload
+	bool FlameTexturePackModel::optedOut(const ModPlatform::IndexedVersion& ver) const
+	{
+		return isOptedOut(ver);
+	}
+
+} // namespace ResourceDownload

@@ -62,61 +62,92 @@
 #include "minecraft/launch/MinecraftTarget.h"
 
 class InstanceWindow;
-class LaunchController : public Task {
-    Q_OBJECT
-   public:
-    void executeTask() override;
+class LaunchController : public Task
+{
+	Q_OBJECT
+  public:
+	void executeTask() override;
 
-    LaunchController();
-    virtual ~LaunchController() = default;
+	LaunchController();
+	virtual ~LaunchController() = default;
 
-    void setInstance(InstancePtr instance) { m_instance = instance; }
+	void setInstance(InstancePtr instance)
+	{
+		m_instance = instance;
+	}
 
-    InstancePtr instance() { return m_instance; }
+	InstancePtr instance()
+	{
+		return m_instance;
+	}
 
-    void setOnline(bool online) { m_online = online; }
+	void setOnline(bool online)
+	{
+		m_online = online;
+	}
 
-    void setOfflineName(const QString& offlineName) { m_offlineName = offlineName; }
+	void setOfflineName(const QString& offlineName)
+	{
+		m_offlineName = offlineName;
+	}
 
-    void setDemo(bool demo) { m_demo = demo; }
+	void setDemo(bool demo)
+	{
+		m_demo = demo;
+	}
 
-    void setProfiler(BaseProfilerFactory* profiler) { m_profiler = profiler; }
+	void setProfiler(BaseProfilerFactory* profiler)
+	{
+		m_profiler = profiler;
+	}
 
-    void setParentWidget(QWidget* widget) { m_parentWidget = widget; }
+	void setParentWidget(QWidget* widget)
+	{
+		m_parentWidget = widget;
+	}
 
-    void setTargetToJoin(MinecraftTarget::Ptr targetToJoin) { m_targetToJoin = std::move(targetToJoin); }
+	void setTargetToJoin(MinecraftTarget::Ptr targetToJoin)
+	{
+		m_targetToJoin = std::move(targetToJoin);
+	}
 
-    void setAccountToUse(MinecraftAccountPtr accountToUse) { m_accountToUse = std::move(accountToUse); }
+	void setAccountToUse(MinecraftAccountPtr accountToUse)
+	{
+		m_accountToUse = std::move(accountToUse);
+	}
 
-    QString id() { return m_instance->id(); }
+	QString id()
+	{
+		return m_instance->id();
+	}
 
-    bool abort() override;
+	bool abort() override;
 
-   private:
-    void login();
-    void launchInstance();
-    void decideAccount();
-    bool askPlayDemo();
-    QString askOfflineName(QString playerName, bool demo, bool& ok);
-    bool reauthenticateAccount(MinecraftAccountPtr account);
+  private:
+	void login();
+	void launchInstance();
+	void decideAccount();
+	bool askPlayDemo();
+	QString askOfflineName(QString playerName, bool demo, bool& ok);
+	bool reauthenticateAccount(MinecraftAccountPtr account);
 
-   private slots:
-    void readyForLaunch();
+  private slots:
+	void readyForLaunch();
 
-    void onSucceeded();
-    void onFailed(QString reason);
-    void onProgressRequested(Task* task);
+	void onSucceeded();
+	void onFailed(QString reason);
+	void onProgressRequested(Task* task);
 
-   private:
-    BaseProfilerFactory* m_profiler = nullptr;
-    bool m_online = true;
-    QString m_offlineName;
-    bool m_demo = false;
-    InstancePtr m_instance;
-    QWidget* m_parentWidget = nullptr;
-    InstanceWindow* m_console = nullptr;
-    MinecraftAccountPtr m_accountToUse = nullptr;
-    AuthSessionPtr m_session;
-    shared_qobject_ptr<LaunchTask> m_launcher;
-    MinecraftTarget::Ptr m_targetToJoin;
+  private:
+	BaseProfilerFactory* m_profiler = nullptr;
+	bool m_online					= true;
+	QString m_offlineName;
+	bool m_demo = false;
+	InstancePtr m_instance;
+	QWidget* m_parentWidget			   = nullptr;
+	InstanceWindow* m_console		   = nullptr;
+	MinecraftAccountPtr m_accountToUse = nullptr;
+	AuthSessionPtr m_session;
+	shared_qobject_ptr<LaunchTask> m_launcher;
+	MinecraftTarget::Ptr m_targetToJoin;
 };

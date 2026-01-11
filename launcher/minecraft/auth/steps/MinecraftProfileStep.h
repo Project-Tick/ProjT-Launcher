@@ -25,22 +25,23 @@
 #include "net/Download.h"
 #include "net/NetJob.h"
 
-class MinecraftProfileStep : public AuthStep {
-    Q_OBJECT
+class MinecraftProfileStep : public AuthStep
+{
+	Q_OBJECT
 
-   public:
-    explicit MinecraftProfileStep(AccountData* data);
-    virtual ~MinecraftProfileStep() noexcept = default;
+  public:
+	explicit MinecraftProfileStep(AccountData* data);
+	virtual ~MinecraftProfileStep() noexcept = default;
 
-    void perform() override;
+	void perform() override;
 
-    QString describe() override;
+	QString describe() override;
 
-   private slots:
-    void onRequestDone();
+  private slots:
+	void onRequestDone();
 
-   private:
-    std::shared_ptr<QByteArray> m_response;
-    Net::Download::Ptr m_request;
-    NetJob::Ptr m_task;
+  private:
+	std::shared_ptr<QByteArray> m_response;
+	Net::Download::Ptr m_request;
+	NetJob::Ptr m_task;
 };

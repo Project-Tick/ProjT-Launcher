@@ -45,42 +45,50 @@
 
 bool JavaInstall::operator<(const JavaInstall& rhs) const
 {
-    auto archCompare = StringUtils::naturalCompare(arch, rhs.arch, Qt::CaseInsensitive);
-    if (archCompare != 0)
-        return archCompare < 0;
-    if (id < rhs.id) {
-        return true;
-    }
-    if (id > rhs.id) {
-        return false;
-    }
-    return StringUtils::naturalCompare(path, rhs.path, Qt::CaseInsensitive) < 0;
+	auto archCompare = StringUtils::naturalCompare(arch, rhs.arch, Qt::CaseInsensitive);
+	if (archCompare != 0)
+		return archCompare < 0;
+	if (id < rhs.id)
+	{
+		return true;
+	}
+	if (id > rhs.id)
+	{
+		return false;
+	}
+	return StringUtils::naturalCompare(path, rhs.path, Qt::CaseInsensitive) < 0;
 }
 
 bool JavaInstall::operator==(const JavaInstall& rhs) const
 {
-    return arch == rhs.arch && id == rhs.id && path == rhs.path;
+	return arch == rhs.arch && id == rhs.id && path == rhs.path;
 }
 
 bool JavaInstall::operator>(const JavaInstall& rhs) const
 {
-    return (!operator<(rhs)) && (!operator==(rhs));
+	return (!operator<(rhs)) && (!operator==(rhs));
 }
 
 bool JavaInstall::operator<(BaseVersion& a) const
 {
-    try {
-        return operator<(dynamic_cast<JavaInstall&>(a));
-    } catch (const std::bad_cast& e) {
-        return BaseVersion::operator<(a);
-    }
+	try
+	{
+		return operator<(dynamic_cast<JavaInstall&>(a));
+	}
+	catch (const std::bad_cast& e)
+	{
+		return BaseVersion::operator<(a);
+	}
 }
 
 bool JavaInstall::operator>(BaseVersion& a) const
 {
-    try {
-        return operator>(dynamic_cast<JavaInstall&>(a));
-    } catch (const std::bad_cast& e) {
-        return BaseVersion::operator>(a);
-    }
+	try
+	{
+		return operator>(dynamic_cast<JavaInstall&>(a));
+	}
+	catch (const std::bad_cast& e)
+	{
+		return BaseVersion::operator>(a);
+	}
 }

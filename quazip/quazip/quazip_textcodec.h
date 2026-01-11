@@ -35,20 +35,21 @@ typedef QTextCodec QuazipTextCodec;
 #endif
 
 #ifndef QUAZIP_CAN_USE_QTEXTCODEC
-class QUAZIP_EXPORT QuazipTextCodec {
-   public:
-    explicit QuazipTextCodec();
+class QUAZIP_EXPORT QuazipTextCodec
+{
+  public:
+	explicit QuazipTextCodec();
 
-    QByteArray fromUnicode(const QString& str) const;
-    QString toUnicode(const QByteArray& a) const;
+	QByteArray fromUnicode(const QString& str) const;
+	QString toUnicode(const QByteArray& a) const;
 
-    static QuazipTextCodec* codecForName(const QByteArray& name);
-    static QuazipTextCodec* codecForLocale();
+	static QuazipTextCodec* codecForName(const QByteArray& name);
+	static QuazipTextCodec* codecForLocale();
 
-   protected:
-    static void setup();
-    QStringConverter::Encoding mEncoding;
+  protected:
+	static void setup();
+	QStringConverter::Encoding mEncoding;
 };
-#endif  // QUAZIP_CAN_USE_QTEXTCODEC
+#endif // QUAZIP_CAN_USE_QTEXTCODEC
 
-#endif  // QUAZIPTEXTCODEC_H
+#endif // QUAZIPTEXTCODEC_H

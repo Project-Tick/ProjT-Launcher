@@ -59,22 +59,23 @@
 #include "Library.h"
 #include "VersionFile.h"
 
-namespace ProfileUtils {
-using PatchOrder = QStringList;
+namespace ProfileUtils
+{
+	using PatchOrder = QStringList;
 
-/// Read and parse a OneSix format order file
-bool readOverrideOrders(QString path, PatchOrder& order);
+	/// Read and parse a OneSix format order file
+	bool readOverrideOrders(QString path, PatchOrder& order);
 
-/// Write a OneSix format order file
-bool writeOverrideOrders(QString path, const PatchOrder& order);
+	/// Write a OneSix format order file
+	bool writeOverrideOrders(QString path, const PatchOrder& order);
 
-/// Parse a version file in JSON format
-VersionFilePtr parseJsonFile(const QFileInfo& fileInfo, bool requireOrder);
+	/// Parse a version file in JSON format
+	VersionFilePtr parseJsonFile(const QFileInfo& fileInfo, bool requireOrder);
 
-/// Save a JSON file (in any format)
-bool saveJsonFile(const QJsonDocument& doc, const QString& filename);
+	/// Save a JSON file (in any format)
+	bool saveJsonFile(const QJsonDocument& doc, const QString& filename);
 
-/// Remove LWJGL from a patch file. This is applied to all Mojang-like profile files.
-void removeLwjglFromPatch(VersionFilePtr patch);
+	/// Remove LWJGL from a patch file. This is applied to all Mojang-like profile files.
+	void removeLwjglFromPatch(VersionFilePtr patch);
 
-}  // namespace ProfileUtils
+} // namespace ProfileUtils

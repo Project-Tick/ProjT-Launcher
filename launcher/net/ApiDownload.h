@@ -42,12 +42,16 @@
 
 #include "Download.h"
 
-namespace Net {
+namespace Net
+{
 
-namespace ApiDownload {
-Download::Ptr makeCached(QUrl url, MetaEntryPtr entry, Download::Options options = Download::Option::NoOptions);
-Download::Ptr makeByteArray(QUrl url, std::shared_ptr<QByteArray> output, Download::Options options = Download::Option::NoOptions);
-Download::Ptr makeFile(QUrl url, QString path, Download::Options options = Download::Option::NoOptions);
-};  // namespace ApiDownload
+	namespace ApiDownload
+	{
+		Download::Ptr makeCached(QUrl url, MetaEntryPtr entry, Download::Options options = Download::Option::NoOptions);
+		Download::Ptr makeByteArray(QUrl url,
+									std::shared_ptr<QByteArray> output,
+									Download::Options options = Download::Option::NoOptions);
+		Download::Ptr makeFile(QUrl url, QString path, Download::Options options = Download::Option::NoOptions);
+	}; // namespace ApiDownload
 
-}  // namespace Net
+} // namespace Net

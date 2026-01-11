@@ -63,27 +63,31 @@
 #include "minecraft/MinecraftInstance.h"
 #include "tasks/Task.h"
 
-class AutoInstallJava : public LaunchStep {
-    Q_OBJECT
+class AutoInstallJava : public LaunchStep
+{
+	Q_OBJECT
 
-   public:
-    explicit AutoInstallJava(LaunchTask* parent);
-    ~AutoInstallJava() override = default;
+  public:
+	explicit AutoInstallJava(LaunchTask* parent);
+	~AutoInstallJava() override = default;
 
-    void executeTask() override;
-    bool canAbort() const override { return m_current_task ? m_current_task->canAbort() : false; }
-    bool abort() override;
+	void executeTask() override;
+	bool canAbort() const override
+	{
+		return m_current_task ? m_current_task->canAbort() : false;
+	}
+	bool abort() override;
 
-   protected:
-    void setJavaPath(QString path);
-    void setJavaPathFromPartial();
-    void downloadJava(Meta::Version::Ptr version, QString javaName);
-    void tryNextMajorJava();
+  protected:
+	void setJavaPath(QString path);
+	void setJavaPathFromPartial();
+	void downloadJava(Meta::Version::Ptr version, QString javaName);
+	void tryNextMajorJava();
 
-   private:
-    MinecraftInstancePtr m_instance;
-    Task::Ptr m_current_task;
+  private:
+	MinecraftInstancePtr m_instance;
+	Task::Ptr m_current_task;
 
-    qsizetype m_majorJavaVersionIndex = 0;
-    const QString m_supported_arch;
+	qsizetype m_majorJavaVersionIndex = 0;
+	const QString m_supported_arch;
 };

@@ -60,13 +60,17 @@
 #include <launch/LaunchStep.h>
 #include <launch/LaunchTask.h>
 
-class VerifyJavaInstall : public LaunchStep {
-    Q_OBJECT
+class VerifyJavaInstall : public LaunchStep
+{
+	Q_OBJECT
 
-   public:
-    explicit VerifyJavaInstall(LaunchTask* parent) : LaunchStep(parent) {};
-    ~VerifyJavaInstall() override = default;
+  public:
+	explicit VerifyJavaInstall(LaunchTask* parent) : LaunchStep(parent) {};
+	~VerifyJavaInstall() override = default;
 
-    void executeTask() override;
-    bool canAbort() const override { return false; }
+	void executeTask() override;
+	bool canAbort() const override
+	{
+		return false;
+	}
 };

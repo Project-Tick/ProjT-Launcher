@@ -33,18 +33,19 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-    ======================================================================== */
+	======================================================================== */
 
 #include "Markdown.h"
 
 QString markdownToHTML(const QString& markdown)
 {
-    const QByteArray markdownData = markdown.toUtf8();
-    char* buffer = cmark_markdown_to_html(markdownData.constData(), markdownData.length(), CMARK_OPT_NOBREAKS | CMARK_OPT_UNSAFE);
+	const QByteArray markdownData = markdown.toUtf8();
+	char* buffer =
+		cmark_markdown_to_html(markdownData.constData(), markdownData.length(), CMARK_OPT_NOBREAKS | CMARK_OPT_UNSAFE);
 
-    QString htmlStr(buffer);
+	QString htmlStr(buffer);
 
-    free(buffer);
+	free(buffer);
 
-    return htmlStr;
+	return htmlStr;
 }

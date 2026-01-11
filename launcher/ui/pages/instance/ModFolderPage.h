@@ -64,64 +64,106 @@
 #include "ExternalResourcesPage.h"
 #include "ui/dialogs/ResourceDownloadDialog.h"
 
-class ModFolderPage : public ExternalResourcesPage {
-    Q_OBJECT
+class ModFolderPage : public ExternalResourcesPage
+{
+	Q_OBJECT
 
-   public:
-    explicit ModFolderPage(BaseInstance* inst, std::shared_ptr<ModFolderModel> model, QWidget* parent = nullptr);
-    virtual ~ModFolderPage() = default;
+  public:
+	explicit ModFolderPage(BaseInstance* inst, std::shared_ptr<ModFolderModel> model, QWidget* parent = nullptr);
+	virtual ~ModFolderPage() = default;
 
-    void setFilter(const QString& filter) { m_fileSelectionFilter = filter; }
+	void setFilter(const QString& filter)
+	{
+		m_fileSelectionFilter = filter;
+	}
 
-    virtual QString displayName() const override { return tr("Mods"); }
-    virtual QIcon icon() const override { return QIcon::fromTheme("loadermods"); }
-    virtual QString id() const override { return "mods"; }
-    virtual QString helpPage() const override { return "Loader-mods"; }
+	virtual QString displayName() const override
+	{
+		return tr("Mods");
+	}
+	virtual QIcon icon() const override
+	{
+		return QIcon::fromTheme("loadermods");
+	}
+	virtual QString id() const override
+	{
+		return "mods";
+	}
+	virtual QString helpPage() const override
+	{
+		return "Loader-mods";
+	}
 
-    virtual bool shouldDisplay() const override;
+	virtual bool shouldDisplay() const override;
 
-   public slots:
-    void updateFrame(const QModelIndex& current, const QModelIndex& previous) override;
+  public slots:
+	void updateFrame(const QModelIndex& current, const QModelIndex& previous) override;
 
-   private slots:
-    void removeItems(const QItemSelection& selection) override;
+  private slots:
+	void removeItems(const QItemSelection& selection) override;
 
-    void downloadMods();
-    void downloadDialogFinished(int result);
-    void updateMods(bool includeDeps = false);
-    void deleteModMetadata();
-    void exportModMetadata();
-    void changeModVersion();
+	void downloadMods();
+	void downloadDialogFinished(int result);
+	void updateMods(bool includeDeps = false);
+	void deleteModMetadata();
+	void exportModMetadata();
+	void changeModVersion();
 
-   protected:
-    std::shared_ptr<ModFolderModel> m_model;
-    QPointer<ResourceDownload::ModDownloadDialog> m_downloadDialog;
+  protected:
+	std::shared_ptr<ModFolderModel> m_model;
+	QPointer<ResourceDownload::ModDownloadDialog> m_downloadDialog;
 };
 
-class CoreModFolderPage : public ModFolderPage {
-    Q_OBJECT
-   public:
-    explicit CoreModFolderPage(BaseInstance* inst, std::shared_ptr<ModFolderModel> mods, QWidget* parent = 0);
-    virtual ~CoreModFolderPage() = default;
+class CoreModFolderPage : public ModFolderPage
+{
+	Q_OBJECT
+  public:
+	explicit CoreModFolderPage(BaseInstance* inst, std::shared_ptr<ModFolderModel> mods, QWidget* parent = 0);
+	virtual ~CoreModFolderPage() = default;
 
-    virtual QString displayName() const override { return tr("Core Mods"); }
-    virtual QIcon icon() const override { return QIcon::fromTheme("coremods"); }
-    virtual QString id() const override { return "coremods"; }
-    virtual QString helpPage() const override { return "Core-mods"; }
+	virtual QString displayName() const override
+	{
+		return tr("Core Mods");
+	}
+	virtual QIcon icon() const override
+	{
+		return QIcon::fromTheme("coremods");
+	}
+	virtual QString id() const override
+	{
+		return "coremods";
+	}
+	virtual QString helpPage() const override
+	{
+		return "Core-mods";
+	}
 
-    virtual bool shouldDisplay() const override;
+	virtual bool shouldDisplay() const override;
 };
 
-class NilModFolderPage : public ModFolderPage {
-    Q_OBJECT
-   public:
-    explicit NilModFolderPage(BaseInstance* inst, std::shared_ptr<ModFolderModel> mods, QWidget* parent = 0);
-    virtual ~NilModFolderPage() = default;
+class NilModFolderPage : public ModFolderPage
+{
+	Q_OBJECT
+  public:
+	explicit NilModFolderPage(BaseInstance* inst, std::shared_ptr<ModFolderModel> mods, QWidget* parent = 0);
+	virtual ~NilModFolderPage() = default;
 
-    virtual QString displayName() const override { return tr("Nilmods"); }
-    virtual QIcon icon() const override { return QIcon::fromTheme("coremods"); }
-    virtual QString id() const override { return "nilmods"; }
-    virtual QString helpPage() const override { return "Nilmods"; }
+	virtual QString displayName() const override
+	{
+		return tr("Nilmods");
+	}
+	virtual QIcon icon() const override
+	{
+		return QIcon::fromTheme("coremods");
+	}
+	virtual QString id() const override
+	{
+		return "nilmods";
+	}
+	virtual QString helpPage() const override
+	{
+		return "Nilmods";
+	}
 
-    virtual bool shouldDisplay() const override;
+	virtual bool shouldDisplay() const override;
 };

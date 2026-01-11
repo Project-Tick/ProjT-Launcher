@@ -61,107 +61,116 @@
 
 bool JavaCommon::checkJVMArgs(QString jvmargs, QWidget* parent)
 {
-    static const QRegularExpression s_memRegex("-Xm[sx]");
-    static const QRegularExpression s_versionRegex("-version:.*");
-    if (jvmargs.contains("-XX:PermSize=") || jvmargs.contains(s_memRegex) || jvmargs.contains("-XX-MaxHeapSize") ||
-        jvmargs.contains("-XX:InitialHeapSize")) {
-        auto warnStr = QObject::tr(
-            "You tried to manually set a JVM memory option (using \"-XX:PermSize\", \"-XX-MaxHeapSize\", \"-XX:InitialHeapSize\", \"-Xmx\" "
-            "or \"-Xms\").\n"
-            "There are dedicated boxes for these in the settings (Java tab, in the Memory group at the top).\n"
-            "This message will be displayed until you remove them from the JVM arguments.");
-        CustomMessageBox::selectable(parent, QObject::tr("JVM arguments warning"), warnStr, QMessageBox::Warning)->exec();
-        return false;
-    }
-    // block lunacy with passing required version to the JVM
-    if (jvmargs.contains(s_versionRegex)) {
-        auto warnStr = QObject::tr(
-            "You tried to pass required Java version argument to the JVM (using \"-version:xxx\"). This is not safe and will not be "
-            "allowed.\n"
-            "This message will be displayed until you remove this from the JVM arguments.");
-        CustomMessageBox::selectable(parent, QObject::tr("JVM arguments warning"), warnStr, QMessageBox::Warning)->exec();
-        return false;
-    }
-    return true;
+	static const QRegularExpression s_memRegex("-Xm[sx]");
+	static const QRegularExpression s_versionRegex("-version:.*");
+	if (jvmargs.contains("-XX:PermSize=") || jvmargs.contains(s_memRegex) || jvmargs.contains("-XX-MaxHeapSize")
+		|| jvmargs.contains("-XX:InitialHeapSize"))
+	{
+		auto warnStr = QObject::tr(
+			"You tried to manually set a JVM memory option (using \"-XX:PermSize\", \"-XX-MaxHeapSize\", "
+			"\"-XX:InitialHeapSize\", \"-Xmx\" "
+			"or \"-Xms\").\n"
+			"There are dedicated boxes for these in the settings (Java tab, in the Memory group at the top).\n"
+			"This message will be displayed until you remove them from the JVM arguments.");
+		CustomMessageBox::selectable(parent, QObject::tr("JVM arguments warning"), warnStr, QMessageBox::Warning)
+			->exec();
+		return false;
+	}
+	// block lunacy with passing required version to the JVM
+	if (jvmargs.contains(s_versionRegex))
+	{
+		auto warnStr = QObject::tr("You tried to pass required Java version argument to the JVM (using "
+								   "\"-version:xxx\"). This is not safe and will not be "
+								   "allowed.\n"
+								   "This message will be displayed until you remove this from the JVM arguments.");
+		CustomMessageBox::selectable(parent, QObject::tr("JVM arguments warning"), warnStr, QMessageBox::Warning)
+			->exec();
+		return false;
+	}
+	return true;
 }
 
 void JavaCommon::javaWasOk(QWidget* parent, const JavaChecker::Result& result)
 {
-    QString text;
-    text += QObject::tr(
-                "Java test succeeded!<br />Platform reported: %1<br />Java version "
-                "reported: %2<br />Java vendor "
-                "reported: %3<br />")
-                .arg(result.realPlatform, result.javaVersion.toString(), result.javaVendor);
-    if (result.errorLog.size()) {
-        auto htmlError = result.errorLog;
-        htmlError.replace('\n', "<br />");
-        text += QObject::tr("<br />Warnings:<br /><font color=\"orange\">%1</font>").arg(htmlError);
-    }
-    CustomMessageBox::selectable(parent, QObject::tr("Java test success"), text, QMessageBox::Information)->show();
+	QString text;
+	text += QObject::tr("Java test succeeded!<br />Platform reported: %1<br />Java version "
+						"reported: %2<br />Java vendor "
+						"reported: %3<br />")
+				.arg(result.realPlatform, result.javaVersion.toString(), result.javaVendor);
+	if (result.errorLog.size())
+	{
+		auto htmlError = result.errorLog;
+		htmlError.replace('\n', "<br />");
+		text += QObject::tr("<br />Warnings:<br /><font color=\"orange\">%1</font>").arg(htmlError);
+	}
+	CustomMessageBox::selectable(parent, QObject::tr("Java test success"), text, QMessageBox::Information)->show();
 }
 
 void JavaCommon::javaArgsWereBad(QWidget* parent, const JavaChecker::Result& result)
 {
-    auto htmlError = result.errorLog;
-    QString text;
-    htmlError.replace('\n', "<br />");
-    text += QObject::tr("The specified Java binary didn't work with the arguments you provided:<br />");
-    text += QString("<font color=\"red\">%1</font>").arg(htmlError);
-    CustomMessageBox::selectable(parent, QObject::tr("Java test failure"), text, QMessageBox::Warning)->show();
+	auto htmlError = result.errorLog;
+	QString text;
+	htmlError.replace('\n', "<br />");
+	text += QObject::tr("The specified Java binary didn't work with the arguments you provided:<br />");
+	text += QString("<font color=\"red\">%1</font>").arg(htmlError);
+	CustomMessageBox::selectable(parent, QObject::tr("Java test failure"), text, QMessageBox::Warning)->show();
 }
 
 void JavaCommon::javaBinaryWasBad(QWidget* parent, const JavaChecker::Result& result)
 {
-    QString text;
-    text += QObject::tr(
-        "The specified Java binary didn't work.<br />You should press 'Detect', "
-        "or set the path to the Java executable.<br />");
-    CustomMessageBox::selectable(parent, QObject::tr("Java test failure"), text, QMessageBox::Warning)->show();
+	QString text;
+	text += QObject::tr("The specified Java binary didn't work.<br />You should press 'Detect', "
+						"or set the path to the Java executable.<br />");
+	CustomMessageBox::selectable(parent, QObject::tr("Java test failure"), text, QMessageBox::Warning)->show();
 }
 
 void JavaCommon::javaCheckNotFound(QWidget* parent)
 {
-    QString text;
-    text += QObject::tr("Java checker library could not be found. Please check your installation.");
-    CustomMessageBox::selectable(parent, QObject::tr("Java test failure"), text, QMessageBox::Warning)->show();
+	QString text;
+	text += QObject::tr("Java checker library could not be found. Please check your installation.");
+	CustomMessageBox::selectable(parent, QObject::tr("Java test failure"), text, QMessageBox::Warning)->show();
 }
 
 void JavaCommon::TestCheck::run()
 {
-    if (!JavaCommon::checkJVMArgs(m_args, m_parent)) {
-        emit finished();
-        return;
-    }
-    if (JavaUtils::getJavaCheckPath().isEmpty()) {
-        javaCheckNotFound(m_parent);
-        emit finished();
-        return;
-    }
-    checker.reset(new JavaChecker(m_path, "", 0, 0, 0, 0));
-    connect(checker.get(), &JavaChecker::checkFinished, this, &JavaCommon::TestCheck::checkFinished);
-    checker->start();
+	if (!JavaCommon::checkJVMArgs(m_args, m_parent))
+	{
+		emit finished();
+		return;
+	}
+	if (JavaUtils::getJavaCheckPath().isEmpty())
+	{
+		javaCheckNotFound(m_parent);
+		emit finished();
+		return;
+	}
+	checker.reset(new JavaChecker(m_path, "", 0, 0, 0, 0));
+	connect(checker.get(), &JavaChecker::checkFinished, this, &JavaCommon::TestCheck::checkFinished);
+	checker->start();
 }
 
 void JavaCommon::TestCheck::checkFinished(const JavaChecker::Result& result)
 {
-    if (result.validity != JavaChecker::Result::Validity::Valid) {
-        javaBinaryWasBad(m_parent, result);
-        emit finished();
-        return;
-    }
-    checker.reset(new JavaChecker(m_path, m_args, m_maxMem, m_maxMem, result.javaVersion.requiresPermGen() ? m_permGen : 0, 0));
-    connect(checker.get(), &JavaChecker::checkFinished, this, &JavaCommon::TestCheck::checkFinishedWithArgs);
-    checker->start();
+	if (result.validity != JavaChecker::Result::Validity::Valid)
+	{
+		javaBinaryWasBad(m_parent, result);
+		emit finished();
+		return;
+	}
+	checker.reset(
+		new JavaChecker(m_path, m_args, m_maxMem, m_maxMem, result.javaVersion.requiresPermGen() ? m_permGen : 0, 0));
+	connect(checker.get(), &JavaChecker::checkFinished, this, &JavaCommon::TestCheck::checkFinishedWithArgs);
+	checker->start();
 }
 
 void JavaCommon::TestCheck::checkFinishedWithArgs(const JavaChecker::Result& result)
 {
-    if (result.validity == JavaChecker::Result::Validity::Valid) {
-        javaWasOk(m_parent, result);
-        emit finished();
-        return;
-    }
-    javaArgsWereBad(m_parent, result);
-    emit finished();
+	if (result.validity == JavaChecker::Result::Validity::Valid)
+	{
+		javaWasOk(m_parent, result);
+		emit finished();
+		return;
+	}
+	javaArgsWereBad(m_parent, result);
+	emit finished();
 }

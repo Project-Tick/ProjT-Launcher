@@ -68,118 +68,141 @@
 /// TAKEN FROM Qt, because it doesn't expose it intelligently
 static inline QChar getNextChar(const QString& s, int location)
 {
-    return (location < s.length()) ? s.at(location) : QChar();
+	return (location < s.length()) ? s.at(location) : QChar();
 }
 
 /// TAKEN FROM Qt, because it doesn't expose it intelligently
 int StringUtils::naturalCompare(const QString& s1, const QString& s2, Qt::CaseSensitivity cs)
 {
-    int l1 = 0, l2 = 0;
-    while (l1 <= s1.size() && l2 <= s2.size()) {
-        // skip spaces, tabs and 0's
-        QChar c1 = getNextChar(s1, l1);
-        while (c1.isSpace())
-            c1 = getNextChar(s1, ++l1);
+	int l1 = 0, l2 = 0;
+	while (l1 <= s1.size() && l2 <= s2.size())
+	{
+		// skip spaces, tabs and 0's
+		QChar c1 = getNextChar(s1, l1);
+		while (c1.isSpace())
+			c1 = getNextChar(s1, ++l1);
 
-        QChar c2 = getNextChar(s2, l2);
-        while (c2.isSpace())
-            c2 = getNextChar(s2, ++l2);
+		QChar c2 = getNextChar(s2, l2);
+		while (c2.isSpace())
+			c2 = getNextChar(s2, ++l2);
 
-        if (c1.isDigit() && c2.isDigit()) {
-            while (c1.digitValue() == 0)
-                c1 = getNextChar(s1, ++l1);
-            while (c2.digitValue() == 0)
-                c2 = getNextChar(s2, ++l2);
+		if (c1.isDigit() && c2.isDigit())
+		{
+			while (c1.digitValue() == 0)
+				c1 = getNextChar(s1, ++l1);
+			while (c2.digitValue() == 0)
+				c2 = getNextChar(s2, ++l2);
 
-            int lookAheadLocation1 = l1;
-            int lookAheadLocation2 = l2;
-            int currentReturnValue = 0;
-            // find the last digit, setting currentReturnValue as we go if it isn't equal
-            for (QChar lookAhead1 = c1, lookAhead2 = c2; (lookAheadLocation1 <= s1.length() && lookAheadLocation2 <= s2.length());
-                 lookAhead1 = getNextChar(s1, ++lookAheadLocation1), lookAhead2 = getNextChar(s2, ++lookAheadLocation2)) {
-                bool is1ADigit = !lookAhead1.isNull() && lookAhead1.isDigit();
-                bool is2ADigit = !lookAhead2.isNull() && lookAhead2.isDigit();
-                if (!is1ADigit && !is2ADigit)
-                    break;
-                if (!is1ADigit)
-                    return -1;
-                if (!is2ADigit)
-                    return 1;
-                if (currentReturnValue == 0) {
-                    if (lookAhead1 < lookAhead2) {
-                        currentReturnValue = -1;
-                    } else if (lookAhead1 > lookAhead2) {
-                        currentReturnValue = 1;
-                    }
-                }
-            }
-            if (currentReturnValue != 0)
-                return currentReturnValue;
-        }
+			int lookAheadLocation1 = l1;
+			int lookAheadLocation2 = l2;
+			int currentReturnValue = 0;
+			// find the last digit, setting currentReturnValue as we go if it isn't equal
+			for (QChar lookAhead1 = c1, lookAhead2 = c2;
+				 (lookAheadLocation1 <= s1.length() && lookAheadLocation2 <= s2.length());
+				 lookAhead1 = getNextChar(s1, ++lookAheadLocation1), lookAhead2 = getNextChar(s2, ++lookAheadLocation2))
+			{
+				bool is1ADigit = !lookAhead1.isNull() && lookAhead1.isDigit();
+				bool is2ADigit = !lookAhead2.isNull() && lookAhead2.isDigit();
+				if (!is1ADigit && !is2ADigit)
+					break;
+				if (!is1ADigit)
+					return -1;
+				if (!is2ADigit)
+					return 1;
+				if (currentReturnValue == 0)
+				{
+					if (lookAhead1 < lookAhead2)
+					{
+						currentReturnValue = -1;
+					}
+					else if (lookAhead1 > lookAhead2)
+					{
+						currentReturnValue = 1;
+					}
+				}
+			}
+			if (currentReturnValue != 0)
+				return currentReturnValue;
+		}
 
-        if (cs == Qt::CaseInsensitive) {
-            if (!c1.isLower())
-                c1 = c1.toLower();
-            if (!c2.isLower())
-                c2 = c2.toLower();
-        }
+		if (cs == Qt::CaseInsensitive)
+		{
+			if (!c1.isLower())
+				c1 = c1.toLower();
+			if (!c2.isLower())
+				c2 = c2.toLower();
+		}
 
-        int r = QString::localeAwareCompare(c1, c2);
-        if (r < 0)
-            return -1;
-        if (r > 0)
-            return 1;
+		int r = QString::localeAwareCompare(c1, c2);
+		if (r < 0)
+			return -1;
+		if (r > 0)
+			return 1;
 
-        l1 += 1;
-        l2 += 1;
-    }
+		l1 += 1;
+		l2 += 1;
+	}
 
-    // The two strings are the same (02 == 2) so fall back to the normal sort
-    return QString::compare(s1, s2, cs);
+	// The two strings are the same (02 == 2) so fall back to the normal sort
+	return QString::compare(s1, s2, cs);
 }
 
 QString StringUtils::truncateUrlHumanFriendly(QUrl& url, int max_len, bool hard_limit)
 {
-    auto display_options = QUrl::RemoveUserInfo | QUrl::RemoveFragment | QUrl::NormalizePathSegments;
-    auto str_url = url.toDisplayString(display_options);
+	auto display_options = QUrl::RemoveUserInfo | QUrl::RemoveFragment | QUrl::NormalizePathSegments;
+	auto str_url		 = url.toDisplayString(display_options);
 
-    if (str_url.length() <= max_len)
-        return str_url;
+	if (str_url.length() <= max_len)
+		return str_url;
 
-    auto url_path_parts = url.path().split('/');
-    QString last_path_segment = url_path_parts.takeLast();
+	auto url_path_parts		  = url.path().split('/');
+	QString last_path_segment = url_path_parts.takeLast();
 
-    if (url_path_parts.size() >= 1 && url_path_parts.first().isEmpty())
-        url_path_parts.removeFirst();  // drop empty first segment (from leading / )
+	if (url_path_parts.size() >= 1 && url_path_parts.first().isEmpty())
+		url_path_parts.removeFirst(); // drop empty first segment (from leading / )
 
-    if (url_path_parts.size() >= 1)
-        url_path_parts.removeLast();  // drop the next to last path segment
+	if (url_path_parts.size() >= 1)
+		url_path_parts.removeLast(); // drop the next to last path segment
 
-    auto url_template = QStringLiteral("%1://%2/%3%4");
+	auto url_template = QStringLiteral("%1://%2/%3%4");
 
-    auto url_compact = url_path_parts.isEmpty()
-                           ? url_template.arg(url.scheme(), url.host(), QStringList({ "...", last_path_segment }).join('/'), url.query())
-                           : url_template.arg(url.scheme(), url.host(),
-                                              QStringList({ url_path_parts.join('/'), "...", last_path_segment }).join('/'), url.query());
+	auto url_compact =
+		url_path_parts.isEmpty()
+			? url_template.arg(url.scheme(),
+							   url.host(),
+							   QStringList({ "...", last_path_segment }).join('/'),
+							   url.query())
+			: url_template.arg(url.scheme(),
+							   url.host(),
+							   QStringList({ url_path_parts.join('/'), "...", last_path_segment }).join('/'),
+							   url.query());
 
-    // remove url parts one by one if it's still too long
-    while (url_compact.length() > max_len && url_path_parts.size() >= 1) {
-        url_path_parts.removeLast();  // drop the next to last path segment
-        url_compact = url_path_parts.isEmpty()
-                          ? url_template.arg(url.scheme(), url.host(), QStringList({ "...", last_path_segment }).join('/'), url.query())
-                          : url_template.arg(url.scheme(), url.host(),
-                                             QStringList({ url_path_parts.join('/'), "...", last_path_segment }).join('/'), url.query());
-    }
+	// remove url parts one by one if it's still too long
+	while (url_compact.length() > max_len && url_path_parts.size() >= 1)
+	{
+		url_path_parts.removeLast(); // drop the next to last path segment
+		url_compact =
+			url_path_parts.isEmpty()
+				? url_template.arg(url.scheme(),
+								   url.host(),
+								   QStringList({ "...", last_path_segment }).join('/'),
+								   url.query())
+				: url_template.arg(url.scheme(),
+								   url.host(),
+								   QStringList({ url_path_parts.join('/'), "...", last_path_segment }).join('/'),
+								   url.query());
+	}
 
-    if ((url_compact.length() >= max_len) && hard_limit) {
-        // still too long, truncate normally
-        url_compact = QString(str_url);
-        auto to_remove = url_compact.length() - max_len + 3;
-        url_compact.remove(url_compact.length() - to_remove - 1, to_remove);
-        url_compact.append("...");
-    }
+	if ((url_compact.length() >= max_len) && hard_limit)
+	{
+		// still too long, truncate normally
+		url_compact	   = QString(str_url);
+		auto to_remove = url_compact.length() - max_len + 3;
+		url_compact.remove(url_compact.length() - to_remove - 1, to_remove);
+		url_compact.append("...");
+	}
 
-    return url_compact;
+	return url_compact;
 }
 
 static const QStringList s_units_si{ "KB", "MB", "GB", "TB" };
@@ -187,71 +210,74 @@ static const QStringList s_units_kibi{ "KiB", "MiB", "GiB", "TiB" };
 
 QString StringUtils::humanReadableFileSize(double bytes, bool use_si, int decimal_points)
 {
-    const QStringList units = use_si ? s_units_si : s_units_kibi;
-    const int scale = use_si ? 1000 : 1024;
+	const QStringList units = use_si ? s_units_si : s_units_kibi;
+	const int scale			= use_si ? 1000 : 1024;
 
-    int u = -1;
-    double r = pow(10, decimal_points);
+	int u	 = -1;
+	double r = pow(10, decimal_points);
 
-    do {
-        bytes /= scale;
-        u++;
-    } while (round(abs(bytes) * r) / r >= scale && u < units.length() - 1);
+	do
+	{
+		bytes /= scale;
+		u++;
+	}
+	while (round(abs(bytes) * r) / r >= scale && u < units.length() - 1);
 
-    return QString::number(bytes, 'f', 2) + " " + units[u];
+	return QString::number(bytes, 'f', 2) + " " + units[u];
 }
 
 QString StringUtils::getRandomAlphaNumeric()
 {
-    return QUuid::createUuid().toString(QUuid::Id128);
+	return QUuid::createUuid().toString(QUuid::Id128);
 }
 
 QPair<QString, QString> StringUtils::splitFirst(const QString& s, const QString& sep, Qt::CaseSensitivity cs)
 {
-    QString left, right;
-    auto index = s.indexOf(sep, 0, cs);
-    left = s.mid(0, index);
-    right = s.mid(index + sep.length());
-    return qMakePair(left, right);
+	QString left, right;
+	auto index = s.indexOf(sep, 0, cs);
+	left	   = s.mid(0, index);
+	right	   = s.mid(index + sep.length());
+	return qMakePair(left, right);
 }
 
 QPair<QString, QString> StringUtils::splitFirst(const QString& s, QChar sep, Qt::CaseSensitivity cs)
 {
-    QString left, right;
-    auto index = s.indexOf(sep, 0, cs);
-    left = s.mid(0, index);
-    right = s.mid(left.length() + 1);
-    return qMakePair(left, right);
+	QString left, right;
+	auto index = s.indexOf(sep, 0, cs);
+	left	   = s.mid(0, index);
+	right	   = s.mid(left.length() + 1);
+	return qMakePair(left, right);
 }
 
 QPair<QString, QString> StringUtils::splitFirst(const QString& s, const QRegularExpression& re)
 {
-    QString left, right;
-    QRegularExpressionMatch match;
-    auto index = s.indexOf(re, 0, &match);
-    left = s.mid(0, index);
-    auto end = match.hasMatch() ? left.length() + match.capturedLength() : left.length() + 1;
-    right = s.mid(end);
-    return qMakePair(left, right);
+	QString left, right;
+	QRegularExpressionMatch match;
+	auto index = s.indexOf(re, 0, &match);
+	left	   = s.mid(0, index);
+	auto end   = match.hasMatch() ? left.length() + match.capturedLength() : left.length() + 1;
+	right	   = s.mid(end);
+	return qMakePair(left, right);
 }
 
 QString StringUtils::htmlListPatch(QString htmlStr)
 {
-    static const QRegularExpression s_ulMatcher("<\\s*/\\s*ul\\s*>");
-    int pos = htmlStr.indexOf(s_ulMatcher);
-    int imgPos;
-    while (pos != -1) {
-        pos = htmlStr.indexOf(">", pos) + 1;  // Get the size of the </ul> tag. Add one for zeroeth index
-        imgPos = htmlStr.indexOf("<img ", pos);
-        if (imgPos == -1)
-            break;  // no image after the tag
+	static const QRegularExpression s_ulMatcher("<\\s*/\\s*ul\\s*>");
+	int pos = htmlStr.indexOf(s_ulMatcher);
+	int imgPos;
+	while (pos != -1)
+	{
+		pos	   = htmlStr.indexOf(">", pos) + 1; // Get the size of the </ul> tag. Add one for zeroeth index
+		imgPos = htmlStr.indexOf("<img ", pos);
+		if (imgPos == -1)
+			break; // no image after the tag
 
-        auto textBetween = htmlStr.mid(pos, imgPos - pos).trimmed();  // trim all white spaces
+		auto textBetween = htmlStr.mid(pos, imgPos - pos).trimmed(); // trim all white spaces
 
-        if (textBetween.isEmpty())
-            htmlStr.insert(pos, "<br>");
+		if (textBetween.isEmpty())
+			htmlStr.insert(pos, "<br>");
 
-        pos = htmlStr.indexOf(s_ulMatcher, pos);
-    }
-    return htmlStr;
+		pos = htmlStr.indexOf(s_ulMatcher, pos);
+	}
+	return htmlStr;
 }

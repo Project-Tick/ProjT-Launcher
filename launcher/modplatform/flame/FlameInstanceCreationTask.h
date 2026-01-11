@@ -69,51 +69,55 @@
 
 #include "ui/dialogs/BlockedModsDialog.h"
 
-class FlameCreationTask final : public InstanceCreationTask {
-    Q_OBJECT
+class FlameCreationTask final : public InstanceCreationTask
+{
+	Q_OBJECT
 
-   public:
-    FlameCreationTask(const QString& staging_path,
-                      SettingsObjectPtr global_settings,
-                      QWidget* parent,
-                      QString id,
-                      QString version_id,
-                      QString original_instance_id = {})
-        : InstanceCreationTask(), m_parent(parent), m_managedId(std::move(id)), m_managedVersionId(std::move(version_id))
-    {
-        setStagingPath(staging_path);
-        setParentSettings(global_settings);
+  public:
+	FlameCreationTask(const QString& staging_path,
+					  SettingsObjectPtr global_settings,
+					  QWidget* parent,
+					  QString id,
+					  QString version_id,
+					  QString original_instance_id = {})
+		: InstanceCreationTask(),
+		  m_parent(parent),
+		  m_managedId(std::move(id)),
+		  m_managedVersionId(std::move(version_id))
+	{
+		setStagingPath(staging_path);
+		setParentSettings(global_settings);
 
-        m_original_instance_id = std::move(original_instance_id);
-    }
+		m_original_instance_id = std::move(original_instance_id);
+	}
 
-    bool abort() override;
+	bool abort() override;
 
-    bool updateInstance() override;
-    bool createInstance() override;
+	bool updateInstance() override;
+	bool createInstance() override;
 
-   private slots:
-    void idResolverSucceeded(QEventLoop&);
-    void setupDownloadJob(QEventLoop&);
-    void copyBlockedMods(QList<BlockedMod> const& blocked_mods);
-    void validateOtherResources(QEventLoop& loop);
-    QString getVersionForLoader(QString uid, QString loaderType, QString version, QString mcVersion);
+  private slots:
+	void idResolverSucceeded(QEventLoop&);
+	void setupDownloadJob(QEventLoop&);
+	void copyBlockedMods(QList<BlockedMod> const& blocked_mods);
+	void validateOtherResources(QEventLoop& loop);
+	QString getVersionForLoader(QString uid, QString loaderType, QString version, QString mcVersion);
 
-   private:
-    QWidget* m_parent = nullptr;
+  private:
+	QWidget* m_parent = nullptr;
 
-    shared_qobject_ptr<Flame::FileResolvingTask> m_modIdResolver;
-    Flame::Manifest m_pack;
+	shared_qobject_ptr<Flame::FileResolvingTask> m_modIdResolver;
+	Flame::Manifest m_pack;
 
-    // Handle to allow aborting
-    Task::Ptr m_processUpdateFileInfoJob = nullptr;
-    NetJob::Ptr m_filesJob = nullptr;
+	// Handle to allow aborting
+	Task::Ptr m_processUpdateFileInfoJob = nullptr;
+	NetJob::Ptr m_filesJob				 = nullptr;
 
-    QString m_managedId, m_managedVersionId;
+	QString m_managedId, m_managedVersionId;
 
-    QList<std::pair<QString, QString>> m_otherResources;
+	QList<std::pair<QString, QString>> m_otherResources;
 
-    std::optional<InstancePtr> m_instance;
+	std::optional<InstancePtr> m_instance;
 
-    QStringList m_selectedOptionalMods;
+	QStringList m_selectedOptionalMods;
 };

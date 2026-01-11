@@ -36,47 +36,48 @@ see quazip/(un)zip.h files for details. Basically it's the zlib license.
 #define QUAZIP_SYMLINK_EXTRACTION_ON_WINDOWS_TEST
 #endif
 
-class TestJlCompress : public QObject {
-    Q_OBJECT
-   private slots:
-    void compressFile_data();
-    void compressFile();
-    void compressFileOptions_data();
-    void compressFileOptions();
-    void compressFiles_data();
-    void compressFiles();
-    void compressDir_data();
-    void compressDir();
-    void compressDirOptions_data();
-    void compressDirOptions();
-    void extractFile_data();
-    void extractFile();
-    void extractFiles_data();
-    void extractFiles();
-    void extractDir_data();
-    void extractDir();
-    void zeroPermissions();
-    void addFile_data();
-    void addFile();
-    void addFileOptions_data();
-    void addFileOptions();
-    void addFiles_data();
-    void addFiles();
-    void addFilesOptions_data();
-    void addFilesOptions();
-    void addDir_data();
-    void addDir();
-    void addDirOptions_data();
-    void addDirOptions();
-    void addFileNonExistingArchive();
-    void addFilesCollision();
-    void addFilesWithDirectory();
+class TestJlCompress : public QObject
+{
+	Q_OBJECT
+  private slots:
+	void compressFile_data();
+	void compressFile();
+	void compressFileOptions_data();
+	void compressFileOptions();
+	void compressFiles_data();
+	void compressFiles();
+	void compressDir_data();
+	void compressDir();
+	void compressDirOptions_data();
+	void compressDirOptions();
+	void extractFile_data();
+	void extractFile();
+	void extractFiles_data();
+	void extractFiles();
+	void extractDir_data();
+	void extractDir();
+	void zeroPermissions();
+	void addFile_data();
+	void addFile();
+	void addFileOptions_data();
+	void addFileOptions();
+	void addFiles_data();
+	void addFiles();
+	void addFilesOptions_data();
+	void addFilesOptions();
+	void addDir_data();
+	void addDir();
+	void addDirOptions_data();
+	void addDirOptions();
+	void addFileNonExistingArchive();
+	void addFilesCollision();
+	void addFilesWithDirectory();
 #ifdef QUAZIP_SYMLINK_TEST
-    void symlinkHandling();
+	void symlinkHandling();
 #endif
 #ifdef QUAZIP_SYMLINK_EXTRACTION_ON_WINDOWS_TEST
-    void symlinkExtractionOnWindows();
+	void symlinkExtractionOnWindows();
 #endif
 };
 
-#endif  // QUAZIP_TEST_JLCOMPRESS_H
+#endif // QUAZIP_TEST_JLCOMPRESS_H

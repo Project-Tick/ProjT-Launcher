@@ -27,16 +27,17 @@ see quazip/(un)zip.h files for details. Basically it's the zlib license.
 
 #include <QtCore/QObject>
 
-class TestQuaZipDir : public QObject {
-    Q_OBJECT
-   private slots:
-    void entryList_data();
-    void entryList();
-    void cd_data();
-    void cd();
-    void entryInfoList();
-    void operators();
-    void filePath();
+class TestQuaZipDir : public QObject
+{
+	Q_OBJECT
+  private slots:
+	void entryList_data();
+	void entryList();
+	void cd_data();
+	void cd();
+	void entryInfoList();
+	void operators();
+	void filePath();
 };
 
-#endif  // QUAZIP_TEST_QUAZIPDIR_H
+#endif // QUAZIP_TEST_QUAZIPDIR_H

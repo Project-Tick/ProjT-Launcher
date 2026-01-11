@@ -49,21 +49,25 @@ class PageContainer;
 class PackProfile;
 class QDialogButtonBox;
 
-namespace Java {
-class InstallDialog final : public QDialog, private BasePageProvider {
-    Q_OBJECT
+namespace Java
+{
+	class InstallDialog final : public QDialog, private BasePageProvider
+	{
+		Q_OBJECT
 
-   public:
-    explicit InstallDialog(const QString& uid = QString(), BaseInstance* instance = nullptr, QWidget* parent = nullptr);
+	  public:
+		explicit InstallDialog(const QString& uid	  = QString(),
+							   BaseInstance* instance = nullptr,
+							   QWidget* parent		  = nullptr);
 
-    QList<BasePage*> getPages() override;
-    QString dialogTitle() override;
+		QList<BasePage*> getPages() override;
+		QString dialogTitle() override;
 
-    void validate(BasePage* selected);
-    void done(int result) override;
+		void validate(BasePage* selected);
+		void done(int result) override;
 
-   private:
-    PageContainer* container;
-    QDialogButtonBox* buttons;
-};
-}  // namespace Java
+	  private:
+		PageContainer* container;
+		QDialogButtonBox* buttons;
+	};
+} // namespace Java

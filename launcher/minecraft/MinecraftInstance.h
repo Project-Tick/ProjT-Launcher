@@ -74,126 +74,133 @@ class WorldList;
 class LaunchStep;
 class PackProfile;
 
-class MinecraftInstance : public BaseInstance {
-    Q_OBJECT
-   public:
-    MinecraftInstance(SettingsObjectPtr globalSettings, SettingsObjectPtr settings, const QString& rootDir);
-    virtual ~MinecraftInstance() = default;
-    virtual void saveNow() override;
+class MinecraftInstance : public BaseInstance
+{
+	Q_OBJECT
+  public:
+	MinecraftInstance(SettingsObjectPtr globalSettings, SettingsObjectPtr settings, const QString& rootDir);
+	virtual ~MinecraftInstance() = default;
+	virtual void saveNow() override;
 
-    void loadSpecificSettings() override;
+	void loadSpecificSettings() override;
 
-    /// @deprecated Legacy method - consider moving to PackProfile
-    QString typeName() const override;
-    /// @deprecated Legacy method - traits should come from PackProfile components
-    QSet<QString> traits() const override;
+	/// @deprecated Legacy method - consider moving to PackProfile
+	QString typeName() const override;
+	/// @deprecated Legacy method - traits should come from PackProfile components
+	QSet<QString> traits() const override;
 
-    bool canEdit() const override { return true; }
+	bool canEdit() const override
+	{
+		return true;
+	}
 
-    bool canExport() const override { return true; }
+	bool canExport() const override
+	{
+		return true;
+	}
 
-    ////// Directories and files //////
+	////// Directories and files //////
 
-    ////// Directories and files //////
-    QString jarModsDir() const;
-    QString resourcePacksDir() const;
-    QString texturePacksDir() const;
-    QString shaderPacksDir() const;
-    QString modsRoot() const override;
-    QString coreModsDir() const;
-    QString nilModsDir() const;
-    QString dataPacksDir();
-    QString modsCacheLocation() const;
-    QString libDir() const;
-    QString worldDir() const;
-    QString resourcesDir() const;
-    QDir jarmodsPath() const;
-    QDir librariesPath() const;
-    QDir versionsPath() const;
-    QString instanceConfigFolder() const override;
+	////// Directories and files //////
+	QString jarModsDir() const;
+	QString resourcePacksDir() const;
+	QString texturePacksDir() const;
+	QString shaderPacksDir() const;
+	QString modsRoot() const override;
+	QString coreModsDir() const;
+	QString nilModsDir() const;
+	QString dataPacksDir();
+	QString modsCacheLocation() const;
+	QString libDir() const;
+	QString worldDir() const;
+	QString resourcesDir() const;
+	QDir jarmodsPath() const;
+	QDir librariesPath() const;
+	QDir versionsPath() const;
+	QString instanceConfigFolder() const override;
 
-    // Path to the instance's minecraft directory.
-    QString gameRoot() const override;
+	// Path to the instance's minecraft directory.
+	QString gameRoot() const override;
 
-    // Path to the instance's minecraft bin directory.
-    QString binRoot() const;
+	// Path to the instance's minecraft bin directory.
+	QString binRoot() const;
 
-    // where to put the natives during/before launch
-    QString getNativePath() const;
+	// where to put the natives during/before launch
+	QString getNativePath() const;
 
-    // where the instance-local libraries should be
-    QString getLocalLibraryPath() const;
+	// where the instance-local libraries should be
+	QString getLocalLibraryPath() const;
 
-    /** Returns whether the instance, with its version, has support for demo mode. */
-    bool supportsDemo() const;
+	/** Returns whether the instance, with its version, has support for demo mode. */
+	bool supportsDemo() const;
 
-    void updateRuntimeContext() override;
+	void updateRuntimeContext() override;
 
-    //////  Profile management //////
-    std::shared_ptr<PackProfile> getPackProfile() const;
+	//////  Profile management //////
+	std::shared_ptr<PackProfile> getPackProfile() const;
 
-    //////  Mod Lists  //////
-    std::shared_ptr<ModFolderModel> loaderModList();
-    std::shared_ptr<ModFolderModel> coreModList();
-    std::shared_ptr<ModFolderModel> nilModList();
-    std::shared_ptr<ResourcePackFolderModel> resourcePackList();
-    std::shared_ptr<TexturePackFolderModel> texturePackList();
-    std::shared_ptr<ShaderPackFolderModel> shaderPackList();
-    std::shared_ptr<DataPackFolderModel> dataPackList();
-    QList<std::shared_ptr<ResourceFolderModel>> resourceLists();
-    std::shared_ptr<WorldList> worldList();
+	//////  Mod Lists  //////
+	std::shared_ptr<ModFolderModel> loaderModList();
+	std::shared_ptr<ModFolderModel> coreModList();
+	std::shared_ptr<ModFolderModel> nilModList();
+	std::shared_ptr<ResourcePackFolderModel> resourcePackList();
+	std::shared_ptr<TexturePackFolderModel> texturePackList();
+	std::shared_ptr<ShaderPackFolderModel> shaderPackList();
+	std::shared_ptr<DataPackFolderModel> dataPackList();
+	QList<std::shared_ptr<ResourceFolderModel>> resourceLists();
+	std::shared_ptr<WorldList> worldList();
 
-    //////  Launch stuff //////
-    QList<Task::Ptr> createUpdateTask() override;
-    shared_qobject_ptr<LaunchTask> createLaunchTask(AuthSessionPtr account, MinecraftTarget::Ptr targetToJoin) override;
-    QStringList extraArguments();
-    QStringList verboseDescription(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin) override;
-    QList<Mod*> getJarMods() const;
-    QString createLaunchScript(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin);
-    /// get arguments passed to java
-    QStringList javaArguments();
-    QString getLauncher();
-    bool shouldApplyOnlineFixes();
+	//////  Launch stuff //////
+	QList<Task::Ptr> createUpdateTask() override;
+	shared_qobject_ptr<LaunchTask> createLaunchTask(AuthSessionPtr account, MinecraftTarget::Ptr targetToJoin) override;
+	QStringList extraArguments();
+	QStringList verboseDescription(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin) override;
+	QList<Mod*> getJarMods() const;
+	QString createLaunchScript(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin);
+	/// get arguments passed to java
+	QStringList javaArguments();
+	QString getLauncher();
+	bool shouldApplyOnlineFixes();
 
-    /// get variables for launch command variable substitution/environment
-    QMap<QString, QString> getVariables() override;
+	/// get variables for launch command variable substitution/environment
+	QMap<QString, QString> getVariables() override;
 
-    /// create an environment for launching processes
-    QProcessEnvironment createEnvironment() override;
-    QProcessEnvironment createLaunchEnvironment() override;
+	/// create an environment for launching processes
+	QProcessEnvironment createEnvironment() override;
+	QProcessEnvironment createLaunchEnvironment() override;
 
-    QStringList getLogFileSearchPaths() override;
+	QStringList getLogFileSearchPaths() override;
 
-    QString getStatusbarDescription() override;
+	QString getStatusbarDescription() override;
 
-    /// @deprecated These methods expose internal launch profile data. Use LaunchProfile directly.
-    virtual QStringList getClassPath();
-    /// @deprecated Use LaunchProfile::getNativeLibraries() instead
-    virtual QStringList getNativeJars();
-    /// @deprecated Use LaunchProfile::getMainClass() instead
-    virtual QString getMainClass() const;
+	/// @deprecated These methods expose internal launch profile data. Use LaunchProfile directly.
+	virtual QStringList getClassPath();
+	/// @deprecated Use LaunchProfile::getNativeLibraries() instead
+	virtual QStringList getNativeJars();
+	/// @deprecated Use LaunchProfile::getMainClass() instead
+	virtual QString getMainClass() const;
 
-    /// @deprecated Argument processing should be in launch steps, not instance
-    virtual QStringList processMinecraftArgs(AuthSessionPtr account, MinecraftTarget::Ptr targetToJoin) const;
+	/// @deprecated Argument processing should be in launch steps, not instance
+	virtual QStringList processMinecraftArgs(AuthSessionPtr account, MinecraftTarget::Ptr targetToJoin) const;
 
-    virtual JavaVersion getJavaVersion();
+	virtual JavaVersion getJavaVersion();
 
-   signals:
-    void profilerChanged();
+  signals:
+	void profilerChanged();
 
-   protected:
-    QMap<QString, QString> createCensorFilterFromSession(AuthSessionPtr session);
+  protected:
+	QMap<QString, QString> createCensorFilterFromSession(AuthSessionPtr session);
 
-   protected:  // data
-    std::shared_ptr<PackProfile> m_components;
-    mutable std::shared_ptr<ModFolderModel> m_loader_mod_list;
-    mutable std::shared_ptr<ModFolderModel> m_core_mod_list;
-    mutable std::shared_ptr<ModFolderModel> m_nil_mod_list;
-    mutable std::shared_ptr<ResourcePackFolderModel> m_resource_pack_list;
-    mutable std::shared_ptr<ShaderPackFolderModel> m_shader_pack_list;
-    mutable std::shared_ptr<TexturePackFolderModel> m_texture_pack_list;
-    mutable std::shared_ptr<DataPackFolderModel> m_data_pack_list;
-    mutable std::shared_ptr<WorldList> m_world_list;
+  protected: // data
+	std::shared_ptr<PackProfile> m_components;
+	mutable std::shared_ptr<ModFolderModel> m_loader_mod_list;
+	mutable std::shared_ptr<ModFolderModel> m_core_mod_list;
+	mutable std::shared_ptr<ModFolderModel> m_nil_mod_list;
+	mutable std::shared_ptr<ResourcePackFolderModel> m_resource_pack_list;
+	mutable std::shared_ptr<ShaderPackFolderModel> m_shader_pack_list;
+	mutable std::shared_ptr<TexturePackFolderModel> m_texture_pack_list;
+	mutable std::shared_ptr<DataPackFolderModel> m_data_pack_list;
+	mutable std::shared_ptr<WorldList> m_world_list;
 };
 
 using MinecraftInstancePtr = std::shared_ptr<MinecraftInstance>;

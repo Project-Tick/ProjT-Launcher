@@ -53,69 +53,80 @@
 
 static QString replaceSuffix(QString target, const QString& suffix, const QString& replacement)
 {
-    if (!target.endsWith(suffix)) {
-        return target;
-    }
-    target.resize(target.length() - suffix.length());
-    return target + replacement;
+	if (!target.endsWith(suffix))
+	{
+		return target;
+	}
+	target.resize(target.length() - suffix.length());
+	return target + replacement;
 }
 
 static bool unzipNatives(QString source, QString targetFolder, bool applyJnilibHack)
 {
-    QuaZip zip(source);
-    if (!zip.open(QuaZip::mdUnzip)) {
-        return false;
-    }
-    QDir directory(targetFolder);
-    if (!zip.goToFirstFile()) {
-        return false;
-    }
-    do {
-        QString name = zip.getCurrentFileName();
-        auto lowercase = name.toLower();
-        if (applyJnilibHack) {
-            name = replaceSuffix(name, ".jnilib", ".dylib");
-        }
-        QString absFilePath = directory.absoluteFilePath(name);
-        if (!JlCompress::extractFile(&zip, "", absFilePath)) {
-            return false;
-        }
-    } while (zip.goToNextFile());
-    zip.close();
-    if (zip.getZipError() != 0) {
-        return false;
-    }
-    return true;
+	QuaZip zip(source);
+	if (!zip.open(QuaZip::mdUnzip))
+	{
+		return false;
+	}
+	QDir directory(targetFolder);
+	if (!zip.goToFirstFile())
+	{
+		return false;
+	}
+	do
+	{
+		QString name   = zip.getCurrentFileName();
+		auto lowercase = name.toLower();
+		if (applyJnilibHack)
+		{
+			name = replaceSuffix(name, ".jnilib", ".dylib");
+		}
+		QString absFilePath = directory.absoluteFilePath(name);
+		if (!JlCompress::extractFile(&zip, "", absFilePath))
+		{
+			return false;
+		}
+	}
+	while (zip.goToNextFile());
+	zip.close();
+	if (zip.getZipError() != 0)
+	{
+		return false;
+	}
+	return true;
 }
 
 void ExtractNatives::executeTask()
 {
-    auto instance = m_parent->instance();
-    auto toExtract = instance->getNativeJars();
-    if (toExtract.isEmpty()) {
-        emitSucceeded();
-        return;
-    }
-    auto settings = instance->settings();
+	auto instance  = m_parent->instance();
+	auto toExtract = instance->getNativeJars();
+	if (toExtract.isEmpty())
+	{
+		emitSucceeded();
+		return;
+	}
+	auto settings = instance->settings();
 
-    auto outputPath = instance->getNativePath();
-    FS::ensureFolderPathExists(outputPath);
-    auto javaVersion = instance->getJavaVersion();
-    bool jniHackEnabled = javaVersion.major() >= 8;
-    for (const auto& source : toExtract) {
-        if (!unzipNatives(source, outputPath, jniHackEnabled)) {
-            const char* reason = QT_TR_NOOP("Couldn't extract native jar '%1' to destination '%2'");
-            emit logLine(QString(reason).arg(source, outputPath), MessageLevel::Fatal);
-            emitFailed(tr(reason).arg(source, outputPath));
-        }
-    }
-    emitSucceeded();
+	auto outputPath = instance->getNativePath();
+	FS::ensureFolderPathExists(outputPath);
+	auto javaVersion	= instance->getJavaVersion();
+	bool jniHackEnabled = javaVersion.major() >= 8;
+	for (const auto& source : toExtract)
+	{
+		if (!unzipNatives(source, outputPath, jniHackEnabled))
+		{
+			const char* reason = QT_TR_NOOP("Couldn't extract native jar '%1' to destination '%2'");
+			emit logLine(QString(reason).arg(source, outputPath), MessageLevel::Fatal);
+			emitFailed(tr(reason).arg(source, outputPath));
+		}
+	}
+	emitSucceeded();
 }
 
 void ExtractNatives::finalize()
 {
-    auto instance = m_parent->instance();
-    QString target_dir = FS::PathCombine(instance->instanceRoot(), "natives/");
-    QDir dir(target_dir);
-    dir.removeRecursively();
+	auto instance	   = m_parent->instance();
+	QString target_dir = FS::PathCombine(instance->instanceRoot(), "natives/");
+	QDir dir(target_dir);
+	dir.removeRecursively();
 }

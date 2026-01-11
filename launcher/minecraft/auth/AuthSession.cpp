@@ -25,37 +25,38 @@
 
 QString AuthSession::serializeUserProperties()
 {
-    QJsonObject userAttrs;
-    /*
-    for (auto key : u.properties.keys())
-    {
-        auto array = QJsonArray::fromStringList(u.properties.values(key));
-        userAttrs.insert(key, array);
-    }
-    */
-    QJsonDocument value(userAttrs);
-    return value.toJson(QJsonDocument::Compact);
+	QJsonObject userAttrs;
+	/*
+	for (auto key : u.properties.keys())
+	{
+		auto array = QJsonArray::fromStringList(u.properties.values(key));
+		userAttrs.insert(key, array);
+	}
+	*/
+	QJsonDocument value(userAttrs);
+	return value.toJson(QJsonDocument::Compact);
 }
 
 bool AuthSession::MakeOffline(QString offline_playername)
 {
-    if (status != PlayableOffline && status != PlayableOnline) {
-        return false;
-    }
-    session = "-";
-    access_token = "0";
-    player_name = offline_playername;
-    status = PlayableOffline;
-    return true;
+	if (status != PlayableOffline && status != PlayableOnline)
+	{
+		return false;
+	}
+	session		 = "-";
+	access_token = "0";
+	player_name	 = offline_playername;
+	status		 = PlayableOffline;
+	return true;
 }
 
 void AuthSession::MakeDemo(QString name, QString u)
 {
-    wants_online = false;
-    demo = true;
-    uuid = u;
-    session = "-";
-    access_token = "0";
-    player_name = name;
-    status = PlayableOnline;  // needs online to download the assets
+	wants_online = false;
+	demo		 = true;
+	uuid		 = u;
+	session		 = "-";
+	access_token = "0";
+	player_name	 = name;
+	status		 = PlayableOnline; // needs online to download the assets
 };

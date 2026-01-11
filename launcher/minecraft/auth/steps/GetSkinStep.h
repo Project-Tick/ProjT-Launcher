@@ -25,22 +25,23 @@
 #include "net/Download.h"
 #include "net/NetJob.h"
 
-class GetSkinStep : public AuthStep {
-    Q_OBJECT
+class GetSkinStep : public AuthStep
+{
+	Q_OBJECT
 
-   public:
-    explicit GetSkinStep(AccountData* data);
-    virtual ~GetSkinStep() noexcept = default;
+  public:
+	explicit GetSkinStep(AccountData* data);
+	virtual ~GetSkinStep() noexcept = default;
 
-    void perform() override;
+	void perform() override;
 
-    QString describe() override;
+	QString describe() override;
 
-   private slots:
-    void onRequestDone();
+  private slots:
+	void onRequestDone();
 
-   private:
-    std::shared_ptr<QByteArray> m_response;
-    Net::Download::Ptr m_request;
-    NetJob::Ptr m_task;
+  private:
+	std::shared_ptr<QByteArray> m_response;
+	Net::Download::Ptr m_request;
+	NetJob::Ptr m_task;
 };

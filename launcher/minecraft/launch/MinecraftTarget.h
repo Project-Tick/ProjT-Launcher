@@ -40,14 +40,18 @@
 
 #include <QString>
 
-struct MinecraftTarget {
-    QString address;
-    quint16 port;
+struct MinecraftTarget
+{
+	QString address;
+	quint16 port;
 
-    QString world;
-    static MinecraftTarget parse(const QString& fullAddress, bool useWorld);
+	QString world;
+	static MinecraftTarget parse(const QString& fullAddress, bool useWorld);
 
-    bool isValid() const { return !address.isEmpty() || !world.isEmpty(); }
+	bool isValid() const
+	{
+		return !address.isEmpty() || !world.isEmpty();
+	}
 
-    using Ptr = std::shared_ptr<MinecraftTarget>;
+	using Ptr = std::shared_ptr<MinecraftTarget>;
 };
