@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-#include <toml++/toml.hpp>
 #include "settings.hpp"
+#include <toml++/toml.hpp>
 
 #if TOML_COMPILER_HAS_EXCEPTIONS ^ SHOULD_HAVE_EXCEPTIONS
 #error TOML_COMPILER_HAS_EXCEPTIONS was not deduced correctly
