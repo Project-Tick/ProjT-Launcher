@@ -727,18 +727,22 @@ jobs:
           echo "VERSION=$tag_name" >> $GITHUB_ENV
       - name: Package source libraries
         env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GPG_PRIVATE_KEY: ${{ secrets.LINUX_GPG_KEY }}
+          GPG_KEY_ID: ${{ secrets.LINUX_GPG_ID }}
         run: |
           cd "${{ github.workspace }}"
           SRC_DIR="ProjTLauncher-source"
-          libs=(libnbtplusplus zlib quazip bzip2 launcherjava)
+          libs=(libnbtplusplus zlib quazip bzip2 launcherjava tomlplusplus libqrencode extra-cmake-modules cmark)
 
           sign_file() {
             local path="$1"
-            if [ -n "${GPG_PRIVATE_KEY}" ] && [ -n "${GPG_PASSPHRASE}" ]; then
+            if [ -n "${GPG_PRIVATE_KEY}" ]; then
               echo "${GPG_PRIVATE_KEY}" | gpg --batch --yes --import
-              gpg --batch --yes --armor --pinentry-mode loopback --passphrase "${GPG_PASSPHRASE}" --output "${path}.asc" --detach-sign "${path}"
+              if [ -n "${GPG_KEY_ID}" ]; then
+                gpg --batch --yes --armor --default-key "${GPG_KEY_ID}" --output "${path}.asc" --detach-sign "${path}"
+              else
+                gpg --batch --yes --armor --output "${path}.asc" --detach-sign "${path}"
+              fi
             fi
           }
 
@@ -861,6 +865,30 @@ jobs:
             launcherjava-${{ env.VERSION }}.zip.asc
             launcherjava-${{ env.VERSION }}.tar.gz.asc
             launcherjava-${{ env.VERSION }}.tar.xz.asc
+            tomlplusplus-${{ env.VERSION }}.zip
+            tomlplusplus-${{ env.VERSION }}.tar.gz
+            tomlplusplus-${{ env.VERSION }}.tar.xz
+            tomlplusplus-${{ env.VERSION }}.zip.asc
+            tomlplusplus-${{ env.VERSION }}.tar.gz.asc
+            tomlplusplus-${{ env.VERSION }}.tar.xz.asc
+            libqrencode-${{ env.VERSION }}.zip
+            libqrencode-${{ env.VERSION }}.tar.gz
+            libqrencode-${{ env.VERSION }}.tar.xz
+            libqrencode-${{ env.VERSION }}.zip.asc
+            libqrencode-${{ env.VERSION }}.tar.gz.asc
+            libqrencode-${{ env.VERSION }}.tar.xz.asc
+            extra-cmake-modules-${{ env.VERSION }}.zip
+            extra-cmake-modules-${{ env.VERSION }}.tar.gz
+            extra-cmake-modules-${{ env.VERSION }}.tar.xz
+            extra-cmake-modules-${{ env.VERSION }}.zip.asc
+            extra-cmake-modules-${{ env.VERSION }}.tar.gz.asc
+            extra-cmake-modules-${{ env.VERSION }}.tar.xz.asc
+            cmark-${{ env.VERSION }}.zip
+            cmark-${{ env.VERSION }}.tar.gz
+            cmark-${{ env.VERSION }}.tar.xz
+            cmark-${{ env.VERSION }}.zip.asc
+            cmark-${{ env.VERSION }}.tar.gz.asc
+            cmark-${{ env.VERSION }}.tar.xz.asc
 
   build-quazip-ubuntu:
     if: true && needs.prepare.outputs.run-quazip == 'true'
@@ -3481,11 +3509,6 @@ jobs:
       BUILD_TYPE: Release
     steps:
       - uses: actions/checkout@v2
-      - name: run vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: '2024.11.16'
-          runVcpkgInstall: false
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build
       - name: Configure CMake
