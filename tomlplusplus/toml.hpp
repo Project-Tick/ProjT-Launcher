@@ -6673,7 +6673,7 @@ TOML_POP_WARNINGS;
 // # Copyright (c) Mark Gillard <mark.gillard@outlook.com.au>
 // # See https://github.com/marzer/tomlplusplus/blob/master/LICENSE for the full license text.
 
-#if TOML_DOXYGEN || TOML_ENABLE_PARSER
+#if TOML_DOXYGEN || (TOML_ENABLE_PARSER && !TOML_EXCEPTIONS)
 
 // # {{
 #ifdef __INTELLISENSE__
@@ -7651,8 +7651,6 @@ TOML_NAMESPACE_START
 {
     TOML_ABI_NAMESPACE_START(noex);
 
-#if TOML_DOXYGEN || !TOML_EXCEPTIONS
-
     class parse_result {
        private:
         struct storage_t {
@@ -7884,8 +7882,6 @@ TOML_NAMESPACE_START
     };
 
     TOML_ABI_NAMESPACE_END;
-
-#endif  // TOML_DOXYGEN || !TOML_EXCEPTIONS
 }
 TOML_NAMESPACE_END;
 
@@ -7903,7 +7899,7 @@ TOML_NAMESPACE_END;
 #endif
 TOML_POP_WARNINGS;
 
-#endif  // TOML_DOXYGEN || TOML_ENABLE_PARSER
+#endif  // TOML_ENABLE_PARSER && !TOML_EXCEPTIONS
 
 //********  impl/parser.hpp  *******************************************************************************************
 
@@ -15818,7 +15814,7 @@ TOML_ANON_NAMESPACE_START
                     weight += 1u;
                     val *= -1.0;
                 }
-                return weight + static_cast<size_t>(std::abs(std::log10(val))) + 1u;
+                return weight + static_cast<size_t>(abs(log10(val))) + 1u;
             }
 
             case node_type::boolean:
