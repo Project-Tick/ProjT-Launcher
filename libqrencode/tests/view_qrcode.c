@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "../config.h"
+#include "../qrencode.h"
 #include "../qrencode_inner.h"
 #include "../qrinput.h"
 #include "../qrspec.h"

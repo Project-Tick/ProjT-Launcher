@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../mqrspec.h"
+#include "../qrencode.h"
 #include "../qrencode_inner.h"
 #include "../qrinput.h"
 #include "../qrspec.h"
