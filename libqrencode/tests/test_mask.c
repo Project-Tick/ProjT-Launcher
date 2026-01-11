@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+#include "common.h"
 #include "../mask.h"
 #include "../qrspec.h"
-#include "common.h"
 #include "decoder.h"
 
 static char dot[2]			 = { '_', '#' };
@@ -71,16 +71,8 @@ static void print_mask(int mask)
 	unsigned char frame[w * w], *masked, *p;
 	int x, y;
 
-	if (mask < 0 || mask >= 8)
-		return;
-
 	memset(frame, 0, w * w);
 	masked = Mask_makeMaskedFrame(w, frame, mask);
-	if (masked == NULL)
-	{
-		printf("Error: Mask_makeMaskedFrame returned NULL for mask %d\n", mask);
-		return;
-	}
 	p	   = masked;
 	for (y = 0; y < w; y++)
 	{
@@ -117,8 +109,6 @@ static int test_mask(int mask)
 
 	memset(frame, 0, w * w);
 	masked = Mask_makeMaskedFrame(w, frame, mask);
-	if (masked == NULL)
-		return -1;
 	p	   = masked;
 	q	   = maskPatterns[mask];
 	for (y = 0; y < w; y++)

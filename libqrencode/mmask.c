@@ -106,22 +106,9 @@ unsigned char* MMask_makeMaskedFrame(int width, unsigned char* frame, int mask)
 {
 	unsigned char* masked;
 
-	if (width <= 0 || frame == NULL || mask < 0 || mask >= maskNum)
-	{
-		errno = EINVAL;
-		return NULL;
-	}
-
 	masked = (unsigned char*)malloc((size_t)(width * width));
 	if (masked == NULL)
 		return NULL;
-
-	if (maskMakers[mask] == NULL)
-	{
-		free(masked);
-		errno = EINVAL;
-		return NULL;
-	}
 
 	maskMakers[mask](width, frame, masked);
 

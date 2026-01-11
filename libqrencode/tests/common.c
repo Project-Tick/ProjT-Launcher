@@ -26,19 +26,19 @@ int ncmpBin(char* correct, BitStream* bstream, size_t len)
 
 	p = correct;
 	i = 0;
-	while (*p != '\0' && i < len)
+	while (*p != '\0')
 	{
 		while (*p == ' ')
 		{
 			p++;
 		}
-		if (*p == '\0')
-			break;
 		bit = (*p == '1') ? 1 : 0;
 		if (bstream->data[i] != bit)
 			return -1;
 		i++;
 		p++;
+		if (i == len)
+			break;
 	}
 
 	return 0;
