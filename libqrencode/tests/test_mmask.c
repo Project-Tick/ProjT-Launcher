@@ -42,10 +42,16 @@ static void print_mask(int mask)
 	unsigned char frame[w * w], *masked, *p;
 	int x, y;
 
+	if (mask < 0 || mask >= 4)
+		return;
+
 	memset(frame, 0, w * w);
 	masked = MMask_makeMaskedFrame(w, frame, mask);
 	if (masked == NULL)
+	{
+		printf("Error: MMask_makeMaskedFrame returned NULL for mask %d\n", mask);
 		return;
+	}
 	p	   = masked;
 	for (y = 0; y < w; y++)
 	{
