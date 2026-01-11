@@ -533,10 +533,8 @@ if(NOT LAUNCHER_FUZZ_ONLY)
     find_package(Qt6 COMPONENTS DBus)
     list(APPEND Launcher_QT_DBUS Qt6::DBus)
     list(APPEND Launcher_QT_LIBS Qt6::Core5Compat)
-else()
-    # For fuzz-only builds, Qt6::Core is needed by fuzz_qjson_parse
-    find_package(Qt6 REQUIRED COMPONENTS Core)
 endif()
+# Note: Qt6 removed from fuzzer builds - fuzz_qjson_parse disabled due to glib dependency issues
 
 # System / Package Manager Provided Libs - Using bundled versions
 if(NOT LAUNCHER_FUZZ_ONLY)

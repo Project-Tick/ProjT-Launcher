@@ -17,8 +17,9 @@ endfunction()
 add_fuzzer(fuzz_nbt_reader fuzz_nbt_reader.cpp)
 target_link_libraries(fuzz_nbt_reader PRIVATE nbt++)
 
-add_fuzzer(fuzz_qjson_parse fuzz_qjson_parse.cpp)
-target_link_libraries(fuzz_qjson_parse PRIVATE Qt6::Core)
+# Disabled: Qt6 adds unnecessary glib dependency in fuzzing environment
+# add_fuzzer(fuzz_qjson_parse fuzz_qjson_parse.cpp)
+# target_link_libraries(fuzz_qjson_parse PRIVATE Qt6::Core)
 
 add_fuzzer(fuzz_gzip fuzz_gzip.cpp ${PROJECT_SOURCE_DIR}/launcher/GZip.cpp)
 target_include_directories(fuzz_gzip PRIVATE ${PROJECT_SOURCE_DIR}/launcher)

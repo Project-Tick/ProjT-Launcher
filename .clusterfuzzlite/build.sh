@@ -19,17 +19,10 @@ if command -v apt-get >/dev/null 2>&1; then
     python3-pip
 fi
 
-# Install Qt6 toolchain via aqt (minimal for fuzzing - only Qt6::Core needed)
-QT_VERSION=6.5.3
-QT_ROOT="/opt/Qt/${QT_VERSION}/gcc_64"
-if [ ! -d "${QT_ROOT}" ]; then
-  python3 -m pip install --no-cache-dir "aqtinstall==3.1.*"
-  # Only install base Qt6 for fuzz_qjson_parse (needs Qt6::Core)
-  python3 -m aqt install-qt --outputdir /opt/Qt linux desktop "${QT_VERSION}" gcc_64
-fi
-export PATH="${QT_ROOT}/bin:${PATH}"
-export CMAKE_PREFIX_PATH="${QT_ROOT}/lib/cmake:${CMAKE_PREFIX_PATH:-}"
-export LD_LIBRARY_PATH="${QT_ROOT}/lib:${LD_LIBRARY_PATH:-}"
+# Qt6 not needed anymore - fuzz_qjson_parse removed to avoid glib dependency
+# Fuzzing only needs: libnbt++ (for fuzz_nbt_reader) and zlib (for fuzz_gzip)
+
+export PATH="${PATH}"
 
 # Configure with fuzzing flags
 cmake -S . -B build -G Ninja \
@@ -43,8 +36,8 @@ cmake -S . -B build -G Ninja \
   -DCMAKE_INSTALL_RPATH="\$ORIGIN" \
   -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
 
-# Build only fuzzers
-cmake --build build --parallel --target fuzz_nbt_reader fuzz_qjson_parse fuzz_gzip
+# Build only fuzzers (fuzz_qjson_parse removed - Qt6 adds glib dependency)
+cmake --build build --parallel --target fuzz_nbt_reader fuzz_gzip
 
 # Copy fuzzers to output directory
 cp build/fuzz_nbt_reader "$OUT/"
@@ -55,8 +48,4 @@ cp build/fuzz_gzip "$OUT/"
 cp "${QT_ROOT}/lib/libQt6Core.so"* "$OUT/" || true
 # ICU libraries required by Qt6::Core
 cp "${QT_ROOT}/lib/libicudata.so"* "$OUT/" || true
-cp "${QT_ROOT}/lib/libicui18n.so"* "$OUT/" || true
-cp "${QT_ROOT}/lib/libicuuc.so"* "$OUT/" || true
-
-echo "✓ Fuzzer build complete. Built targets:"
-ls -lh "$OUT/fuzz_"*
+cp "${QT_ROOT}gzip "$OUT/"
