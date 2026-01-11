@@ -5,7 +5,11 @@
 #pragma once
 
 // toml++ config
+#ifdef TOML_UNDEF_MACROS
+#undef TOML_UNDEF_MACROS
+#endif
 #define TOML_UNDEF_MACROS 0
+
 #ifndef TOML_HEADER_ONLY
 #define TOML_HEADER_ONLY 0
 #endif
@@ -22,6 +26,9 @@
 #define LEAK_TESTS 0
 #endif
 #ifdef _MSC_VER
+#ifdef TOML_CALLCONV
+#undef TOML_CALLCONV
+#endif
 #define TOML_CALLCONV __stdcall  // just to test that TOML_CALLCONV doesn't cause linker failures
 #endif
 
