@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(QRencode VERSION 4.1.1 LANGUAGES C)
 
@@ -139,13 +139,13 @@ install(TARGETS qrencode DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 ## Build utility tools
 if(WITH_TOOLS)
-    if(NOT WITHOUT_PNG)
+    if(NOT WITHOUT_PNG AND PNG_FOUND)
         add_definitions(-DHAVE_PNG=1)
     endif()
     add_executable(qrenc qrenc.c)
     set_target_properties(qrenc PROPERTIES OUTPUT_NAME qrencode)
 
-    if(NOT WITHOUT_PNG)
+    if(NOT WITHOUT_PNG AND PNG_FOUND)
         target_link_libraries(qrenc qrencode PNG::PNG)
     else()
         target_link_libraries(qrenc qrencode)
