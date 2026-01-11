@@ -44,6 +44,8 @@ static void print_mask(int mask)
 
 	memset(frame, 0, w * w);
 	masked = MMask_makeMaskedFrame(w, frame, mask);
+	if (masked == NULL)
+		return;
 	p	   = masked;
 	for (y = 0; y < w; y++)
 	{
@@ -80,6 +82,8 @@ static int test_mask(int mask)
 
 	memset(frame, 0, w * w);
 	masked = MMask_makeMaskedFrame(w, frame, mask);
+	if (masked == NULL)
+		return -1;
 	p	   = masked;
 	q	   = maskPatterns[mask];
 	for (y = 0; y < w; y++)
