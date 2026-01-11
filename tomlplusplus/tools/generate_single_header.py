@@ -87,29 +87,6 @@ def main():
 	root_dir = utils.entry_script_dir().parent
 	include_dir = Path(root_dir, 'include', 'toml++')
 
-	# Format source files before preprocessing
-	try:
-		import subprocess
-		import platform
-		clang_format_config = Path(root_dir, '.clang-format')
-		if clang_format_config.exists():
-			print("Formatting source files with clang-format...")
-			source_dirs = [
-				Path(include_dir),
-				Path(include_dir, 'impl'),
-			]
-			for src_dir in source_dirs:
-				if src_dir.exists():
-					for ext in ['*.cpp', '*.h', '*.hpp', '*.inl']:
-						for file in src_dir.glob(ext):
-							subprocess.run(['clang-format', '-i', '--style=file', str(file)],
-								check=False, capture_output=True)
-			print("✓ Source files formatted")
-		else:
-			print("⚠ .clang-format not found, skipping source formatting")
-	except Exception as e:
-		print(f"⚠ Source formatting failed: {e}")
-
 	# preprocess header(s)
 	toml_h = str(Preprocessor(Path(include_dir, 'toml.hpp')))
 
@@ -282,20 +259,6 @@ def main():
 		print("Writing to {}".format(output_file_path))
 		with open(output_file_path,'w', encoding='utf-8', newline='\n') as output_file:
 			print(output_str, file=output_file)
-		
-		# Run clang-format (LLVM 19.7.1 style)
-		try:
-			import subprocess
-			clang_format_config = Path(utils.entry_script_dir(), '..', '.clang-format').resolve()
-			if clang_format_config.exists():
-				print("Running clang-format on toml.hpp...")
-				subprocess.run(['clang-format', '-i', '--style=file', str(output_file_path)], 
-					check=False, capture_output=True)
-				print("✓ Formatted with clang-format")
-			else:
-				print("⚠ .clang-format not found, skipping formatting")
-		except Exception as e:
-			print(f"⚠ clang-format failed: {e}")
 
 
 if __name__ == '__main__':
