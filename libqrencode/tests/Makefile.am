@@ -31,7 +31,7 @@ test_qrinput_SOURCES = test_qrinput.c common.c
 test_qrinput_LDADD = $(DECODER_LIBS) ../libqrencode.la
 
 test_bitstream_SOURCES = test_bitstream.c common.c
-test_bitstream_LDADD = ../libqrencode.la
+test_bitstream_LDADD = $(DECODER_LIBS) ../libqrencode.la
 
 test_estimatebit_SOURCES = test_estimatebit.c common.c
 test_estimatebit_LDADD = ../libqrencode.la
