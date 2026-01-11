@@ -79,14 +79,6 @@ if(MSVC)
     add_definitions(-Dstrncasecmp=_strnicmp)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
-    
-    if(WITH_TOOLS)
-        find_path(GETOPT_INCLUDE_DIR getopt.h PATH_SUFFIXES include)
-        find_library(GETOPT_LIBRARIES getopt PATH_SUFFIXES lib)
-        if(GETOPT_INCLUDE_DIR)
-            include_directories(${GETOPT_INCLUDE_DIR})
-        endif()
-    endif(WITH_TOOLS)
 endif(MSVC)
 
 set(QRENCODE_SRCS qrencode.c
@@ -142,17 +134,22 @@ if(WITH_TOOLS)
     if(NOT WITHOUT_PNG AND PNG_FOUND)
         add_definitions(-DHAVE_PNG=1)
     endif()
-    add_executable(qrenc qrenc.c)
+
+    set(QRENC_SRCS qrenc.c)
+
+    # MSVC doesn't have getopt.h, use bundled implementation
+    if(MSVC)
+        list(APPEND QRENC_SRCS getopt.c)
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+    endif()
+
+    add_executable(qrenc ${QRENC_SRCS})
     set_target_properties(qrenc PROPERTIES OUTPUT_NAME qrencode)
 
     if(NOT WITHOUT_PNG AND PNG_FOUND)
         target_link_libraries(qrenc qrencode PNG::PNG)
     else()
         target_link_libraries(qrenc qrencode)
-    endif()
-
-    if(MSVC AND GETOPT_LIBRARIES)
-        target_link_libraries(qrenc ${GETOPT_LIBRARIES})
     endif()
 
     install(TARGETS qrenc DESTINATION ${CMAKE_INSTALL_BINDIR})
