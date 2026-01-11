@@ -11,8 +11,8 @@ on:
         required: false
       LINUX_GPG_ID:
         required: false
-      GITHUB_TOKEN:
-        required: true
+      WINGET_TOKEN:
+        required: false
 
 jobs:
   create-release:
@@ -139,7 +139,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@5122b4edc95f85501a71628a57dc180a03ec7588
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           tag_name: ${{ github.ref }}
           name: ProjTLauncher ${{ env.VERSION }}
           draft: true
