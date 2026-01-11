@@ -2120,6 +2120,13 @@ jobs:
 
       - uses: pnpm/action-setup@1e1c8eafbd745f64b1ef30a7d7ed7965034c486c
 
+      - name: Install Doxygen and Poxy for toml++ docs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen python3-pip
+          pip3 install --user poxy
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
       - name: Install dependencies & build
         run: |
           pnpm install --frozen-lockfile
