@@ -3136,23 +3136,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      
-      - name: Configure Git
+      - name: Configure Git line endings
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          persist-credentials: false
+
+      - name: Normalize line endings
+        run: |
+          git add --renormalize .
+          git reset --hard HEAD
 
       - name: Use Node.js
         uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
 
       - uses: pnpm/action-setup@1e1c8eafbd745f64b1ef30a7d7ed7965034c486c
         name: Install pnpm
-
-      - name: Clean working tree before commit
-        run: |
-          git reset --hard
-          git clean -fdx
 
       - name: Install dependencies & update contributors
         env:
@@ -3167,6 +3169,11 @@ jobs:
           git config --local user.name "Project-Tick-Bot"
           git add ./website/_data/contributors.json
           git commit -m "chore: Update contributors" || true
+
+      - name: Prepare clean state for PR
+        run: |
+          git add --renormalize .
+          git diff --quiet || git commit -m "chore: Normalize line endings" || true
 
       - name: Create PR
         id: cpr
@@ -3192,7 +3199,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Configure Git line endings
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          persist-credentials: false
+
+      - name: Normalize line endings
+        run: |
+          git add --renormalize .
+          git reset --hard HEAD
+
       - uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15
 
       - name: Use PAT
