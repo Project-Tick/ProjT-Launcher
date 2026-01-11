@@ -2,20 +2,12 @@ name: ClusterFuzzLite CI
 
 on:
   pull_request:
-    paths:
-      - 'fuzz/**'
-      - '.clusterfuzzlite/**'
-      - 'libnbtplusplus/**'
-      - 'quazip/**'
-      - 'launcher/**'
-      - 'CMakeLists.txt'
   push:
     branches:
       - develop
-      - main
   schedule:
-    # Run daily at 06:00 UTC
-    - cron: '0 6 * * *'
+    # Run daily at 03:00 UTC
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -32,7 +24,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sanitizer: [address, undefined, memory]
+        # Memory sanitizer removed - requires full recompile of all deps including Qt
+        sanitizer: [address, undefined]
     steps:
       - name: Build Fuzzers (${{ matrix.sanitizer }})
         id: build
@@ -75,25 +68,8 @@ jobs:
           sanitizer: ${{ matrix.sanitizer }}
           output-sarif: true
       - name: Upload SARIF
-        if: always()
+        if: always() && steps.run.outputs.sarif-file != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: results.sarif
+          sarif_file: ${{ steps.run.outputs.sarif-file }}
           category: clusterfuzzlite-${{ matrix.sanitizer }}
-
-  corpus-pruning:
-    name: Corpus Pruning
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Fuzzers
-        id: build
-        uses: google/clusterfuzzlite/actions/build_fuzzers@v1
-        with:
-          sanitizer: address
-          language: c++
-      - name: Prune Corpus
-        id: prune
-        uses: google/clusterfuzzlite/actions/prune@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
