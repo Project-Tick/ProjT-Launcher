@@ -1,94 +1,123 @@
-## toml++ Documentation Setup
+# toml++ Documentation Setup `website/tomlplusplus/`
 
-This directory contains the configuration and source files for building the toml++ API documentation using Poxy (Doxygen + m.css).
+> **Location**: `website/tomlplusplus/`  
+> **Tools**: Poxy, Doxygen, m.css  
+> **Output**: API documentation HTML
 
-### Setup
+---
 
-First, install the required dependencies:
+## Overview
+
+This directory contains configuration for building the toml++ API documentation using Poxy (a Doxygen + m.css wrapper).
+
+---
+
+## Quick Start
+
+### Install Dependencies
 
 ```bash
 npm run setup:doxygen
 ```
 
-This will install:
-- **Doxygen** (via Homebrew on macOS)
+This installs:
+- **Doxygen** (via Homebrew on macOS, apt on Linux)
 - **Poxy** (via pipx)
 
-#### Manual Setup
+### Build Documentation
 
-If automatic installation fails, you can install manually:
+```bash
+npm run build:tomlplusplus
+```
 
-**macOS:**
+### Full Site Build
+
+```bash
+npm run build  # Includes toml++ docs
+```
+
+---
+
+## Manual Setup
+
+### macOS
+
 ```bash
 brew install doxygen pipx
 pipx install poxy
 ```
 
-**Linux:**
+### Linux
+
 ```bash
 sudo apt-get install doxygen python3-pip
 python3 -m pip install --user pipx
 pipx install poxy
 ```
 
-### Building Documentation
+---
 
-To build the toml++ documentation:
+## Configuration
 
-```bash
-npm run build:tomlplusplus
-```
+Documentation is configured via `poxy.toml`:
 
-This will:
-1. Run Poxy with the configuration in `poxy.toml`
-2. Generate HTML documentation to `website/tomlplusplus/html/`
-3. The HTML will be copied to `_site/tomlplusplus-docs/` during the site build
+| Setting | Value |
+|---------|-------|
+| Source paths | `../../tomlplusplus/include` |
+| Pages | `pages/` directory |
+| Images | `images/` directory |
+| Theme | Dark (default) |
+| Output | `html/` directory |
 
-### Full Site Build
+---
 
-The toml++ documentation is automatically built when you run:
-
-```bash
-npm run build
-```
-
-### Configuration
-
-The documentation is configured via `poxy.toml`. Key settings:
-
-- **Source paths**: Points to `../../tomlplusplus/include` for the C++ headers
-- **Pages**: Markdown files in the `pages/` directory
-- **Images**: SVG badges and logos in the `images/` directory
-- **Theme**: Dark theme by default
-- **Output**: HTML files are generated to `html/` directory
-
-### Troubleshooting
-
-#### Poxy fails with "ModuleNotFoundError: No module named 'jinja2'"
-
-This can happen if system Python is incompatible. Install jinja2 to Homebrew Python:
-
-```bash
-/opt/homebrew/bin/python3 -m pip install --break-system-packages jinja2 Pygments
-```
-
-#### Doxygen warnings
-
-Minor Doxygen warnings about unresolved links are normal and don't prevent documentation generation.
-
-### Directory Structure
+## Directory Structure
 
 ```
 website/tomlplusplus/
 ├── poxy.toml          # Poxy configuration
 ├── pages/             # Documentation pages (Markdown)
 │   └── main_page.md
-├── images/            # Badges, logos, and graphics
-└── html/              # Generated HTML (after build)
+├── images/            # Badges, logos, graphics
+└── html/              # Generated output (after build)
 ```
 
-### Links
+---
+
+## Build Process
+
+1. **Poxy** reads `poxy.toml`
+2. **Doxygen** parses C++ headers
+3. **m.css** generates styled HTML
+4. Output copied to `_site/tomlplusplus/` during site build
+
+---
+
+## Troubleshooting
+
+### ModuleNotFoundError: jinja2
+
+Install to Homebrew Python:
+
+```bash
+/opt/homebrew/bin/python3 -m pip install --break-system-packages jinja2 Pygments
+```
+
+### Doxygen Warnings
+
+Minor warnings about unresolved links are normal and don't prevent generation.
+
+---
+
+## Related Documentation
+
+- [toml++](./tomlplusplus.md) — Library documentation
+- [Workflows](./workflows.md) — CI builds documentation
+
+---
+
+## External Links
 
 - [Poxy Documentation](https://github.com/marzer/poxy)
-- [Repository](https://github.com/Project-Tick/ProjT-Launcher)
 - [Doxygen Manual](https://www.doxygen.nl/manual/)
+- [m.css](https://mcss.mosra.cz/)

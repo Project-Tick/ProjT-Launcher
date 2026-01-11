@@ -1,0 +1,586 @@
+name: CI Quazip
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+  push:
+    branches: [develop, main]
+    paths:
+      - 'quazip/**'
+      - '.github/workflows/ci-quazip.yml'
+  pull_request:
+    paths:
+      - 'quazip/**'
+      - '.github/workflows/ci-quazip.yml'
+
+jobs:
+  build-quazip-ubuntu:
+    name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [22.04, 24.04]
+        qt_version: [5.15.2, 6.8.2]
+        shared: [ON, OFF]
+    uses: ./.github/workflows/reusable.yml
+    with:
+        runs_on: ubuntu-${{ matrix.os_version }}
+        os_version: ${{ matrix.os_version }}
+        qt_version: ${{ matrix.qt_version }}
+        shared: ${{ matrix.shared }}
+        ref: ${{ inputs.ref }}
+        working_directory: quazip
+
+  build-quazip-ubuntu-zlibconst:
+    name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-zlibconst
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [ 24.04 ]
+        qt_version: [ 6.8.2 ]
+    uses: ./.github/workflows/reusable.yml
+    with:
+      runs_on: ubuntu-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: "ON"
+      zlib_const: "ON"
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  build-quazip-ubuntu-no-qtextcodec:
+    name: Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-no-qtextcodec
+    strategy:
+      fail-fast: true
+      matrix:
+        os_version: [ 24.04 ]
+        qt_version: [ 6.8.2 ]
+    uses: ./.github/workflows/reusable.yml
+    with:
+      runs_on: ubuntu-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: "ON"
+      qtextcodec: 'OFF'
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  build-quazip-macos:
+    name: macos-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [15, 14, 15-intel]
+        qt_version: [6.8.2, 5.15.2]
+        shared: [ON, OFF]
+        exclude:
+          - os_version: 14
+            qt_version: 5.15.2 #Not available due to ARM arch
+          - os_version: 15
+            qt_version: 5.15.2 #Not available due to ARM arch
+    uses: ./.github/workflows/reusable.yml
+    with:
+      runs_on: macos-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: ${{ matrix.shared }}
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  build-quazip-alpine:
+    timeout-minutes: 50
+    name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
+    runs-on: "ubuntu-22.04"
+    container:
+      image: "${{ matrix.runner }}"
+    strategy:
+      matrix:
+        runner:
+          - "alpine:3.21"
+        qt_version:
+          - "qt5"
+          - "qt6"
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      TEST_ZIP_UNZIP_LARGE: true
+    steps:
+      - name: Show OS info
+        run: cat /etc/os-release
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+      - name: Install build tools
+        working-directory: quazip
+        run: apk add --update g++ make cmake ${{ matrix.qt_version }}-qtbase-dev
+      - name: Install compat
+        if: ${{ matrix.qt_version == 'qt6' }}
+        working-directory: quazip
+        run: apk add qt6-qt5compat-dev
+      - name: Show cmake version
+        working-directory: quazip
+        run: cmake --version
+      - name: Run cmake
+        working-directory: quazip
+        run: cmake -B build -DQUAZIP_ENABLE_TESTS=ON
+      - name: Build quazip
+        working-directory: quazip
+        run: cd build && VERBOSE=1 make -j8
+      - name: Build tests
+        working-directory: quazip
+        run: cd build/qztest && VERBOSE=1 make -j8
+      - name: Run tests
+        working-directory: quazip
+        run: build/qztest/qztest
+
+  build-quazip-windows-x64:
+    name: Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ conan, vcpkg ]
+        qt_version: [ 5.15.2, 6.8.2 ]
+    uses: ./.github/workflows/reusable-win.yml
+    with:
+      runs_on: "win-x64"
+      arch: x64
+      qt_version: ${{ matrix.qt_version }}
+      preset: ${{ matrix.preset }}
+      pe_str: "x86-64"
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  build-quazip-windows-x86:
+    name: Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ conan_x86, vcpkg_x86 ]
+        qt_version: [ 5.15.2 ]
+    uses: ./.github/workflows/reusable-win.yml
+    with:
+      runs_on: "win-x86"
+      arch: x86
+      qt_version: ${{ matrix.qt_version }}
+      preset: ${{ matrix.preset }}
+      pe_str: "i386"
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  build-quazip-ubuntu-ci-extract:
+    name: extract-Ubuntu-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [ 24.04 ]
+        qt_version: [ 6.8.2 ]
+        shared: [ ON ]
+    uses: ./.github/workflows/reusable.yml
+    needs: [ build-quazip-ubuntu, build-quazip-macos, build-quazip-windows-x64, build-quazip-windows-x86 ]
+    with:
+      runs_on: ubuntu-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: ${{ matrix.shared }}
+      cross_extract: true
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  build-quazip-macos-ci-extract:
+    name: extract-macos-${{ matrix.os_version }}-Qt-${{ matrix.qt_version }}-shared-${{ matrix.shared }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: [ 15 ]
+        qt_version: [ 6.8.2 ]
+        shared: [ ON ]
+    uses: ./.github/workflows/reusable.yml
+    needs: [ build-quazip-ubuntu, build-quazip-macos, build-quazip-windows-x64, build-quazip-windows-x86 ]
+    with:
+      runs_on: macos-${{ matrix.os_version }}
+      os_version: ${{ matrix.os_version }}
+      qt_version: ${{ matrix.qt_version }}
+      shared: ${{ matrix.shared }}
+      cross_extract: true
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  build-quazip-windows-x64-ci-extract:
+    name: extract-Win-Qt-${{ matrix.qt_version }}-preset-${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ vcpkg ]
+        qt_version: [ 6.8.2 ]
+    uses: ./.github/workflows/reusable-win.yml
+    needs: [ build-quazip-ubuntu, build-quazip-macos, build-quazip-windows-x64, build-quazip-windows-x86 ]
+    with:
+      runs_on: "win-x64"
+      arch: x64
+      qt_version: ${{ matrix.qt_version }}
+      preset: ${{ matrix.preset }}
+      pe_str: "x86-64"
+      cross_extract: true
+      ref: ${{ inputs.ref }}
+      working_directory: quazip
+
+  build-quazip-fedora:
+    name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
+    runs-on: "ubuntu-22.04"
+    defaults:
+      run:
+        working-directory: quazip
+    container:
+      image: "${{ matrix.runner }}"
+    strategy:
+      matrix:
+        runner:
+          - "fedora:42"
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - name: Install build tools
+        run: dnf -y install g++ make cmake qt6-qtbase-devel qt6-qt5compat-devel zlib-ng-devel zlib-ng-compat-devel
+      - name: Run cmake
+        run: cmake -B build -DQUAZIP_ENABLE_TESTS=ON
+      - name: Build quazip
+        run: cd build && VERBOSE=1 make -j8
+      - name: Run tests
+        run: build/qztest/qztest
+
+  build-quazip-use-qt-zlib-ubuntu:
+    timeout-minutes: 50
+    env:
+      BUILD_TYPE: Release
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: quazip
+    name: use-qt-zlib-ubuntu-${{ matrix.qt_version }}
+    container: ghcr.io/cen1/qt:${{ matrix.qt_version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        qt_version: [ 5.15.12, 6.4.3, 6.8.2 ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+      - name: Configure CMake
+        run: cmake -DCMAKE_BUILD_TYPE="${{env.BUILD_TYPE}}" -DBUILD_SHARED_LIBS=OFF -DQUAZIP_ENABLE_TESTS=ON -DQUAZIP_USE_QT_ZLIB=ON -DCMAKE_PREFIX_PATH="/usr/local/Qt-${{ matrix.qt_version }}" -B build
+
+      - name: Build
+        run: cmake --build build --config ${{env.BUILD_TYPE}}
+
+      - name: Run tests
+        working-directory: ${{ github.workspace }}/quazip/build
+        run: ctest --verbose -C Release
+
+  build-quazip-use-qt6-zlib-windows:
+    timeout-minutes: 50
+    env:
+      BUILD_TYPE: Release
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: quazip
+    name: use-qt6-zlib-windows-${{ matrix.qt_version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        qt_version: [ 6.8.2 ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+      - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
+        with:
+          arch: x64
+
+      - name: Restore Qt build cache
+        id: cache-qt-restore
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        with:
+          key: windows-qt-${{ matrix.qt_version }}
+          path: qt-everywhere-src-${{ matrix.qt_version }}
+
+      - name: Restore Qt zip
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        id: cache-qt-zip-restore
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        with:
+          key: windows-qt-${{ matrix.qt_version }}-zip
+          path: qt-everywhere-src-${{ matrix.qt_version }}.zip
+
+      - name: Download Qt 6
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true' && steps.cache-qt-zip-restore.outputs.cache-hit != 'true'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          curl https://ftp.fau.de/qtproject/archive/qt/6.8/${{ matrix.qt_version }}/single/qt-everywhere-src-${{ matrix.qt_version }}.zip --output qt-everywhere-src-${{ matrix.qt_version }}.zip
+
+      - name: Save Qt zip
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true' && steps.cache-qt-zip-restore.outputs.cache-hit != 'true'
+        id: cache-qt-zip-save
+        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
+        with:
+          path: qt-everywhere-src-${{ matrix.qt_version }}.zip
+          key: windows-qt-${{ matrix.qt_version }}-zip
+
+      - name: Extract Qt zip
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          rm -rf qt-everywhere-src-${{ matrix.qt_version }}
+          unzip -oq qt-everywhere-src-${{ matrix.qt_version }}.zip
+          ls -la
+
+      - name: Configure Qt
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        shell: cmd
+        working-directory: qt-everywhere-src-${{ matrix.qt_version }}
+        run: ./configure.bat -prefix "${{github.workspace}}/Qt" -qt-zlib ^
+          -static ^
+          -opensource ^
+          -confirm-license ^
+          -optimize-size ^
+          -nomake examples ^
+          -nomake tests ^
+          -no-dbus ^
+          -no-icu ^
+          -no-fontconfig ^
+          -no-opengl ^
+          -no-openssl ^
+          -no-gui ^
+          -skip qtconnectivity ^
+          -skip qtdatavis3d ^
+          -skip qtdeclarative ^
+          -skip qtdoc ^
+          -skip qtactiveqt ^
+          -skip qt3d ^
+          -skip qtgraphs ^
+          -skip qtgrpc ^
+          -skip qtimageformats ^
+          -skip qtlanguageserver ^
+          -skip qtlocation ^
+          -skip qthttpserver ^
+          -skip qtmultimedia ^
+          -skip qtopcua ^
+          -skip qtpositioning ^
+          -skip qtremoteobjects ^
+          -skip qtscxml ^
+          -skip qtsensors ^
+          -skip qtserialbus ^
+          -skip qtserialport ^
+          -skip qtshadertools ^
+          -skip qtspeech ^
+          -skip qtsvg ^
+          -skip qttools ^
+          -skip qttranslations ^
+          -skip qtwebchannel ^
+          -skip qtwebengine ^
+          -skip qtwebsockets ^
+          -skip qtwebview ^
+          -skip qtcharts ^
+          -skip qtcoap ^
+          -skip qtlottie ^
+          -skip qtmqtt ^
+          -skip qtnetworkauth ^
+          -skip qtquick3d ^
+          -skip qtquick3dphysics ^
+          -skip qtquickeffectmaker ^
+          -skip qtquicktimeline ^
+          -skip qtvirtualkeyboard ^
+          -skip qtwayland ^
+          -skip qtcanvas3d ^
+          -skip qtgamepad ^
+          -skip qtpurchasing ^
+          -skip qtscript
+
+      - name: Build Qt
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        shell: cmd
+        working-directory: qt-everywhere-src-${{ matrix.qt_version }}
+        run: cmake --build . --parallel
+
+      - name: Cache Qt
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        id: cache-qt
+        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
+        with:
+          path: qt-everywhere-src-${{ matrix.qt_version }}
+          key: windows-qt-${{ matrix.qt_version }}
+
+      - name: Install Qt
+        shell: cmd
+        working-directory: qt-everywhere-src-${{ matrix.qt_version }}
+        run: cmake --install .
+
+      - name: Configure CMake
+        run: cmake -DCMAKE_BUILD_TYPE="${{env.BUILD_TYPE}}" -DQUAZIP_QT_MAJOR_VERSION=6 -DBUILD_SHARED_LIBS=OFF -DQUAZIP_ENABLE_TESTS=ON -DQUAZIP_USE_QT_ZLIB=ON -B "${{github.workspace}}/build" -DCMAKE_PREFIX_PATH="${{github.workspace}}\Qt"
+
+      - name: Build
+        shell: cmd
+        working-directory: ${{github.workspace}}\build
+        run: cmake --build . --config ${{env.BUILD_TYPE}}
+
+      - name: Run tests
+        shell: cmd
+        working-directory: ${{github.workspace}}\build
+        run: ctest --verbose --output-on-failure -C Release
+
+  build-quazip-use-qt5-zlib-windows:
+    timeout-minutes: 50
+    env:
+      BUILD_TYPE: Release
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: quazip
+    name: use-qt5-zlib-windows-${{ matrix.qt_version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        qt_version: [ 5.15.12 ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+      - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
+        with:
+          arch: x64
+
+      - name: Restore Qt build cache
+        id: cache-qt-restore
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        with:
+          key: windows-qt-${{ matrix.qt_version }}
+          path: qt-everywhere-src-${{ matrix.qt_version }}
+
+      - name: Restore Qt zip
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        id: cache-qt-zip-restore
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        with:
+          key: windows-qt-${{ matrix.qt_version }}-zip
+          path: qt-everywhere-src-${{ matrix.qt_version }}.zip
+
+      - name: Download Qt 5
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true' && steps.cache-qt-zip-restore.outputs.cache-hit != 'true'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          curl https://ftp.fau.de/qtproject/archive/qt/5.15/${{ matrix.qt_version }}/single/qt-everywhere-opensource-src-${{ matrix.qt_version }}.zip --output qt-everywhere-src-${{ matrix.qt_version }}.zip
+
+      - name: Save Qt zip
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true' && steps.cache-qt-zip-restore.outputs.cache-hit != 'true'
+        id: cache-qt-zip-save
+        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
+        with:
+          path: qt-everywhere-src-${{ matrix.qt_version }}.zip
+          key: windows-qt-${{ matrix.qt_version }}-zip
+
+      - name: Extract Qt zip
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          rm -rf qt-everywhere-src-${{ matrix.qt_version }}
+          unzip -oq qt-everywhere-src-${{ matrix.qt_version }}.zip
+          ls -la
+
+      - name: Normalize Qt source dir
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ -d "qt-everywhere-opensource-src-${{ matrix.qt_version }}" ] && [ ! -d "qt-everywhere-src-${{ matrix.qt_version }}" ]; then
+            mv "qt-everywhere-opensource-src-${{ matrix.qt_version }}" "qt-everywhere-src-${{ matrix.qt_version }}"
+          fi
+
+      - name: Configure Qt
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        shell: cmd
+        working-directory: qt-everywhere-src-${{ matrix.qt_version }}
+        run: ./configure.bat -prefix "${{github.workspace}}/Qt" -qt-zlib ^
+          -static ^
+          -opensource ^
+          -confirm-license ^
+          -optimize-size ^
+          -nomake examples ^
+          -nomake tests ^
+          -no-dbus ^
+          -no-fontconfig ^
+          -no-opengl ^
+          -no-openssl ^
+          -no-gui ^
+          -skip qtconnectivity ^
+          -skip qtdatavis3d ^
+          -skip qtdeclarative ^
+          -skip qtdoc ^
+          -skip qtactiveqt ^
+          -skip qt3d ^
+          -skip qtimageformats ^
+          -skip qtlocation ^
+          -skip qtmultimedia ^
+          -skip qtopcua ^
+          -skip qtremoteobjects ^
+          -skip qtscxml ^
+          -skip qtsensors ^
+          -skip qtserialbus ^
+          -skip qtserialport ^
+          -skip qtspeech ^
+          -skip qtsvg ^
+          -skip qttools ^
+          -skip qttranslations ^
+          -skip qtwebchannel ^
+          -skip qtwebengine ^
+          -skip qtwebsockets ^
+          -skip qtwebview ^
+          -skip qtcharts ^
+          -skip qtcoap ^
+          -skip qtlottie ^
+          -skip qtmqtt ^
+          -skip qtnetworkauth ^
+          -skip qtquick3d ^
+          -skip qtquicktimeline ^
+          -skip qtvirtualkeyboard ^
+          -skip qtwayland ^
+          -skip qtcanvas3d ^
+          -skip qtgamepad ^
+          -skip qtpurchasing ^
+          -skip qtscript
+
+      - name: Build Qt
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        shell: cmd
+        working-directory: qt-everywhere-src-${{ matrix.qt_version }}
+        run: nmake
+
+      - name: Cache Qt
+        if: steps.cache-qt-restore.outputs.cache-hit != 'true'
+        id: cache-qt
+        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
+        with:
+          path: qt-everywhere-src-${{ matrix.qt_version }}
+          key: windows-qt-${{ matrix.qt_version }}-zip
+
+      - name: Install Qt
+        shell: cmd
+        working-directory: qt-everywhere-src-${{ matrix.qt_version }}
+        run: nmake install
+
+      - name: Configure CMake
+        run: cmake -DCMAKE_BUILD_TYPE="${{env.BUILD_TYPE}}" -DQUAZIP_QT_MAJOR_VERSION=5 -DBUILD_SHARED_LIBS=OFF -DQUAZIP_ENABLE_TESTS=ON -DQUAZIP_USE_QT_ZLIB=ON -B build -DCMAKE_PREFIX_PATH="${{github.workspace}}\Qt"
+
+      - name: Build
+        shell: cmd
+        run: cmake --build build --config ${{env.BUILD_TYPE}}
+
+      - name: Run tests
+        shell: cmd
+        run: ctest --verbose --output-on-failure -C Release

@@ -1,0 +1,146 @@
+name: CI Website
+
+on:
+  workflow_call:
+    inputs:
+      run-website:
+        required: true
+        type: string
+      is-pr:
+        required: true
+        type: string
+  push:
+    branches: [develop]
+    paths:
+      - 'website/**'
+      - 'website-root/**'
+      - 'docs/handbook/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci-website.yml'
+  pull_request:
+    paths:
+      - 'website/**'
+      - 'website-root/**'
+      - 'docs/handbook/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci-website.yml'
+
+jobs:
+  build-website:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - uses: pnpm/action-setup@1e1c8eafbd745f64b1ef30a7d7ed7965034c486c
+
+      - name: Install Doxygen and Poxy for toml++ docs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen python3-pip
+          pip3 install --user poxy
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # ─────────────────────────────────────────────────────────────
+      # HANDBOOK SYNC: Copy docs/handbook to website-root/handbook
+      # ─────────────────────────────────────────────────────────────
+      - name: Sync handbook from docs to website-root
+        run: |
+          echo "📚 Syncing handbook documentation..."
+          
+          # Create handbook pages directory
+          mkdir -p website-root/handbook/pages
+          
+          # Copy all markdown files from docs/handbook
+          for file in docs/handbook/*.md; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              # Skip README.md (index is separate)
+              if [ "$filename" != "README.md" ]; then
+                # Convert filename to URL-friendly format
+                slug=$(echo "$filename" | sed 's/.md$//' | tr '_' '-')
+                
+                # Create individual page with frontmatter
+                cat > "website-root/handbook/pages/${slug}.md" << EOF
+          ---
+          permalink: /handbook/${slug}/index.html
+          eleventyExcludeFromCollections: true
+          ---
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${slug} - Developer Handbook</title>
+            <link rel="stylesheet" href="/handbook/style.css">
+          </head>
+          <body>
+            <nav class="nav">
+              <a href="/handbook/">← Handbook</a>
+            </nav>
+            <article class="content">
+          EOF
+                
+                # Convert markdown to simple HTML (basic conversion)
+                cat "$file" >> "website-root/handbook/pages/${slug}.md"
+                
+                cat >> "website-root/handbook/pages/${slug}.md" << EOF
+            </article>
+          </body>
+          </html>
+          EOF
+                
+                echo "  ✓ Synced: $filename → $slug"
+              fi
+            fi
+          done
+          
+          echo "✅ Handbook sync complete"
+
+      - name: Install dependencies & build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      # ─────────────────────────────────────────────────────────────
+      # POST-BUILD: Copy raw handbook markdown for direct access
+      # ─────────────────────────────────────────────────────────────
+      - name: Copy handbook raw markdown to _site
+        run: |
+          mkdir -p _site/handbook/raw
+          cp docs/handbook/*.md _site/handbook/raw/ 2>/dev/null || true
+          echo "✅ Raw handbook files copied"
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
+        with:
+          path: ./_site
+
+  deploy-website:
+    timeout-minutes: 5
+    # Only deploy on pushes to develop; skip PRs/merge_group explicitly
+    if: github.repository_owner == 'Project-Tick' && github.event_name == 'push'
+    needs: [build-website]
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@854d7aa1b99e4509c4d1b53d69b7ba4eaf39215a

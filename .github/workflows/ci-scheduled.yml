@@ -1,0 +1,373 @@
+name: CI Scheduled Jobs
+
+on:
+  workflow_call:
+    inputs:
+      schedule-cron:
+        required: true
+        type: string
+      is-pr-closed:
+        required: true
+        type: string
+      is-release:
+        required: true
+        type: string
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+      ORG_MEMBERS_TOKEN:
+        required: false
+      TOKEN:
+        required: false
+      WINGET_TOKEN:
+        required: false
+
+jobs:
+  backport:
+    name: Backport to Release Branch
+    # Only run on closed/merged PRs with backport label
+    if: inputs.is-pr-closed == 'true' && github.event.pull_request.merged == true && contains(join(github.event.pull_request.labels.*.name, ','), 'backport/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract target branch from label
+        id: target
+        run: |
+          # Extract version from label like "backport/release-1.0" -> "release-1.0"
+          labels="${{ join(github.event.pull_request.labels.*.name, ' ') }}"
+          label=$(echo "$labels" | tr ' ' '\n' | grep -E "^backport/release-[0-9A-Za-z._-]+$" | head -1)
+          if [ -z "$label" ]; then
+            echo "No valid backport label found"
+            exit 0
+          fi
+          target_branch="${label#backport/}"
+          pr_number="${{ github.event.pull_request.number }}"
+          backport_branch="backport/${target_branch}/pr-${pr_number}"
+          echo "target_branch=$target_branch" >> "$GITHUB_OUTPUT"
+          echo "backport_branch=$backport_branch" >> "$GITHUB_OUTPUT"
+          echo "Creating backport to: $target_branch"
+
+      - name: Create backport branch
+        if: steps.target.outputs.target_branch != ''
+        run: |
+          TARGET_BRANCH="${{ steps.target.outputs.target_branch }}"
+          BACKPORT_BRANCH="${{ steps.target.outputs.backport_branch }}"
+          MERGE_SHA="${{ github.event.pull_request.merge_commit_sha }}"
+          
+          # Verify target branch exists
+          if ! git ls-remote --exit-code --heads origin "$TARGET_BRANCH" > /dev/null 2>&1; then
+            echo "Error: Target branch '$TARGET_BRANCH' does not exist"
+            exit 1
+          fi
+          
+          # Create backport branch from target branch
+          git fetch origin "$TARGET_BRANCH"
+          git checkout -b "$BACKPORT_BRANCH" "origin/$TARGET_BRANCH"
+          
+          # Cherry-pick the merge commit
+          if git cherry-pick -m 1 "$MERGE_SHA"; then
+            echo "Successfully cherry-picked $MERGE_SHA"
+          else
+            echo "Error: Cherry-pick failed with conflicts"
+            echo "The following files have conflicts:"
+            git diff --name-only --diff-filter=U
+            echo ""
+            echo "Manual backport required. Please:"
+            echo "1. Create a branch from $TARGET_BRANCH"
+            echo "2. Manually apply changes from PR #${{ github.event.pull_request.number }}"
+            echo "3. Create a pull request to $TARGET_BRANCH"
+            git cherry-pick --abort
+            exit 1
+          fi
+          
+          # Push the backport branch
+          git push origin "$BACKPORT_BRANCH"
+
+      - name: Create backport PR
+        if: steps.target.outputs.target_branch != ''
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const branch = '${{ steps.target.outputs.target_branch }}';
+            const backportBranch = '${{ steps.target.outputs.backport_branch }}';
+            const originalPR = context.payload.pull_request.number;
+            const originalTitle = context.payload.pull_request.title;
+            
+            try {
+              // Create backport PR
+              const response = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[Backport ${branch}] ${originalTitle}`,
+                body: `Automated backport of #${originalPR} to \`${branch}\`\n\n---\n\nOriginal PR: #${originalPR}`,
+                head: backportBranch,
+                base: branch
+              });
+              
+              console.log(`Created backport PR: #${response.data.number}`);
+              
+              // Add backport label to the new PR
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: response.data.number,
+                labels: ['automated-backport']
+              });
+            } catch (error) {
+              console.error(`Failed to create backport PR: ${error.message}`);
+              throw error;
+            }
+
+  process-review:
+    name: Process Review
+    if: github.event_name == 'pull_request_review' || github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout CI scripts
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            ci/github-script
+
+      - name: Setup Node.js
+        uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd ci/github-script
+          npm install
+          npm ci --omit=dev
+
+      - name: Process review
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          github-token: ${{ github.token }}
+          retries: 3
+          script: |
+            const { handleMergeComment } = require('./ci/github-script/merge.js');
+            
+            // Get PR information
+            let pull_request;
+            
+            if (context.eventName === 'workflow_run') {
+              // Get PR from workflow run
+              const { head_sha, repository } = context.payload.workflow_run;
+              
+              const prs = await github.rest.pulls.list({
+                owner: repository.owner.login,
+                repo: repository.name,
+                head: `${repository.owner.login}:${head_sha}`,
+                state: 'open',
+              });
+              
+              if (prs.data.length === 0) {
+                core.info('No open PR found for this commit');
+                return;
+              }
+              
+              pull_request = prs.data[0];
+            } else if (context.eventName === 'pull_request_review') {
+              pull_request = context.payload.pull_request;
+              const review = context.payload.review;
+              
+              // Handle merge command in review
+              await handleMergeComment({
+                github,
+                body: review.body,
+                node_id: review.node_id,
+                reaction: review.state === 'approved' ? 'ROCKET' : 'EYES',
+              });
+            }
+            
+            if (!pull_request) {
+              core.info('No PR to process');
+              return;
+            }
+            
+            core.info(`Processing review for PR #${pull_request.number}`);
+            
+            // Update labels based on review state
+            const reviews = await github.rest.pulls.listReviews({
+              ...context.repo,
+              pull_number: pull_request.number,
+            });
+            
+            const hasApproval = reviews.data.some(r => r.state === 'APPROVED');
+            const hasChangesRequested = reviews.data.some(r => r.state === 'CHANGES_REQUESTED');
+            
+            const labelsToAdd = [];
+            const labelsToRemove = [];
+            
+            if (hasApproval && !hasChangesRequested) {
+              labelsToAdd.push('40.approved');
+              labelsToRemove.push('40.needs-review', '40.changes-requested');
+            } else if (hasChangesRequested) {
+              labelsToAdd.push('40.changes-requested');
+              labelsToRemove.push('40.approved', '40.needs-review');
+            } else {
+              labelsToAdd.push('40.needs-review');
+              labelsToRemove.push('40.approved', '40.changes-requested');
+            }
+            
+            // Apply label changes
+            const currentLabels = pull_request.labels.map(l => l.name);
+            
+            for (const label of labelsToAdd) {
+              if (!currentLabels.includes(label)) {
+                try {
+                  await github.rest.issues.addLabels({
+                    ...context.repo,
+                    issue_number: pull_request.number,
+                    labels: [label],
+                  });
+                } catch (e) {
+                  core.warning(`Could not add label ${label}: ${e.message}`);
+                }
+              }
+            }
+            
+            for (const label of labelsToRemove) {
+              if (currentLabels.includes(label)) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    ...context.repo,
+                    issue_number: pull_request.number,
+                    name: label,
+                  });
+                } catch (e) {
+                  // Label might not exist
+                }
+              }
+            }
+            
+            core.info('Review processing complete');
+
+  stale-label:
+    timeout-minutes: 5
+    name: Label stale issues and PRs
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/stale@a21a0816299b11691f9592ef0d63d08e02f06d9d
+        with:
+          days-before-stale: 60
+          days-before-close: -1 # Don't close anything
+          exempt-issue-labels: rfc,nostale,help wanted
+          exempt-all-milestones: true
+          exempt-all-assignees: true
+          operations-per-run: 1000
+          stale-issue-label: inactive
+          stale-pr-label: inactive
+
+  update-contributors:
+    timeout-minutes: 10
+    if: github.repository_owner == 'Project-Tick'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure Git line endings
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          persist-credentials: false
+
+      - name: Normalize line endings
+        run: |
+          git add --renormalize .
+          git reset --hard HEAD
+
+      - name: Use Node.js
+        uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
+
+      - uses: pnpm/action-setup@1e1c8eafbd745f64b1ef30a7d7ed7965034c486c
+        name: Install pnpm
+
+      - name: Install dependencies & update contributors
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_MEMBERS_TOKEN }}
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run update-contributors
+
+      - name: Commit files
+        run: |
+          git config --local user.email "gitbot@yongdohyun.org.tr"
+          git config --local user.name "Project-Tick-Bot"
+          git add ./website/_data/contributors.json
+          git commit -m "chore: Update contributors" || true
+
+      - name: Prepare clean state for PR
+        run: |
+          git add --renormalize .
+          git diff --quiet || git commit -m "chore: Normalize line endings" || true
+
+      - name: Create PR
+        id: cpr
+        uses: peter-evans/create-pull-request@2271f1ddcf09437ed8f019733eb5cfba58ac76f0
+        with:
+          base: "develop"
+          branch: "update-contributors"
+          delete-branch: false
+          title: "chore: Update Contributors"
+          body: "Automated pull request to update contributors"
+
+      - name: Enable Pull Request Automerge
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        uses: peter-evans/enable-pull-request-automerge@23c09f60046c64f1b0079b44af614bfa411395b9
+        with:
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: merge
+
+  update-flake:
+    timeout-minutes: 10
+    if: github.repository_owner == 'Project-Tick'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure Git line endings
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          persist-credentials: false
+
+      - name: Normalize line endings
+        run: |
+          git add --renormalize .
+          git reset --hard HEAD
+
+      - uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15
+
+      - name: Use PAT
+        run: echo "GITHUB_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
+
+      - uses: DeterminateSystems/update-flake-lock@2235257b90962ba68499d64da5b0d1eaa3b46c1e
+        with:
+          commit-msg: "chore(nix): update lockfile"
+          pr-title: "chore(nix): update lockfile"
+          pr-labels: |
+            41.changelog:omit

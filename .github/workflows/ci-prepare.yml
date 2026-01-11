@@ -1,0 +1,569 @@
+name: CI Prepare
+
+on:
+  workflow_call:
+    outputs:
+      should-test:
+        value: ${{ jobs.prepare.outputs.should-test }}
+      should-build:
+        value: ${{ jobs.prepare.outputs.should-build }}
+      event-name:
+        value: ${{ jobs.prepare.outputs.event-name }}
+      is-pr:
+        value: ${{ jobs.prepare.outputs.is-pr }}
+      is-push:
+        value: ${{ jobs.prepare.outputs.is-push }}
+      is-tag-push:
+        value: ${{ jobs.prepare.outputs.is-tag-push }}
+      is-branch-push:
+        value: ${{ jobs.prepare.outputs.is-branch-push }}
+      is-merge-group:
+        value: ${{ jobs.prepare.outputs.is-merge-group }}
+      is-dispatch:
+        value: ${{ jobs.prepare.outputs.is-dispatch }}
+      is-schedule:
+        value: ${{ jobs.prepare.outputs.is-schedule }}
+      is-issue-comment:
+        value: ${{ jobs.prepare.outputs.is-issue-comment }}
+      is-release:
+        value: ${{ jobs.prepare.outputs.is-release }}
+      is-workflow-run:
+        value: ${{ jobs.prepare.outputs.is-workflow-run }}
+      is-pr-review:
+        value: ${{ jobs.prepare.outputs.is-pr-review }}
+      is-branch-protection:
+        value: ${{ jobs.prepare.outputs.is-branch-protection }}
+      is-pr-closed:
+        value: ${{ jobs.prepare.outputs.is-pr-closed }}
+      schedule-cron:
+        value: ${{ jobs.prepare.outputs.schedule-cron }}
+      ref-name:
+        value: ${{ jobs.prepare.outputs.ref-name }}
+      ref-type:
+        value: ${{ jobs.prepare.outputs.ref-type }}
+      build-type:
+        value: ${{ jobs.prepare.outputs.build-type }}
+      run-release-build:
+        value: ${{ jobs.prepare.outputs.run-release-build }}
+      run-regular-build:
+        value: ${{ jobs.prepare.outputs.run-regular-build }}
+      run-zlib:
+        value: ${{ jobs.prepare.outputs.run-zlib }}
+      run-bzip2:
+        value: ${{ jobs.prepare.outputs.run-bzip2 }}
+      run-quazip:
+        value: ${{ jobs.prepare.outputs.run-quazip }}
+      run-website:
+        value: ${{ jobs.prepare.outputs.run-website }}
+      run-nix:
+        value: ${{ jobs.prepare.outputs.run-nix }}
+      run-bot:
+        value: ${{ jobs.prepare.outputs.run-bot }}
+      run-meta:
+        value: ${{ jobs.prepare.outputs.run-meta }}
+      run-branding:
+        value: ${{ jobs.prepare.outputs.run-branding }}
+      run-schedule:
+        value: ${{ jobs.prepare.outputs.run-schedule }}
+      run-cmark:
+        value: ${{ jobs.prepare.outputs.run-cmark }}
+      run-tomlplusplus:
+        value: ${{ jobs.prepare.outputs.run-tomlplusplus }}
+      run-libqrencode:
+        value: ${{ jobs.prepare.outputs.run-libqrencode }}
+      dominant-scope:
+        value: ${{ jobs.prepare.outputs.dominant-scope }}
+      changed-files:
+        value: ${{ jobs.prepare.outputs.changed-files }}
+      base-ref:
+        value: ${{ jobs.prepare.outputs.base-ref }}
+      head-ref:
+        value: ${{ jobs.prepare.outputs.head-ref }}
+
+jobs:
+  prepare:
+    timeout-minutes: 5
+    name: Prepare Workflow Context
+    runs-on: ubuntu-latest
+    outputs:
+      should-test: ${{ steps.decide.outputs.should-test }}
+      should-build: ${{ steps.decide.outputs.should-build }}
+      event-name: ${{ steps.trigger.outputs.event-name }}
+      is-pr: ${{ steps.trigger.outputs.is-pr }}
+      is-push: ${{ steps.trigger.outputs.is-push }}
+      is-tag-push: ${{ steps.trigger.outputs.is-tag-push }}
+      is-branch-push: ${{ steps.trigger.outputs.is-branch-push }}
+      is-merge-group: ${{ steps.trigger.outputs.is-merge-group }}
+      is-dispatch: ${{ steps.trigger.outputs.is-dispatch }}
+      is-schedule: ${{ steps.trigger.outputs.is-schedule }}
+      is-issue-comment: ${{ steps.trigger.outputs.is-issue-comment }}
+      is-release: ${{ steps.trigger.outputs.is-release }}
+      is-workflow-run: ${{ steps.trigger.outputs.is-workflow-run }}
+      is-pr-review: ${{ steps.trigger.outputs.is-pr-review }}
+      is-branch-protection: ${{ steps.trigger.outputs.is-branch-protection }}
+      is-pr-closed: ${{ steps.trigger.outputs.is-pr-closed }}
+      schedule-cron: ${{ steps.trigger.outputs.schedule-cron }}
+      ref-name: ${{ steps.trigger.outputs.ref-name }}
+      ref-type: ${{ steps.trigger.outputs.ref-type }}
+      build-type: ${{ steps.decide.outputs.build-type }}
+      run-release-build: ${{ steps.decide.outputs.run-release-build }}
+      run-regular-build: ${{ steps.decide.outputs.run-regular-build }}
+      run-zlib: ${{ steps.decide.outputs.run-zlib }}
+      run-bzip2: ${{ steps.decide.outputs.run-bzip2 }}
+      run-quazip: ${{ steps.decide.outputs.run-quazip }}
+      run-website: ${{ steps.decide.outputs.run-website }}
+      run-nix: ${{ steps.decide.outputs.run-nix }}
+      run-bot: ${{ steps.decide.outputs.run-bot }}
+      run-meta: ${{ steps.decide.outputs.run-meta }}
+      run-branding: ${{ steps.decide.outputs.run-branding }}
+      run-schedule: ${{ steps.decide.outputs.run-schedule }}
+      run-cmark: ${{ steps.decide.outputs.run-cmark }}
+      run-tomlplusplus: ${{ steps.decide.outputs.run-tomlplusplus }}
+      run-libqrencode: ${{ steps.decide.outputs.run-libqrencode }}
+      dominant-scope: ${{ steps.decide.outputs.dominant-scope }}
+      changed-files: ${{ steps.collect.outputs.changed-files }}
+      base-ref: ${{ steps.base.outputs.base }}
+      head-ref: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          fetch-depth: 0
+
+      - name: Determine base ref
+        id: base
+        run: |
+          if [ -n "${{ github.event.pull_request.base.sha || '' }}" ]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.before || '' }}" ]; then
+            echo "base=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=HEAD~1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Collect changed files
+        id: collect
+        run: |
+          base="${{ steps.base.outputs.base }}"
+          git fetch --no-tags --prune --depth=200 origin +refs/heads/*:refs/remotes/origin/* || true
+          git diff --name-only "$base"...HEAD > changed.txt || true
+          changed_files=$(cat changed.txt | tr '\n' ',' | sed 's/,$//')
+          echo "changed-files=$changed_files" >> "$GITHUB_OUTPUT"
+
+      - name: Detect trigger context
+        id: trigger
+        run: |
+          event="${{ github.event_name }}"
+          action="${{ github.event.action || '' }}"
+          ref="${{ github.ref }}"
+          ref_name="${{ github.ref_name }}"
+          ref_type="${{ github.ref_type }}"
+          schedule_cron="${{ github.event.schedule || '' }}"
+
+          is_pr=false
+          is_pr_closed=false
+          is_push=false
+          is_tag_push=false
+          is_branch_push=false
+          is_merge_group=false
+          is_dispatch=false
+          is_schedule=false
+          is_issue_comment=false
+          is_release=false
+          is_workflow_run=false
+          is_pr_review=false
+          is_branch_protection=false
+
+          case "$event" in
+            pull_request)
+              is_pr=true
+              if [ "$action" = "closed" ]; then is_pr_closed=true; fi
+              ;;
+            push)
+              is_push=true
+              if [ "$ref_type" = "tag" ]; then is_tag_push=true; else is_branch_push=true; fi
+              ;;
+            merge_group) is_merge_group=true ;;
+            workflow_dispatch) is_dispatch=true ;;
+            schedule) is_schedule=true ;;
+            issue_comment) is_issue_comment=true ;;
+            release) is_release=true ;;
+            workflow_run) is_workflow_run=true ;;
+            pull_request_review) is_pr_review=true ;;
+            branch_protection_rule) is_branch_protection=true ;;
+          esac
+
+          {
+            echo "event-name=$event"
+            echo "ref-name=$ref_name"
+            echo "ref-type=$ref_type"
+            echo "is-pr=$is_pr"
+            echo "is-push=$is_push"
+            echo "is-tag-push=$is_tag_push"
+            echo "is-branch-push=$is_branch_push"
+            echo "is-merge-group=$is_merge_group"
+            echo "is-dispatch=$is_dispatch"
+            echo "is-schedule=$is_schedule"
+            echo "is-issue-comment=$is_issue_comment"
+            echo "is-release=$is_release"
+            echo "is-workflow-run=$is_workflow_run"
+            echo "is-pr-review=$is_pr_review"
+            echo "is-branch-protection=$is_branch_protection"
+            echo "is-pr-closed=$is_pr_closed"
+            echo "schedule-cron=$schedule_cron"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Parse PR scope checklist
+        id: scope
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          python3 <<'PY'
+          import json, os, re
+
+          event_path = os.environ.get("GITHUB_EVENT_PATH")
+          body = ""
+          if event_path and os.path.isfile(event_path):
+            with open(event_path, "r", encoding="utf-8") as f:
+              payload = json.load(f)
+              body = payload.get("pull_request", {}).get("body") or ""
+
+          scope_body = body
+          m = re.search(r"##\s*Scope\s*(.*?)(?:\n##\s|\Z)", body, flags=re.IGNORECASE | re.DOTALL)
+          if m:
+            scope_body = m.group(1)
+
+          scopes = {
+            "launcher": r"- \[[xX]\]\s+Launcher\b",
+            "website": r"- \[[xX]\]\s+Website\b",
+            "bot": r"- \[[xX]\]\s+Bot\b",
+            "meta": r"- \[[xX]\]\s+Metadata Generator\b",
+            "quazip": r"- \[[xX]\]\s+Quazip\b",
+            "bzip2": r"- \[[xX]\]\s+bzip2\b",
+            "zlib": r"- \[[xX]\]\s+Zlib\b",
+            "packages": r"- \[[xX]\]\s+Packages\b",
+            "docs": r"- \[[xX]\]\s+Docs\b",
+            "tools": r"- \[[xX]\]\s+Tools\b",
+            "ci": r"- \[[xX]\]\s+CI\b",
+            "branding": r"- \[[xX]\]\s+Branding\b",
+            "launcherjava": r"- \[[xX]\]\s+Launcher Java System\b",
+            "javacheck": r"- \[[xX]\]\s+JavaCheck\b",
+            "libnbtplusplus": r"- \[[xX]\]\s+libnbtplusplus\b",
+            "cmark": r"- \[[xX]\]\s+cmark\b",
+            "tomlplusplus": r"- \[[xX]\]\s+toml\+\+\b",
+            "libqrencode": r"- \[[xX]\]\s+libqrencode\b",
+          }
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+            for key, pattern in scopes.items():
+              selected = bool(re.search(pattern, scope_body, flags=re.IGNORECASE))
+              f.write(f"{key}={'true' if selected else 'false'}\n")
+          PY
+
+      - name: Decide scope
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          IS_PR: ${{ steps.trigger.outputs.is-pr }}
+          IS_PUSH: ${{ steps.trigger.outputs.is-push }}
+          IS_MERGE_GROUP: ${{ steps.trigger.outputs.is-merge-group }}
+          IS_SCHEDULE: ${{ steps.trigger.outputs.is-schedule }}
+          IS_TAG: ${{ steps.trigger.outputs.is-tag-push }}
+          IS_RELEASE_EVENT: ${{ steps.trigger.outputs.is-release }}
+          IS_PR_CLOSED: ${{ steps.trigger.outputs.is-pr-closed }}
+          SCOPE_LAUNCHER: ${{ steps.scope.outputs.launcher || 'false' }}
+          SCOPE_WEBSITE: ${{ steps.scope.outputs.website || 'false' }}
+          SCOPE_BOT: ${{ steps.scope.outputs.bot || 'false' }}
+          SCOPE_META: ${{ steps.scope.outputs.meta || 'false' }}
+          SCOPE_QUAZIP: ${{ steps.scope.outputs.quazip || 'false' }}
+          SCOPE_BZIP2: ${{ steps.scope.outputs.bzip2 || 'false' }}
+          SCOPE_ZLIB: ${{ steps.scope.outputs.zlib || 'false' }}
+          SCOPE_PACKAGES: ${{ steps.scope.outputs.packages || 'false' }}
+          SCOPE_DOCS: ${{ steps.scope.outputs.docs || 'false' }}
+          SCOPE_TOOLS: ${{ steps.scope.outputs.tools || 'false' }}
+          SCOPE_CI: ${{ steps.scope.outputs.ci || 'false' }}
+          SCOPE_BRANDING: ${{ steps.scope.outputs.branding || 'false' }}
+          SCOPE_LAUNCHERJAVA: ${{ steps.scope.outputs.launcherjava || 'false' }}
+          SCOPE_JAVACHECK: ${{ steps.scope.outputs.javacheck || 'false' }}
+          SCOPE_LIBNBT: ${{ steps.scope.outputs.libnbtplusplus || 'false' }}
+          SCOPE_CMARK: ${{ steps.scope.outputs.cmark || 'false' }}
+          SCOPE_TOMLPLUSPLUS: ${{ steps.scope.outputs.tomlplusplus || 'false' }}
+          SCOPE_LIBQRENCODE: ${{ steps.scope.outputs.libqrencode || 'false' }}
+        run: |
+          changed="$(cat changed.txt || true)"
+
+          is_pr=false
+          if [ -n "${{ github.event.pull_request.number || '' }}" ]; then
+            is_pr=true
+          fi
+
+          match() {
+            echo "$changed" | grep -E "$1" >/dev/null 2>&1
+          }
+
+          scope_selected=false
+          if [ "$IS_PR" = "true" ] && { [ "$SCOPE_LAUNCHER" = "true" ] || [ "$SCOPE_WEBSITE" = "true" ] || [ "$SCOPE_BOT" = "true" ] || [ "$SCOPE_META" = "true" ] || [ "$SCOPE_QUAZIP" = "true" ] || [ "$SCOPE_BZIP2" = "true" ] || [ "$SCOPE_ZLIB" = "true" ] || [ "$SCOPE_PACKAGES" = "true" ] || [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ] || [ "$SCOPE_CI" = "true" ] || [ "$SCOPE_BRANDING" = "true" ] || [ "$SCOPE_CMARK" = "true" ] || [ "$SCOPE_TOMLPLUSPLUS" = "true" ] || [ "$SCOPE_LIBQRENCODE" = "true" ]; }; then
+            scope_selected=true
+          fi
+
+          if [ "$IS_RELEASE_EVENT" = "true" ]; then
+            should_test=false
+            should_build=false
+          elif [ "$IS_PR_CLOSED" = "true" ]; then
+            should_test=false
+            should_build=false
+          elif [ "$IS_SCHEDULE" = "true" ]; then
+            should_test=false
+            should_build=false
+          elif [ "$IS_PUSH" = "true" ] || [ "$IS_MERGE_GROUP" = "true" ]; then
+            should_test=true
+            should_build=true
+          elif $is_pr || [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            should_test=true
+            should_build=true
+          elif [ "$ACTOR" = "dependabot[bot]" ]; then
+            should_test=true
+            should_build=true
+          elif match '^(launcher|libraries|tests|buildconfig|cmake|program_info|zlib|quazip|bzip2)/|CMakeLists.txt|\\.cpp$|\\.h$|\\.ui$'; then
+            should_test=true
+            should_build=true
+          elif $scope_selected; then
+            should_test=true
+            should_build=true
+          else
+            should_test=false
+            should_build=false
+          fi
+
+          run_zlib=false
+          run_bzip2=false
+          run_quazip=false
+          run_website=false
+          run_nix=false
+          run_bot=false
+          run_meta=false
+          run_branding=false
+          run_schedule=false
+          run_cmark=false
+          run_tomlplusplus=false
+          run_libqrencode=false
+          build_type="Debug"
+          run_release_build=false
+          run_regular_build=false
+          dominant_scope="none"
+
+          # Pick a dominant scope (highest priority wins) for summary/routing
+          if [ "$SCOPE_CI" = "true" ]; then
+            dominant_scope="ci"
+          elif [ "$SCOPE_LAUNCHER" = "true" ]; then
+            dominant_scope="launcher"
+          elif [ "$SCOPE_LAUNCHERJAVA" = "true" ]; then
+            dominant_scope="launcher-java"
+          elif [ "$SCOPE_JAVACHECK" = "true" ]; then
+            dominant_scope="javacheck"
+          elif [ "$SCOPE_LIBNBT" = "true" ]; then
+            dominant_scope="libnbtplusplus"
+          elif [ "$SCOPE_CMARK" = "true" ]; then
+            dominant_scope="cmark"
+          elif [ "$SCOPE_TOMLPLUSPLUS" = "true" ]; then
+            dominant_scope="tomlplusplus"
+          elif [ "$SCOPE_LIBQRENCODE" = "true" ]; then
+            dominant_scope="libqrencode"
+          elif [ "$SCOPE_ZLIB" = "true" ]; then
+            dominant_scope="zlib"
+          elif [ "$SCOPE_BZIP2" = "true" ]; then
+            dominant_scope="bzip2"
+          elif [ "$SCOPE_QUAZIP" = "true" ]; then
+            dominant_scope="quazip"
+          elif [ "$SCOPE_PACKAGES" = "true" ]; then
+            dominant_scope="packages"
+          elif [ "$SCOPE_WEBSITE" = "true" ]; then
+            dominant_scope="website"
+          elif [ "$SCOPE_BOT" = "true" ]; then
+            dominant_scope="bot"
+          elif [ "$SCOPE_META" = "true" ]; then
+            dominant_scope="meta"
+          elif [ "$SCOPE_TOOLS" = "true" ]; then
+            dominant_scope="tools"
+          elif [ "$SCOPE_DOCS" = "true" ]; then
+            dominant_scope="docs"
+          elif [ "$SCOPE_BRANDING" = "true" ]; then
+            dominant_scope="branding"
+          fi
+
+          if [ "$IS_TAG" = "true" ]; then
+            build_type="Release"
+          fi
+
+          if [ "$IS_RELEASE_EVENT" = "true" ] || [ "$IS_PR_CLOSED" = "true" ]; then
+            # release events are handled elsewhere; do not run component jobs
+            :
+          elif [ "$IS_PUSH" = "true" ] || [ "$IS_MERGE_GROUP" = "true" ]; then
+            # On push/merge_group run everything
+            run_zlib=true
+            run_bzip2=true
+            run_quazip=true
+            run_website=true
+            run_nix=true
+            run_bot=true
+            run_meta=true
+            run_branding=true
+            run_cmark=true
+            run_tomlplusplus=true
+            run_libqrencode=true
+          elif [ "$IS_SCHEDULE" = "true" ]; then
+            run_schedule=true
+          elif [ "$IS_SCHEDULE" != "true" ]; then
+            match '^cmark/' && run_cmark=true
+            match '^tomlplusplus/' && run_tomlplusplus=true
+            match '^libqrencode/' && run_libqrencode=true
+            match '^zlib/' && run_zlib=true
+            match '^bzip2/' && run_bzip2=true
+            match '^quazip/' && run_quazip=true
+            match '^website/' && run_website=true
+            match '^bot/' && run_bot=true
+            match '^meta/' && run_meta=true
+            match '^program_info/|^public/|^website/img/' && run_branding=true
+            match '^flake\.nix$|^shell\.nix$|^nix/' && run_nix=true
+          fi
+
+          if [ "$IS_PR" = "true" ]; then
+            if [ "$SCOPE_ZLIB" = "true" ]; then run_zlib=true; fi
+            if [ "$SCOPE_BZIP2" = "true" ]; then run_bzip2=true; fi
+            if [ "$SCOPE_QUAZIP" = "true" ]; then run_quazip=true; fi
+            if [ "$SCOPE_WEBSITE" = "true" ]; then run_website=true; fi
+            if [ "$SCOPE_BOT" = "true" ]; then run_bot=true; fi
+            if [ "$SCOPE_META" = "true" ]; then run_meta=true; fi
+            if [ "$SCOPE_BRANDING" = "true" ]; then run_branding=true; fi
+            if [ "$SCOPE_PACKAGES" = "true" ]; then run_nix=true; fi
+            if [ "$SCOPE_CI" = "true" ]; then
+              run_zlib=true
+              run_bzip2=true
+              run_quazip=true
+              run_website=true
+              run_nix=true
+              run_bot=true
+              run_meta=true
+              run_branding=true
+              run_cmark=true
+              run_tomlplusplus=true
+              run_libqrencode=true
+              should_test=true
+              should_build=true
+            fi
+            if [ "$SCOPE_LAUNCHERJAVA" = "true" ] || [ "$SCOPE_JAVACHECK" = "true" ] || [ "$SCOPE_LIBNBT" = "true" ]; then
+              should_test=true
+              should_build=true
+              run_regular_build=true
+            fi
+            if [ "$SCOPE_DOCS" = "true" ] || [ "$SCOPE_TOOLS" = "true" ] || [ "$SCOPE_BOT" = "true" ] || [ "$SCOPE_META" = "true" ] || [ "$SCOPE_BRANDING" = "true" ]; then
+              if [ "$SCOPE_LAUNCHER" != "true" ] && [ "$SCOPE_CI" != "true" ] && [ "$SCOPE_LAUNCHERJAVA" != "true" ] && [ "$SCOPE_JAVACHECK" != "true" ] && [ "$SCOPE_LIBNBT" != "true" ] && [ "$SCOPE_ZLIB" != "true" ] && [ "$SCOPE_BZIP2" != "true" ] && [ "$SCOPE_QUAZIP" != "true" ] && [ "$SCOPE_WEBSITE" != "true" ] && [ "$SCOPE_PACKAGES" != "true" ]; then
+                should_test=true
+                should_build=false
+                run_zlib=false
+                run_bzip2=false
+                run_quazip=false
+                run_website=false
+                run_nix=false
+                run_regular_build=false
+              fi
+            fi
+
+            # If scopes are explicitly selected on a PR, clamp component runs to those scopes (docs/tools/branding remain no-op)
+            if [ "$scope_selected" = "true" ]; then
+              run_zlib=$([ "$SCOPE_ZLIB" = "true" ] && echo true || echo false)
+              run_bzip2=$([ "$SCOPE_BZIP2" = "true" ] && echo true || echo false)
+              run_quazip=$([ "$SCOPE_QUAZIP" = "true" ] && echo true || echo false)
+              run_website=$([ "$SCOPE_WEBSITE" = "true" ] && echo true || echo false)
+              run_nix=$([ "$SCOPE_PACKAGES" = "true" ] && echo true || echo false)
+              run_bot=$([ "$SCOPE_BOT" = "true" ] && echo true || echo false)
+              run_meta=$([ "$SCOPE_META" = "true" ] && echo true || echo false)
+              run_branding=$([ "$SCOPE_BRANDING" = "true" ] && echo true || echo false)
+              run_cmark=$([ "$SCOPE_CMARK" = "true" ] && echo true || echo false)
+              run_tomlplusplus=$([ "$SCOPE_TOMLPLUSPLUS" = "true" ] && echo true || echo false)
+              run_libqrencode=$([ "$SCOPE_LIBQRENCODE" = "true" ] && echo true || echo false)
+            fi
+          fi
+
+          if [ "$IS_TAG" = "true" ]; then
+            run_release_build=true
+          elif [ "$should_build" = "true" ]; then
+            run_regular_build=true
+          fi
+
+          # If no scope was explicitly selected, infer a dominant area from the jobs we plan to run
+          if [ "$dominant_scope" = "none" ]; then
+            if [ "$run_regular_build" = "true" ]; then
+              dominant_scope="launcher"
+            elif [ "$run_cmark" = "true" ]; then
+              dominant_scope="cmark"
+            elif [ "$run_tomlplusplus" = "true" ]; then
+              dominant_scope="tomlplusplus"
+            elif [ "$run_libqrencode" = "true" ]; then
+              dominant_scope="libqrencode"
+            elif [ "$run_zlib" = "true" ]; then
+              dominant_scope="zlib"
+            elif [ "$run_bzip2" = "true" ]; then
+              dominant_scope="bzip2"
+            elif [ "$run_quazip" = "true" ]; then
+              dominant_scope="quazip"
+            elif [ "$run_website" = "true" ]; then
+              dominant_scope="website"
+            elif [ "$run_bot" = "true" ]; then
+              dominant_scope="bot"
+            elif [ "$run_meta" = "true" ]; then
+              dominant_scope="meta"
+            elif [ "$run_nix" = "true" ]; then
+              dominant_scope="packages"
+            elif [ "$run_branding" = "true" ]; then
+              dominant_scope="branding"
+            fi
+          fi
+
+          echo "should-test=$should_test" >> "$GITHUB_OUTPUT"
+          echo "should-build=$should_build" >> "$GITHUB_OUTPUT"
+          echo "run-zlib=$run_zlib" >> "$GITHUB_OUTPUT"
+          echo "run-bzip2=$run_bzip2" >> "$GITHUB_OUTPUT"
+          echo "run-quazip=$run_quazip" >> "$GITHUB_OUTPUT"
+          echo "run-website=$run_website" >> "$GITHUB_OUTPUT"
+          echo "run-nix=$run_nix" >> "$GITHUB_OUTPUT"
+          echo "run-bot=$run_bot" >> "$GITHUB_OUTPUT"
+          echo "run-meta=$run_meta" >> "$GITHUB_OUTPUT"
+          echo "run-branding=$run_branding" >> "$GITHUB_OUTPUT"
+          echo "run-schedule=$run_schedule" >> "$GITHUB_OUTPUT"
+          echo "run-cmark=$run_cmark" >> "$GITHUB_OUTPUT"
+          echo "run-tomlplusplus=$run_tomlplusplus" >> "$GITHUB_OUTPUT"
+          echo "run-libqrencode=$run_libqrencode" >> "$GITHUB_OUTPUT"
+          echo "build-type=$build_type" >> "$GITHUB_OUTPUT"
+          echo "run-release-build=$run_release_build" >> "$GITHUB_OUTPUT"
+          echo "run-regular-build=$run_regular_build" >> "$GITHUB_OUTPUT"
+          echo "dominant-scope=$dominant_scope" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        run: |
+          echo "## Prepare Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Base ref: \`${{ steps.base.outputs.base }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Head ref: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Event: \`${{ steps.trigger.outputs.event-name }}\` (ref: `${{ steps.trigger.outputs.ref-name }}` type: `${{ steps.trigger.outputs.ref-type }}`)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.trigger.outputs.is-schedule }}" = "true" ]; then
+            echo "- Schedule cron: \`${{ steps.trigger.outputs.schedule-cron }}\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "- Trigger flags: pr=${{ steps.trigger.outputs.is-pr }} (closed=${{ steps.trigger.outputs.is-pr-closed }}), push=${{ steps.trigger.outputs.is-push }}, merge_group=${{ steps.trigger.outputs.is-merge-group }}, dispatch=${{ steps.trigger.outputs.is-dispatch }}, schedule=${{ steps.trigger.outputs.is-schedule }}, issue_comment=${{ steps.trigger.outputs.is-issue-comment }}, release=${{ steps.trigger.outputs.is-release }}, workflow_run=${{ steps.trigger.outputs.is-workflow-run }}, pr_review=${{ steps.trigger.outputs.is-pr-review }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Should test: \`${{ steps.decide.outputs.should-test }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Should build: \`${{ steps.decide.outputs.should-build }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Build type: \`${{ steps.decide.outputs.build-type }}\` (Release if tag push, else Debug)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run release build: \`${{ steps.decide.outputs.run-release-build }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run regular build: \`${{ steps.decide.outputs.run-regular-build }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run zlib: \`${{ steps.decide.outputs.run-zlib }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run bzip2: \`${{ steps.decide.outputs.run-bzip2 }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run quazip: \`${{ steps.decide.outputs.run-quazip }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run website: \`${{ steps.decide.outputs.run-website }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run nix: \`${{ steps.decide.outputs.run-nix }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run schedule-specific: \`${{ steps.decide.outputs.run-schedule }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Dominant scope: \`${{ steps.decide.outputs.dominant-scope || 'none' }}\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.trigger.outputs.is-pr }}" = "true" ]; then
+            echo "- Scope flags: launcher=${{ steps.scope.outputs.launcher || 'false' }}, launcher-java=${{ steps.scope.outputs.launcherjava || 'false' }}, javacheck=${{ steps.scope.outputs.javacheck || 'false' }}, libnbtplusplus=${{ steps.scope.outputs.libnbtplusplus || 'false' }}, website=${{ steps.scope.outputs.website || 'false' }}, bot=${{ steps.scope.outputs.bot || 'false' }}, meta=${{ steps.scope.outputs.meta || 'false' }}, quazip=${{ steps.scope.outputs.quazip || 'false' }}, bzip2=${{ steps.scope.outputs.bzip2 || 'false' }}, zlib=${{ steps.scope.outputs.zlib || 'false' }}, packages=${{ steps.scope.outputs.packages || 'false' }}, docs=${{ steps.scope.outputs.docs || 'false' }}, tools=${{ steps.scope.outputs.tools || 'false' }}, ci=${{ steps.scope.outputs.ci || 'false' }}, branding=${{ steps.scope.outputs.branding || 'false' }}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Scope flags: n/a (non-PR event)" >> "$GITHUB_STEP_SUMMARY"
+          fi

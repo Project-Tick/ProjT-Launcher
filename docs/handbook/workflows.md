@@ -1,108 +1,225 @@
-## GitHub Actions Workflows
+# GitHub Actions Workflows
 
-This directory contains workflow configurations for the ProjT Launcher CI/CD pipeline.
+> **Location**: `.github/workflows/`  
+> **Platform**: GitHub Actions  
+> **Type**: CI/CD Pipeline
 
-### Overview
+---
 
-The workflows are organized by functionality:
+## Overview
 
-#### Repo Maintenance
+ProjT Launcher uses a modular GitHub Actions workflow architecture. The CI system is split into specialized sub-workflows that are orchestrated by a main coordinator workflow.
 
-- **`ci.yml`**: Very Ci needs is here
-- **`scorecard.yml`**: OSSF Scorecard analysis and SARIF upload
-- **`clusterfuzzlite.yml`**: ClusterFuzzLite fuzzing runs (libFuzzer targets)
-- **`python-fuzz.yml`**: Python Atheris fuzzing runs (meta/)
-- **`js-fuzz.yml`**: JavaScript property fuzzing runs (bot/)
+---
 
-### Key Design Principles
+## Workflow Architecture
 
-#### Push Events
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      ci-new.yml                             │
+│                  (Main Orchestrator)                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │ ci-prepare  │  │  ci-lint    │  │     ci-release      │ │
+│  │   .yml      │  │    .yml     │  │        .yml         │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              Library Workflows                       │   │
+│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────────┐  │   │
+│  │  │ci-zlib  │ │ci-bzip2 │ │ci-quazip│ │ ci-cmark  │  │   │
+│  │  │  .yml   │ │  .yml   │ │  .yml   │ │   .yml    │  │   │
+│  │  └─────────┘ └─────────┘ └─────────┘ └───────────┘  │   │
+│  │  ┌──────────────┐ ┌────────────────┐               │   │
+│  │  │ci-tomlplusplus│ │ ci-libqrencode │               │   │
+│  │  │     .yml      │ │      .yml      │               │   │
+│  │  └──────────────┘ └────────────────┘               │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │ ci-website  │  │ci-scheduled │  │      (unlock)       │ │
+│  │   .yml      │  │    .yml     │  │      Merge Gate     │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
 
-- Most workflows use standard `push` events to develop/release branches
-- This allows external contributors to test workflows without prior approval
+---
 
-#### Pull Request Events
+## Workflow Files
 
-- Workflows use `pull_request` event type (not `pull_request_target`)
-- Code review and approval by maintainers protects the repository
+### Main Orchestrator
 
-#### Path Filters
+| File | Description |
+|------|-------------|
+| `ci-new.yml` | Main coordinator that calls all sub-workflows with conditional logic |
 
-- Workflows use path filters to avoid unnecessary runs
-- For example, `build.yml` only runs when C++, CMake, or workflow files change
+### Core Workflows
 
-### Workflow Files
+| File | Purpose | Triggers |
+|------|---------|----------|
+| `ci-prepare.yml` | Initial setup, dependency caching | Called by main |
+| `ci-lint.yml` | Code quality checks (clang-format, linters) | Push, PR, Manual |
+| `ci-release.yml` | Build releases, create artifacts | Release, Manual |
+| `ci-website.yml` | Build and deploy website | Push, PR |
+| `ci-scheduled.yml` | Scheduled maintenance tasks | Cron |
 
-#### Workflow File Structure
+### Library Workflows
 
-Each workflow file contains:
+Each bundled library has its own independent CI:
 
-- Trigger conditions (on: events)
-- Permissions (least privilege principle)
-- Jobs with specific steps
-- Environment variables for consistency
+| File | Library | Tests |
+|------|---------|-------|
+| `ci-zlib.yml` | zlib | Compression tests |
+| `ci-bzip2.yml` | bzip2 | Compression + valgrind |
+| `ci-quazip.yml` | QuaZip | Qt ZIP operations |
+| `ci-cmark.yml` | cmark | Markdown parsing |
+| `ci-tomlplusplus.yml` | toml++ | TOML parsing |
+| `ci-libqrencode.yml` | libqrencode | QR generation |
 
-### Common Patterns
+---
 
-#### Setup & Checkout
+## Workflow Design Principles
+
+### 1. Modular Architecture
+
+Each workflow is self-contained and can be run independently:
 
 ```yaml
-- uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-  with:
-    fetch-depth: 0  # Full history for git operations
+# Sub-workflow pattern
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+  push:
+    paths:
+      - 'library-name/**'
+  pull_request:
+    paths:
+      - 'library-name/**'
 ```
 
-### Conditional Steps
+### 2. Centralized Control
 
-#### Conditional Steps Example
+The main orchestrator (`ci-new.yml`) controls when each sub-workflow runs:
 
 ```yaml
-- name: Step name
-  if: github.ref_type == 'tag'  # Only run on tags
-  run: echo "Release build"
+jobs:
+  call-zlib:
+    if: needs.prepare.outputs.run-zlib == 'true'
+    uses: ./.github/workflows/ci-zlib.yml
 ```
 
-### Artifacts & Uploads
+### 3. Path Filtering
 
-#### Artifacts & Uploads Example
+Workflows only run when relevant files change:
 
 ```yaml
-- uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-  with:
-    name: build-artifacts
-    path: build/launcher
+paths:
+  - 'zlib/**'
+  - '.github/workflows/ci-zlib.yml'
 ```
 
-### Testing Workflows Locally
+### 4. Merge Gate
 
-For most workflows, you can test locally using:
+The `unlock` job aggregates all results for merge protection:
 
-```bash
-# Lint check
-clang-format -i launcher/**/*.cpp launcher/**/*.h
-
-# Build test
-cmake --preset linux && cmake --build --preset linux
-
-# Flake check (if using Nix)
-nix flake check
+{% raw %}
+```yaml
+unlock:
+  needs: [lint, build, test-zlib, test-bzip2, ...]
+  if: always()
+  runs-on: ubuntu-latest
+  steps:
+    - name: Check all jobs
+      run: |
+        if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+          exit 1
+        fi
 ```
+{% endraw %}
 
-### Adding New Workflows
+---
 
-When adding new workflows:
+## Triggers
 
-1. Follow the naming convention: lowercase, hyphens for spaces
-2. Use path filters to avoid unnecessary runs
-3. Apply least privilege permissions
-4. Use github.token by default (avoid elevated privileges)
-5. Add documentation in this README
+| Trigger | Workflows | Description |
+|---------|-----------|-------------|
+| `push` | All | Commits to main branches |
+| `pull_request` | All | Pull request changes |
+| `release` | Release | GitHub releases |
+| `schedule` | Scheduled | Cron jobs |
+| `workflow_dispatch` | All | Manual triggers |
+| `workflow_call` | Sub-workflows | Called by orchestrator |
 
-### Troubleshooting
+---
 
-#### Troubleshooting Guide
+## Environment Variables
 
-- **Workflow not triggering**: Check path filters and branch configuration
-- **Permission denied errors**: Verify permissions: section
-- **Tests failing locally but passing in CI**: Check environment differences (dependencies, paths)
-- **Slow workflows**: Consider using caching or parallelization
+| Variable | Description |
+|----------|-------------|
+| `GITHUB_TOKEN` | Automatic GitHub token |
+| `MSA_CLIENT_ID` | Microsoft Auth client ID |
+| `CACHIX_AUTH_TOKEN` | Nix cache auth |
+
+---
+
+## Adding New Workflows
+
+1. **Create the workflow file** in `.github/workflows/`
+2. **Add workflow_call trigger** for orchestrator integration
+3. **Add push/PR triggers** for independent execution
+4. **Update ci-new.yml** to include the new workflow
+5. **Document** in this handbook
+
+### Template
+
+{% raw %}
+```yaml
+name: CI Library Name
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+  push:
+    paths:
+      - 'library-name/**'
+      - '.github/workflows/ci-libraryname.yml'
+  pull_request:
+    paths:
+      - 'library-name/**'
+      - '.github/workflows/ci-libraryname.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      # Build steps...
+```
+{% endraw %}
+
+---
+
+## Related Documentation
+
+- [CI Support Files](./ci_support.md) — Configuration files
+- [CI Evaluation](./ptcieval.md) — Nix-based validation
+- [GitHub Scripts](./ptcigh.md) — Automation helpers
+- [Bot](./bot.md) — PR automation
+
+---
+
+## External Links
+
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [Workflow Syntax](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions)
+- [Reusable Workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows)

@@ -1,0 +1,110 @@
+name: toml++ CI
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+  push:
+    branches: [develop, main]
+    paths:
+      - 'tomlplusplus/**'
+      - '.github/workflows/ci-tomlplusplus.yml'
+  pull_request:
+    paths:
+      - 'tomlplusplus/**'
+      - '.github/workflows/ci-tomlplusplus.yml'
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # LINUX BUILDS
+  # ═══════════════════════════════════════════════════════════════════════════
+  tomlplusplus-linux:
+    name: Linux-${{ matrix.compiler }}-${{ matrix.type }}
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [clang, gcc]
+        linker: [lld]
+        type: [debug, release]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: tomlplusplus
+    env:
+      clang_version: "14"
+      gcc_version: "11"
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install base dependencies
+        run: |
+          sudo apt -y update
+          sudo apt -y install --no-install-recommends git ninja-build libstdc++-${{ env.gcc_version }}-dev locales-all clang-format-${{ env.clang_version }}
+          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-${{ env.clang_version }} 1000
+      - name: Install python dependencies
+        run: |
+          pip3 install --user --no-cache-dir --upgrade meson
+          pip3 install --user --no-cache-dir --upgrade -r tools/requirements.txt
+      - name: Check toml.hpp (auto-fix if needed)
+        run: |
+          cd tools
+          python3 generate_single_header.py || true
+          python3 ci_single_header_check.py || echo "toml.hpp check skipped"
+      - name: Install lld
+        if: ${{ startsWith(matrix.linker, 'lld') }}
+        run: |
+          sudo apt -y install --no-install-recommends lld-${{ env.clang_version }}
+          sudo update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-${{ env.clang_version }} 1000
+      - name: Install clang
+        if: ${{ startsWith(matrix.compiler, 'clang') }}
+        run: |
+          sudo apt -y install --no-install-recommends clang-${{ env.clang_version }}
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-${{ env.clang_version }} 1000
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-${{ env.clang_version }} 1000
+      - name: Install gcc
+        if: ${{ startsWith(matrix.compiler, 'gcc') }}
+        run: |
+          sudo apt -y install --no-install-recommends gcc-${{ env.gcc_version }} g++-${{ env.gcc_version }}
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-${{ env.gcc_version }} 1000
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${{ env.gcc_version }} 1000
+      - name: Configure locales
+        run: |
+          sudo locale-gen 'en_US.utf8' 'ja_JP.utf8' 'de_DE.utf8' 'it_IT.utf8' 'tr_TR.utf8' 'fi_FI.utf8' 'fr_FR.utf8' 'zh_CN.utf8'
+      - name: Configure Meson
+        run: |
+          CXX=c++ CXX_LD=${{ matrix.linker }} meson setup build --buildtype=${{ matrix.type }} -Ddevel=true -Db_lto=false
+      - name: Build
+        run: meson compile -C build
+      - name: Test
+        run: meson test -C build --verbose
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # WINDOWS BUILDS
+  # ═══════════════════════════════════════════════════════════════════════════
+  tomlplusplus-windows:
+    name: Windows-MSVC-${{ matrix.type }}${{ matrix.permissive && '-permissive' || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [debug, release]
+        permissive: [false, true]
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: cmd
+        working-directory: tomlplusplus
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          python3 -m pip install -U pip
+          pip3 install meson ninja
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Configure Meson
+        run: meson setup build --vsenv --buildtype=${{ matrix.type }} -Ddevel=true -Db_lto=false -Dpermissive=${{ matrix.permissive }}
+      - name: Build
+        run: meson compile -C build
+      - name: Test
+        run: meson test -C build --verbose

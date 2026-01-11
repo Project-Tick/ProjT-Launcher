@@ -1,46 +1,79 @@
-## Tests
+# Bzip2 Tests
 
-BZip2 has two test suites:
+> **Directory**: `bzip2/`  
+> **Test Suites**: Quick (default), Large
 
-1. The quick test suite is the original test suite. It is small and runs very
-   quickly to verify correct compression and decompression of simple files.
+---
 
-2. The large test suite is a large collection of test files gathered from
-   various sources. It includes not only good `.bz2` files but also bad ones.
+## Overview
 
-The quick tests will run under Valgrind if Valgrind is installed on the system
-and was discovered by CMake/Meson at build time. If you installed Valgrind after
-build time, you may have to do a clean build for the Valgrind to be detected.
+Bzip2 has two test suites for validating compression and decompression functionality.
 
-The slow tests have Valgrind disabled, because with it enabled it takes upwards
-of 35 minutes to run.
+---
 
-### Running the Tests
+## Test Suites
 
-Run the tests using CMake or Meson's test commands.
+| Suite | Files | Speed | Valgrind |
+|-------|-------|-------|----------|
+| **Quick** | Small set | Fast (~seconds) | ✅ Enabled |
+| **Large** | Many files | Slow (~minutes) | ❌ Disabled |
 
-For CMake:
+---
 
-```sh
+## Quick Test Suite
+
+The default test suite validates basic functionality:
+
+### What It Tests
+
+1. **Compression** — Compress reference files, decompress, verify match
+2. **Decompression** — Decompress `.bz2` files, verify against reference
+3. **Multiple modes** — Tests various compression levels
+
+### Running
+
+```bash
+# CMake
+cd bzip2/build
 ctest -V
-```
 
-For Meson:
-
-```sh
+# Meson
 meson test -C builddir --print-errorlogs
 ```
 
-### Quick Test Suite
+---
 
-The quick test suite is a small set of `.bz2` compressed files and original
-reference files.
+## Large Test Suite
 
-BZip2 must be able to:
+Comprehensive test with files from various sources:
 
-1. Compress the reference files without error and decompress the newly created
-   compressed version into a file that matches the original reference file.
-   Multiple compression modes are tested.
+### Contents
 
-2. Decompress the `.bz2` files without error. The decompressed file must match
-   the original reference file.
+- ✅ Good `.bz2` files — Should decompress correctly
+- ❌ Bad `.bz2.bad` files — Should fail gracefully
+
+### Running
+
+Integrated with the build system test commands.
+
+---
+
+## Valgrind Integration
+
+The quick tests run under Valgrind if available:
+
+```bash
+# Check if Valgrind is detected
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+# Valgrind runs automatically during ctest
+```
+
+The large tests have Valgrind disabled (would take 35+ minutes).
+
+---
+
+## Related Documentation
+
+- [Bzip2 Overview](./bzip2.md) — Main documentation
+- [Compiling](./bzip2-compiling.md) — Build instructions
+- [Test Files](./bzip2-testfiles.md) — Test file collection

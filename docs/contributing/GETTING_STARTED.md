@@ -1,299 +1,222 @@
-# 🚀 Getting Started
+# Getting Started
 
-## ⚠️ Compliance Warning
+Guide to setting up your development environment for ProjT Launcher.
 
-**This project requires a consistent development environment.** Deviating from the specified tool versions or configurations may result in build failures.
-
-These steps focus on the launcher. For the bot, website, or metadata generator, see their respective README files.
+---
 
 ## Prerequisites
 
-Before you write any code, you need to set up your workspace. If you are new to open source, follow these steps carefully.
+### Required Tools
 
-### 1. Understand the Rules
+| Tool | Version | Purpose |
+|------|---------|---------|
+| CMake | 3.22+ | Build system |
+| Qt | 6.x | GUI framework |
+| Compiler | C++20 | GCC 11+, Clang 14+, MSVC 2022 |
+| Ninja | 1.10+ | Build tool |
+| Git | 2.30+ | Version control |
 
-- **Code of Conduct**: We want a safe community. Read [CODE_OF_CONDUCT.md](../../CODE_OF_CONDUCT.md).
-- **Security**: Found a hack? Don't post it publicly! Read [SECURITY.md](../../SECURITY.md).
+### Optional Tools
 
-### 2. Get the Code (Fork & Clone)
-
-You cannot edit the main project directly. You need your own copy.
-
-1. **Fork**: Click the **Fork** button at the top right of the GitHub page. This creates a copy of `ProjT-Launcher` in your own account (e.g., `YourName/ProjT-Launcher`).
-2. **Clone**: Download your fork to your computer. Open your terminal (PowerShell or Terminal) and run:
-
-   ```bash
-   # Replace 'YourName' with your GitHub username
-   git clone https://github.com/YourName/ProjT-Launcher.git
-   cd ProjT-Launcher
-   ```
-
-3. **Add Upstream**: Link your local copy to the original project so you can get updates.
-
-   ```bash
-   git remote add upstream https://github.com/YongDo-Hyun/ProjT-Launcher.git
-   ```
+| Tool | Purpose |
+|------|---------|
+| clang-format | Code formatting |
+| clang-tidy | Static analysis |
+| Valgrind | Memory checking (Linux) |
 
 ---
 
-## 🛠 Development Environment
+## Clone Repository
 
-## Required Tools (And Why We Need Them)
+```sh
+# Fork on GitHub first, then:
+git clone https://github.com/YourName/ProjT-Launcher.git
+cd ProjT-Launcher
 
-We use specific tools to build the launcher. You **must** follow the specified major versions and toolchain constraints.
+# Add upstream remote
+git remote add upstream https://github.com/YongDo-Hyun/ProjT-Launcher.git
+```
 
-| Tool | Version | What is it? | Why strict? |
-| ------ | --------- | ------------- | ------------- |
-| **CMake** | 3.22+ | The "Builder". It creates the instructions for how to compile the code. | Old versions miss features we use. |
-| **Qt** | 6.x (Supported) | The "Framework". It provides the windows, buttons, and graphics. | **CRITICAL**. We use Qt 6 features. |
-| **Compiler** | C++20 | The "Translator". Converts C++ code into an executable (.exe). | We use modern C++20 features (concepts, ranges). |
-| **Ninja** | 1.10+ | The "Worker". It executes the build instructions from CMake very fast. | It's much faster than Make or MSBuild. |
-| **Git** | 2.30+ | The "Time Machine". Tracks changes and versions. | Required for version control. |
-| **Java JDK** | 8, 17, 21 | The "Engine". Required to actually run Minecraft. | Minecraft requires specific Java versions. |
-| **Libraries** | Latest | cmark, tomlplusplus, qrcodegencpp | Provided via system packages (Linux/macOS) or NuGet (Windows). |
+---
 
-## 🖥️ OS-Specific Setup
+## Platform Setup
 
 ### Windows
 
-We recommend using **Visual Studio 2022** or **VS Code** with the MSVC compiler.
+**Visual Studio 2022**:
 
-> [!IMPORTANT]
-> On Windows, binary dependencies are managed via NuGet. vcpkg is not supported.
+1. Install VS 2022 with "Desktop development with C++"
+2. Install Qt 6.x via Qt Online Installer
+   - Select MSVC 2022 64-bit
+   - Select Qt Shader Tools
+3. Install dependencies via NuGet (required for CI parity):
 
-- Install Visual Studio 2022 Community:
-  - Workload: "Desktop development with C++"
-- Install Qt 6:
-  - Use the Qt Online Installer.
-  - Select Custom installation.
-  - Select `Qt 6.x (latest)` -> `MSVC 2022 64-bit`.
-  - Select `All additional libraries`.
-  - Select `Qt Shader Tools`.
-- Install NuGet (Dependency Manager):
-  - Add the GitHub Packages source for ProjT dependencies:
-    - `nuget sources add -Name project-tick -Source https://nuget.pkg.github.com/Project-Tick/index.json -UserName <github-username> -Password <PAT> -StorePasswordInClearText`
-  - Restore binary dependencies into `dependencies/`:
-    - `nuget install ./packages.config -OutputDirectory dependencies -ConfigFile nuget.config`
+```powershell
+nuget install ./packages.config -OutputDirectory dependencies
+```
+
+**Note**: NuGet dependencies are mandatory for Windows builds to ensure CI reproducibility.
 
 ### Linux
 
-- Install Nix: Follow the instructions at <https://nixos.org/download.html>
-- Enter the development environment:
+**Nix (Recommended)**:
 
-```bash
+```sh
 nix develop .#default
 ```
 
-This will provide all necessary dependencies including Qt 6, CMake, Ninja, and compilers.
+**Manual**:
+
+```sh
+# Debian/Ubuntu
+sudo apt install cmake ninja-build qt6-base-dev qt6-tools-dev
+
+# Fedora
+sudo dnf install cmake ninja-build qt6-qtbase-devel qt6-qttools-devel
+
+# Arch
+sudo pacman -S cmake ninja qt6-base qt6-tools
+```
 
 ### macOS
 
-- Install Nix: Follow the instructions at <https://nixos.org/download.html>
-- Enter the development environment:
+**Nix (Recommended)**:
 
-```bash
+```sh
 nix develop .#default
 ```
 
-This will provide all necessary dependencies including Qt 6, CMake, Ninja, and compilers.
+**Homebrew**:
+
+```sh
+brew install cmake ninja qt@6
+```
 
 ---
 
-## ⚙️ IDE Configuration
+## Build
 
-### Visual Studio Code (Highly Recommended)
+### Configure
 
-- Extensions:
-  - **C/C++** (Microsoft)
-  - **CMake Tools** (Microsoft)
-  - **clangd** (LLVM) - *Disable C/C++ IntelliSense if using this.*
-  - **Qt All Extensions Pack** (Optional, for Qt UI files and tooling)
+```sh
+# List available presets
+cmake --list-presets
 
-- Settings (`.vscode/settings.json`):
+# Windows
+cmake --preset windows_msvc
+
+# Linux
+cmake --preset linux
+
+# macOS
+cmake --preset macos
+```
+
+### Build
+
+```sh
+# Debug (development)
+cmake --build --preset <preset> --config Debug
+
+# Release (production)
+cmake --build --preset <preset> --config Release
+```
+
+### Run
+
+```sh
+# Windows (MSVC preset)
+./build/windows_msvc/Debug/ProjT-Launcher.exe
+
+# Linux
+./build/linux/Debug/ProjT-Launcher
+
+# macOS
+./build/macos/Debug/ProjT-Launcher.app/Contents/MacOS/ProjT-Launcher
+```
+
+### Test
+
+```sh
+ctest --preset <preset> --output-on-failure
+```
+
+---
+
+## IDE Setup
+
+### VS Code (Recommended)
+
+Extensions:
+- C/C++ (Microsoft)
+- CMake Tools (Microsoft)
+- clangd (LLVM)
+
+Settings (`.vscode/settings.json`):
 
 ```json
 {
-    "cmake.configureOnOpen": true,
-    "cmake.generator": "Ninja",
-    "files.associations": {
-        "*.h": "cpp",
-        "*.cpp": "cpp",
-        "*.ui": "xml"
-    }
-}
-```
-
-- Launch Configuration (`.vscode/launch.json`):
-  Use this to debug the application directly from VS Code.
-
-```json
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Debug Launcher",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "QT_LOGGING_RULES",
-                    "value": "*.debug=true"
-                }
-            ],
-            "console": "integratedTerminal"
-        }
-    ]
-}
-```
-
-## 🏗️ Building the Project
-
-### Using VS Code (Easiest)
-
-- Open the folder in VS Code.
-- Select your Kit (e.g., `Visual Studio Community 2022 Release - amd64`).
-- Click **Build** in the status bar (or press `F7`).
-- Click **Run** (play button) to start the launcher.
-
-### Using Command Line
-
-```bash
-# 1. Create build directory
-mkdir build
-cd build
-
-# 2. Configure (Replace path to Qt if not in PATH)
-cmake -DCMAKE_PREFIX_PATH="C:/Qt/6.x/msvc2022_64" -GNinja ..
-
-# 3. Build
-ninja
-
-# 4. Run
-./Launcher.exe
-```
-
-- Debug Configuration (`.vscode/launch.json`):
-  Create this file to enable F5 debugging.
-
-```json
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Debug Launcher",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "${env:PATH};C:/Qt/6.x/msvc2022_64/bin"
-                }
-            ],
-            "console": "integratedTerminal"
-        }
-    ]
+  "cmake.configureOnOpen": true,
+  "cmake.generator": "Ninja"
 }
 ```
 
 ### Qt Creator
 
-- Open Project: Open `CMakeLists.txt` as a project.
-- Kit Selection: Select the Kit matching your Qt 6.x installation.
-- Code Style: Go to `Tools > Options > C++ > Code Style` and import `.clang-format`.
+1. Open `CMakeLists.txt` as project
+2. Select Qt 6.x kit
+3. Import `.clang-format` in Tools > Options > C++ > Code Style
+
+### Visual Studio 2022
+
+1. File > Open > CMake
+2. Select `CMakeLists.txt`
+3. Configure Qt path in CMake settings
 
 ---
 
-## 🏗️ Build Instructions (Step-by-Step)
+## Troubleshooting
 
-Building means converting the source code (text files) into an executable program (like `.exe`)
+### Qt not found
 
-### Step 1: Configure
-
-**What it does:** Checks your system for the required tools (Qt, Compiler) and creates a "build plan".
-**Command:**
-
-```bash
-# First, see what presets are available for your OS
-cmake --list-presets
-
-# For Windows (Visual Studio):
-cmake --preset windows_msvc
-
-# For Linux:
-cmake --preset linux
+```sh
+cmake --preset <preset> -DCMAKE_PREFIX_PATH="/path/to/Qt/6.x/gcc_64"
 ```
 
-*If this fails, CMake can't find your tools. Check the Troubleshooting section.*
+### Wrong Qt minor version
 
-### Step 2: Build
+CI requires exact Qt version match. Check `cmake/versions.cmake` for the required version. Mismatched Qt versions cause ABI incompatibility.
 
-**What it does:** Compiles the code. This takes time.
-**Command:**
+### MSVC vs MinGW mismatch
 
-```bash
-# Build in Debug mode (Best for coding, has extra checks)
-cmake --build --preset windows_msvc --config Debug
+Qt kit must match your compiler. Use MSVC kit with Visual Studio, MinGW kit with MinGW toolchain. Do not mix.
 
-# Build in Release mode (Best for playing, runs fast)
-cmake --build --preset windows_msvc --config Release
+### clang-format version mismatch
+
+Use the version specified in CI. Different versions produce different output. Check `.github/workflows/` for the expected version.
+
+### Ninja not found
+
+Install Ninja or use a different generator:
+
+```sh
+cmake -G "Unix Makefiles" ..
 ```
 
-### Step 3: Run
+### C++20 not supported
 
-**What it does:** Starts the launcher!
-**Command:**
-
-```bash
-# The executable will be in the build folder
-./build/windows_msvc/Debug/ProjT-Launcher.exe
-```
-
-### Step 4: Test
-
-**What it does:** Runs automated checks to make sure you didn't break anything.
-**Command:**
-
-```bash
-ctest --preset windows_msvc --build-config Debug --output-on-failure
-```
-
-## Supported Presets
-
-| Preset | Description | OS |
-| ------ | ----------- | -- |
-| `windows_msvc` | MSVC Compiler (Standard) | Windows |
-| `windows_mingw` | MinGW GCC (Alternative) | Windows |
-| `linux` | GCC/Clang | Linux |
-| `macos` | Clang (Apple) | macOS |
-| `ci-windows` | CI Configuration | Windows |
+Update your compiler:
+- GCC: 11+
+- Clang: 14+
+- MSVC: 2022
 
 ---
 
-## ❓ Troubleshooting
+## Next Steps
 
-### "Qt Config file not found"
+These documents must be read before submitting code:
 
-- **Cause**: CMake cannot find your Qt installation.
-- **Fix**: Set `CMAKE_PREFIX_PATH` to your Qt bin folder.
-
-```bash
-cmake --preset windows_msvc -DCMAKE_PREFIX_PATH="C:/Qt/6.x/msvc2022_64"
-```
-
-### "Ninja not found"
-
-- **Cause**: Ninja is not in your PATH.
-- **Fix**: Install Ninja and add it to PATH, or use `Visual Studio` generator (slower).
-
-### "C++20 not supported"
-
-- **Cause**: Your compiler is too old.
-- **Fix**: Update VS 2022, GCC to 11+, or Clang to 14+.
+- [Code Style](./CODE_STYLE.md) - Formatting rules
+- [Project Structure](./PROJECT_STRUCTURE.md) - Where files go
+- [Architecture](./ARCHITECTURE.md) - How components interact
+- [Workflow](./WORKFLOW.md) - Git workflow and PR process

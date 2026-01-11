@@ -1,80 +1,121 @@
-## ProjT Launcher CI Evaluation
+# CI Evaluation `ci/eval/`
 
-This directory contains Nix helpers for validating repository configuration locally (and can be wired into CI if desired).
+> **Location**: `ci/eval/`  
+> **Platform**: Nix  
+> **Purpose**: Project configuration validation
 
-### Purpose
+---
 
-This evaluation module performs:
+## Overview
 
-- CMakeLists.txt syntax validation
-- vcpkg.json dependency verification
-- Nix flake structure checking
-- Build configuration validation across platforms
+The CI evaluation module provides Nix-based validation of the project structure and configuration. It catches errors in build files before they reach CI.
 
-### Local Usage
+---
 
-#### Quick validation
+## What It Validates
+
+| Component | Checks |
+|-----------|--------|
+| **CMake** | Syntax, target definitions |
+| **vcpkg** | Dependency declarations |
+| **Nix** | Flake structure, expressions |
+| **Build** | Cross-platform configuration |
+
+---
+
+## Quick Usage
+
+### Validate Everything
 
 ```bash
-# Validate project structure
-nix-build ci -A eval.validate
+nix-build ci -A eval.full
+```
 
-# Check specific component
+### Validate Specific Component
+
+```bash
 nix-build ci -A eval.cmake
 nix-build ci -A eval.vcpkg
 nix-build ci -A eval.nix
 ```
 
-#### Full evaluation
+### Quick Test Mode
 
 ```bash
-# Run complete evaluation
-nix-build ci -A eval.full
+nix-build ci -A eval.validate --arg quickTest true
 ```
 
-### Supported Systems
+---
 
-Evaluation is performed for the following platforms:
+## Supported Systems
 
-- `x86_64-linux` - Linux (64-bit)
-- `x86_64-darwin` - macOS Intel
-- `aarch64-darwin` - macOS Apple Silicon
-- `x86_64-windows` - Windows (via cross-compilation)
+| System | Platform |
+|--------|----------|
+| `x86_64-linux` | Linux 64-bit |
+| `x86_64-darwin` | macOS Intel |
+| `aarch64-darwin` | macOS Apple Silicon |
+| `x86_64-windows` | Windows (cross) |
 
-### Configuration
+### Limit to Specific System
 
-The following arguments can be used:
+```bash
+nix-build ci -A eval.full --arg systems '["x86_64-linux"]'
+```
 
-- `--arg quickTest true`: Enable quick validation mode
-- `--arg systems '["x86_64-linux"]'`: Limit to specific systems
+---
 
-### Project Structure Validation
+## Configuration Validation
 
-The evaluation checks:
+### CMake Files
 
-#### CMake Configuration
+- `CMakeLists.txt` — Main configuration
+- `cmake/*.cmake` — CMake modules
+- `CMakePresets.json` — Build presets
 
-- `CMakeLists.txt` - Main build configuration
-- `cmake/*.cmake` - CMake modules
-- `CMakePresets.json` - Build presets
+### Dependencies
 
-#### Dependencies
+- `vcpkg.json` — vcpkg dependencies
+- `vcpkg-configuration.json` — vcpkg settings
 
-- `vcpkg.json` - vcpkg dependencies
-- `vcpkg-configuration.json` - vcpkg settings
+### Nix Build
 
-#### Nix Build
+- `flake.nix` — Flake definition
+- `default.nix` — Default expression
+- `shell.nix` — Development shell
 
-- `flake.nix` - Nix flake definition
-- `default.nix` - Default Nix expression
-- `shell.nix` - Development shell
+---
 
-### CI Integration
+## CI Integration
 
-Evaluation now runs automatically in `.github/workflows/eval.yml`. The workflow installs Nix on `ubuntu-latest`, evaluates the module with `nix-build --expr 'let pkgs = import <nixpkgs> {}; eval = (import ./ci/eval { inherit (pkgs) lib runCommand cmake nix jq; }) {}; in eval.full'`, and publishes the generated summary to the workflow run. Trigger it manually with **Run workflow** or let it execute on every pull request. You can mirror the same steps locally with:
+Evaluation runs in `.github/workflows/eval.yml`:
+
+```yaml
+- name: Evaluate
+  run: |
+    nix-build --expr 'let
+      pkgs = import <nixpkgs> {};
+      eval = (import ./ci/eval { inherit (pkgs) lib runCommand cmake nix jq; }) {};
+    in eval.full'
+```
+
+---
+
+## Local Replication
 
 ```bash
 NIX_PATH=nixpkgs=channel:nixos-unstable \
-nix-build --expr 'let pkgs = import <nixpkgs> {}; eval = (import ./ci/eval { inherit (pkgs) lib runCommand cmake nix jq; }) {}; in eval.full'
+nix-build --expr 'let
+  pkgs = import <nixpkgs> {};
+  eval = (import ./ci/eval { inherit (pkgs) lib runCommand cmake nix jq; }) {};
+in eval.full'
+
 cat result/summary.md
 ```
+
+---
+
+## Related Documentation
+
+- [Workflows](./workflows.md) — CI overview
+- [CI Support](./ci_support.md) — Support files
+- [Nix Packaging](./nix.md) — Nix build system

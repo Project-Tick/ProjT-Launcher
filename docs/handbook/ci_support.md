@@ -1,25 +1,102 @@
-## CI Support Files
+# CI Support `ci/`
 
-This directory contains support files and scripts used by CI/CD for the ProjT Launcher repository.
+> **Location**: `ci/`  
+> **Purpose**: CI configuration and support files
 
-### What uses this directory
+---
 
-- GitHub Actions workflows in `.github/workflows/` (CI automation, PR tooling)
-- Nix helpers for local development and validation (`ci/default.nix`, `ci/eval/`, `ci/parse.nix`)
-- PR automation scripts (`ci/github-script/`)
+## Overview
 
-### Useful entry points
+The `ci/` directory contains configuration files, scripts, and Nix expressions that support the CI/CD pipeline. These files are used by GitHub Actions workflows for code quality, validation, and build processes.
 
-- `ci/code-quality.sh`: Local PR-style checks between HEAD and a base branch
-- `ci/default.nix`: Nix dev environment with build dependencies
-- `ci/pinned.json`: Reference versions for tooling/CI runners
+---
 
-### Local usage
+## Directory Structure
+
+```
+ci/
+├── code-quality.nix        # Nix expression for code quality tools
+├── code-quality.sh         # Shell script for linting/formatting
+├── default.nix             # Default Nix entry point
+├── parse.nix               # Nix parsing utilities
+├── pinned.json             # Pinned Nix package versions
+├── supportedBranches.js    # Branch configuration
+├── supportedSystems.json   # Target system matrix
+├── supportedVersions.nix   # Version compatibility
+├── update-pinned.sh        # Update pinned packages
+├── OWNERS                  # Code ownership file
+│
+├── codeowners-validator/   # CODEOWNERS validation
+├── eval/                   # Evaluation helpers
+├── github-script/          # GitHub Script automation
+└── nixpkgs-vet/            # Nixpkgs validation
+```
+
+---
+
+## File Descriptions
+
+### Core Files
+
+| File | Description |
+|------|-------------|
+| `code-quality.nix` | Nix expression defining code quality tool environment |
+| `code-quality.sh` | Main script for running clang-format, linters, etc. |
+| `default.nix` | Default Nix derivation entry point |
+
+### Configuration
+
+| File | Description |
+|------|-------------|
+| `pinned.json` | Pinned nixpkgs revision for reproducibility |
+| `supportedSystems.json` | Build matrix (Linux, macOS, Windows) |
+| `supportedVersions.nix` | Supported version compatibility matrix |
+| `supportedBranches.js` | CI branch filtering rules |
+
+### Subdirectories
+
+| Directory | Purpose |
+|-----------|---------|
+| `codeowners-validator/` | Validates CODEOWNERS file format |
+| `eval/` | Nix evaluation helpers for project validation |
+| `github-script/` | JavaScript helpers for GitHub Actions |
+| `nixpkgs-vet/` | Nixpkgs best practices validation |
+
+---
+
+## Usage
+
+### Running Code Quality Checks
 
 ```bash
-# Compare your current branch against develop
-./ci/code-quality.sh develop
+# Using Nix
+nix-shell ci/default.nix --run "./ci/code-quality.sh"
 
-# Enter Nix dev shell (if you use Nix)
-nix develop -f ci/default.nix
+# Or directly
+./ci/code-quality.sh
 ```
+
+### Updating Pinned Packages
+
+```bash
+./ci/update-pinned.sh
+```
+
+---
+
+## Integration
+
+These files are used by:
+
+- `ci-lint.yml` — Code quality workflow
+- `ci-new.yml` — Main orchestrator
+- `flake.nix` — Nix flake development shell
+
+---
+
+## Related Documentation
+
+- [Workflows](./workflows.md) — GitHub Actions overview
+- [CI Evaluation](./ptcieval.md) — Project validation
+- [GitHub Scripts](./ptcigh.md) — Automation helpers
+- [Nix Packaging](./nix.md) — Nix build system

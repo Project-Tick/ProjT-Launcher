@@ -1,68 +1,103 @@
-# 🏗 Architecture and Separation of Concerns
+# Architecture
 
-## ⚠️ UI/Logic Separation
+High-level design and component interaction in ProjT Launcher.
 
-The launcher UI uses **Qt Widgets** (`.ui` files + C++). Keep UI code in `launcher/ui/` and keep core logic in `launcher/`, `launcher/minecraft/`, `launcher/net/`, `launcher/modplatform/`, `launcher/java/`, and `launcher/tasks/`.
+---
 
-**Rule of thumb:** UI classes should **display state and forward user intent**. They should not perform long-running or stateful operations directly.
+## Layers
 
-## Layers (Simple Model)
+```
+┌─────────────────────────────────────────┐
+│              UI Layer                   │
+│         launcher/ui/ (Qt Widgets)       │
+├─────────────────────────────────────────┤
+│            Core Layer                   │
+│   launcher/minecraft/, net/, java/      │
+├─────────────────────────────────────────┤
+│            Task System                  │
+│           launcher/tasks/               │
+└─────────────────────────────────────────┘
+```
 
-1. **UI Layer (Qt Widgets)**
-   - Files: `launcher/ui/`
-   - Responsibilities: rendering, user input, invoking actions
-   - Avoid direct file I/O or network access here.
+### UI Layer
 
-2. **Core/Domain Layer**
-   - Files: `launcher/`, `launcher/minecraft/`, `launcher/net/`, `launcher/modplatform/`, `launcher/java/`
-   - Responsibilities: data models, networking, settings, persistence, launch logic
-   - Avoid UI dependencies in this layer.
+**Location**: `launcher/ui/`
 
-3. **Task System**
-   - Files: `launcher/tasks/`
-   - Responsibilities: long-running or async work (downloads, extracting, indexing)
-   - UI starts tasks and listens to signals for progress/completion.
+- Qt Widgets interface
+- Renders state, handles user input
+- No direct I/O or network access
 
-> [!IMPORTANT]
-> Tasks are executed off the UI thread using the launcher’s internal task executor.
-> UI code must not assume which thread a task runs on.
+### Core Layer
 
-## UI to Core Communication
+**Location**: `launcher/`, `launcher/minecraft/`, `launcher/net/`, `launcher/java/`
 
-Prefer signals/slots and existing service objects over direct calls from UI to deep internals. For long work, use `Task` and connect progress signals to UI elements. Service objects are long-lived, non-UI classes owned by Application
-(e.g. AccountManager, InstanceManager, NetworkManager).
+- Business logic
+- Data models
+- Network operations
+- No UI dependencies
+
+### Task System
+
+**Location**: `launcher/tasks/`
+
+- Long-running operations
+- Async work (downloads, extraction)
+- Progress reporting
+
+---
+
+## Key Principles
+
+### Separation of Concerns
+
+UI classes display state and forward user intent. They do not perform:
+
+- File I/O
+- Network requests
+- Long computations
+
+### Communication Pattern
+
+UI communicates with core via signals/slots:
 
 ```cpp
-auto task = makeShared<MyTask>();
+auto task = makeShared<DownloadTask>(url);
 connect(task.get(), &Task::progress, this, &MainWindow::updateProgress);
-connect(task.get(), &Task::failed, this, &MainWindow::showError);
+connect(task.get(), &Task::finished, this, &MainWindow::onDownloadComplete);
 task->start();
 ```
 
-## Threading & Concurrency
+### Threading
 
-- **Main thread**: UI rendering only.
-- **Worker threads**: File I/O, networking, hashing, or launch preparation.
-- Any operation taking more than a few milliseconds should be async (use `Task` or `QThread`).
+| Thread | Purpose |
+|--------|---------|
+| Main | UI rendering only |
+| Worker | File I/O, networking, hashing |
 
-## The Task System
+Operations > 10ms should be async.
+
+---
+
+## Task System
 
 ### Creating a Task
-
-Inherit from `Task` and implement `executeTask()`.
 
 ```cpp
 class MyTask : public Task {
     Q_OBJECT
+
 protected:
     void executeTask() override {
-        setStatus("Doing something...");
+        setStatus("Working...");
         setProgress(0);
 
-        // Do work...
-        if (failed) {
-            emitFailed("Something went wrong");
-            return;
+        // Do work
+        for (int i = 0; i < 100; i++) {
+            if (isCancelled()) {
+                emitFailed("Cancelled");
+                return;
+            }
+            setProgress(i);
         }
 
         emitSucceeded();
@@ -74,19 +109,69 @@ protected:
 
 ```cpp
 auto task = makeShared<MyTask>();
-connect(task.get(), &Task::succeeded, this, &MyClass::onTaskDone);
+connect(task.get(), &Task::succeeded, this, &MyClass::onSuccess);
+connect(task.get(), &Task::failed, this, &MyClass::onFailure);
 task->start();
 ```
 
-## Common Violations (Do Not Do This)
+---
 
-1. **Blocking the UI**: no `sleep()` or long loops in UI classes.
-2. **UI in core**: avoid `QtWidgets` includes outside `launcher/ui/`.
-3. **Direct I/O in UI**: move I/O into tasks or core services.
+## Application Lifecycle
 
-## Application Lifecycle (High-Level)
+1. **Startup**: `main.cpp` creates `Application` singleton
+2. **Setup**: Load settings, accounts, instances
+3. **UI Launch**: Create `MainWindow`
+4. **Runtime**: Event loop processes user actions
+5. **Shutdown**: Save state, release resources
 
-1. **Startup**: `main.cpp` initializes the `Application` singleton.
-2. **Setup**: `Application` loads settings, accounts, and instances.
-3. **UI Launch**: `Application::showMainWindow()` creates `MainWindow`.
-4. **Shutdown**: state is saved and resources are released.
+---
+
+## Service Objects
+
+Long-lived non-UI classes owned by Application:
+
+- `AccountManager` - Microsoft/offline accounts
+- `InstanceManager` - Minecraft instances
+- `NetworkManager` - HTTP operations
+- `SettingsManager` - Configuration
+
+Access via `Application::instance()->serviceName()`.
+
+---
+
+## Common Violations
+
+**Don't do these**:
+
+| Violation | Fix |
+|-----------|-----|
+| `sleep()` in UI | Use Task |
+| Network in UI class | Move to core service |
+| UI import in core | Remove dependency |
+| Direct file I/O in UI | Use Task |
+
+---
+
+## Module Dependencies
+
+```
+ui/ ──→ minecraft/ ──→ net/
+         │              │
+         └──→ tasks/ ←──┘
+               │
+               └──→ java/
+```
+
+**Rules**:
+
+- No circular dependencies
+- `ui/` depends on everything
+- Core modules are independent
+- `tasks/` is a utility layer
+
+---
+
+## Related
+
+- [Project Structure](./PROJECT_STRUCTURE.md)
+- [Testing](./TESTING.md)

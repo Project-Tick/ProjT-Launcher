@@ -1,0 +1,106 @@
+name: libqrencode CI
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+  push:
+    branches: [develop, main]
+    paths:
+      - 'libqrencode/**'
+      - '.github/workflows/ci-libqrencode.yml'
+  pull_request:
+    paths:
+      - 'libqrencode/**'
+      - '.github/workflows/ci-libqrencode.yml'
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # AUTOTOOLS BUILD (configure)
+  # ═══════════════════════════════════════════════════════════════════════════
+  libqrencode-configure:
+    name: Linux-Autotools
+    defaults:
+      run:
+        working-directory: libqrencode
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool pkg-config libpng-dev
+      - name: generate configure script
+        run: |
+          chmod +x ./autogen.sh
+          ./autogen.sh
+      - name: configure
+        run: ./configure --with-tests
+      - name: make
+        run: make
+      - name: make check
+        run: make check
+      - name: make distcheck
+        run: make distcheck
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CMAKE BUILDS - WINDOWS
+  # ═══════════════════════════════════════════════════════════════════════════
+  libqrencode-cmake-windows:
+    name: Windows-CMake
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: libqrencode
+    env:
+      BUILD_TYPE: Release
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{runner.workspace}}/build
+      - name: Configure CMake
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: cmake $GITHUB_WORKSPACE/libqrencode -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_TESTS=yes
+      - name: Build
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE
+      - name: Test
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: ctest -C $BUILD_TYPE
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CMAKE BUILDS - LINUX
+  # ═══════════════════════════════════════════════════════════════════════════
+  libqrencode-cmake-linux:
+    name: Linux-CMake
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libqrencode
+    env:
+      BUILD_TYPE: Release
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpng-dev
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{runner.workspace}}/build
+      - name: Configure CMake
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: cmake $GITHUB_WORKSPACE/libqrencode -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_TESTS=yes -DBUILD_SHARED_LIBS=on
+      - name: Build
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE
+      - name: Test
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: ctest -C $BUILD_TYPE

@@ -1,147 +1,53 @@
-## ProjT Launcher Nix Packaging `nix/`
+# Nix Packaging `nix/`
 
-<!-- ### Installing a stable release (nixpkgs) -->
+> **Location**: `nix/`, `flake.nix`, `shell.nix`, `default.nix`  
+> **Platform**: NixOS, Nix package manager  
+> **Purpose**: Reproducible builds and packaging
 
-<!-- > **Note**  
-> Some examples still reference the upstream `Project-Tick/ProjT-Launcher` repository. Replace those occurrences with the Git host/owner of ProjT Launcher once your mirror is public. -->
+---
 
-<!-- ProjT Launcher currently reuses the upstream `projtlauncher` packages that have been in [nixpkgs](https://github.com/NixOS/nixpkgs/) since 25.11. -->
+## Overview
 
-<!-- Check the upstream [ProjT Launcher entry on the NixOS Wiki](https://wiki.nixos.org/wiki/ProjT_Launcher) for up-to-date instructions until our dedicated documentation is published. -->
+ProjT Launcher provides first-class Nix support for reproducible builds, development environments, and packaging. Both Flakes and traditional Nix expressions are supported.
 
-### Installing a development release (flake)
+---
 
-We use [cachix](https://cachix.org/) to cache our development and release builds.
-If you want to avoid rebuilds you may add the Cachix bucket to your substitutors, or use `--accept-flake-config`
-to temporarily enable it when using `nix` commands.
+## Quick Start
 
-Example (NixOS):
+### Run Without Installing
 
-```nix
-{
-  nix.settings = {
-    trusted-substituters = [ "https://cache.projecttick.org.tr" ];
-
-    trusted-public-keys = [
-      "cache.projecttick.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
-    ];
-  };
-}
-```
-
-#### Installing the package directly
-
-After adding `github:Project-Tick/ProjT-Launcher` to your flake inputs, you can access the flake's `packages` output.
-
-Example:
-
-```nix
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    projtlauncher = {
-      url = "github:Project-Tick/ProjT-Launcher";
-
-      # Optional: Override the nixpkgs input of projtlauncher to use the same revision as the rest of your flake
-      # Note that this may break the reproducibility mentioned above, and you might not be able to access the binary cache
-      #
-      # inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  outputs =
-    { nixpkgs, projtlauncher, ... }:
-    {
-      nixosConfigurations.foo = nixpkgs.lib.nixosSystem {
-        modules = [
-          ./configuration.nix
-
-          (
-            { pkgs, ... }:
-            {
-              environment.systemPackages = [ projtlauncher.packages.${pkgs.system}.projtlauncher ];
-            }
-          )
-        ];
-      };
-    };
-}
-```
-
-#### Using the overlay
-
-Alternatively, if you don't want to use our `packages` output, you can add our overlay to your nixpkgs instance.
-This will ensure ProjT Launcher is built with your system's packages.
-
-> [!WARNING]
-> Depending on what revision of nixpkgs your system uses, this may result in binaries that differ from the above `packages` output
-> If this is the case, you will not be able to use the binary cache
-
-Example:
-
-```nix
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    projtlauncher = {
-      url = "github:Project-Tick/ProjT-Launcher";
-
-      # Optional: Override the nixpkgs input of projtlauncher to use the same revision as the rest of your flake
-      # Note that this may break the reproducibility mentioned above, and you might not be able to access the binary cache
-      #
-      # inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  outputs =
-    { nixpkgs, projtlauncher, ... }:
-    {
-      nixosConfigurations.foo = nixpkgs.lib.nixosSystem {
-        modules = [
-          ./configuration.nix
-
-          (
-            { pkgs, ... }:
-            {
-              nixpkgs.overlays = [ projtlauncher.overlays.default ];
-
-              environment.systemPackages = [ pkgs.projtlauncher ];
-            }
-          )
-        ];
-      };
-    };
-}
-```
-
-#### Installing the package ad-hoc (`nix shell`, `nix run`, etc.)
-
-You can simply call the default package of this flake.
-
-Example:
-
-```shell
+```bash
 nix run github:Project-Tick/ProjT-Launcher
+```
 
-nix shell github:Project-Tick/ProjT-Launcher
+### Install via Flakes
 
+```bash
 nix profile install github:Project-Tick/ProjT-Launcher
 ```
 
-### Installing a development release (without flakes)
+### Development Shell
 
-We use [Cachix](https://cachix.org/) to cache our development and release builds.
-If you want to avoid rebuilds you may add the Cachix bucket to your substitutors.
+```bash
+# With Flakes
+nix develop github:Project-Tick/ProjT-Launcher
 
-Example (NixOS):
+# Traditional
+nix-shell
+```
+
+---
+
+## Binary Cache
+
+We use Cachix for pre-built binaries. Add to avoid rebuilds:
+
+### NixOS Configuration
 
 ```nix
 {
   nix.settings = {
     trusted-substituters = [ "https://cache.projecttick.org.tr" ];
-
     trusted-public-keys = [
       "cache.projecttick.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
     ];
@@ -149,74 +55,157 @@ Example (NixOS):
 }
 ```
 
-#### Installing the package directly (`fetchTarball`)
+### Flakes (Temporary)
 
-We use flake-compat to allow using this Flake on a system that doesn't use flakes.
+```bash
+nix run github:Project-Tick/ProjT-Launcher --accept-flake-config
+```
 
-Example:
+---
+
+## Installation Methods
+
+### Flakes (Recommended)
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    projtlauncher.url = "github:Project-Tick/ProjT-Launcher";
+  };
+
+  outputs = { nixpkgs, projtlauncher, ... }: {
+    nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
+      modules = [
+        ({ pkgs, ... }: {
+          environment.systemPackages = [
+            projtlauncher.packages.${pkgs.system}.projtlauncher
+          ];
+        })
+      ];
+    };
+  };
+}
+```
+
+### Using Overlay
+
+```nix
+{
+  nixpkgs.overlays = [ projtlauncher.overlays.default ];
+  environment.systemPackages = [ pkgs.projtlauncher ];
+}
+```
+
+### Traditional Nix (No Flakes)
 
 ```nix
 { pkgs, ... }:
 {
   environment.systemPackages = [
-    (import (
-      builtins.fetchTarball "https://github.com/Project-Tick/ProjT-Launcher/archive/develop.tar.gz"
+    (import (builtins.fetchTarball 
+      "https://github.com/Project-Tick/ProjT-Launcher/archive/develop.tar.gz"
     )).packages.${pkgs.system}.projtlauncher
   ];
 }
 ```
 
-#### Using the overlay (`fetchTarball`)
+---
 
-Alternatively, if you don't want to use our `packages` output, you can add our overlay to your instance of nixpkgs.
-This results in ProjT Launcher using your system's libraries
+## Package Variants
 
-Example:
+| Package | Description |
+|---------|-------------|
+| `projtlauncher` | Fully wrapped with runtime dependencies |
+| `projtlauncher-unwrapped` | Minimal build for customization |
+
+### Customization Options
+
+The wrapped package accepts these overrides:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `additionalLibs` | `[]` | Extra `LD_LIBRARY_PATH` entries |
+| `additionalPrograms` | `[]` | Extra `PATH` entries |
+| `controllerSupport` | `isLinux` | Game controller support |
+| `gamemodeSupport` | `isLinux` | Feral GameMode integration |
+| `jdks` | `[jdk21 jdk17 jdk8]` | Available Java runtimes |
+| `msaClientID` | `null` | Microsoft Auth client ID |
+| `textToSpeechSupport` | `isLinux` | TTS support |
+
+### Example Override
 
 ```nix
-{ pkgs, ... }:
-{
-  nixpkgs.overlays = [
-    (import (
-      builtins.fetchTarball "https://github.com/Project-Tick/ProjT-Launcher/archive/develop.tar.gz"
-    )).overlays.default
-  ];
-
-  environment.systemPackages = [ pkgs.projtlauncher ];
+projtlauncher.override {
+  jdks = [ pkgs.jdk21 pkgs.jdk17 ];
+  gamemodeSupport = false;
 }
 ```
 
-#### Installing the package ad-hoc (`nix-env`)
+---
 
-You can add this repository as a channel and install its packages that way.
+## Development
 
-Example:
+### Enter Development Shell
 
-```shell
-nix-channel --add https://github.com/Project-Tick/ProjT-Launcher/archive/develop.tar.gz projtlauncher
-
-nix-channel --update projtlauncher
-
-nix-env -iA projtlauncher.projtlauncher
+```bash
+nix develop
+# or
+nix-shell
 ```
 
-### Package variants
+### Build Locally
 
-Both Nixpkgs and this repository offer the following packages:
+```bash
+nix build .#projtlauncher
+./result/bin/projtlauncher
+```
 
-- `projtlauncher` - The preferred build, wrapped with everything necessary to run the launcher and Minecraft
-- `projtlauncher-unwrapped` - A minimal build that allows for advanced customization of the launcher's runtime environment
+---
 
-#### Customizing wrapped packages
+## File Structure
 
-The wrapped package (`projtlauncher`) offers some build parameters to further customize the launcher's environment.
+```
+├── flake.nix          # Flake definition
+├── flake.lock         # Locked dependencies
+├── default.nix        # Flake-compat entry
+├── shell.nix          # Development shell
+└── nix/
+    ├── default.nix    # Package derivation
+    └── ...
+```
 
-The following parameters can be overridden:
+---
 
-- `additionalLibs` (default: `[ ]`) Additional libraries that will be added to `LD_LIBRARY_PATH`
-- `additionalPrograms` (default: `[ ]`) Additional libraries that will be added to `PATH`
-- `controllerSupport` (default: `isLinux`) Turn on/off support for controllers on Linux (macOS will always have this)
-- `gamemodeSupport` (default: `isLinux`) Turn on/off support for [Feral GameMode](https://github.com/FeralInteractive/gamemode) on Linux
-- `jdks` (default: `[ jdk21 jdk17 jdk8 ]`) Java runtimes added to `PROJTLAUNCHER_JAVA_PATHS` variable
-- `msaClientID` (default: `null`, requires full rebuild!) Client ID used for Microsoft Authentication
-- `textToSpeechSupport` (default: `isLinux`) Turn on/off support for text-to-speech on Linux (macOS will always have this)
+## Troubleshooting
+
+### Binary Cache Not Working
+
+Ensure the cache is in `trusted-substituters` (requires root):
+
+```bash
+sudo nix-channel --update
+```
+
+### Build Failures
+
+Try with fresh nixpkgs:
+
+```bash
+nix build --override-input nixpkgs github:NixOS/nixpkgs/nixos-unstable
+```
+
+---
+
+## Related Documentation
+
+- [CI Support](./ci_support.md) — CI Nix integration
+- [CI Evaluation](./ptcieval.md) — Nix-based validation
+
+---
+
+## External Links
+
+- [Nix Manual](https://nixos.org/manual/nix/stable/)
+- [NixOS Wiki: ProjT Launcher](https://wiki.nixos.org/wiki/ProjT_Launcher)
+- [Cachix](https://cachix.org/)

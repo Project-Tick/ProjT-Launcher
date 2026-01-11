@@ -1,45 +1,174 @@
-## Third-party libraries
+# Third-party Libraries
 
-This section lists third‑party/external libraries required by other components in this repository. Each entry includes the library name, its purpose in the repo, license information, and a source URL.
+> **Purpose**: Overview of all external dependencies used by ProjT Launcher
 
-### gamemode
+---
 
-A performance optimization daemon.
+## Overview
 
-See [github repo](https://github.com/FeralInteractive/gamemode).
+ProjT Launcher includes several third-party libraries for various functionality. This document provides a quick reference to all external dependencies.
 
-![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-AB2B28?logo=bsd) licensed
+---
 
-### LocalPeer
+## Detached Fork Libraries
 
-Library for making only one instance of the application run at all times.
+These libraries are **detached forks** — independently maintained by Project Tick, not synchronized with original repositories:
 
-![License: BSD](https://img.shields.io/badge/License-BSD-blue.svg) licensed, derived from [QtSingleApplication](https://github.com/qtproject/qt-solutions/tree/master/qtsingleapplication).
+### Compression
 
-Changes are made to make the code more generic and useful in less usual conditions.
+| Library | Purpose | License | Documentation |
+|---------|---------|---------|---------------|
+| **zlib** | DEFLATE compression | zlib | [zlib.md](./zlib.md) |
+| **bzip2** | Block-sorting compression | BSD-like | [bzip2.md](./bzip2.md) |
+| **QuaZip** | Qt ZIP wrapper | LGPL-2.1+ | [quazip.md](./quazip.md) |
 
-### murmur2
+### Data Formats
 
-Canonical implementation of the murmur2 hash, taken from [SMHasher](https://github.com/aappleby/smhasher).
+| Library | Purpose | License | Documentation |
+|---------|---------|---------|---------------|
+| **toml++** | TOML parser | MIT | [tomlplusplus.md](./tomlplusplus.md) |
+| **libnbt++** | NBT format | GPL-3.0 | [libnbtplusplus.md](./libnbtplusplus.md) |
+| **cmark** | Markdown parser | BSD-2-Clause | [cmark.md](./cmark.md) |
 
-Public domain (the author disclaimed the copyright).
+### Utilities
 
-### rainbow
+| Library | Purpose | License | Documentation |
+|---------|---------|---------|---------------|
+| **libqrencode** | QR code generation | LGPL-2.1+ | [libqrencode.md](./libqrencode.md) |
 
-Color functions extracted from [KGuiAddons](https://inqlude.org/libraries/kguiaddons.html). Used for adaptive text coloring.
+### Build System
 
-Available either under ![LGPL-2.1-or-later](https://img.shields.io/badge/license-LGPL--2.1--or--later-C4282D?logo=gnu)
+| Library | Purpose | License | Documentation |
+|---------|---------|---------|---------------|
+| **Extra CMake Modules** | CMake utilities | BSD-3-Clause | [extra-cmake-modules.md](./extra-cmake-modules.md) |
 
-### systeminfo
+---
 
-A ProjT Launcher-specific library for probing system information.
+## Original READMEs
 
-![Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-D22128?logo=apache)
+Each detached fork retains its original upstream documentation. These are preserved for reference but are not actively maintained by Project Tick:
 
-### qdcss
+| Library | Documentation |
+|---------|---------------|
+| toml++ | `tomlplusplus/README.md` |
+| libqrencode | `libqrencode/README.md` |
+| ECM | `extra-cmake-modules/README.md` |
+| zlib | `zlib/README-cmake.md`, `zlib/FAQ` |
+| bzip2 | `bzip2/bzip2.txt`, `bzip2/manual.html` |
+| cmark | `cmark/changelog.txt`, `cmark/man/` |
+| QuaZip | `quazip/QuaZip-1.x-migration.md` |
+| libnbt++ | `libnbtplusplus/include/` (headers) |
 
-A quick and dirty css parser, used by NilLoader to store mod metadata.
+For Project Tick–specific documentation and usage, refer to the handbook pages linked above.
 
-Translated (and heavily trimmed down) from [the original Java code](https://github.com/unascribed/NilLoader/blob/trunk/website/main/java/nilloader/api/lib/qdcss/QDCSS.java) from NilLoader
+---
 
-Licensed under ![LGPL-3.0](https://img.shields.io/badge/license-LGPL--3.0-C4282D?logo=gnu).
+## Internal Libraries
+
+These are ProjT Launcher-specific libraries:
+
+### gamemode `gamemode/`
+
+Performance optimization daemon integration.
+
+- **Upstream**: [GitHub](https://github.com/FeralInteractive/gamemode)
+- **License**: BSD-3-Clause
+- **Use**: Linux gaming performance optimization
+
+### LocalPeer `LocalPeer/`
+
+Single-instance application enforcement.
+
+- **Origin**: Derived from QtSingleApplication
+- **License**: BSD
+- **Use**: Prevents multiple launcher instances
+
+### murmur2 `murmur2/`
+
+Hash function implementation.
+
+- **Origin**: [SMHasher](https://github.com/aappleby/smhasher)
+- **License**: Public Domain
+- **Use**: Content hashing for mods
+
+### rainbow `rainbow/`
+
+Color manipulation functions.
+
+- **Origin**: KGuiAddons
+- **License**: LGPL-2.1+
+- **Use**: Adaptive text coloring
+
+### systeminfo `systeminfo/`
+
+System information probing.
+
+- **License**: Apache-2.0
+- **Use**: Hardware/OS detection
+
+### qdcss `qdcss/`
+
+Quick and dirty CSS parser.
+
+- **Origin**: NilLoader
+- **License**: LGPL-3.0
+- **Use**: Mod metadata parsing
+
+---
+
+## External Dependencies
+
+These are system/Qt dependencies not bundled:
+
+### Qt Framework
+
+| Module | Purpose |
+|--------|---------|
+| Qt Core | Base functionality |
+| Qt GUI | UI rendering |
+| Qt Widgets | UI components |
+| Qt Network | HTTP/networking |
+| Qt Concurrent | Threading |
+
+### System Libraries
+
+| Library | Purpose | Platforms |
+|---------|---------|-----------|
+| OpenSSL | TLS/HTTPS | All |
+| libpng | PNG images | All |
+| zlib (system) | Alternative to bundled | Optional |
+
+---
+
+## License Summary
+
+| License | Libraries |
+|---------|-----------|
+| **MIT** | toml++ |
+| **BSD-2/3-Clause** | cmark, gamemode |
+| **BSD-like** | bzip2, LocalPeer |
+| **zlib** | zlib |
+| **LGPL-2.1+** | QuaZip, rainbow, libqrencode |
+| **LGPL-3.0** | qdcss |
+| **GPL-3.0** | libnbt++ |
+| **Apache-2.0** | systeminfo |
+| **Public Domain** | murmur2 |
+
+---
+
+## Adding New Dependencies
+
+When adding new libraries:
+
+1. **Evaluate license compatibility** with GPL-3.0
+2. **Create handbook documentation** in `docs/handbook/`
+3. **Update this file** with the new entry
+4. **Add CI workflow** if needed
+5. **Update CMakeLists.txt** for build integration
+
+---
+
+## Related Documentation
+
+- [Workflows](./workflows.md) — CI for libraries
+- [README](./README.md) — Handbook index
