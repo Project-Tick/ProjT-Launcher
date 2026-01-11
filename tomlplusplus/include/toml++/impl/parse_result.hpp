@@ -5,7 +5,7 @@
 #pragma once
 
 #include "preprocessor.hpp"
-#if TOML_DOXYGEN || (TOML_ENABLE_PARSER && !TOML_EXCEPTIONS)
+#if TOML_DOXYGEN || TOML_ENABLE_PARSER
 
 #include "header_start.hpp"
 #include "parse_error.hpp"
@@ -14,6 +14,8 @@
 TOML_NAMESPACE_START
 {
     TOML_ABI_NAMESPACE_START(noex);
+
+#if TOML_DOXYGEN || !TOML_EXCEPTIONS
 
     /// \brief	The result of a parsing operation.
     ///
@@ -405,8 +407,10 @@ TOML_NAMESPACE_START
     };
 
     TOML_ABI_NAMESPACE_END;
+
+#endif  // TOML_DOXYGEN || !TOML_EXCEPTIONS
 }
 TOML_NAMESPACE_END;
 
 #include "header_end.hpp"
-#endif  // TOML_ENABLE_PARSER && !TOML_EXCEPTIONS
+#endif  // TOML_DOXYGEN || TOML_ENABLE_PARSER
