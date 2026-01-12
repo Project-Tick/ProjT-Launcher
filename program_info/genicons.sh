@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LAUNCHER_APPID="tr.org.projecttick.ProjTLauncher"
+LAUNCHER_APPID="org.projecttick.ProjTLauncher"
 
 svg2png() {
     input_file="$1"

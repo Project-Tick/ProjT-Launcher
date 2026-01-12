@@ -9,10 +9,10 @@ cask "projtlauncher" do
 
   name "ProjT Launcher"
   desc "Minecraft launcher"
-  homepage "https://projecttick.org.tr/projtlauncher/"
+  homepage "https://projecttick.org/projtlauncher/"
 
   livecheck do
-    url "https://projecttick.org.tr/projtlauncher/feed/appcast.xml"
+    url "https://projecttick.org/projtlauncher/feed/appcast.xml"
     strategy :sparkle
   end
 
@@ -25,7 +25,7 @@ cask "projtlauncher" do
     "~/Library/Application Support/ProjT Launcher/metacache",
     "~/Library/Application Support/ProjT Launcher/projtlauncher-*.log",
     "~/Library/Application Support/ProjT Launcher/projtlauncher.cfg",
-    "~/Library/Preferences/tr.org.projecttick.ProjTLauncher.plist",
-    "~/Library/Saved Application State/tr.org.projecttick.ProjTLauncher.savedState",
+    "~/Library/Preferences/org.projecttick.ProjTLauncher.plist",
+    "~/Library/Saved Application State/org.projecttick.ProjTLauncher.savedState",
   ]
 end

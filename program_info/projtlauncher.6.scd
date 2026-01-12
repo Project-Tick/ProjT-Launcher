@@ -75,7 +75,7 @@ https://github.com/Project-Tick/ProjT-Launcher/issues
 
 GitHub: https://github.com/Project-Tick/ProjT-Launcher
 
-Main website: https://projecttick.org.tr/projtlauncher
+Main website: https://projecttick.org/projtlauncher
 
 # AUTHORS
 

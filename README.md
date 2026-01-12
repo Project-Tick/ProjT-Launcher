@@ -14,7 +14,7 @@ Fork of [Prism Launcher](https://prismlauncher.org), diverging to keep maintenan
 ## Download
 
 - [Releases](https://github.com/YongDo-Hyun/ProjT-Launcher/releases) – Stable builds only. Nightly builds are not provided.
-- [Website](https://projecttick.org.tr/projtlauncher/)
+- [Website](https://projecttick.org/projtlauncher/)
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/projtlauncher.svg)](https://repology.org/project/projtlauncher/versions)
 
@@ -101,7 +101,8 @@ Contributions to each component are licensed under its respective license. See [
 
 ## Links
 
-- [Website](https://projecttick.org.tr/projtlauncher/)
+- [Website](https://projecttick.org/projtlauncher/)
+- [Project Tick Website](https://projecttick.org/)
 - [Issues](https://github.com/YongDo-Hyun/ProjT-Launcher/issues)
 - [Discussions](https://github.com/YongDo-Hyun/ProjT-Launcher/discussions)
 
