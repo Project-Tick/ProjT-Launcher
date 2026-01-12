@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import fc from "fast-check";
 
-import { parsePositiveInt, safeJsonParse } from "../../bot/index.js";
+import { parsePositiveInt, safeJsonParse } from "../index.js";
 
 test("safeJsonParse never throws", () => {
   fc.assert(

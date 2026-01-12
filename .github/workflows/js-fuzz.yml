@@ -24,4 +24,4 @@ jobs:
         run: npm install && npm install fast-check
         working-directory: bot
       - name: Run fast-check fuzz
-        run: node fuzz/bot/fastcheck.test.js
+        run: node bot/fuzz/fastcheck.test.js

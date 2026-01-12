@@ -8,7 +8,7 @@ This project ships libFuzzer targets for key parsers and data paths.
 - `fuzz_qjson_parse`: Qt JSON parser
 - `fuzz_gzip`: GZip inflate/deflate helpers
 - `fuzz/meta/fuzz_meta_models.py`: Python Atheris targets for metadata models
-- `fuzz/bot/fastcheck.test.js`: JS property fuzzing for bot helpers
+- `bot/fuzz/fastcheck.test.js`: JS property fuzzing for bot helpers
 
 ## Local build (Linux/macOS)
 
@@ -36,4 +36,4 @@ The `ClusterFuzzLite` workflow builds and runs these targets on schedule and on 
 ## CI (Python/JS fuzzing)
 
 - `Python Atheris Fuzz` runs `fuzz/meta/fuzz_meta_models.py`
-- `JS Fast-Check Fuzz` runs `fuzz/bot/fastcheck.test.js`
+- `JS Fast-Check Fuzz` runs `bot/fuzz/fastcheck.test.js`
