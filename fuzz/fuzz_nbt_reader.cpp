@@ -8,8 +8,9 @@
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
 	// Avoid excessive allocations on pathological inputs
-	// Reduce limit to prevent OOM crashes during fuzzing
-	constexpr size_t kMaxInputSize = 64 * 1024; // 64 KiB (was 1 MiB)
+	// Very strict limit to prevent array allocation bombs
+	// E.g., NBT array with count 0x92929292 would allocate 3.2GB
+	constexpr size_t kMaxInputSize = 4 * 1024; // 4 KiB (was 64 KiB)
 	if (!data || size == 0 || size > kMaxInputSize)
 	{
 		return 0;
