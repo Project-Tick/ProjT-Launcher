@@ -36,7 +36,7 @@ For development setup with presets and full tooling, see [GETTING_STARTED.md](do
 | Tool | Version |
 | ---- | ------- |
 | CMake | 3.22+ |
-| Qt | 6.x |
+| Qt | 6.10.x |
 | Compiler | C++20 |
 
 ### Nix
