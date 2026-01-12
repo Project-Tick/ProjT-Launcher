@@ -388,8 +388,8 @@ local z_size_t gz_read(gz_statep state, voidp buf, z_size_t len)
 				/* if state->x.have != 0, error will be caught after copy */
 				err = -1;
 			continue; /* no progress yet -- go back to copy above */
-			/* the copy above assures that we will leave with space in the
-			   output buffer, allowing at least one gzungetc() to succeed */
+					  /* the copy above assures that we will leave with space in the
+						 output buffer, allowing at least one gzungetc() to succeed */
 		}
 
 		/* large len -- read directly into user buffer */
