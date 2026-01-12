@@ -283,7 +283,7 @@ endif()
 ######## Set URLs ########
 set(Launcher_NEWS_RSS_URL "https://projecttick.org/projtlauncher/feed/feed.xml" CACHE STRING "URL to fetch ProjT Launcher's news RSS feed from.")
 set(Launcher_NEWS_OPEN_URL "https://projecttick.org/projtlauncher/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
-set(Launcher_HELP_URL "https://projecttick.org/projtlauncher/wiki/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
+set(Launcher_HELP_URL "https://projecttick.org/handbook/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
 set(Launcher_LOGIN_CALLBACK_URL "https://projecttick.org/projtlauncher/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
 set(Launcher_FMLLIBS_BASE_URL "https://files.yongdohyun.org/fmllibs/" CACHE STRING "URL for FML Libraries.")
 
