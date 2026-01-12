@@ -11,7 +11,7 @@ Guide to setting up your development environment for ProjT Launcher.
 | Tool | Version | Purpose |
 |------|---------|---------|
 | CMake | 3.22+ | Build system |
-| Qt | 6.x | GUI framework |
+| Qt | 6.10.0 | GUI framework |
 | Compiler | C++20 | GCC 11+, Clang 14+, MSVC 2022 |
 | Ninja | 1.10+ | Build tool |
 | Git | 2.30+ | Version control |
@@ -46,7 +46,7 @@ git remote add upstream https://github.com/YongDo-Hyun/ProjT-Launcher.git
 **Visual Studio 2022**:
 
 1. Install VS 2022 with "Desktop development with C++"
-2. Install Qt 6.x via Qt Online Installer
+2. Install Qt 6.10.0 via Qt Online Installer
    - Select MSVC 2022 64-bit
    - Select Qt Shader Tools
 3. Install dependencies via NuGet (required for CI parity):
@@ -164,7 +164,7 @@ Settings (`.vscode/settings.json`):
 ### Qt Creator
 
 1. Open `CMakeLists.txt` as project
-2. Select Qt 6.x kit
+2. Select Qt 6.10.0 kit
 3. Import `.clang-format` in Tools > Options > C++ > Code Style
 
 ### Visual Studio 2022
@@ -180,7 +180,7 @@ Settings (`.vscode/settings.json`):
 ### Qt not found
 
 ```sh
-cmake --preset <preset> -DCMAKE_PREFIX_PATH="/path/to/Qt/6.x/gcc_64"
+cmake --preset <preset> -DCMAKE_PREFIX_PATH="/path/to/Qt/6.10.0/gcc_64"
 ```
 
 ### Wrong Qt minor version

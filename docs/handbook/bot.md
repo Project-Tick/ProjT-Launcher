@@ -1,7 +1,3 @@
----
-permalink: /handbook/bot-details/
----
-
 # Bot `bot/`
 
 > **Type**: Cloudflare Worker  
