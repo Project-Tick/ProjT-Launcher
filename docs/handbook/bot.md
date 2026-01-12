@@ -30,15 +30,15 @@ The ProjT Launcher bot is a Cloudflare Worker that automates pull request labeli
 ## Architecture
 
 ```
-┌─────────────┐     ┌──────────────────┐     ┌─────────────┐
-│   GitHub    │────▶│  Cloudflare      │────▶│   GitHub    │
-│  Webhook    │     │  Worker (bot/)   │     │   API       │
-└─────────────┘     └──────────────────┘     └─────────────┘
+┌─────────────┐      ┌──────────────────┐      ┌─────────────┐
+│   GitHub    │────▶│  Cloudflare      │────▶ │   GitHub    │
+│  Webhook    │      │  Worker (bot/)   │      │   API       │
+└─────────────┘      └──────────────────┘      └─────────────┘
                            │
-                    ┌──────▼──────┐
-                    │ wrangler.json│
-                    │ (config)     │
-                    └─────────────┘
+                    ┌──────▼────────┐
+                    │ wrangler.json │
+                    │ (config)      │
+                    └───────────────┘
 ```
 
 ---

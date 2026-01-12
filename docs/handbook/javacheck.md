@@ -15,10 +15,10 @@ JavaCheck is a minimal Java program that prints system properties. It's used by 
 ## How It Works
 
 ```
-┌─────────────────┐     ┌─────────────┐     ┌──────────────┐
+┌─────────────────┐      ┌─────────────┐     ┌──────────────┐
 │  ProjT Launcher │────▶│  JavaCheck  │────▶│   stdout     │
-│     (C++)       │     │   (Java)    │     │  properties  │
-└─────────────────┘     └─────────────┘     └──────────────┘
+│     (C++)       │      │   (Java)    │     │  properties  │
+└─────────────────┘      └─────────────┘     └──────────────┘
 ```
 
 ### Execution

@@ -15,11 +15,11 @@ LauncherJava is the Java-based component responsible for actually launching Mine
 ## How It Works
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+┌─────────────┐      ┌──────────────┐     ┌─────────────┐
 │  ProjT      │────▶│ LauncherJava │────▶│  Minecraft  │
-│  Launcher   │     │   (Java)     │     │    JVM      │
-│  (C++)      │     │              │     │             │
-└─────────────┘     └──────────────┘     └─────────────┘
+│  Launcher   │      │   (Java)     │     │    JVM      │
+│  (C++)      │      │              │     │             │
+└─────────────┘      └──────────────┘     └─────────────┘
       │                    │
       │   stdin            │   exec
       │   (script)         │   (launch)
