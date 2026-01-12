@@ -19,8 +19,9 @@ if command -v apt-get >/dev/null 2>&1; then
     python3-pip
 fi
 
-# Qt6 not needed anymore - fuzz_qjson_parse removed to avoid glib dependency
-# Fuzzing only needs: libnbt++ (for fuzz_nbt_reader) and zlib (for fuzz_gzip)
+# Qt6 not available in OSS-Fuzz environment
+# Only fuzz_nbt_reader is built (uses libnbt++ and zlib, no Qt dependency)
+# fuzz_gzip requires Qt6::Core (for QByteArray/QFile in GZip.cpp) - skipped
 
 export PATH="${PATH}"
 
@@ -36,16 +37,9 @@ cmake -S . -B build -G Ninja \
   -DCMAKE_INSTALL_RPATH="\$ORIGIN" \
   -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
 
-# Build only fuzzers (fuzz_qjson_parse removed - Qt6 adds glib dependency)
-cmake --build build --parallel --target fuzz_nbt_reader fuzz_gzip
+# Build only fuzz_nbt_reader (no Qt dependency)
+# fuzz_gzip is conditionally built only when Qt6::Core is available
+cmake --build build --parallel --target fuzz_nbt_reader
 
 # Copy fuzzers to output directory
 cp build/fuzz_nbt_reader "$OUT/"
-cp build/fuzz_qjson_parse "$OUT/"
-cp build/fuzz_gzip "$OUT/"
-
-# Bundle only essential Qt6::Core runtime (needed by fuzz_qjson_parse)
-cp "${QT_ROOT}/lib/libQt6Core.so"* "$OUT/" || true
-# ICU libraries required by Qt6::Core
-cp "${QT_ROOT}/lib/libicudata.so"* "$OUT/" || true
-cp "${QT_ROOT}gzip "$OUT/"
