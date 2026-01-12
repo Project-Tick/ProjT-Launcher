@@ -23,9 +23,11 @@
 #include "crtp_tag.h"
 #include "io/stream_reader.h"
 #include "io/stream_writer.h"
+#include <algorithm>
+#include <istream>
+#include <limits>
 #include <type_traits>
 #include <vector>
-#include <istream>
 
 namespace nbt
 {
@@ -49,6 +51,45 @@ namespace nbt
 		template <>
 		struct get_array_type<int64_t> : public std::integral_constant<tag_type, tag_type::Long_Array>
 		{};
+
+		enum class remaining_status
+		{
+			unknown,
+			not_enough,
+			enough
+		};
+
+		inline remaining_status check_remaining_bytes(std::istream& is, std::size_t needed)
+		{
+			const std::ios::iostate old_state = is.rdstate();
+			const std::streampos pos = is.tellg();
+			if (pos == std::streampos(-1))
+			{
+				is.clear(old_state);
+				return remaining_status::unknown;
+			}
+
+			is.clear();
+			is.seekg(0, std::ios::end);
+			const std::streampos end = is.tellg();
+			if (end == std::streampos(-1))
+			{
+				is.clear();
+				is.seekg(pos);
+				is.clear(old_state);
+				return remaining_status::unknown;
+			}
+
+			is.clear();
+			is.seekg(pos);
+			is.clear(old_state);
+
+			if (end < pos)
+				return remaining_status::unknown;
+
+			const std::size_t remaining = static_cast<std::size_t>(end - pos);
+			return remaining >= needed ? remaining_status::enough : remaining_status::not_enough;
+		}
 	}
 	///@cond
 
@@ -202,9 +243,38 @@ namespace nbt
 		if (!reader.get_istr())
 			throw io::input_error("Error reading length of tag_byte_array");
 
-		data.resize(length);
-		reader.get_istr().read(reinterpret_cast<char*>(data.data()), length);
-		if (!reader.get_istr())
+		const std::size_t length_size = static_cast<std::size_t>(length);
+		const auto remaining_status = detail::check_remaining_bytes(reader.get_istr(), length_size);
+		if (remaining_status == detail::remaining_status::not_enough)
+		{
+			reader.get_istr().setstate(std::ios::failbit);
+			throw io::input_error("Error reading contents of tag_byte_array");
+		}
+
+		data.clear();
+		if (remaining_status == detail::remaining_status::enough)
+		{
+			data.resize(length_size);
+			reader.get_istr().read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(length_size));
+			if (!reader.get_istr())
+				throw io::input_error("Error reading contents of tag_byte_array");
+			return;
+		}
+
+		constexpr std::size_t kChunkSize = 4096;
+		std::vector<char> buffer(kChunkSize);
+		std::size_t remaining = length_size;
+		while (remaining > 0)
+		{
+			const std::size_t to_read = std::min(remaining, buffer.size());
+			reader.get_istr().read(buffer.data(), static_cast<std::streamsize>(to_read));
+			const std::streamsize got = reader.get_istr().gcount();
+			if (got <= 0)
+				break;
+			data.insert(data.end(), buffer.begin(), buffer.begin() + got);
+			remaining -= static_cast<std::size_t>(got);
+		}
+		if (remaining != 0 || !reader.get_istr())
 			throw io::input_error("Error reading contents of tag_byte_array");
 	}
 
@@ -218,9 +288,24 @@ namespace nbt
 		if (!reader.get_istr())
 			throw io::input_error("Error reading length of generic array tag");
 
+		const std::size_t length_size = static_cast<std::size_t>(length);
+		if (length_size > std::numeric_limits<std::size_t>::max() / sizeof(T))
+		{
+			reader.get_istr().setstate(std::ios::failbit);
+			throw io::input_error("Error reading contents of generic array tag");
+		}
+		const auto remaining_status =
+			detail::check_remaining_bytes(reader.get_istr(), length_size * sizeof(T));
+		if (remaining_status == detail::remaining_status::not_enough)
+		{
+			reader.get_istr().setstate(std::ios::failbit);
+			throw io::input_error("Error reading contents of generic array tag");
+		}
+
 		data.clear();
-		data.reserve(length);
-		for (T i = 0; i < length; ++i)
+		if (remaining_status == detail::remaining_status::enough)
+			data.reserve(length_size);
+		for (int32_t i = 0; i < length; ++i)
 		{
 			T val;
 			reader.read_num(val);
@@ -240,8 +325,23 @@ namespace nbt
 		if (!reader.get_istr())
 			throw io::input_error("Error reading length of tag_long_array");
 
+		const std::size_t length_size = static_cast<std::size_t>(length);
+		if (length_size > std::numeric_limits<std::size_t>::max() / sizeof(int64_t))
+		{
+			reader.get_istr().setstate(std::ios::failbit);
+			throw io::input_error("Error reading contents of tag_long_array");
+		}
+		const auto remaining_status =
+			detail::check_remaining_bytes(reader.get_istr(), length_size * sizeof(int64_t));
+		if (remaining_status == detail::remaining_status::not_enough)
+		{
+			reader.get_istr().setstate(std::ios::failbit);
+			throw io::input_error("Error reading contents of tag_long_array");
+		}
+
 		data.clear();
-		data.reserve(length);
+		if (remaining_status == detail::remaining_status::enough)
+			data.reserve(length_size);
 		for (int32_t i = 0; i < length; ++i)
 		{
 			int64_t val;
