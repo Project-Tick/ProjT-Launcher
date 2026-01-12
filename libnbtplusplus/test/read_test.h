@@ -22,10 +22,10 @@
 #ifdef NBT_HAVE_ZLIB
 #include "io/izlibstream.h"
 #endif
-#include <fstream>
-#include <iostream>
-#include <sstream>
 #include "nbt_tags.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 using namespace nbt;
 

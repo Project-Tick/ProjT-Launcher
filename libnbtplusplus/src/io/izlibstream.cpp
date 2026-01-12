@@ -96,4 +96,4 @@ namespace zlib
 		return traits_type::to_int_type(*gptr());
 	}
 
-} // namespace zlib
+}

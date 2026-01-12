@@ -20,12 +20,12 @@
 #ifndef TAG_PRIMITIVE_H_INCLUDED
 #define TAG_PRIMITIVE_H_INCLUDED
 
-#include <istream>
-#include <sstream>
 #include "crtp_tag.h"
+#include "primitive_detail.h"
 #include "io/stream_reader.h"
 #include "io/stream_writer.h"
-#include "primitive_detail.h"
+#include <istream>
+#include <sstream>
 
 namespace nbt
 {
@@ -39,10 +39,10 @@ namespace nbt
 	class tag_primitive final : public detail::crtp_tag<tag_primitive<T>>
 	{
 	  public:
-		/// The type of the value
+		///The type of the value
 		typedef T value_type;
 
-		/// The type of the tag
+		///The type of the tag
 		static constexpr tag_type type = detail::get_primitive_type<T>::value;
 
 		// Constructor
@@ -126,6 +126,6 @@ namespace nbt
 		writer.write_num(value);
 	}
 
-} // namespace nbt
+}
 
 #endif // TAG_PRIMITIVE_H_INCLUDED

@@ -20,11 +20,11 @@
 #ifndef TAG_LIST_H_INCLUDED
 #define TAG_LIST_H_INCLUDED
 
-#include <stdexcept>
-#include <vector>
 #include "crtp_tag.h"
 #include "tagfwd.h"
 #include "value_initializer.h"
+#include <stdexcept>
+#include <vector>
 
 namespace nbt
 {
@@ -47,7 +47,7 @@ namespace nbt
 		typedef std::vector<value>::iterator iterator;
 		typedef std::vector<value>::const_iterator const_iterator;
 
-		/// The type of the tag
+		///The type of the tag
 		static constexpr tag_type type = tag_type::List;
 
 		/**
@@ -67,11 +67,11 @@ namespace nbt
 		tag_list() : tag_list(tag_type::Null)
 		{}
 
-		/// Constructs an empty list with the given content type
+		///Constructs an empty list with the given content type
 		explicit tag_list(tag_type type) : el_type_(type)
 		{}
 
-		/// Constructs a list with the given contents
+		///Constructs a list with the given contents
 		tag_list(std::initializer_list<int8_t> init);
 		tag_list(std::initializer_list<int16_t> init);
 		tag_list(std::initializer_list<int32_t> init);
@@ -139,25 +139,25 @@ namespace nbt
 		template <class T, class... Args>
 		void emplace_back(Args&&... args);
 
-		/// Removes the last element of the list
+		///Removes the last element of the list
 		void pop_back()
 		{
 			tags.pop_back();
 		}
 
-		/// Returns the content type of the list, or tag_type::Null if undetermined
+		///Returns the content type of the list, or tag_type::Null if undetermined
 		tag_type el_type() const
 		{
 			return el_type_;
 		}
 
-		/// Returns the number of tags in the list
+		///Returns the number of tags in the list
 		size_t size() const
 		{
 			return tags.size();
 		}
 
-		/// Erases all tags from the list. Preserves the content type.
+		///Erases all tags from the list. Preserves the content type.
 		void clear()
 		{
 			tags.clear();
@@ -256,6 +256,6 @@ namespace nbt
 			tags.emplace_back(nbt::make_unique<T>(arg));
 	}
 
-} // namespace nbt
+}
 
 #endif // TAG_LIST_H_INCLUDED

@@ -49,6 +49,6 @@ namespace nbt
 	class tag_list;
 	class tag_compound;
 
-} // namespace nbt
+}
 
 #endif // TAGFWD_H_INCLUDED

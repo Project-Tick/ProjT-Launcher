@@ -41,4 +41,4 @@ namespace nbt
 		writer.write_string(value);
 	}
 
-} // namespace nbt
+}

@@ -20,9 +20,9 @@
 #ifndef CRTP_TAG_H_INCLUDED
 #define CRTP_TAG_H_INCLUDED
 
-#include "make_unique.h"
-#include "nbt_visitor.h"
 #include "tag.h"
+#include "nbt_visitor.h"
+#include "make_unique.h"
 
 namespace nbt
 {
@@ -85,8 +85,8 @@ namespace nbt
 		crtp_tag<Sub>::~crtp_tag() noexcept
 		{}
 
-	} // namespace detail
+	}
 
-} // namespace nbt
+}
 
 #endif // CRTP_TAG_H_INCLUDED

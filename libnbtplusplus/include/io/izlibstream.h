@@ -20,9 +20,9 @@
 #ifndef IZLIBSTREAM_H_INCLUDED
 #define IZLIBSTREAM_H_INCLUDED
 
-#include <zlib.h>
-#include <istream>
 #include "io/zlib_streambuf.h"
+#include <istream>
+#include <zlib.h>
 
 namespace zlib
 {
@@ -93,6 +93,6 @@ namespace zlib
 		inflate_streambuf buf;
 	};
 
-} // namespace zlib
+}
 
 #endif // IZLIBSTREAM_H_INCLUDED

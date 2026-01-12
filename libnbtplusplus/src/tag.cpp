@@ -18,12 +18,12 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "tag.h"
+#include "nbt_tags.h"
+#include "text/json_formatter.h"
 #include <limits>
 #include <ostream>
 #include <stdexcept>
 #include <typeinfo>
-#include "nbt_tags.h"
-#include "text/json_formatter.h"
 
 namespace nbt
 {
@@ -57,7 +57,7 @@ namespace nbt
 				default: throw std::invalid_argument("Invalid numeric tag type");
 			}
 		}
-	} // namespace
+	}
 
 	std::unique_ptr<tag> tag::create(tag_type type)
 	{
@@ -152,4 +152,4 @@ namespace nbt
 		return os;
 	}
 
-} // namespace nbt
+}

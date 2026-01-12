@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
-// #include "text/json_formatter.h"
+//#include "text/json_formatter.h"
+#include "io/stream_reader.h"
+#include "io/stream_writer.h"
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include "io/stream_reader.h"
-#include "io/stream_writer.h"
 #include "nbt_tags.h"
 
 using namespace nbt;

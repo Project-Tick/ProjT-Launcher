@@ -18,11 +18,11 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cxxtest/TestSuite.h>
+#include "nbt_tags.h"
+#include "nbt_visitor.h"
 #include <algorithm>
 #include <set>
 #include <stdexcept>
-#include "nbt_tags.h"
-#include "nbt_visitor.h"
 
 using namespace nbt;
 

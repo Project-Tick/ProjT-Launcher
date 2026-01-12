@@ -18,10 +18,10 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cxxtest/TestSuite.h>
-#include <fstream>
-#include <sstream>
 #include "io/izlibstream.h"
 #include "io/ozlibstream.h"
+#include <fstream>
+#include <sstream>
 
 #include "data.h"
 

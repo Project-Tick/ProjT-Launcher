@@ -18,10 +18,10 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "tag_compound.h"
-#include <istream>
-#include <sstream>
 #include "io/stream_reader.h"
 #include "io/stream_writer.h"
+#include <istream>
+#include <sstream>
 
 namespace nbt
 {
@@ -106,4 +106,4 @@ namespace nbt
 		writer.write_type(tag_type::End);
 	}
 
-} // namespace nbt
+}

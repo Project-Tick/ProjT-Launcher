@@ -20,12 +20,12 @@
 #ifndef TAG_ARRAY_H_INCLUDED
 #define TAG_ARRAY_H_INCLUDED
 
-#include <istream>
-#include <type_traits>
-#include <vector>
 #include "crtp_tag.h"
 #include "io/stream_reader.h"
 #include "io/stream_writer.h"
+#include <type_traits>
+#include <vector>
+#include <istream>
 
 namespace nbt
 {
@@ -33,7 +33,7 @@ namespace nbt
 	///@cond
 	namespace detail
 	{
-		/// Meta-struct that holds the tag_type value for a specific array type
+		///Meta-struct that holds the tag_type value for a specific array type
 		template <class T>
 		struct get_array_type
 		{
@@ -49,7 +49,7 @@ namespace nbt
 		template <>
 		struct get_array_type<int64_t> : public std::integral_constant<tag_type, tag_type::Long_Array>
 		{};
-	} // namespace detail
+	}
 	///@cond
 
 	/**
@@ -65,23 +65,23 @@ namespace nbt
 		typedef typename std::vector<T>::iterator iterator;
 		typedef typename std::vector<T>::const_iterator const_iterator;
 
-		/// The type of the contained values
+		///The type of the contained values
 		typedef T value_type;
 
-		/// The type of the tag
+		///The type of the tag
 		static constexpr tag_type type = detail::get_array_type<T>::value;
 
-		/// Constructs an empty array
+		///Constructs an empty array
 		tag_array()
 		{}
 
-		/// Constructs an array with the given values
+		///Constructs an array with the given values
 		tag_array(std::initializer_list<T> init) : data(init)
 		{}
 		tag_array(std::vector<T>&& vec) noexcept : data(std::move(vec))
 		{}
 
-		/// Returns a reference to the vector that contains the values
+		///Returns a reference to the vector that contains the values
 		std::vector<T>& get()
 		{
 			return data;
@@ -118,25 +118,25 @@ namespace nbt
 			return data[i];
 		}
 
-		/// Appends a value at the end of the array
+		///Appends a value at the end of the array
 		void push_back(T val)
 		{
 			data.push_back(val);
 		}
 
-		/// Removes the last element from the array
+		///Removes the last element from the array
 		void pop_back()
 		{
 			data.pop_back();
 		}
 
-		/// Returns the number of values in the array
+		///Returns the number of values in the array
 		size_t size() const
 		{
 			return data.size();
 		}
 
-		/// Erases all values from the array.
+		///Erases all values from the array.
 		void clear()
 		{
 			data.clear();
@@ -296,6 +296,6 @@ namespace nbt
 	typedef tag_array<int32_t> tag_int_array;
 	typedef tag_array<int64_t> tag_long_array;
 
-} // namespace nbt
+}
 
 #endif // TAG_ARRAY_H_INCLUDED

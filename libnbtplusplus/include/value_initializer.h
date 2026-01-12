@@ -64,6 +64,6 @@ namespace nbt
 		value_initializer(const char* str);
 	};
 
-} // namespace nbt
+}
 
 #endif // VALUE_INITIALIZER_H_INCLUDED

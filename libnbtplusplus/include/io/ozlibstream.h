@@ -20,9 +20,9 @@
 #ifndef OZLIBSTREAM_H_INCLUDED
 #define OZLIBSTREAM_H_INCLUDED
 
-#include <zlib.h>
-#include <ostream>
 #include "io/zlib_streambuf.h"
+#include <ostream>
+#include <zlib.h>
 
 namespace zlib
 {
@@ -57,7 +57,7 @@ namespace zlib
 			return os;
 		}
 
-		/// Finishes compression and writes all pending data to the output
+		///Finishes compression and writes all pending data to the output
 		void close();
 
 	  private:
@@ -100,13 +100,13 @@ namespace zlib
 			return buf.get_ostr();
 		}
 
-		/// Finishes compression and writes all pending data to the output
+		///Finishes compression and writes all pending data to the output
 		void close();
 
 	  private:
 		deflate_streambuf buf;
 	};
 
-} // namespace zlib
+}
 
 #endif // OZLIBSTREAM_H_INCLUDED

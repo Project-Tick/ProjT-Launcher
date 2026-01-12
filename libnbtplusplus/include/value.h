@@ -20,9 +20,9 @@
 #ifndef TAG_REF_PROXY_H_INCLUDED
 #define TAG_REF_PROXY_H_INCLUDED
 
+#include "tag.h"
 #include <string>
 #include <type_traits>
-#include "tag.h"
 
 namespace nbt
 {
@@ -156,7 +156,7 @@ namespace nbt
 		 */
 		explicit operator const std::string&() const;
 
-		/// Returns true if the value is not uninitialized
+		///Returns true if the value is not uninitialized
 		explicit operator bool() const
 		{
 			return tag_ != nullptr;
@@ -205,7 +205,7 @@ namespace nbt
 		value& operator[](size_t i);
 		const value& operator[](size_t i) const;
 
-		/// Returns a reference to the underlying std::unique_ptr<tag>
+		///Returns a reference to the underlying std::unique_ptr<tag>
 		std::unique_ptr<tag>& get_ptr()
 		{
 			return tag_;
@@ -214,7 +214,7 @@ namespace nbt
 		{
 			return tag_;
 		}
-		/// Resets the underlying std::unique_ptr<tag> to a different value
+		///Resets the underlying std::unique_ptr<tag> to a different value
 		void set_ptr(std::unique_ptr<tag>&& t)
 		{
 			tag_ = std::move(t);
@@ -242,6 +242,6 @@ namespace nbt
 		return tag_->as<T>();
 	}
 
-} // namespace nbt
+}
 
 #endif // TAG_REF_PROXY_H_INCLUDED

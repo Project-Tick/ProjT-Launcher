@@ -28,7 +28,7 @@ namespace nbt
 
 	namespace detail
 	{
-		/// Meta-struct that holds the tag_type value for a specific primitive type
+		///Meta-struct that holds the tag_type value for a specific primitive type
 		template <class T>
 		struct get_primitive_type
 		{
@@ -54,9 +54,9 @@ namespace nbt
 		template <>
 		struct get_primitive_type<double> : public std::integral_constant<tag_type, tag_type::Double>
 		{};
-	} // namespace detail
+	}
 
-} // namespace nbt
+}
 ///@endcond
 
 #endif // PRIMITIVE_DETAIL_H_INCLUDED

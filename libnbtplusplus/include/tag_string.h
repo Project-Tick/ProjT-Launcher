@@ -20,17 +20,17 @@
 #ifndef TAG_STRING_H_INCLUDED
 #define TAG_STRING_H_INCLUDED
 
-#include <string>
 #include "crtp_tag.h"
+#include <string>
 
 namespace nbt
 {
 
-	/// Tag that contains a UTF-8 string
+	///Tag that contains a UTF-8 string
 	class NBT_EXPORT tag_string final : public detail::crtp_tag<tag_string>
 	{
 	  public:
-		/// The type of the tag
+		///The type of the tag
 		static constexpr tag_type type = tag_type::String;
 
 		// Constructors
@@ -102,6 +102,6 @@ namespace nbt
 		return !(lhs == rhs);
 	}
 
-} // namespace nbt
+}
 
 #endif // TAG_STRING_H_INCLUDED

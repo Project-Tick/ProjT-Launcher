@@ -42,4 +42,4 @@ namespace nbt
 	value_initializer::value_initializer(const char* str) : value(tag_string(str))
 	{}
 
-} // namespace nbt
+}

@@ -18,9 +18,9 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "io/stream_reader.h"
-#include <istream>
 #include "make_unique.h"
 #include "tag_compound.h"
+#include <istream>
 
 namespace nbt
 {
@@ -110,5 +110,5 @@ namespace nbt
 			return ret;
 		}
 
-	} // namespace io
-} // namespace nbt
+	}
+}

@@ -20,9 +20,9 @@
 #ifndef JSON_FORMATTER_H_INCLUDED
 #define JSON_FORMATTER_H_INCLUDED
 
+#include "tagfwd.h"
 #include <ostream>
 #include "nbt_export.h"
-#include "tagfwd.h"
 
 namespace nbt
 {
@@ -42,7 +42,7 @@ namespace nbt
 			void print(std::ostream& os, const tag& t) const;
 		};
 
-	} // namespace text
-} // namespace nbt
+	}
+}
 
 #endif // JSON_FORMATTER_H_INCLUDED

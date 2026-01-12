@@ -50,5 +50,5 @@ namespace nbt
 			os.write(str.data(), str.size());
 		}
 
-	} // namespace io
-} // namespace nbt
+	}
+}

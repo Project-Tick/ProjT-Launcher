@@ -18,12 +18,12 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "value.h"
-#include <algorithm>
-#include <cstdint>
-#include <initializer_list>
-#include <memory>
-#include <typeinfo>
 #include "nbt_tags.h"
+#include <typeinfo>
+#include <algorithm>
+#include <initializer_list>
+#include <cstdint>
+#include <memory>
 
 namespace nbt
 {
@@ -94,7 +94,7 @@ namespace nbt
 				default: throw std::bad_cast();
 			}
 		}
-	} // namespace
+	}
 
 	value& value::operator=(int8_t val)
 	{
@@ -280,4 +280,4 @@ namespace nbt
 		return !(lhs == rhs);
 	}
 
-} // namespace nbt
+}

@@ -20,15 +20,15 @@
 #ifndef TAG_COMPOUND_H_INCLUDED
 #define TAG_COMPOUND_H_INCLUDED
 
-#include <map>
-#include <string>
 #include "crtp_tag.h"
 #include "value_initializer.h"
+#include <map>
+#include <string>
 
 namespace nbt
 {
 
-	/// Tag that contains multiple unordered named tags of arbitrary types
+	///Tag that contains multiple unordered named tags of arbitrary types
 	class NBT_EXPORT tag_compound final : public detail::crtp_tag<tag_compound>
 	{
 		typedef std::map<std::string, value> map_t_;
@@ -38,14 +38,14 @@ namespace nbt
 		typedef map_t_::iterator iterator;
 		typedef map_t_::const_iterator const_iterator;
 
-		/// The type of the tag
+		///The type of the tag
 		static constexpr tag_type type = tag_type::Compound;
 
-		/// Constructs an empty compound
+		///Constructs an empty compound
 		tag_compound()
 		{}
 
-		/// Constructs a compound with the given key-value pairs
+		///Constructs a compound with the given key-value pairs
 		tag_compound(std::initializer_list<std::pair<std::string, value_initializer>> init);
 
 		/**
@@ -104,18 +104,18 @@ namespace nbt
 		 */
 		bool erase(const std::string& key);
 
-		/// Returns true if the given key exists in the compound
+		///Returns true if the given key exists in the compound
 		bool has_key(const std::string& key) const;
-		/// Returns true if the given key exists and the tag has the given type
+		///Returns true if the given key exists and the tag has the given type
 		bool has_key(const std::string& key, tag_type type) const;
 
-		/// Returns the number of tags in the compound
+		///Returns the number of tags in the compound
 		size_t size() const
 		{
 			return tags.size();
 		}
 
-		/// Erases all tags from the compound
+		///Erases all tags from the compound
 		void clear()
 		{
 			tags.clear();
@@ -169,6 +169,6 @@ namespace nbt
 		return put(key, value(make_unique<T>(std::forward<Args>(args)...)));
 	}
 
-} // namespace nbt
+}
 
 #endif // TAG_COMPOUND_H_INCLUDED

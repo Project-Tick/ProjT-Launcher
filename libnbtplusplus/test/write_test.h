@@ -18,16 +18,16 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cxxtest/TestSuite.h>
-#include "io/stream_reader.h"
 #include "io/stream_writer.h"
+#include "io/stream_reader.h"
 #ifdef NBT_HAVE_ZLIB
-#include "io/izlibstream.h"
 #include "io/ozlibstream.h"
+#include "io/izlibstream.h"
 #endif
-#include <fstream>
-#include <iostream>
-#include <sstream>
 #include "nbt_tags.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 #include "data.h"
 

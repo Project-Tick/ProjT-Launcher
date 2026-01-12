@@ -18,10 +18,10 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "tag_list.h"
-#include <istream>
+#include "nbt_tags.h"
 #include "io/stream_reader.h"
 #include "io/stream_writer.h"
-#include "nbt_tags.h"
+#include <istream>
 
 namespace nbt
 {
@@ -182,4 +182,4 @@ namespace nbt
 		return !(lhs == rhs);
 	}
 
-} // namespace nbt
+}

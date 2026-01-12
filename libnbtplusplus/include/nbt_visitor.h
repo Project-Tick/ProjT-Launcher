@@ -103,6 +103,6 @@ namespace nbt
 	inline const_nbt_visitor::~const_nbt_visitor() noexcept
 	{}
 
-} // namespace nbt
+}
 
 #endif // NBT_VISITOR_H_INCLUDED

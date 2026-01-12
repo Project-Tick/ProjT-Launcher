@@ -20,20 +20,20 @@
 #ifndef STREAM_READER_H_INCLUDED
 #define STREAM_READER_H_INCLUDED
 
+#include "endian_str.h"
+#include "tag.h"
+#include "tag_compound.h"
 #include <iosfwd>
 #include <memory>
 #include <stdexcept>
 #include <utility>
-#include "endian_str.h"
-#include "tag.h"
-#include "tag_compound.h"
 
 namespace nbt
 {
 	namespace io
 	{
 
-		/// Exception that gets thrown when reading is not successful
+		///Exception that gets thrown when reading is not successful
 		class NBT_EXPORT input_error : public std::runtime_error
 		{
 			using std::runtime_error::runtime_error;
@@ -74,9 +74,9 @@ namespace nbt
 			 */
 			explicit stream_reader(std::istream& is, endian::endian e = endian::big) noexcept;
 
-			/// Returns the stream
+			///Returns the stream
 			std::istream& get_istr() const;
-			/// Returns the byte order
+			///Returns the byte order
 			endian::endian get_endian() const;
 
 			/**
@@ -133,7 +133,7 @@ namespace nbt
 			endian::read(is, x, endian);
 		}
 
-	} // namespace io
-} // namespace nbt
+	}
+}
 
 #endif // STREAM_READER_H_INCLUDED

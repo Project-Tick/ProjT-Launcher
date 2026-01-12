@@ -28,7 +28,7 @@
 namespace nbt
 {
 
-	/// Tag type values used in the binary format
+	///Tag type values used in the binary format
 	enum class tag_type : int8_t
 	{
 		End		   = 0,
@@ -60,9 +60,9 @@ namespace nbt
 	{
 		class stream_reader;
 		class stream_writer;
-	} // namespace io
+	}
 
-	/// Base class for all NBT tag classes
+	///Base class for all NBT tag classes
 	class NBT_EXPORT tag
 	{
 	  public:
@@ -70,7 +70,7 @@ namespace nbt
 		virtual ~tag() noexcept
 		{}
 
-		/// Returns the type of the tag
+		///Returns the type of the tag
 		virtual tag_type get_type() const noexcept = 0;
 
 		// Polymorphic clone methods
@@ -140,7 +140,7 @@ namespace nbt
 		virtual bool equals(const tag& rhs) const = 0;
 	};
 
-	/// Output operator for tag types
+	///Output operator for tag types
 	NBT_EXPORT std::ostream& operator<<(std::ostream& os, tag_type tt);
 
 	/**
@@ -165,6 +165,6 @@ namespace nbt
 		return dynamic_cast<const T&>(*this);
 	}
 
-} // namespace nbt
+}
 
 #endif // TAG_H_INCLUDED

@@ -18,11 +18,11 @@
  * along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "text/json_formatter.h"
+#include "nbt_tags.h"
+#include "nbt_visitor.h"
 #include <cmath>
 #include <iomanip>
 #include <limits>
-#include "nbt_tags.h"
-#include "nbt_visitor.h"
 
 namespace nbt
 {
@@ -31,7 +31,7 @@ namespace nbt
 
 		namespace // anonymous
 		{
-			/// Helper class which uses the Visitor pattern to pretty-print tags
+			///Helper class which uses the Visitor pattern to pretty-print tags
 			class json_fmt_visitor : public const_nbt_visitor
 			{
 			  public:
@@ -237,7 +237,7 @@ namespace nbt
 					}
 				}
 			};
-		} // namespace
+		}
 
 		void json_formatter::print(std::ostream& os, const tag& t) const
 		{
@@ -245,5 +245,5 @@ namespace nbt
 			t.accept(v);
 		}
 
-	} // namespace text
-} // namespace nbt
+	}
+}

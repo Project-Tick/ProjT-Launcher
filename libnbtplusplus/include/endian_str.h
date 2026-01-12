@@ -37,11 +37,11 @@ namespace endian
 		big
 	};
 
-	/// Reads number from stream in specified endian
+	///Reads number from stream in specified endian
 	template <class T>
 	void read(std::istream& is, T& x, endian e);
 
-	/// Reads number from stream in little endian
+	///Reads number from stream in little endian
 	NBT_EXPORT void read_little(std::istream& is, uint8_t& x);
 	NBT_EXPORT void read_little(std::istream& is, uint16_t& x);
 	NBT_EXPORT void read_little(std::istream& is, uint32_t& x);
@@ -53,7 +53,7 @@ namespace endian
 	NBT_EXPORT void read_little(std::istream& is, float& x);
 	NBT_EXPORT void read_little(std::istream& is, double& x);
 
-	/// Reads number from stream in big endian
+	///Reads number from stream in big endian
 	NBT_EXPORT void read_big(std::istream& is, uint8_t& x);
 	NBT_EXPORT void read_big(std::istream& is, uint16_t& x);
 	NBT_EXPORT void read_big(std::istream& is, uint32_t& x);
@@ -65,11 +65,11 @@ namespace endian
 	NBT_EXPORT void read_big(std::istream& is, float& x);
 	NBT_EXPORT void read_big(std::istream& is, double& x);
 
-	/// Writes number to stream in specified endian
+	///Writes number to stream in specified endian
 	template <class T>
 	void write(std::ostream& os, T x, endian e);
 
-	/// Writes number to stream in little endian
+	///Writes number to stream in little endian
 	NBT_EXPORT void write_little(std::ostream& os, uint8_t x);
 	NBT_EXPORT void write_little(std::ostream& os, uint16_t x);
 	NBT_EXPORT void write_little(std::ostream& os, uint32_t x);
@@ -81,7 +81,7 @@ namespace endian
 	NBT_EXPORT void write_little(std::ostream& os, float x);
 	NBT_EXPORT void write_little(std::ostream& os, double x);
 
-	/// Writes number to stream in big endian
+	///Writes number to stream in big endian
 	NBT_EXPORT void write_big(std::ostream& os, uint8_t x);
 	NBT_EXPORT void write_big(std::ostream& os, uint16_t x);
 	NBT_EXPORT void write_big(std::ostream& os, uint32_t x);
@@ -111,6 +111,6 @@ namespace endian
 			write_big(os, x);
 	}
 
-} // namespace endian
+}
 
 #endif // ENDIAN_STR_H_INCLUDED

@@ -1,16 +1,16 @@
 #ifndef ZLIB_STREAMBUF_H_INCLUDED
 #define ZLIB_STREAMBUF_H_INCLUDED
 
-#include <zlib.h>
 #include <stdexcept>
 #include <streambuf>
 #include <vector>
+#include <zlib.h>
 #include "nbt_export.h"
 
 namespace zlib
 {
 
-	/// Exception thrown in case zlib encounters a problem
+	///Exception thrown in case zlib encounters a problem
 	class NBT_EXPORT zlib_error : public std::runtime_error
 	{
 	  public:
@@ -22,7 +22,7 @@ namespace zlib
 		{}
 	};
 
-	/// Base class for deflate_streambuf and inflate_streambuf
+	///Base class for deflate_streambuf and inflate_streambuf
 	class zlib_streambuf : public std::streambuf
 	{
 	  protected:
@@ -38,6 +38,6 @@ namespace zlib
 		}
 	};
 
-} // namespace zlib
+}
 
 #endif // ZLIB_STREAMBUF_H_INCLUDED

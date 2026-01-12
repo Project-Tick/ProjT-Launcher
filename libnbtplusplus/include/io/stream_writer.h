@@ -20,10 +20,10 @@
 #ifndef STREAM_WRITER_H_INCLUDED
 #define STREAM_WRITER_H_INCLUDED
 
+#include "tag.h"
+#include "endian_str.h"
 #include <iosfwd>
 #include <string>
-#include "endian_str.h"
-#include "tag.h"
 
 namespace nbt
 {
@@ -58,9 +58,9 @@ namespace nbt
 		class NBT_EXPORT stream_writer
 		{
 		  public:
-			/// Maximum length of an NBT string (16 bit unsigned)
+			///Maximum length of an NBT string (16 bit unsigned)
 			static constexpr size_t max_string_len = UINT16_MAX;
-			/// Maximum length of an NBT list or array (32 bit signed)
+			///Maximum length of an NBT list or array (32 bit signed)
 			static constexpr uint32_t max_array_len = INT32_MAX;
 
 			/**
@@ -71,12 +71,12 @@ namespace nbt
 			explicit stream_writer(std::ostream& os, endian::endian e = endian::big) noexcept : os(os), endian(e)
 			{}
 
-			/// Returns the stream
+			///Returns the stream
 			std::ostream& get_ostr() const
 			{
 				return os;
 			}
-			/// Returns the byte order
+			///Returns the byte order
 			endian::endian get_endian() const
 			{
 				return endian;
@@ -129,7 +129,7 @@ namespace nbt
 			endian::write(os, x, endian);
 		}
 
-	} // namespace io
-} // namespace nbt
+	}
+}
 
 #endif // STREAM_WRITER_H_INCLUDED

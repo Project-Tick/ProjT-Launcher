@@ -55,7 +55,7 @@ namespace endian
 			memcpy(&ret, &f, 8);
 			return ret;
 		}
-	} // namespace
+	}
 
 	//------------------------------------------------------------------------------
 
@@ -283,4 +283,4 @@ namespace endian
 		write_big(os, pun_double_to_int(x));
 	}
 
-} // namespace endian
+}
