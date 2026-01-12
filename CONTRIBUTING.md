@@ -1,6 +1,6 @@
 # Contributing to ProjT Launcher
 
-```
+```text
 Upstream Maintainer: YongDo-Hyun <yongdohyun@projtlauncher.yongdohyun.org.tr>
 License: GPL-3.0-only (Launcher), AGPL-3.0-only (Website), see COPYING.md
 ```
@@ -22,7 +22,7 @@ ctest --preset default
 ## Requirements
 
 | Component | Requirement |
-|-----------|-------------|
+| --------- | ----------- |
 | CMake | 3.22+ |
 | Qt | 6.x (exact version required) |
 | Compiler | C++20 support |
@@ -35,7 +35,7 @@ ctest --preset default
 
 ## Project Areas
 
-```
+```yaml
 launcher/           Launcher application (C++/Qt)
 website/            Website (Eleventy)
 bot/                Automation bot (Cloudflare Workers)
@@ -49,7 +49,7 @@ scripts/, tools/    Build and development tools
 
 These are independently maintained forks, not synced with upstream:
 
-```
+```yaml
 zlib/               Compression library
 bzip2/              Compression library
 quazip/             ZIP archive handling
@@ -62,7 +62,7 @@ extra-cmake-modules/    CMake utilities
 
 ### Vendored Libraries
 
-```
+```yaml
 gamemode/           GameMode integration
 LocalPeer/          Single instance support
 murmur2/            Hash functions
@@ -84,6 +84,7 @@ clang-format -i path/to/file.cpp
 ```
 
 Key rules:
+
 - Tabs for indentation (width: 4)
 - Column limit: 120
 - Allman brace style
@@ -91,14 +92,15 @@ Key rules:
 
 ### Commit Messages
 
-```
+```text
 component: short description
 
 Optional explanation of what and why.
 ```
 
 Examples:
-```
+
+```text
 launcher: fix crash on startup with invalid config
 zlib: update to version 1.3.1
 ci: add macOS arm64 build support
@@ -116,7 +118,8 @@ git commit -s -m "component: description"
 ```
 
 This adds:
-```
+
+```text
 Signed-off-by: Your Name <your.email@example.com>
 ```
 
@@ -128,11 +131,11 @@ The bot enforces DCO compliance and labels PRs missing sign-off.
 
 ### Before Submitting
 
-1. Run clang-format on changed files
-2. Ensure code compiles without warnings
-3. Add tests for new functionality
-4. Sign off all commits
-5. Update documentation if needed
+- Run clang-format on changed files
+- Ensure code compiles without warnings
+- Add tests for new functionality
+- Sign off all commits
+- Update documentation if needed
 
 ### PR Requirements
 
@@ -179,7 +182,7 @@ ctest -R test_name --preset default
 
 The launcher follows MVVM (Model-View-ViewModel) pattern:
 
-```
+```yaml
 Model       Data and business logic
 ViewModel   Presentation logic, state management
 View        Qt Widgets UI components
@@ -213,15 +216,18 @@ Include in bug reports:
 
 ## FAQ
 
-**Q: Why is my PR failing CI?**
+Q: Why is my PR failing CI?
+
 - Run clang-format
 - Sign off commits (`git commit -s`)
 - Add tests for new code
 
-**Q: Can I use a different Qt version?**
+Q: Can I use a different Qt version?
+
 - No. Exact version matching is required.
 
-**Q: How do I update a fork library?**
+Q: How do I update a fork library?
+
 - Document changes thoroughly
 - Test all dependent code
 - Submit separate PR for library update
@@ -230,9 +236,9 @@ Include in bug reports:
 
 ## Contact
 
-- Issues: https://github.com/YongDo-Hyun/ProjT-Launcher/issues
-- Discussions: https://github.com/YongDo-Hyun/ProjT-Launcher/discussions
-- Email: yongdohyun@projtlauncher.yongdohyun.org.tr
+- Issues: [GitHub Issues](https://github.com/YongDo-Hyun/ProjT-Launcher/issues)
+- Discussions: [GitHub Discussions](https://github.com/YongDo-Hyun/ProjT-Launcher/discussions)
+- Email: [yongdohyun@projtlauncher.yongdohyun.org.tr](mailto:yongdohyun@projtlauncher.yongdohyun.org.tr)
 
 ---
 

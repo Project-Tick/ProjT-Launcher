@@ -34,7 +34,7 @@ For development setup with presets and full tooling, see [GETTING_STARTED.md](do
 ### Requirements
 
 | Tool | Version |
-|------|---------|
+| ---- | ------- |
 | CMake | 3.22+ |
 | Qt | 6.x |
 | Compiler | C++20 |
@@ -47,7 +47,7 @@ nix build .#projtlauncher
 
 ## Structure
 
-```
+```yaml
 launcher/       Application (C++/Qt)
 website/        Website (Eleventy)
 bot/            Automation (Cloudflare Workers)
@@ -57,7 +57,7 @@ docs/           Documentation
 
 ### Detached Fork Libraries
 
-```
+```yaml
 zlib/           Compression
 bzip2/          Compression
 quazip/         ZIP handling
@@ -72,7 +72,7 @@ libnbtplusplus/ NBT format
 
 ### Vendored Libraries
 
-```
+```yaml
 gamemode/       GameMode integration
 LocalPeer/      Single instance
 murmur2/        Hash functions
