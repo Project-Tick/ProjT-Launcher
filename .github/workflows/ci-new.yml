@@ -1,5 +1,12 @@
 name: Project Tick Infra
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN CI ENTRY POINT
+# ═══════════════════════════════════════════════════════════════════════════════
+# This is the ONLY workflow that should have push/pull_request triggers.
+# All other ci-* workflows are called from here via workflow_call.
+# ═══════════════════════════════════════════════════════════════════════════════
+
 on:
   merge_group:
   push:
@@ -132,10 +139,11 @@ jobs:
   release:
     name: Release
     needs: [prepare, build-projt-launcher-release]
-    if: needs.prepare.outputs.run-release-build == 'true'
+    if: needs.prepare.outputs.run-release-build == 'true' || needs.prepare.outputs.is-release == 'true'
     uses: ./.github/workflows/ci-release.yml
     with:
       run-release-build: ${{ needs.prepare.outputs.run-release-build }}
+      is-release: ${{ needs.prepare.outputs.is-release }}
     secrets: inherit
 
   # ═══════════════════════════════════════════════════════════════════════════
@@ -148,6 +156,7 @@ jobs:
     uses: ./.github/workflows/ci-quazip.yml
     with:
       ref: ${{ github.sha }}
+      run-quazip: ${{ needs.prepare.outputs.run-quazip }}
 
   # ═══════════════════════════════════════════════════════════════════════════
   # BZIP2 TESTS
@@ -157,6 +166,8 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.run-bzip2 == 'true'
     uses: ./.github/workflows/ci-bzip2.yml
+    with:
+      run-bzip2: ${{ needs.prepare.outputs.run-bzip2 }}
 
   # ═══════════════════════════════════════════════════════════════════════════
   # ZLIB TESTS
@@ -166,6 +177,8 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.run-zlib == 'true'
     uses: ./.github/workflows/ci-zlib.yml
+    with:
+      run-zlib: ${{ needs.prepare.outputs.run-zlib }}
 
   # ═══════════════════════════════════════════════════════════════════════════
   # WEBSITE BUILD & DEPLOY
@@ -192,6 +205,7 @@ jobs:
     uses: ./.github/workflows/ci-cmark.yml
     with:
       ref: ${{ github.sha }}
+      run-cmark: ${{ needs.prepare.outputs.run-cmark }}
 
   tomlplusplus:
     name: toml++
@@ -200,6 +214,7 @@ jobs:
     uses: ./.github/workflows/ci-tomlplusplus.yml
     with:
       ref: ${{ github.sha }}
+      run-tomlplusplus: ${{ needs.prepare.outputs.run-tomlplusplus }}
 
   libqrencode:
     name: libqrencode
@@ -208,6 +223,7 @@ jobs:
     uses: ./.github/workflows/ci-libqrencode.yml
     with:
       ref: ${{ github.sha }}
+      run-libqrencode: ${{ needs.prepare.outputs.run-libqrencode }}
 
   # ═══════════════════════════════════════════════════════════════════════════
   # SCHEDULED JOBS

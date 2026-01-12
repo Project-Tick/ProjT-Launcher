@@ -1,26 +1,25 @@
 name: cmark CI
 
+# This workflow is called by ci-new.yml only.
+# Do not add push/pull_request triggers here.
 on:
   workflow_call:
     inputs:
       ref:
         required: false
         type: string
-  push:
-    branches: [develop, main]
-    paths:
-      - 'cmark/**'
-      - '.github/workflows/ci-cmark.yml'
-  pull_request:
-    paths:
-      - 'cmark/**'
-      - '.github/workflows/ci-cmark.yml'
+      run-cmark:
+        description: 'Whether to run cmark jobs'
+        required: false
+        type: string
+        default: 'true'
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   # LINTER
   # ═══════════════════════════════════════════════════════════════════════════
   cmark-linter:
+    if: inputs.run-cmark == 'true'
     name: Clang Lint
     defaults:
       run:
@@ -42,6 +41,7 @@ jobs:
   # POSIX BUILDS (Linux, macOS)
   # ═══════════════════════════════════════════════════════════════════════════
   cmark-posix:
+    if: inputs.run-cmark == 'true'
     name: ${{ matrix.os }}-${{ matrix.cc }}-${{ matrix.build_type }}${{ matrix.sanitizers && '-ASan' || '' }}
     defaults:
       run:
@@ -114,6 +114,7 @@ jobs:
   # WINDOWS BUILDS
   # ═══════════════════════════════════════════════════════════════════════════
   cmark-windows:
+    if: inputs.run-cmark == 'true'
     name: Windows-MSVC-${{ matrix.build_type }}
     defaults:
       run:

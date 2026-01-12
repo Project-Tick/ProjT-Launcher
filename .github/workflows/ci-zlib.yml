@@ -1,23 +1,22 @@
 name: CI Zlib
 
+# This workflow is called by ci-new.yml only.
+# Do not add push/pull_request triggers here.
 on:
   workflow_call:
     inputs:
       ref:
         required: false
         type: string
-  push:
-    branches: [develop, main]
-    paths:
-      - 'zlib/**'
-      - '.github/workflows/ci-zlib.yml'
-  pull_request:
-    paths:
-      - 'zlib/**'
-      - '.github/workflows/ci-zlib.yml'
+      run-zlib:
+        description: 'Whether to run zlib jobs'
+        required: false
+        type: string
+        default: 'true'
 
 jobs:
   build-zlib-main:
+    if: inputs.run-zlib == 'true'
     timeout-minutes: 30
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
@@ -149,6 +148,7 @@ jobs:
       run: ctest ./build2 -C Release --output-on-failure --max-width 120
 
   build-zlib-msvc:
+    if: inputs.run-zlib == 'true'
     timeout-minutes: 30
     name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
     runs-on: ${{ matrix.os.value }}
@@ -213,6 +213,7 @@ jobs:
       run: ctest ./build2 -C Release --output-on-failure --max-width 120
 
   build-zlib-ci-cmake:
+    if: inputs.run-zlib == 'true'
     timeout-minutes: 30
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
@@ -342,6 +343,7 @@ jobs:
           zlib/build/CMakeFiles/CMakeError.log
 
   build-zlib-ci-configure:
+    if: inputs.run-zlib == 'true'
     timeout-minutes: 30
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
@@ -488,6 +490,7 @@ jobs:
           ${{ matrix.build-dir || '.' }}/configure.log
 
   build-zlib-MSys:
+    if: inputs.run-zlib == 'true'
     timeout-minutes: 10
     runs-on: windows-latest
     strategy:
@@ -531,6 +534,7 @@ jobs:
       run: ctest --output-on-failure --test-dir "$(cygpath -u "$GITHUB_WORKSPACE")/zlib/build" -C Release
 
   build-zlib-cygwin:
+    if: inputs.run-zlib == 'true'
     timeout-minutes: 10
     strategy:
       fail-fast: false

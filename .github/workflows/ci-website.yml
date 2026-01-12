@@ -1,5 +1,7 @@
 name: CI Website
 
+# This workflow is called by ci-new.yml only.
+# Do not add push/pull_request triggers here.
 on:
   workflow_call:
     inputs:
@@ -9,26 +11,10 @@ on:
       is-pr:
         required: true
         type: string
-  push:
-    branches: [develop]
-    paths:
-      - 'website/**'
-      - 'website-root/**'
-      - 'docs/handbook/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - '.github/workflows/ci-website.yml'
-  pull_request:
-    paths:
-      - 'website/**'
-      - 'website-root/**'
-      - 'docs/handbook/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - '.github/workflows/ci-website.yml'
 
 jobs:
   build-website:
+    if: inputs.run-website == 'true'
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
@@ -129,9 +115,8 @@ jobs:
           path: ./_site
 
   deploy-website:
+    if: inputs.run-website == 'true' && github.repository_owner == 'Project-Tick' && github.event_name == 'push'
     timeout-minutes: 5
-    # Only deploy on pushes to develop; skip PRs/merge_group explicitly
-    if: github.repository_owner == 'Project-Tick' && github.event_name == 'push'
     needs: [build-website]
     permissions:
       pages: write

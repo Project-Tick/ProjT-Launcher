@@ -1,26 +1,25 @@
 name: toml++ CI
 
+# This workflow is called by ci-new.yml only.
+# Do not add push/pull_request triggers here.
 on:
   workflow_call:
     inputs:
       ref:
         required: false
         type: string
-  push:
-    branches: [develop, main]
-    paths:
-      - 'tomlplusplus/**'
-      - '.github/workflows/ci-tomlplusplus.yml'
-  pull_request:
-    paths:
-      - 'tomlplusplus/**'
-      - '.github/workflows/ci-tomlplusplus.yml'
+      run-tomlplusplus:
+        description: 'Whether to run tomlplusplus jobs'
+        required: false
+        type: string
+        default: 'true'
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   # LINUX BUILDS
   # ═══════════════════════════════════════════════════════════════════════════
   tomlplusplus-linux:
+    if: inputs.run-tomlplusplus == 'true'
     name: Linux-${{ matrix.compiler }}-${{ matrix.type }}
     strategy:
       fail-fast: false
@@ -84,6 +83,7 @@ jobs:
   # WINDOWS BUILDS
   # ═══════════════════════════════════════════════════════════════════════════
   tomlplusplus-windows:
+    if: inputs.run-tomlplusplus == 'true'
     name: Windows-MSVC-${{ matrix.type }}${{ matrix.permissive && '-permissive' || '' }}
     strategy:
       fail-fast: false

@@ -1,26 +1,25 @@
 name: libqrencode CI
 
+# This workflow is called by ci-new.yml only.
+# Do not add push/pull_request triggers here.
 on:
   workflow_call:
     inputs:
       ref:
         required: false
         type: string
-  push:
-    branches: [develop, main]
-    paths:
-      - 'libqrencode/**'
-      - '.github/workflows/ci-libqrencode.yml'
-  pull_request:
-    paths:
-      - 'libqrencode/**'
-      - '.github/workflows/ci-libqrencode.yml'
+      run-libqrencode:
+        description: 'Whether to run libqrencode jobs'
+        required: false
+        type: string
+        default: 'true'
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   # AUTOTOOLS BUILD (configure)
   # ═══════════════════════════════════════════════════════════════════════════
   libqrencode-configure:
+    if: inputs.run-libqrencode == 'true'
     name: Linux-Autotools
     defaults:
       run:
@@ -49,6 +48,7 @@ jobs:
   # CMAKE BUILDS - WINDOWS
   # ═══════════════════════════════════════════════════════════════════════════
   libqrencode-cmake-windows:
+    if: inputs.run-libqrencode == 'true'
     name: Windows-CMake
     runs-on: windows-latest
     defaults:
@@ -77,6 +77,7 @@ jobs:
   # CMAKE BUILDS - LINUX
   # ═══════════════════════════════════════════════════════════════════════════
   libqrencode-cmake-linux:
+    if: inputs.run-libqrencode == 'true'
     name: Linux-CMake
     runs-on: ubuntu-latest
     defaults:

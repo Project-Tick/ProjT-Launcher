@@ -1,5 +1,7 @@
 name: CI Prepare
 
+# This workflow is called by ci-new.yml only.
+# Do not add push/pull_request triggers here.
 on:
   workflow_call:
     outputs:
