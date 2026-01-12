@@ -21,11 +21,15 @@ target_link_libraries(fuzz_nbt_reader PRIVATE nbt++)
 # add_fuzzer(fuzz_qjson_parse fuzz_qjson_parse.cpp)
 # target_link_libraries(fuzz_qjson_parse PRIVATE Qt6::Core)
 
-add_fuzzer(fuzz_gzip fuzz_gzip.cpp ${PROJECT_SOURCE_DIR}/launcher/GZip.cpp)
-target_include_directories(fuzz_gzip PRIVATE ${PROJECT_SOURCE_DIR}/launcher)
-# Use static zlib for fuzzer to avoid sanitizer symbol mismatch
-if(TARGET zlibstatic)
-    target_link_libraries(fuzz_gzip PRIVATE Qt6::Core zlibstatic)
-else()
-    target_link_libraries(fuzz_gzip PRIVATE Qt6::Core ZLIB::ZLIB)
+# fuzz_gzip requires Qt6::Core for QByteArray/QFile usage in GZip.cpp
+# Only build if Qt6::Core is available
+if(TARGET Qt6::Core)
+    add_fuzzer(fuzz_gzip fuzz_gzip.cpp ${PROJECT_SOURCE_DIR}/launcher/GZip.cpp)
+    target_include_directories(fuzz_gzip PRIVATE ${PROJECT_SOURCE_DIR}/launcher)
+    # Use static zlib for fuzzer to avoid sanitizer symbol mismatch
+    if(TARGET zlibstatic)
+        target_link_libraries(fuzz_gzip PRIVATE Qt6::Core zlibstatic)
+    else()
+        target_link_libraries(fuzz_gzip PRIVATE Qt6::Core ZLIB::ZLIB)
+    endif()
 endif()
