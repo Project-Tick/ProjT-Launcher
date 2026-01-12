@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>@Launcher_AppID@</id>
+  <name>ProjT Launcher</name>
+  <summary>Custom Minecraft Launcher to easily manage multiple Minecraft installations at once</summary>
+  <developer id="org.projecttick">
+    <name>Project Tick Contributors</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <description>
+    <p>ProjT Launcher is a custom launcher for Minecraft that focuses on predictability, long term stability and simplicity.</p>
+    <p>Features:</p>
+    <ul>
+      <li>Easily install game modifications, such as Fabric, Forge and Quilt</li>
+      <li>Easily install and update modpacks from the Launcher</li>
+      <li>Control your Java settings, and enable Mangohud or Gamemode with a toggle</li>
+      <li>Manage worlds and resource packs from the launcher</li>
+      <li>See logs and other details easily through a dashboard</li>
+      <li>Kill Minecraft in case of a crash/freeze</li>
+      <li>Isolate Minecraft instances to keep everything clean</li>
+      <li>Install and update mods directly from the launcher</li>
+      <li>Customize the launcher with themes, and more</li>
+      <li>And cat :3</li>
+    </ul>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The main ProjT Launcher window</caption>
+      <image type="source">https://projecttick.org/projtlauncher/img/screenshots/projtlauncher_dark_main_window.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Modpack installation</caption>
+      <image type="source">https://projecttick.org/projtlauncher/img/screenshots/projtlauncher_dark_new_instance_modrinth.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Mod installation</caption>
+      <image type="source">https://projecttick.org/projtlauncher/img/screenshots/projtlauncher_dark_download_mods.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Mod updating</caption>
+      <image type="source">https://projecttick.org/projtlauncher/img/screenshots/projtlauncher_dark_confirm_mods_selection.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Instance management</caption>
+      <image type="source">https://projecttick.org/projtlauncher/img/screenshots/projtlauncher_dark_console_window_version.png</image>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="@Launcher_VERSION_NAME@" date="@Launcher_BUILD_TIMESTAMP@"></release>
+  </releases>
+  <url type="homepage">https://projecttick.org/projtlauncher/</url>
+  <url type="bugtracker">https://github.com/Project-Tick/ProjT-Launcher/issues</url>
+  <url type="faq">https://projecttick.org/projtlauncher/wiki/overview/faq/</url>
+  <url type="help">https://projecttick.org/projtlauncher/wiki/</url>
+  <url type="vcs-browser">https://github.com/Project-Tick/ProjT-Launcher</url>
+  <url type="contribute">https://github.com/Project-Tick/ProjT-Launcher/blob/develop/CONTRIBUTING.md</url>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-fantasy">moderate</content_attribute>
+    <content_attribute id="social-chat">intense</content_attribute>
+  </content_rating>
+  <launchable type="desktop-id">@Launcher_AppID@.desktop</launchable>
+</component>

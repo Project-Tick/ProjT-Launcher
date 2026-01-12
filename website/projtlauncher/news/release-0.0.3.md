@@ -33,7 +33,7 @@ This release is the largest update since the project began, completing the full 
   - Updated CMake project metadata  
   - Updated Application.cpp / Application.h naming and UI elements  
   - New application icons, Big Sur style logos, and updated instance icons  
-- **Updated Flatpak Manifest (tr.org.yongdohyun.ProjTLauncher.yml)**  
+- **Updated Flatpak Manifest (org.yongdohyun.ProjTLauncher.yml)**  
   - Improved structure, removed legacy modules  
   - Updated runtime integrations and packaging paths  
 - **Debian packaging improvements**  

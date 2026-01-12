@@ -97,7 +97,7 @@ make check
 #include <stdio.h>
 
 int main() {
-    QRcode *qr = QRcode_encodeString("https://projecttick.org.tr",
+    QRcode *qr = QRcode_encodeString("https://projecttick.org",
                                       0,                    // Version (0 = auto)
                                       QR_ECLEVEL_M,         // Error correction
                                       QR_MODE_8,            // Encoding mode
@@ -146,7 +146,7 @@ The `qrencode` CLI tool creates QR code images:
 qrencode -o output.png "Hello World"
 
 # Generate SVG
-qrencode -t SVG -o output.svg "https://projecttick.org.tr"
+qrencode -t SVG -o output.svg "https://projecttick.org"
 
 # Generate ASCII art
 qrencode -t ASCII "Hello World"

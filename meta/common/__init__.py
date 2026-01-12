@@ -8,7 +8,7 @@ import requests
 from cachecontrol import CacheControl  # type: ignore
 from cachecontrol.caches import FileCache  # type: ignore
 
-LAUNCHER_MAVEN = "https://files.projecttick.org.tr/maven/%s"
+LAUNCHER_MAVEN = "https://files.projecttick.org/maven/%s"
 
 
 def serialize_datetime(dt: datetime.datetime):

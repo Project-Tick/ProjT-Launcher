@@ -15,7 +15,7 @@ ProjT Launcher stores your data in your OS's standard application data folder. F
 | Scoop                      | `%HOMEPATH%\scoop\persist\projtlauncher`                        |
 | macOS                      | `~/Library/Application Support/ProjTLauncher`                   |
 | Linux                      | `~/.local/share/ProjTLauncher`                                  |
-| Flatpak                    | `~/.var/app/tr.org.projecttick.ProjTLauncher/data/ProjTLauncher`|
+| Flatpak                    | `~/.var/app/org.projecttick.ProjTLauncher/data/ProjTLauncher`|
 
 ## Internal folder structure
 

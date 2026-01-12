@@ -93,7 +93,7 @@ Set `Launcher_BUILD_PLATFORM` to identify your distribution:
 Installed to `/usr/share/applications/`:
 
 ```
-tr.org.projecttick.ProjTLauncher.desktop
+org.projecttick.ProjTLauncher.desktop
 ```
 
 ### Icon
@@ -101,7 +101,7 @@ tr.org.projecttick.ProjTLauncher.desktop
 Installed to `/usr/share/icons/hicolor/`:
 
 ```
-tr.org.projecttick.ProjTLauncher.svg
+org.projecttick.ProjTLauncher.svg
 ```
 
 ### AppStream Metadata
@@ -109,7 +109,7 @@ tr.org.projecttick.ProjTLauncher.svg
 Installed to `/usr/share/metainfo/`:
 
 ```
-tr.org.projecttick.ProjTLauncher.metainfo.xml
+org.projecttick.ProjTLauncher.metainfo.xml
 ```
 
 ---

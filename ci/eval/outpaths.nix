@@ -77,7 +77,7 @@ let
       appimage = "ProjT-Launcher-x86_64.AppImage";
       deb = "projt-launcher_VERSION_amd64.deb";
       rpm = "projt-launcher-VERSION.x86_64.rpm";
-      flatpak = "tr.org.yongdohyun.ProjTLauncher.flatpak";
+      flatpak = "org.yongdohyun.ProjTLauncher.flatpak";
     };
     "aarch64-linux" = {
       appimage = "ProjT-Launcher-aarch64.AppImage";

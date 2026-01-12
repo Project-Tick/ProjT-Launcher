@@ -159,7 +159,7 @@ void LauncherPartLaunch::executeTask()
 #else
 	args << classPath.join(':');
 #endif
-	args << "tr.org.projecttick.projtlauncher.normal.EntryPoint";
+	args << "org.projecttick.projtlauncher.normal.EntryPoint";
 
 	qDebug() << args.join(' ');
 

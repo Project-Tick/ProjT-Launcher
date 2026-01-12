@@ -87,12 +87,12 @@
  * 
  * ======================================================================== */
 
-package tr.org.projecttick.projtlauncher.normal.legacy;
+package org.projecttick.projtlauncher.normal.legacy;
 
-import tr.org.projecttick.projtlauncher.legacy.LegacyLauncher;
-import tr.org.projecttick.projtlauncher.legacy.fix.online.OnlineFixes;
-import tr.org.projecttick.projtlauncher.normal.launcher.Launcher;
-import tr.org.projecttick.projtlauncher.normal.utils.Parameters;
+import org.projecttick.projtlauncher.legacy.LegacyLauncher;
+import org.projecttick.projtlauncher.legacy.fix.online.OnlineFixes;
+import org.projecttick.projtlauncher.normal.launcher.Launcher;
+import org.projecttick.projtlauncher.normal.utils.Parameters;
 
 // real implementation loaded from ProjTLaunchLegacy.jar
 public final class LegacyProxy {

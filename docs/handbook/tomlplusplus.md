@@ -187,7 +187,7 @@ See [ci-tomlplusplus.yml](../../.github/workflows/ci-tomlplusplus.yml) for CI co
 
 | Resource | Description |
 |----------|-------------|
-| [API Docs](https://projecttick.org.tr/tomlplusplus/) | Full API reference |
+| [API Docs](https://projecttick.org/tomlplusplus/) | Full API reference |
 | [TOML Spec](https://toml.io/en/v1.0.0) | TOML v1.0.0 specification |
 | [Original README](../../tomlplusplus/README.md) | Upstream library documentation |
 | [Website Build](./website-tomlplusplus.md) | Building API docs |

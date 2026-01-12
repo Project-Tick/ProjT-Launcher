@@ -42,18 +42,18 @@ nix-shell
 
 We use Cachix for pre-built binaries. Add to avoid rebuilds:
 
-### NixOS Configuration
+<!-- ### NixOS Configuration
 
 ```nix
 {
   nix.settings = {
-    trusted-substituters = [ "https://cache.projecttick.org.tr" ];
+    trusted-substituters = [ "https://cache.projecttick.org" ];
     trusted-public-keys = [
-      "cache.projecttick.org.tr-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
+      "cache.projecttick.org-1:HrpR1buYLhqx0ooS1rMgyHChoYf+faZm82hsIY6JS+s="
     ];
   };
 }
-```
+``` -->
 
 ### Flakes (Temporary)
 

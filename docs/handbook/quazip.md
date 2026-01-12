@@ -45,7 +45,7 @@ QuaZip is used for:
 | Resource | Description |
 |----------|-------------|
 | [Migration Guide](../../quazip/QuaZip-1.x-migration.md) | Migration guide to QuaZip 1.x |
-| [Online Docs](https://projecttick.org.tr/projtlauncher/wiki/) | Full documentation |
+| [Online Docs](https://projecttick.org/projtlauncher/wiki/) | Full documentation |
 | `quazip/qztest/` | Test suite and examples |
 
 ---
