@@ -6,11 +6,11 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const OUT_FILE_DEVELOPERS = path.join(__dirname, "../website/_data/developers.json");
-const OUT_FILE_MODERATORS = path.join(__dirname, "../website/_data/moderators.json");
+const OUT_FILE_DEVELOPERS = path.join(__dirname, "../website/projtlauncher/_data/developers.json");
+const OUT_FILE_MODERATORS = path.join(__dirname, "../website/projtlauncher/_data/moderators.json");
 const OUT_FILE_CONTRIBUTORS = path.join(
   __dirname,
-  "../website/_data/contributors.json"
+  "../website/projtlauncher/_data/contributors.json"
 );
 
 const UNLISTED_CONTRIBUTORS = new Set([172450873 /* crueter */]);

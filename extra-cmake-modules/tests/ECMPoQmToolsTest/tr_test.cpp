@@ -1,7 +1,7 @@
 /*
-    SPDX-FileCopyrightText: 2015 Alex Merry <alex.merry@kde.org>
+	SPDX-FileCopyrightText: 2015 Alex Merry <alex.merry@kde.org>
 
-    SPDX-License-Identifier: BSD-3-Clause
+	SPDX-License-Identifier: BSD-3-Clause
 */
 
 #include <QCoreApplication>
@@ -11,12 +11,12 @@
 
 int main(int argc, char** argv)
 {
-    QCoreApplication app(argc, argv);
+	QCoreApplication app(argc, argv);
 
-    QTextStream output(stdout);
+	QTextStream output(stdout);
 
-    output << QCoreApplication::translate("testcontext", "test string") << ":";
-    output << QCoreApplication::translate("testcontext", "test plural %n", 0, 5) << '\n';
+	output << QCoreApplication::translate("testcontext", "test string") << ":";
+	output << QCoreApplication::translate("testcontext", "test plural %n", 0, 5) << '\n';
 
-    return 0;
+	return 0;
 }

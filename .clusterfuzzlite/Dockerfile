@@ -1,11 +1,10 @@
 FROM gcr.io/oss-fuzz-base/base-builder
 
-# Dependencies required to build the fuzzing targets
+# Minimal dependencies for fuzzer build
+# Qt6 will be installed via aqt in build.sh
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    qtbase5-dev \
-    qttools5-dev \
-    qttools5-dev-tools \
     ninja-build \
+    python3-pip \
  && rm -rf /var/lib/apt/lists/*
 
 # Copy the source into the image

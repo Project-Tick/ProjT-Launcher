@@ -84,10 +84,11 @@ Q_DECLARE_METATYPE(MinecraftAccountPtr)
  * but we might as well add some things for it in ProjT Launcher right now so
  * we don't have to rip the code to pieces to add it later.
  */
-struct AccountProfile {
-    QString id;
-    QString name;
-    bool legacy;
+struct AccountProfile
+{
+	QString id;
+	QString name;
+	bool legacy;
 };
 
 /**
@@ -96,108 +97,145 @@ struct AccountProfile {
  * Said information may include things such as that account's username, client token, and access
  * token if the user chose to stay logged in.
  */
-class MinecraftAccount : public QObject, public Usable {
-    Q_OBJECT
-   public: /* construction */
-    //! Do not copy accounts. ever.
-    explicit MinecraftAccount(const MinecraftAccount& other, QObject* parent) = delete;
+class MinecraftAccount : public QObject, public Usable
+{
+	Q_OBJECT
+  public: /* construction */
+	//! Do not copy accounts. ever.
+	explicit MinecraftAccount(const MinecraftAccount& other, QObject* parent) = delete;
 
-    //! Default constructor
-    explicit MinecraftAccount(QObject* parent = 0);
+	//! Default constructor
+	explicit MinecraftAccount(QObject* parent = 0);
 
-    static MinecraftAccountPtr createBlankMSA();
+	static MinecraftAccountPtr createBlankMSA();
 
-    static MinecraftAccountPtr createOffline(const QString& username);
+	static MinecraftAccountPtr createOffline(const QString& username);
 
-    static MinecraftAccountPtr loadFromJsonV3(const QJsonObject& json);
+	static MinecraftAccountPtr loadFromJsonV3(const QJsonObject& json);
 
-    static QUuid uuidFromUsername(QString username);
+	static QUuid uuidFromUsername(QString username);
 
-    //! Saves a MinecraftAccount to a JSON object and returns it.
-    QJsonObject saveToJson() const;
+	//! Saves a MinecraftAccount to a JSON object and returns it.
+	QJsonObject saveToJson() const;
 
-   public: /* manipulation */
-    shared_qobject_ptr<AuthFlow> login(bool useDeviceCode = false);
+  public: /* manipulation */
+	shared_qobject_ptr<AuthFlow> login(bool useDeviceCode = false);
 
-    shared_qobject_ptr<AuthFlow> refresh();
+	shared_qobject_ptr<AuthFlow> refresh();
 
-    shared_qobject_ptr<AuthFlow> currentTask();
+	shared_qobject_ptr<AuthFlow> currentTask();
 
-   public: /* queries */
-    QString internalId() const { return data.internalId; }
+  public: /* queries */
+	QString internalId() const
+	{
+		return data.internalId;
+	}
 
-    QString accountDisplayString() const { return data.accountDisplayString(); }
+	QString accountDisplayString() const
+	{
+		return data.accountDisplayString();
+	}
 
-    QString accessToken() const { return data.accessToken(); }
+	QString accessToken() const
+	{
+		return data.accessToken();
+	}
 
-    QString profileId() const { return data.profileId(); }
+	QString profileId() const
+	{
+		return data.profileId();
+	}
 
-    QString profileName() const { return data.profileName(); }
+	QString profileName() const
+	{
+		return data.profileName();
+	}
 
-    bool isActive() const;
+	bool isActive() const;
 
-    AccountType accountType() const noexcept { return data.type; }
+	AccountType accountType() const noexcept
+	{
+		return data.type;
+	}
 
-    bool ownsMinecraft() const { return data.type != AccountType::Offline && data.minecraftEntitlement.ownsMinecraft; }
+	bool ownsMinecraft() const
+	{
+		return data.type != AccountType::Offline && data.minecraftEntitlement.ownsMinecraft;
+	}
 
-    bool hasProfile() const { return data.profileId().size() != 0; }
+	bool hasProfile() const
+	{
+		return data.profileId().size() != 0;
+	}
 
-    QString typeString() const
-    {
-        switch (data.type) {
-            case AccountType::MSA: {
-                return "msa";
-            } break;
-            case AccountType::Offline: {
-                return "offline";
-            } break;
-            default: {
-                return "unknown";
-            }
-        }
-    }
+	QString typeString() const
+	{
+		switch (data.type)
+		{
+			case AccountType::MSA:
+			{
+				return "msa";
+			}
+			break;
+			case AccountType::Offline:
+			{
+				return "offline";
+			}
+			break;
+			default:
+			{
+				return "unknown";
+			}
+		}
+	}
 
-    QPixmap getFace() const;
+	QPixmap getFace() const;
 
-    //! Returns the current state of the account
-    AccountState accountState() const;
+	//! Returns the current state of the account
+	AccountState accountState() const;
 
-    AccountData* accountData() { return &data; }
+	AccountData* accountData()
+	{
+		return &data;
+	}
 
-    bool shouldRefresh() const;
+	bool shouldRefresh() const;
 
-    void fillSession(AuthSessionPtr session);
+	void fillSession(AuthSessionPtr session);
 
-    QString lastError() const { return data.lastError(); }
+	QString lastError() const
+	{
+		return data.lastError();
+	}
 
-   signals:
-    /**
-     * This signal is emitted when the account changes
-     */
-    void changed();
+  signals:
+	/**
+	 * This signal is emitted when the account changes
+	 */
+	void changed();
 
-    void activityChanged(bool active);
+	void activityChanged(bool active);
 
-    // Specific signals for different state changes
-    void accountStateChanged(AccountState newState);
-    void authenticationSucceeded();
-    void authenticationFailed(QString reason, AccountTaskState taskState);
-    void profileUpdated();
-    void validityChanged(Validity newValidity);
-    /// Emitted when an authentication error occurs
-    void authenticationError(QString errorMessage);
+	// Specific signals for different state changes
+	void accountStateChanged(AccountState newState);
+	void authenticationSucceeded();
+	void authenticationFailed(QString reason, AccountTaskState taskState);
+	void profileUpdated();
+	void validityChanged(Validity newValidity);
+	/// Emitted when an authentication error occurs
+	void authenticationError(QString errorMessage);
 
-   protected: /* variables */
-    AccountData data;
+  protected: /* variables */
+	AccountData data;
 
-    // current task we are executing here
-    shared_qobject_ptr<AuthFlow> m_currentTask;
+	// current task we are executing here
+	shared_qobject_ptr<AuthFlow> m_currentTask;
 
-   protected: /* methods */
-    void incrementUses() override;
-    void decrementUses() override;
+  protected: /* methods */
+	void incrementUses() override;
+	void decrementUses() override;
 
-   private slots:
-    void authSucceeded();
-    void authFailed(QString reason);
+  private slots:
+	void authSucceeded();
+	void authFailed(QString reason);
 };

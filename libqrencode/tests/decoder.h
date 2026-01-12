@@ -4,19 +4,21 @@
 #include "../qrencode.h"
 #include "datachunk.h"
 
-typedef struct {
-    unsigned char* data;
-    int size;
-    int mqr;
-    int version;
-    QRecLevel level;
-    DataChunk *chunks, *last;
-    int eccResult;
+typedef struct
+{
+	unsigned char* data;
+	int size;
+	int mqr;
+	int version;
+	QRecLevel level;
+	DataChunk *chunks, *last;
+	int eccResult;
 } QRdata;
 
-struct FormatInfo {
-    int version;
-    QRecLevel level;
+struct FormatInfo
+{
+	int version;
+	QRecLevel level;
 };
 
 extern struct FormatInfo MQRformat[];

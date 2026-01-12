@@ -66,15 +66,16 @@
  *
  *  See MultipleOptionsTask if that's not the case.
  */
-class SequentialTask : public ConcurrentTask {
-    Q_OBJECT
-   public:
-    explicit SequentialTask(QString task_name = "");
-    ~SequentialTask() override = default;
+class SequentialTask : public ConcurrentTask
+{
+	Q_OBJECT
+  public:
+	explicit SequentialTask(QString task_name = "");
+	~SequentialTask() override = default;
 
-   protected slots:
-    virtual void subTaskFailed(Task::Ptr, const QString& msg) override;
+  protected slots:
+	virtual void subTaskFailed(Task::Ptr, const QString& msg) override;
 
-   protected:
-    void updateState() override;
+  protected:
+	void updateState() override;
 };

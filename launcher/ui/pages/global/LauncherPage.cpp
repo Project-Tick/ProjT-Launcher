@@ -80,252 +80,271 @@
 #include <QProcess>
 
 // Note: InstSortMode is defined here as it's only used by LauncherPage sorting preferences.
-enum InstSortMode {
-    // Sort alphabetically by name.
-    Sort_Name,
-    // Sort by which instance was launched most recently.
-    Sort_LastLaunch
+enum InstSortMode
+{
+	// Sort alphabetically by name.
+	Sort_Name,
+	// Sort by which instance was launched most recently.
+	Sort_LastLaunch
 };
 
 LauncherPage::LauncherPage(QWidget* parent) : QWidget(parent), ui(new Ui::LauncherPage)
 {
-    ui->setupUi(this);
+	ui->setupUi(this);
 
-    ui->sortingModeGroup->setId(ui->sortByNameBtn, Sort_Name);
-    ui->sortingModeGroup->setId(ui->sortLastLaunchedBtn, Sort_LastLaunch);
+	ui->sortingModeGroup->setId(ui->sortByNameBtn, Sort_Name);
+	ui->sortingModeGroup->setId(ui->sortLastLaunchedBtn, Sort_LastLaunch);
 
-    loadSettings();
+	loadSettings();
 
-    ui->updateSettingsBox->setHidden(!APPLICATION->updater());
+	ui->updateSettingsBox->setHidden(!APPLICATION->updater());
 }
 
 LauncherPage::~LauncherPage()
 {
-    delete ui;
+	delete ui;
 }
 
 bool LauncherPage::apply()
 {
-    applySettings();
-    return true;
+	applySettings();
+	return true;
 }
 
 void LauncherPage::on_instDirBrowseBtn_clicked()
 {
-    QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Instance Folder"), ui->instDirTextBox->text());
+	QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Instance Folder"), ui->instDirTextBox->text());
 
-    // do not allow current dir - it's dirty. Do not allow dirs that don't exist
-    if (!raw_dir.isEmpty() && QDir(raw_dir).exists()) {
-        QString cooked_dir = FS::NormalizePath(raw_dir);
-        if (FS::checkProblemticPathJava(QDir(cooked_dir))) {
-            QMessageBox warning;
-            warning.setText(
-                tr("You're trying to specify an instance folder which\'s path "
-                   "contains at least one \'!\'. "
-                   "Java is known to cause problems if that is the case, your "
-                   "instances (probably) won't start!"));
-            warning.setInformativeText(
-                tr("Do you really want to use this path? "
-                   "Selecting \"No\" will close this and not alter your instance path."));
-            warning.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-            int result = warning.exec();
-            if (result == QMessageBox::Ok) {
-                ui->instDirTextBox->setText(cooked_dir);
-            }
-        } else if (DesktopServices::isFlatpak() && raw_dir.startsWith("/run/user")) {
-            QMessageBox warning;
-            warning.setText(tr("You're trying to specify an instance folder "
-                               "which was granted temporarily via Flatpak.\n"
-                               "This is known to cause problems. "
-                               "After a restart the launcher might break, "
-                               "because it will no longer have access to that directory.\n\n"
-                               "Granting %1 access to it via Flatseal is recommended.")
-                                .arg(BuildConfig.LAUNCHER_DISPLAYNAME));
-            warning.setInformativeText(tr("Do you want to proceed anyway?"));
-            warning.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-            int result = warning.exec();
-            if (result == QMessageBox::Ok) {
-                ui->instDirTextBox->setText(cooked_dir);
-            }
-        } else {
-            ui->instDirTextBox->setText(cooked_dir);
-        }
-    }
+	// do not allow current dir - it's dirty. Do not allow dirs that don't exist
+	if (!raw_dir.isEmpty() && QDir(raw_dir).exists())
+	{
+		QString cooked_dir = FS::NormalizePath(raw_dir);
+		if (FS::checkProblemticPathJava(QDir(cooked_dir)))
+		{
+			QMessageBox warning;
+			warning.setText(tr("You're trying to specify an instance folder which\'s path "
+							   "contains at least one \'!\'. "
+							   "Java is known to cause problems if that is the case, your "
+							   "instances (probably) won't start!"));
+			warning.setInformativeText(tr("Do you really want to use this path? "
+										  "Selecting \"No\" will close this and not alter your instance path."));
+			warning.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+			int result = warning.exec();
+			if (result == QMessageBox::Ok)
+			{
+				ui->instDirTextBox->setText(cooked_dir);
+			}
+		}
+		else if (DesktopServices::isFlatpak() && raw_dir.startsWith("/run/user"))
+		{
+			QMessageBox warning;
+			warning.setText(tr("You're trying to specify an instance folder "
+							   "which was granted temporarily via Flatpak.\n"
+							   "This is known to cause problems. "
+							   "After a restart the launcher might break, "
+							   "because it will no longer have access to that directory.\n\n"
+							   "Granting %1 access to it via Flatseal is recommended.")
+								.arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+			warning.setInformativeText(tr("Do you want to proceed anyway?"));
+			warning.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+			int result = warning.exec();
+			if (result == QMessageBox::Ok)
+			{
+				ui->instDirTextBox->setText(cooked_dir);
+			}
+		}
+		else
+		{
+			ui->instDirTextBox->setText(cooked_dir);
+		}
+	}
 }
 
 void LauncherPage::on_iconsDirBrowseBtn_clicked()
 {
-    QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Icons Folder"), ui->iconsDirTextBox->text());
+	QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Icons Folder"), ui->iconsDirTextBox->text());
 
-    // do not allow current dir - it's dirty. Do not allow dirs that don't exist
-    if (!raw_dir.isEmpty() && QDir(raw_dir).exists()) {
-        QString cooked_dir = FS::NormalizePath(raw_dir);
-        ui->iconsDirTextBox->setText(cooked_dir);
-    }
+	// do not allow current dir - it's dirty. Do not allow dirs that don't exist
+	if (!raw_dir.isEmpty() && QDir(raw_dir).exists())
+	{
+		QString cooked_dir = FS::NormalizePath(raw_dir);
+		ui->iconsDirTextBox->setText(cooked_dir);
+	}
 }
 
 void LauncherPage::on_modsDirBrowseBtn_clicked()
 {
-    QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Mods Folder"), ui->modsDirTextBox->text());
+	QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Mods Folder"), ui->modsDirTextBox->text());
 
-    // do not allow current dir - it's dirty. Do not allow dirs that don't exist
-    if (!raw_dir.isEmpty() && QDir(raw_dir).exists()) {
-        QString cooked_dir = FS::NormalizePath(raw_dir);
-        ui->modsDirTextBox->setText(cooked_dir);
-    }
+	// do not allow current dir - it's dirty. Do not allow dirs that don't exist
+	if (!raw_dir.isEmpty() && QDir(raw_dir).exists())
+	{
+		QString cooked_dir = FS::NormalizePath(raw_dir);
+		ui->modsDirTextBox->setText(cooked_dir);
+	}
 }
 
 void LauncherPage::on_downloadsDirBrowseBtn_clicked()
 {
-    QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Downloads Folder"), ui->downloadsDirTextBox->text());
+	QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Downloads Folder"), ui->downloadsDirTextBox->text());
 
-    if (!raw_dir.isEmpty() && QDir(raw_dir).exists()) {
-        QString cooked_dir = FS::NormalizePath(raw_dir);
-        ui->downloadsDirTextBox->setText(cooked_dir);
-    }
+	if (!raw_dir.isEmpty() && QDir(raw_dir).exists())
+	{
+		QString cooked_dir = FS::NormalizePath(raw_dir);
+		ui->downloadsDirTextBox->setText(cooked_dir);
+	}
 }
 
 void LauncherPage::on_javaDirBrowseBtn_clicked()
 {
-    QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Java Folder"), ui->javaDirTextBox->text());
+	QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Java Folder"), ui->javaDirTextBox->text());
 
-    if (!raw_dir.isEmpty() && QDir(raw_dir).exists()) {
-        QString cooked_dir = FS::NormalizePath(raw_dir);
-        ui->javaDirTextBox->setText(cooked_dir);
-    }
+	if (!raw_dir.isEmpty() && QDir(raw_dir).exists())
+	{
+		QString cooked_dir = FS::NormalizePath(raw_dir);
+		ui->javaDirTextBox->setText(cooked_dir);
+	}
 }
 
 void LauncherPage::on_skinsDirBrowseBtn_clicked()
 {
-    QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Skins Folder"), ui->skinsDirTextBox->text());
+	QString raw_dir = QFileDialog::getExistingDirectory(this, tr("Skins Folder"), ui->skinsDirTextBox->text());
 
-    // do not allow current dir - it's dirty. Do not allow dirs that don't exist
-    if (!raw_dir.isEmpty() && QDir(raw_dir).exists()) {
-        QString cooked_dir = FS::NormalizePath(raw_dir);
-        ui->skinsDirTextBox->setText(cooked_dir);
-    }
+	// do not allow current dir - it's dirty. Do not allow dirs that don't exist
+	if (!raw_dir.isEmpty() && QDir(raw_dir).exists())
+	{
+		QString cooked_dir = FS::NormalizePath(raw_dir);
+		ui->skinsDirTextBox->setText(cooked_dir);
+	}
 }
 
 void LauncherPage::on_metadataEnableBtn_clicked()
 {
-    ui->metadataWarningLabel->setHidden(ui->metadataEnableBtn->isChecked());
+	ui->metadataWarningLabel->setHidden(ui->metadataEnableBtn->isChecked());
 }
 
 void LauncherPage::applySettings()
 {
-    auto s = APPLICATION->settings();
+	auto s = APPLICATION->settings();
 
-    // Updates
-    if (APPLICATION->updater()) {
-        APPLICATION->updater()->setAutomaticallyChecksForUpdates(ui->autoUpdateCheckBox->isChecked());
-        APPLICATION->updater()->setUpdateCheckInterval(ui->updateIntervalSpinBox->value() * 3600);
-    }
+	// Updates
+	if (APPLICATION->updater())
+	{
+		APPLICATION->updater()->setAutomaticallyChecksForUpdates(ui->autoUpdateCheckBox->isChecked());
+		APPLICATION->updater()->setUpdateCheckInterval(ui->updateIntervalSpinBox->value() * 3600);
+	}
 
-    s->set("MenuBarInsteadOfToolBar", ui->preferMenuBarCheckBox->isChecked());
+	s->set("MenuBarInsteadOfToolBar", ui->preferMenuBarCheckBox->isChecked());
 
-    s->set("NumberOfConcurrentTasks", ui->numberOfConcurrentTasksSpinBox->value());
-    s->set("NumberOfConcurrentDownloads", ui->numberOfConcurrentDownloadsSpinBox->value());
-    s->set("NumberOfManualRetries", ui->numberOfManualRetriesSpinBox->value());
-    s->set("RequestTimeout", ui->timeoutSecondsSpinBox->value());
+	s->set("NumberOfConcurrentTasks", ui->numberOfConcurrentTasksSpinBox->value());
+	s->set("NumberOfConcurrentDownloads", ui->numberOfConcurrentDownloadsSpinBox->value());
+	s->set("NumberOfManualRetries", ui->numberOfManualRetriesSpinBox->value());
+	s->set("RequestTimeout", ui->timeoutSecondsSpinBox->value());
 
-    // Console settings
-    s->set("ConsoleMaxLines", ui->lineLimitSpinBox->value());
-    s->set("ConsoleOverflowStop", ui->checkStopLogging->checkState() != Qt::Unchecked);
+	// Console settings
+	s->set("ConsoleMaxLines", ui->lineLimitSpinBox->value());
+	s->set("ConsoleOverflowStop", ui->checkStopLogging->checkState() != Qt::Unchecked);
 
-    // Folders
-    // Note: Instance migration on folder change is a complex feature requiring user confirmation,
-    // progress tracking, and rollback capability. Deferred for dedicated implementation.
-    s->set("InstanceDir", ui->instDirTextBox->text());
-    s->set("CentralModsDir", ui->modsDirTextBox->text());
-    s->set("IconsDir", ui->iconsDirTextBox->text());
-    s->set("DownloadsDir", ui->downloadsDirTextBox->text());
-    s->set("SkinsDir", ui->skinsDirTextBox->text());
-    s->set("JavaDir", ui->javaDirTextBox->text());
-    s->set("DownloadsDirWatchRecursive", ui->downloadsDirWatchRecursiveCheckBox->isChecked());
-    s->set("MoveModsFromDownloadsDir", ui->downloadsDirMoveCheckBox->isChecked());
+	// Folders
+	// Note: Instance migration on folder change is a complex feature requiring user confirmation,
+	// progress tracking, and rollback capability. Deferred for dedicated implementation.
+	s->set("InstanceDir", ui->instDirTextBox->text());
+	s->set("CentralModsDir", ui->modsDirTextBox->text());
+	s->set("IconsDir", ui->iconsDirTextBox->text());
+	s->set("DownloadsDir", ui->downloadsDirTextBox->text());
+	s->set("SkinsDir", ui->skinsDirTextBox->text());
+	s->set("JavaDir", ui->javaDirTextBox->text());
+	s->set("DownloadsDirWatchRecursive", ui->downloadsDirWatchRecursiveCheckBox->isChecked());
+	s->set("MoveModsFromDownloadsDir", ui->downloadsDirMoveCheckBox->isChecked());
 
-    // Instance
-    auto sortMode = (InstSortMode)ui->sortingModeGroup->checkedId();
-    switch (sortMode) {
-        case Sort_LastLaunch:
-            s->set("InstSortMode", "LastLaunch");
-            break;
-        case Sort_Name:
-        default:
-            s->set("InstSortMode", "Name");
-            break;
-    }
+	// Instance
+	auto sortMode = (InstSortMode)ui->sortingModeGroup->checkedId();
+	switch (sortMode)
+	{
+		case Sort_LastLaunch: s->set("InstSortMode", "LastLaunch"); break;
+		case Sort_Name:
+		default: s->set("InstSortMode", "Name"); break;
+	}
 
-    if (ui->askToRenameDirBtn->isChecked()) {
-        s->set("InstRenamingMode", "AskEverytime");
-    } else if (ui->alwaysRenameDirBtn->isChecked()) {
-        s->set("InstRenamingMode", "PhysicalDir");
-    } else if (ui->neverRenameDirBtn->isChecked()) {
-        s->set("InstRenamingMode", "MetadataOnly");
-    }
+	if (ui->askToRenameDirBtn->isChecked())
+	{
+		s->set("InstRenamingMode", "AskEverytime");
+	}
+	else if (ui->alwaysRenameDirBtn->isChecked())
+	{
+		s->set("InstRenamingMode", "PhysicalDir");
+	}
+	else if (ui->neverRenameDirBtn->isChecked())
+	{
+		s->set("InstRenamingMode", "MetadataOnly");
+	}
 
-    // Mods
-    s->set("ModMetadataDisabled", !ui->metadataEnableBtn->isChecked());
-    s->set("ModDependenciesDisabled", !ui->dependenciesEnableBtn->isChecked());
-    s->set("SkipModpackUpdatePrompt", !ui->modpackUpdatePromptBtn->isChecked());
+	// Mods
+	s->set("ModMetadataDisabled", !ui->metadataEnableBtn->isChecked());
+	s->set("ModDependenciesDisabled", !ui->dependenciesEnableBtn->isChecked());
+	s->set("SkipModpackUpdatePrompt", !ui->modpackUpdatePromptBtn->isChecked());
 
-    // Backups
-    s->set("AutoBackupBeforeLaunch", ui->autoBackupBeforeLaunchCheckBox->isChecked());
+	// Backups
+	s->set("AutoBackupBeforeLaunch", ui->autoBackupBeforeLaunchCheckBox->isChecked());
 }
 void LauncherPage::loadSettings()
 {
-    auto s = APPLICATION->settings();
-    // Updates
-    if (APPLICATION->updater()) {
-        ui->autoUpdateCheckBox->setChecked(APPLICATION->updater()->getAutomaticallyChecksForUpdates());
-        ui->updateIntervalSpinBox->setValue(APPLICATION->updater()->getUpdateCheckInterval() / 3600);
-    }
+	auto s = APPLICATION->settings();
+	// Updates
+	if (APPLICATION->updater())
+	{
+		ui->autoUpdateCheckBox->setChecked(APPLICATION->updater()->getAutomaticallyChecksForUpdates());
+		ui->updateIntervalSpinBox->setValue(APPLICATION->updater()->getUpdateCheckInterval() / 3600);
+	}
 
-    ui->preferMenuBarCheckBox->setChecked(s->get("MenuBarInsteadOfToolBar").toBool());
+	ui->preferMenuBarCheckBox->setChecked(s->get("MenuBarInsteadOfToolBar").toBool());
 
-    ui->numberOfConcurrentTasksSpinBox->setValue(s->get("NumberOfConcurrentTasks").toInt());
-    ui->numberOfConcurrentDownloadsSpinBox->setValue(s->get("NumberOfConcurrentDownloads").toInt());
-    ui->numberOfManualRetriesSpinBox->setValue(s->get("NumberOfManualRetries").toInt());
-    ui->timeoutSecondsSpinBox->setValue(s->get("RequestTimeout").toInt());
+	ui->numberOfConcurrentTasksSpinBox->setValue(s->get("NumberOfConcurrentTasks").toInt());
+	ui->numberOfConcurrentDownloadsSpinBox->setValue(s->get("NumberOfConcurrentDownloads").toInt());
+	ui->numberOfManualRetriesSpinBox->setValue(s->get("NumberOfManualRetries").toInt());
+	ui->timeoutSecondsSpinBox->setValue(s->get("RequestTimeout").toInt());
 
-    // Console settings
-    ui->lineLimitSpinBox->setValue(s->get("ConsoleMaxLines").toInt());
-    ui->checkStopLogging->setChecked(s->get("ConsoleOverflowStop").toBool());
+	// Console settings
+	ui->lineLimitSpinBox->setValue(s->get("ConsoleMaxLines").toInt());
+	ui->checkStopLogging->setChecked(s->get("ConsoleOverflowStop").toBool());
 
-    // Folders
-    ui->instDirTextBox->setText(s->get("InstanceDir").toString());
-    ui->modsDirTextBox->setText(s->get("CentralModsDir").toString());
-    ui->iconsDirTextBox->setText(s->get("IconsDir").toString());
-    ui->downloadsDirTextBox->setText(s->get("DownloadsDir").toString());
-    ui->skinsDirTextBox->setText(s->get("SkinsDir").toString());
-    ui->javaDirTextBox->setText(s->get("JavaDir").toString());
-    ui->downloadsDirWatchRecursiveCheckBox->setChecked(s->get("DownloadsDirWatchRecursive").toBool());
-    ui->downloadsDirMoveCheckBox->setChecked(s->get("MoveModsFromDownloadsDir").toBool());
+	// Folders
+	ui->instDirTextBox->setText(s->get("InstanceDir").toString());
+	ui->modsDirTextBox->setText(s->get("CentralModsDir").toString());
+	ui->iconsDirTextBox->setText(s->get("IconsDir").toString());
+	ui->downloadsDirTextBox->setText(s->get("DownloadsDir").toString());
+	ui->skinsDirTextBox->setText(s->get("SkinsDir").toString());
+	ui->javaDirTextBox->setText(s->get("JavaDir").toString());
+	ui->downloadsDirWatchRecursiveCheckBox->setChecked(s->get("DownloadsDirWatchRecursive").toBool());
+	ui->downloadsDirMoveCheckBox->setChecked(s->get("MoveModsFromDownloadsDir").toBool());
 
-    // Instance
-    QString sortMode = s->get("InstSortMode").toString();
-    if (sortMode == "LastLaunch") {
-        ui->sortLastLaunchedBtn->setChecked(true);
-    } else {
-        ui->sortByNameBtn->setChecked(true);
-    }
+	// Instance
+	QString sortMode = s->get("InstSortMode").toString();
+	if (sortMode == "LastLaunch")
+	{
+		ui->sortLastLaunchedBtn->setChecked(true);
+	}
+	else
+	{
+		ui->sortByNameBtn->setChecked(true);
+	}
 
-    QString renamingMode = s->get("InstRenamingMode").toString();
-    ui->askToRenameDirBtn->setChecked(renamingMode == "AskEverytime");
-    ui->alwaysRenameDirBtn->setChecked(renamingMode == "PhysicalDir");
-    ui->neverRenameDirBtn->setChecked(renamingMode == "MetadataOnly");
+	QString renamingMode = s->get("InstRenamingMode").toString();
+	ui->askToRenameDirBtn->setChecked(renamingMode == "AskEverytime");
+	ui->alwaysRenameDirBtn->setChecked(renamingMode == "PhysicalDir");
+	ui->neverRenameDirBtn->setChecked(renamingMode == "MetadataOnly");
 
-    // Mods
-    ui->metadataEnableBtn->setChecked(!s->get("ModMetadataDisabled").toBool());
-    ui->metadataWarningLabel->setHidden(ui->metadataEnableBtn->isChecked());
-    ui->dependenciesEnableBtn->setChecked(!s->get("ModDependenciesDisabled").toBool());
-    ui->modpackUpdatePromptBtn->setChecked(!s->get("SkipModpackUpdatePrompt").toBool());
+	// Mods
+	ui->metadataEnableBtn->setChecked(!s->get("ModMetadataDisabled").toBool());
+	ui->metadataWarningLabel->setHidden(ui->metadataEnableBtn->isChecked());
+	ui->dependenciesEnableBtn->setChecked(!s->get("ModDependenciesDisabled").toBool());
+	ui->modpackUpdatePromptBtn->setChecked(!s->get("SkipModpackUpdatePrompt").toBool());
 
-    // Backups
-    ui->autoBackupBeforeLaunchCheckBox->setChecked(s->get("AutoBackupBeforeLaunch").toBool());
+	// Backups
+	ui->autoBackupBeforeLaunchCheckBox->setChecked(s->get("AutoBackupBeforeLaunch").toBool());
 }
 
 void LauncherPage::retranslate()
 {
-    ui->retranslateUi(this);
+	ui->retranslateUi(this);
 }

@@ -74,189 +74,216 @@
 
 AccountListPage::AccountListPage(QWidget* parent) : QMainWindow(parent), ui(new Ui::AccountListPage)
 {
-    ui->setupUi(this);
-    ui->listView->setEmptyString(
-        tr("Welcome!\n"
-           "If you're new here, you can select the \"Add Microsoft\" button to link your Microsoft account."));
-    ui->listView->setEmptyMode(VersionListView::String);
-    ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
+	ui->setupUi(this);
+	ui->listView->setEmptyString(
+		tr("Welcome!\n"
+		   "If you're new here, you can select the \"Add Microsoft\" button to link your Microsoft account."));
+	ui->listView->setEmptyMode(VersionListView::String);
+	ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    m_accounts = APPLICATION->accounts();
+	m_accounts = APPLICATION->accounts();
 
-    ui->listView->setModel(m_accounts.get());
-    ui->listView->header()->setSectionResizeMode(AccountList::VListColumns::ProfileNameColumn, QHeaderView::Stretch);
-    ui->listView->header()->setSectionResizeMode(AccountList::VListColumns::NameColumn, QHeaderView::Stretch);
-    ui->listView->header()->setSectionResizeMode(AccountList::VListColumns::TypeColumn, QHeaderView::ResizeToContents);
-    ui->listView->header()->setSectionResizeMode(AccountList::VListColumns::StatusColumn, QHeaderView::ResizeToContents);
-    ui->listView->setSelectionMode(QAbstractItemView::SingleSelection);
+	ui->listView->setModel(m_accounts.get());
+	ui->listView->header()->setSectionResizeMode(AccountList::VListColumns::ProfileNameColumn, QHeaderView::Stretch);
+	ui->listView->header()->setSectionResizeMode(AccountList::VListColumns::NameColumn, QHeaderView::Stretch);
+	ui->listView->header()->setSectionResizeMode(AccountList::VListColumns::TypeColumn, QHeaderView::ResizeToContents);
+	ui->listView->header()->setSectionResizeMode(AccountList::VListColumns::StatusColumn,
+												 QHeaderView::ResizeToContents);
+	ui->listView->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    // Expand the account column
+	// Expand the account column
 
-    QItemSelectionModel* selectionModel = ui->listView->selectionModel();
+	QItemSelectionModel* selectionModel = ui->listView->selectionModel();
 
-    connect(selectionModel, &QItemSelectionModel::selectionChanged,
-            [this]([[maybe_unused]] const QItemSelection& sel, [[maybe_unused]] const QItemSelection& dsel) { updateButtonStates(); });
-    connect(ui->listView, &VersionListView::customContextMenuRequested, this, &AccountListPage::ShowContextMenu);
-    connect(ui->listView, &VersionListView::activated, this,
-            [this](const QModelIndex& index) { m_accounts->setDefaultAccount(m_accounts->at(index.row())); });
+	connect(selectionModel,
+			&QItemSelectionModel::selectionChanged,
+			[this]([[maybe_unused]] const QItemSelection& sel, [[maybe_unused]] const QItemSelection& dsel)
+			{ updateButtonStates(); });
+	connect(ui->listView, &VersionListView::customContextMenuRequested, this, &AccountListPage::ShowContextMenu);
+	connect(ui->listView,
+			&VersionListView::activated,
+			this,
+			[this](const QModelIndex& index) { m_accounts->setDefaultAccount(m_accounts->at(index.row())); });
 
-    connect(m_accounts.get(), &AccountList::listChanged, this, &AccountListPage::listChanged);
-    connect(m_accounts.get(), &AccountList::listActivityChanged, this, &AccountListPage::listChanged);
-    connect(m_accounts.get(), &AccountList::defaultAccountChanged, this, &AccountListPage::listChanged);
+	connect(m_accounts.get(), &AccountList::listChanged, this, &AccountListPage::listChanged);
+	connect(m_accounts.get(), &AccountList::listActivityChanged, this, &AccountListPage::listChanged);
+	connect(m_accounts.get(), &AccountList::defaultAccountChanged, this, &AccountListPage::listChanged);
 
-    updateButtonStates();
+	updateButtonStates();
 
-    // Xbox authentication won't work without a client identifier, so disable the button if it is missing
-    if (~APPLICATION->capabilities() & Application::SupportsMSA) {
-        ui->actionAddMicrosoft->setVisible(false);
-        ui->actionAddMicrosoft->setToolTip(tr("No Microsoft Authentication client ID was set."));
-    }
+	// Xbox authentication won't work without a client identifier, so disable the button if it is missing
+	if (~APPLICATION->capabilities() & Application::SupportsMSA)
+	{
+		ui->actionAddMicrosoft->setVisible(false);
+		ui->actionAddMicrosoft->setToolTip(tr("No Microsoft Authentication client ID was set."));
+	}
 }
 
 AccountListPage::~AccountListPage()
 {
-    delete ui;
+	delete ui;
 }
 
 void AccountListPage::retranslate()
 {
-    ui->retranslateUi(this);
+	ui->retranslateUi(this);
 }
 
 void AccountListPage::ShowContextMenu(const QPoint& pos)
 {
-    auto menu = ui->toolBar->createContextMenu(this, tr("Context menu"));
-    menu->exec(ui->listView->mapToGlobal(pos));
-    delete menu;
+	auto menu = ui->toolBar->createContextMenu(this, tr("Context menu"));
+	menu->exec(ui->listView->mapToGlobal(pos));
+	delete menu;
 }
 
 void AccountListPage::changeEvent(QEvent* event)
 {
-    if (event->type() == QEvent::LanguageChange) {
-        ui->retranslateUi(this);
-    }
-    QMainWindow::changeEvent(event);
+	if (event->type() == QEvent::LanguageChange)
+	{
+		ui->retranslateUi(this);
+	}
+	QMainWindow::changeEvent(event);
 }
 
 QMenu* AccountListPage::createPopupMenu()
 {
-    QMenu* filteredMenu = QMainWindow::createPopupMenu();
-    filteredMenu->removeAction(ui->toolBar->toggleViewAction());
-    return filteredMenu;
+	QMenu* filteredMenu = QMainWindow::createPopupMenu();
+	filteredMenu->removeAction(ui->toolBar->toggleViewAction());
+	return filteredMenu;
 }
 
 void AccountListPage::listChanged()
 {
-    updateButtonStates();
+	updateButtonStates();
 }
 
 void AccountListPage::on_actionAddMicrosoft_triggered()
 {
-    auto account = MSALoginDialog::newAccount(this);
-    if (account) {
-        m_accounts->addAccount(account);
-        if (m_accounts->count() == 1) {
-            m_accounts->setDefaultAccount(account);
-        }
-    }
+	auto account = MSALoginDialog::newAccount(this);
+	if (account)
+	{
+		m_accounts->addAccount(account);
+		if (m_accounts->count() == 1)
+		{
+			m_accounts->setDefaultAccount(account);
+		}
+	}
 }
 
 void AccountListPage::on_actionAddOffline_triggered()
 {
-    if (!m_accounts->anyAccountIsValid()) {
-        QMessageBox::warning(this, tr("Error"),
-                             tr("You must add a Microsoft account that owns Minecraft before you can add an offline account."
-                                "<br><br>"
-                                "If you have lost your account you can contact Microsoft for support."));
-        return;
-    }
+	if (!m_accounts->anyAccountIsValid())
+	{
+		QMessageBox::warning(
+			this,
+			tr("Error"),
+			tr("You must add a Microsoft account that owns Minecraft before you can add an offline account."
+			   "<br><br>"
+			   "If you have lost your account you can contact Microsoft for support."));
+		return;
+	}
 
-    MinecraftAccountPtr account =
-        OfflineLoginDialog::newAccount(this, tr("Please enter your desired username to add your offline account."));
+	MinecraftAccountPtr account =
+		OfflineLoginDialog::newAccount(this, tr("Please enter your desired username to add your offline account."));
 
-    if (account) {
-        m_accounts->addAccount(account);
-        if (m_accounts->count() == 1) {
-            m_accounts->setDefaultAccount(account);
-        }
-    }
+	if (account)
+	{
+		m_accounts->addAccount(account);
+		if (m_accounts->count() == 1)
+		{
+			m_accounts->setDefaultAccount(account);
+		}
+	}
 }
 
 void AccountListPage::on_actionRemove_triggered()
 {
-    auto response = CustomMessageBox::selectable(this, tr("Remove account?"), tr("Do you really want to delete this account?"),
-                                                 QMessageBox::Question, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
-                        ->exec();
-    if (response != QMessageBox::Yes) {
-        return;
-    }
-    QModelIndexList selection = ui->listView->selectionModel()->selectedIndexes();
-    if (selection.size() > 0) {
-        QModelIndex selected = selection.first();
-        m_accounts->removeAccount(selected);
-    }
+	auto response = CustomMessageBox::selectable(this,
+												 tr("Remove account?"),
+												 tr("Do you really want to delete this account?"),
+												 QMessageBox::Question,
+												 QMessageBox::Yes | QMessageBox::No,
+												 QMessageBox::No)
+						->exec();
+	if (response != QMessageBox::Yes)
+	{
+		return;
+	}
+	QModelIndexList selection = ui->listView->selectionModel()->selectedIndexes();
+	if (selection.size() > 0)
+	{
+		QModelIndex selected = selection.first();
+		m_accounts->removeAccount(selected);
+	}
 }
 
 void AccountListPage::on_actionRefresh_triggered()
 {
-    QModelIndexList selection = ui->listView->selectionModel()->selectedIndexes();
-    if (selection.size() > 0) {
-        QModelIndex selected = selection.first();
-        MinecraftAccountPtr account = selected.data(AccountList::PointerRole).value<MinecraftAccountPtr>();
-        m_accounts->requestRefresh(account->internalId());
-    }
+	QModelIndexList selection = ui->listView->selectionModel()->selectedIndexes();
+	if (selection.size() > 0)
+	{
+		QModelIndex selected		= selection.first();
+		MinecraftAccountPtr account = selected.data(AccountList::PointerRole).value<MinecraftAccountPtr>();
+		m_accounts->requestRefresh(account->internalId());
+	}
 }
 
 void AccountListPage::on_actionSetDefault_triggered()
 {
-    QModelIndexList selection = ui->listView->selectionModel()->selectedIndexes();
-    if (selection.size() > 0) {
-        QModelIndex selected = selection.first();
-        MinecraftAccountPtr account = selected.data(AccountList::PointerRole).value<MinecraftAccountPtr>();
-        m_accounts->setDefaultAccount(account);
-    }
+	QModelIndexList selection = ui->listView->selectionModel()->selectedIndexes();
+	if (selection.size() > 0)
+	{
+		QModelIndex selected		= selection.first();
+		MinecraftAccountPtr account = selected.data(AccountList::PointerRole).value<MinecraftAccountPtr>();
+		m_accounts->setDefaultAccount(account);
+	}
 }
 
 void AccountListPage::on_actionNoDefault_triggered()
 {
-    m_accounts->setDefaultAccount(nullptr);
+	m_accounts->setDefaultAccount(nullptr);
 }
 
 void AccountListPage::updateButtonStates()
 {
-    // If there is no selection, disable buttons that require something selected.
-    QModelIndexList selection = ui->listView->selectionModel()->selectedIndexes();
-    bool hasSelection = !selection.empty();
-    bool accountIsReady = false;
-    bool accountIsOnline = false;
-    if (hasSelection) {
-        QModelIndex selected = selection.first();
-        MinecraftAccountPtr account = selected.data(AccountList::PointerRole).value<MinecraftAccountPtr>();
-        accountIsReady = !account->isActive();
-        accountIsOnline = account->accountType() != AccountType::Offline;
-    }
-    ui->actionRemove->setEnabled(accountIsReady);
-    ui->actionSetDefault->setEnabled(accountIsReady);
-    ui->actionManageSkins->setEnabled(accountIsReady && accountIsOnline);
-    ui->actionRefresh->setEnabled(accountIsReady && accountIsOnline);
+	// If there is no selection, disable buttons that require something selected.
+	QModelIndexList selection = ui->listView->selectionModel()->selectedIndexes();
+	bool hasSelection		  = !selection.empty();
+	bool accountIsReady		  = false;
+	bool accountIsOnline	  = false;
+	if (hasSelection)
+	{
+		QModelIndex selected		= selection.first();
+		MinecraftAccountPtr account = selected.data(AccountList::PointerRole).value<MinecraftAccountPtr>();
+		accountIsReady				= !account->isActive();
+		accountIsOnline				= account->accountType() != AccountType::Offline;
+	}
+	ui->actionRemove->setEnabled(accountIsReady);
+	ui->actionSetDefault->setEnabled(accountIsReady);
+	ui->actionManageSkins->setEnabled(accountIsReady && accountIsOnline);
+	ui->actionRefresh->setEnabled(accountIsReady && accountIsOnline);
 
-    if (m_accounts->defaultAccount().get() == nullptr) {
-        ui->actionNoDefault->setEnabled(false);
-        ui->actionNoDefault->setChecked(true);
-    } else {
-        ui->actionNoDefault->setEnabled(true);
-        ui->actionNoDefault->setChecked(false);
-    }
-    ui->listView->resizeColumnToContents(3);
+	if (m_accounts->defaultAccount().get() == nullptr)
+	{
+		ui->actionNoDefault->setEnabled(false);
+		ui->actionNoDefault->setChecked(true);
+	}
+	else
+	{
+		ui->actionNoDefault->setEnabled(true);
+		ui->actionNoDefault->setChecked(false);
+	}
+	ui->listView->resizeColumnToContents(3);
 }
 
 void AccountListPage::on_actionManageSkins_triggered()
 {
-    QModelIndexList selection = ui->listView->selectionModel()->selectedIndexes();
-    if (selection.size() > 0) {
-        QModelIndex selected = selection.first();
-        MinecraftAccountPtr account = selected.data(AccountList::PointerRole).value<MinecraftAccountPtr>();
-        SkinManageDialog dialog(this, account);
-        dialog.exec();
-    }
+	QModelIndexList selection = ui->listView->selectionModel()->selectedIndexes();
+	if (selection.size() > 0)
+	{
+		QModelIndex selected		= selection.first();
+		MinecraftAccountPtr account = selected.data(AccountList::PointerRole).value<MinecraftAccountPtr>();
+		SkinManageDialog dialog(this, account);
+		dialog.exec();
+	}
 }

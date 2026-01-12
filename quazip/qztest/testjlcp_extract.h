@@ -27,10 +27,11 @@ see quazip/(un)zip.h files for details. Basically it's the zlib license.
 
 #include <QtCore/QObject>
 
-class TestJlCpExtract : public QObject {
-    Q_OBJECT
-   private slots:
-    void extract();
+class TestJlCpExtract : public QObject
+{
+	Q_OBJECT
+  private slots:
+	void extract();
 };
 
-#endif  // QUAZIP_TEST_JLCPEXTRACT_H
+#endif // QUAZIP_TEST_JLCPEXTRACT_H

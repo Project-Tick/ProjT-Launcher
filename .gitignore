@@ -562,3 +562,4 @@ $RECYCLE.BIN/
 memory-bank/
 .clangd
 compile_commands.json
+ci-old.yml

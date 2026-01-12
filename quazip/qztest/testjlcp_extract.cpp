@@ -50,65 +50,69 @@ Q_DECLARE_METATYPE(JlCompress::Options::CompressionStrategy)
  */
 void TestJlCpExtract::extract()
 {
-    QSet<QString> zipNames = { "jlsimplefile.zip", "jlsimplefile-storage.zip", "jlsimplefile-best.zip" };
+	QSet<QString> zipNames = { "jlsimplefile.zip", "jlsimplefile-storage.zip", "jlsimplefile-best.zip" };
 
-    QSet<QString> fileNames = { "test0.txt" };
+	QSet<QString> fileNames = { "test0.txt" };
 
-    qDebug() << "Performing CP extract tests in " << QDir::currentPath();
+	qDebug() << "Performing CP extract tests in " << QDir::currentPath();
 
-    QDirIterator it(QDir::currentPath(), QStringList() << "*_cp", QDir::Dirs, QDirIterator::Subdirectories);
+	QDirIterator it(QDir::currentPath(), QStringList() << "*_cp", QDir::Dirs, QDirIterator::Subdirectories);
 
-    QVERIFY(it.hasNext());
+	QVERIFY(it.hasNext());
 
-    while (it.hasNext()) {
-        QFileInfo artifact_dir(it.next());
-        qDebug() << "====== Found artifact:" << artifact_dir.fileName() << "======";
+	while (it.hasNext())
+	{
+		QFileInfo artifact_dir(it.next());
+		qDebug() << "====== Found artifact:" << artifact_dir.fileName() << "======";
 
-        QFileInfo cpZip(artifact_dir.absoluteFilePath(), "cp.zip");
-        QVERIFY(cpZip.exists());
+		QFileInfo cpZip(artifact_dir.absoluteFilePath(), "cp.zip");
+		QVERIFY(cpZip.exists());
 
-        QDir target2(artifact_dir.absoluteFilePath() + "/cp");
-        // macos-13_qt6.8.2_sharedON_cp/cp/
-        JlCompress::extractDir(cpZip.absoluteFilePath(), target2.absolutePath());
+		QDir target2(artifact_dir.absoluteFilePath() + "/cp");
+		// macos-13_qt6.8.2_sharedON_cp/cp/
+		JlCompress::extractDir(cpZip.absoluteFilePath(), target2.absolutePath());
 
-        QList<QString> extractedZipList = target2.entryList(QStringList() << "*.zip", QDir::Files);
-        QSet<QString> extractedZipSet(extractedZipList.begin(), extractedZipList.end());
+		QList<QString> extractedZipList = target2.entryList(QStringList() << "*.zip", QDir::Files);
+		QSet<QString> extractedZipSet(extractedZipList.begin(), extractedZipList.end());
 
-        extractedZipSet = extractedZipSet.subtract(zipNames);
-        QVERIFY(extractedZipSet.isEmpty());
+		extractedZipSet = extractedZipSet.subtract(zipNames);
+		QVERIFY(extractedZipSet.isEmpty());
 
-        for (const QString& _zipFile : zipNames) {
-            qDebug() << "Found ZIP:" << _zipFile;
-            QFileInfo zip(target2, _zipFile);
-            QDir target3(target2.absolutePath() + "/" + zip.completeBaseName());
-            // macos-13_qt6.8.2_sharedON_cp/cp/jlsimplefile/
-            JlCompress::extractDir(zip.absoluteFilePath(), target3.absolutePath());
+		for (const QString& _zipFile : zipNames)
+		{
+			qDebug() << "Found ZIP:" << _zipFile;
+			QFileInfo zip(target2, _zipFile);
+			QDir target3(target2.absolutePath() + "/" + zip.completeBaseName());
+			// macos-13_qt6.8.2_sharedON_cp/cp/jlsimplefile/
+			JlCompress::extractDir(zip.absoluteFilePath(), target3.absolutePath());
 
-            QList<QString> extractedFileList = target3.entryList(QDir::Files);
-            QSet<QString> extractedFileSet(extractedFileList.begin(), extractedFileList.end());
+			QList<QString> extractedFileList = target3.entryList(QDir::Files);
+			QSet<QString> extractedFileSet(extractedFileList.begin(), extractedFileList.end());
 
-            extractedFileSet = extractedFileSet.subtract(fileNames);
-            QVERIFY(extractedFileSet.isEmpty());
+			extractedFileSet = extractedFileSet.subtract(fileNames);
+			QVERIFY(extractedFileSet.isEmpty());
 
-            // Check file content
-            for (const QString& fileName : extractedFileList) {
-                qDebug() << "Found File:" << fileName;
+			// Check file content
+			for (const QString& fileName : extractedFileList)
+			{
+				qDebug() << "Found File:" << fileName;
 
-                QFile file(target3.absolutePath() + "/" + fileName);
-                if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                    QFAIL("Failed to open file");
-                }
+				QFile file(target3.absolutePath() + "/" + fileName);
+				if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+				{
+					QFAIL("Failed to open file");
+				}
 
-                QTextStream in(&file);
-                QString fileContent = in.readAll();
-                file.close();
+				QTextStream in(&file);
+				QString fileContent = in.readAll();
+				file.close();
 
-                QString expectedContent("");
-                QTextStream ss(&expectedContent);
-                ss << "This is a test file named " << fileName << quazip_endl;
+				QString expectedContent("");
+				QTextStream ss(&expectedContent);
+				ss << "This is a test file named " << fileName << quazip_endl;
 
-                QVERIFY(fileContent == expectedContent);
-            }
-        }
-    }
+				QVERIFY(fileContent == expectedContent);
+			}
+		}
+	}
 }

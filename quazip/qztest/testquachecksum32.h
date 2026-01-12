@@ -27,11 +27,12 @@ see quazip/(un)zip.h files for details. Basically it's the zlib license.
 
 #include <QtCore/QObject>
 
-class TestQuaChecksum32 : public QObject {
-    Q_OBJECT
-   private slots:
-    void calculate();
-    void update();
+class TestQuaChecksum32 : public QObject
+{
+	Q_OBJECT
+  private slots:
+	void calculate();
+	void update();
 };
 
-#endif  // QUAZIP_TEST_QUACHECKSUM32_H
+#endif // QUAZIP_TEST_QUACHECKSUM32_H

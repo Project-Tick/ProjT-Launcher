@@ -76,276 +76,312 @@
 
 QVariant LogFormatProxyModel::data(const QModelIndex& index, int role) const
 {
-    const LogColors& colors = APPLICATION->themeManager()->getLogColors();
+	const LogColors& colors = APPLICATION->themeManager()->getLogColors();
 
-    switch (role) {
-        case Qt::FontRole:
-            return m_font;
-        case Qt::ForegroundRole: {
-            auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LogModel::LevelRole).toInt());
-            QColor result = colors.foreground.value(level);
+	switch (role)
+	{
+		case Qt::FontRole: return m_font;
+		case Qt::ForegroundRole:
+		{
+			auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LogModel::LevelRole).toInt());
+			QColor result = colors.foreground.value(level);
 
-            if (result.isValid())
-                return result;
+			if (result.isValid())
+				return result;
 
-            break;
-        }
-        case Qt::BackgroundRole: {
-            auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LogModel::LevelRole).toInt());
-            QColor result = colors.background.value(level);
+			break;
+		}
+		case Qt::BackgroundRole:
+		{
+			auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LogModel::LevelRole).toInt());
+			QColor result = colors.background.value(level);
 
-            if (result.isValid())
-                return result;
+			if (result.isValid())
+				return result;
 
-            break;
-        }
-    }
+			break;
+		}
+	}
 
-    return QIdentityProxyModel::data(index, role);
+	return QIdentityProxyModel::data(index, role);
 }
 
 QModelIndex LogFormatProxyModel::find(const QModelIndex& start, const QString& value, bool reverse) const
 {
-    QModelIndex parentIndex = parent(start);
-    auto compare = [this, start, parentIndex, value](int r) -> QModelIndex {
-        QModelIndex idx = index(r, start.column(), parentIndex);
-        if (!idx.isValid() || idx == start) {
-            return QModelIndex();
-        }
-        QVariant v = data(idx, Qt::DisplayRole);
-        QString t = v.toString();
-        if (t.contains(value, Qt::CaseInsensitive))
-            return idx;
-        return QModelIndex();
-    };
-    if (reverse) {
-        int from = start.row();
-        int to = 0;
+	QModelIndex parentIndex = parent(start);
+	auto compare			= [this, start, parentIndex, value](int r) -> QModelIndex
+	{
+		QModelIndex idx = index(r, start.column(), parentIndex);
+		if (!idx.isValid() || idx == start)
+		{
+			return QModelIndex();
+		}
+		QVariant v = data(idx, Qt::DisplayRole);
+		QString t  = v.toString();
+		if (t.contains(value, Qt::CaseInsensitive))
+			return idx;
+		return QModelIndex();
+	};
+	if (reverse)
+	{
+		int from = start.row();
+		int to	 = 0;
 
-        for (int i = 0; i < 2; ++i) {
-            for (int r = from; (r >= to); --r) {
-                auto idx = compare(r);
-                if (idx.isValid())
-                    return idx;
-            }
-            // prepare for the next iteration
-            from = rowCount() - 1;
-            to = start.row();
-        }
-    } else {
-        int from = start.row();
-        int to = rowCount(parentIndex);
+		for (int i = 0; i < 2; ++i)
+		{
+			for (int r = from; (r >= to); --r)
+			{
+				auto idx = compare(r);
+				if (idx.isValid())
+					return idx;
+			}
+			// prepare for the next iteration
+			from = rowCount() - 1;
+			to	 = start.row();
+		}
+	}
+	else
+	{
+		int from = start.row();
+		int to	 = rowCount(parentIndex);
 
-        for (int i = 0; i < 2; ++i) {
-            for (int r = from; (r < to); ++r) {
-                auto idx = compare(r);
-                if (idx.isValid())
-                    return idx;
-            }
-            // prepare for the next iteration
-            from = 0;
-            to = start.row();
-        }
-    }
-    return QModelIndex();
+		for (int i = 0; i < 2; ++i)
+		{
+			for (int r = from; (r < to); ++r)
+			{
+				auto idx = compare(r);
+				if (idx.isValid())
+					return idx;
+			}
+			// prepare for the next iteration
+			from = 0;
+			to	 = start.row();
+		}
+	}
+	return QModelIndex();
 }
 
 LogPage::LogPage(InstancePtr instance, QWidget* parent) : QWidget(parent), ui(new Ui::LogPage), m_instance(instance)
 {
-    ui->setupUi(this);
+	ui->setupUi(this);
 
-    m_proxy = new LogFormatProxyModel(this);
+	m_proxy = new LogFormatProxyModel(this);
 
-    // set up fonts in the log proxy
-    {
-        QString fontFamily = APPLICATION->settings()->get("ConsoleFont").toString();
-        bool conversionOk = false;
-        int fontSize = APPLICATION->settings()->get("ConsoleFontSize").toInt(&conversionOk);
-        if (!conversionOk) {
-            fontSize = 11;
-        }
-        m_proxy->setFont(QFont(fontFamily, fontSize));
-    }
+	// set up fonts in the log proxy
+	{
+		QString fontFamily = APPLICATION->settings()->get("ConsoleFont").toString();
+		bool conversionOk  = false;
+		int fontSize	   = APPLICATION->settings()->get("ConsoleFontSize").toInt(&conversionOk);
+		if (!conversionOk)
+		{
+			fontSize = 11;
+		}
+		m_proxy->setFont(QFont(fontFamily, fontSize));
+	}
 
-    ui->text->setModel(m_proxy);
+	ui->text->setModel(m_proxy);
 
-    // set up instance and launch process recognition
-    {
-        auto launchTask = m_instance->getLaunchTask();
-        if (launchTask) {
-            setInstanceLaunchTaskChanged(launchTask, true);
-        }
-        connect(m_instance.get(), &BaseInstance::launchTaskChanged, this, &LogPage::onInstanceLaunchTaskChanged);
-    }
+	// set up instance and launch process recognition
+	{
+		auto launchTask = m_instance->getLaunchTask();
+		if (launchTask)
+		{
+			setInstanceLaunchTaskChanged(launchTask, true);
+		}
+		connect(m_instance.get(), &BaseInstance::launchTaskChanged, this, &LogPage::onInstanceLaunchTaskChanged);
+	}
 
-    auto findShortcut = new QShortcut(QKeySequence(QKeySequence::Find), this);
-    connect(findShortcut, &QShortcut::activated, this, &LogPage::findActivated);
-    auto findNextShortcut = new QShortcut(QKeySequence(QKeySequence::FindNext), this);
-    connect(findNextShortcut, &QShortcut::activated, this, &LogPage::findNextActivated);
-    connect(ui->searchBar, &QLineEdit::returnPressed, this, &LogPage::on_findButton_clicked);
-    auto findPreviousShortcut = new QShortcut(QKeySequence(QKeySequence::FindPrevious), this);
-    connect(findPreviousShortcut, &QShortcut::activated, this, &LogPage::findPreviousActivated);
+	auto findShortcut = new QShortcut(QKeySequence(QKeySequence::Find), this);
+	connect(findShortcut, &QShortcut::activated, this, &LogPage::findActivated);
+	auto findNextShortcut = new QShortcut(QKeySequence(QKeySequence::FindNext), this);
+	connect(findNextShortcut, &QShortcut::activated, this, &LogPage::findNextActivated);
+	connect(ui->searchBar, &QLineEdit::returnPressed, this, &LogPage::on_findButton_clicked);
+	auto findPreviousShortcut = new QShortcut(QKeySequence(QKeySequence::FindPrevious), this);
+	connect(findPreviousShortcut, &QShortcut::activated, this, &LogPage::findPreviousActivated);
 }
 
 LogPage::~LogPage()
 {
-    delete ui;
+	delete ui;
 }
 
 void LogPage::modelStateToUI()
 {
-    if (m_model->wrapLines()) {
-        ui->text->setWordWrap(true);
-        ui->wrapCheckbox->setCheckState(Qt::Checked);
-    } else {
-        ui->text->setWordWrap(false);
-        ui->wrapCheckbox->setCheckState(Qt::Unchecked);
-    }
-    if (m_model->colorLines()) {
-        ui->text->setColorLines(true);
-        ui->colorCheckbox->setCheckState(Qt::Checked);
-    } else {
-        ui->text->setColorLines(false);
-        ui->colorCheckbox->setCheckState(Qt::Unchecked);
-    }
-    if (m_model->suspended()) {
-        ui->trackLogCheckbox->setCheckState(Qt::Unchecked);
-    } else {
-        ui->trackLogCheckbox->setCheckState(Qt::Checked);
-    }
+	if (m_model->wrapLines())
+	{
+		ui->text->setWordWrap(true);
+		ui->wrapCheckbox->setCheckState(Qt::Checked);
+	}
+	else
+	{
+		ui->text->setWordWrap(false);
+		ui->wrapCheckbox->setCheckState(Qt::Unchecked);
+	}
+	if (m_model->colorLines())
+	{
+		ui->text->setColorLines(true);
+		ui->colorCheckbox->setCheckState(Qt::Checked);
+	}
+	else
+	{
+		ui->text->setColorLines(false);
+		ui->colorCheckbox->setCheckState(Qt::Unchecked);
+	}
+	if (m_model->suspended())
+	{
+		ui->trackLogCheckbox->setCheckState(Qt::Unchecked);
+	}
+	else
+	{
+		ui->trackLogCheckbox->setCheckState(Qt::Checked);
+	}
 }
 
 void LogPage::UIToModelState()
 {
-    if (!m_model) {
-        return;
-    }
-    m_model->setLineWrap(ui->wrapCheckbox->checkState() == Qt::Checked);
-    m_model->setColorLines(ui->colorCheckbox->checkState() == Qt::Checked);
-    m_model->suspend(ui->trackLogCheckbox->checkState() != Qt::Checked);
+	if (!m_model)
+	{
+		return;
+	}
+	m_model->setLineWrap(ui->wrapCheckbox->checkState() == Qt::Checked);
+	m_model->setColorLines(ui->colorCheckbox->checkState() == Qt::Checked);
+	m_model->suspend(ui->trackLogCheckbox->checkState() != Qt::Checked);
 }
 
 void LogPage::setInstanceLaunchTaskChanged(shared_qobject_ptr<LaunchTask> proc, bool initial)
 {
-    m_process = proc;
-    if (m_process) {
-        m_model = proc->getLogModel();
-        m_proxy->setSourceModel(m_model.get());
-        if (initial) {
-            modelStateToUI();
-        } else {
-            UIToModelState();
-        }
-    } else {
-        m_proxy->setSourceModel(nullptr);
-        m_model.reset();
-    }
+	m_process = proc;
+	if (m_process)
+	{
+		m_model = proc->getLogModel();
+		m_proxy->setSourceModel(m_model.get());
+		if (initial)
+		{
+			modelStateToUI();
+		}
+		else
+		{
+			UIToModelState();
+		}
+	}
+	else
+	{
+		m_proxy->setSourceModel(nullptr);
+		m_model.reset();
+	}
 }
 
 void LogPage::onInstanceLaunchTaskChanged(shared_qobject_ptr<LaunchTask> proc)
 {
-    setInstanceLaunchTaskChanged(proc, false);
+	setInstanceLaunchTaskChanged(proc, false);
 }
 
 bool LogPage::apply()
 {
-    return true;
+	return true;
 }
 
 bool LogPage::shouldDisplay() const
 {
-    return true;
+	return true;
 }
 
 void LogPage::on_btnPaste_clicked()
 {
-    if (!m_model)
-        return;
+	if (!m_model)
+		return;
 
-    // FIXME: turn this into a proper task and move the upload logic out of GuiUtil!
-    m_model->append(MessageLevel::Launcher,
-                    QString("Log upload triggered at: %1").arg(QDateTime::currentDateTime().toString(Qt::RFC2822Date)));
-    auto url = GuiUtil::uploadPaste(tr("Minecraft Log"), m_model->toPlainText(), this);
-    if (!url.has_value()) {
-        m_model->append(MessageLevel::Error, QString("Log upload canceled"));
-    } else if (url->isNull()) {
-        m_model->append(MessageLevel::Error, QString("Log upload failed!"));
-    } else {
-        m_model->append(MessageLevel::Launcher, QString("Log uploaded to: %1").arg(url.value()));
-    }
+	// FIXME: turn this into a proper task and move the upload logic out of GuiUtil!
+	m_model->append(MessageLevel::Launcher,
+					QString("Log upload triggered at: %1").arg(QDateTime::currentDateTime().toString(Qt::RFC2822Date)));
+	auto url = GuiUtil::uploadPaste(tr("Minecraft Log"), m_model->toPlainText(), this);
+	if (!url.has_value())
+	{
+		m_model->append(MessageLevel::Error, QString("Log upload canceled"));
+	}
+	else if (url->isNull())
+	{
+		m_model->append(MessageLevel::Error, QString("Log upload failed!"));
+	}
+	else
+	{
+		m_model->append(MessageLevel::Launcher, QString("Log uploaded to: %1").arg(url.value()));
+	}
 }
 
 void LogPage::on_btnCopy_clicked()
 {
-    if (!m_model)
-        return;
-    m_model->append(MessageLevel::Launcher, QString("Clipboard copy at: %1").arg(QDateTime::currentDateTime().toString(Qt::RFC2822Date)));
-    GuiUtil::setClipboardText(m_model->toPlainText());
+	if (!m_model)
+		return;
+	m_model->append(MessageLevel::Launcher,
+					QString("Clipboard copy at: %1").arg(QDateTime::currentDateTime().toString(Qt::RFC2822Date)));
+	GuiUtil::setClipboardText(m_model->toPlainText());
 }
 
 void LogPage::on_btnClear_clicked()
 {
-    if (!m_model)
-        return;
-    m_model->clear();
-    m_container->refreshContainer();
+	if (!m_model)
+		return;
+	m_model->clear();
+	m_container->refreshContainer();
 }
 
 void LogPage::on_btnBottom_clicked()
 {
-    ui->text->scrollToBottom();
+	ui->text->scrollToBottom();
 }
 
 void LogPage::on_trackLogCheckbox_clicked(bool checked)
 {
-    if (!m_model)
-        return;
-    m_model->suspend(!checked);
+	if (!m_model)
+		return;
+	m_model->suspend(!checked);
 }
 
 void LogPage::on_wrapCheckbox_clicked(bool checked)
 {
-    ui->text->setWordWrap(checked);
-    if (!m_model)
-        return;
-    m_model->setLineWrap(checked);
+	ui->text->setWordWrap(checked);
+	if (!m_model)
+		return;
+	m_model->setLineWrap(checked);
 }
 
 void LogPage::on_colorCheckbox_clicked(bool checked)
 {
-    ui->text->setColorLines(checked);
-    if (!m_model)
-        return;
-    m_model->setColorLines(checked);
+	ui->text->setColorLines(checked);
+	if (!m_model)
+		return;
+	m_model->setColorLines(checked);
 }
 
 void LogPage::on_findButton_clicked()
 {
-    auto modifiers = QApplication::keyboardModifiers();
-    bool reverse = modifiers & Qt::ShiftModifier;
-    ui->text->findNext(ui->searchBar->text(), reverse);
+	auto modifiers = QApplication::keyboardModifiers();
+	bool reverse   = modifiers & Qt::ShiftModifier;
+	ui->text->findNext(ui->searchBar->text(), reverse);
 }
 
 void LogPage::findNextActivated()
 {
-    ui->text->findNext(ui->searchBar->text(), false);
+	ui->text->findNext(ui->searchBar->text(), false);
 }
 
 void LogPage::findPreviousActivated()
 {
-    ui->text->findNext(ui->searchBar->text(), true);
+	ui->text->findNext(ui->searchBar->text(), true);
 }
 
 void LogPage::findActivated()
 {
-    // focus the search bar if it doesn't have focus
-    if (!ui->searchBar->hasFocus()) {
-        ui->searchBar->setFocus();
-        ui->searchBar->selectAll();
-    }
+	// focus the search bar if it doesn't have focus
+	if (!ui->searchBar->hasFocus())
+	{
+		ui->searchBar->setFocus();
+		ui->searchBar->selectAll();
+	}
 }
 
 void LogPage::retranslate()
 {
-    ui->retranslateUi(this);
+	ui->retranslateUi(this);
 }

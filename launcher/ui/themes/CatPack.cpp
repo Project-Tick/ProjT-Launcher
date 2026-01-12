@@ -67,96 +67,105 @@
 
 QString BasicCatPack::path() const
 {
-    const auto now = QDate::currentDate();
-    const auto birthday = QDate(now.year(), 11, 1);
-    const auto xmas = QDate(now.year(), 12, 25);
-    const auto halloween = QDate(now.year(), 10, 31);
+	const auto now		 = QDate::currentDate();
+	const auto birthday	 = QDate(now.year(), 11, 1);
+	const auto xmas		 = QDate(now.year(), 12, 25);
+	const auto halloween = QDate(now.year(), 10, 31);
 
-    QString cat = QString(":/backgrounds/%1").arg(m_id);
-    if (std::abs(now.daysTo(xmas)) <= 4) {
-        cat += "-xmas";
-    } else if (std::abs(now.daysTo(halloween)) <= 4) {
-        cat += "-spooky";
-    } else if (std::abs(now.daysTo(birthday)) <= 12) {
-        cat += "-bday";
-    }
-    return cat;
+	QString cat = QString(":/backgrounds/%1").arg(m_id);
+	if (std::abs(now.daysTo(xmas)) <= 4)
+	{
+		cat += "-xmas";
+	}
+	else if (std::abs(now.daysTo(halloween)) <= 4)
+	{
+		cat += "-spooky";
+	}
+	else if (std::abs(now.daysTo(birthday)) <= 12)
+	{
+		cat += "-bday";
+	}
+	return cat;
 }
 
 JsonCatPack::PartialDate partialDate(QJsonObject date)
 {
-    auto month = Json::ensureInteger(date, "month", 1);
-    if (month > 12)
-        month = 12;
-    else if (month <= 0)
-        month = 1;
-    auto day = Json::ensureInteger(date, "day", 1);
-    if (day > 31)
-        day = 31;
-    else if (day <= 0)
-        day = 1;
-    return { month, day };
+	auto month = Json::ensureInteger(date, "month", 1);
+	if (month > 12)
+		month = 12;
+	else if (month <= 0)
+		month = 1;
+	auto day = Json::ensureInteger(date, "day", 1);
+	if (day > 31)
+		day = 31;
+	else if (day <= 0)
+		day = 1;
+	return { month, day };
 };
 
 JsonCatPack::JsonCatPack(QFileInfo& manifestInfo) : BasicCatPack(manifestInfo.dir().dirName())
 {
-    QString path = manifestInfo.path();
-    auto doc = Json::requireDocument(manifestInfo.absoluteFilePath(), "CatPack JSON file");
-    const auto root = doc.object();
-    m_name = Json::requireString(root, "name", "Catpack name");
-    m_default_path = FS::PathCombine(path, Json::requireString(root, "default", "Default Cat"));
-    auto variants = Json::ensureArray(root, "variants", QJsonArray(), "Catpack Variants");
-    for (auto v : variants) {
-        auto variant = Json::ensureObject(v, QJsonObject(), "Cat variant");
-        m_variants << Variant{ FS::PathCombine(path, Json::requireString(variant, "path", "Variant path")),
-                               partialDate(Json::requireObject(variant, "startTime", "Variant startTime")),
-                               partialDate(Json::requireObject(variant, "endTime", "Variant endTime")) };
-    }
+	QString path	= manifestInfo.path();
+	auto doc		= Json::requireDocument(manifestInfo.absoluteFilePath(), "CatPack JSON file");
+	const auto root = doc.object();
+	m_name			= Json::requireString(root, "name", "Catpack name");
+	m_default_path	= FS::PathCombine(path, Json::requireString(root, "default", "Default Cat"));
+	auto variants	= Json::ensureArray(root, "variants", QJsonArray(), "Catpack Variants");
+	for (auto v : variants)
+	{
+		auto variant = Json::ensureObject(v, QJsonObject(), "Cat variant");
+		m_variants << Variant{ FS::PathCombine(path, Json::requireString(variant, "path", "Variant path")),
+							   partialDate(Json::requireObject(variant, "startTime", "Variant startTime")),
+							   partialDate(Json::requireObject(variant, "endTime", "Variant endTime")) };
+	}
 }
 
 QDate ensureDay(int year, int month, int day)
 {
-    QDate date(year, month, 1);
-    if (day > date.daysInMonth())
-        day = date.daysInMonth();
-    return QDate(year, month, day);
+	QDate date(year, month, 1);
+	if (day > date.daysInMonth())
+		day = date.daysInMonth();
+	return QDate(year, month, day);
 }
 
 QString JsonCatPack::path() const
 {
-    return path(QDate::currentDate());
+	return path(QDate::currentDate());
 }
 
 QString JsonCatPack::path(QDate now) const
 {
-    for (auto var : m_variants) {
-        QDate startDate = ensureDay(now.year(), var.startTime.month, var.startTime.day);
-        QDate endDate = ensureDay(now.year(), var.endTime.month, var.endTime.day);
-        if (startDate > endDate) {  // it's spans over multiple years
-            if (endDate < now)      // end date is in the past so jump one year into the future for endDate
-                endDate = endDate.addYears(1);
-            else  // end date is in the future so jump one year into the past for startDate
-                startDate = startDate.addYears(-1);
-        }
+	for (auto var : m_variants)
+	{
+		QDate startDate = ensureDay(now.year(), var.startTime.month, var.startTime.day);
+		QDate endDate	= ensureDay(now.year(), var.endTime.month, var.endTime.day);
+		if (startDate > endDate)
+		{					   // it's spans over multiple years
+			if (endDate < now) // end date is in the past so jump one year into the future for endDate
+				endDate = endDate.addYears(1);
+			else // end date is in the future so jump one year into the past for startDate
+				startDate = startDate.addYears(-1);
+		}
 
-        if (startDate <= now && now <= endDate)
-            return var.path;
-    }
-    auto dInfo = QFileInfo(m_default_path);
-    if (!dInfo.isDir())
-        return m_default_path;
+		if (startDate <= now && now <= endDate)
+			return var.path;
+	}
+	auto dInfo = QFileInfo(m_default_path);
+	if (!dInfo.isDir())
+		return m_default_path;
 
-    QStringList supportedImageFormats;
-    for (auto format : QImageReader::supportedImageFormats()) {
-        supportedImageFormats.append("*." + format);
-    }
+	QStringList supportedImageFormats;
+	for (auto format : QImageReader::supportedImageFormats())
+	{
+		supportedImageFormats.append("*." + format);
+	}
 
-    auto files = QDir(m_default_path).entryInfoList(supportedImageFormats, QDir::Files, QDir::Name);
-    if (files.length() == 0)
-        return "";
-    auto idx = (now.dayOfYear() - 1) % files.length();
-    auto isRandom = dInfo.fileName().compare("random", Qt::CaseInsensitive) == 0;
-    if (isRandom)
-        idx = QRandomGenerator::global()->bounded(0, files.length());
-    return files[idx].absoluteFilePath();
+	auto files = QDir(m_default_path).entryInfoList(supportedImageFormats, QDir::Files, QDir::Name);
+	if (files.length() == 0)
+		return "";
+	auto idx	  = (now.dayOfYear() - 1) % files.length();
+	auto isRandom = dInfo.fileName().compare("random", Qt::CaseInsensitive) == 0;
+	if (isRandom)
+		idx = QRandomGenerator::global()->bounded(0, files.length());
+	return files[idx].absoluteFilePath();
 }

@@ -20,80 +20,93 @@
 #ifndef OZLIBSTREAM_H_INCLUDED
 #define OZLIBSTREAM_H_INCLUDED
 
-#include <zlib.h>
-#include <ostream>
 #include "io/zlib_streambuf.h"
+#include <ostream>
+#include <zlib.h>
 
-namespace zlib {
+namespace zlib
+{
 
-/**
- * @brief Stream buffer used by zlib::ozlibstream
- * @sa ozlibstream
- */
-class NBT_EXPORT deflate_streambuf : public zlib_streambuf {
-   public:
-    /**
-     * @param output the ostream to wrap
-     * @param bufsize the size of the internal buffers
-     * @param level the compression level, ranges from 0 to 9, or -1 for default
-     *
-     * Refer to the zlib documentation of deflateInit2 for details about the arguments.
-     *
-     * @throw zlib_error if zlib encounters a problem during initialization
-     */
-    explicit deflate_streambuf(std::ostream& output,
-                               size_t bufsize = 32768,
-                               int level = Z_DEFAULT_COMPRESSION,
-                               int window_bits = 15,
-                               int mem_level = 8,
-                               int strategy = Z_DEFAULT_STRATEGY);
-    ~deflate_streambuf() noexcept;
+	/**
+	 * @brief Stream buffer used by zlib::ozlibstream
+	 * @sa ozlibstream
+	 */
+	class NBT_EXPORT deflate_streambuf : public zlib_streambuf
+	{
+	  public:
+		/**
+		 * @param output the ostream to wrap
+		 * @param bufsize the size of the internal buffers
+		 * @param level the compression level, ranges from 0 to 9, or -1 for default
+		 *
+		 * Refer to the zlib documentation of deflateInit2 for details about the arguments.
+		 *
+		 * @throw zlib_error if zlib encounters a problem during initialization
+		 */
+		explicit deflate_streambuf(std::ostream& output,
+								   size_t bufsize  = 32768,
+								   int level	   = Z_DEFAULT_COMPRESSION,
+								   int window_bits = 15,
+								   int mem_level   = 8,
+								   int strategy	   = Z_DEFAULT_STRATEGY);
+		~deflate_streambuf() noexcept;
 
-    ///@return the wrapped ostream
-    std::ostream& get_ostr() const { return os; }
+		///@return the wrapped ostream
+		std::ostream& get_ostr() const
+		{
+			return os;
+		}
 
-    /// Finishes compression and writes all pending data to the output
-    void close();
+		///Finishes compression and writes all pending data to the output
+		void close();
 
-   private:
-    std::ostream& os;
+	  private:
+		std::ostream& os;
 
-    void deflate_chunk(int flush = Z_NO_FLUSH);
+		void deflate_chunk(int flush = Z_NO_FLUSH);
 
-    int_type overflow(int_type ch) override;
-    int sync() override;
-};
+		int_type overflow(int_type ch) override;
+		int sync() override;
+	};
 
-/**
- * @brief An ostream adapter that compresses data using zlib
- *
- * This ostream wraps another ostream. Data written to an ozlibstream will be
- * deflated (compressed) with zlib and written to the wrapped ostream.
- *
- * @sa deflate_streambuf
- */
-class NBT_EXPORT ozlibstream : public std::ostream {
-   public:
-    /**
-     * @param output the ostream to wrap
-     * @param level the compression level, ranges from 0 to 9, or -1 for default
-     * @param gzip if true, the output will be in gzip format rather than zlib
-     * @param bufsize the size of the internal buffers
-     */
-    explicit ozlibstream(std::ostream& output, int level = Z_DEFAULT_COMPRESSION, bool gzip = false, size_t bufsize = 32768)
-        : std::ostream(&buf), buf(output, bufsize, level, 15 + (gzip ? 16 : 0))
-    {}
+	/**
+	 * @brief An ostream adapter that compresses data using zlib
+	 *
+	 * This ostream wraps another ostream. Data written to an ozlibstream will be
+	 * deflated (compressed) with zlib and written to the wrapped ostream.
+	 *
+	 * @sa deflate_streambuf
+	 */
+	class NBT_EXPORT ozlibstream : public std::ostream
+	{
+	  public:
+		/**
+		 * @param output the ostream to wrap
+		 * @param level the compression level, ranges from 0 to 9, or -1 for default
+		 * @param gzip if true, the output will be in gzip format rather than zlib
+		 * @param bufsize the size of the internal buffers
+		 */
+		explicit ozlibstream(std::ostream& output,
+							 int level		= Z_DEFAULT_COMPRESSION,
+							 bool gzip		= false,
+							 size_t bufsize = 32768)
+			: std::ostream(&buf),
+			  buf(output, bufsize, level, 15 + (gzip ? 16 : 0))
+		{}
 
-    ///@return the wrapped ostream
-    std::ostream& get_ostr() const { return buf.get_ostr(); }
+		///@return the wrapped ostream
+		std::ostream& get_ostr() const
+		{
+			return buf.get_ostr();
+		}
 
-    /// Finishes compression and writes all pending data to the output
-    void close();
+		///Finishes compression and writes all pending data to the output
+		void close();
 
-   private:
-    deflate_streambuf buf;
-};
+	  private:
+		deflate_streambuf buf;
+	};
 
-}  // namespace zlib
+}
 
-#endif  // OZLIBSTREAM_H_INCLUDED
+#endif // OZLIBSTREAM_H_INCLUDED

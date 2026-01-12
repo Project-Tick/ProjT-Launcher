@@ -62,29 +62,31 @@
 #include "JavaSettingsWidget.h"
 #include "minecraft/MinecraftInstance.h"
 
-namespace Ui {
-class MinecraftSettingsWidget;
+namespace Ui
+{
+	class MinecraftSettingsWidget;
 }
 
-class MinecraftSettingsWidget : public QWidget {
-   public:
-    MinecraftSettingsWidget(MinecraftInstancePtr instance, QWidget* parent = nullptr);
-    ~MinecraftSettingsWidget() override;
+class MinecraftSettingsWidget : public QWidget
+{
+  public:
+	MinecraftSettingsWidget(MinecraftInstancePtr instance, QWidget* parent = nullptr);
+	~MinecraftSettingsWidget() override;
 
-    void loadSettings();
-    void saveSettings();
+	void loadSettings();
+	void saveSettings();
 
-   private:
-    void openGlobalSettings();
-    void updateAccountsMenu(const SettingsObject& settings);
-    bool isQuickPlaySupported();
-   private slots:
-    void saveSelectedLoaders();
-    void saveDataPacksPath();
-    void selectDataPacksFolder();
+  private:
+	void openGlobalSettings();
+	void updateAccountsMenu(const SettingsObject& settings);
+	bool isQuickPlaySupported();
+  private slots:
+	void saveSelectedLoaders();
+	void saveDataPacksPath();
+	void selectDataPacksFolder();
 
-    MinecraftInstancePtr m_instance;
-    Ui::MinecraftSettingsWidget* m_ui;
-    JavaSettingsWidget* m_javaSettings = nullptr;
-    bool m_quickPlaySingleplayer = false;
+	MinecraftInstancePtr m_instance;
+	Ui::MinecraftSettingsWidget* m_ui;
+	JavaSettingsWidget* m_javaSettings = nullptr;
+	bool m_quickPlaySingleplayer	   = false;
 };

@@ -66,85 +66,91 @@
 #include <net/NetJob.h>
 #include <qobject.h>
 
-namespace {
-QString getCreditsHtml()
+namespace
 {
-    QFile dataFile(":/documents/credits.html");
-    dataFile.open(QIODevice::ReadOnly);
+	QString getCreditsHtml()
+	{
+		QFile dataFile(":/documents/credits.html");
+		dataFile.open(QIODevice::ReadOnly);
 
-    QString fileContent = QString::fromUtf8(dataFile.readAll());
+		QString fileContent = QString::fromUtf8(dataFile.readAll());
 
-    return fileContent.arg(QObject::tr("%1 Developers").arg(BuildConfig.LAUNCHER_DISPLAYNAME), QObject::tr("Prism Launcher Developers"),
-                           QObject::tr("MultiMC Developers"), QObject::tr("With special thanks to"));
-}
+		return fileContent.arg(QObject::tr("%1 Developers").arg(BuildConfig.LAUNCHER_DISPLAYNAME),
+							   QObject::tr("Prism Launcher Developers"),
+							   QObject::tr("MultiMC Developers"),
+							   QObject::tr("With special thanks to"));
+	}
 
-QString getLicenseHtml()
-{
-    QFile dataFile(":/documents/COPYING");
-    if (dataFile.open(QIODevice::ReadOnly)) {
-        QString output = markdownToHTML(dataFile.readAll());
-        dataFile.close();
-        return output;
-    } else {
-        qWarning() << "Failed to open file '" << dataFile.fileName() << "' for reading!";
-        return QString();
-    }
-}
+	QString getLicenseHtml()
+	{
+		QFile dataFile(":/documents/COPYING");
+		if (dataFile.open(QIODevice::ReadOnly))
+		{
+			QString output = markdownToHTML(dataFile.readAll());
+			dataFile.close();
+			return output;
+		}
+		else
+		{
+			qWarning() << "Failed to open file '" << dataFile.fileName() << "' for reading!";
+			return QString();
+		}
+	}
 
-}  // namespace
+} // namespace
 
 AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDialog)
 {
-    ui->setupUi(this);
+	ui->setupUi(this);
 
-    QString launcherName = BuildConfig.LAUNCHER_DISPLAYNAME;
+	QString launcherName = BuildConfig.LAUNCHER_DISPLAYNAME;
 
-    setWindowTitle(tr("About %1").arg(launcherName));
+	setWindowTitle(tr("About %1").arg(launcherName));
 
-    QString chtml = getCreditsHtml();
-    ui->creditsText->setHtml(StringUtils::htmlListPatch(chtml));
+	QString chtml = getCreditsHtml();
+	ui->creditsText->setHtml(StringUtils::htmlListPatch(chtml));
 
-    QString lhtml = getLicenseHtml();
-    ui->licenseText->setHtml(StringUtils::htmlListPatch(lhtml));
+	QString lhtml = getLicenseHtml();
+	ui->licenseText->setHtml(StringUtils::htmlListPatch(lhtml));
 
-    ui->urlLabel->setOpenExternalLinks(true);
+	ui->urlLabel->setOpenExternalLinks(true);
 
-    ui->icon->setPixmap(APPLICATION->logo().pixmap(64));
-    ui->title->setText(launcherName);
+	ui->icon->setPixmap(APPLICATION->logo().pixmap(64));
+	ui->title->setText(launcherName);
 
-    ui->versionLabel->setText(BuildConfig.printableVersionString());
+	ui->versionLabel->setText(BuildConfig.printableVersionString());
 
-    if (!BuildConfig.BUILD_PLATFORM.isEmpty())
-        ui->platformLabel->setText(tr("Platform") + ": " + BuildConfig.BUILD_PLATFORM);
-    else
-        ui->platformLabel->setVisible(false);
+	if (!BuildConfig.BUILD_PLATFORM.isEmpty())
+		ui->platformLabel->setText(tr("Platform") + ": " + BuildConfig.BUILD_PLATFORM);
+	else
+		ui->platformLabel->setVisible(false);
 
-    if (!BuildConfig.GIT_COMMIT.isEmpty())
-        ui->commitLabel->setText(tr("Commit: %1").arg(BuildConfig.GIT_COMMIT));
-    else
-        ui->commitLabel->setVisible(false);
+	if (!BuildConfig.GIT_COMMIT.isEmpty())
+		ui->commitLabel->setText(tr("Commit: %1").arg(BuildConfig.GIT_COMMIT));
+	else
+		ui->commitLabel->setVisible(false);
 
-    if (!BuildConfig.BUILD_DATE.isEmpty())
-        ui->buildDateLabel->setText(tr("Build date: %1").arg(BuildConfig.BUILD_DATE));
-    else
-        ui->buildDateLabel->setVisible(false);
+	if (!BuildConfig.BUILD_DATE.isEmpty())
+		ui->buildDateLabel->setText(tr("Build date: %1").arg(BuildConfig.BUILD_DATE));
+	else
+		ui->buildDateLabel->setVisible(false);
 
-    if (!BuildConfig.VERSION_CHANNEL.isEmpty())
-        ui->channelLabel->setText(tr("Channel") + ": " + BuildConfig.VERSION_CHANNEL);
-    else
-        ui->channelLabel->setVisible(false);
+	if (!BuildConfig.VERSION_CHANNEL.isEmpty())
+		ui->channelLabel->setText(tr("Channel") + ": " + BuildConfig.VERSION_CHANNEL);
+	else
+		ui->channelLabel->setVisible(false);
 
-    QString urlText("<html><head/><body><p><a href=\"%1\">%1</a></p></body></html>");
-    ui->urlLabel->setText(urlText.arg(BuildConfig.LAUNCHER_GIT));
+	QString urlText("<html><head/><body><p><a href=\"%1\">%1</a></p></body></html>");
+	ui->urlLabel->setText(urlText.arg(BuildConfig.LAUNCHER_GIT));
 
-    ui->copyLabel->setText(BuildConfig.LAUNCHER_COPYRIGHT);
+	ui->copyLabel->setText(BuildConfig.LAUNCHER_COPYRIGHT);
 
-    connect(ui->closeButton, &QPushButton::clicked, this, &AboutDialog::close);
+	connect(ui->closeButton, &QPushButton::clicked, this, &AboutDialog::close);
 
-    connect(ui->aboutQt, &QPushButton::clicked, &QApplication::aboutQt);
+	connect(ui->aboutQt, &QPushButton::clicked, &QApplication::aboutQt);
 }
 
 AboutDialog::~AboutDialog()
 {
-    delete ui;
+	delete ui;
 }

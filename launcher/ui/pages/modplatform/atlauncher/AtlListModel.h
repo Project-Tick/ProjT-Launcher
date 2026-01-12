@@ -42,46 +42,48 @@
 #include <QIcon>
 #include "net/NetJob.h"
 
-namespace Atl {
+namespace Atl
+{
 
-using LogoMap = QMap<QString, QIcon>;
-using LogoCallback = std::function<void(QString)>;
+	using LogoMap	   = QMap<QString, QIcon>;
+	using LogoCallback = std::function<void(QString)>;
 
-class ListModel : public QAbstractListModel {
-    Q_OBJECT
+	class ListModel : public QAbstractListModel
+	{
+		Q_OBJECT
 
-   public:
-    ListModel(QObject* parent);
-    virtual ~ListModel();
+	  public:
+		ListModel(QObject* parent);
+		virtual ~ListModel();
 
-    int rowCount(const QModelIndex& parent) const override;
-    int columnCount(const QModelIndex& parent) const override;
-    QVariant data(const QModelIndex& index, int role) const override;
+		int rowCount(const QModelIndex& parent) const override;
+		int columnCount(const QModelIndex& parent) const override;
+		QVariant data(const QModelIndex& index, int role) const override;
 
-    void request();
+		void request();
 
-    void getLogo(const QString& logo, const QString& logoUrl, LogoCallback callback);
+		void getLogo(const QString& logo, const QString& logoUrl, LogoCallback callback);
 
-   private slots:
-    void requestFinished();
-    void requestFailed(QString reason);
+	  private slots:
+		void requestFinished();
+		void requestFailed(QString reason);
 
-    void logoFailed(QString logo);
-    void logoLoaded(QString logo, QIcon out);
+		void logoFailed(QString logo);
+		void logoLoaded(QString logo, QIcon out);
 
-   private:
-    void requestLogo(QString file, QString url);
+	  private:
+		void requestLogo(QString file, QString url);
 
-   private:
-    QList<ATLauncher::IndexedPack> modpacks;
+	  private:
+		QList<ATLauncher::IndexedPack> modpacks;
 
-    QStringList m_failedLogos;
-    QStringList m_loadingLogos;
-    LogoMap m_logoMap;
-    QMap<QString, LogoCallback> waitingCallbacks;
+		QStringList m_failedLogos;
+		QStringList m_loadingLogos;
+		LogoMap m_logoMap;
+		QMap<QString, LogoCallback> waitingCallbacks;
 
-    NetJob::Ptr jobPtr;
-    std::shared_ptr<QByteArray> response = std::make_shared<QByteArray>();
-};
+		NetJob::Ptr jobPtr;
+		std::shared_ptr<QByteArray> response = std::make_shared<QByteArray>();
+	};
 
-}  // namespace Atl
+} // namespace Atl

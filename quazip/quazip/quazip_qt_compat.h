@@ -21,19 +21,20 @@
 #include <QtCore/QSaveFile>
 inline bool quazip_close(QIODevice* device)
 {
-    QSaveFile* file = qobject_cast<QSaveFile*>(device);
-    if (file != nullptr) {
-        // We have to call the ugly commit() instead:
-        return file->commit();
-    }
-    device->close();
-    return true;
+	QSaveFile* file = qobject_cast<QSaveFile*>(device);
+	if (file != nullptr)
+	{
+		// We have to call the ugly commit() instead:
+		return file->commit();
+	}
+	device->close();
+	return true;
 }
 #else
 inline bool quazip_close(QIODevice* device)
 {
-    device->close();
-    return true;
+	device->close();
+	return true;
 }
 #endif
 
@@ -52,14 +53,14 @@ const auto SkipEmptyParts = QString::SplitBehavior::SkipEmptyParts;
 template <typename T, typename C>
 inline void quazip_sort(T begin, T end, C comparator)
 {
-    std::sort(begin, end, comparator);
+	std::sort(begin, end, comparator);
 }
 #else
 #include <QtCore/QtAlgorithms>
 template <typename T, typename C>
 inline void quazip_sort(T begin, T end, C comparator)
 {
-    qSort(begin, end, comparator);
+	qSort(begin, end, comparator);
 }
 #endif
 
@@ -69,12 +70,12 @@ inline void quazip_sort(T begin, T end, C comparator)
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
 inline QDateTime quazip_ctime(const QFileInfo& fi)
 {
-    return fi.birthTime();
+	return fi.birthTime();
 }
 #else
 inline QDateTime quazip_ctime(const QFileInfo& fi)
 {
-    return fi.created();
+	return fi.created();
 }
 #endif
 
@@ -83,13 +84,13 @@ inline QDateTime quazip_ctime(const QFileInfo& fi)
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 inline bool quazip_is_symlink(const QFileInfo& fi)
 {
-    return fi.isSymbolicLink();
+	return fi.isSymbolicLink();
 }
 #else
 inline bool quazip_is_symlink(const QFileInfo& fi)
 {
-    // also detects *.lnk on Windows, but better than nothing
-    return fi.isSymLink();
+	// also detects *.lnk on Windows, but better than nothing
+	return fi.isSymLink();
 }
 #endif
 
@@ -98,12 +99,12 @@ inline bool quazip_is_symlink(const QFileInfo& fi)
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 13, 0))
 inline QString quazip_symlink_target(const QFileInfo& fi)
 {
-    return fi.symLinkTarget();
+	return fi.symLinkTarget();
 }
 #else
 inline QString quazip_symlink_target(const QFileInfo& fi)
 {
-    return fi.readLink();  // What's the difference? I've no idea.
+	return fi.readLink(); // What's the difference? I've no idea.
 }
 #endif
 
@@ -112,22 +113,22 @@ inline QString quazip_symlink_target(const QFileInfo& fi)
 #include <QtCore/QTimeZone>
 inline QDateTime quazip_since_epoch()
 {
-    return QDateTime(QDate(1970, 1, 1), QTime(0, 0), QTimeZone::UTC);
+	return QDateTime(QDate(1970, 1, 1), QTime(0, 0), QTimeZone::UTC);
 }
 
 inline QDateTime quazip_since_epoch_ntfs()
 {
-    return QDateTime(QDate(1601, 1, 1), QTime(0, 0), QTimeZone::UTC);
+	return QDateTime(QDate(1601, 1, 1), QTime(0, 0), QTimeZone::UTC);
 }
 #else
 inline QDateTime quazip_since_epoch()
 {
-    return QDateTime(QDate(1970, 1, 1), QTime(0, 0), Qt::UTC);
+	return QDateTime(QDate(1970, 1, 1), QTime(0, 0), Qt::UTC);
 }
 
 inline QDateTime quazip_since_epoch_ntfs()
 {
-    return QDateTime(QDate(1601, 1, 1), QTime(0, 0), Qt::UTC);
+	return QDateTime(QDate(1601, 1, 1), QTime(0, 0), Qt::UTC);
 }
 #endif
 
@@ -136,32 +137,32 @@ inline QDateTime quazip_since_epoch_ntfs()
 #if (QT_VERSION >= 0x040700)
 inline quint64 quazip_ntfs_ticks(const QDateTime& time, int fineTicks)
 {
-    QDateTime base = quazip_since_epoch_ntfs();
-    return base.msecsTo(time) * 10000 + fineTicks;
+	QDateTime base = quazip_since_epoch_ntfs();
+	return base.msecsTo(time) * 10000 + fineTicks;
 }
 #else
 inline quint64 quazip_ntfs_ticks(const QDateTime& time, int fineTicks)
 {
-    QDateTime base = quazip_since_epoch_ntfs();
-    QDateTime utc = time.toUTC();
-    return (static_cast<qint64>(base.date().daysTo(utc.date())) * Q_INT64_C(86400000) +
-            static_cast<qint64>(base.time().msecsTo(utc.time()))) *
-               Q_INT64_C(10000) +
-           fineTicks;
+	QDateTime base = quazip_since_epoch_ntfs();
+	QDateTime utc  = time.toUTC();
+	return (static_cast<qint64>(base.date().daysTo(utc.date())) * Q_INT64_C(86400000)
+			+ static_cast<qint64>(base.time().msecsTo(utc.time())))
+			 * Q_INT64_C(10000)
+		 + fineTicks;
 }
 #endif
 
 // yet another improvement...
 #include <QtCore/QDateTime>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)  // Yay! Finally a way to get time as qint64!
+#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0) // Yay! Finally a way to get time as qint64!
 inline qint64 quazip_to_time64_t(const QDateTime& time)
 {
-    return time.toSecsSinceEpoch();
+	return time.toSecsSinceEpoch();
 }
 #else
 inline qint64 quazip_to_time64_t(const QDateTime& time)
 {
-    return static_cast<qint64>(time.toTime_t());  // 32 bits only, but better than nothing
+	return static_cast<qint64>(time.toTime_t()); // 32 bits only, but better than nothing
 }
 #endif
 
@@ -185,11 +186,11 @@ const auto quazip_endl = endl;
 #define COMPAT_UTC_TZ QTimeZone::utc()
 #endif
 
-#else  // timezone feature disabled
+#else // timezone feature disabled
 #include <QtCore/Qt>
 
 #define COMPAT_UTC_TZ Qt::UTC
 
 #endif
 
-#endif  // QUAZIP_QT_COMPAT_H
+#endif // QUAZIP_QT_COMPAT_H

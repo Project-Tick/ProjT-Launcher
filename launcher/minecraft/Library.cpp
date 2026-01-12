@@ -79,39 +79,47 @@
  * @param overridePath Optional path to override the default storage path.
  */
 void Library::getApplicableFiles(const RuntimeContext& runtimeContext,
-                                 QStringList& jar,
-                                 QStringList& native,
-                                 QStringList& native32,
-                                 QStringList& native64,
-                                 const QString& overridePath) const
+								 QStringList& jar,
+								 QStringList& native,
+								 QStringList& native32,
+								 QStringList& native64,
+								 const QString& overridePath) const
 {
-    bool local = isLocal();
-    // Lambda function to get the absolute file path
-    auto actualPath = [this, local, overridePath](QString relPath) {
-        relPath = FS::RemoveInvalidPathChars(relPath);
-        QFileInfo out(FS::PathCombine(storagePrefix(), relPath));
-        if (local && !overridePath.isEmpty()) {
-            QString fileName = out.fileName();
-            return QFileInfo(FS::PathCombine(overridePath, fileName)).absoluteFilePath();
-        }
-        return out.absoluteFilePath();
-    };
+	bool local = isLocal();
+	// Lambda function to get the absolute file path
+	auto actualPath = [this, local, overridePath](QString relPath)
+	{
+		relPath = FS::RemoveInvalidPathChars(relPath);
+		QFileInfo out(FS::PathCombine(storagePrefix(), relPath));
+		if (local && !overridePath.isEmpty())
+		{
+			QString fileName = out.fileName();
+			return QFileInfo(FS::PathCombine(overridePath, fileName)).absoluteFilePath();
+		}
+		return out.absoluteFilePath();
+	};
 
-    QString raw_storage = storageSuffix(runtimeContext);
-    if (isNative()) {
-        if (raw_storage.contains("${arch}")) {
-            auto nat32Storage = raw_storage;
-            nat32Storage.replace("${arch}", "32");
-            auto nat64Storage = raw_storage;
-            nat64Storage.replace("${arch}", "64");
-            native32 += actualPath(nat32Storage);
-            native64 += actualPath(nat64Storage);
-        } else {
-            native += actualPath(raw_storage);
-        }
-    } else {
-        jar += actualPath(raw_storage);
-    }
+	QString raw_storage = storageSuffix(runtimeContext);
+	if (isNative())
+	{
+		if (raw_storage.contains("${arch}"))
+		{
+			auto nat32Storage = raw_storage;
+			nat32Storage.replace("${arch}", "32");
+			auto nat64Storage = raw_storage;
+			nat64Storage.replace("${arch}", "64");
+			native32 += actualPath(nat32Storage);
+			native64 += actualPath(nat64Storage);
+		}
+		else
+		{
+			native += actualPath(raw_storage);
+		}
+	}
+	else
+	{
+		jar += actualPath(raw_storage);
+	}
 }
 
 /**
@@ -128,125 +136,162 @@ void Library::getApplicableFiles(const RuntimeContext& runtimeContext,
  * @return QList<Net::NetRequest::Ptr> List of download requests.
  */
 QList<Net::NetRequest::Ptr> Library::getDownloads(const RuntimeContext& runtimeContext,
-                                                  class HttpMetaCache* cache,
-                                                  QStringList& failedLocalFiles,
-                                                  const QString& overridePath) const
+												  class HttpMetaCache* cache,
+												  QStringList& failedLocalFiles,
+												  const QString& overridePath) const
 {
-    QList<Net::NetRequest::Ptr> out;
-    bool stale = isAlwaysStale();
-    bool local = isLocal();
+	QList<Net::NetRequest::Ptr> out;
+	bool stale = isAlwaysStale();
+	bool local = isLocal();
 
-    // Lambda function to check if a local file exists
-    auto check_local_file = [overridePath, &failedLocalFiles](QString storage) {
-        QFileInfo fileinfo(storage);
-        QString fileName = fileinfo.fileName();
-        auto fullPath = FS::PathCombine(overridePath, fileName);
-        QFileInfo localFileInfo(fullPath);
-        if (!localFileInfo.exists()) {
-            failedLocalFiles.append(localFileInfo.filePath());
-            return false;
-        }
-        return true;
-    };
+	// Lambda function to check if a local file exists
+	auto check_local_file = [overridePath, &failedLocalFiles](QString storage)
+	{
+		QFileInfo fileinfo(storage);
+		QString fileName = fileinfo.fileName();
+		auto fullPath	 = FS::PathCombine(overridePath, fileName);
+		QFileInfo localFileInfo(fullPath);
+		if (!localFileInfo.exists())
+		{
+			failedLocalFiles.append(localFileInfo.filePath());
+			return false;
+		}
+		return true;
+	};
 
-    // Lambda function to add a download request
-    auto add_download = [this, local, check_local_file, cache, stale, &out](QString storage, QString url, QString sha1) {
-        if (local) {
-            return check_local_file(storage);
-        }
-        auto entry = cache->resolveEntry("libraries", storage);
-        if (stale) {
-            entry->setStale(true);
-        }
-        if (!entry->isStale())
-            return true;
-        Net::Download::Options options;
-        if (stale) {
-            options |= Net::Download::Option::AcceptLocalFiles;
-        }
+	// Lambda function to add a download request
+	auto add_download = [this, local, check_local_file, cache, stale, &out](QString storage, QString url, QString sha1)
+	{
+		if (local)
+		{
+			return check_local_file(storage);
+		}
+		auto entry = cache->resolveEntry("libraries", storage);
+		if (stale)
+		{
+			entry->setStale(true);
+		}
+		if (!entry->isStale())
+			return true;
+		Net::Download::Options options;
+		if (stale)
+		{
+			options |= Net::Download::Option::AcceptLocalFiles;
+		}
 
-        // Don't add a time limit for the libraries cache entry validity
-        options |= Net::Download::Option::MakeEternal;
+		// Don't add a time limit for the libraries cache entry validity
+		options |= Net::Download::Option::MakeEternal;
 
-        if (sha1.size()) {
-            auto dl = Net::ApiDownload::makeCached(url, entry, options);
-            dl->addValidator(new Net::ChecksumValidator(QCryptographicHash::Sha1, sha1));
-            qDebug() << "Checksummed Download for:" << rawName().serialize() << "storage:" << storage << "url:" << url;
-            out.append(dl);
-        } else {
-            out.append(Net::ApiDownload::makeCached(url, entry, options));
-            qDebug() << "Download for:" << rawName().serialize() << "storage:" << storage << "url:" << url;
-        }
-        return true;
-    };
+		if (sha1.size())
+		{
+			auto dl = Net::ApiDownload::makeCached(url, entry, options);
+			dl->addValidator(new Net::ChecksumValidator(QCryptographicHash::Sha1, sha1));
+			qDebug() << "Checksummed Download for:" << rawName().serialize() << "storage:" << storage << "url:" << url;
+			out.append(dl);
+		}
+		else
+		{
+			out.append(Net::ApiDownload::makeCached(url, entry, options));
+			qDebug() << "Download for:" << rawName().serialize() << "storage:" << storage << "url:" << url;
+		}
+		return true;
+	};
 
-    QString raw_storage = storageSuffix(runtimeContext);
-    if (m_mojangDownloads) {
-        if (isNative()) {
-            auto nativeClassifier = getCompatibleNative(runtimeContext);
-            if (!nativeClassifier.isNull()) {
-                if (nativeClassifier.contains("${arch}")) {
-                    auto nat32Classifier = nativeClassifier;
-                    nat32Classifier.replace("${arch}", "32");
-                    auto nat64Classifier = nativeClassifier;
-                    nat64Classifier.replace("${arch}", "64");
-                    auto nat32info = m_mojangDownloads->getDownloadInfo(nat32Classifier);
-                    if (nat32info) {
-                        auto cooked_storage = raw_storage;
-                        cooked_storage.replace("${arch}", "32");
-                        add_download(cooked_storage, nat32info->url, nat32info->sha1);
-                    }
-                    auto nat64info = m_mojangDownloads->getDownloadInfo(nat64Classifier);
-                    if (nat64info) {
-                        auto cooked_storage = raw_storage;
-                        cooked_storage.replace("${arch}", "64");
-                        add_download(cooked_storage, nat64info->url, nat64info->sha1);
-                    }
-                } else {
-                    auto info = m_mojangDownloads->getDownloadInfo(nativeClassifier);
-                    if (info) {
-                        add_download(raw_storage, info->url, info->sha1);
-                    }
-                }
-            } else {
-                qDebug() << "Ignoring native library" << m_name.serialize() << "because it has no classifier for current OS";
-            }
-        } else {
-            if (m_mojangDownloads->artifact) {
-                auto artifact = m_mojangDownloads->artifact;
-                add_download(raw_storage, artifact->url, artifact->sha1);
-            } else {
-                qDebug() << "Ignoring java library" << m_name.serialize() << "because it has no artifact";
-            }
-        }
-    } else {
-        auto raw_dl = [this, raw_storage]() {
-            if (!m_absoluteURL.isEmpty()) {
-                return m_absoluteURL;
-            }
+	QString raw_storage = storageSuffix(runtimeContext);
+	if (m_mojangDownloads)
+	{
+		if (isNative())
+		{
+			auto nativeClassifier = getCompatibleNative(runtimeContext);
+			if (!nativeClassifier.isNull())
+			{
+				if (nativeClassifier.contains("${arch}"))
+				{
+					auto nat32Classifier = nativeClassifier;
+					nat32Classifier.replace("${arch}", "32");
+					auto nat64Classifier = nativeClassifier;
+					nat64Classifier.replace("${arch}", "64");
+					auto nat32info = m_mojangDownloads->getDownloadInfo(nat32Classifier);
+					if (nat32info)
+					{
+						auto cooked_storage = raw_storage;
+						cooked_storage.replace("${arch}", "32");
+						add_download(cooked_storage, nat32info->url, nat32info->sha1);
+					}
+					auto nat64info = m_mojangDownloads->getDownloadInfo(nat64Classifier);
+					if (nat64info)
+					{
+						auto cooked_storage = raw_storage;
+						cooked_storage.replace("${arch}", "64");
+						add_download(cooked_storage, nat64info->url, nat64info->sha1);
+					}
+				}
+				else
+				{
+					auto info = m_mojangDownloads->getDownloadInfo(nativeClassifier);
+					if (info)
+					{
+						add_download(raw_storage, info->url, info->sha1);
+					}
+				}
+			}
+			else
+			{
+				qDebug() << "Ignoring native library" << m_name.serialize()
+						 << "because it has no classifier for current OS";
+			}
+		}
+		else
+		{
+			if (m_mojangDownloads->artifact)
+			{
+				auto artifact = m_mojangDownloads->artifact;
+				add_download(raw_storage, artifact->url, artifact->sha1);
+			}
+			else
+			{
+				qDebug() << "Ignoring java library" << m_name.serialize() << "because it has no artifact";
+			}
+		}
+	}
+	else
+	{
+		auto raw_dl = [this, raw_storage]()
+		{
+			if (!m_absoluteURL.isEmpty())
+			{
+				return m_absoluteURL;
+			}
 
-            if (m_repositoryURL.isEmpty()) {
-                return BuildConfig.LIBRARY_BASE + raw_storage;
-            }
+			if (m_repositoryURL.isEmpty())
+			{
+				return BuildConfig.LIBRARY_BASE + raw_storage;
+			}
 
-            if (m_repositoryURL.endsWith('/')) {
-                return m_repositoryURL + raw_storage;
-            } else {
-                return m_repositoryURL + QChar('/') + raw_storage;
-            }
-        }();
-        if (raw_storage.contains("${arch}")) {
-            QString cooked_storage = raw_storage;
-            QString cooked_dl = raw_dl;
-            add_download(cooked_storage.replace("${arch}", "32"), cooked_dl.replace("${arch}", "32"), QString());
-            cooked_storage = raw_storage;
-            cooked_dl = raw_dl;
-            add_download(cooked_storage.replace("${arch}", "64"), cooked_dl.replace("${arch}", "64"), QString());
-        } else {
-            add_download(raw_storage, raw_dl, QString());
-        }
-    }
-    return out;
+			if (m_repositoryURL.endsWith('/'))
+			{
+				return m_repositoryURL + raw_storage;
+			}
+			else
+			{
+				return m_repositoryURL + QChar('/') + raw_storage;
+			}
+		}();
+		if (raw_storage.contains("${arch}"))
+		{
+			QString cooked_storage = raw_storage;
+			QString cooked_dl	   = raw_dl;
+			add_download(cooked_storage.replace("${arch}", "32"), cooked_dl.replace("${arch}", "32"), QString());
+			cooked_storage = raw_storage;
+			cooked_dl	   = raw_dl;
+			add_download(cooked_storage.replace("${arch}", "64"), cooked_dl.replace("${arch}", "64"), QString());
+		}
+		else
+		{
+			add_download(raw_storage, raw_dl, QString());
+		}
+	}
+	return out;
 }
 
 /**
@@ -260,22 +305,27 @@ QList<Net::NetRequest::Ptr> Library::getDownloads(const RuntimeContext& runtimeC
  */
 bool Library::isActive(const RuntimeContext& runtimeContext) const
 {
-    bool result = true;
-    if (m_rules.empty()) {
-        result = true;
-    } else {
-        Rule::Action ruleResult = Rule::Disallow;
-        for (auto rule : m_rules) {
-            Rule::Action temp = rule.apply(runtimeContext);
-            if (temp != Rule::Defer)
-                ruleResult = temp;
-        }
-        result = result && (ruleResult == Rule::Allow);
-    }
-    if (isNative()) {
-        result = result && !getCompatibleNative(runtimeContext).isNull();
-    }
-    return result;
+	bool result = true;
+	if (m_rules.empty())
+	{
+		result = true;
+	}
+	else
+	{
+		Rule::Action ruleResult = Rule::Disallow;
+		for (auto rule : m_rules)
+		{
+			Rule::Action temp = rule.apply(runtimeContext);
+			if (temp != Rule::Defer)
+				ruleResult = temp;
+		}
+		result = result && (ruleResult == Rule::Allow);
+	}
+	if (isNative())
+	{
+		result = result && !getCompatibleNative(runtimeContext).isNull();
+	}
+	return result;
 }
 
 /**
@@ -285,7 +335,7 @@ bool Library::isActive(const RuntimeContext& runtimeContext) const
  */
 bool Library::isLocal() const
 {
-    return m_hint == "local";
+	return m_hint == "local";
 }
 
 /**
@@ -295,7 +345,7 @@ bool Library::isLocal() const
  */
 bool Library::isAlwaysStale() const
 {
-    return m_hint == "always-stale";
+	return m_hint == "always-stale";
 }
 
 /**
@@ -309,16 +359,16 @@ bool Library::isAlwaysStale() const
  */
 QString Library::getCompatibleNative(const RuntimeContext& runtimeContext) const
 {
-    // try to match precise classifier "[os]-[arch]"
-    auto entry = m_nativeClassifiers.constFind(runtimeContext.getClassifier());
-    // try to match imprecise classifier on legacy architectures "[os]"
-    if (entry == m_nativeClassifiers.constEnd() && runtimeContext.isLegacyArch())
-        entry = m_nativeClassifiers.constFind(runtimeContext.system);
+	// try to match precise classifier "[os]-[arch]"
+	auto entry = m_nativeClassifiers.constFind(runtimeContext.getClassifier());
+	// try to match imprecise classifier on legacy architectures "[os]"
+	if (entry == m_nativeClassifiers.constEnd() && runtimeContext.isLegacyArch())
+		entry = m_nativeClassifiers.constFind(runtimeContext.system);
 
-    if (entry == m_nativeClassifiers.constEnd())
-        return QString();
+	if (entry == m_nativeClassifiers.constEnd())
+		return QString();
 
-    return entry.value();
+	return entry.value();
 }
 
 /**
@@ -328,7 +378,7 @@ QString Library::getCompatibleNative(const RuntimeContext& runtimeContext) const
  */
 void Library::setStoragePrefix(QString prefix)
 {
-    m_storagePrefix = prefix;
+	m_storagePrefix = prefix;
 }
 
 /**
@@ -338,7 +388,7 @@ void Library::setStoragePrefix(QString prefix)
  */
 QString Library::defaultStoragePrefix()
 {
-    return "libraries/";
+	return "libraries/";
 }
 
 /**
@@ -348,10 +398,11 @@ QString Library::defaultStoragePrefix()
  */
 QString Library::storagePrefix() const
 {
-    if (m_storagePrefix.isEmpty()) {
-        return defaultStoragePrefix();
-    }
-    return m_storagePrefix;
+	if (m_storagePrefix.isEmpty())
+	{
+		return defaultStoragePrefix();
+	}
+	return m_storagePrefix;
 }
 
 /**
@@ -365,23 +416,28 @@ QString Library::storagePrefix() const
  */
 QString Library::filename(const RuntimeContext& runtimeContext) const
 {
-    if (!m_filename.isEmpty()) {
-        return m_filename;
-    }
-    // non-native? use only the gradle specifier
-    if (!isNative()) {
-        return m_name.getFileName();
-    }
+	if (!m_filename.isEmpty())
+	{
+		return m_filename;
+	}
+	// non-native? use only the gradle specifier
+	if (!isNative())
+	{
+		return m_name.getFileName();
+	}
 
-    // otherwise native, override classifiers. Mojang HACK!
-    GradleSpecifier nativeSpec = m_name;
-    QString nativeClassifier = getCompatibleNative(runtimeContext);
-    if (!nativeClassifier.isNull()) {
-        nativeSpec.setClassifier(nativeClassifier);
-    } else {
-        nativeSpec.setClassifier("INVALID");
-    }
-    return nativeSpec.getFileName();
+	// otherwise native, override classifiers. Mojang HACK!
+	GradleSpecifier nativeSpec = m_name;
+	QString nativeClassifier   = getCompatibleNative(runtimeContext);
+	if (!nativeClassifier.isNull())
+	{
+		nativeSpec.setClassifier(nativeClassifier);
+	}
+	else
+	{
+		nativeSpec.setClassifier("INVALID");
+	}
+	return nativeSpec.getFileName();
 }
 
 /**
@@ -395,9 +451,9 @@ QString Library::filename(const RuntimeContext& runtimeContext) const
  */
 QString Library::displayName(const RuntimeContext& runtimeContext) const
 {
-    if (!m_displayname.isEmpty())
-        return m_displayname;
-    return filename(runtimeContext);
+	if (!m_displayname.isEmpty())
+		return m_displayname;
+	return filename(runtimeContext);
 }
 
 /**
@@ -411,18 +467,22 @@ QString Library::displayName(const RuntimeContext& runtimeContext) const
  */
 QString Library::storageSuffix(const RuntimeContext& runtimeContext) const
 {
-    // non-native? use only the gradle specifier
-    if (!isNative()) {
-        return m_name.toPath(m_filename);
-    }
+	// non-native? use only the gradle specifier
+	if (!isNative())
+	{
+		return m_name.toPath(m_filename);
+	}
 
-    // otherwise native, override classifiers. Mojang HACK!
-    GradleSpecifier nativeSpec = m_name;
-    QString nativeClassifier = getCompatibleNative(runtimeContext);
-    if (!nativeClassifier.isNull()) {
-        nativeSpec.setClassifier(nativeClassifier);
-    } else {
-        nativeSpec.setClassifier("INVALID");
-    }
-    return nativeSpec.toPath(m_filename);
+	// otherwise native, override classifiers. Mojang HACK!
+	GradleSpecifier nativeSpec = m_name;
+	QString nativeClassifier   = getCompatibleNative(runtimeContext);
+	if (!nativeClassifier.isNull())
+	{
+		nativeSpec.setClassifier(nativeClassifier);
+	}
+	else
+	{
+		nativeSpec.setClassifier("INVALID");
+	}
+	return nativeSpec.toPath(m_filename);
 }

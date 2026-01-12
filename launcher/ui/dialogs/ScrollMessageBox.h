@@ -22,19 +22,21 @@
 #include <QDialog>
 
 QT_BEGIN_NAMESPACE
-namespace Ui {
-class ScrollMessageBox;
+namespace Ui
+{
+	class ScrollMessageBox;
 }
 QT_END_NAMESPACE
 
-class ScrollMessageBox : public QDialog {
-    Q_OBJECT
+class ScrollMessageBox : public QDialog
+{
+	Q_OBJECT
 
-   public:
-    ScrollMessageBox(QWidget* parent, const QString& title, const QString& text, const QString& body);
+  public:
+	ScrollMessageBox(QWidget* parent, const QString& title, const QString& text, const QString& body);
 
-    ~ScrollMessageBox() override;
+	~ScrollMessageBox() override;
 
-   private:
-    Ui::ScrollMessageBox* ui;
+  private:
+	Ui::ScrollMessageBox* ui;
 };

@@ -21,9 +21,11 @@
 
 #include "Theme.h"
 
-class FusionTheme : public Theme {
-   public:
-    virtual ~FusionTheme() {}
+class FusionTheme : public Theme
+{
+  public:
+	virtual ~FusionTheme()
+	{}
 
-    QString qtTheme() override;
+	QString qtTheme() override;
 };

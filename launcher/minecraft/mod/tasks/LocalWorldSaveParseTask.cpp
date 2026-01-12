@@ -52,162 +52,180 @@
 #include <QDir>
 #include <QFileInfo>
 
-namespace WorldSaveUtils {
-
-bool process(WorldSave& pack, ProcessingLevel level)
+namespace WorldSaveUtils
 {
-    switch (pack.type()) {
-        case ResourceType::FOLDER:
-            return WorldSaveUtils::processFolder(pack, level);
-        case ResourceType::ZIPFILE:
-            return WorldSaveUtils::processZIP(pack, level);
-        default:
-            qWarning() << "Invalid type for world save parse task!";
-            return false;
-    }
-}
 
-/// @brief checks a folder structure to see if it contains a level.dat
-/// @param dir the path to check
-/// @param saves used in recursive call if a "saves" dir was found
-/// @return std::tuple of (
-///             bool <found level.dat>,
-///             QString <name of folder containing level.dat>,
-///             bool <saves folder found>
-///         )
-static std::tuple<bool, QString, bool> contains_level_dat(QDir dir, bool saves = false)
-{
-    for (auto const& entry : dir.entryInfoList()) {
-        if (!entry.isDir()) {
-            continue;
-        }
-        if (!saves && entry.fileName() == "saves") {
-            return contains_level_dat(QDir(entry.filePath()), true);
-        }
-        QFileInfo level_dat(FS::PathCombine(entry.filePath(), "level.dat"));
-        if (level_dat.exists() && level_dat.isFile()) {
-            return std::make_tuple(true, entry.fileName(), saves);
-        }
-    }
-    return std::make_tuple(false, "", saves);
-}
+	bool process(WorldSave& pack, ProcessingLevel level)
+	{
+		switch (pack.type())
+		{
+			case ResourceType::FOLDER: return WorldSaveUtils::processFolder(pack, level);
+			case ResourceType::ZIPFILE: return WorldSaveUtils::processZIP(pack, level);
+			default: qWarning() << "Invalid type for world save parse task!"; return false;
+		}
+	}
 
-bool processFolder(WorldSave& save, ProcessingLevel level)
-{
-    Q_ASSERT(save.type() == ResourceType::FOLDER);
+	/// @brief checks a folder structure to see if it contains a level.dat
+	/// @param dir the path to check
+	/// @param saves used in recursive call if a "saves" dir was found
+	/// @return std::tuple of (
+	///             bool <found level.dat>,
+	///             QString <name of folder containing level.dat>,
+	///             bool <saves folder found>
+	///         )
+	static std::tuple<bool, QString, bool> contains_level_dat(QDir dir, bool saves = false)
+	{
+		for (auto const& entry : dir.entryInfoList())
+		{
+			if (!entry.isDir())
+			{
+				continue;
+			}
+			if (!saves && entry.fileName() == "saves")
+			{
+				return contains_level_dat(QDir(entry.filePath()), true);
+			}
+			QFileInfo level_dat(FS::PathCombine(entry.filePath(), "level.dat"));
+			if (level_dat.exists() && level_dat.isFile())
+			{
+				return std::make_tuple(true, entry.fileName(), saves);
+			}
+		}
+		return std::make_tuple(false, "", saves);
+	}
 
-    auto [found, save_dir_name, found_saves_dir] = contains_level_dat(QDir(save.fileinfo().filePath()));
+	bool processFolder(WorldSave& save, ProcessingLevel level)
+	{
+		Q_ASSERT(save.type() == ResourceType::FOLDER);
 
-    if (!found) {
-        return false;
-    }
+		auto [found, save_dir_name, found_saves_dir] = contains_level_dat(QDir(save.fileinfo().filePath()));
 
-    save.setSaveDirName(save_dir_name);
+		if (!found)
+		{
+			return false;
+		}
 
-    if (found_saves_dir) {
-        save.setSaveFormat(WorldSaveFormat::MULTI);
-    } else {
-        save.setSaveFormat(WorldSaveFormat::SINGLE);
-    }
+		save.setSaveDirName(save_dir_name);
 
-    if (level == ProcessingLevel::BasicInfoOnly) {
-        return true;  // only need basic info already checked
-    }
+		if (found_saves_dir)
+		{
+			save.setSaveFormat(WorldSaveFormat::MULTI);
+		}
+		else
+		{
+			save.setSaveFormat(WorldSaveFormat::SINGLE);
+		}
 
-    // reserved for more intensive processing
+		if (level == ProcessingLevel::BasicInfoOnly)
+		{
+			return true; // only need basic info already checked
+		}
 
-    return true;  // all tests passed
-}
+		// reserved for more intensive processing
 
-/// @brief checks a folder structure to see if it contains a level.dat
-/// @param zip the zip file to check
-/// @return std::tuple of (
-///             bool <found level.dat>,
-///             QString <name of folder containing level.dat>,
-///             bool <saves folder found>
-///         )
-static std::tuple<bool, QString, bool> contains_level_dat(QuaZip& zip)
-{
-    bool saves = false;
-    QuaZipDir zipDir(&zip);
-    if (zipDir.exists("/saves")) {
-        saves = true;
-        zipDir.cd("/saves");
-    }
+		return true; // all tests passed
+	}
 
-    for (auto const& entry : zipDir.entryList()) {
-        zipDir.cd(entry);
-        if (zipDir.exists("level.dat")) {
-            return std::make_tuple(true, entry, saves);
-        }
-        zipDir.cd("..");
-    }
-    return std::make_tuple(false, "", saves);
-}
+	/// @brief checks a folder structure to see if it contains a level.dat
+	/// @param zip the zip file to check
+	/// @return std::tuple of (
+	///             bool <found level.dat>,
+	///             QString <name of folder containing level.dat>,
+	///             bool <saves folder found>
+	///         )
+	static std::tuple<bool, QString, bool> contains_level_dat(QuaZip& zip)
+	{
+		bool saves = false;
+		QuaZipDir zipDir(&zip);
+		if (zipDir.exists("/saves"))
+		{
+			saves = true;
+			zipDir.cd("/saves");
+		}
 
-bool processZIP(WorldSave& save, ProcessingLevel level)
-{
-    Q_ASSERT(save.type() == ResourceType::ZIPFILE);
+		for (auto const& entry : zipDir.entryList())
+		{
+			zipDir.cd(entry);
+			if (zipDir.exists("level.dat"))
+			{
+				return std::make_tuple(true, entry, saves);
+			}
+			zipDir.cd("..");
+		}
+		return std::make_tuple(false, "", saves);
+	}
 
-    QuaZip zip(save.fileinfo().filePath());
-    if (!zip.open(QuaZip::mdUnzip))
-        return false;  // can't open zip file
+	bool processZIP(WorldSave& save, ProcessingLevel level)
+	{
+		Q_ASSERT(save.type() == ResourceType::ZIPFILE);
 
-    auto [found, save_dir_name, found_saves_dir] = contains_level_dat(zip);
+		QuaZip zip(save.fileinfo().filePath());
+		if (!zip.open(QuaZip::mdUnzip))
+			return false; // can't open zip file
 
-    if (save_dir_name.endsWith("/")) {
-        save_dir_name.chop(1);
-    }
+		auto [found, save_dir_name, found_saves_dir] = contains_level_dat(zip);
 
-    if (!found) {
-        return false;
-    }
+		if (save_dir_name.endsWith("/"))
+		{
+			save_dir_name.chop(1);
+		}
 
-    save.setSaveDirName(save_dir_name);
+		if (!found)
+		{
+			return false;
+		}
 
-    if (found_saves_dir) {
-        save.setSaveFormat(WorldSaveFormat::MULTI);
-    } else {
-        save.setSaveFormat(WorldSaveFormat::SINGLE);
-    }
+		save.setSaveDirName(save_dir_name);
 
-    if (level == ProcessingLevel::BasicInfoOnly) {
-        zip.close();
-        return true;  // only need basic info already checked
-    }
+		if (found_saves_dir)
+		{
+			save.setSaveFormat(WorldSaveFormat::MULTI);
+		}
+		else
+		{
+			save.setSaveFormat(WorldSaveFormat::SINGLE);
+		}
 
-    // reserved for more intensive processing
+		if (level == ProcessingLevel::BasicInfoOnly)
+		{
+			zip.close();
+			return true; // only need basic info already checked
+		}
 
-    zip.close();
+		// reserved for more intensive processing
 
-    return true;
-}
+		zip.close();
 
-bool validate(QFileInfo file)
-{
-    WorldSave sp{ file };
-    return WorldSaveUtils::process(sp, ProcessingLevel::BasicInfoOnly) && sp.valid();
-}
+		return true;
+	}
 
-}  // namespace WorldSaveUtils
+	bool validate(QFileInfo file)
+	{
+		WorldSave sp{ file };
+		return WorldSaveUtils::process(sp, ProcessingLevel::BasicInfoOnly) && sp.valid();
+	}
 
-LocalWorldSaveParseTask::LocalWorldSaveParseTask(int token, WorldSave& save) : Task(false), m_token(token), m_save(save) {}
+} // namespace WorldSaveUtils
+
+LocalWorldSaveParseTask::LocalWorldSaveParseTask(int token, WorldSave& save) : Task(false), m_token(token), m_save(save)
+{}
 
 bool LocalWorldSaveParseTask::abort()
 {
-    m_aborted = true;
-    return true;
+	m_aborted = true;
+	return true;
 }
 
 void LocalWorldSaveParseTask::executeTask()
 {
-    if (!WorldSaveUtils::process(m_save)) {
-        emitFailed("this is not a world");
-        return;
-    }
+	if (!WorldSaveUtils::process(m_save))
+	{
+		emitFailed("this is not a world");
+		return;
+	}
 
-    if (m_aborted)
-        emitAborted();
-    else
-        emitSucceeded();
+	if (m_aborted)
+		emitAborted();
+	else
+		emitSucceeded();
 }

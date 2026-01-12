@@ -48,42 +48,52 @@
 #include <windows.h>
 #endif
 
-LocalResourceUpdateTask::LocalResourceUpdateTask(QDir index_dir, ModPlatform::IndexedPack& project, ModPlatform::IndexedVersion& version)
-    : m_index_dir(index_dir), m_project(project), m_version(version)
+LocalResourceUpdateTask::LocalResourceUpdateTask(QDir index_dir,
+												 ModPlatform::IndexedPack& project,
+												 ModPlatform::IndexedVersion& version)
+	: m_index_dir(index_dir),
+	  m_project(project),
+	  m_version(version)
 {
-    // Ensure a '.index' folder exists in the mods folder, and create it if it does not
-    if (!FS::ensureFolderPathExists(index_dir.path())) {
-        emitFailed(QString("Unable to create index directory at %1!").arg(index_dir.absolutePath()));
-    }
+	// Ensure a '.index' folder exists in the mods folder, and create it if it does not
+	if (!FS::ensureFolderPathExists(index_dir.path()))
+	{
+		emitFailed(QString("Unable to create index directory at %1!").arg(index_dir.absolutePath()));
+	}
 
 #ifdef Q_OS_WIN32
-    SetFileAttributesW(index_dir.path().toStdWString().c_str(), FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_NOT_CONTENT_INDEXED);
+	SetFileAttributesW(index_dir.path().toStdWString().c_str(),
+					   FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_NOT_CONTENT_INDEXED);
 #endif
 }
 
 void LocalResourceUpdateTask::executeTask()
 {
-    setStatus(tr("Updating index for resource:\n%1").arg(m_project.name));
+	setStatus(tr("Updating index for resource:\n%1").arg(m_project.name));
 
-    auto old_metadata = Metadata::get(m_index_dir, m_project.addonId);
-    if (old_metadata.isValid()) {
-        emit hasOldResource(old_metadata.name, old_metadata.filename);
-        if (m_project.slug.isEmpty())
-            m_project.slug = old_metadata.slug;
-    }
+	auto old_metadata = Metadata::get(m_index_dir, m_project.addonId);
+	if (old_metadata.isValid())
+	{
+		emit hasOldResource(old_metadata.name, old_metadata.filename);
+		if (m_project.slug.isEmpty())
+			m_project.slug = old_metadata.slug;
+	}
 
-    auto pw_mod = Metadata::create(m_index_dir, m_project, m_version);
-    if (pw_mod.isValid()) {
-        Metadata::update(m_index_dir, pw_mod);
-        emitSucceeded();
-    } else {
-        qCritical() << "Tried to update an invalid resource!";
-        emitFailed(tr("Invalid metadata"));
-    }
+	auto pw_mod = Metadata::create(m_index_dir, m_project, m_version);
+	if (pw_mod.isValid())
+	{
+		Metadata::update(m_index_dir, pw_mod);
+		emitSucceeded();
+	}
+	else
+	{
+		qCritical() << "Tried to update an invalid resource!";
+		emitFailed(tr("Invalid metadata"));
+	}
 }
 
 auto LocalResourceUpdateTask::abort() -> bool
 {
-    emitAborted();
-    return true;
+	emitAborted();
+	return true;
 }

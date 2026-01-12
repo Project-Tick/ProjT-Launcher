@@ -50,35 +50,47 @@
 
 #include "tasks/Task.h"
 
-namespace WorldSaveUtils {
+namespace WorldSaveUtils
+{
 
-enum class ProcessingLevel { Full, BasicInfoOnly };
+	enum class ProcessingLevel
+	{
+		Full,
+		BasicInfoOnly
+	};
 
-bool process(WorldSave& save, ProcessingLevel level = ProcessingLevel::Full);
+	bool process(WorldSave& save, ProcessingLevel level = ProcessingLevel::Full);
 
-bool processZIP(WorldSave& pack, ProcessingLevel level = ProcessingLevel::Full);
-bool processFolder(WorldSave& pack, ProcessingLevel level = ProcessingLevel::Full);
+	bool processZIP(WorldSave& pack, ProcessingLevel level = ProcessingLevel::Full);
+	bool processFolder(WorldSave& pack, ProcessingLevel level = ProcessingLevel::Full);
 
-bool validate(QFileInfo file);
+	bool validate(QFileInfo file);
 
-}  // namespace WorldSaveUtils
+} // namespace WorldSaveUtils
 
-class LocalWorldSaveParseTask : public Task {
-    Q_OBJECT
-   public:
-    LocalWorldSaveParseTask(int token, WorldSave& save);
+class LocalWorldSaveParseTask : public Task
+{
+	Q_OBJECT
+  public:
+	LocalWorldSaveParseTask(int token, WorldSave& save);
 
-    bool canAbort() const override { return true; }
-    bool abort() override;
+	bool canAbort() const override
+	{
+		return true;
+	}
+	bool abort() override;
 
-    void executeTask() override;
+	void executeTask() override;
 
-    int token() const { return m_token; }
+	int token() const
+	{
+		return m_token;
+	}
 
-   private:
-    int m_token;
+  private:
+	int m_token;
 
-    WorldSave& m_save;
+	WorldSave& m_save;
 
-    bool m_aborted = false;
+	bool m_aborted = false;
 };

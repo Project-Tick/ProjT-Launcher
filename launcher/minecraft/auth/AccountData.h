@@ -66,84 +66,109 @@
 #include <QString>
 #include <QVariantMap>
 
-enum class Validity { None, Assumed, Certain };
-
-struct Token {
-    QDateTime issueInstant;
-    QDateTime notAfter;
-    QString token;
-    QString refresh_token;
-    QVariantMap extra;
-
-    Validity validity = Validity::None;
-    bool persistent = true;
+enum class Validity
+{
+	None,
+	Assumed,
+	Certain
 };
 
-struct Skin {
-    QString id;
-    QString url;
-    QString variant;
+struct Token
+{
+	QDateTime issueInstant;
+	QDateTime notAfter;
+	QString token;
+	QString refresh_token;
+	QVariantMap extra;
 
-    QByteArray data;
+	Validity validity = Validity::None;
+	bool persistent	  = true;
 };
 
-struct Cape {
-    QString id;
-    QString url;
-    QString alias;
+struct Skin
+{
+	QString id;
+	QString url;
+	QString variant;
 
-    QByteArray data;
+	QByteArray data;
 };
 
-struct MinecraftEntitlement {
-    bool ownsMinecraft = false;
-    bool canPlayMinecraft = false;
-    Validity validity = Validity::None;
+struct Cape
+{
+	QString id;
+	QString url;
+	QString alias;
+
+	QByteArray data;
 };
 
-struct MinecraftProfile {
-    QString id;
-    QString name;
-    Skin skin;
-    QString currentCape;
-    QMap<QString, Cape> capes;
-    Validity validity = Validity::None;
+struct MinecraftEntitlement
+{
+	bool ownsMinecraft	  = false;
+	bool canPlayMinecraft = false;
+	Validity validity	  = Validity::None;
 };
 
-enum class AccountType { MSA, Offline };
+struct MinecraftProfile
+{
+	QString id;
+	QString name;
+	Skin skin;
+	QString currentCape;
+	QMap<QString, Cape> capes;
+	Validity validity = Validity::None;
+};
 
-enum class AccountState { Unchecked, Offline, Working, Online, Disabled, Errored, Expired, Gone };
+enum class AccountType
+{
+	MSA,
+	Offline
+};
 
-struct AccountData {
-    QJsonObject saveState() const;
-    bool resumeStateFromV3(QJsonObject data);
+enum class AccountState
+{
+	Unchecked,
+	Offline,
+	Working,
+	Online,
+	Disabled,
+	Errored,
+	Expired,
+	Gone
+};
 
-    //! userName for Mojang accounts, gamertag for MSA
-    QString accountDisplayString() const;
+struct AccountData
+{
+	QJsonObject saveState() const;
+	bool resumeStateFromV3(QJsonObject data);
 
-    //! Yggdrasil access token, as passed to the game.
-    QString accessToken() const;
+	//! userName for Mojang accounts, gamertag for MSA
+	QString accountDisplayString() const;
 
-    QString profileId() const;
-    QString profileName() const;
+	//! Yggdrasil access token, as passed to the game.
+	QString accessToken() const;
 
-    QString lastError() const;
+	QString profileId() const;
+	QString profileName() const;
 
-    AccountType type = AccountType::MSA;
+	QString lastError() const;
 
-    QString msaClientID;
-    Token msaToken;
-    Token userToken;
-    Token xboxApiToken;
-    Token mojangservicesToken;
+	AccountType type = AccountType::MSA;
 
-    Token yggdrasilToken;
-    MinecraftProfile minecraftProfile;
-    MinecraftEntitlement minecraftEntitlement;
-    Validity validity_ = Validity::None;
+	QString msaClientID;
+	Token msaToken;
+	Token userToken;
+	Token xboxApiToken;
+	Token mojangservicesToken;
 
-    // runtime only information (not saved with the account)
-    QString internalId;
-    QString errorString;
-    AccountState accountState = AccountState::Unchecked;
+	Token yggdrasilToken;
+	MinecraftProfile minecraftProfile;
+	MinecraftEntitlement minecraftEntitlement;
+	Validity validity_ = Validity::None;
+
+	// runtime only information (not saved with the account)
+	QString internalId;
+	QString errorString;
+	AccountState accountState = AccountState::Unchecked;
 };

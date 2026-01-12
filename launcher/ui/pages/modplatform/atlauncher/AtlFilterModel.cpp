@@ -43,82 +43,89 @@
 
 #include "StringUtils.h"
 
-namespace Atl {
-
-FilterModel::FilterModel(QObject* parent) : QSortFilterProxyModel(parent)
+namespace Atl
 {
-    currentSorting = Sorting::ByPopularity;
-    sortings.insert(tr("Sort by Popularity"), Sorting::ByPopularity);
-    sortings.insert(tr("Sort by Name"), Sorting::ByName);
-    sortings.insert(tr("Sort by Game Version"), Sorting::ByGameVersion);
 
-    searchTerm = "";
-}
+	FilterModel::FilterModel(QObject* parent) : QSortFilterProxyModel(parent)
+	{
+		currentSorting = Sorting::ByPopularity;
+		sortings.insert(tr("Sort by Popularity"), Sorting::ByPopularity);
+		sortings.insert(tr("Sort by Name"), Sorting::ByName);
+		sortings.insert(tr("Sort by Game Version"), Sorting::ByGameVersion);
 
-const QMap<QString, FilterModel::Sorting> FilterModel::getAvailableSortings()
-{
-    return sortings;
-}
+		searchTerm = "";
+	}
 
-QString FilterModel::translateCurrentSorting()
-{
-    return sortings.key(currentSorting);
-}
+	const QMap<QString, FilterModel::Sorting> FilterModel::getAvailableSortings()
+	{
+		return sortings;
+	}
 
-void FilterModel::setSorting(Sorting sorting)
-{
-    currentSorting = sorting;
-    invalidate();
-}
+	QString FilterModel::translateCurrentSorting()
+	{
+		return sortings.key(currentSorting);
+	}
 
-FilterModel::Sorting FilterModel::getCurrentSorting()
-{
-    return currentSorting;
-}
+	void FilterModel::setSorting(Sorting sorting)
+	{
+		currentSorting = sorting;
+		invalidate();
+	}
 
-void FilterModel::setSearchTerm(const QString term)
-{
-    searchTerm = term.trimmed();
-    invalidate();
-}
+	FilterModel::Sorting FilterModel::getCurrentSorting()
+	{
+		return currentSorting;
+	}
 
-bool FilterModel::filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
-{
-    if (searchTerm.isEmpty()) {
-        return true;
-    }
-    QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
-    QVariant raw = sourceModel()->data(index, Qt::UserRole);
-    Q_ASSERT(raw.canConvert<ATLauncher::IndexedPack>());
-    auto pack = raw.value<ATLauncher::IndexedPack>();
+	void FilterModel::setSearchTerm(const QString term)
+	{
+		searchTerm = term.trimmed();
+		invalidate();
+	}
 
-    if (searchTerm.startsWith("#"))
-        return QString::number(pack.id) == searchTerm.mid(1);
-    return pack.name.contains(searchTerm, Qt::CaseInsensitive);
-}
+	bool FilterModel::filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
+	{
+		if (searchTerm.isEmpty())
+		{
+			return true;
+		}
+		QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
+		QVariant raw	  = sourceModel()->data(index, Qt::UserRole);
+		Q_ASSERT(raw.canConvert<ATLauncher::IndexedPack>());
+		auto pack = raw.value<ATLauncher::IndexedPack>();
 
-bool FilterModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
-{
-    QVariant leftRaw = sourceModel()->data(left, Qt::UserRole);
-    Q_ASSERT(leftRaw.canConvert<ATLauncher::IndexedPack>());
-    auto leftPack = leftRaw.value<ATLauncher::IndexedPack>();
-    QVariant rightRaw = sourceModel()->data(right, Qt::UserRole);
-    Q_ASSERT(rightRaw.canConvert<ATLauncher::IndexedPack>());
-    auto rightPack = rightRaw.value<ATLauncher::IndexedPack>();
+		if (searchTerm.startsWith("#"))
+			return QString::number(pack.id) == searchTerm.mid(1);
+		return pack.name.contains(searchTerm, Qt::CaseInsensitive);
+	}
 
-    if (currentSorting == ByPopularity) {
-        return leftPack.position > rightPack.position;
-    } else if (currentSorting == ByGameVersion) {
-        Version lv(leftPack.versions.at(0).minecraft);
-        Version rv(rightPack.versions.at(0).minecraft);
-        return lv < rv;
-    } else if (currentSorting == ByName) {
-        return StringUtils::naturalCompare(leftPack.name, rightPack.name, Qt::CaseSensitive) >= 0;
-    }
+	bool FilterModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
+	{
+		QVariant leftRaw = sourceModel()->data(left, Qt::UserRole);
+		Q_ASSERT(leftRaw.canConvert<ATLauncher::IndexedPack>());
+		auto leftPack	  = leftRaw.value<ATLauncher::IndexedPack>();
+		QVariant rightRaw = sourceModel()->data(right, Qt::UserRole);
+		Q_ASSERT(rightRaw.canConvert<ATLauncher::IndexedPack>());
+		auto rightPack = rightRaw.value<ATLauncher::IndexedPack>();
 
-    // Invalid sorting set, somehow...
-    qWarning() << "Invalid sorting set!";
-    return true;
-}
+		if (currentSorting == ByPopularity)
+		{
+			return leftPack.position > rightPack.position;
+		}
+		else if (currentSorting == ByGameVersion)
+		{
+			Version lv(leftPack.versions.at(0).minecraft);
+			Version rv(rightPack.versions.at(0).minecraft);
+			return lv < rv;
+		}
+		else if (currentSorting == ByName)
+		{
+			return StringUtils::naturalCompare(leftPack.name, rightPack.name, Qt::CaseSensitive) >= 0;
+		}
 
-}  // namespace Atl
+		// Invalid sorting set, somehow...
+		qWarning() << "Invalid sorting set!";
+		return true;
+	}
+
+} // namespace Atl

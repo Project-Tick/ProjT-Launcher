@@ -1,14 +1,19 @@
-libnbtplusplus
-quazip
-_site
-node_modules
-LICENSE
-website
+# build / generated
+_site/
+node_modules/
+
+# vendored / forked upstreams
+bzip2/
+quazip/
+tomlplusplus/
+libnbtplusplus/
+libqrencode/
+cmark/
+extra-cmake-modules/
+zlib/
+
+# generated reports
 TODO_FIXME_REPORT.md
-README.md
-<!-- FIXME: HACK -->
-tomlplusplus
-libqrencode
-cmark
-extra-cmake-modules
-<!-- FIXME: HACK -->
+
+COPYING.md
+docs

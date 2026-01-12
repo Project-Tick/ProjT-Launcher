@@ -23,62 +23,69 @@
 
 #include "FileSystem.h"
 
-namespace Override {
-
-void createOverrides(const QString& name, const QString& parent_folder, const QString& override_path)
+namespace Override
 {
-    QString file_path(FS::PathCombine(parent_folder, name + ".txt"));
-    if (QFile::exists(file_path))
-        FS::deletePath(file_path);
 
-    FS::ensureFilePathExists(file_path);
+	void createOverrides(const QString& name, const QString& parent_folder, const QString& override_path)
+	{
+		QString file_path(FS::PathCombine(parent_folder, name + ".txt"));
+		if (QFile::exists(file_path))
+			FS::deletePath(file_path);
 
-    QFile file(file_path);
-    if (!file.open(QFile::WriteOnly)) {
-        qWarning() << "Failed to open file '" << file.fileName() << "' for writing!";
-        return;
-    }
+		FS::ensureFilePathExists(file_path);
 
-    QDirIterator override_iterator(override_path, QDirIterator::Subdirectories);
-    while (override_iterator.hasNext()) {
-        auto override_file_path = override_iterator.next();
-        QFileInfo info(override_file_path);
-        if (info.isFile()) {
-            // Absolute path with temp directory -> relative path
-            override_file_path = override_file_path.split(name).last().remove(0, 1);
+		QFile file(file_path);
+		if (!file.open(QFile::WriteOnly))
+		{
+			qWarning() << "Failed to open file '" << file.fileName() << "' for writing!";
+			return;
+		}
 
-            file.write(override_file_path.toUtf8());
-            file.write("\n");
-        }
-    }
+		QDirIterator override_iterator(override_path, QDirIterator::Subdirectories);
+		while (override_iterator.hasNext())
+		{
+			auto override_file_path = override_iterator.next();
+			QFileInfo info(override_file_path);
+			if (info.isFile())
+			{
+				// Absolute path with temp directory -> relative path
+				override_file_path = override_file_path.split(name).last().remove(0, 1);
 
-    file.close();
-}
+				file.write(override_file_path.toUtf8());
+				file.write("\n");
+			}
+		}
 
-QStringList readOverrides(const QString& name, const QString& parent_folder)
-{
-    QString file_path(FS::PathCombine(parent_folder, name + ".txt"));
+		file.close();
+	}
 
-    QFile file(file_path);
-    if (!file.exists())
-        return {};
+	QStringList readOverrides(const QString& name, const QString& parent_folder)
+	{
+		QString file_path(FS::PathCombine(parent_folder, name + ".txt"));
 
-    QStringList previous_overrides;
+		QFile file(file_path);
+		if (!file.exists())
+			return {};
 
-    if (!file.open(QFile::ReadOnly)) {
-        qWarning() << "Failed to open file '" << file.fileName() << "' for reading!";
-        return previous_overrides;
-    }
+		QStringList previous_overrides;
 
-    QString entry;
-    do {
-        entry = file.readLine();
-        previous_overrides.append(entry.trimmed());
-    } while (!entry.isEmpty());
+		if (!file.open(QFile::ReadOnly))
+		{
+			qWarning() << "Failed to open file '" << file.fileName() << "' for reading!";
+			return previous_overrides;
+		}
 
-    file.close();
+		QString entry;
+		do
+		{
+			entry = file.readLine();
+			previous_overrides.append(entry.trimmed());
+		}
+		while (!entry.isEmpty());
 
-    return previous_overrides;
-}
+		file.close();
 
-}  // namespace Override
+		return previous_overrides;
+	}
+
+} // namespace Override

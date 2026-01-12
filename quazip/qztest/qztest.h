@@ -32,10 +32,19 @@ see quazip/(un)zip.h files for details. Basically it's the zlib license.
 #include <quazip_qt_compat.h>
 
 extern bool createTestFiles(const QStringList& fileNames, int size = -1, const QString& dir = "tmp");
-extern bool createTestFileLarge(const QString& fileName, long long size, const QString& dir = "tmp", bool useRandomBuffer = false);
+extern bool createTestFileLarge(const QString& fileName,
+								long long size,
+								const QString& dir	 = "tmp",
+								bool useRandomBuffer = false);
 extern void removeTestFiles(const QStringList& fileNames, const QString& dir = "tmp");
 extern bool createTestArchive(const QString& zipName, const QStringList& fileNames, const QString& dir = "tmp");
-extern bool createTestArchive(const QString& zipName, const QStringList& fileNames, QuazipTextCodec* codec, const QString& dir = "tmp");
-extern bool createTestArchive(QIODevice* ioDevice, const QStringList& fileNames, QuazipTextCodec* codec, const QString& dir = "tmp");
+extern bool createTestArchive(const QString& zipName,
+							  const QStringList& fileNames,
+							  QuazipTextCodec* codec,
+							  const QString& dir = "tmp");
+extern bool createTestArchive(QIODevice* ioDevice,
+							  const QStringList& fileNames,
+							  QuazipTextCodec* codec,
+							  const QString& dir = "tmp");
 
-#endif  // QUAZIP_TEST_QZTEST_H
+#endif // QUAZIP_TEST_QZTEST_H

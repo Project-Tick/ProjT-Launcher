@@ -31,44 +31,53 @@
 
 void MinecraftInstanceLaunchMenu::populate(MinecraftInstance* instance, QMenu* menu)
 {
-    QAction* normalLaunch = menu->addAction(MinecraftInstance::tr("&Launch"));
-    normalLaunch->setShortcut(QKeySequence::Open);
-    QAction* normalLaunchOffline = menu->addAction(MinecraftInstance::tr("Launch &Offline"));
-    normalLaunchOffline->setShortcut(QKeySequence(MinecraftInstance::tr("Ctrl+Shift+O")));
-    QAction* normalLaunchDemo = menu->addAction(MinecraftInstance::tr("Launch &Demo"));
-    normalLaunchDemo->setShortcut(QKeySequence(MinecraftInstance::tr("Ctrl+Alt+O")));
+	QAction* normalLaunch = menu->addAction(MinecraftInstance::tr("&Launch"));
+	normalLaunch->setShortcut(QKeySequence::Open);
+	QAction* normalLaunchOffline = menu->addAction(MinecraftInstance::tr("Launch &Offline"));
+	normalLaunchOffline->setShortcut(QKeySequence(MinecraftInstance::tr("Ctrl+Shift+O")));
+	QAction* normalLaunchDemo = menu->addAction(MinecraftInstance::tr("Launch &Demo"));
+	normalLaunchDemo->setShortcut(QKeySequence(MinecraftInstance::tr("Ctrl+Alt+O")));
 
-    normalLaunchDemo->setEnabled(instance->supportsDemo());
+	normalLaunchDemo->setEnabled(instance->supportsDemo());
 
-    QObject::connect(normalLaunch, &QAction::triggered, [instance] { APPLICATION->launch(instance->shared_from_this()); });
-    QObject::connect(normalLaunchOffline, &QAction::triggered,
-                     [instance] { APPLICATION->launch(instance->shared_from_this(), false, false); });
-    QObject::connect(normalLaunchDemo, &QAction::triggered, [instance] { APPLICATION->launch(instance->shared_from_this(), false, true); });
+	QObject::connect(normalLaunch,
+					 &QAction::triggered,
+					 [instance] { APPLICATION->launch(instance->shared_from_this()); });
+	QObject::connect(normalLaunchOffline,
+					 &QAction::triggered,
+					 [instance] { APPLICATION->launch(instance->shared_from_this(), false, false); });
+	QObject::connect(normalLaunchDemo,
+					 &QAction::triggered,
+					 [instance] { APPLICATION->launch(instance->shared_from_this(), false, true); });
 
-    QString profilersTitle = MinecraftInstance::tr("Profilers");
-    menu->addSeparator()->setText(profilersTitle);
+	QString profilersTitle = MinecraftInstance::tr("Profilers");
+	menu->addSeparator()->setText(profilersTitle);
 
-    auto profilers = new QActionGroup(menu);
-    profilers->setExclusive(true);
-    QObject::connect(profilers, &QActionGroup::triggered, [instance](QAction* action) {
-        instance->settings()->set("Profiler", action->data());
-        emit instance->profilerChanged();
-    });
+	auto profilers = new QActionGroup(menu);
+	profilers->setExclusive(true);
+	QObject::connect(profilers,
+					 &QActionGroup::triggered,
+					 [instance](QAction* action)
+					 {
+						 instance->settings()->set("Profiler", action->data());
+						 emit instance->profilerChanged();
+					 });
 
-    QAction* noProfilerAction = menu->addAction(MinecraftInstance::tr("&No Profiler"));
-    noProfilerAction->setData("");
-    noProfilerAction->setCheckable(true);
-    noProfilerAction->setChecked(true);
-    profilers->addAction(noProfilerAction);
+	QAction* noProfilerAction = menu->addAction(MinecraftInstance::tr("&No Profiler"));
+	noProfilerAction->setData("");
+	noProfilerAction->setCheckable(true);
+	noProfilerAction->setChecked(true);
+	profilers->addAction(noProfilerAction);
 
-    for (auto profiler = APPLICATION->profilers().begin(); profiler != APPLICATION->profilers().end(); profiler++) {
-        QAction* profilerAction = menu->addAction(profiler.value()->name());
-        profilers->addAction(profilerAction);
-        profilerAction->setData(profiler.key());
-        profilerAction->setCheckable(true);
-        profilerAction->setChecked(instance->settings()->get("Profiler").toString() == profiler.key());
+	for (auto profiler = APPLICATION->profilers().begin(); profiler != APPLICATION->profilers().end(); profiler++)
+	{
+		QAction* profilerAction = menu->addAction(profiler.value()->name());
+		profilers->addAction(profilerAction);
+		profilerAction->setData(profiler.key());
+		profilerAction->setCheckable(true);
+		profilerAction->setChecked(instance->settings()->get("Profiler").toString() == profiler.key());
 
-        QString error;
-        profilerAction->setEnabled(profiler.value()->check(&error));
-    }
+		QString error;
+		profilerAction->setEnabled(profiler.value()->check(&error));
+	}
 }

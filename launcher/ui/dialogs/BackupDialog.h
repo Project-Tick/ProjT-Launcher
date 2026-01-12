@@ -24,37 +24,39 @@
 #include "BaseInstance.h"
 #include "minecraft/BackupManager.h"
 
-namespace Ui {
-class BackupDialog;
+namespace Ui
+{
+	class BackupDialog;
 }
 
-class BackupDialog : public QDialog {
-    Q_OBJECT
+class BackupDialog : public QDialog
+{
+	Q_OBJECT
 
-   public:
-    explicit BackupDialog(InstancePtr instance, QWidget* parent = nullptr);
-    ~BackupDialog();
+  public:
+	explicit BackupDialog(InstancePtr instance, QWidget* parent = nullptr);
+	~BackupDialog();
 
-   private slots:
-    void on_createButton_clicked();
-    void on_restoreButton_clicked();
-    void on_deleteButton_clicked();
-    void on_refreshButton_clicked();
-    void on_backupList_currentRowChanged(int currentRow);
-    void on_addCustomPathButton_clicked();
-    void on_removeCustomPathButton_clicked();
-    void onBackupCreated(const QString& instanceId, const QString& backupName);
-    void onBackupRestored(const QString& instanceId, const QString& backupName);
+  private slots:
+	void on_createButton_clicked();
+	void on_restoreButton_clicked();
+	void on_deleteButton_clicked();
+	void on_refreshButton_clicked();
+	void on_backupList_currentRowChanged(int currentRow);
+	void on_addCustomPathButton_clicked();
+	void on_removeCustomPathButton_clicked();
+	void onBackupCreated(const QString& instanceId, const QString& backupName);
+	void onBackupRestored(const QString& instanceId, const QString& backupName);
 
-   private:
-    void refreshBackupList();
-    void updateBackupDetails();
-    void updateButtons();
-    BackupOptions getSelectedOptions() const;
+  private:
+	void refreshBackupList();
+	void updateBackupDetails();
+	void updateButtons();
+	BackupOptions getSelectedOptions() const;
 
-    Ui::BackupDialog* ui;
-    InstancePtr m_instance;
-    BackupManager* m_backupManager;
-    QList<InstanceBackup> m_backups;
-    QStringList m_customPaths;
+	Ui::BackupDialog* ui;
+	InstancePtr m_instance;
+	BackupManager* m_backupManager;
+	QList<InstanceBackup> m_backups;
+	QStringList m_customPaths;
 };

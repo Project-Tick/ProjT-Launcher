@@ -43,27 +43,30 @@
 #include <QMetaType>
 #include <QString>
 
-namespace ATLauncher {
+namespace ATLauncher
+{
 
-struct IndexedVersion {
-    QString version;
-    QString minecraft;
-};
+	struct IndexedVersion
+	{
+		QString version;
+		QString minecraft;
+	};
 
-struct IndexedPack {
-    int id;
-    int position;
-    QString name;
-    PackType type;
-    QList<IndexedVersion> versions;
-    bool system;
-    QString description;
+	struct IndexedPack
+	{
+		int id;
+		int position;
+		QString name;
+		PackType type;
+		QList<IndexedVersion> versions;
+		bool system;
+		QString description;
 
-    QString safeName;
-};
+		QString safeName;
+	};
 
-void loadIndexedPack(IndexedPack& m, QJsonObject& obj);
-}  // namespace ATLauncher
+	void loadIndexedPack(IndexedPack& m, QJsonObject& obj);
+} // namespace ATLauncher
 
 Q_DECLARE_METATYPE(ATLauncher::IndexedPack)
 Q_DECLARE_METATYPE(QList<ATLauncher::IndexedVersion>)

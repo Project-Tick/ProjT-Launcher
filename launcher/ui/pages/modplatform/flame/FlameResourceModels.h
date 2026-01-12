@@ -30,23 +30,31 @@
 #include "ui/pages/modplatform/ModModel.h"
 #include "ui/pages/modplatform/flame/FlameResourcePages.h"
 
-namespace ResourceDownload {
+namespace ResourceDownload
+{
 
-class FlameTexturePackModel : public TexturePackResourceModel {
-    Q_OBJECT
+	class FlameTexturePackModel : public TexturePackResourceModel
+	{
+		Q_OBJECT
 
-   public:
-    FlameTexturePackModel(const BaseInstance&);
-    ~FlameTexturePackModel() override = default;
+	  public:
+		FlameTexturePackModel(const BaseInstance&);
+		~FlameTexturePackModel() override = default;
 
-    bool optedOut(const ModPlatform::IndexedVersion& ver) const override;
+		bool optedOut(const ModPlatform::IndexedVersion& ver) const override;
 
-   private:
-    QString debugName() const override { return Flame::debugName() + " (Model)"; }
-    QString metaEntryBase() const override { return Flame::metaEntryBase(); }
+	  private:
+		QString debugName() const override
+		{
+			return Flame::debugName() + " (Model)";
+		}
+		QString metaEntryBase() const override
+		{
+			return Flame::metaEntryBase();
+		}
 
-    ResourceAPI::SearchArgs createSearchArguments() override;
-    ResourceAPI::VersionSearchArgs createVersionsArguments(const QModelIndex&) override;
-};
+		ResourceAPI::SearchArgs createSearchArguments() override;
+		ResourceAPI::VersionSearchArgs createVersionsArguments(const QModelIndex&) override;
+	};
 
-}  // namespace ResourceDownload
+} // namespace ResourceDownload

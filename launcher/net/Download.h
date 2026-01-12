@@ -64,21 +64,27 @@
 #include "QObjectPtr.h"
 #include "net/NetRequest.h"
 
-namespace Net {
-class Download : public NetRequest {
-    Q_OBJECT
-   public:
-    using Ptr = shared_qobject_ptr<class Download>;
-    explicit Download() : NetRequest() { logCat = taskDownloadLogC; }
+namespace Net
+{
+	class Download : public NetRequest
+	{
+		Q_OBJECT
+	  public:
+		using Ptr = shared_qobject_ptr<class Download>;
+		explicit Download() : NetRequest()
+		{
+			logCat = taskDownloadLogC;
+		}
 
 #if defined(LAUNCHER_APPLICATION)
-    static auto makeCached(QUrl url, MetaEntryPtr entry, Options options = Option::NoOptions) -> Download::Ptr;
+		static auto makeCached(QUrl url, MetaEntryPtr entry, Options options = Option::NoOptions) -> Download::Ptr;
 #endif
 
-    static auto makeByteArray(QUrl url, std::shared_ptr<QByteArray> output, Options options = Option::NoOptions) -> Download::Ptr;
-    static auto makeFile(QUrl url, QString path, Options options = Option::NoOptions) -> Download::Ptr;
+		static auto makeByteArray(QUrl url, std::shared_ptr<QByteArray> output, Options options = Option::NoOptions)
+			-> Download::Ptr;
+		static auto makeFile(QUrl url, QString path, Options options = Option::NoOptions) -> Download::Ptr;
 
-   protected:
-    virtual QNetworkReply* getReply(QNetworkRequest&) override;
-};
-}  // namespace Net
+	  protected:
+		virtual QNetworkReply* getReply(QNetworkRequest&) override;
+	};
+} // namespace Net

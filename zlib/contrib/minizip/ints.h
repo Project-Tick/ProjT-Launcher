@@ -26,12 +26,12 @@ typedef unsigned ui16_t;
 #if defined(UINT_MAX) && UINT_MAX == 0xffffffff
 typedef int i32_t;
 typedef unsigned ui32_t;
-#define PI32 "d"
+#define PI32  "d"
 #define PUI32 "u"
 #elif defined(ULONG_MAX) && ULONG_MAX == 0xffffffff
 typedef long i32_t;
 typedef unsigned long ui32_t;
-#define PI32 "ld"
+#define PI32  "ld"
 #define PUI32 "lu"
 #else
 #error "no 32-bit integer"
@@ -39,17 +39,17 @@ typedef unsigned long ui32_t;
 #if defined(ULONG_MAX) && ULONG_MAX == 0xffffffffffffffff
 typedef long i64_t;
 typedef unsigned long ui64_t;
-#define PI64 "ld"
+#define PI64  "ld"
 #define PUI64 "lu"
 #elif defined(ULLONG_MAX) && ULLONG_MAX == 0xffffffffffffffff
 typedef long long i64_t;
 typedef unsigned long long ui64_t;
-#define PI64 "lld"
+#define PI64  "lld"
 #define PUI64 "llu"
 #elif defined(ULONG_LONG_MAX) && ULONG_LONG_MAX == 0xffffffffffffffff
 typedef long long i64_t;
 typedef unsigned long long ui64_t;
-#define PI64 "lld"
+#define PI64  "lld"
 #define PUI64 "llu"
 #else
 #error "no 64-bit integer"

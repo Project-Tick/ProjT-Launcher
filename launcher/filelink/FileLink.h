@@ -58,35 +58,45 @@
 #define PRISM_EXTERNAL_EXE
 #include "FileSystem.h"
 
-class FileLinkApp : public QCoreApplication {
-    // friends for the purpose of limiting access to deprecated stuff
-    Q_OBJECT
-   public:
-    enum Status { Starting, Failed, Succeeded, Initialized };
-    FileLinkApp(int& argc, char** argv);
-    virtual ~FileLinkApp();
-    Status status() const { return m_status; }
+class FileLinkApp : public QCoreApplication
+{
+	// friends for the purpose of limiting access to deprecated stuff
+	Q_OBJECT
+  public:
+	enum Status
+	{
+		Starting,
+		Failed,
+		Succeeded,
+		Initialized
+	};
+	FileLinkApp(int& argc, char** argv);
+	virtual ~FileLinkApp();
+	Status status() const
+	{
+		return m_status;
+	}
 
-   private:
-    void joinServer(QString server);
-    void readPathPairs();
-    void runLink();
-    void sendResults();
+  private:
+	void joinServer(QString server);
+	void readPathPairs();
+	void runLink();
+	void sendResults();
 
-    Status m_status = Status::Starting;
+	Status m_status = Status::Starting;
 
-    bool m_useHardLinks = false;
+	bool m_useHardLinks = false;
 
-    QDateTime m_startTime;
-    QLocalSocket socket;
-    QDataStream in;
-    quint32 blockSize;
+	QDateTime m_startTime;
+	QLocalSocket socket;
+	QDataStream in;
+	quint32 blockSize;
 
-    QList<FS::LinkPair> m_links_to_make;
-    QList<FS::LinkResult> m_path_results;
+	QList<FS::LinkPair> m_links_to_make;
+	QList<FS::LinkResult> m_path_results;
 
 #if defined Q_OS_WIN32
-    // used on Windows to attach the standard IO streams
-    bool consoleAttached = false;
+	// used on Windows to attach the standard IO streams
+	bool consoleAttached = false;
 #endif
 };

@@ -33,16 +33,17 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-    ======================================================================== */
+	======================================================================== */
 
 #pragma once
 
 #include <QString>
 #include <QStringList>
 
-namespace MangoHud {
+namespace MangoHud
+{
 
-QString getLibraryString();
+	QString getLibraryString();
 
-QString findLibrary(QString libName);
-}  // namespace MangoHud
+	QString findLibrary(QString libName);
+} // namespace MangoHud

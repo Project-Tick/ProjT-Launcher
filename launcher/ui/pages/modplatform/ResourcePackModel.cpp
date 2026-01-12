@@ -29,45 +29,50 @@
 
 #include <QMessageBox>
 
-namespace ResourceDownload {
-
-ResourcePackResourceModel::ResourcePackResourceModel(BaseInstance const& base_inst,
-                                                     ResourceAPI* api,
-                                                     QString debugName,
-                                                     QString metaEntryBase)
-    : ResourceModel(api), m_base_instance(base_inst), m_debugName(debugName + " (Model)"), m_metaEntryBase(metaEntryBase)
-{}
-
-/******** Make data requests ********/
-
-ResourceAPI::SearchArgs ResourcePackResourceModel::createSearchArguments()
+namespace ResourceDownload
 {
-    auto sort = getCurrentSortingMethodByIndex();
-    return { ModPlatform::ResourceType::ResourcePack, m_next_search_offset, m_search_term, sort };
-}
 
-ResourceAPI::VersionSearchArgs ResourcePackResourceModel::createVersionsArguments(const QModelIndex& entry)
-{
-    auto pack = m_packs[entry.row()];
-    return { pack, {}, {}, ModPlatform::ResourceType::ResourcePack };
-}
+	ResourcePackResourceModel::ResourcePackResourceModel(BaseInstance const& base_inst,
+														 ResourceAPI* api,
+														 QString debugName,
+														 QString metaEntryBase)
+		: ResourceModel(api),
+		  m_base_instance(base_inst),
+		  m_debugName(debugName + " (Model)"),
+		  m_metaEntryBase(metaEntryBase)
+	{}
 
-ResourceAPI::ProjectInfoArgs ResourcePackResourceModel::createInfoArguments(const QModelIndex& entry)
-{
-    auto pack = m_packs[entry.row()];
-    return { pack };
-}
+	/******** Make data requests ********/
 
-void ResourcePackResourceModel::searchWithTerm(const QString& term, unsigned int sort)
-{
-    if (m_search_term == term && m_search_term.isNull() == term.isNull() && m_current_sort_index == sort) {
-        return;
-    }
+	ResourceAPI::SearchArgs ResourcePackResourceModel::createSearchArguments()
+	{
+		auto sort = getCurrentSortingMethodByIndex();
+		return { ModPlatform::ResourceType::ResourcePack, m_next_search_offset, m_search_term, sort };
+	}
 
-    setSearchTerm(term);
-    m_current_sort_index = sort;
+	ResourceAPI::VersionSearchArgs ResourcePackResourceModel::createVersionsArguments(const QModelIndex& entry)
+	{
+		auto pack = m_packs[entry.row()];
+		return { pack, {}, {}, ModPlatform::ResourceType::ResourcePack };
+	}
 
-    refresh();
-}
+	ResourceAPI::ProjectInfoArgs ResourcePackResourceModel::createInfoArguments(const QModelIndex& entry)
+	{
+		auto pack = m_packs[entry.row()];
+		return { pack };
+	}
 
-}  // namespace ResourceDownload
+	void ResourcePackResourceModel::searchWithTerm(const QString& term, unsigned int sort)
+	{
+		if (m_search_term == term && m_search_term.isNull() == term.isNull() && m_current_sort_index == sort)
+		{
+			return;
+		}
+
+		setSearchTerm(term);
+		m_current_sort_index = sort;
+
+		refresh();
+	}
+
+} // namespace ResourceDownload

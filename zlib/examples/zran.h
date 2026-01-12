@@ -7,21 +7,23 @@
 #include "zlib.h"
 
 // Access point.
-typedef struct point {
-    off_t out;              // offset in uncompressed data
-    off_t in;               // offset in compressed file of first full byte
-    int bits;               // 0, or number of bits (1-7) from byte at in-1
-    unsigned dict;          // number of bytes in window to use as a dictionary
-    unsigned char* window;  // preceding 32K (or less) of uncompressed data
+typedef struct point
+{
+	off_t out;			   // offset in uncompressed data
+	off_t in;			   // offset in compressed file of first full byte
+	int bits;			   // 0, or number of bits (1-7) from byte at in-1
+	unsigned dict;		   // number of bytes in window to use as a dictionary
+	unsigned char* window; // preceding 32K (or less) of uncompressed data
 } point_t;
 
 // Access point list.
-struct deflate_index {
-    int have;       // number of access points in list
-    int mode;       // -15 for raw, 15 for zlib, or 31 for gzip
-    off_t length;   // total length of uncompressed data
-    point_t* list;  // allocated list of access points
-    z_stream strm;  // re-usable inflate engine for extraction
+struct deflate_index
+{
+	int have;	   // number of access points in list
+	int mode;	   // -15 for raw, 15 for zlib, or 31 for gzip
+	off_t length;  // total length of uncompressed data
+	point_t* list; // allocated list of access points
+	z_stream strm; // re-usable inflate engine for extraction
 };
 
 // Make one pass through a zlib, gzip, or raw deflate compressed stream and

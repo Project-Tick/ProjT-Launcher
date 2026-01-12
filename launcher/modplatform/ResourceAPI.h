@@ -72,105 +72,116 @@
 #include "tasks/Task.h"
 
 /* Simple class with a common interface for interacting with APIs */
-class ResourceAPI {
-   public:
-    virtual ~ResourceAPI() = default;
+class ResourceAPI
+{
+  public:
+	virtual ~ResourceAPI() = default;
 
-    struct SortingMethod {
-        // The index of the sorting method. Used to allow for arbitrary ordering in the list of methods.
-        // Used by Flame in the API request.
-        unsigned int index;
-        // The real name of the sorting, as used in the respective API specification.
-        // Used by Modrinth in the API request.
-        QString name;
-        // The human-readable name of the sorting, used for display in the UI.
-        QString readable_name;
-    };
+	struct SortingMethod
+	{
+		// The index of the sorting method. Used to allow for arbitrary ordering in the list of methods.
+		// Used by Flame in the API request.
+		unsigned int index;
+		// The real name of the sorting, as used in the respective API specification.
+		// Used by Modrinth in the API request.
+		QString name;
+		// The human-readable name of the sorting, used for display in the UI.
+		QString readable_name;
+	};
 
-    template <typename T>
-    struct Callback {
-        std::function<void(T&)> on_succeed;
-        std::function<void(QString const& reason, int network_error_code)> on_fail;
-        std::function<void()> on_abort;
-    };
+	template <typename T>
+	struct Callback
+	{
+		std::function<void(T&)> on_succeed;
+		std::function<void(QString const& reason, int network_error_code)> on_fail;
+		std::function<void()> on_abort;
+	};
 
-    struct SearchArgs {
-        ModPlatform::ResourceType type{};
-        int offset = 0;
+	struct SearchArgs
+	{
+		ModPlatform::ResourceType type{};
+		int offset = 0;
 
-        std::optional<QString> search;
-        std::optional<SortingMethod> sorting;
-        std::optional<ModPlatform::ModLoaderTypes> loaders;
-        std::optional<std::list<Version>> versions;
-        std::optional<ModPlatform::Side> side;
-        std::optional<QStringList> categoryIds;
-        bool openSource;
-    };
+		std::optional<QString> search;
+		std::optional<SortingMethod> sorting;
+		std::optional<ModPlatform::ModLoaderTypes> loaders;
+		std::optional<std::list<Version>> versions;
+		std::optional<ModPlatform::Side> side;
+		std::optional<QStringList> categoryIds;
+		bool openSource;
+	};
 
-    struct VersionSearchArgs {
-        ModPlatform::IndexedPack::Ptr pack;
+	struct VersionSearchArgs
+	{
+		ModPlatform::IndexedPack::Ptr pack;
 
-        std::optional<std::list<Version>> mcVersions;
-        std::optional<ModPlatform::ModLoaderTypes> loaders;
-        ModPlatform::ResourceType resourceType;
-    };
+		std::optional<std::list<Version>> mcVersions;
+		std::optional<ModPlatform::ModLoaderTypes> loaders;
+		ModPlatform::ResourceType resourceType;
+	};
 
-    struct ProjectInfoArgs {
-        ModPlatform::IndexedPack::Ptr pack;
-    };
+	struct ProjectInfoArgs
+	{
+		ModPlatform::IndexedPack::Ptr pack;
+	};
 
-    struct DependencySearchArgs {
-        ModPlatform::Dependency dependency;
-        Version mcVersion;
-        ModPlatform::ModLoaderTypes loader;
-    };
+	struct DependencySearchArgs
+	{
+		ModPlatform::Dependency dependency;
+		Version mcVersion;
+		ModPlatform::ModLoaderTypes loader;
+	};
 
-   public:
-    /** Gets a list of available sorting methods for this API. */
-    virtual auto getSortingMethods() const -> QList<SortingMethod> = 0;
+  public:
+	/** Gets a list of available sorting methods for this API. */
+	virtual auto getSortingMethods() const -> QList<SortingMethod> = 0;
 
-   public slots:
-    virtual Task::Ptr searchProjects(SearchArgs&&, Callback<QList<ModPlatform::IndexedPack::Ptr>>&&) const;
+  public slots:
+	virtual Task::Ptr searchProjects(SearchArgs&&, Callback<QList<ModPlatform::IndexedPack::Ptr>>&&) const;
 
-    virtual Task::Ptr getProject(QString addonId, std::shared_ptr<QByteArray> response) const;
-    virtual Task::Ptr getProjects(QStringList addonIds, std::shared_ptr<QByteArray> response) const = 0;
+	virtual Task::Ptr getProject(QString addonId, std::shared_ptr<QByteArray> response) const;
+	virtual Task::Ptr getProjects(QStringList addonIds, std::shared_ptr<QByteArray> response) const = 0;
 
-    virtual Task::Ptr getProjectInfo(ProjectInfoArgs&&, Callback<ModPlatform::IndexedPack::Ptr>&&) const;
-    Task::Ptr getProjectVersions(VersionSearchArgs&& args, Callback<QVector<ModPlatform::IndexedVersion>>&& callbacks) const;
-    virtual Task::Ptr getDependencyVersion(DependencySearchArgs&&, Callback<ModPlatform::IndexedVersion>&&) const;
+	virtual Task::Ptr getProjectInfo(ProjectInfoArgs&&, Callback<ModPlatform::IndexedPack::Ptr>&&) const;
+	Task::Ptr getProjectVersions(VersionSearchArgs&& args,
+								 Callback<QVector<ModPlatform::IndexedVersion>>&& callbacks) const;
+	virtual Task::Ptr getDependencyVersion(DependencySearchArgs&&, Callback<ModPlatform::IndexedVersion>&&) const;
 
-   protected:
-    inline QString debugName() const { return "External resource API"; }
+  protected:
+	inline QString debugName() const
+	{
+		return "External resource API";
+	}
 
-    QString mapMCVersionToModrinth(Version v) const;
+	QString mapMCVersionToModrinth(Version v) const;
 
-    QString getGameVersionsString(std::list<Version> mcVersions) const;
+	QString getGameVersionsString(std::list<Version> mcVersions) const;
 
-   public:
-    virtual auto getSearchURL(SearchArgs const& args) const -> std::optional<QString> = 0;
-    virtual auto getInfoURL(QString const& id) const -> std::optional<QString> = 0;
-    virtual auto getVersionsURL(VersionSearchArgs const& args) const -> std::optional<QString> = 0;
-    virtual auto getDependencyURL(DependencySearchArgs const& args) const -> std::optional<QString> = 0;
+  public:
+	virtual auto getSearchURL(SearchArgs const& args) const -> std::optional<QString>				= 0;
+	virtual auto getInfoURL(QString const& id) const -> std::optional<QString>						= 0;
+	virtual auto getVersionsURL(VersionSearchArgs const& args) const -> std::optional<QString>		= 0;
+	virtual auto getDependencyURL(DependencySearchArgs const& args) const -> std::optional<QString> = 0;
 
-    /** Functions to load data into a pack.
-     *
-     *  Those are needed for the same reason as documentToArray, and NEED to be re-implemented in the same way.
-     */
+	/** Functions to load data into a pack.
+	 *
+	 *  Those are needed for the same reason as documentToArray, and NEED to be re-implemented in the same way.
+	 */
 
-    virtual void loadIndexedPack(ModPlatform::IndexedPack&, QJsonObject&) const = 0;
-    virtual ModPlatform::IndexedVersion loadIndexedPackVersion(QJsonObject& obj, ModPlatform::ResourceType) const = 0;
+	virtual void loadIndexedPack(ModPlatform::IndexedPack&, QJsonObject&) const									  = 0;
+	virtual ModPlatform::IndexedVersion loadIndexedPackVersion(QJsonObject& obj, ModPlatform::ResourceType) const = 0;
 
-    /** Converts a JSON document to a common array format.
-     *
-     *  This is needed so that different providers, with different JSON structures, can be parsed
-     *  uniformally. You NEED to re-implement this if you intend on using the default callbacks.
-     */
-    virtual QJsonArray documentToArray(QJsonDocument& obj) const = 0;
+	/** Converts a JSON document to a common array format.
+	 *
+	 *  This is needed so that different providers, with different JSON structures, can be parsed
+	 *  uniformally. You NEED to re-implement this if you intend on using the default callbacks.
+	 */
+	virtual QJsonArray documentToArray(QJsonDocument& obj) const = 0;
 
-    /** Functions to load data into a pack.
-     *
-     *  Those are needed for the same reason as documentToArray, and NEED to be re-implemented in the same way.
-     */
+	/** Functions to load data into a pack.
+	 *
+	 *  Those are needed for the same reason as documentToArray, and NEED to be re-implemented in the same way.
+	 */
 
-    virtual void loadExtraPackInfo(ModPlatform::IndexedPack&, QJsonObject&) const = 0;
+	virtual void loadExtraPackInfo(ModPlatform::IndexedPack&, QJsonObject&) const = 0;
 };

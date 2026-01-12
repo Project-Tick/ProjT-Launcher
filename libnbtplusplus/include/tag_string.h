@@ -20,67 +20,88 @@
 #ifndef TAG_STRING_H_INCLUDED
 #define TAG_STRING_H_INCLUDED
 
-#include <string>
 #include "crtp_tag.h"
+#include <string>
 
-namespace nbt {
-
-/// Tag that contains a UTF-8 string
-class NBT_EXPORT tag_string final : public detail::crtp_tag<tag_string> {
-   public:
-    /// The type of the tag
-    static constexpr tag_type type = tag_type::String;
-
-    // Constructors
-    tag_string() {}
-    tag_string(const std::string& str) : value(str) {}
-    tag_string(std::string&& str) noexcept : value(std::move(str)) {}
-    tag_string(const char* str) : value(str) {}
-
-    // Getters
-    operator std::string&() { return value; }
-    operator const std::string&() const { return value; }
-    const std::string& get() const { return value; }
-
-    // Setters
-    tag_string& operator=(const std::string& str)
-    {
-        value = str;
-        return *this;
-    }
-    tag_string& operator=(std::string&& str)
-    {
-        value = std::move(str);
-        return *this;
-    }
-    tag_string& operator=(const char* str)
-    {
-        value = str;
-        return *this;
-    }
-    void set(const std::string& str) { value = str; }
-    void set(std::string&& str) { value = std::move(str); }
-
-    void read_payload(io::stream_reader& reader) override;
-    /**
-     * @inheritdoc
-     * @throw std::length_error if the string is too long for NBT
-     */
-    void write_payload(io::stream_writer& writer) const override;
-
-   private:
-    std::string value;
-};
-
-inline bool operator==(const tag_string& lhs, const tag_string& rhs)
+namespace nbt
 {
-    return lhs.get() == rhs.get();
-}
-inline bool operator!=(const tag_string& lhs, const tag_string& rhs)
-{
-    return !(lhs == rhs);
+
+	///Tag that contains a UTF-8 string
+	class NBT_EXPORT tag_string final : public detail::crtp_tag<tag_string>
+	{
+	  public:
+		///The type of the tag
+		static constexpr tag_type type = tag_type::String;
+
+		// Constructors
+		tag_string()
+		{}
+		tag_string(const std::string& str) : value(str)
+		{}
+		tag_string(std::string&& str) noexcept : value(std::move(str))
+		{}
+		tag_string(const char* str) : value(str)
+		{}
+
+		// Getters
+		operator std::string&()
+		{
+			return value;
+		}
+		operator const std::string&() const
+		{
+			return value;
+		}
+		const std::string& get() const
+		{
+			return value;
+		}
+
+		// Setters
+		tag_string& operator=(const std::string& str)
+		{
+			value = str;
+			return *this;
+		}
+		tag_string& operator=(std::string&& str)
+		{
+			value = std::move(str);
+			return *this;
+		}
+		tag_string& operator=(const char* str)
+		{
+			value = str;
+			return *this;
+		}
+		void set(const std::string& str)
+		{
+			value = str;
+		}
+		void set(std::string&& str)
+		{
+			value = std::move(str);
+		}
+
+		void read_payload(io::stream_reader& reader) override;
+		/**
+		 * @inheritdoc
+		 * @throw std::length_error if the string is too long for NBT
+		 */
+		void write_payload(io::stream_writer& writer) const override;
+
+	  private:
+		std::string value;
+	};
+
+	inline bool operator==(const tag_string& lhs, const tag_string& rhs)
+	{
+		return lhs.get() == rhs.get();
+	}
+	inline bool operator!=(const tag_string& lhs, const tag_string& rhs)
+	{
+		return !(lhs == rhs);
+	}
+
 }
 
-}  // namespace nbt
-
-#endif  // TAG_STRING_H_INCLUDED
+#endif // TAG_STRING_H_INCLUDED

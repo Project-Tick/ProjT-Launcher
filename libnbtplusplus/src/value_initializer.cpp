@@ -20,16 +20,26 @@
 #include "value_initializer.h"
 #include "nbt_tags.h"
 
-namespace nbt {
+namespace nbt
+{
 
-value_initializer::value_initializer(int8_t val) : value(tag_byte(val)) {}
-value_initializer::value_initializer(int16_t val) : value(tag_short(val)) {}
-value_initializer::value_initializer(int32_t val) : value(tag_int(val)) {}
-value_initializer::value_initializer(int64_t val) : value(tag_long(val)) {}
-value_initializer::value_initializer(float val) : value(tag_float(val)) {}
-value_initializer::value_initializer(double val) : value(tag_double(val)) {}
-value_initializer::value_initializer(const std::string& str) : value(tag_string(str)) {}
-value_initializer::value_initializer(std::string&& str) : value(tag_string(std::move(str))) {}
-value_initializer::value_initializer(const char* str) : value(tag_string(str)) {}
+	value_initializer::value_initializer(int8_t val) : value(tag_byte(val))
+	{}
+	value_initializer::value_initializer(int16_t val) : value(tag_short(val))
+	{}
+	value_initializer::value_initializer(int32_t val) : value(tag_int(val))
+	{}
+	value_initializer::value_initializer(int64_t val) : value(tag_long(val))
+	{}
+	value_initializer::value_initializer(float val) : value(tag_float(val))
+	{}
+	value_initializer::value_initializer(double val) : value(tag_double(val))
+	{}
+	value_initializer::value_initializer(const std::string& str) : value(tag_string(str))
+	{}
+	value_initializer::value_initializer(std::string&& str) : value(tag_string(std::move(str)))
+	{}
+	value_initializer::value_initializer(const char* str) : value(tag_string(str))
+	{}
 
-}  // namespace nbt
+}

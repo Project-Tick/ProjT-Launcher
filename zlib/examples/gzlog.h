@@ -11,11 +11,11 @@
   freely, subject to the following restrictions:
 
   1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
+	 claim that you wrote the original software. If you use this software
+	 in a product, an acknowledgment in the product documentation would be
+	 appreciated but is not required.
   2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
+	 misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 
   Mark Adler    madler@alumni.caltech.edu
@@ -24,9 +24,9 @@
 /* Version History:
    1.0  26 Nov 2004  First version
    2.0  25 Apr 2008  Complete redesign for recovery of interrupted operations
-                     Interface changed slightly in that now path is a prefix
-                     Compression now occurs as needed during gzlog_write()
-                     gzlog_write() now always leaves the log file as valid gzip
+					 Interface changed slightly in that now path is a prefix
+					 Compression now occurs as needed during gzlog_write()
+					 gzlog_write() now always leaves the log file as valid gzip
    2.1   8 Jul 2012  Fix argument checks in gzlog_compress() and gzlog_write()
    2.2  14 Aug 2012  Clean up signed comparisons
  */

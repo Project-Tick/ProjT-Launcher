@@ -21,8 +21,9 @@
 #include "BaseInstance.h"
 
 // Helper class to populate launch menus, decoupling UI from Core instances.
-namespace LaunchMenu {
+namespace LaunchMenu
+{
 
-void populate(std::shared_ptr<BaseInstance> instance, QMenu* menu);
+	void populate(std::shared_ptr<BaseInstance> instance, QMenu* menu);
 
 }

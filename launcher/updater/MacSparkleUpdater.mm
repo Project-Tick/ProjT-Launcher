@@ -119,7 +119,8 @@ MacSparkleUpdater::MacSparkleUpdater() {
                                                                          userDriverDelegate:nil];
 
     priv->updaterObserver = [[UpdaterObserver alloc] initWithUpdater:priv->updaterController.updater];
-    // Use KVO to run a callback that emits a Qt signal when `canCheckForUpdates` changes, so the UI can respond accordingly.
+    // Use KVO to run a callback that emits a Qt signal when `canCheckForUpdates` changes, so the UI can respond
+    // accordingly.
     priv->updaterObserver.callback = ^(bool canCheck) {
       emit canCheckForUpdatesChanged(canCheck);
     };

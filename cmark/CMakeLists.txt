@@ -119,7 +119,7 @@ if(BUILD_TESTING)
   add_subdirectory(test testdir)
 endif()
 if(CMARK_LIB_FUZZER)
-  add_subdirectory(fuzz)
+  add_subdirectory(${CMAKE_SOURCE_DIR}/fuzz/cmark ${CMAKE_CURRENT_BINARY_DIR}/fuzz)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)

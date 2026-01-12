@@ -4,10 +4,11 @@
 #include "harness.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void test_cplusplus(test_batch_runner* runner);
+	void test_cplusplus(test_batch_runner* runner);
 
 #ifdef __cplusplus
 }

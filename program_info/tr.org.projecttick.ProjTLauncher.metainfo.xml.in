@@ -27,32 +27,32 @@
   <screenshots>
     <screenshot type="default">
       <caption>The main ProjT Launcher window</caption>
-      <image type="source">https://projtlauncher.projecttick.org.tr/img/screenshots/projtlauncher_dark_main_window.png</image>
+      <image type="source">https://projecttick.org.tr/projtlauncher/img/screenshots/projtlauncher_dark_main_window.png</image>
     </screenshot>
     <screenshot>
       <caption>Modpack installation</caption>
-      <image type="source">https://projtlauncher.projecttick.org.tr/img/screenshots/projtlauncher_dark_new_instance_modrinth.png</image>
+      <image type="source">https://projecttick.org.tr/projtlauncher/img/screenshots/projtlauncher_dark_new_instance_modrinth.png</image>
     </screenshot>
     <screenshot>
       <caption>Mod installation</caption>
-      <image type="source">https://projtlauncher.projecttick.org.tr/img/screenshots/projtlauncher_dark_download_mods.png</image>
+      <image type="source">https://projecttick.org.tr/projtlauncher/img/screenshots/projtlauncher_dark_download_mods.png</image>
     </screenshot>
     <screenshot>
       <caption>Mod updating</caption>
-      <image type="source">https://projtlauncher.projecttick.org.tr/img/screenshots/projtlauncher_dark_confirm_mods_selection.png</image>
+      <image type="source">https://projecttick.org.tr/projtlauncher/img/screenshots/projtlauncher_dark_confirm_mods_selection.png</image>
     </screenshot>
     <screenshot>
       <caption>Instance management</caption>
-      <image type="source">https://projtlauncher.projecttick.org.tr/img/screenshots/projtlauncher_dark_console_window_version.png</image>
+      <image type="source">https://projecttick.org.tr/projtlauncher/img/screenshots/projtlauncher_dark_console_window_version.png</image>
     </screenshot>
   </screenshots>
   <releases>
     <release version="@Launcher_VERSION_NAME@" date="@Launcher_BUILD_TIMESTAMP@"></release>
   </releases>
-  <url type="homepage">https://projtlauncher.projecttick.org.tr/</url>
+  <url type="homepage">https://projecttick.org.tr/projtlauncher/</url>
   <url type="bugtracker">https://github.com/Project-Tick/ProjT-Launcher/issues</url>
-  <url type="faq">https://projtlauncher.projecttick.org.tr/wiki/overview/faq/</url>
-  <url type="help">https://projtlauncher.projecttick.org.tr/wiki/</url>
+  <url type="faq">https://projecttick.org.tr/projtlauncher/wiki/overview/faq/</url>
+  <url type="help">https://projecttick.org.tr/projtlauncher/wiki/</url>
   <url type="vcs-browser">https://github.com/Project-Tick/ProjT-Launcher</url>
   <url type="contribute">https://github.com/Project-Tick/ProjT-Launcher/blob/develop/CONTRIBUTING.md</url>
   <content_rating type="oars-1.1">

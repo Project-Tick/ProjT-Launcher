@@ -3,12 +3,13 @@
 
 #include "../qrencode.h"
 
-typedef struct _DataChunk {
-    QRencodeMode mode;
-    int size;
-    int bits;
-    unsigned char* data;
-    struct _DataChunk* next;
+typedef struct _DataChunk
+{
+	QRencodeMode mode;
+	int size;
+	int bits;
+	unsigned char* data;
+	struct _DataChunk* next;
 } DataChunk;
 
 DataChunk* DataChunk_new(QRencodeMode mode);

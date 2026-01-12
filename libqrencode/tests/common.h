@@ -20,33 +20,34 @@ extern const char levelChar[4];
 extern const char* modeStr[5];
 
 void testInit(int tests);
-#define testStart(__arg__) (testStartReal(__func__, __arg__))
+#define testStart(__arg__)	(testStartReal(__func__, __arg__))
 #define testEndExp(__arg__) (testEnd(!(__arg__)))
 void testStartReal(const char* func, const char* name);
 void testEnd(int result);
 void testFinish(void);
 void testReport(int tests);
 
-#define assert_exp(__exp__, ...) \
-    {                            \
-        assertionNum++;          \
-        if (!(__exp__)) {        \
-            assertionFailed++;   \
-            printf(__VA_ARGS__); \
-        }                        \
-    }
+#define assert_exp(__exp__, ...)                                                                                       \
+	{                                                                                                                  \
+		assertionNum++;                                                                                                \
+		if (!(__exp__))                                                                                                \
+		{                                                                                                              \
+			assertionFailed++;                                                                                         \
+			printf(__VA_ARGS__);                                                                                       \
+		}                                                                                                              \
+	}
 
-#define assert_zero(__exp__, ...) assert_exp((__exp__) == 0, __VA_ARGS__)
-#define assert_nonzero(__exp__, ...) assert_exp((__exp__) != 0, __VA_ARGS__)
-#define assert_null(__ptr__, ...) assert_exp((__ptr__) == NULL, __VA_ARGS__)
-#define assert_nonnull(__ptr__, ...) assert_exp((__ptr__) != NULL, __VA_ARGS__)
-#define assert_equal(__e1__, __e2__, ...) assert_exp((__e1__) == (__e2__), __VA_ARGS__)
+#define assert_zero(__exp__, ...)			 assert_exp((__exp__) == 0, __VA_ARGS__)
+#define assert_nonzero(__exp__, ...)		 assert_exp((__exp__) != 0, __VA_ARGS__)
+#define assert_null(__ptr__, ...)			 assert_exp((__ptr__) == NULL, __VA_ARGS__)
+#define assert_nonnull(__ptr__, ...)		 assert_exp((__ptr__) != NULL, __VA_ARGS__)
+#define assert_equal(__e1__, __e2__, ...)	 assert_exp((__e1__) == (__e2__), __VA_ARGS__)
 #define assert_notequal(__e1__, __e2__, ...) assert_exp((__e1__) != (__e2__), __VA_ARGS__)
-#define assert_nothing(__exp__, ...) \
-    {                                \
-        printf(__VA_ARGS__);         \
-        __exp__;                     \
-    }
+#define assert_nothing(__exp__, ...)                                                                                   \
+	{                                                                                                                  \
+		printf(__VA_ARGS__);                                                                                           \
+		__exp__;                                                                                                       \
+	}
 
 int ncmpBin(char* correct, BitStream* bstream, size_t len);
 int cmpBin(char* correct, BitStream* bstream);

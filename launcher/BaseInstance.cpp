@@ -75,433 +75,450 @@
 
 int getConsoleMaxLines(SettingsObjectPtr settings)
 {
-    auto lineSetting = settings->getSetting("ConsoleMaxLines");
-    bool conversionOk = false;
-    int maxLines = lineSetting->get().toInt(&conversionOk);
-    if (!conversionOk) {
-        maxLines = lineSetting->defValue().toInt();
-        qWarning() << "ConsoleMaxLines has nonsensical value, defaulting to" << maxLines;
-    }
-    return maxLines;
+	auto lineSetting  = settings->getSetting("ConsoleMaxLines");
+	bool conversionOk = false;
+	int maxLines	  = lineSetting->get().toInt(&conversionOk);
+	if (!conversionOk)
+	{
+		maxLines = lineSetting->defValue().toInt();
+		qWarning() << "ConsoleMaxLines has nonsensical value, defaulting to" << maxLines;
+	}
+	return maxLines;
 }
 
 bool shouldStopOnConsoleOverflow(SettingsObjectPtr settings)
 {
-    return settings->get("ConsoleOverflowStop").toBool();
+	return settings->get("ConsoleOverflowStop").toBool();
 }
 
-BaseInstance::BaseInstance(SettingsObjectPtr globalSettings, SettingsObjectPtr settings, const QString& rootDir) : QObject()
+BaseInstance::BaseInstance(SettingsObjectPtr globalSettings, SettingsObjectPtr settings, const QString& rootDir)
+	: QObject()
 {
-    m_settings = settings;
-    m_global_settings = globalSettings;
-    m_rootDir = rootDir;
+	m_settings		  = settings;
+	m_global_settings = globalSettings;
+	m_rootDir		  = rootDir;
 
-    m_settings->registerSetting("name", "Unnamed Instance");
-    m_settings->registerSetting("iconKey", "default");
-    m_settings->registerSetting("notes", "");
+	m_settings->registerSetting("name", "Unnamed Instance");
+	m_settings->registerSetting("iconKey", "default");
+	m_settings->registerSetting("notes", "");
 
-    m_settings->registerSetting("lastLaunchTime", 0);
-    m_settings->registerSetting("totalTimePlayed", 0);
-    if (m_settings->get("totalTimePlayed").toLongLong() < 0)
-        m_settings->reset("totalTimePlayed");
-    m_settings->registerSetting("lastTimePlayed", 0);
+	m_settings->registerSetting("lastLaunchTime", 0);
+	m_settings->registerSetting("totalTimePlayed", 0);
+	if (m_settings->get("totalTimePlayed").toLongLong() < 0)
+		m_settings->reset("totalTimePlayed");
+	m_settings->registerSetting("lastTimePlayed", 0);
 
-    m_settings->registerSetting("linkedInstances", "[]");
-    m_settings->registerSetting("shortcuts", QString());
+	m_settings->registerSetting("linkedInstances", "[]");
+	m_settings->registerSetting("shortcuts", QString());
 
-    // Game time override
-    auto gameTimeOverride = m_settings->registerSetting("OverrideGameTime", false);
-    m_settings->registerOverride(globalSettings->getSetting("ShowGameTime"), gameTimeOverride);
-    m_settings->registerOverride(globalSettings->getSetting("RecordGameTime"), gameTimeOverride);
+	// Game time override
+	auto gameTimeOverride = m_settings->registerSetting("OverrideGameTime", false);
+	m_settings->registerOverride(globalSettings->getSetting("ShowGameTime"), gameTimeOverride);
+	m_settings->registerOverride(globalSettings->getSetting("RecordGameTime"), gameTimeOverride);
 
-    // NOTE: Sometimees InstanceType is already registered, as it was used to identify the type of
-    // a locally stored instance
-    if (!m_settings->getSetting("InstanceType"))
-        m_settings->registerSetting("InstanceType", "");
+	// NOTE: Sometimees InstanceType is already registered, as it was used to identify the type of
+	// a locally stored instance
+	if (!m_settings->getSetting("InstanceType"))
+		m_settings->registerSetting("InstanceType", "");
 
-    // Custom Commands
-    auto commandSetting = m_settings->registerSetting({ "OverrideCommands", "OverrideLaunchCmd" }, false);
-    m_settings->registerOverride(globalSettings->getSetting("PreLaunchCommand"), commandSetting);
-    m_settings->registerOverride(globalSettings->getSetting("WrapperCommand"), commandSetting);
-    m_settings->registerOverride(globalSettings->getSetting("PostExitCommand"), commandSetting);
+	// Custom Commands
+	auto commandSetting = m_settings->registerSetting({ "OverrideCommands", "OverrideLaunchCmd" }, false);
+	m_settings->registerOverride(globalSettings->getSetting("PreLaunchCommand"), commandSetting);
+	m_settings->registerOverride(globalSettings->getSetting("WrapperCommand"), commandSetting);
+	m_settings->registerOverride(globalSettings->getSetting("PostExitCommand"), commandSetting);
 
-    // Console
-    auto consoleSetting = m_settings->registerSetting("OverrideConsole", false);
-    m_settings->registerOverride(globalSettings->getSetting("ShowConsole"), consoleSetting);
-    m_settings->registerOverride(globalSettings->getSetting("AutoCloseConsole"), consoleSetting);
-    m_settings->registerOverride(globalSettings->getSetting("ShowConsoleOnError"), consoleSetting);
-    m_settings->registerOverride(globalSettings->getSetting("LogPrePostOutput"), consoleSetting);
+	// Console
+	auto consoleSetting = m_settings->registerSetting("OverrideConsole", false);
+	m_settings->registerOverride(globalSettings->getSetting("ShowConsole"), consoleSetting);
+	m_settings->registerOverride(globalSettings->getSetting("AutoCloseConsole"), consoleSetting);
+	m_settings->registerOverride(globalSettings->getSetting("ShowConsoleOnError"), consoleSetting);
+	m_settings->registerOverride(globalSettings->getSetting("LogPrePostOutput"), consoleSetting);
 
-    m_settings->registerPassthrough(globalSettings->getSetting("ConsoleMaxLines"), nullptr);
-    m_settings->registerPassthrough(globalSettings->getSetting("ConsoleOverflowStop"), nullptr);
+	m_settings->registerPassthrough(globalSettings->getSetting("ConsoleMaxLines"), nullptr);
+	m_settings->registerPassthrough(globalSettings->getSetting("ConsoleOverflowStop"), nullptr);
 
-    // Managed Packs
-    m_settings->registerSetting("ManagedPack", false);
-    m_settings->registerSetting("ManagedPackType", "");
-    m_settings->registerSetting("ManagedPackID", "");
-    m_settings->registerSetting("ManagedPackName", "");
-    m_settings->registerSetting("ManagedPackVersionID", "");
-    m_settings->registerSetting("ManagedPackVersionName", "");
+	// Managed Packs
+	m_settings->registerSetting("ManagedPack", false);
+	m_settings->registerSetting("ManagedPackType", "");
+	m_settings->registerSetting("ManagedPackID", "");
+	m_settings->registerSetting("ManagedPackName", "");
+	m_settings->registerSetting("ManagedPackVersionID", "");
+	m_settings->registerSetting("ManagedPackVersionName", "");
 
-    m_settings->registerSetting("Profiler", "");
+	m_settings->registerSetting("Profiler", "");
 }
 
 QString BaseInstance::getPreLaunchCommand()
 {
-    return settings()->get("PreLaunchCommand").toString();
+	return settings()->get("PreLaunchCommand").toString();
 }
 
 QString BaseInstance::getWrapperCommand()
 {
-    return settings()->get("WrapperCommand").toString();
+	return settings()->get("WrapperCommand").toString();
 }
 
 QString BaseInstance::getPostExitCommand()
 {
-    return settings()->get("PostExitCommand").toString();
+	return settings()->get("PostExitCommand").toString();
 }
 
 bool BaseInstance::isManagedPack() const
 {
-    return m_settings->get("ManagedPack").toBool();
+	return m_settings->get("ManagedPack").toBool();
 }
 
 QString BaseInstance::getManagedPackType() const
 {
-    return m_settings->get("ManagedPackType").toString();
+	return m_settings->get("ManagedPackType").toString();
 }
 
 QString BaseInstance::getManagedPackID() const
 {
-    return m_settings->get("ManagedPackID").toString();
+	return m_settings->get("ManagedPackID").toString();
 }
 
 QString BaseInstance::getManagedPackName() const
 {
-    return m_settings->get("ManagedPackName").toString();
+	return m_settings->get("ManagedPackName").toString();
 }
 
 QString BaseInstance::getManagedPackVersionID() const
 {
-    return m_settings->get("ManagedPackVersionID").toString();
+	return m_settings->get("ManagedPackVersionID").toString();
 }
 
 QString BaseInstance::getManagedPackVersionName() const
 {
-    return m_settings->get("ManagedPackVersionName").toString();
+	return m_settings->get("ManagedPackVersionName").toString();
 }
 
 void BaseInstance::setManagedPack(const QString& type,
-                                  const QString& id,
-                                  const QString& name,
-                                  const QString& versionId,
-                                  const QString& version)
+								  const QString& id,
+								  const QString& name,
+								  const QString& versionId,
+								  const QString& version)
 {
-    m_settings->set("ManagedPack", true);
-    m_settings->set("ManagedPackType", type);
-    m_settings->set("ManagedPackID", id);
-    m_settings->set("ManagedPackName", name);
-    m_settings->set("ManagedPackVersionID", versionId);
-    m_settings->set("ManagedPackVersionName", version);
+	m_settings->set("ManagedPack", true);
+	m_settings->set("ManagedPackType", type);
+	m_settings->set("ManagedPackID", id);
+	m_settings->set("ManagedPackName", name);
+	m_settings->set("ManagedPackVersionID", versionId);
+	m_settings->set("ManagedPackVersionName", version);
 }
 
 void BaseInstance::copyManagedPack(BaseInstance& other)
 {
-    m_settings->set("ManagedPack", other.isManagedPack());
-    m_settings->set("ManagedPackType", other.getManagedPackType());
-    m_settings->set("ManagedPackID", other.getManagedPackID());
-    m_settings->set("ManagedPackName", other.getManagedPackName());
-    m_settings->set("ManagedPackVersionID", other.getManagedPackVersionID());
-    m_settings->set("ManagedPackVersionName", other.getManagedPackVersionName());
+	m_settings->set("ManagedPack", other.isManagedPack());
+	m_settings->set("ManagedPackType", other.getManagedPackType());
+	m_settings->set("ManagedPackID", other.getManagedPackID());
+	m_settings->set("ManagedPackName", other.getManagedPackName());
+	m_settings->set("ManagedPackVersionID", other.getManagedPackVersionID());
+	m_settings->set("ManagedPackVersionName", other.getManagedPackVersionName());
 
-    if (APPLICATION->settings()->get("AutomaticJavaSwitch").toBool() && m_settings->get("AutomaticJava").toBool() &&
-        m_settings->get("OverrideJavaLocation").toBool()) {
-        m_settings->set("OverrideJavaLocation", false);
-        m_settings->set("JavaPath", "");
-    }
+	if (APPLICATION->settings()->get("AutomaticJavaSwitch").toBool() && m_settings->get("AutomaticJava").toBool()
+		&& m_settings->get("OverrideJavaLocation").toBool())
+	{
+		m_settings->set("OverrideJavaLocation", false);
+		m_settings->set("JavaPath", "");
+	}
 }
 
 QStringList BaseInstance::getLinkedInstances() const
 {
-    auto setting = m_settings->get("linkedInstances").toString();
-    return Json::toStringList(setting);
+	auto setting = m_settings->get("linkedInstances").toString();
+	return Json::toStringList(setting);
 }
 
 void BaseInstance::setLinkedInstances(const QStringList& list)
 {
-    m_settings->set("linkedInstances", Json::fromStringList(list));
+	m_settings->set("linkedInstances", Json::fromStringList(list));
 }
 
 void BaseInstance::addLinkedInstanceId(const QString& id)
 {
-    auto linkedInstances = getLinkedInstances();
-    linkedInstances.append(id);
-    setLinkedInstances(linkedInstances);
+	auto linkedInstances = getLinkedInstances();
+	linkedInstances.append(id);
+	setLinkedInstances(linkedInstances);
 }
 
 bool BaseInstance::removeLinkedInstanceId(const QString& id)
 {
-    auto linkedInstances = getLinkedInstances();
-    int numRemoved = linkedInstances.removeAll(id);
-    setLinkedInstances(linkedInstances);
-    return numRemoved > 0;
+	auto linkedInstances = getLinkedInstances();
+	int numRemoved		 = linkedInstances.removeAll(id);
+	setLinkedInstances(linkedInstances);
+	return numRemoved > 0;
 }
 
 bool BaseInstance::isLinkedToInstanceId(const QString& id) const
 {
-    auto linkedInstances = getLinkedInstances();
-    return linkedInstances.contains(id);
+	auto linkedInstances = getLinkedInstances();
+	return linkedInstances.contains(id);
 }
 
 void BaseInstance::iconUpdated(QString key)
 {
-    if (iconKey() == key) {
-        emit propertiesChanged(this);
-    }
+	if (iconKey() == key)
+	{
+		emit propertiesChanged(this);
+	}
 }
 
 void BaseInstance::invalidate()
 {
-    changeStatus(Status::Gone);
-    qDebug() << "Instance" << id() << "has been invalidated.";
+	changeStatus(Status::Gone);
+	qDebug() << "Instance" << id() << "has been invalidated.";
 }
 
 void BaseInstance::changeStatus(BaseInstance::Status newStatus)
 {
-    Status status = currentStatus();
-    if (status != newStatus) {
-        m_status = newStatus;
-        emit statusChanged(status, newStatus);
-    }
+	Status status = currentStatus();
+	if (status != newStatus)
+	{
+		m_status = newStatus;
+		emit statusChanged(status, newStatus);
+	}
 }
 
 BaseInstance::Status BaseInstance::currentStatus() const
 {
-    return m_status;
+	return m_status;
 }
 
 QString BaseInstance::id() const
 {
-    return QFileInfo(instanceRoot()).fileName();
+	return QFileInfo(instanceRoot()).fileName();
 }
 
 bool BaseInstance::isRunning() const
 {
-    return m_isRunning;
+	return m_isRunning;
 }
 
 void BaseInstance::setRunning(bool running)
 {
-    if (running == m_isRunning)
-        return;
+	if (running == m_isRunning)
+		return;
 
-    m_isRunning = running;
+	m_isRunning = running;
 
-    emit runningStatusChanged(running);
+	emit runningStatusChanged(running);
 }
 
 void BaseInstance::setMinecraftRunning(bool running)
 {
-    if (!settings()->get("RecordGameTime").toBool()) {
-        return;
-    }
+	if (!settings()->get("RecordGameTime").toBool())
+	{
+		return;
+	}
 
-    if (running) {
-        m_timeStarted = QDateTime::currentDateTime();
-        setLastLaunch(m_timeStarted.toMSecsSinceEpoch());
-    } else {
-        QDateTime timeEnded = QDateTime::currentDateTime();
+	if (running)
+	{
+		m_timeStarted = QDateTime::currentDateTime();
+		setLastLaunch(m_timeStarted.toMSecsSinceEpoch());
+	}
+	else
+	{
+		QDateTime timeEnded = QDateTime::currentDateTime();
 
-        qint64 current = settings()->get("totalTimePlayed").toLongLong();
-        settings()->set("totalTimePlayed", current + m_timeStarted.secsTo(timeEnded));
-        settings()->set("lastTimePlayed", m_timeStarted.secsTo(timeEnded));
+		qint64 current = settings()->get("totalTimePlayed").toLongLong();
+		settings()->set("totalTimePlayed", current + m_timeStarted.secsTo(timeEnded));
+		settings()->set("lastTimePlayed", m_timeStarted.secsTo(timeEnded));
 
-        emit propertiesChanged(this);
-    }
+		emit propertiesChanged(this);
+	}
 }
 
 int64_t BaseInstance::totalTimePlayed() const
 {
-    qint64 current = m_settings->get("totalTimePlayed").toLongLong();
-    if (m_isRunning) {
-        QDateTime timeNow = QDateTime::currentDateTime();
-        return current + m_timeStarted.secsTo(timeNow);
-    }
-    return current;
+	qint64 current = m_settings->get("totalTimePlayed").toLongLong();
+	if (m_isRunning)
+	{
+		QDateTime timeNow = QDateTime::currentDateTime();
+		return current + m_timeStarted.secsTo(timeNow);
+	}
+	return current;
 }
 
 int64_t BaseInstance::lastTimePlayed() const
 {
-    if (m_isRunning) {
-        QDateTime timeNow = QDateTime::currentDateTime();
-        return m_timeStarted.secsTo(timeNow);
-    }
-    return m_settings->get("lastTimePlayed").toLongLong();
+	if (m_isRunning)
+	{
+		QDateTime timeNow = QDateTime::currentDateTime();
+		return m_timeStarted.secsTo(timeNow);
+	}
+	return m_settings->get("lastTimePlayed").toLongLong();
 }
 
 void BaseInstance::resetTimePlayed()
 {
-    settings()->reset("totalTimePlayed");
-    settings()->reset("lastTimePlayed");
+	settings()->reset("totalTimePlayed");
+	settings()->reset("lastTimePlayed");
 }
 
 QString BaseInstance::instanceType() const
 {
-    return m_settings->get("InstanceType").toString();
+	return m_settings->get("InstanceType").toString();
 }
 
 QString BaseInstance::instanceRoot() const
 {
-    return m_rootDir;
+	return m_rootDir;
 }
 
 SettingsObjectPtr BaseInstance::settings()
 {
-    loadSpecificSettings();
+	loadSpecificSettings();
 
-    return m_settings;
+	return m_settings;
 }
 
 bool BaseInstance::canLaunch() const
 {
-    return (!hasVersionBroken() && !isRunning());
+	return (!hasVersionBroken() && !isRunning());
 }
 
 bool BaseInstance::reloadSettings()
 {
-    return m_settings->reload();
+	return m_settings->reload();
 }
 
 qint64 BaseInstance::lastLaunch() const
 {
-    return m_settings->get("lastLaunchTime").value<qint64>();
+	return m_settings->get("lastLaunchTime").value<qint64>();
 }
 
 void BaseInstance::setLastLaunch(qint64 val)
 {
-    if (lastLaunch() == val)
-        return;
-    m_settings->set("lastLaunchTime", val);
-    emit propertiesChanged(this);
+	if (lastLaunch() == val)
+		return;
+	m_settings->set("lastLaunchTime", val);
+	emit propertiesChanged(this);
 }
 
 void BaseInstance::setNotes(QString val)
 {
-    if (notes() == val)
-        return;
-    m_settings->set("notes", val);
+	if (notes() == val)
+		return;
+	m_settings->set("notes", val);
 }
 
 QString BaseInstance::notes() const
 {
-    return m_settings->get("notes").toString();
+	return m_settings->get("notes").toString();
 }
 
 void BaseInstance::setIconKey(QString val)
 {
-    if (iconKey() == val)
-        return;
-    m_settings->set("iconKey", val);
-    emit propertiesChanged(this);
+	if (iconKey() == val)
+		return;
+	m_settings->set("iconKey", val);
+	emit propertiesChanged(this);
 }
 
 QString BaseInstance::iconKey() const
 {
-    return m_settings->get("iconKey").toString();
+	return m_settings->get("iconKey").toString();
 }
 
 void BaseInstance::setName(QString val)
 {
-    if (name() == val)
-        return;
-    m_settings->set("name", val);
-    emit propertiesChanged(this);
+	if (name() == val)
+		return;
+	m_settings->set("name", val);
+	emit propertiesChanged(this);
 }
 
 bool BaseInstance::syncInstanceDirName(const QString& newRoot) const
 {
-    auto oldRoot = instanceRoot();
-    return oldRoot == newRoot || QFile::rename(oldRoot, newRoot);
+	auto oldRoot = instanceRoot();
+	return oldRoot == newRoot || QFile::rename(oldRoot, newRoot);
 }
 
 void BaseInstance::registerShortcut(const ShortcutData& data)
 {
-    auto currentShortcuts = shortcuts();
-    currentShortcuts.append(data);
-    qDebug() << "Registering shortcut for instance" << id() << "with name" << data.name << "and path" << data.filePath;
-    setShortcuts(currentShortcuts);
+	auto currentShortcuts = shortcuts();
+	currentShortcuts.append(data);
+	qDebug() << "Registering shortcut for instance" << id() << "with name" << data.name << "and path" << data.filePath;
+	setShortcuts(currentShortcuts);
 }
 
 void BaseInstance::setShortcuts(const QList<ShortcutData>& shortcuts)
 {
-    // Convert new shortcuts to JSON for comparison
-    QJsonArray newArray;
-    for (const auto& elem : shortcuts) {
-        newArray.append(QJsonObject{ { "name", elem.name }, { "filePath", elem.filePath }, { "target", static_cast<int>(elem.target) } });
-    }
-    QJsonDocument newDocument;
-    newDocument.setArray(newArray);
-    QString newJson = QString::fromUtf8(newDocument.toJson(QJsonDocument::Compact));
+	// Convert new shortcuts to JSON for comparison
+	QJsonArray newArray;
+	for (const auto& elem : shortcuts)
+	{
+		newArray.append(QJsonObject{ { "name", elem.name },
+									 { "filePath", elem.filePath },
+									 { "target", static_cast<int>(elem.target) } });
+	}
+	QJsonDocument newDocument;
+	newDocument.setArray(newArray);
+	QString newJson = QString::fromUtf8(newDocument.toJson(QJsonDocument::Compact));
 
-    // Fast comparison: check if JSON strings are identical (avoids parsing and disk I/O)
-    QString currentJson = m_settings->get("shortcuts").toString();
-    if (currentJson == newJson)
-        return;
+	// Fast comparison: check if JSON strings are identical (avoids parsing and disk I/O)
+	QString currentJson = m_settings->get("shortcuts").toString();
+	if (currentJson == newJson)
+		return;
 
-    m_settings->set("shortcuts", newJson);
+	m_settings->set("shortcuts", newJson);
 }
 
 QList<ShortcutData> BaseInstance::shortcuts() const
 {
-    auto data = m_settings->get("shortcuts").toString().toUtf8();
-    QJsonParseError parseError;
-    auto document = QJsonDocument::fromJson(data, &parseError);
-    if (parseError.error != QJsonParseError::NoError || !document.isArray())
-        return {};
+	auto data = m_settings->get("shortcuts").toString().toUtf8();
+	QJsonParseError parseError;
+	auto document = QJsonDocument::fromJson(data, &parseError);
+	if (parseError.error != QJsonParseError::NoError || !document.isArray())
+		return {};
 
-    QList<ShortcutData> results;
-    for (const auto& elem : document.array()) {
-        if (!elem.isObject())
-            continue;
-        auto dict = elem.toObject();
-        if (!dict.contains("name") || !dict.contains("filePath") || !dict.contains("target"))
-            continue;
-        int value = dict["target"].toInt(-1);
-        if (!dict["name"].isString() || !dict["filePath"].isString() || value < 0 || value >= 3)
-            continue;
+	QList<ShortcutData> results;
+	for (const auto& elem : document.array())
+	{
+		if (!elem.isObject())
+			continue;
+		auto dict = elem.toObject();
+		if (!dict.contains("name") || !dict.contains("filePath") || !dict.contains("target"))
+			continue;
+		int value = dict["target"].toInt(-1);
+		if (!dict["name"].isString() || !dict["filePath"].isString() || value < 0 || value >= 3)
+			continue;
 
-        QString shortcutName = dict["name"].toString();
-        QString filePath = dict["filePath"].toString();
-        if (!QDir(filePath).exists()) {
-            qWarning() << "Shortcut" << shortcutName << "for instance" << name() << "have non-existent path" << filePath;
-            continue;
-        }
-        results.append({ shortcutName, filePath, static_cast<ShortcutTarget>(value) });
-    }
-    return results;
+		QString shortcutName = dict["name"].toString();
+		QString filePath	 = dict["filePath"].toString();
+		if (!QDir(filePath).exists())
+		{
+			qWarning() << "Shortcut" << shortcutName << "for instance" << name() << "have non-existent path"
+					   << filePath;
+			continue;
+		}
+		results.append({ shortcutName, filePath, static_cast<ShortcutTarget>(value) });
+	}
+	return results;
 }
 
 QString BaseInstance::name() const
 {
-    return m_settings->get("name").toString();
+	return m_settings->get("name").toString();
 }
 
 QString BaseInstance::windowTitle() const
 {
-    return BuildConfig.LAUNCHER_DISPLAYNAME + ": " + name();
+	return BuildConfig.LAUNCHER_DISPLAYNAME + ": " + name();
 }
 
 shared_qobject_ptr<LaunchTask> BaseInstance::getLaunchTask()
 {
-    return m_launchProcess;
+	return m_launchProcess;
 }
 
 void BaseInstance::updateRuntimeContext()
 {
-    // NOOP
+	// NOOP
 }
 
 bool BaseInstance::isLegacy()
 {
-    return traits().contains("legacyLaunch") || traits().contains("alphaLaunch");
+	return traits().contains("legacyLaunch") || traits().contains("alphaLaunch");
 }

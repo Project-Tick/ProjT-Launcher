@@ -46,54 +46,63 @@
 #include "net/Download.h"
 #include "net/Upload.h"
 
-namespace Ui {
-class ProfileSetupDialog;
+namespace Ui
+{
+	class ProfileSetupDialog;
 }
 
-class ProfileSetupDialog : public QDialog {
-    Q_OBJECT
-   public:
-    explicit ProfileSetupDialog(MinecraftAccountPtr accountToSetup, QWidget* parent = 0);
-    ~ProfileSetupDialog();
+class ProfileSetupDialog : public QDialog
+{
+	Q_OBJECT
+  public:
+	explicit ProfileSetupDialog(MinecraftAccountPtr accountToSetup, QWidget* parent = 0);
+	~ProfileSetupDialog();
 
-    enum class NameStatus { NotSet, Pending, Available, Exists, Error } nameStatus = NameStatus::NotSet;
+	enum class NameStatus
+	{
+		NotSet,
+		Pending,
+		Available,
+		Exists,
+		Error
+	} nameStatus = NameStatus::NotSet;
 
-   private slots:
-    void on_buttonBox_accepted();
-    void on_buttonBox_rejected();
+  private slots:
+	void on_buttonBox_accepted();
+	void on_buttonBox_rejected();
 
-    void nameEdited(const QString& name);
-    void startCheck();
+	void nameEdited(const QString& name);
+	void startCheck();
 
-    void checkFinished();
-    void setupProfileFinished();
+	void checkFinished();
+	void setupProfileFinished();
 
-   protected:
-    void scheduleCheck(const QString& name);
-    void checkName(const QString& name);
-    void setNameStatus(NameStatus status, QString errorString);
+  protected:
+	void scheduleCheck(const QString& name);
+	void checkName(const QString& name);
+	void setNameStatus(NameStatus status, QString errorString);
 
-    void setupProfile(const QString& profileName);
+	void setupProfile(const QString& profileName);
 
-   private:
-    MinecraftAccountPtr m_accountToSetup;
-    Ui::ProfileSetupDialog* ui;
-    QIcon goodIcon;
-    QIcon yellowIcon;
-    QIcon badIcon;
-    QAction* validityAction = nullptr;
+  private:
+	MinecraftAccountPtr m_accountToSetup;
+	Ui::ProfileSetupDialog* ui;
+	QIcon goodIcon;
+	QIcon yellowIcon;
+	QIcon badIcon;
+	QAction* validityAction = nullptr;
 
-    QString queuedCheck;
+	QString queuedCheck;
 
-    bool isChecking = false;
-    bool isWorking = false;
-    QString currentCheck;
+	bool isChecking = false;
+	bool isWorking	= false;
+	QString currentCheck;
 
-    QTimer checkStartTimer;
+	QTimer checkStartTimer;
 
-    std::shared_ptr<QByteArray> m_check_response;
-    Net::Download::Ptr m_check_task;
+	std::shared_ptr<QByteArray> m_check_response;
+	Net::Download::Ptr m_check_task;
 
-    std::shared_ptr<QByteArray> m_profile_response;
-    Net::Upload::Ptr m_profile_task;
+	std::shared_ptr<QByteArray> m_profile_response;
+	Net::Upload::Ptr m_profile_task;
 };

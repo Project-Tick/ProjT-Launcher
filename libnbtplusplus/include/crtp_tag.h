@@ -20,43 +20,73 @@
 #ifndef CRTP_TAG_H_INCLUDED
 #define CRTP_TAG_H_INCLUDED
 
-#include "make_unique.h"
-#include "nbt_visitor.h"
 #include "tag.h"
+#include "nbt_visitor.h"
+#include "make_unique.h"
 
-namespace nbt {
+namespace nbt
+{
 
-namespace detail {
+	namespace detail
+	{
 
-template <class Sub>
-class crtp_tag : public tag {
-   public:
-    // Pure virtual destructor to make the class abstract
-    virtual ~crtp_tag() noexcept = 0;
+		template <class Sub>
+		class crtp_tag : public tag
+		{
+		  public:
+			// Pure virtual destructor to make the class abstract
+			virtual ~crtp_tag() noexcept = 0;
 
-    tag_type get_type() const noexcept override final { return Sub::type; };
+			tag_type get_type() const noexcept override final
+			{
+				return Sub::type;
+			};
 
-    std::unique_ptr<tag> clone() const& override final { return make_unique<Sub>(sub_this()); }
-    std::unique_ptr<tag> move_clone() && override final { return make_unique<Sub>(std::move(sub_this())); }
+			std::unique_ptr<tag> clone() const& override final
+			{
+				return make_unique<Sub>(sub_this());
+			}
+			std::unique_ptr<tag> move_clone() && override final
+			{
+				return make_unique<Sub>(std::move(sub_this()));
+			}
 
-    tag& assign(tag&& rhs) override final { return sub_this() = dynamic_cast<Sub&&>(rhs); }
+			tag& assign(tag&& rhs) override final
+			{
+				return sub_this() = dynamic_cast<Sub&&>(rhs);
+			}
 
-    void accept(nbt_visitor& visitor) override final { visitor.visit(sub_this()); }
-    void accept(const_nbt_visitor& visitor) const override final { visitor.visit(sub_this()); }
+			void accept(nbt_visitor& visitor) override final
+			{
+				visitor.visit(sub_this());
+			}
+			void accept(const_nbt_visitor& visitor) const override final
+			{
+				visitor.visit(sub_this());
+			}
 
-   private:
-    bool equals(const tag& rhs) const override final { return sub_this() == static_cast<const Sub&>(rhs); }
+		  private:
+			bool equals(const tag& rhs) const override final
+			{
+				return sub_this() == static_cast<const Sub&>(rhs);
+			}
 
-    Sub& sub_this() { return static_cast<Sub&>(*this); }
-    const Sub& sub_this() const { return static_cast<const Sub&>(*this); }
-};
+			Sub& sub_this()
+			{
+				return static_cast<Sub&>(*this);
+			}
+			const Sub& sub_this() const
+			{
+				return static_cast<const Sub&>(*this);
+			}
+		};
 
-template <class Sub>
-crtp_tag<Sub>::~crtp_tag() noexcept
-{}
+		template <class Sub>
+		crtp_tag<Sub>::~crtp_tag() noexcept
+		{}
 
-}  // namespace detail
+	}
 
-}  // namespace nbt
+}
 
-#endif  // CRTP_TAG_H_INCLUDED
+#endif // CRTP_TAG_H_INCLUDED

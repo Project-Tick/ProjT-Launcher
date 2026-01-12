@@ -31,27 +31,28 @@ see quazip/(un)zip.h files for details. Basically it's the zlib license.
 #define QUAZIP_TEST_QSAVEFILE
 #endif
 
-class TestQuaZip : public QObject {
-    Q_OBJECT
-   private slots:
-    void getFileList_data();
-    void getFileList();
-    void add_data();
-    void add();
-    void setFileNameCodec_data();
-    void setFileNameCodec();
-    void setOsCode_data();
-    void setOsCode();
-    void setDataDescriptorWritingEnabled();
-    void testQIODeviceAPI();
-    void setZipName();
-    void setIoDevice();
-    void setCommentCodec();
-    void setAutoClose();
+class TestQuaZip : public QObject
+{
+	Q_OBJECT
+  private slots:
+	void getFileList_data();
+	void getFileList();
+	void add_data();
+	void add();
+	void setFileNameCodec_data();
+	void setFileNameCodec();
+	void setOsCode_data();
+	void setOsCode();
+	void setDataDescriptorWritingEnabled();
+	void testQIODeviceAPI();
+	void setZipName();
+	void setIoDevice();
+	void setCommentCodec();
+	void setAutoClose();
 #ifdef QUAZIP_TEST_QSAVEFILE
-    void saveFileBug();
+	void saveFileBug();
 #endif
-    void testSequential();
+	void testSequential();
 };
 
-#endif  // QUAZIP_TEST_QUAZIP_H
+#endif // QUAZIP_TEST_QUAZIP_H

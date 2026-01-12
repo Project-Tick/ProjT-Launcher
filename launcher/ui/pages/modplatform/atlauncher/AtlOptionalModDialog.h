@@ -63,71 +63,80 @@
 #include "modplatform/atlauncher/ATLPackManifest.h"
 #include "net/NetJob.h"
 
-namespace Ui {
-class AtlOptionalModDialog;
+namespace Ui
+{
+	class AtlOptionalModDialog;
 }
 
-class AtlOptionalModListModel : public QAbstractListModel {
-    Q_OBJECT
+class AtlOptionalModListModel : public QAbstractListModel
+{
+	Q_OBJECT
 
-   public:
-    enum Columns {
-        EnabledColumn = 0,
-        NameColumn,
-        DescriptionColumn,
-    };
+  public:
+	enum Columns
+	{
+		EnabledColumn = 0,
+		NameColumn,
+		DescriptionColumn,
+	};
 
-    AtlOptionalModListModel(QWidget* parent, const ATLauncher::PackVersion& version, QList<ATLauncher::VersionMod> mods);
+	AtlOptionalModListModel(QWidget* parent,
+							const ATLauncher::PackVersion& version,
+							QList<ATLauncher::VersionMod> mods);
 
-    QList<QString> getResult();
+	QList<QString> getResult();
 
-    int rowCount(const QModelIndex& parent) const override;
-    int columnCount(const QModelIndex& parent) const override;
+	int rowCount(const QModelIndex& parent) const override;
+	int columnCount(const QModelIndex& parent) const override;
 
-    QVariant data(const QModelIndex& index, int role) const override;
-    bool setData(const QModelIndex& index, const QVariant& value, int role) override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+	QVariant data(const QModelIndex& index, int role) const override;
+	bool setData(const QModelIndex& index, const QVariant& value, int role) override;
+	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
-    Qt::ItemFlags flags(const QModelIndex& index) const override;
+	Qt::ItemFlags flags(const QModelIndex& index) const override;
 
-    void useShareCode(const QString& code);
+	void useShareCode(const QString& code);
 
-   public slots:
-    void shareCodeSuccess();
-    void shareCodeFailure(const QString& reason);
+  public slots:
+	void shareCodeSuccess();
+	void shareCodeFailure(const QString& reason);
 
-    void selectRecommended();
-    void clearAll();
+	void selectRecommended();
+	void clearAll();
 
-   private:
-    void toggleMod(const ATLauncher::VersionMod& mod, int index);
-    void setMod(const ATLauncher::VersionMod& mod, int index, bool enable, bool shouldEmit = true);
+  private:
+	void toggleMod(const ATLauncher::VersionMod& mod, int index);
+	void setMod(const ATLauncher::VersionMod& mod, int index, bool enable, bool shouldEmit = true);
 
-   private:
-    NetJob::Ptr m_jobPtr;
-    std::shared_ptr<QByteArray> m_response = std::make_shared<QByteArray>();
+  private:
+	NetJob::Ptr m_jobPtr;
+	std::shared_ptr<QByteArray> m_response = std::make_shared<QByteArray>();
 
-    ATLauncher::PackVersion m_version;
-    QList<ATLauncher::VersionMod> m_mods;
+	ATLauncher::PackVersion m_version;
+	QList<ATLauncher::VersionMod> m_mods;
 
-    QMap<QString, bool> m_selection;
-    QMap<QString, int> m_index;
-    QMap<QString, QList<QString>> m_dependents;
+	QMap<QString, bool> m_selection;
+	QMap<QString, int> m_index;
+	QMap<QString, QList<QString>> m_dependents;
 };
 
-class AtlOptionalModDialog : public QDialog {
-    Q_OBJECT
+class AtlOptionalModDialog : public QDialog
+{
+	Q_OBJECT
 
-   public:
-    AtlOptionalModDialog(QWidget* parent, const ATLauncher::PackVersion& version, QList<ATLauncher::VersionMod> mods);
-    ~AtlOptionalModDialog() override;
+  public:
+	AtlOptionalModDialog(QWidget* parent, const ATLauncher::PackVersion& version, QList<ATLauncher::VersionMod> mods);
+	~AtlOptionalModDialog() override;
 
-    QList<QString> getResult() { return listModel->getResult(); }
+	QList<QString> getResult()
+	{
+		return listModel->getResult();
+	}
 
-    void useShareCode();
+	void useShareCode();
 
-   private:
-    Ui::AtlOptionalModDialog* ui;
+  private:
+	Ui::AtlOptionalModDialog* ui;
 
-    AtlOptionalModListModel* listModel;
+	AtlOptionalModListModel* listModel;
 };

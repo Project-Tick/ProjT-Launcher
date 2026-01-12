@@ -41,27 +41,28 @@
 #include "net/ApiDownload.h"
 #include "net/ApiHeaderProxy.h"
 
-namespace Net {
-
-Download::Ptr ApiDownload::makeCached(QUrl url, MetaEntryPtr entry, Download::Options options)
+namespace Net
 {
-    auto dl = Download::makeCached(url, entry, options);
-    dl->addHeaderProxy(new ApiHeaderProxy());
-    return dl;
-}
 
-Download::Ptr ApiDownload::makeByteArray(QUrl url, std::shared_ptr<QByteArray> output, Download::Options options)
-{
-    auto dl = Download::makeByteArray(url, output, options);
-    dl->addHeaderProxy(new ApiHeaderProxy());
-    return dl;
-}
+	Download::Ptr ApiDownload::makeCached(QUrl url, MetaEntryPtr entry, Download::Options options)
+	{
+		auto dl = Download::makeCached(url, entry, options);
+		dl->addHeaderProxy(new ApiHeaderProxy());
+		return dl;
+	}
 
-Download::Ptr ApiDownload::makeFile(QUrl url, QString path, Download::Options options)
-{
-    auto dl = Download::makeFile(url, path, options);
-    dl->addHeaderProxy(new ApiHeaderProxy());
-    return dl;
-}
+	Download::Ptr ApiDownload::makeByteArray(QUrl url, std::shared_ptr<QByteArray> output, Download::Options options)
+	{
+		auto dl = Download::makeByteArray(url, output, options);
+		dl->addHeaderProxy(new ApiHeaderProxy());
+		return dl;
+	}
 
-}  // namespace Net
+	Download::Ptr ApiDownload::makeFile(QUrl url, QString path, Download::Options options)
+	{
+		auto dl = Download::makeFile(url, path, options);
+		dl->addHeaderProxy(new ApiHeaderProxy());
+		return dl;
+	}
+
+} // namespace Net

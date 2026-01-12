@@ -58,49 +58,51 @@
 #include <QProcess>
 #include "FileSystem.h"
 
-namespace DesktopServices {
-bool openPath(const QFileInfo& path, bool ensureFolderPathExists)
+namespace DesktopServices
 {
-    qDebug() << "Opening path" << path;
-    if (ensureFolderPathExists) {
-        FS::ensureFolderPathExists(path);
-    }
-    return openUrl(QUrl::fromLocalFile(QFileInfo(path).absoluteFilePath()));
-}
+	bool openPath(const QFileInfo& path, bool ensureFolderPathExists)
+	{
+		qDebug() << "Opening path" << path;
+		if (ensureFolderPathExists)
+		{
+			FS::ensureFolderPathExists(path);
+		}
+		return openUrl(QUrl::fromLocalFile(QFileInfo(path).absoluteFilePath()));
+	}
 
-bool openPath(const QString& path, bool ensureFolderPathExists)
-{
-    return openPath(QFileInfo(path), ensureFolderPathExists);
-}
+	bool openPath(const QString& path, bool ensureFolderPathExists)
+	{
+		return openPath(QFileInfo(path), ensureFolderPathExists);
+	}
 
-bool run(const QString& application, const QStringList& args, const QString& workingDirectory, qint64* pid)
-{
-    qDebug() << "Running" << application << "with args" << args.join(' ');
-    return QProcess::startDetached(application, args, workingDirectory, pid);
-}
+	bool run(const QString& application, const QStringList& args, const QString& workingDirectory, qint64* pid)
+	{
+		qDebug() << "Running" << application << "with args" << args.join(' ');
+		return QProcess::startDetached(application, args, workingDirectory, pid);
+	}
 
-bool openUrl(const QUrl& url)
-{
-    qDebug() << "Opening URL" << url.toString();
-    return QDesktopServices::openUrl(url);
-}
+	bool openUrl(const QUrl& url)
+	{
+		qDebug() << "Opening URL" << url.toString();
+		return QDesktopServices::openUrl(url);
+	}
 
-bool isFlatpak()
-{
+	bool isFlatpak()
+	{
 #ifdef Q_OS_LINUX
-    return QFile::exists("/.flatpak-info");
+		return QFile::exists("/.flatpak-info");
 #else
-    return false;
+		return false;
 #endif
-}
+	}
 
-bool isSnap()
-{
+	bool isSnap()
+	{
 #ifdef Q_OS_LINUX
-    return getenv("SNAP");
+		return getenv("SNAP");
 #else
-    return false;
+		return false;
 #endif
-}
+	}
 
-}  // namespace DesktopServices
+} // namespace DesktopServices

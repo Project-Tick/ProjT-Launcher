@@ -1,16 +1,19 @@
 {
   "name": "projtlauncher",
-  "version": "0.0.3-4",
-  "description": "Official ProjT Launcher website",
+  "version": "0.0.4-1",
+  "description": "Project Tick - Official websites for ProjT Launcher, toml++ and more",
   "scripts": {
-    "build": "eleventy",
+    "build": "npm run build:tomlplusplus && eleventy && npm run copy:tomlplusplus",
+    "build:tomlplusplus": "node ./scripts/build-tomlplusplus.mjs",
+    "copy:tomlplusplus": "mkdir -p _site/tomlplusplus && cp -r website/tomlplusplus/html/* _site/tomlplusplus/",
     "watch": "eleventy --watch",
     "serve": "eleventy --serve",
     "start": "eleventy --serve",
     "debug": "DEBUG=* npx eleventy",
     "lint": "markdownlint .",
     "lint:fix": "markdownlint --fix .",
-    "update-contributors": "node ./scripts/update-contributors.mjs"
+    "update-contributors": "node ./scripts/update-contributors.mjs",
+    "setup:doxygen": "node ./scripts/setup-doxygen.mjs"
   },
   "repository": {
     "type": "git",
@@ -25,7 +28,7 @@
   "bugs": {
     "url": "https://github.com/Project-Tick/ProjT-Launcher/issues"
   },
-  "homepage": "https://projtlauncher.projecttick.org.tr/",
+  "homepage": "https://projecttick.org.tr/projtlauncher/",
   "devDependencies": {
     "@11ty/eleventy": "3.1.2",
     "@11ty/eleventy-fetch": "5.1.0",
@@ -41,7 +44,8 @@
     "markdown-it": "14.1.0",
     "markdown-it-anchor": "9.2.0",
     "markdown-it-table-of-contents": "0.9.0",
-    "markdownlint-cli": "0.45.0"
+    "markdownlint-cli": "0.45.0",
+    "markdownlint-cli2": "^0.20.0"
   },
   "packageManager": "pnpm@10.18.3"
 }

@@ -24,30 +24,31 @@
 #define TAGFWD_H_INCLUDED
 #include <cstdint>
 
-namespace nbt {
+namespace nbt
+{
 
-class tag;
+	class tag;
 
-template <class T>
-class tag_primitive;
-typedef tag_primitive<int8_t> tag_byte;
-typedef tag_primitive<int16_t> tag_short;
-typedef tag_primitive<int32_t> tag_int;
-typedef tag_primitive<int64_t> tag_long;
-typedef tag_primitive<float> tag_float;
-typedef tag_primitive<double> tag_double;
+	template <class T>
+	class tag_primitive;
+	typedef tag_primitive<int8_t> tag_byte;
+	typedef tag_primitive<int16_t> tag_short;
+	typedef tag_primitive<int32_t> tag_int;
+	typedef tag_primitive<int64_t> tag_long;
+	typedef tag_primitive<float> tag_float;
+	typedef tag_primitive<double> tag_double;
 
-class tag_string;
+	class tag_string;
 
-template <class T>
-class tag_array;
-typedef tag_array<int8_t> tag_byte_array;
-typedef tag_array<int32_t> tag_int_array;
-typedef tag_array<int64_t> tag_long_array;
+	template <class T>
+	class tag_array;
+	typedef tag_array<int8_t> tag_byte_array;
+	typedef tag_array<int32_t> tag_int_array;
+	typedef tag_array<int64_t> tag_long_array;
 
-class tag_list;
-class tag_compound;
+	class tag_list;
+	class tag_compound;
 
-}  // namespace nbt
+}
 
-#endif  // TAGFWD_H_INCLUDED
+#endif // TAGFWD_H_INCLUDED

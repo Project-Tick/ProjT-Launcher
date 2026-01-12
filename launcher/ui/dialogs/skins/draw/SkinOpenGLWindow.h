@@ -50,56 +50,58 @@
 #include "ui/dialogs/skins/draw/BoxGeometry.h"
 #include "ui/dialogs/skins/draw/Scene.h"
 
-class SkinProvider {
-   public:
-    virtual ~SkinProvider() = default;
-    virtual SkinModel* getSelectedSkin() = 0;
-    virtual QHash<QString, QImage> capes() = 0;
+class SkinProvider
+{
+  public:
+	virtual ~SkinProvider()				   = default;
+	virtual SkinModel* getSelectedSkin()   = 0;
+	virtual QHash<QString, QImage> capes() = 0;
 };
-class SkinOpenGLWindow : public QOpenGLWindow, protected QOpenGLFunctions {
-    Q_OBJECT
+class SkinOpenGLWindow : public QOpenGLWindow, protected QOpenGLFunctions
+{
+	Q_OBJECT
 
-   public:
-    SkinOpenGLWindow(SkinProvider* parent, QColor color);
-    virtual ~SkinOpenGLWindow();
+  public:
+	SkinOpenGLWindow(SkinProvider* parent, QColor color);
+	virtual ~SkinOpenGLWindow();
 
-    void updateScene(SkinModel* skin);
-    void updateCape(const QImage& cape);
-    void setElytraVisible(bool visible);
+	void updateScene(SkinModel* skin);
+	void updateCape(const QImage& cape);
+	void setElytraVisible(bool visible);
 
-   protected:
-    void mousePressEvent(QMouseEvent* e) override;
-    void mouseReleaseEvent(QMouseEvent* e) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
-    void wheelEvent(QWheelEvent* event) override;
+  protected:
+	void mousePressEvent(QMouseEvent* e) override;
+	void mouseReleaseEvent(QMouseEvent* e) override;
+	void mouseMoveEvent(QMouseEvent* event) override;
+	void wheelEvent(QWheelEvent* event) override;
 
-    void initializeGL() override;
-    void resizeGL(int w, int h) override;
-    void paintGL() override;
+	void initializeGL() override;
+	void resizeGL(int w, int h) override;
+	void paintGL() override;
 
-    void initShaders();
+	void initShaders();
 
-    void generateBackgroundTexture(int width, int height, int tileSize);
-    void renderBackground();
+	void generateBackgroundTexture(int width, int height, int tileSize);
+	void renderBackground();
 
-   private:
-    QOpenGLShaderProgram* m_modelProgram;
-    QOpenGLShaderProgram* m_backgroundProgram;
-    opengl::Scene* m_scene = nullptr;
+  private:
+	QOpenGLShaderProgram* m_modelProgram;
+	QOpenGLShaderProgram* m_backgroundProgram;
+	opengl::Scene* m_scene = nullptr;
 
-    QMatrix4x4 m_projection;
+	QMatrix4x4 m_projection;
 
-    QVector2D m_mousePosition;
+	QVector2D m_mousePosition;
 
-    bool m_isMousePressed = false;
-    float m_distance = 48;
-    float m_yaw = 90;   // Horizontal rotation angle
-    float m_pitch = 0;  // Vertical rotation angle
+	bool m_isMousePressed = false;
+	float m_distance	  = 48;
+	float m_yaw			  = 90; // Horizontal rotation angle
+	float m_pitch		  = 0;	// Vertical rotation angle
 
-    bool m_isFirstFrame = true;
+	bool m_isFirstFrame = true;
 
-    opengl::BoxGeometry* m_background = nullptr;
-    QOpenGLTexture* m_backgroundTexture = nullptr;
-    QColor m_baseColor;
-    SkinProvider* m_parent = nullptr;
+	opengl::BoxGeometry* m_background	= nullptr;
+	QOpenGLTexture* m_backgroundTexture = nullptr;
+	QColor m_baseColor;
+	SkinProvider* m_parent = nullptr;
 };

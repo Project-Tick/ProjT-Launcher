@@ -47,58 +47,58 @@
 
 PageDialog::PageDialog(BasePageProvider* pageProvider, QString defaultId, QWidget* parent) : QDialog(parent)
 {
-    setWindowTitle(pageProvider->dialogTitle());
-    m_container = new PageContainer(pageProvider, std::move(defaultId), this);
+	setWindowTitle(pageProvider->dialogTitle());
+	m_container = new PageContainer(pageProvider, std::move(defaultId), this);
 
-    auto* mainLayout = new QVBoxLayout(this);
+	auto* mainLayout = new QVBoxLayout(this);
 
-    auto* focusStealer = new QPushButton(this);
-    mainLayout->addWidget(focusStealer);
-    focusStealer->setDefault(true);
-    focusStealer->hide();
+	auto* focusStealer = new QPushButton(this);
+	mainLayout->addWidget(focusStealer);
+	focusStealer->setDefault(true);
+	focusStealer->hide();
 
-    mainLayout->addWidget(m_container);
-    mainLayout->setSpacing(0);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
+	mainLayout->addWidget(m_container);
+	mainLayout->setSpacing(0);
+	mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    setLayout(mainLayout);
+	setLayout(mainLayout);
 
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Help | QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    buttons->button(QDialogButtonBox::Ok)->setText(tr("&OK"));
-    buttons->button(QDialogButtonBox::Cancel)->setText(tr("&Cancel"));
-    buttons->button(QDialogButtonBox::Help)->setText(tr("Help"));
-    buttons->setContentsMargins(6, 0, 6, 0);
-    m_container->addButtons(buttons);
+	auto* buttons = new QDialogButtonBox(QDialogButtonBox::Help | QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+	buttons->button(QDialogButtonBox::Ok)->setText(tr("&OK"));
+	buttons->button(QDialogButtonBox::Cancel)->setText(tr("&Cancel"));
+	buttons->button(QDialogButtonBox::Help)->setText(tr("Help"));
+	buttons->setContentsMargins(6, 0, 6, 0);
+	m_container->addButtons(buttons);
 
-    connect(buttons->button(QDialogButtonBox::Ok), &QPushButton::clicked, this, &PageDialog::accept);
-    connect(buttons->button(QDialogButtonBox::Cancel), &QPushButton::clicked, this, &PageDialog::reject);
-    connect(buttons->button(QDialogButtonBox::Help), &QPushButton::clicked, m_container, &PageContainer::help);
+	connect(buttons->button(QDialogButtonBox::Ok), &QPushButton::clicked, this, &PageDialog::accept);
+	connect(buttons->button(QDialogButtonBox::Cancel), &QPushButton::clicked, this, &PageDialog::reject);
+	connect(buttons->button(QDialogButtonBox::Help), &QPushButton::clicked, m_container, &PageContainer::help);
 
-    restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("PagedGeometry").toString().toUtf8()));
+	restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("PagedGeometry").toString().toUtf8()));
 }
 
 void PageDialog::accept()
 {
-    if (handleClose())
-        QDialog::accept();
+	if (handleClose())
+		QDialog::accept();
 }
 
 void PageDialog::closeEvent(QCloseEvent* event)
 {
-    if (handleClose())
-        QDialog::closeEvent(event);
+	if (handleClose())
+		QDialog::closeEvent(event);
 }
 
 bool PageDialog::handleClose()
 {
-    qDebug() << "Paged dialog close requested";
-    if (!m_container->prepareToClose())
-        return false;
+	qDebug() << "Paged dialog close requested";
+	if (!m_container->prepareToClose())
+		return false;
 
-    qDebug() << "Paged dialog close approved";
-    APPLICATION->settings()->set("PagedGeometry", QString::fromUtf8(saveGeometry().toBase64()));
-    qDebug() << "Paged dialog geometry saved";
+	qDebug() << "Paged dialog close approved";
+	APPLICATION->settings()->set("PagedGeometry", QString::fromUtf8(saveGeometry().toBase64()));
+	qDebug() << "Paged dialog geometry saved";
 
-    emit applied();
-    return true;
+	emit applied();
+	return true;
 }

@@ -46,26 +46,29 @@
 #include "InstanceTask.h"
 #include "PackHelpers.h"
 
-namespace FTBImportAPP {
+namespace FTBImportAPP
+{
 
-class PackInstallTask : public InstanceTask {
-    Q_OBJECT
+	class PackInstallTask : public InstanceTask
+	{
+		Q_OBJECT
 
-   public:
-    explicit PackInstallTask(const Modpack& pack) : m_pack(pack) {}
-    virtual ~PackInstallTask() = default;
+	  public:
+		explicit PackInstallTask(const Modpack& pack) : m_pack(pack)
+		{}
+		virtual ~PackInstallTask() = default;
 
-   protected:
-    virtual void executeTask() override;
+	  protected:
+		virtual void executeTask() override;
 
-   private slots:
-    void copySettings();
+	  private slots:
+		void copySettings();
 
-   private:
-    QFuture<bool> m_copyFuture;
-    QFutureWatcher<bool> m_copyFutureWatcher;
+	  private:
+		QFuture<bool> m_copyFuture;
+		QFutureWatcher<bool> m_copyFutureWatcher;
 
-    const Modpack m_pack;
-};
+		const Modpack m_pack;
+	};
 
-}  // namespace FTBImportAPP
+} // namespace FTBImportAPP

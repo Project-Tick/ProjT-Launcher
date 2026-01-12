@@ -33,14 +33,15 @@ See COPYING file for the full LGPL text.
 #define QUAZIP_SYMLINK_EXTRACTION_ON_WINDOWS_TEST
 #endif
 
-class TestJlCpCompress : public QObject {
-    Q_OBJECT
-   private:
-    QStringList archivesToBundle;
-   private slots:
-    void compressFileOptions_data();
-    void compressFileOptions();
-    void createBundle();
+class TestJlCpCompress : public QObject
+{
+	Q_OBJECT
+  private:
+	QStringList archivesToBundle;
+  private slots:
+	void compressFileOptions_data();
+	void compressFileOptions();
+	void createBundle();
 };
 
-#endif  // QUAZIP_TEST_JLCP_COMPRESS_H
+#endif // QUAZIP_TEST_JLCP_COMPRESS_H

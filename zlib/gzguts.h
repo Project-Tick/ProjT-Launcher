@@ -78,8 +78,9 @@
 #endif
 
 #ifndef HAVE_VSNPRINTF
-#if !defined(NO_vsnprintf) && \
-    (defined(MSDOS) || defined(__TURBOC__) || defined(__SASC) || defined(VMS) || defined(__OS400) || defined(__MVS__))
+#if !defined(NO_vsnprintf)                                                                                             \
+	&& (defined(MSDOS) || defined(__TURBOC__) || defined(__SASC) || defined(VMS) || defined(__OS400)                   \
+		|| defined(__MVS__))
 /* vsnprintf may exist on some MS-DOS compilers (DJGPP?),
    but for now we just assume it doesn't. */
 #define NO_vsnprintf
@@ -155,9 +156,9 @@ ZEXTERN z_off64_t ZEXPORT gzoffset64(gzFile);
 #define GZBUFSIZE 8192
 
 /* gzip modes, also provide a little integrity check on the passed structure */
-#define GZ_NONE 0
-#define GZ_READ 7247
-#define GZ_WRITE 31153
+#define GZ_NONE	  0
+#define GZ_READ	  7247
+#define GZ_WRITE  31153
 #define GZ_APPEND 1 /* mode set to GZ_WRITE after the file is opened */
 
 /* values for gz_state how */
@@ -166,39 +167,40 @@ ZEXTERN z_off64_t ZEXPORT gzoffset64(gzFile);
 #define GZIP 2 /* decompress a gzip stream */
 
 /* internal gzip file state data structure */
-typedef struct {
-    /* exposed contents for gzgetc() macro */
-    struct gzFile_s x; /* "x" for exposed */
-                       /* x.have: number of bytes available at x.next */
-                       /* x.next: next output data to deliver or write */
-                       /* x.pos: current position in uncompressed data */
-    /* used for both reading and writing */
-    int mode;           /* see gzip modes above */
-    int fd;             /* file descriptor */
-    char* path;         /* path or fd for error messages */
-    unsigned size;      /* buffer size, zero if not allocated yet */
-    unsigned want;      /* requested buffer size, default is GZBUFSIZE */
-    unsigned char* in;  /* input buffer (double-sized when writing) */
-    unsigned char* out; /* output buffer (double-sized when reading) */
-    int direct;         /* 0 if processing gzip, 1 if transparent */
-    /* just for reading */
-    int junk;        /* -1 = start, 1 = junk candidate, 0 = in gzip */
-    int how;         /* 0: get header, 1: copy, 2: decompress */
-    int again;       /* true if EAGAIN or EWOULDBLOCK on last i/o */
-    z_off64_t start; /* where the gzip data started, for rewinding */
-    int eof;         /* true if end of input file reached */
-    int past;        /* true if read requested past end */
-    /* just for writing */
-    int level;    /* compression level */
-    int strategy; /* compression strategy */
-    int reset;    /* true if a reset is pending after a Z_FINISH */
-    /* seek request */
-    z_off64_t skip; /* amount to skip (already rewound if backwards) */
-    /* error information */
-    int err;   /* error code */
-    char* msg; /* error message */
-    /* zlib inflate or deflate stream */
-    z_stream strm; /* stream structure in-place (not a pointer) */
+typedef struct
+{
+	/* exposed contents for gzgetc() macro */
+	struct gzFile_s x; /* "x" for exposed */
+					   /* x.have: number of bytes available at x.next */
+					   /* x.next: next output data to deliver or write */
+					   /* x.pos: current position in uncompressed data */
+	/* used for both reading and writing */
+	int mode;			/* see gzip modes above */
+	int fd;				/* file descriptor */
+	char* path;			/* path or fd for error messages */
+	unsigned size;		/* buffer size, zero if not allocated yet */
+	unsigned want;		/* requested buffer size, default is GZBUFSIZE */
+	unsigned char* in;	/* input buffer (double-sized when writing) */
+	unsigned char* out; /* output buffer (double-sized when reading) */
+	int direct;			/* 0 if processing gzip, 1 if transparent */
+	/* just for reading */
+	int junk;		 /* -1 = start, 1 = junk candidate, 0 = in gzip */
+	int how;		 /* 0: get header, 1: copy, 2: decompress */
+	int again;		 /* true if EAGAIN or EWOULDBLOCK on last i/o */
+	z_off64_t start; /* where the gzip data started, for rewinding */
+	int eof;		 /* true if end of input file reached */
+	int past;		 /* true if read requested past end */
+	/* just for writing */
+	int level;	  /* compression level */
+	int strategy; /* compression strategy */
+	int reset;	  /* true if a reset is pending after a Z_FINISH */
+	/* seek request */
+	z_off64_t skip; /* amount to skip (already rewound if backwards) */
+	/* error information */
+	int err;   /* error code */
+	char* msg; /* error message */
+	/* zlib inflate or deflate stream */
+	z_stream strm; /* stream structure in-place (not a pointer) */
 } gz_state;
 typedef gz_state FAR* gz_statep;
 

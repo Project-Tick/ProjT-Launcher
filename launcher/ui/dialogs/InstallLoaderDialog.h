@@ -48,20 +48,23 @@ class PageContainer;
 class PackProfile;
 class QDialogButtonBox;
 
-class InstallLoaderDialog final : public QDialog, protected BasePageProvider {
-    Q_OBJECT
+class InstallLoaderDialog final : public QDialog, protected BasePageProvider
+{
+	Q_OBJECT
 
-   public:
-    explicit InstallLoaderDialog(std::shared_ptr<PackProfile> instance, const QString& uid = QString(), QWidget* parent = nullptr);
+  public:
+	explicit InstallLoaderDialog(std::shared_ptr<PackProfile> instance,
+								 const QString& uid = QString(),
+								 QWidget* parent	= nullptr);
 
-    QList<BasePage*> getPages() override;
-    QString dialogTitle() override;
+	QList<BasePage*> getPages() override;
+	QString dialogTitle() override;
 
-    void validate(BasePage* page);
-    void done(int result) override;
+	void validate(BasePage* page);
+	void done(int result) override;
 
-   private:
-    std::shared_ptr<PackProfile> profile;
-    PageContainer* container;
-    QDialogButtonBox* buttons;
+  private:
+	std::shared_ptr<PackProfile> profile;
+	PageContainer* container;
+	QDialogButtonBox* buttons;
 };

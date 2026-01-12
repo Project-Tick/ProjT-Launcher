@@ -1,257 +1,230 @@
-# 📝 Code Style and Formatting
+# Code Style
 
-## ⚠️ Zero Tolerance Policy
+Formatting and coding standards for ProjT Launcher.
 
-Code style violations will cause the CI pipeline to fail immediately. **No exceptions.**
+---
 
-## C++ Formatting (Mandatory)
+## Formatting
 
-**All C++ files must be formatted with `clang-format` before committing.**
+All C++ code must be formatted with clang-format before committing.
 
-```bash
-# Single file
+```sh
 clang-format -i path/to/file.cpp
-
-# All files (Windows PowerShell)
-Get-ChildItem -Path "launcher" -Recurse -Include "*.cpp","*.h" | ForEach-Object { clang-format -i $_.FullName }
 ```
 
-### Basic Format Rules (`.clang-format`)
-
-```yaml
-BasedOnStyle: Chromium
-IndentWidth: 4
-ColumnLimit: 140
-Standard: c++20
-UseTab: Never
-PointerAlignment: Left
-BreakBeforeBraces: Custom
-```
-
-## C++ Coding Standards
-
-### 1. Modern C++ Usage
-
-**Why?** Modern C++ (C++20) features prevent bugs that were common in older versions.
-
-- **`auto`**: Use `auto` only when the type is obvious (e.g., `auto* widget = new QWidget(this);`) or for iterators.
-  - *Why?* It makes code cleaner, but overusing it hides important type information.
-  - **`nullptr`**: Always use `nullptr`, never `NULL` or `0`.
-    - *Why?* `NULL` is just the number 0. `nullptr` is a specific type that prevents accidental math with pointers.
-  - **`override`**: All virtual function overrides must be marked with `override`.
-    - *Why?* If you change the parent function, the compiler will tell you if you forgot to update the child.
-  - **`const`**: Methods that do not modify the object state **must** be marked `const`.
-    - *Why?* It promises the compiler (and other programmers) that this function is safe to call without changing anything.
-
-### 2. Memory Management
-
-Direct use of `new` is only allowed when immediately assigning a QObject parent.
-All other heap allocations must use smart pointers.
-
-**Why?** Memory leaks (forgetting to delete memory) are the #1 cause of crashes in C++.
-
-- **Raw Pointers (`*`)**: **Forbidden** for ownership.
-  - *Bad:* `MyClass* obj = new MyClass();` (Who deletes this? Often forgotten.)
-  - **Smart Pointers**: Use `std::unique_ptr` or `std::shared_ptr`.
-    - *Good:* `auto obj = std::make_unique<MyClass>();` (Automatically deleted when it goes out of scope.)
-  - **Qt Parent Ownership**: Do not transfer ownership of raw pointers manually; rely exclusively on QObject parent ownership.
-    - *Good:* `new QButton(this);` (Qt deletes the button when `this` is deleted.)
-
-### 3. Error Handling
-
-**Why?** Crashes are bad. We want to handle errors gracefully.
-
-- **Exceptions**: Avoid them. They are slow and hard to track.
-- **`std::optional`**: Use when a value might be missing.
-  - *Example:* `std::optional<User> findUser(id)` (Returns a User or nothing).
-  - **`std::expected` (or equivalent)**: Use when an operation can fail.
-    - *Example:* Returns either the Result OR an Error.
-
-### 4. Lambda Expressions
-
-**Why?** Lambdas are small functions inside functions. They are powerful but dangerous if they use variables that no longer exist.
-
-- **Capture**: Avoid default capture `[=]` or `[&]`.
-  - *Why?* It's easy to accidentally capture a huge object or a pointer that becomes invalid.
-  - **`this` Capture**: Be extremely careful capturing `this` in async operations.
-    - *Why?* If the object is deleted before the async task finishes, the app crashes. Use `QPointer`.
-  - **Forward Declarations**: `class MyClass;` instead of `#include "MyClass.h"`.
-    - *Why?* If you only use a pointer, you don't need the full file. This makes builds faster.
-
-### 5. Headers and Includes
-
-**Why?** Proper organization speeds up compilation.
-
-- **`#pragma once`**: Mandatory. Prevents the file from being read twice.
-- **Forward Declarations**: `class MyClass;` instead of `#include "MyClass.h"`.
-  - *Why?* If you only use a pointer, you don't need the full file. This makes builds faster.
-
-### 6. Naming Conventions
-
-**Why?** Consistency makes code readable. We use `m_` to instantly know if a variable belongs to the class.
-
-| Type | Format | Example | Why? |
-| ------ | -------- | --------- | ------ |
-| Class/Struct | PascalCase | `MainWindow` | Standard C++ style. |
-| Private Member | `m_` + camelCase | `m_currentTheme` | **Crucial.** Distinguishes `m_name` (class variable) from `name` (local variable). |
-| Static Member | `s_` + camelCase | `s_instance` | Tells you this variable is shared across all instances. |
-| Public Member | camelCase | `dateOfBirth` | Standard for structs. |
-| Constant | SCREAMING_SNAKE | `MAX_VALUE` | Screaming means "DO NOT CHANGE". |
-| Function | camelCase | `getCurrentTheme()` | Qt style. |
-
-### 7. Comments and Documentation
-
-- **Public API**: Public methods should be commented if their behavior is not obvious.
-- **Complex Logic**: Must be commented with `//` explaining *why*, not *what*.
-- **TODOs**: Must include your username: `// TODO(username): Fix this`.
+CI will reject unformatted code.
 
 ---
 
-## Qt Widgets UI Standards
+## C++ Standards
 
-### 1. `.ui` Files (Qt Designer)
+### Modern C++
 
-- **Use Qt Designer** for layout and widgets.
-- **Do not edit** generated `ui_*.h` files by hand.
-- Keep layout in `.ui` and logic in the paired `.cpp`/`.h`.
-- Set meaningful `objectName` values for widgets that are referenced in code.
+| Feature | Usage |
+|---------|-------|
+| `auto` | Only when type is obvious |
+| `nullptr` | Always (never `NULL` or `0`) |
+| `override` | Required on all overrides |
+| `const` | Required for non-mutating methods |
 
-### 2. Widget Classes
+### Memory Management
 
-- Avoid heavy logic in UI classes; delegate to core services or tasks.
-- Use signals/slots instead of tight coupling between widgets.
-- Prefer existing models/proxies (e.g., `InstanceList`, `InstanceProxyModel`) for data views.
+**Smart Pointers**:
 
-### 3. Styling
+```cpp
+// Good
+auto obj = std::make_unique<MyClass>();
 
-- Avoid inline style sheets unless necessary.
-- Reuse existing style helpers and theme settings for consistency.
+// Bad - raw pointer ownership
+MyClass* obj = new MyClass();
+```
+
+**Qt Parent Ownership**:
+
+```cpp
+// Good - Qt manages lifetime
+new QButton(this);
+```
+
+### Error Handling
+
+- Avoid exceptions
+- Use `std::optional` for missing values
+- Use `std::expected` for operations that can fail
+
+### Lambdas
+
+```cpp
+// Good - explicit capture
+connect(btn, &QPushButton::clicked, this, [this, id]() {
+    handleClick(id);
+});
+
+// Bad - default capture
+connect(btn, &QPushButton::clicked, [=]() { ... });
+```
 
 ---
 
-## 📋 Standard File Templates (Copy & Paste)
+## Naming Conventions
 
-Use these templates when creating new files to ensure you follow all rules.
+| Type | Format | Example |
+|------|--------|---------|
+| Class | PascalCase | `MainWindow` |
+| Private member | `m_` + camelCase | `m_currentTheme` |
+| Static member | `s_` + camelCase | `s_instance` |
+| Public member | camelCase | `dateOfBirth` |
+| Constant | SCREAMING_SNAKE | `MAX_VALUE` |
+| Function | camelCase | `getCurrentTheme()` || Enum class | PascalCase | `enum class State` |
+| Enum values | PascalCase | `State::Running` |
 
-## 1. C++ Header Template (`.h`)
+**SCREAMING_SNAKE scope**: Use for `constexpr` constants, `#define` macros, and legacy `enum` values only. Prefer `enum class` with PascalCase values for new code.
+---
+
+## Headers
+
+### Include Guards
+
+```cpp
+#pragma once
+```
+
+### Include Order
+
+1. Corresponding header
+2. C++ standard library
+3. Qt headers
+4. Third-party headers
+5. Project headers
+
+```cpp
+#include "MyClass.h"
+
+#include <memory>
+#include <string>
+
+#include <QObject>
+#include <QString>
+
+#include "OtherClass.h"
+```
+
+**Note**: clang-format automatically reorders includes. Always accept its output.
+
+### Forward Declarations
+
+Prefer forward declarations over includes when possible:
+
+```cpp
+// Good
+class OtherClass;
+
+// Avoid
+#include "OtherClass.h"
+```
+
+**Qt warning**: Forward declarations do not work for QObject-derived classes that use `Q_OBJECT`. These must be fully included.
+
+---
+
+## Comments
+
+### Documentation
+
+```cpp
+/// @brief Short description.
+///
+/// Detailed description if needed.
+/// @param input Description of parameter.
+/// @return Description of return value.
+bool doSomething(const QString& input);
+```
+
+### Implementation Comments
+
+```cpp
+// Why this approach was chosen
+// NOT what the code does
+```
+
+### TODOs
+
+```cpp
+// TODO(username): Description of what needs to be done
+// FIXME(username): Description of broken behavior that needs fixing
+```
+
+- **TODO**: Planned improvement or missing feature
+- **FIXME**: Known bug or broken behavior requiring attention
+- Username is required for traceability
+- Compatible with IDE TODO/FIXME highlighting tools
+
+---
+
+## Qt Widgets
+
+### UI Files
+
+- Use Qt Designer for layout
+- Never edit generated `ui_*.h` files
+- Set meaningful `objectName` values
+
+### Widget Classes
+
+- Keep UI logic minimal
+- Delegate to core services
+- Use signals/slots for communication
+
+---
+
+## File Templates
+
+These templates apply only to new Project Tick–owned files. Do not modify license headers in upstream forked code.
+
+### Header (.h)
 
 ```cpp
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick Team
-/*
- *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2026 Project Tick
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 
 #pragma once
 
 #include <QObject>
-#include <memory>
 
-/// @brief Short description of what this class does.
-///
-/// Detailed description if necessary.
-class MyNewClass : public QObject {
+class MyClass : public QObject {
     Q_OBJECT
 
-   public:
-    explicit MyNewClass(QObject* parent = nullptr);
-    ~MyNewClass() override;
+public:
+    explicit MyClass(QObject* parent = nullptr);
+    ~MyClass() override;
 
-    bool doSomething(const QString& input);
-
-   signals:
+signals:
     void somethingHappened();
 
-   private:
-    void internalHelper();
-
+private:
     QString m_data;
 };
 ```
 
-## 2. C++ Source Template (`.cpp`)
+### Source (.cpp)
 
 ```cpp
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick Team
-/*
- *  ProjT Launcher - Minecraft Launcher
- *  Copyright (C) 2026 Project Tick
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 
-#include "MyNewClass.h"
+#include "MyClass.h"
 
-#include <QDebug>
-
-MyNewClass::MyNewClass(QObject* parent) : QObject(parent) {
-    // Initialization
+MyClass::MyClass(QObject* parent)
+    : QObject(parent)
+{
 }
 
-MyNewClass::~MyNewClass() = default;
-
-bool MyNewClass::doSomething(const QString& input) {
-    if (input.isEmpty()) {
-        return false;
-    }
-    
-    m_data = input;
-    emit somethingHappened();
-    return true;
-}
-
-void MyNewClass::internalHelper() {
-    // Private logic
-}
+MyClass::~MyClass() = default;
 ```
 
-## 3. CMakeLists.txt Template (New Module)
+---
 
-```cmake
-# Define the library
-add_library(ProjT_MyModule STATIC)
+## Related
 
-# Add sources
-target_sources(ProjT_MyModule PRIVATE
-    MyClass.cpp
-    MyClass.h
-)
-
-# Link dependencies
-target_link_libraries(ProjT_MyModule PRIVATE
-    Qt6::Core
-    Qt6::Network
-    ProjT_Utils
-)
-
-# Include directories
-target_include_directories(ProjT_MyModule PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-```
+- [Project Structure](./PROJECT_STRUCTURE.md)
+- [Architecture](./ARCHITECTURE.md)

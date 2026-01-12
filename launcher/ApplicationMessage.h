@@ -25,10 +25,11 @@
 #include <QHash>
 #include <QString>
 
-struct ApplicationMessage {
-    QString command;
-    QHash<QString, QString> args;
+struct ApplicationMessage
+{
+	QString command;
+	QHash<QString, QString> args;
 
-    QByteArray serialize();
-    void parse(const QByteArray& input);
+	QByteArray serialize();
+	void parse(const QByteArray& input);
 };

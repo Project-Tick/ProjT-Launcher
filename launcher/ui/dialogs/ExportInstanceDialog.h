@@ -67,29 +67,31 @@
 class BaseInstance;
 using InstancePtr = std::shared_ptr<BaseInstance>;
 
-namespace Ui {
-class ExportInstanceDialog;
+namespace Ui
+{
+	class ExportInstanceDialog;
 }
 
-class ExportInstanceDialog : public QDialog {
-    Q_OBJECT
+class ExportInstanceDialog : public QDialog
+{
+	Q_OBJECT
 
-   public:
-    explicit ExportInstanceDialog(InstancePtr instance, QWidget* parent = 0);
-    ~ExportInstanceDialog();
+  public:
+	explicit ExportInstanceDialog(InstancePtr instance, QWidget* parent = 0);
+	~ExportInstanceDialog();
 
-    virtual void done(int result);
+	virtual void done(int result);
 
-   private:
-    void doExport();
-    QString ignoreFileName();
+  private:
+	void doExport();
+	QString ignoreFileName();
 
-   private:
-    Ui::ExportInstanceDialog* m_ui;
-    InstancePtr m_instance;
-    FileIgnoreProxy* m_proxyModel;
-    FastFileIconProvider m_icons;
+  private:
+	Ui::ExportInstanceDialog* m_ui;
+	InstancePtr m_instance;
+	FileIgnoreProxy* m_proxyModel;
+	FastFileIconProvider m_icons;
 
-   private slots:
-    void rowsInserted(QModelIndex parent, int top, int bottom);
+  private slots:
+	void rowsInserted(QModelIndex parent, int top, int bottom);
 };

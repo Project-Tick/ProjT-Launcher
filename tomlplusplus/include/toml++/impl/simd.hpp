@@ -1,13 +1,14 @@
-// # This file is a part of toml++ and is subject to the the terms of the MIT license.
-// # Copyright (c) Mark Gillard <mark.gillard@outlook.com.au>
-// # See https://github.com/marzer/tomlplusplus/blob/master/LICENSE for the full license text.
-//  SPDX-License-Identifier: MIT
+//# This file is a part of toml++ and is subject to the the terms of the MIT license.
+//# Copyright (c) Mark Gillard <mark.gillard@outlook.com.au>
+//# See https://github.com/marzer/tomlplusplus/blob/master/LICENSE for the full license text.
+// SPDX-License-Identifier: MIT
 #pragma once
 
 #include "preprocessor.hpp"
 #if TOML_ENABLE_SIMD
 
-#if defined(__SSE2__) || (defined(_MSC_VER) && (defined(_M_AMD64) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)))
+#if defined(__SSE2__)                                                                                                  \
+	|| (defined(_MSC_VER) && (defined(_M_AMD64) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)))
 #define TOML_HAS_SSE2 1
 #endif
 
@@ -15,7 +16,7 @@
 #define TOML_HAS_SSE4_1 1
 #endif
 
-#endif  // TOML_ENABLE_SIMD
+#endif // TOML_ENABLE_SIMD
 
 #ifndef TOML_HAS_SSE2
 #define TOML_HAS_SSE2 0

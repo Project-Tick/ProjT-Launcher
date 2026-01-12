@@ -48,116 +48,151 @@
 #include "net/NetJob.h"
 #include "tasks/Task.h"
 
-namespace Java {
-ArchiveDownloadTask::ArchiveDownloadTask(QUrl url, QString final_path, QString checksumType, QString checksumHash)
-    : m_url(url), m_final_path(final_path), m_checksum_type(checksumType), m_checksum_hash(checksumHash)
-{}
-
-void ArchiveDownloadTask::executeTask()
+namespace Java
 {
-    // JRE found ! download the zip
-    setStatus(tr("Downloading Java"));
+	ArchiveDownloadTask::ArchiveDownloadTask(QUrl url, QString final_path, QString checksumType, QString checksumHash)
+		: m_url(url),
+		  m_final_path(final_path),
+		  m_checksum_type(checksumType),
+		  m_checksum_hash(checksumHash)
+	{}
 
-    MetaEntryPtr entry = APPLICATION->metacache()->resolveEntry("java", m_url.fileName());
+	void ArchiveDownloadTask::executeTask()
+	{
+		// JRE found ! download the zip
+		setStatus(tr("Downloading Java"));
 
-    auto download = makeShared<NetJob>(QString("JRE::DownloadJava"), APPLICATION->network());
-    auto action = Net::Download::makeCached(m_url, entry);
-    if (!m_checksum_hash.isEmpty() && !m_checksum_type.isEmpty()) {
-        auto hashType = QCryptographicHash::Algorithm::Sha1;
-        if (m_checksum_type == "sha256") {
-            hashType = QCryptographicHash::Algorithm::Sha256;
-        }
-        action->addValidator(new Net::ChecksumValidator(hashType, QByteArray::fromHex(m_checksum_hash.toUtf8())));
-    }
-    download->addNetAction(action);
-    auto fullPath = entry->getFullPath();
+		MetaEntryPtr entry = APPLICATION->metacache()->resolveEntry("java", m_url.fileName());
 
-    connect(download.get(), &Task::failed, this, &ArchiveDownloadTask::emitFailed);
-    connect(download.get(), &Task::progress, this, &ArchiveDownloadTask::setProgress);
-    connect(download.get(), &Task::stepProgress, this, &ArchiveDownloadTask::propagateStepProgress);
-    connect(download.get(), &Task::status, this, &ArchiveDownloadTask::setStatus);
-    connect(download.get(), &Task::details, this, &ArchiveDownloadTask::setDetails);
-    connect(download.get(), &Task::aborted, this, &ArchiveDownloadTask::emitAborted);
-    connect(download.get(), &Task::succeeded, [this, fullPath] {
-        // This should do all of the extracting and creating folders
-        extractJava(fullPath);
-    });
-    m_task = download;
-    m_task->start();
-}
+		auto download = makeShared<NetJob>(QString("JRE::DownloadJava"), APPLICATION->network());
+		auto action	  = Net::Download::makeCached(m_url, entry);
+		if (!m_checksum_hash.isEmpty() && !m_checksum_type.isEmpty())
+		{
+			auto hashType = QCryptographicHash::Algorithm::Sha1;
+			if (m_checksum_type == "sha256")
+			{
+				hashType = QCryptographicHash::Algorithm::Sha256;
+			}
+			action->addValidator(new Net::ChecksumValidator(hashType, QByteArray::fromHex(m_checksum_hash.toUtf8())));
+		}
+		download->addNetAction(action);
+		auto fullPath = entry->getFullPath();
 
-void ArchiveDownloadTask::extractJava(QString input)
-{
-    setStatus(tr("Extracting Java"));
-    if (input.endsWith("tar")) {
-        setStatus(tr("Extracting Java (Progress is not reported for tar archives)"));
-        QFile in(input);
-        if (!in.open(QFile::ReadOnly)) {
-            emitFailed(tr("Unable to open supplied tar file."));
-            return;
-        }
-        if (!Tar::extract(&in, QDir(m_final_path).absolutePath())) {
-            emitFailed(tr("Unable to extract supplied tar file."));
-            return;
-        }
-        emitSucceeded();
-        return;
-    } else if (input.endsWith("tar.gz") || input.endsWith("taz") || input.endsWith("tgz")) {
-        setStatus(tr("Extracting Java (Progress is not reported for tar archives)"));
-        if (!GZTar::extract(input, QDir(m_final_path).absolutePath())) {
-            emitFailed(tr("Unable to extract supplied tar file."));
-            return;
-        }
-        emitSucceeded();
-        return;
-    } else if (input.endsWith("zip")) {
-        auto zip = std::make_shared<QuaZip>(input);
-        if (!zip->open(QuaZip::mdUnzip)) {
-            emitFailed(tr("Unable to open supplied zip file."));
-            return;
-        }
-        auto files = zip->getFileNameList();
-        if (files.isEmpty()) {
-            emitFailed(tr("No files were found in the supplied zip file."));
-            return;
-        }
-        m_task = makeShared<MMCZip::ExtractZipTask>(zip, m_final_path, files[0]);
+		connect(download.get(), &Task::failed, this, &ArchiveDownloadTask::emitFailed);
+		connect(download.get(), &Task::progress, this, &ArchiveDownloadTask::setProgress);
+		connect(download.get(), &Task::stepProgress, this, &ArchiveDownloadTask::propagateStepProgress);
+		connect(download.get(), &Task::status, this, &ArchiveDownloadTask::setStatus);
+		connect(download.get(), &Task::details, this, &ArchiveDownloadTask::setDetails);
+		connect(download.get(), &Task::aborted, this, &ArchiveDownloadTask::emitAborted);
+		connect(download.get(),
+				&Task::succeeded,
+				[this, fullPath]
+				{
+					// This should do all of the extracting and creating folders
+					extractJava(fullPath);
+				});
+		m_task = download;
+		m_task->start();
+	}
 
-        auto progressStep = std::make_shared<TaskStepProgress>();
-        connect(m_task.get(), &Task::finished, this, [this, progressStep] {
-            progressStep->state = TaskStepState::Succeeded;
-            stepProgress(*progressStep);
-        });
+	void ArchiveDownloadTask::extractJava(QString input)
+	{
+		setStatus(tr("Extracting Java"));
+		if (input.endsWith("tar"))
+		{
+			setStatus(tr("Extracting Java (Progress is not reported for tar archives)"));
+			QFile in(input);
+			if (!in.open(QFile::ReadOnly))
+			{
+				emitFailed(tr("Unable to open supplied tar file."));
+				return;
+			}
+			if (!Tar::extract(&in, QDir(m_final_path).absolutePath()))
+			{
+				emitFailed(tr("Unable to extract supplied tar file."));
+				return;
+			}
+			emitSucceeded();
+			return;
+		}
+		else if (input.endsWith("tar.gz") || input.endsWith("taz") || input.endsWith("tgz"))
+		{
+			setStatus(tr("Extracting Java (Progress is not reported for tar archives)"));
+			if (!GZTar::extract(input, QDir(m_final_path).absolutePath()))
+			{
+				emitFailed(tr("Unable to extract supplied tar file."));
+				return;
+			}
+			emitSucceeded();
+			return;
+		}
+		else if (input.endsWith("zip"))
+		{
+			auto zip = std::make_shared<QuaZip>(input);
+			if (!zip->open(QuaZip::mdUnzip))
+			{
+				emitFailed(tr("Unable to open supplied zip file."));
+				return;
+			}
+			auto files = zip->getFileNameList();
+			if (files.isEmpty())
+			{
+				emitFailed(tr("No files were found in the supplied zip file."));
+				return;
+			}
+			m_task = makeShared<MMCZip::ExtractZipTask>(zip, m_final_path, files[0]);
 
-        connect(m_task.get(), &Task::succeeded, this, &ArchiveDownloadTask::emitSucceeded);
-        connect(m_task.get(), &Task::aborted, this, &ArchiveDownloadTask::emitAborted);
-        connect(m_task.get(), &Task::failed, this, [this, progressStep](QString reason) {
-            progressStep->state = TaskStepState::Failed;
-            stepProgress(*progressStep);
-            emitFailed(reason);
-        });
-        connect(m_task.get(), &Task::stepProgress, this, &ArchiveDownloadTask::propagateStepProgress);
+			auto progressStep = std::make_shared<TaskStepProgress>();
+			connect(m_task.get(),
+					&Task::finished,
+					this,
+					[this, progressStep]
+					{
+						progressStep->state = TaskStepState::Succeeded;
+						stepProgress(*progressStep);
+					});
 
-        connect(m_task.get(), &Task::progress, this, [this, progressStep](qint64 current, qint64 total) {
-            progressStep->update(current, total);
-            stepProgress(*progressStep);
-        });
-        connect(m_task.get(), &Task::status, this, [this, progressStep](QString status) {
-            progressStep->status = status;
-            stepProgress(*progressStep);
-        });
-        m_task->start();
-        return;
-    }
+			connect(m_task.get(), &Task::succeeded, this, &ArchiveDownloadTask::emitSucceeded);
+			connect(m_task.get(), &Task::aborted, this, &ArchiveDownloadTask::emitAborted);
+			connect(m_task.get(),
+					&Task::failed,
+					this,
+					[this, progressStep](QString reason)
+					{
+						progressStep->state = TaskStepState::Failed;
+						stepProgress(*progressStep);
+						emitFailed(reason);
+					});
+			connect(m_task.get(), &Task::stepProgress, this, &ArchiveDownloadTask::propagateStepProgress);
 
-    emitFailed(tr("Could not determine archive type!"));
-}
+			connect(m_task.get(),
+					&Task::progress,
+					this,
+					[this, progressStep](qint64 current, qint64 total)
+					{
+						progressStep->update(current, total);
+						stepProgress(*progressStep);
+					});
+			connect(m_task.get(),
+					&Task::status,
+					this,
+					[this, progressStep](QString status)
+					{
+						progressStep->status = status;
+						stepProgress(*progressStep);
+					});
+			m_task->start();
+			return;
+		}
 
-bool ArchiveDownloadTask::abort()
-{
-    auto aborted = canAbort();
-    if (m_task)
-        aborted = m_task->abort();
-    return aborted;
-};
-}  // namespace Java
+		emitFailed(tr("Could not determine archive type!"));
+	}
+
+	bool ArchiveDownloadTask::abort()
+	{
+		auto aborted = canAbort();
+		if (m_task)
+			aborted = m_task->abort();
+		return aborted;
+	};
+} // namespace Java

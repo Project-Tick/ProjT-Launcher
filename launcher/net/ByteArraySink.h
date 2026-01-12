@@ -60,60 +60,65 @@
 
 #include "Sink.h"
 
-namespace Net {
+namespace Net
+{
 
-/*
- * Sink object for downloads that uses an external QByteArray it doesn't own as a target.
- */
-class ByteArraySink : public Sink {
-   public:
-    ByteArraySink(std::shared_ptr<QByteArray> output) : m_output(output) {};
+	/*
+	 * Sink object for downloads that uses an external QByteArray it doesn't own as a target.
+	 */
+	class ByteArraySink : public Sink
+	{
+	  public:
+		ByteArraySink(std::shared_ptr<QByteArray> output) : m_output(output) {};
 
-    virtual ~ByteArraySink() = default;
+		virtual ~ByteArraySink() = default;
 
-   public:
-    auto init(QNetworkRequest& request) -> Task::State override
-    {
-        if (m_output)
-            m_output->clear();
-        else
-            qWarning() << "ByteArraySink did not initialize the buffer because it's not addressable";
-        if (initAllValidators(request))
-            return Task::State::Running;
-        m_fail_reason = "Failed to initialize validators";
-        return Task::State::Failed;
-    };
+	  public:
+		auto init(QNetworkRequest& request) -> Task::State override
+		{
+			if (m_output)
+				m_output->clear();
+			else
+				qWarning() << "ByteArraySink did not initialize the buffer because it's not addressable";
+			if (initAllValidators(request))
+				return Task::State::Running;
+			m_fail_reason = "Failed to initialize validators";
+			return Task::State::Failed;
+		};
 
-    auto write(QByteArray& data) -> Task::State override
-    {
-        if (m_output)
-            m_output->append(data);
-        else
-            qWarning() << "ByteArraySink did not write the buffer because it's not addressable";
-        if (writeAllValidators(data))
-            return Task::State::Running;
-        m_fail_reason = "Failed to write validators";
-        return Task::State::Failed;
-    }
+		auto write(QByteArray& data) -> Task::State override
+		{
+			if (m_output)
+				m_output->append(data);
+			else
+				qWarning() << "ByteArraySink did not write the buffer because it's not addressable";
+			if (writeAllValidators(data))
+				return Task::State::Running;
+			m_fail_reason = "Failed to write validators";
+			return Task::State::Failed;
+		}
 
-    auto abort() -> Task::State override
-    {
-        failAllValidators();
-        m_fail_reason = "Aborted";
-        return Task::State::Failed;
-    }
+		auto abort() -> Task::State override
+		{
+			failAllValidators();
+			m_fail_reason = "Aborted";
+			return Task::State::Failed;
+		}
 
-    auto finalize(QNetworkReply& reply) -> Task::State override
-    {
-        if (finalizeAllValidators(reply))
-            return Task::State::Succeeded;
-        m_fail_reason = "Failed to finalize validators";
-        return Task::State::Failed;
-    }
+		auto finalize(QNetworkReply& reply) -> Task::State override
+		{
+			if (finalizeAllValidators(reply))
+				return Task::State::Succeeded;
+			m_fail_reason = "Failed to finalize validators";
+			return Task::State::Failed;
+		}
 
-    auto hasLocalData() -> bool override { return false; }
+		auto hasLocalData() -> bool override
+		{
+			return false;
+		}
 
-   protected:
-    std::shared_ptr<QByteArray> m_output;
-};
-}  // namespace Net
+	  protected:
+		std::shared_ptr<QByteArray> m_output;
+	};
+} // namespace Net

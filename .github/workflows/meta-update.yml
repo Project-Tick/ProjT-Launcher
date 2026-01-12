@@ -107,17 +107,17 @@ jobs:
         env:
           META_BOT_TOKEN: ${{ secrets.META_BOT_TOKEN }}
           DEPLOY_PAT: ${{ secrets.DEPLOY_PAT }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           token="${DEPLOY_PAT:-$META_BOT_TOKEN}"
           if [ -n "$token" ]; then
             git config --global url."https://${token}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
             git config --global url."https://${token}:x-oauth-basic@github.com/".insteadOf "git@github.com:"
             echo "Using PAT for GitHub authentication"
-          elif [ -n "$GITHUB_TOKEN" ]; then
-            git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-            git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "git@github.com:"
-            echo "Using GITHUB_TOKEN for GitHub authentication (must have access to target repos)"
+          elif [ -n "$GH_TOKEN" ]; then
+            git config --global url."https://${GH_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+            git config --global url."https://${GH_TOKEN}:x-oauth-basic@github.com/".insteadOf "git@github.com:"
+            echo "Using GH_TOKEN for GitHub authentication (must have access to target repos)"
           else
             echo "No token provided; HTTPS pushes will fail. Add DEPLOY_PAT secret with access to meta-upstream and meta-launcher."
           fi

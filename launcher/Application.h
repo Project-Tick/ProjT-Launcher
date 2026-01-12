@@ -93,8 +93,9 @@ class MCEditTool;
 class ThemeManager;
 class IconTheme;
 
-namespace Meta {
-class Index;
+namespace Meta
+{
+	class Index;
 }
 
 #if defined(APPLICATION)
@@ -108,241 +109,295 @@ class Index;
 #endif
 #define APPLICATION_DYN (dynamic_cast<Application*>(QCoreApplication::instance()))
 
-class Application : public QApplication {
-    // friends for the purpose of limiting access to deprecated stuff
-    Q_OBJECT
-   public:
-    enum Status { StartingUp, Failed, Succeeded, Initialized };
+class Application : public QApplication
+{
+	// friends for the purpose of limiting access to deprecated stuff
+	Q_OBJECT
+  public:
+	enum Status
+	{
+		StartingUp,
+		Failed,
+		Succeeded,
+		Initialized
+	};
 
-    enum Capability {
-        None = 0,
+	enum Capability
+	{
+		None = 0,
 
-        SupportsMSA = 1 << 0,
-        SupportsFlame = 1 << 1,
-        SupportsGameMode = 1 << 2,
-        SupportsMangoHud = 1 << 3,
-    };
-    Q_DECLARE_FLAGS(Capabilities, Capability)
+		SupportsMSA		 = 1 << 0,
+		SupportsFlame	 = 1 << 1,
+		SupportsGameMode = 1 << 2,
+		SupportsMangoHud = 1 << 3,
+	};
+	Q_DECLARE_FLAGS(Capabilities, Capability)
 
-   public:
-    Application(int& argc, char** argv);
-    virtual ~Application();
+  public:
+	Application(int& argc, char** argv);
+	virtual ~Application();
 
-    bool event(QEvent* event) override;
+	bool event(QEvent* event) override;
 
-    std::shared_ptr<SettingsObject> settings() const { return m_settings; }
+	std::shared_ptr<SettingsObject> settings() const
+	{
+		return m_settings;
+	}
 
-    qint64 timeSinceStart() const { return m_startTime.msecsTo(QDateTime::currentDateTime()); }
+	qint64 timeSinceStart() const
+	{
+		return m_startTime.msecsTo(QDateTime::currentDateTime());
+	}
 
-    QIcon logo();
+	QIcon logo();
 
-    ThemeManager* themeManager() { return m_themeManager.get(); }
+	ThemeManager* themeManager()
+	{
+		return m_themeManager.get();
+	}
 
-    shared_qobject_ptr<ExternalUpdater> updater() { return m_updater; }
+	shared_qobject_ptr<ExternalUpdater> updater()
+	{
+		return m_updater;
+	}
 
-    void triggerUpdateCheck();
+	void triggerUpdateCheck();
 
-    std::shared_ptr<TranslationsModel> translations();
+	std::shared_ptr<TranslationsModel> translations();
 
-    std::shared_ptr<JavaInstallList> javalist();
+	std::shared_ptr<JavaInstallList> javalist();
 
-    std::shared_ptr<InstanceList> instances() const { return m_instances; }
+	std::shared_ptr<InstanceList> instances() const
+	{
+		return m_instances;
+	}
 
-    std::shared_ptr<IconList> icons() const { return m_icons; }
+	std::shared_ptr<IconList> icons() const
+	{
+		return m_icons;
+	}
 
-    MCEditTool* mcedit() const { return m_mcedit.get(); }
+	MCEditTool* mcedit() const
+	{
+		return m_mcedit.get();
+	}
 
-    shared_qobject_ptr<AccountList> accounts() const { return m_accounts; }
+	shared_qobject_ptr<AccountList> accounts() const
+	{
+		return m_accounts;
+	}
 
-    Status status() const { return m_status; }
+	Status status() const
+	{
+		return m_status;
+	}
 
-    const QMap<QString, std::shared_ptr<BaseProfilerFactory>>& profilers() const { return m_profilers; }
+	const QMap<QString, std::shared_ptr<BaseProfilerFactory>>& profilers() const
+	{
+		return m_profilers;
+	}
 
-    void updateProxySettings(QString proxyTypeStr, QString addr, int port, QString user, QString password);
+	void updateProxySettings(QString proxyTypeStr, QString addr, int port, QString user, QString password);
 
-    shared_qobject_ptr<QNetworkAccessManager> network();
+	shared_qobject_ptr<QNetworkAccessManager> network();
 
-    shared_qobject_ptr<HttpMetaCache> metacache();
+	shared_qobject_ptr<HttpMetaCache> metacache();
 
-    shared_qobject_ptr<Meta::Index> metadataIndex();
+	shared_qobject_ptr<Meta::Index> metadataIndex();
 
-    void updateCapabilities();
+	void updateCapabilities();
 
-    void detectLibraries();
+	void detectLibraries();
 
-    /*!
-     * Finds and returns the full path to a jar file.
-     * Returns a null-string if it could not be found.
-     */
-    QString getJarPath(QString jarFile);
+	/*!
+	 * Finds and returns the full path to a jar file.
+	 * Returns a null-string if it could not be found.
+	 */
+	QString getJarPath(QString jarFile);
 
-    QString getMSAClientID();
-    QString getFlameAPIKey();
-    QString getModrinthAPIToken();
-    QString getUserAgent();
+	QString getMSAClientID();
+	QString getFlameAPIKey();
+	QString getModrinthAPIToken();
+	QString getUserAgent();
 
-    /// this is the root of the 'installation'. Used for automatic updates
-    const QString& root() { return m_rootPath; }
+	/// this is the root of the 'installation'. Used for automatic updates
+	const QString& root()
+	{
+		return m_rootPath;
+	}
 
-    /// the data path the application is using
-    const QString& dataRoot() { return m_dataPath; }
+	/// the data path the application is using
+	const QString& dataRoot()
+	{
+		return m_dataPath;
+	}
 
-    /// the java installed path the application is using
-    const QString javaPath();
+	/// the java installed path the application is using
+	const QString javaPath();
 
-    bool isPortable() { return m_portable; }
+	bool isPortable()
+	{
+		return m_portable;
+	}
 
-    const Capabilities capabilities() { return m_capabilities; }
+	const Capabilities capabilities()
+	{
+		return m_capabilities;
+	}
 
-    /*!
-     * Opens a json file using either a system default editor, or, if not empty, the editor
-     * specified in the settings
-     */
-    bool openJsonEditor(const QString& filename);
+	/*!
+	 * Opens a json file using either a system default editor, or, if not empty, the editor
+	 * specified in the settings
+	 */
+	bool openJsonEditor(const QString& filename);
 
-    InstanceWindow* showInstanceWindow(InstancePtr instance, QString page = QString());
-    MainWindow* showMainWindow(bool minimized = false);
-    ViewLogWindow* showLogWindow();
+	InstanceWindow* showInstanceWindow(InstancePtr instance, QString page = QString());
+	MainWindow* showMainWindow(bool minimized = false);
+	ViewLogWindow* showLogWindow();
 
-    void updateIsRunning(bool running);
-    bool updatesAreAllowed();
+	void updateIsRunning(bool running);
+	bool updatesAreAllowed();
 
-    void ShowGlobalSettings(class QWidget* parent, QString open_page = QString());
+	void ShowGlobalSettings(class QWidget* parent, QString open_page = QString());
 
-    bool updaterEnabled();
-    QString updaterBinaryName();
+	bool updaterEnabled();
+	QString updaterBinaryName();
 
-    QUrl normalizeImportUrl(QString const& url);
+	QUrl normalizeImportUrl(QString const& url);
 
-   signals:
-    void updateAllowedChanged(bool status);
-    void globalSettingsAboutToOpen();
-    void globalSettingsApplied();
-    int currentCatChanged(int index);
+  signals:
+	void updateAllowedChanged(bool status);
+	void globalSettingsAboutToOpen();
+	void globalSettingsApplied();
+	int currentCatChanged(int index);
 
-    void oauthReplyRecieved(QVariantMap);
+	void oauthReplyRecieved(QVariantMap);
 
 #ifdef Q_OS_MACOS
-    void clickedOnDock();
+	void clickedOnDock();
 #endif
 
-   public slots:
-    bool launch(InstancePtr instance,
-                bool online = true,
-                bool demo = false,
-                MinecraftTarget::Ptr targetToJoin = nullptr,
-                MinecraftAccountPtr accountToUse = nullptr,
-                const QString& offlineName = QString());
-    bool kill(InstancePtr instance);
-    void closeCurrentWindow();
+  public slots:
+	bool launch(InstancePtr instance,
+				bool online						  = true,
+				bool demo						  = false,
+				MinecraftTarget::Ptr targetToJoin = nullptr,
+				MinecraftAccountPtr accountToUse  = nullptr,
+				const QString& offlineName		  = QString());
+	bool kill(InstancePtr instance);
+	void closeCurrentWindow();
 
-   private slots:
-    void on_windowClose();
-    void messageReceived(const QByteArray& message);
-    void controllerSucceeded();
-    void controllerFailed(const QString& error);
-    void setupWizardFinished(int status);
-    void continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName);
+  private slots:
+	void on_windowClose();
+	void messageReceived(const QByteArray& message);
+	void controllerSucceeded();
+	void controllerFailed(const QString& error);
+	void setupWizardFinished(int status);
+	void continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName);
 
-   private:
-    bool handleDataMigration(const QString& currentData, const QString& oldData, const QString& name, const QString& configFile) const;
-    bool createSetupWizard();
-    void performMainStartupAction();
+  private:
+	bool handleDataMigration(const QString& currentData,
+							 const QString& oldData,
+							 const QString& name,
+							 const QString& configFile) const;
+	bool createSetupWizard();
+	void performMainStartupAction();
 
-    // sets the fatal error message and m_status to Failed.
-    void showFatalErrorMessage(const QString& title, const QString& content);
+	// sets the fatal error message and m_status to Failed.
+	void showFatalErrorMessage(const QString& title, const QString& content);
 
-   private:
-    void addRunningInstance();
-    void subRunningInstance();
-    bool shouldExitNow() const;
+  private:
+	void addRunningInstance();
+	void subRunningInstance();
+	bool shouldExitNow() const;
 
-    /// Migrates legacy pastebin settings to new format
-    void migratePastebinSettings();
+	/// Migrates legacy pastebin settings to new format
+	void migratePastebinSettings();
 
-   private:
-    QDateTime m_startTime;
+  private:
+	QDateTime m_startTime;
 
-    shared_qobject_ptr<QNetworkAccessManager> m_network;
+	shared_qobject_ptr<QNetworkAccessManager> m_network;
 
-    shared_qobject_ptr<ExternalUpdater> m_updater;
-    shared_qobject_ptr<AccountList> m_accounts;
+	shared_qobject_ptr<ExternalUpdater> m_updater;
+	shared_qobject_ptr<AccountList> m_accounts;
 
-    shared_qobject_ptr<HttpMetaCache> m_metacache;
-    shared_qobject_ptr<Meta::Index> m_metadataIndex;
+	shared_qobject_ptr<HttpMetaCache> m_metacache;
+	shared_qobject_ptr<Meta::Index> m_metadataIndex;
 
-    std::shared_ptr<SettingsObject> m_settings;
-    std::shared_ptr<InstanceList> m_instances;
-    std::shared_ptr<IconList> m_icons;
-    std::shared_ptr<JavaInstallList> m_javalist;
-    std::shared_ptr<TranslationsModel> m_translations;
-    std::shared_ptr<GenericPageProvider> m_globalSettingsProvider;
-    std::unique_ptr<MCEditTool> m_mcedit;
-    QSet<QString> m_features;
-    std::unique_ptr<ThemeManager> m_themeManager;
+	std::shared_ptr<SettingsObject> m_settings;
+	std::shared_ptr<InstanceList> m_instances;
+	std::shared_ptr<IconList> m_icons;
+	std::shared_ptr<JavaInstallList> m_javalist;
+	std::shared_ptr<TranslationsModel> m_translations;
+	std::shared_ptr<GenericPageProvider> m_globalSettingsProvider;
+	std::unique_ptr<MCEditTool> m_mcedit;
+	QSet<QString> m_features;
+	std::unique_ptr<ThemeManager> m_themeManager;
 
-    QMap<QString, std::shared_ptr<BaseProfilerFactory>> m_profilers;
+	QMap<QString, std::shared_ptr<BaseProfilerFactory>> m_profilers;
 
-    QString m_rootPath;
-    QString m_dataPath;
-    Status m_status = Application::StartingUp;
-    Capabilities m_capabilities;
-    bool m_portable = false;
+	QString m_rootPath;
+	QString m_dataPath;
+	Status m_status = Application::StartingUp;
+	Capabilities m_capabilities;
+	bool m_portable = false;
 
 #ifdef Q_OS_MACOS
-    Qt::ApplicationState m_prevAppState = Qt::ApplicationInactive;
+	Qt::ApplicationState m_prevAppState = Qt::ApplicationInactive;
 #endif
 
 #if defined Q_OS_WIN32
-    // used on Windows to attach the standard IO streams
-    bool consoleAttached = false;
+	// used on Windows to attach the standard IO streams
+	bool consoleAttached = false;
 #endif
 
-    // FIXME: attach to instances instead.
-    struct InstanceXtras {
-        InstanceWindow* window = nullptr;
-        shared_qobject_ptr<LaunchController> controller;
-    };
-    std::map<QString, InstanceXtras> m_instanceExtras;
-    mutable QMutex m_instanceExtrasMutex;
+	// FIXME: attach to instances instead.
+	struct InstanceXtras
+	{
+		InstanceWindow* window = nullptr;
+		shared_qobject_ptr<LaunchController> controller;
+	};
+	std::map<QString, InstanceXtras> m_instanceExtras;
+	mutable QMutex m_instanceExtrasMutex;
 
-    // main state variables
-    size_t m_openWindows = 0;
-    size_t m_runningInstances = 0;
-    bool m_updateRunning = false;
+	// main state variables
+	size_t m_openWindows	  = 0;
+	size_t m_runningInstances = 0;
+	bool m_updateRunning	  = false;
 
-    // main window, if any
-    MainWindow* m_mainWindow = nullptr;
+	// main window, if any
+	MainWindow* m_mainWindow = nullptr;
 
-    // log window, if any
-    ViewLogWindow* m_viewLogWindow = nullptr;
+	// log window, if any
+	ViewLogWindow* m_viewLogWindow = nullptr;
 
-    // peer launcher instance connector - used to implement single instance launcher and signalling
-    LocalPeer* m_peerInstance = nullptr;
+	// peer launcher instance connector - used to implement single instance launcher and signalling
+	LocalPeer* m_peerInstance = nullptr;
 
-    SetupWizard* m_setupWizard = nullptr;
+	SetupWizard* m_setupWizard = nullptr;
 
-   public:
-    QString m_detectedGLFWPath;
-    QString m_detectedOpenALPath;
-    QString m_instanceIdToLaunch;
-    QString m_serverToJoin;
-    QString m_worldToJoin;
-    QString m_profileToUse;
-    bool m_offline = false;
-    QString m_offlineName;
-    bool m_liveCheck = false;
-    QList<QUrl> m_urlsToImport;
-    QString m_instanceIdToShowWindowOf;
-    std::unique_ptr<QFile> logFile;
-    shared_qobject_ptr<LogModel> logModel;
+  public:
+	QString m_detectedGLFWPath;
+	QString m_detectedOpenALPath;
+	QString m_instanceIdToLaunch;
+	QString m_serverToJoin;
+	QString m_worldToJoin;
+	QString m_profileToUse;
+	bool m_offline = false;
+	QString m_offlineName;
+	bool m_liveCheck = false;
+	QList<QUrl> m_urlsToImport;
+	QString m_instanceIdToShowWindowOf;
+	std::unique_ptr<QFile> logFile;
+	shared_qobject_ptr<LogModel> logModel;
 
-   public:
-    void addQSavePath(QString);
-    void removeQSavePath(QString);
-    bool checkQSavePath(QString);
+  public:
+	void addQSavePath(QString);
+	void removeQSavePath(QString);
+	bool checkQSavePath(QString);
 
-   private:
-    QHash<QString, int> m_qsaveResources;
-    mutable QMutex m_qsaveResourcesMutex;
+  private:
+	QHash<QString, int> m_qsaveResources;
+	mutable QMutex m_qsaveResourcesMutex;
 };

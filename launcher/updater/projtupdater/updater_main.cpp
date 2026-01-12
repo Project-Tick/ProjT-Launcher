@@ -46,18 +46,17 @@
 #include "ProjTUpdater.h"
 int main(int argc, char* argv[])
 {
-    ProjTUpdaterApp wUpApp(argc, argv);
+	ProjTUpdaterApp wUpApp(argc, argv);
 
-    switch (wUpApp.status()) {
-        case ProjTUpdaterApp::Starting:
-        case ProjTUpdaterApp::Initialized: {
-            return wUpApp.exec();
-        }
-        case ProjTUpdaterApp::Failed:
-            return 1;
-        case ProjTUpdaterApp::Succeeded:
-            return 0;
-        default:
-            return -1;
-    }
+	switch (wUpApp.status())
+	{
+		case ProjTUpdaterApp::Starting:
+		case ProjTUpdaterApp::Initialized:
+		{
+			return wUpApp.exec();
+		}
+		case ProjTUpdaterApp::Failed: return 1;
+		case ProjTUpdaterApp::Succeeded: return 0;
+		default: return -1;
+	}
 }

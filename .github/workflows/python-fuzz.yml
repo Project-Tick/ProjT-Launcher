@@ -26,4 +26,4 @@ jobs:
           python -m pip install -r requirements.txt atheris
       - name: Run Atheris
         run: |
-          python meta/fuzz/fuzz_meta_models.py -runs=2000
+          python fuzz/meta/fuzz_meta_models.py -runs=2000

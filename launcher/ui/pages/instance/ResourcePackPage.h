@@ -68,32 +68,47 @@
 
 #include "minecraft/mod/ResourcePackFolderModel.h"
 
-class ResourcePackPage : public ExternalResourcesPage {
-    Q_OBJECT
-   public:
-    explicit ResourcePackPage(MinecraftInstance* instance, std::shared_ptr<ResourcePackFolderModel> model, QWidget* parent = 0);
+class ResourcePackPage : public ExternalResourcesPage
+{
+	Q_OBJECT
+  public:
+	explicit ResourcePackPage(MinecraftInstance* instance,
+							  std::shared_ptr<ResourcePackFolderModel> model,
+							  QWidget* parent = 0);
 
-    QString displayName() const override { return tr("Resource Packs"); }
-    QIcon icon() const override { return QIcon::fromTheme("resourcepacks"); }
-    QString id() const override { return "resourcepacks"; }
-    QString helpPage() const override { return "Resource-packs"; }
+	QString displayName() const override
+	{
+		return tr("Resource Packs");
+	}
+	QIcon icon() const override
+	{
+		return QIcon::fromTheme("resourcepacks");
+	}
+	QString id() const override
+	{
+		return "resourcepacks";
+	}
+	QString helpPage() const override
+	{
+		return "Resource-packs";
+	}
 
-    virtual bool shouldDisplay() const override
-    {
-        return !m_instance->traits().contains("no-texturepacks") && !m_instance->traits().contains("texturepacks");
-    }
+	virtual bool shouldDisplay() const override
+	{
+		return !m_instance->traits().contains("no-texturepacks") && !m_instance->traits().contains("texturepacks");
+	}
 
-   public slots:
-    void updateFrame(const QModelIndex& current, const QModelIndex& previous) override;
+  public slots:
+	void updateFrame(const QModelIndex& current, const QModelIndex& previous) override;
 
-   private slots:
-    void downloadResourcePacks();
-    void downloadDialogFinished(int result);
-    void updateResourcePacks();
-    void deleteResourcePackMetadata();
-    void changeResourcePackVersion();
+  private slots:
+	void downloadResourcePacks();
+	void downloadDialogFinished(int result);
+	void updateResourcePacks();
+	void deleteResourcePackMetadata();
+	void changeResourcePackVersion();
 
-   protected:
-    std::shared_ptr<ResourcePackFolderModel> m_model;
-    QPointer<ResourceDownload::ResourceDownloadDialog> m_downloadDialog;
+  protected:
+	std::shared_ptr<ResourcePackFolderModel> m_model;
+	QPointer<ResourceDownload::ResourceDownloadDialog> m_downloadDialog;
 };

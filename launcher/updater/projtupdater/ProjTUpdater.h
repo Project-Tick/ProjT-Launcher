@@ -68,100 +68,117 @@
 
 #include "GitHubRelease.h"
 
-class ProjTUpdaterApp : public QApplication {
-    // friends for the purpose of limiting access to deprecated stuff
-    Q_OBJECT
-   public:
-    enum Status { Starting, Failed, Succeeded, Initialized, Aborted };
-    ProjTUpdaterApp(int& argc, char** argv);
-    virtual ~ProjTUpdaterApp();
-    void loadReleaseList();
-    void run();
-    Status status() const { return m_status; }
+class ProjTUpdaterApp : public QApplication
+{
+	// friends for the purpose of limiting access to deprecated stuff
+	Q_OBJECT
+  public:
+	enum Status
+	{
+		Starting,
+		Failed,
+		Succeeded,
+		Initialized,
+		Aborted
+	};
+	ProjTUpdaterApp(int& argc, char** argv);
+	virtual ~ProjTUpdaterApp();
+	void loadReleaseList();
+	void run();
+	Status status() const
+	{
+		return m_status;
+	}
 
-   private:
-    void fail(const QString& reason);
-    void abort(const QString& reason);
-    void showFatalErrorMessage(const QString& title, const QString& content);
+  private:
+	void fail(const QString& reason);
+	void abort(const QString& reason);
+	void showFatalErrorMessage(const QString& title, const QString& content);
 
-    bool loadProjTVersionFromExe(const QString& exe_path);
+	bool loadProjTVersionFromExe(const QString& exe_path);
 
-    void downloadReleasePage(const QString& api_url, int page);
-    int parseReleasePage(const QByteArray* response);
+	void downloadReleasePage(const QString& api_url, int page);
+	int parseReleasePage(const QByteArray* response);
 
-    bool needUpdate(const GitHubRelease& release);
+	bool needUpdate(const GitHubRelease& release);
 
-    GitHubRelease getLatestRelease();
-    GitHubRelease selectRelease();
-    QList<GitHubRelease> newerReleases();
-    QList<GitHubRelease> nonDraftReleases();
+	GitHubRelease getLatestRelease();
+	GitHubRelease selectRelease();
+	QList<GitHubRelease> newerReleases();
+	QList<GitHubRelease> nonDraftReleases();
 
-    void printReleases();
+	void printReleases();
 
-    QList<GitHubReleaseAsset> validReleaseArtifacts(const GitHubRelease& release);
-    GitHubReleaseAsset selectAsset(const QList<GitHubReleaseAsset>& assets);
-    void performUpdate(const GitHubRelease& release);
-    void performInstall(QFileInfo file);
-    void unpackAndInstall(QFileInfo file);
-    void backupAppDir();
-    std::optional<QDir> unpackArchive(QFileInfo file);
+	QList<GitHubReleaseAsset> validReleaseArtifacts(const GitHubRelease& release);
+	GitHubReleaseAsset selectAsset(const QList<GitHubReleaseAsset>& assets);
+	void performUpdate(const GitHubRelease& release);
+	void performInstall(QFileInfo file);
+	void unpackAndInstall(QFileInfo file);
+	void backupAppDir();
+	std::optional<QDir> unpackArchive(QFileInfo file);
 
-    QFileInfo downloadAsset(const GitHubReleaseAsset& asset);
-    bool callAppImageUpdate();
+	QFileInfo downloadAsset(const GitHubReleaseAsset& asset);
+	bool callAppImageUpdate();
 
-    void moveAndFinishUpdate(QDir target);
+	void moveAndFinishUpdate(QDir target);
 
-   public slots:
-    void downloadError(QString reason);
+  public slots:
+	void downloadError(QString reason);
 
-   private:
-    const QString& root() { return m_rootPath; }
+  private:
+	const QString& root()
+	{
+		return m_rootPath;
+	}
 
-    bool isPortable() { return m_isPortable; }
+	bool isPortable()
+	{
+		return m_isPortable;
+	}
 
-    void clearUpdateLog();
-    void logUpdate(const QString& msg);
+	void clearUpdateLog();
+	void logUpdate(const QString& msg);
 
-    QString m_rootPath;
-    QString m_dataPath;
-    bool m_isPortable = false;
-    bool m_isAppimage = false;
-    bool m_isFlatpak = false;
-    QString m_appimagePath;
-    QString m_projtExecutable;
-    QUrl m_projtRepoUrl;
-    Version m_userSelectedVersion;
-    bool m_checkOnly;
-    bool m_forceUpdate;
-    bool m_printOnly;
-    bool m_selectUI;
-    bool m_allowDowngrade;
-    bool m_allowPreRelease;
+	QString m_rootPath;
+	QString m_dataPath;
+	bool m_isPortable = false;
+	bool m_isAppimage = false;
+	bool m_isFlatpak  = false;
+	QString m_appimagePath;
+	QString m_projtExecutable;
+	QUrl m_projtRepoUrl;
+	Version m_userSelectedVersion;
+	bool m_checkOnly;
+	bool m_forceUpdate;
+	bool m_printOnly;
+	bool m_selectUI;
+	bool m_allowDowngrade;
+	bool m_allowPreRelease;
 
-    QString m_updateLogPath;
+	QString m_updateLogPath;
 
-    QString m_projtBinaryName;
-    QString m_projtVersion;
-    int m_projtVersionMajor = -1;
-    int m_projtVersionMinor = -1;
-    int m_projtVersionPatch = -1;
-    QString m_prsimVersionChannel;
-    QString m_projtGitCommit;
+	QString m_projtBinaryName;
+	QString m_projtVersion;
+	int m_projtVersionMajor = -1;
+	int m_projtVersionMinor = -1;
+	int m_projtVersionPatch = -1;
+	QString m_prsimVersionChannel;
+	QString m_projtGitCommit;
 
-    GitHubRelease m_install_release;
+	GitHubRelease m_install_release;
 
-    Status m_status = Status::Starting;
-    shared_qobject_ptr<QNetworkAccessManager> m_network;
-    QString m_current_url;
-    Task::Ptr m_current_task;
-    QList<GitHubRelease> m_releases;
+	Status m_status = Status::Starting;
+	shared_qobject_ptr<QNetworkAccessManager> m_network;
+	QString m_current_url;
+	Task::Ptr m_current_task;
+	QList<GitHubRelease> m_releases;
 
-   public:
-    std::unique_ptr<QFile> logFile;
-    bool logToConsole = false;
+  public:
+	std::unique_ptr<QFile> logFile;
+	bool logToConsole = false;
 
 #if defined Q_OS_WIN32
-    // used on Windows to attach the standard IO streams
-    bool consoleAttached = false;
+	// used on Windows to attach the standard IO streams
+	bool consoleAttached = false;
 #endif
 };

@@ -3,11 +3,12 @@
 
 #include <QtCore/QObject>
 
-class TestQuaZipNewInfo : public QObject {
-    using QObject::QObject;
-    Q_OBJECT
-   private slots:
-    void setFileNTFSTimes();
+class TestQuaZipNewInfo : public QObject
+{
+	using QObject::QObject;
+	Q_OBJECT
+  private slots:
+	void setFileNTFSTimes();
 };
 
-#endif  // TESTQUAZIPNEWINFO_H
+#endif // TESTQUAZIPNEWINFO_H

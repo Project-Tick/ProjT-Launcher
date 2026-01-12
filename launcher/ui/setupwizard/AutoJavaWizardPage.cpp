@@ -24,29 +24,31 @@
 
 AutoJavaWizardPage::AutoJavaWizardPage(QWidget* parent) : BaseWizardPage(parent), ui(new Ui::AutoJavaWizardPage)
 {
-    ui->setupUi(this);
+	ui->setupUi(this);
 }
 
 AutoJavaWizardPage::~AutoJavaWizardPage()
 {
-    delete ui;
+	delete ui;
 }
 
-void AutoJavaWizardPage::initializePage() {}
+void AutoJavaWizardPage::initializePage()
+{}
 
 bool AutoJavaWizardPage::validatePage()
 {
-    auto s = APPLICATION->settings();
+	auto s = APPLICATION->settings();
 
-    if (!ui->previousSettingsRadioButton->isChecked()) {
-        s->set("AutomaticJavaSwitch", true);
-        s->set("AutomaticJavaDownload", true);
-    }
-    s->set("UserAskedAboutAutomaticJavaDownload", true);
-    return true;
+	if (!ui->previousSettingsRadioButton->isChecked())
+	{
+		s->set("AutomaticJavaSwitch", true);
+		s->set("AutomaticJavaDownload", true);
+	}
+	s->set("UserAskedAboutAutomaticJavaDownload", true);
+	return true;
 }
 
 void AutoJavaWizardPage::retranslate()
 {
-    ui->retranslateUi(this);
+	ui->retranslateUi(this);
 }

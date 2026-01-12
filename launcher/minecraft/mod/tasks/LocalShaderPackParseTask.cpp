@@ -49,89 +49,96 @@
 #include <quazip/quazipdir.h>
 #include <quazip/quazipfile.h>
 
-namespace ShaderPackUtils {
-
-bool process(ShaderPack& pack, ProcessingLevel level)
+namespace ShaderPackUtils
 {
-    switch (pack.type()) {
-        case ResourceType::FOLDER:
-            return ShaderPackUtils::processFolder(pack, level);
-        case ResourceType::ZIPFILE:
-            return ShaderPackUtils::processZIP(pack, level);
-        default:
-            qWarning() << "Invalid type for shader pack parse task!";
-            return false;
-    }
-}
 
-bool processFolder(ShaderPack& pack, ProcessingLevel level)
-{
-    Q_ASSERT(pack.type() == ResourceType::FOLDER);
+	bool process(ShaderPack& pack, ProcessingLevel level)
+	{
+		switch (pack.type())
+		{
+			case ResourceType::FOLDER: return ShaderPackUtils::processFolder(pack, level);
+			case ResourceType::ZIPFILE: return ShaderPackUtils::processZIP(pack, level);
+			default: qWarning() << "Invalid type for shader pack parse task!"; return false;
+		}
+	}
 
-    QFileInfo shaders_dir_info(FS::PathCombine(pack.fileinfo().filePath(), "shaders"));
-    if (!shaders_dir_info.exists() || !shaders_dir_info.isDir()) {
-        return false;  // assets dir does not exists or isn't valid
-    }
-    pack.setPackFormat(ShaderPackFormat::VALID);
+	bool processFolder(ShaderPack& pack, ProcessingLevel level)
+	{
+		Q_ASSERT(pack.type() == ResourceType::FOLDER);
 
-    if (level == ProcessingLevel::BasicInfoOnly) {
-        return true;  // only need basic info already checked
-    }
+		QFileInfo shaders_dir_info(FS::PathCombine(pack.fileinfo().filePath(), "shaders"));
+		if (!shaders_dir_info.exists() || !shaders_dir_info.isDir())
+		{
+			return false; // assets dir does not exists or isn't valid
+		}
+		pack.setPackFormat(ShaderPackFormat::VALID);
 
-    return true;  // all tests passed
-}
+		if (level == ProcessingLevel::BasicInfoOnly)
+		{
+			return true; // only need basic info already checked
+		}
 
-bool processZIP(ShaderPack& pack, ProcessingLevel level)
-{
-    Q_ASSERT(pack.type() == ResourceType::ZIPFILE);
+		return true; // all tests passed
+	}
 
-    QuaZip zip(pack.fileinfo().filePath());
-    if (!zip.open(QuaZip::mdUnzip))
-        return false;  // can't open zip file
+	bool processZIP(ShaderPack& pack, ProcessingLevel level)
+	{
+		Q_ASSERT(pack.type() == ResourceType::ZIPFILE);
 
-    QuaZipFile file(&zip);
+		QuaZip zip(pack.fileinfo().filePath());
+		if (!zip.open(QuaZip::mdUnzip))
+			return false; // can't open zip file
 
-    QuaZipDir zipDir(&zip);
-    if (!zipDir.exists("/shaders")) {
-        return false;  // assets dir does not exists at zip root
-    }
-    pack.setPackFormat(ShaderPackFormat::VALID);
+		QuaZipFile file(&zip);
 
-    if (level == ProcessingLevel::BasicInfoOnly) {
-        zip.close();
-        return true;  // only need basic info already checked
-    }
+		QuaZipDir zipDir(&zip);
+		if (!zipDir.exists("/shaders"))
+		{
+			return false; // assets dir does not exists at zip root
+		}
+		pack.setPackFormat(ShaderPackFormat::VALID);
 
-    zip.close();
+		if (level == ProcessingLevel::BasicInfoOnly)
+		{
+			zip.close();
+			return true; // only need basic info already checked
+		}
 
-    return true;
-}
+		zip.close();
 
-bool validate(QFileInfo file)
-{
-    ShaderPack sp{ file };
-    return ShaderPackUtils::process(sp, ProcessingLevel::BasicInfoOnly) && sp.valid();
-}
+		return true;
+	}
 
-}  // namespace ShaderPackUtils
+	bool validate(QFileInfo file)
+	{
+		ShaderPack sp{ file };
+		return ShaderPackUtils::process(sp, ProcessingLevel::BasicInfoOnly) && sp.valid();
+	}
 
-LocalShaderPackParseTask::LocalShaderPackParseTask(int token, ShaderPack& sp) : Task(false), m_token(token), m_shader_pack(sp) {}
+} // namespace ShaderPackUtils
+
+LocalShaderPackParseTask::LocalShaderPackParseTask(int token, ShaderPack& sp)
+	: Task(false),
+	  m_token(token),
+	  m_shader_pack(sp)
+{}
 
 bool LocalShaderPackParseTask::abort()
 {
-    m_aborted = true;
-    return true;
+	m_aborted = true;
+	return true;
 }
 
 void LocalShaderPackParseTask::executeTask()
 {
-    if (!ShaderPackUtils::process(m_shader_pack)) {
-        emitFailed("this is not a shader pack");
-        return;
-    }
+	if (!ShaderPackUtils::process(m_shader_pack))
+	{
+		emitFailed("this is not a shader pack");
+		return;
+	}
 
-    if (m_aborted)
-        emitAborted();
-    else
-        emitSucceeded();
+	if (m_aborted)
+		emitAborted();
+	else
+		emitSucceeded();
 }

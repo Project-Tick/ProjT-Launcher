@@ -70,302 +70,332 @@
 
 auto MetaEntry::getFullPath() -> QString
 {
-    QString fullPath = FS::PathCombine(m_basePath, m_relativePath);
-    QFileInfo info(fullPath);
-    if (!info.exists()) {
-        qWarning() << "MetaEntry::getFullPath: Path does not exist:" << fullPath;
-    }
-    return fullPath;
+	QString fullPath = FS::PathCombine(m_basePath, m_relativePath);
+	QFileInfo info(fullPath);
+	if (!info.exists())
+	{
+		qWarning() << "MetaEntry::getFullPath: Path does not exist:" << fullPath;
+	}
+	return fullPath;
 }
 
 HttpMetaCache::HttpMetaCache(QString path) : QObject(), m_index_file(path)
 {
-    saveBatchingTimer.setSingleShot(true);
-    saveBatchingTimer.setTimerType(Qt::VeryCoarseTimer);
+	saveBatchingTimer.setSingleShot(true);
+	saveBatchingTimer.setTimerType(Qt::VeryCoarseTimer);
 
-    connect(&saveBatchingTimer, &QTimer::timeout, this, &HttpMetaCache::SaveNow);
+	connect(&saveBatchingTimer, &QTimer::timeout, this, &HttpMetaCache::SaveNow);
 }
 
 HttpMetaCache::~HttpMetaCache()
 {
-    saveBatchingTimer.stop();
-    SaveNow();
+	saveBatchingTimer.stop();
+	SaveNow();
 }
 
 auto HttpMetaCache::getEntry(QString base, QString resource_path) -> MetaEntryPtr
 {
-    // no base. no base path. can't store
-    if (!m_entries.contains(base)) {
-        qWarning() << "HttpMetaCache::getEntry: base not found:" << base << "resource_path:" << resource_path;
-        return {};
-    }
+	// no base. no base path. can't store
+	if (!m_entries.contains(base))
+	{
+		qWarning() << "HttpMetaCache::getEntry: base not found:" << base << "resource_path:" << resource_path;
+		return {};
+	}
 
-    EntryMap& map = m_entries[base];
-    if (map.entry_list.contains(resource_path)) {
-        return map.entry_list[resource_path];
-    }
+	EntryMap& map = m_entries[base];
+	if (map.entry_list.contains(resource_path))
+	{
+		return map.entry_list[resource_path];
+	}
 
-    return {};
+	return {};
 }
 
 auto HttpMetaCache::resolveEntry(QString base, QString resource_path, QString expected_etag) -> MetaEntryPtr
 {
-    resource_path = FS::RemoveInvalidPathChars(resource_path);
-    auto entry = getEntry(base, resource_path);
-    // it's not present? generate a default stale entry
-    if (!entry) {
-        return staleEntry(base, resource_path);
-    }
+	resource_path = FS::RemoveInvalidPathChars(resource_path);
+	auto entry	  = getEntry(base, resource_path);
+	// it's not present? generate a default stale entry
+	if (!entry)
+	{
+		return staleEntry(base, resource_path);
+	}
 
-    auto& selected_base = m_entries[base];
-    QString real_path = FS::PathCombine(selected_base.base_path, resource_path);
-    QFileInfo finfo(real_path);
+	auto& selected_base = m_entries[base];
+	QString real_path	= FS::PathCombine(selected_base.base_path, resource_path);
+	QFileInfo finfo(real_path);
 
-    // is the file really there? if not -> stale
-    if (!finfo.isFile() || !finfo.isReadable()) {
-        // if the file doesn't exist, we disown the entry
-        selected_base.entry_list.remove(resource_path);
-        return staleEntry(base, resource_path);
-    }
+	// is the file really there? if not -> stale
+	if (!finfo.isFile() || !finfo.isReadable())
+	{
+		// if the file doesn't exist, we disown the entry
+		selected_base.entry_list.remove(resource_path);
+		return staleEntry(base, resource_path);
+	}
 
-    if (!expected_etag.isEmpty() && expected_etag != entry->m_etag) {
-        // if the etag doesn't match expected, we disown the entry
-        selected_base.entry_list.remove(resource_path);
-        return staleEntry(base, resource_path);
-    }
+	if (!expected_etag.isEmpty() && expected_etag != entry->m_etag)
+	{
+		// if the etag doesn't match expected, we disown the entry
+		selected_base.entry_list.remove(resource_path);
+		return staleEntry(base, resource_path);
+	}
 
-    // if the file changed, check md5sum
-    qint64 file_last_changed = finfo.lastModified().toUTC().toMSecsSinceEpoch();
-    if (file_last_changed != entry->m_local_changed_timestamp) {
-        QFile input(real_path);
-        if (!input.open(QIODevice::ReadOnly)) {
-            qWarning() << "Failed to open file '" << input.fileName() << "' for reading!";
-            return staleEntry(base, resource_path);
-        }
-        QString md5sum = QCryptographicHash::hash(input.readAll(), QCryptographicHash::Md5).toHex().constData();
-        if (entry->m_md5sum != md5sum) {
-            selected_base.entry_list.remove(resource_path);
-            return staleEntry(base, resource_path);
-        }
+	// if the file changed, check md5sum
+	qint64 file_last_changed = finfo.lastModified().toUTC().toMSecsSinceEpoch();
+	if (file_last_changed != entry->m_local_changed_timestamp)
+	{
+		QFile input(real_path);
+		if (!input.open(QIODevice::ReadOnly))
+		{
+			qWarning() << "Failed to open file '" << input.fileName() << "' for reading!";
+			return staleEntry(base, resource_path);
+		}
+		QString md5sum = QCryptographicHash::hash(input.readAll(), QCryptographicHash::Md5).toHex().constData();
+		if (entry->m_md5sum != md5sum)
+		{
+			selected_base.entry_list.remove(resource_path);
+			return staleEntry(base, resource_path);
+		}
 
-        // md5sums matched... keep entry and save the new state to file
-        entry->m_local_changed_timestamp = file_last_changed;
-        SaveEventually();
-    }
+		// md5sums matched... keep entry and save the new state to file
+		entry->m_local_changed_timestamp = file_last_changed;
+		SaveEventually();
+	}
 
-    // Get rid of old entries, to prevent cache problems
-    // DISABLED: This was causing 500+ms delay when opening NewInstanceDialog
-    // Users can manually clear cache if needed
-    /*
-    auto current_time = QDateTime::currentSecsSinceEpoch();
-    if (entry->isExpired(current_time - (file_last_changed / 1000))) {
-        qCWarning(taskNetLogC) << "[HttpMetaCache]"
-                               << "Removing cache entry because of old age!";
-        selected_base.entry_list.remove(resource_path);
-        return staleEntry(base, resource_path);
-    }
-    */
+	// Get rid of old entries, to prevent cache problems
+	// DISABLED: This was causing 500+ms delay when opening NewInstanceDialog
+	// Users can manually clear cache if needed
+	/*
+	auto current_time = QDateTime::currentSecsSinceEpoch();
+	if (entry->isExpired(current_time - (file_last_changed / 1000))) {
+		qCWarning(taskNetLogC) << "[HttpMetaCache]"
+							   << "Removing cache entry because of old age!";
+		selected_base.entry_list.remove(resource_path);
+		return staleEntry(base, resource_path);
+	}
+	*/
 
-    // entry passed all the checks we cared about.
-    entry->m_basePath = getBasePath(base);
-    return entry;
+	// entry passed all the checks we cared about.
+	entry->m_basePath = getBasePath(base);
+	return entry;
 }
 
 auto HttpMetaCache::updateEntry(MetaEntryPtr stale_entry) -> bool
 {
-    if (!m_entries.contains(stale_entry->m_baseId)) {
-        qCCritical(taskHttpMetaCacheLogC) << "Cannot add entry with unknown base: " << stale_entry->m_baseId.toLocal8Bit();
-        return false;
-    }
+	if (!m_entries.contains(stale_entry->m_baseId))
+	{
+		qCCritical(taskHttpMetaCacheLogC)
+			<< "Cannot add entry with unknown base: " << stale_entry->m_baseId.toLocal8Bit();
+		return false;
+	}
 
-    if (stale_entry->m_stale) {
-        qCCritical(taskHttpMetaCacheLogC) << "Cannot add stale entry: " << stale_entry->getFullPath().toLocal8Bit();
-        return false;
-    }
+	if (stale_entry->m_stale)
+	{
+		qCCritical(taskHttpMetaCacheLogC) << "Cannot add stale entry: " << stale_entry->getFullPath().toLocal8Bit();
+		return false;
+	}
 
-    m_entries[stale_entry->m_baseId].entry_list[stale_entry->m_relativePath] = stale_entry;
-    SaveEventually();
+	m_entries[stale_entry->m_baseId].entry_list[stale_entry->m_relativePath] = stale_entry;
+	SaveEventually();
 
-    return true;
+	return true;
 }
 
 auto HttpMetaCache::evictEntry(MetaEntryPtr entry) -> bool
 {
-    if (!entry)
-        return false;
+	if (!entry)
+		return false;
 
-    entry->m_stale = true;
-    SaveEventually();
-    return true;
+	entry->m_stale = true;
+	SaveEventually();
+	return true;
 }
 
 // returns true on success, false otherwise
 auto HttpMetaCache::evictAll() -> bool
 {
-    bool ret = true;
-    for (QString& base : m_entries.keys()) {
-        EntryMap& map = m_entries[base];
-        qCDebug(taskHttpMetaCacheLogC) << "Evicting base" << base;
-        for (MetaEntryPtr entry : map.entry_list) {
-            if (!evictEntry(entry))
-                qCWarning(taskHttpMetaCacheLogC) << "Unexpected missing cache entry" << entry->m_basePath;
-        }
-        map.entry_list.clear();
-        // AND all return codes together so the result is true iff all runs of deletePath() are true
-        ret &= FS::deletePath(map.base_path);
-    }
-    return ret;
+	bool ret = true;
+	for (QString& base : m_entries.keys())
+	{
+		EntryMap& map = m_entries[base];
+		qCDebug(taskHttpMetaCacheLogC) << "Evicting base" << base;
+		for (MetaEntryPtr entry : map.entry_list)
+		{
+			if (!evictEntry(entry))
+				qCWarning(taskHttpMetaCacheLogC) << "Unexpected missing cache entry" << entry->m_basePath;
+		}
+		map.entry_list.clear();
+		// AND all return codes together so the result is true iff all runs of deletePath() are true
+		ret &= FS::deletePath(map.base_path);
+	}
+	return ret;
 }
 
 auto HttpMetaCache::staleEntry(QString base, QString resource_path) -> MetaEntryPtr
 {
-    auto foo = new MetaEntry();
-    foo->m_baseId = base;
-    foo->m_basePath = getBasePath(base);
-    foo->m_relativePath = resource_path;
-    foo->m_stale = true;
+	auto foo			= new MetaEntry();
+	foo->m_baseId		= base;
+	foo->m_basePath		= getBasePath(base);
+	foo->m_relativePath = resource_path;
+	foo->m_stale		= true;
 
-    return MetaEntryPtr(foo);
+	return MetaEntryPtr(foo);
 }
 
 void HttpMetaCache::addBase(QString base, QString base_root)
 {
-    if (m_entries.contains(base)) {
-        qWarning() << "Base" << base << "already exists in meta cache";
-        return;
-    }
+	if (m_entries.contains(base))
+	{
+		qWarning() << "Base" << base << "already exists in meta cache";
+		return;
+	}
 
-    // Check if the base path is valid
-    QDir baseDir(base_root);
-    if (!baseDir.exists()) {
-        qWarning() << "Base path" << base_root << "does not exist for base" << base;
-    }
+	// Check if the base path is valid
+	QDir baseDir(base_root);
+	if (!baseDir.exists())
+	{
+		qWarning() << "Base path" << base_root << "does not exist for base" << base;
+	}
 
-    EntryMap foo;
-    foo.base_path = base_root;
-    m_entries[base] = foo;
+	EntryMap foo;
+	foo.base_path	= base_root;
+	m_entries[base] = foo;
 }
 
 auto HttpMetaCache::getBasePath(QString base) -> QString
 {
-    if (m_entries.contains(base)) {
-        return m_entries[base].base_path;
-    }
+	if (m_entries.contains(base))
+	{
+		return m_entries[base].base_path;
+	}
 
-    return {};
+	return {};
 }
 
 void HttpMetaCache::Load()
 {
-    if (m_index_file.isNull())
-        return;
+	if (m_index_file.isNull())
+		return;
 
-    QFile index(m_index_file);
-    if (!index.open(QIODevice::ReadOnly))
-        return;
+	QFile index(m_index_file);
+	if (!index.open(QIODevice::ReadOnly))
+		return;
 
-    QJsonParseError parseError;
-    QJsonDocument json = QJsonDocument::fromJson(index.readAll(), &parseError);
+	QJsonParseError parseError;
+	QJsonDocument json = QJsonDocument::fromJson(index.readAll(), &parseError);
 
-    // Fail if the JSON is invalid.
-    if (parseError.error != QJsonParseError::NoError) {
-        qCritical() << QString("Failed to parse HttpMetaCache file: %1 at offset %2")
-                           .arg(parseError.errorString(), QString::number(parseError.offset))
-                           .toUtf8();
-        return;
-    }
+	// Fail if the JSON is invalid.
+	if (parseError.error != QJsonParseError::NoError)
+	{
+		qCritical() << QString("Failed to parse HttpMetaCache file: %1 at offset %2")
+						   .arg(parseError.errorString(), QString::number(parseError.offset))
+						   .toUtf8();
+		return;
+	}
 
-    // Make sure the root is an object.
-    if (!json.isObject()) {
-        qCritical() << "HttpMetaCache root should be an object.";
-        return;
-    }
+	// Make sure the root is an object.
+	if (!json.isObject())
+	{
+		qCritical() << "HttpMetaCache root should be an object.";
+		return;
+	}
 
-    auto root = json.object();
+	auto root = json.object();
 
-    // check file version first
-    auto version_val = Json::ensureString(root, "version");
-    if (version_val != "1")
-        return;
+	// check file version first
+	auto version_val = Json::ensureString(root, "version");
+	if (version_val != "1")
+		return;
 
-    // read the entry array
-    auto array = Json::ensureArray(root, "entries");
-    for (auto element : array) {
-        auto element_obj = Json::ensureObject(element);
-        auto base = Json::ensureString(element_obj, "base");
-        if (!m_entries.contains(base))
-            continue;
+	// read the entry array
+	auto array = Json::ensureArray(root, "entries");
+	for (auto element : array)
+	{
+		auto element_obj = Json::ensureObject(element);
+		auto base		 = Json::ensureString(element_obj, "base");
+		if (!m_entries.contains(base))
+			continue;
 
-        auto& entrymap = m_entries[base];
+		auto& entrymap = m_entries[base];
 
-        auto foo = new MetaEntry();
-        foo->m_baseId = base;
-        foo->m_relativePath = Json::ensureString(element_obj, "path");
-        foo->m_md5sum = Json::ensureString(element_obj, "md5sum");
-        foo->m_etag = Json::ensureString(element_obj, "etag");
-        foo->m_local_changed_timestamp = Json::ensureDouble(element_obj, "last_changed_timestamp");
-        foo->m_remote_changed_timestamp = Json::ensureString(element_obj, "remote_changed_timestamp");
+		auto foo						= new MetaEntry();
+		foo->m_baseId					= base;
+		foo->m_relativePath				= Json::ensureString(element_obj, "path");
+		foo->m_md5sum					= Json::ensureString(element_obj, "md5sum");
+		foo->m_etag						= Json::ensureString(element_obj, "etag");
+		foo->m_local_changed_timestamp	= Json::ensureDouble(element_obj, "last_changed_timestamp");
+		foo->m_remote_changed_timestamp = Json::ensureString(element_obj, "remote_changed_timestamp");
 
-        foo->makeEternal(Json::ensureBoolean(element_obj, (const QString)QStringLiteral("eternal"), false));
-        if (!foo->isEternal()) {
-            foo->m_current_age = Json::ensureDouble(element_obj, "current_age");
-            foo->m_max_age = Json::ensureDouble(element_obj, "max_age");
-        }
+		foo->makeEternal(Json::ensureBoolean(element_obj, (const QString)QStringLiteral("eternal"), false));
+		if (!foo->isEternal())
+		{
+			foo->m_current_age = Json::ensureDouble(element_obj, "current_age");
+			foo->m_max_age	   = Json::ensureDouble(element_obj, "max_age");
+		}
 
-        // presumed innocent until closer examination
-        foo->m_stale = false;
+		// presumed innocent until closer examination
+		foo->m_stale = false;
 
-        entrymap.entry_list[foo->m_relativePath] = MetaEntryPtr(foo);
-    }
+		entrymap.entry_list[foo->m_relativePath] = MetaEntryPtr(foo);
+	}
 }
 
 void HttpMetaCache::SaveEventually()
 {
-    // reset the save timer
-    saveBatchingTimer.stop();
-    saveBatchingTimer.start(30000);
+	// reset the save timer
+	saveBatchingTimer.stop();
+	saveBatchingTimer.start(30000);
 }
 
 void HttpMetaCache::SaveNow()
 {
-    if (m_index_file.isNull())
-        return;
+	if (m_index_file.isNull())
+		return;
 
-    qCDebug(taskHttpMetaCacheLogC) << "Saving metacache with" << m_entries.size() << "entries";
+	qCDebug(taskHttpMetaCacheLogC) << "Saving metacache with" << m_entries.size() << "entries";
 
-    QJsonObject toplevel;
-    Json::writeString(toplevel, "version", "1");
+	QJsonObject toplevel;
+	Json::writeString(toplevel, "version", "1");
 
-    QJsonArray entriesArr;
-    for (auto group : m_entries) {
-        for (auto entry : group.entry_list) {
-            // do not save stale entries. they are dead.
-            if (entry->m_stale) {
-                continue;
-            }
+	QJsonArray entriesArr;
+	for (auto group : m_entries)
+	{
+		for (auto entry : group.entry_list)
+		{
+			// do not save stale entries. they are dead.
+			if (entry->m_stale)
+			{
+				continue;
+			}
 
-            QJsonObject entryObj;
-            Json::writeString(entryObj, "base", entry->m_baseId);
-            Json::writeString(entryObj, "path", entry->m_relativePath);
-            Json::writeString(entryObj, "md5sum", entry->m_md5sum);
-            Json::writeString(entryObj, "etag", entry->m_etag);
-            entryObj.insert("last_changed_timestamp", QJsonValue(double(entry->m_local_changed_timestamp)));
-            if (!entry->m_remote_changed_timestamp.isEmpty())
-                entryObj.insert("remote_changed_timestamp", QJsonValue(entry->m_remote_changed_timestamp));
-            if (entry->isEternal()) {
-                entryObj.insert("eternal", true);
-            } else {
-                entryObj.insert("current_age", QJsonValue(double(entry->m_current_age)));
-                entryObj.insert("max_age", QJsonValue(double(entry->m_max_age)));
-            }
-            entriesArr.append(entryObj);
-        }
-    }
-    toplevel.insert("entries", entriesArr);
+			QJsonObject entryObj;
+			Json::writeString(entryObj, "base", entry->m_baseId);
+			Json::writeString(entryObj, "path", entry->m_relativePath);
+			Json::writeString(entryObj, "md5sum", entry->m_md5sum);
+			Json::writeString(entryObj, "etag", entry->m_etag);
+			entryObj.insert("last_changed_timestamp", QJsonValue(double(entry->m_local_changed_timestamp)));
+			if (!entry->m_remote_changed_timestamp.isEmpty())
+				entryObj.insert("remote_changed_timestamp", QJsonValue(entry->m_remote_changed_timestamp));
+			if (entry->isEternal())
+			{
+				entryObj.insert("eternal", true);
+			}
+			else
+			{
+				entryObj.insert("current_age", QJsonValue(double(entry->m_current_age)));
+				entryObj.insert("max_age", QJsonValue(double(entry->m_max_age)));
+			}
+			entriesArr.append(entryObj);
+		}
+	}
+	toplevel.insert("entries", entriesArr);
 
-    try {
-        Json::write(toplevel, m_index_file);
-    } catch (const Exception& e) {
-        qCWarning(taskHttpMetaCacheLogC) << "Error writing cache:" << e.what();
-    }
+	try
+	{
+		Json::write(toplevel, m_index_file);
+	}
+	catch (const Exception& e)
+	{
+		qCWarning(taskHttpMetaCacheLogC) << "Error writing cache:" << e.what();
+	}
 }

@@ -34,34 +34,40 @@
 
 #include <QRegularExpression>
 
-namespace ResourceDownload {
-
-ResourcePackResourcePage::ResourcePackResourcePage(ResourceDownloadDialog* dialog, BaseInstance& instance) : ResourcePage(dialog, instance)
-{}
-
-/******** Callbacks to events in the UI (set up in the derived classes) ********/
-
-void ResourcePackResourcePage::triggerSearch()
+namespace ResourceDownload
 {
-    m_ui->packView->selectionModel()->setCurrentIndex({}, QItemSelectionModel::SelectionFlag::ClearAndSelect);
-    m_ui->packView->clearSelection();
-    m_ui->packDescription->clear();
-    m_ui->versionSelectionBox->clear();
 
-    updateSelectionButton();
+	ResourcePackResourcePage::ResourcePackResourcePage(ResourceDownloadDialog* dialog, BaseInstance& instance)
+		: ResourcePage(dialog, instance)
+	{}
 
-    static_cast<ResourcePackResourceModel*>(m_model)->searchWithTerm(getSearchTerm(), m_ui->sortByBox->currentData().toUInt());
-    m_fetchProgress.watch(m_model->activeSearchJob().get());
-}
+	/******** Callbacks to events in the UI (set up in the derived classes) ********/
 
-QMap<QString, QString> ResourcePackResourcePage::urlHandlers() const
-{
-    QMap<QString, QString> map;
-    map.insert(QRegularExpression::anchoredPattern("(?:www\\.)?modrinth\\.com\\/resourcepack\\/([^\\/]+)\\/?"), "modrinth");
-    map.insert(QRegularExpression::anchoredPattern("(?:www\\.)?curseforge\\.com\\/minecraft\\/texture-packs\\/([^\\/]+)\\/?"),
-               "curseforge");
-    map.insert(QRegularExpression::anchoredPattern("minecraft\\.curseforge\\.com\\/projects\\/([^\\/]+)\\/?"), "curseforge");
-    return map;
-}
+	void ResourcePackResourcePage::triggerSearch()
+	{
+		m_ui->packView->selectionModel()->setCurrentIndex({}, QItemSelectionModel::SelectionFlag::ClearAndSelect);
+		m_ui->packView->clearSelection();
+		m_ui->packDescription->clear();
+		m_ui->versionSelectionBox->clear();
 
-}  // namespace ResourceDownload
+		updateSelectionButton();
+
+		static_cast<ResourcePackResourceModel*>(m_model)->searchWithTerm(getSearchTerm(),
+																		 m_ui->sortByBox->currentData().toUInt());
+		m_fetchProgress.watch(m_model->activeSearchJob().get());
+	}
+
+	QMap<QString, QString> ResourcePackResourcePage::urlHandlers() const
+	{
+		QMap<QString, QString> map;
+		map.insert(QRegularExpression::anchoredPattern("(?:www\\.)?modrinth\\.com\\/resourcepack\\/([^\\/]+)\\/?"),
+				   "modrinth");
+		map.insert(QRegularExpression::anchoredPattern(
+					   "(?:www\\.)?curseforge\\.com\\/minecraft\\/texture-packs\\/([^\\/]+)\\/?"),
+				   "curseforge");
+		map.insert(QRegularExpression::anchoredPattern("minecraft\\.curseforge\\.com\\/projects\\/([^\\/]+)\\/?"),
+				   "curseforge");
+		return map;
+	}
+
+} // namespace ResourceDownload

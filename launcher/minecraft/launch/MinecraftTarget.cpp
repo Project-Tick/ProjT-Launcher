@@ -45,62 +45,75 @@
 // used by callers requiring validation.
 MinecraftTarget MinecraftTarget::parse(const QString& fullAddress, bool useWorld)
 {
-    // Validate input - empty or whitespace-only addresses are invalid
-    QString trimmed = fullAddress.trimmed();
-    if (trimmed.isEmpty()) {
-        return MinecraftTarget{};  // Return empty target for invalid input
-    }
+	// Validate input - empty or whitespace-only addresses are invalid
+	QString trimmed = fullAddress.trimmed();
+	if (trimmed.isEmpty())
+	{
+		return MinecraftTarget{}; // Return empty target for invalid input
+	}
 
-    if (useWorld) {
-        MinecraftTarget target;
-        target.world = trimmed;
-        return target;
-    }
+	if (useWorld)
+	{
+		MinecraftTarget target;
+		target.world = trimmed;
+		return target;
+	}
 
-    QStringList split = trimmed.split(":");
+	QStringList split = trimmed.split(":");
 
-    // The logic below replicates the exact logic minecraft uses for parsing server addresses.
-    // While the conversion is not lossless and eats errors, it ensures the same behavior
-    // within Minecraft and ProjT Launcher when entering server addresses.
-    if (trimmed.startsWith("[")) {
-        int bracket = trimmed.indexOf("]");
-        if (bracket > 0) {
-            QString ipv6 = trimmed.mid(1, bracket - 1);
-            QString port = trimmed.mid(bracket + 1).trimmed();
+	// The logic below replicates the exact logic minecraft uses for parsing server addresses.
+	// While the conversion is not lossless and eats errors, it ensures the same behavior
+	// within Minecraft and ProjT Launcher when entering server addresses.
+	if (trimmed.startsWith("["))
+	{
+		int bracket = trimmed.indexOf("]");
+		if (bracket > 0)
+		{
+			QString ipv6 = trimmed.mid(1, bracket - 1);
+			QString port = trimmed.mid(bracket + 1).trimmed();
 
-            if (port.startsWith(":") && !ipv6.isEmpty()) {
-                port = port.mid(1);
-                split = QStringList({ ipv6, port });
-            } else {
-                split = QStringList({ ipv6 });
-            }
-        }
-    }
+			if (port.startsWith(":") && !ipv6.isEmpty())
+			{
+				port  = port.mid(1);
+				split = QStringList({ ipv6, port });
+			}
+			else
+			{
+				split = QStringList({ ipv6 });
+			}
+		}
+	}
 
-    if (split.size() > 2) {
-        split = QStringList({ trimmed });
-    }
+	if (split.size() > 2)
+	{
+		split = QStringList({ trimmed });
+	}
 
-    QString realAddress = split[0];
+	QString realAddress = split[0];
 
-    // Validate address is not empty after parsing
-    if (realAddress.isEmpty()) {
-        return MinecraftTarget{};  // Invalid address
-    }
+	// Validate address is not empty after parsing
+	if (realAddress.isEmpty())
+	{
+		return MinecraftTarget{}; // Invalid address
+	}
 
-    quint16 realPort = 25565;
-    if (split.size() > 1) {
-        bool ok;
-        uint portValue = split[1].toUInt(&ok);
+	quint16 realPort = 25565;
+	if (split.size() > 1)
+	{
+		bool ok;
+		uint portValue = split[1].toUInt(&ok);
 
-        // Validate port is in valid range (1-65535)
-        if (ok && portValue > 0 && portValue <= 65535) {
-            realPort = static_cast<quint16>(portValue);
-        } else {
-            // Invalid port, use default
-            realPort = 25565;
-        }
-    }
+		// Validate port is in valid range (1-65535)
+		if (ok && portValue > 0 && portValue <= 65535)
+		{
+			realPort = static_cast<quint16>(portValue);
+		}
+		else
+		{
+			// Invalid port, use default
+			realPort = 25565;
+		}
+	}
 
-    return MinecraftTarget{ realAddress, realPort };
+	return MinecraftTarget{ realAddress, realPort };
 }

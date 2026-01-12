@@ -69,170 +69,207 @@ class QFileSystemWatcher;
 class InstanceTask;
 struct InstanceName;
 
-using InstanceId = QString;
-using GroupId = QString;
+using InstanceId	  = QString;
+using GroupId		  = QString;
 using InstanceLocator = std::pair<InstancePtr, int>;
 
-enum class InstCreateError { NoCreateError = 0, NoSuchVersion, UnknownCreateError, InstExists, CantCreateDir };
-
-enum class GroupsState { NotLoaded, Steady, Dirty };
-
-struct TrashShortcutItem {
-    ShortcutData data;
-    QString trashPath;
+enum class InstCreateError
+{
+	NoCreateError = 0,
+	NoSuchVersion,
+	UnknownCreateError,
+	InstExists,
+	CantCreateDir
 };
 
-struct TrashHistoryItem {
-    QString id;
-    QString path;
-    QString trashPath;
-    QString groupName;
-    QList<TrashShortcutItem> shortcuts;
+enum class GroupsState
+{
+	NotLoaded,
+	Steady,
+	Dirty
 };
 
-class InstanceList : public QAbstractListModel {
-    Q_OBJECT
+struct TrashShortcutItem
+{
+	ShortcutData data;
+	QString trashPath;
+};
 
-   public:
-    explicit InstanceList(SettingsObjectPtr settings, const QString& instDir, QObject* parent = 0);
-    virtual ~InstanceList();
+struct TrashHistoryItem
+{
+	QString id;
+	QString path;
+	QString trashPath;
+	QString groupName;
+	QList<TrashShortcutItem> shortcuts;
+};
 
-   public:
-    QModelIndex index(int row, int column = 0, const QModelIndex& parent = QModelIndex()) const override;
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex& index, int role) const override;
-    Qt::ItemFlags flags(const QModelIndex& index) const override;
+class InstanceList : public QAbstractListModel
+{
+	Q_OBJECT
 
-    bool setData(const QModelIndex& index, const QVariant& value, int role) override;
+  public:
+	explicit InstanceList(SettingsObjectPtr settings, const QString& instDir, QObject* parent = 0);
+	virtual ~InstanceList();
 
-    enum AdditionalRoles {
-        GroupRole = Qt::UserRole,
-        InstancePointerRole = 0x34B1CB48,  ///< Return pointer to real instance
-        InstanceIDRole = 0x34B1CB49        ///< Return id if the instance
-    };
-    /*!
-     * \brief Error codes returned by functions in the InstanceList class.
-     * NoError Indicates that no error occurred.
-     * UnknownError indicates that an unspecified error occurred.
-     */
-    enum InstListError { NoError = 0, UnknownError };
+  public:
+	QModelIndex index(int row, int column = 0, const QModelIndex& parent = QModelIndex()) const override;
+	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+	QVariant data(const QModelIndex& index, int role) const override;
+	Qt::ItemFlags flags(const QModelIndex& index) const override;
 
-    InstancePtr at(int i) const { return m_instances.at(i); }
+	bool setData(const QModelIndex& index, const QVariant& value, int role) override;
 
-    int count() const { return m_instances.count(); }
+	enum AdditionalRoles
+	{
+		GroupRole			= Qt::UserRole,
+		InstancePointerRole = 0x34B1CB48, ///< Return pointer to real instance
+		InstanceIDRole		= 0x34B1CB49  ///< Return id if the instance
+	};
+	/*!
+	 * \brief Error codes returned by functions in the InstanceList class.
+	 * NoError Indicates that no error occurred.
+	 * UnknownError indicates that an unspecified error occurred.
+	 */
+	enum InstListError
+	{
+		NoError = 0,
+		UnknownError
+	};
 
-    InstListError loadList();
-    void saveNow();
+	InstancePtr at(int i) const
+	{
+		return m_instances.at(i);
+	}
 
-    /* O(n) */
-    InstancePtr getInstanceById(QString id) const;
-    /* O(n) */
-    InstancePtr getInstanceByManagedName(const QString& managed_name) const;
-    /* O(n) */
-    QList<InstancePtr> getAllInstancesByManagedName(const QString& managed_name) const;
-    QModelIndex getInstanceIndexById(const QString& id) const;
-    QStringList getGroups();
-    bool isGroupCollapsed(const QString& groupName);
+	int count() const
+	{
+		return m_instances.count();
+	}
 
-    GroupId getInstanceGroup(const InstanceId& id) const;
-    void setInstanceGroup(const InstanceId& id, GroupId name);
+	InstListError loadList();
+	void saveNow();
 
-    void deleteGroup(const GroupId& name);
-    void renameGroup(const GroupId& src, const GroupId& dst);
-    bool trashInstance(const InstanceId& id);
-    bool trashedSomething() const;
-    bool undoTrashInstance();
-    void deleteInstance(const InstanceId& id);
+	/* O(n) */
+	InstancePtr getInstanceById(QString id) const;
+	/* O(n) */
+	InstancePtr getInstanceByManagedName(const QString& managed_name) const;
+	/* O(n) */
+	QList<InstancePtr> getAllInstancesByManagedName(const QString& managed_name) const;
+	QModelIndex getInstanceIndexById(const QString& id) const;
+	QStringList getGroups();
+	bool isGroupCollapsed(const QString& groupName);
 
-    // Wrap an instance creation task in some more task machinery and make it ready to be used
-    Task* wrapInstanceTask(InstanceTask* task);
+	GroupId getInstanceGroup(const InstanceId& id) const;
+	void setInstanceGroup(const InstanceId& id, GroupId name);
 
-    /**
-     * Create a new empty staging area for instance creation and @return a path/key top commit it later.
-     * Used by instance manipulation tasks.
-     */
-    QString getStagedInstancePath();
+	void deleteGroup(const GroupId& name);
+	void renameGroup(const GroupId& src, const GroupId& dst);
+	bool trashInstance(const InstanceId& id);
+	bool trashedSomething() const;
+	bool undoTrashInstance();
+	void deleteInstance(const InstanceId& id);
 
-    /**
-     * Commit the staging area given by @keyPath to the provider - used when creation succeeds.
-     * Used by instance manipulation tasks.
-     * should_override is used when another similar instance already exists, and we want to override it
-     * - for instance, when updating it.
-     */
-    bool commitStagedInstance(const QString& keyPath, const InstanceName& instanceName, QString groupName, const InstanceTask&);
+	// Wrap an instance creation task in some more task machinery and make it ready to be used
+	Task* wrapInstanceTask(InstanceTask* task);
 
-    /**
-     * Destroy a previously created staging area given by @keyPath - used when creation fails.
-     * Used by instance manipulation tasks.
-     */
-    bool destroyStagingPath(const QString& keyPath);
+	/**
+	 * Create a new empty staging area for instance creation and @return a path/key top commit it later.
+	 * Used by instance manipulation tasks.
+	 */
+	QString getStagedInstancePath();
 
-    int getTotalPlayTime();
+	/**
+	 * Commit the staging area given by @keyPath to the provider - used when creation succeeds.
+	 * Used by instance manipulation tasks.
+	 * should_override is used when another similar instance already exists, and we want to override it
+	 * - for instance, when updating it.
+	 */
+	bool commitStagedInstance(const QString& keyPath,
+							  const InstanceName& instanceName,
+							  QString groupName,
+							  const InstanceTask&);
 
-    Qt::DropActions supportedDragActions() const override;
+	/**
+	 * Destroy a previously created staging area given by @keyPath - used when creation fails.
+	 * Used by instance manipulation tasks.
+	 */
+	bool destroyStagingPath(const QString& keyPath);
 
-    Qt::DropActions supportedDropActions() const override;
+	int getTotalPlayTime();
 
-    bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override;
+	Qt::DropActions supportedDragActions() const override;
 
-    bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
+	Qt::DropActions supportedDropActions() const override;
 
-    QStringList mimeTypes() const override;
-    QMimeData* mimeData(const QModelIndexList& indexes) const override;
+	bool canDropMimeData(const QMimeData* data,
+						 Qt::DropAction action,
+						 int row,
+						 int column,
+						 const QModelIndex& parent) const override;
 
-    QStringList getLinkedInstancesById(const QString& id) const;
+	bool dropMimeData(const QMimeData* data,
+					  Qt::DropAction action,
+					  int row,
+					  int column,
+					  const QModelIndex& parent) override;
 
-   signals:
-    void dataIsInvalid();
-    void instancesChanged();
-    void instanceSelectRequest(QString instanceId);
-    void groupsChanged(QSet<QString> groups);
+	QStringList mimeTypes() const override;
+	QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
-   public slots:
-    void on_InstFolderChanged(const Setting& setting, QVariant value);
-    void on_GroupStateChanged(const QString& group, bool collapsed);
+	QStringList getLinkedInstancesById(const QString& id) const;
 
-   private slots:
-    void propertiesChanged(BaseInstance* inst);
-    void providerUpdated();
-    void instanceDirContentsChanged(const QString& path);
+  signals:
+	void dataIsInvalid();
+	void instancesChanged();
+	void instanceSelectRequest(QString instanceId);
+	void groupsChanged(QSet<QString> groups);
 
-   private:
-    int getInstIndex(BaseInstance* inst) const;
-    void updateTotalPlayTime();
-    void suspendWatch();
-    void resumeWatch();
-    void add(const QList<InstancePtr>& list);
-    void loadGroupList();
-    void saveGroupList();
-    QList<InstanceId> discoverInstances();
-    InstancePtr loadInstance(const InstanceId& id);
+  public slots:
+	void on_InstFolderChanged(const Setting& setting, QVariant value);
+	void on_GroupStateChanged(const QString& group, bool collapsed);
 
-    void increaseGroupCount(const QString& group);
-    void decreaseGroupCount(const QString& group);
+  private slots:
+	void propertiesChanged(BaseInstance* inst);
+	void providerUpdated();
+	void instanceDirContentsChanged(const QString& path);
 
-    /// Removes instances that no longer exist on disk, optimizing for contiguous removals.
-    /// @param deadInstances Map of instance IDs to their (pointer, index) pairs to be removed.
-    void removeDeadInstances(const QMap<InstanceId, InstanceLocator>& deadInstances);
+  private:
+	int getInstIndex(BaseInstance* inst) const;
+	void updateTotalPlayTime();
+	void suspendWatch();
+	void resumeWatch();
+	void add(const QList<InstancePtr>& list);
+	void loadGroupList();
+	void saveGroupList();
+	QList<InstanceId> discoverInstances();
+	InstancePtr loadInstance(const InstanceId& id);
 
-   private:
-    int m_watchLevel = 0;
-    int totalPlayTime = 0;
-    bool m_dirty = false;
-    QList<InstancePtr> m_instances;
-    // id -> refs
-    QMap<QString, int> m_groupNameCache;
+	void increaseGroupCount(const QString& group);
+	void decreaseGroupCount(const QString& group);
 
-    SettingsObjectPtr m_globalSettings;
-    QString m_instDir;
-    QFileSystemWatcher* m_watcher;
-    // NOTE: Optimized using QHash for cached lookups.
-    QSet<QString> m_collapsedGroups;
-    QHash<InstanceId, GroupId> m_instanceGroupIndex;
-    QSet<InstanceId> instanceSet;
-    QHash<InstanceId, InstancePtr> m_instanceMap;
-    bool m_groupsLoaded = false;
-    bool m_instancesProbed = false;
+	/// Removes instances that no longer exist on disk, optimizing for contiguous removals.
+	/// @param deadInstances Map of instance IDs to their (pointer, index) pairs to be removed.
+	void removeDeadInstances(const QMap<InstanceId, InstanceLocator>& deadInstances);
 
-    QStack<TrashHistoryItem> m_trashHistory;
+  private:
+	int m_watchLevel  = 0;
+	int totalPlayTime = 0;
+	bool m_dirty	  = false;
+	QList<InstancePtr> m_instances;
+	// id -> refs
+	QMap<QString, int> m_groupNameCache;
+
+	SettingsObjectPtr m_globalSettings;
+	QString m_instDir;
+	QFileSystemWatcher* m_watcher;
+	// NOTE: Optimized using QHash for cached lookups.
+	QSet<QString> m_collapsedGroups;
+	QHash<InstanceId, GroupId> m_instanceGroupIndex;
+	QSet<InstanceId> instanceSet;
+	QHash<InstanceId, InstancePtr> m_instanceMap;
+	bool m_groupsLoaded	   = false;
+	bool m_instancesProbed = false;
+
+	QStack<TrashHistoryItem> m_trashHistory;
 };

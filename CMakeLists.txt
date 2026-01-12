@@ -281,17 +281,17 @@ endif()
 ##################################### Set Application options #####################################
 
 ######## Set URLs ########
-set(Launcher_NEWS_RSS_URL "https://projtlauncher.projecttick.org.tr/feed/feed.xml" CACHE STRING "URL to fetch ProjT Launcher's news RSS feed from.")
-set(Launcher_NEWS_OPEN_URL "https://projtlauncher.projecttick.org.tr/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
-set(Launcher_HELP_URL "https://projtlauncher.projecttick.org.tr/wiki/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
-set(Launcher_LOGIN_CALLBACK_URL "https://projtlauncher.projecttick.org.tr/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
-set(Launcher_FMLLIBS_BASE_URL "https://files.projtlauncher.projecttick.org.tr/fmllibs/" CACHE STRING "URL for FML Libraries.")
+set(Launcher_NEWS_RSS_URL "https://projecttick.org.tr/projtlauncher/feed/feed.xml" CACHE STRING "URL to fetch ProjT Launcher's news RSS feed from.")
+set(Launcher_NEWS_OPEN_URL "https://projecttick.org.tr/projtlauncher/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
+set(Launcher_HELP_URL "https://projecttick.org.tr/projtlauncher/wiki/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
+set(Launcher_LOGIN_CALLBACK_URL "https://projecttick.org.tr/projtlauncher/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
+set(Launcher_FMLLIBS_BASE_URL "https://files.yongdohyun.org.tr/fmllibs/" CACHE STRING "URL for FML Libraries.")
 
 ######## Set version numbers ########
 set(Launcher_VERSION_MAJOR 0)
 set(Launcher_VERSION_MINOR 0)
-set(Launcher_VERSION_PATCH 3)
-set(Launcher_VERSION_TWEAK 5)
+set(Launcher_VERSION_PATCH 4)
+set(Launcher_VERSION_TWEAK 1)
 
 set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.${Launcher_VERSION_TWEAK}")
 set(Launcher_VERSION_NAME4 "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.${Launcher_VERSION_TWEAK}")
@@ -323,13 +323,13 @@ set(Launcher_TRANSLATIONS_URL "https://hosted.weblate.org/projects/projecttickla
 set(Launcher_TRANSLATION_FILES_URL "http://i18n.projecttick.org.tr/" CACHE STRING "URL for the translations files.")
 
 # Matrix Space
-set(Launcher_MATRIX_URL "https://projtlauncher.projecttick.org.tr/matrix" CACHE STRING "URL to the Matrix Space")
+set(Launcher_MATRIX_URL "https://projecttick.org.tr/projtlauncher/matrix" CACHE STRING "URL to the Matrix Space")
 
 # Discord URL
-set(Launcher_DISCORD_URL "https://projtlauncher.projecttick.org.tr/discord" CACHE STRING "URL for the Discord guild.")
+set(Launcher_DISCORD_URL "https://projecttick.org.tr/projtlauncher/discord" CACHE STRING "URL for the Discord guild.")
 
 # Subreddit URL
-set(Launcher_SUBREDDIT_URL "https://projtlauncher.projecttick.org.tr/reddit" CACHE STRING "URL for the subreddit.")
+set(Launcher_SUBREDDIT_URL "https:/projecttick.org.tr/projtlauncher/reddit" CACHE STRING "URL for the subreddit.")
 
 # Builds
 # Builds
@@ -468,10 +468,36 @@ if(NOT ZLIB_FOUND)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
         message(STATUS "Using bundled zlib")
         set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
+        # For fuzzing builds, disable shared library to avoid sanitizer symbol conflicts
+        if(BUILD_FUZZERS)
+            set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+            message(STATUS "Fuzzing build: Building zlib as static library only")
+        endif()
         # Disable instrumentation for external dependencies to avoid linker issues
+        # IMPORTANT: Save and restore flags to prevent interference with fuzzer compilation
+        set(_SAVED_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+        set(_SAVED_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        set(_SAVED_CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+        set(_SAVED_CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+        
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        
+        # For OSS-Fuzz: Strip sanitizer flags from zlib build to avoid symbol conflicts
+        if(DEFINED ENV{LIB_FUZZING_ENGINE})
+            string(REGEX REPLACE "-fsanitize=[^ ]*" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+            string(REGEX REPLACE "-fsanitize-coverage=[^ ]*" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+            string(REGEX REPLACE "-fno-sanitize-recover=[^ ]*" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+            message(STATUS "OSS-Fuzz build: Stripping sanitizer flags from zlib")
+        endif()
+        
         add_subdirectory(zlib)
+        
+        # Restore flags after zlib subdirectory
+        set(CMAKE_C_FLAGS "${_SAVED_CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${_SAVED_CMAKE_CXX_FLAGS}")
+        set(CMAKE_C_FLAGS_DEBUG "${_SAVED_CMAKE_C_FLAGS_DEBUG}")
+        set(CMAKE_C_FLAGS_RELEASE "${_SAVED_CMAKE_C_FLAGS_RELEASE}")
         
         if(TARGET zlibstatic)
             set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -499,101 +525,109 @@ if(NOT ZLIB_FOUND)
     endif()
 endif()
 
-if(NOT OpenSSL_FOUND)
-    find_package(OpenSSL REQUIRED)
+if(NOT LAUNCHER_FUZZ_ONLY)
+    if(NOT OpenSSL_FOUND)
+        find_package(OpenSSL REQUIRED)
+    endif()
+    find_package(Qt6 REQUIRED COMPONENTS Core CoreTools Widgets Concurrent Network Test Xml Core5Compat NetworkAuth OpenGL)
+    find_package(Qt6 COMPONENTS DBus)
+    list(APPEND Launcher_QT_DBUS Qt6::DBus)
+    list(APPEND Launcher_QT_LIBS Qt6::Core5Compat)
 endif()
-find_package(Qt6 REQUIRED COMPONENTS Core CoreTools Widgets Concurrent Network Test Xml Core5Compat NetworkAuth OpenGL)
-find_package(Qt6 COMPONENTS DBus)
-list(APPEND Launcher_QT_DBUS Qt6::DBus)
-list(APPEND Launcher_QT_LIBS Qt6::Core5Compat)
+# Note: Qt6 removed from fuzzer builds - fuzz_qjson_parse disabled due to glib dependency issues
 
 # System / Package Manager Provided Libs - Using bundled versions
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/bzip2/CMakeLists.txt")
-    message(STATUS "Using bundled bzip2")
-    set(ENABLE_LIB_ONLY ON CACHE BOOL "" FORCE)
-    set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-    set(ENABLE_DOCS OFF CACHE BOOL "" FORCE)
-    set(ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
-    # Disable shared library and use static library for consistent linking
-    set(ENABLE_SHARED_LIB OFF CACHE BOOL "" FORCE)
-    set(ENABLE_STATIC_LIB ON CACHE BOOL "" FORCE)
-    # Disable instrumentation for external dependencies to avoid linker issues
-    string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-    string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    add_subdirectory(bzip2)
-    set(BZIP2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bzip2" CACHE PATH "" FORCE)
-else()
-    message(FATAL_ERROR "Bundled bzip2 not found")
-endif()
+if(NOT LAUNCHER_FUZZ_ONLY)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/bzip2/CMakeLists.txt")
+        message(STATUS "Using bundled bzip2")
+        set(ENABLE_LIB_ONLY ON CACHE BOOL "" FORCE)
+        set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+        set(ENABLE_DOCS OFF CACHE BOOL "" FORCE)
+        set(ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+        # Disable shared library and use static library for consistent linking
+        set(ENABLE_SHARED_LIB OFF CACHE BOOL "" FORCE)
+        set(ENABLE_STATIC_LIB ON CACHE BOOL "" FORCE)
+        # Disable instrumentation for external dependencies to avoid linker issues
+        string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+        string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        add_subdirectory(bzip2)
+        set(BZIP2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bzip2" CACHE PATH "" FORCE)
+    else()
+        message(FATAL_ERROR "Bundled bzip2 not found")
+    endif()
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/quazip/CMakeLists.txt")
-    message(STATUS "Using bundled QuaZip")
-    set(QUAZIP_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-    set(QUAZIP_INSTALL ON CACHE BOOL "" FORCE)
-    set(QUAZIP_INSTALL_CMAKE_CONFIG OFF CACHE BOOL "" FORCE)
-    set(QUAZIP_BZIP2 ON CACHE BOOL "" FORCE)
-    set(QUAZIP_FETCH_LIBS OFF CACHE BOOL "" FORCE)
-    set(QUAZIP_FORCE_FETCH_LIBS OFF CACHE BOOL "" FORCE)
-    # Disable instrumentation for external dependencies to avoid linker issues
-    string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-    string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    add_subdirectory(quazip)
-else()
-    message(FATAL_ERROR "Bundled QuaZip not found")
-endif()
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/quazip/CMakeLists.txt")
+        message(STATUS "Using bundled QuaZip")
+        set(QUAZIP_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+        set(QUAZIP_INSTALL ON CACHE BOOL "" FORCE)
+        set(QUAZIP_INSTALL_CMAKE_CONFIG OFF CACHE BOOL "" FORCE)
+        set(QUAZIP_BZIP2 ON CACHE BOOL "" FORCE)
+        set(QUAZIP_FETCH_LIBS OFF CACHE BOOL "" FORCE)
+        set(QUAZIP_FORCE_FETCH_LIBS OFF CACHE BOOL "" FORCE)
+        # Disable instrumentation for external dependencies to avoid linker issues
+        string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+        string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        add_subdirectory(quazip)
+    else()
+        message(FATAL_ERROR "Bundled QuaZip not found")
+    endif()
 
-# tomlplusplus - Using bundled fork
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tomlplusplus/CMakeLists.txt")
-    message(STATUS "Using bundled tomlplusplus")
-    add_subdirectory(tomlplusplus)
-else()
-    find_package(tomlplusplus 3.2.0 QUIET)
-    if(NOT tomlplusplus_FOUND)
-        message(FATAL_ERROR "tomlplusplus not found. tomlplusplus/ directory is missing.")
+    # tomlplusplus - Using bundled fork
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tomlplusplus/CMakeLists.txt")
+        message(STATUS "Using bundled tomlplusplus")
+        add_subdirectory(tomlplusplus)
+    else()
+        find_package(tomlplusplus 3.2.0 QUIET)
+        if(NOT tomlplusplus_FOUND)
+            message(FATAL_ERROR "tomlplusplus not found. tomlplusplus/ directory is missing.")
+        endif()
     endif()
 endif()
 
 # cmark - Using bundled or system library
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmark/CMakeLists.txt")
-    message(STATUS "Using bundled cmark")
-    set(CMARK_TESTS OFF CACHE BOOL "" FORCE)
-    set(CMARK_SHARED ON CACHE BOOL "" FORCE)
-    add_subdirectory(cmark)
-    if(TARGET cmark AND NOT TARGET cmark::cmark)
-        add_library(cmark::cmark ALIAS cmark)
-    endif()
-else()
-    find_library(CMARK_LIB NAMES cmark)
-    find_path(CMARK_INC NAMES cmark.h)
-    if(CMARK_LIB AND CMARK_INC)
-        message(STATUS "Found system cmark")
-        if(NOT TARGET cmark::cmark)
-            add_library(cmark::cmark UNKNOWN IMPORTED)
-            set_target_properties(cmark::cmark PROPERTIES 
-                IMPORTED_LOCATION "${CMARK_LIB}"
-                INTERFACE_INCLUDE_DIRECTORIES "${CMARK_INC}")
+if(NOT LAUNCHER_FUZZ_ONLY)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmark/CMakeLists.txt")
+        message(STATUS "Using bundled cmark")
+        set(CMARK_TESTS OFF CACHE BOOL "" FORCE)
+        set(CMARK_SHARED ON CACHE BOOL "" FORCE)
+        add_subdirectory(cmark)
+        if(TARGET cmark AND NOT TARGET cmark::cmark)
+            add_library(cmark::cmark ALIAS cmark)
         endif()
     else()
-        message(FATAL_ERROR "cmark not found. cmark/ directory is missing and system cmark not available.")
+        find_library(CMARK_LIB NAMES cmark)
+        find_path(CMARK_INC NAMES cmark.h)
+        if(CMARK_LIB AND CMARK_INC)
+            message(STATUS "Found system cmark")
+            if(NOT TARGET cmark::cmark)
+                add_library(cmark::cmark UNKNOWN IMPORTED)
+                set_target_properties(cmark::cmark PROPERTIES 
+                    IMPORTED_LOCATION "${CMARK_LIB}"
+                    INTERFACE_INCLUDE_DIRECTORIES "${CMARK_INC}")
+            endif()
+        else()
+            message(FATAL_ERROR "cmark not found. cmark/ directory is missing and system cmark not available.")
+        endif()
     endif()
 endif()
 
-find_package(PkgConfig QUIET)
-if(PkgConfig_FOUND)
-    pkg_check_modules(QRENCODE IMPORTED_TARGET libqrencode)
-endif()
+if(NOT LAUNCHER_FUZZ_ONLY)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(QRENCODE IMPORTED_TARGET libqrencode)
+    endif()
 
-if(TARGET PkgConfig::QRENCODE)
-    add_library(qrcodegenerator ALIAS PkgConfig::QRENCODE)
-else()
-    find_library(QRENCODE_LIB NAMES qrencode libqrencode)
-    find_path(QRENCODE_INC NAMES qrencode.h)
-    if(QRENCODE_LIB AND QRENCODE_INC)
-        add_library(qrcodegenerator UNKNOWN IMPORTED)
-        set_target_properties(qrcodegenerator PROPERTIES
-            IMPORTED_LOCATION "${QRENCODE_LIB}"
-            INTERFACE_INCLUDE_DIRECTORIES "${QRENCODE_INC}")
+    if(TARGET PkgConfig::QRENCODE)
+        add_library(qrcodegenerator ALIAS PkgConfig::QRENCODE)
     else()
+        find_library(QRENCODE_LIB NAMES qrencode libqrencode)
+        find_path(QRENCODE_INC NAMES qrencode.h)
+        if(QRENCODE_LIB AND QRENCODE_INC)
+            add_library(qrcodegenerator UNKNOWN IMPORTED)
+            set_target_properties(qrcodegenerator PROPERTIES
+                IMPORTED_LOCATION "${QRENCODE_LIB}"
+                INTERFACE_INCLUDE_DIRECTORIES "${QRENCODE_INC}")
+        else()
         message(STATUS "Using bundled libqrencode")
         # Set CMake policy version to avoid version compatibility error
         set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
@@ -643,15 +677,20 @@ else()
         if(NOT DEFINED QRENCODE_INC OR QRENCODE_INC STREQUAL "")
             set(QRENCODE_INC "${CMAKE_CURRENT_SOURCE_DIR}/libqrencode;${CMAKE_CURRENT_SOURCE_DIR}/libqrencode/include;${CMAKE_CURRENT_SOURCE_DIR}/libqrencode/lib" CACHE PATH "QRENCODE include dir" FORCE)
         endif()
+        endif()
     endif()
 endif()
 
-include(ECMQtDeclareLoggingCategory)
+if(NOT LAUNCHER_FUZZ_ONLY)
+    include(ECMQtDeclareLoggingCategory)
+endif()
 
 ####################################### Program Info #######################################
 
-set(Launcher_APP_BINARY_NAME "projtlauncher" CACHE STRING "Name of the Launcher binary")
-add_subdirectory(program_info)
+if(NOT LAUNCHER_FUZZ_ONLY)
+    set(Launcher_APP_BINARY_NAME "projtlauncher" CACHE STRING "Name of the Launcher binary")
+    add_subdirectory(program_info)
+endif()
 
 ####################################### Install layout #######################################
 
@@ -686,8 +725,8 @@ if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND APPLE)
     set(MACOSX_BUNDLE_LONG_VERSION_STRING "${Launcher_VERSION_NAME}")
     set(MACOSX_BUNDLE_ICON_FILE ${Launcher_Name}.icns)
     set(MACOSX_BUNDLE_COPYRIGHT "${Launcher_Copyright_Mac}")
-    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "v55ZWWD6QlPoXGV6VLzOTZxZUggWeE51X8cRQyQh6vA=" CACHE STRING "Public key for Sparkle update feed")
-    set(MACOSX_SPARKLE_UPDATE_FEED_URL "https://projtlauncher.projecttick.org.tr/feed/appcast.xml" CACHE STRING "URL for Sparkle update feed")
+    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "+VhpenS1HNf0LFA0vLxdxczWXdW5AntvE5AWPlGznbc=" CACHE STRING "Public key for Sparkle update feed")
+    set(MACOSX_SPARKLE_UPDATE_FEED_URL "https://projecttick.org.tr/projtlauncher/feed/appcast.xml" CACHE STRING "URL for Sparkle update feed")
 
     set(MACOSX_SPARKLE_DOWNLOAD_URL "https://github.com/sparkle-project/Sparkle/releases/download/2.8.0/Sparkle-2.8.0.tar.xz" CACHE STRING "URL to Sparkle release archive")
     set(MACOSX_SPARKLE_SHA256 "fd5681ee92bf238aaac2d08214ceaf0cc8976e452d7f882d80bac1e61581f3b1" CACHE STRING "SHA256 checksum for Sparkle release archive")
@@ -764,7 +803,9 @@ else()
     find_package(libnbt++ REQUIRED)
 endif()
 
-add_subdirectory(./systeminfo) # system information library
+if(NOT LAUNCHER_FUZZ_ONLY)
+    add_subdirectory(./systeminfo) # system information library
+endif()
 if(NOT LAUNCHER_FUZZ_ONLY)
     add_subdirectory(./launcherjava) # java based launcher part for Minecraft
     add_subdirectory(./javacheck) # java compatibility checker
@@ -777,7 +818,9 @@ endif()
 
 ############################### Built Artifacts ###############################
 
-add_subdirectory(buildconfig)
+if(NOT LAUNCHER_FUZZ_ONLY)
+    add_subdirectory(buildconfig)
+endif()
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
@@ -786,4 +829,7 @@ if(BUILD_FUZZERS)
     add_subdirectory(fuzz EXCLUDE_FROM_ALL)
 endif()
 # NOTE: this must always be last to appease the CMake deity of quirky install command evaluation order.
-add_subdirectory(launcher)
+if(NOT LAUNCHER_FUZZ_ONLY)
+    add_subdirectory(launcher)
+endif()
+

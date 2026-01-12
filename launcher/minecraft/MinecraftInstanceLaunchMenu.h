@@ -28,7 +28,8 @@ class MinecraftInstance;
  * Helper class to populate launch menu for Minecraft instances.
  * This separates UI code from the core MinecraftInstance class.
  */
-class MinecraftInstanceLaunchMenu {
-   public:
-    static void populate(MinecraftInstance* instance, QMenu* menu);
+class MinecraftInstanceLaunchMenu
+{
+  public:
+	static void populate(MinecraftInstance* instance, QMenu* menu);
 };

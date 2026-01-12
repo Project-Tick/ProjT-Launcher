@@ -46,26 +46,27 @@
 #include "launch/LaunchTask.h"
 #include "settings/SettingsObject.h"
 
-class GenericProfiler : public BaseProfiler {
-    Q_OBJECT
-   public:
-    GenericProfiler(SettingsObjectPtr settings, InstancePtr instance, QObject* parent = 0);
+class GenericProfiler : public BaseProfiler
+{
+	Q_OBJECT
+  public:
+	GenericProfiler(SettingsObjectPtr settings, InstancePtr instance, QObject* parent = 0);
 
-   protected:
-    void beginProfilingImpl(shared_qobject_ptr<LaunchTask> process);
+  protected:
+	void beginProfilingImpl(shared_qobject_ptr<LaunchTask> process);
 };
 
 GenericProfiler::GenericProfiler(SettingsObjectPtr settings, InstancePtr instance, QObject* parent)
-    : BaseProfiler(settings, instance, parent)
+	: BaseProfiler(settings, instance, parent)
 {}
 
 void GenericProfiler::beginProfilingImpl(shared_qobject_ptr<LaunchTask> process)
 {
-    emit readyToLaunch(tr("Started process: %1").arg(process->pid()));
+	emit readyToLaunch(tr("Started process: %1").arg(process->pid()));
 }
 
 BaseExternalTool* GenericProfilerFactory::createTool(InstancePtr instance, QObject* parent)
 {
-    return new GenericProfiler(globalSettings, instance, parent);
+	return new GenericProfiler(globalSettings, instance, parent);
 }
 #include "GenericProfiler.moc"

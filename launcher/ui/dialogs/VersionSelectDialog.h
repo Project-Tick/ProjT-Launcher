@@ -68,37 +68,38 @@ class BaseVersionList;
 #include "BaseVersion.h"
 #include "BaseVersionList.h"
 
-class VersionSelectDialog : public QDialog {
-    Q_OBJECT
-   public:
-    VersionSelectDialog(BaseVersionList* vlist, QString title, QWidget* parent = 0, bool cancelable = true);
+class VersionSelectDialog : public QDialog
+{
+	Q_OBJECT
+  public:
+	VersionSelectDialog(BaseVersionList* vlist, QString title, QWidget* parent = 0, bool cancelable = true);
 
-    int exec() override;
-    BaseVersion::Ptr selectedVersion() const;
-    void setResizeOn(int column);
-    void setEmptyString(QString emptyString);
-    void setEmptyErrorString(QString emptyErrorString);
-    void setCurrentVersion(const QString& version);
-    void selectRecommended();
+	int exec() override;
+	BaseVersion::Ptr selectedVersion() const;
+	void setResizeOn(int column);
+	void setEmptyString(QString emptyString);
+	void setEmptyErrorString(QString emptyErrorString);
+	void setCurrentVersion(const QString& version);
+	void selectRecommended();
 
-    void setExactFilter(BaseVersionList::ModelRoles role, QString filter);
-    void setExactIfPresentFilter(BaseVersionList::ModelRoles role, QString filter);
-    void setFuzzyFilter(BaseVersionList::ModelRoles role, QString filter);
+	void setExactFilter(BaseVersionList::ModelRoles role, QString filter);
+	void setExactIfPresentFilter(BaseVersionList::ModelRoles role, QString filter);
+	void setFuzzyFilter(BaseVersionList::ModelRoles role, QString filter);
 
-   public slots:
-    virtual void retranslate();
+  public slots:
+	virtual void retranslate();
 
-   private slots:
-    void on_refreshButton_clicked();
+  private slots:
+	void on_refreshButton_clicked();
 
-   private:
-    QVBoxLayout* m_verticalLayout;
-    QHBoxLayout* m_horizontalLayout;
-    VersionSelectWidget* m_versionWidget;
-    QPushButton* m_refreshButton;
-    QDialogButtonBox* m_buttonBox;
-    BaseVersionList* m_vlist = nullptr;
-    QString m_currentVersion;
-    QString m_title;  // Added member to store the title
-    int resizeOnColumn = -1;
+  private:
+	QVBoxLayout* m_verticalLayout;
+	QHBoxLayout* m_horizontalLayout;
+	VersionSelectWidget* m_versionWidget;
+	QPushButton* m_refreshButton;
+	QDialogButtonBox* m_buttonBox;
+	BaseVersionList* m_vlist = nullptr;
+	QString m_currentVersion;
+	QString m_title; // Added member to store the title
+	int resizeOnColumn = -1;
 };

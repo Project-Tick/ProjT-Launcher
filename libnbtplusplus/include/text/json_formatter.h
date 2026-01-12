@@ -20,25 +20,29 @@
 #ifndef JSON_FORMATTER_H_INCLUDED
 #define JSON_FORMATTER_H_INCLUDED
 
+#include "tagfwd.h"
 #include <ostream>
 #include "nbt_export.h"
-#include "tagfwd.h"
 
-namespace nbt {
-namespace text {
+namespace nbt
+{
+	namespace text
+	{
 
-/**
- * @brief Prints tags in a JSON-like syntax into a stream
- *
- * @todo Make it configurable and able to produce actual standard-conformant JSON
- */
-class NBT_EXPORT json_formatter {
-   public:
-    json_formatter() {}
-    void print(std::ostream& os, const tag& t) const;
-};
+		/**
+		 * @brief Prints tags in a JSON-like syntax into a stream
+		 *
+		 * @todo Make it configurable and able to produce actual standard-conformant JSON
+		 */
+		class NBT_EXPORT json_formatter
+		{
+		  public:
+			json_formatter()
+			{}
+			void print(std::ostream& os, const tag& t) const;
+		};
 
-}  // namespace text
-}  // namespace nbt
+	}
+}
 
-#endif  // JSON_FORMATTER_H_INCLUDED
+#endif // JSON_FORMATTER_H_INCLUDED

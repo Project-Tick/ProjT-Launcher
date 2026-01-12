@@ -67,271 +67,319 @@
 #include <QIcon>
 #include <QUrl>
 
-Technic::ListModel::ListModel(QObject* parent) : QAbstractListModel(parent) {}
+Technic::ListModel::ListModel(QObject* parent) : QAbstractListModel(parent)
+{}
 
-Technic::ListModel::~ListModel() {}
+Technic::ListModel::~ListModel()
+{}
 
 QVariant Technic::ListModel::data(const QModelIndex& index, int role) const
 {
-    int pos = index.row();
-    if (pos >= modpacks.size() || pos < 0 || !index.isValid()) {
-        return QString("INVALID INDEX %1").arg(pos);
-    }
+	int pos = index.row();
+	if (pos >= modpacks.size() || pos < 0 || !index.isValid())
+	{
+		return QString("INVALID INDEX %1").arg(pos);
+	}
 
-    Modpack pack = modpacks.at(pos);
-    switch (role) {
-        case Qt::ToolTipRole: {
-            if (pack.description.length() > 100) {
-                // some magic to prevent to long tooltips and replace html linebreaks
-                QString edit = pack.description.left(97);
-                edit = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
-                return edit;
-            }
-            return pack.description;
-        }
-        case Qt::DecorationRole: {
-            if (m_logoMap.contains(pack.logoName)) {
-                return (m_logoMap.value(pack.logoName));
-            }
-            QIcon icon = QIcon::fromTheme("screenshot-placeholder");
-            ((ListModel*)this)->requestLogo(pack.logoName, pack.logoUrl);
-            return icon;
-        }
-        case Qt::UserRole: {
-            QVariant v;
-            v.setValue(pack);
-            return v;
-        }
-        case Qt::DisplayRole:
-            return pack.name;
-        case Qt::SizeHintRole:
-            return QSize(0, 58);
-        // Custom data
-        case UserDataTypes::TITLE:
-            return pack.name;
-        case UserDataTypes::DESCRIPTION:
-            return pack.description;
-        case UserDataTypes::INSTALLED:
-            return false;
-        default:
-            break;
-    }
+	Modpack pack = modpacks.at(pos);
+	switch (role)
+	{
+		case Qt::ToolTipRole:
+		{
+			if (pack.description.length() > 100)
+			{
+				// some magic to prevent to long tooltips and replace html linebreaks
+				QString edit = pack.description.left(97);
+				edit		 = edit.left(edit.lastIndexOf("<br>")).left(edit.lastIndexOf(" ")).append("...");
+				return edit;
+			}
+			return pack.description;
+		}
+		case Qt::DecorationRole:
+		{
+			if (m_logoMap.contains(pack.logoName))
+			{
+				return (m_logoMap.value(pack.logoName));
+			}
+			QIcon icon = QIcon::fromTheme("screenshot-placeholder");
+			((ListModel*)this)->requestLogo(pack.logoName, pack.logoUrl);
+			return icon;
+		}
+		case Qt::UserRole:
+		{
+			QVariant v;
+			v.setValue(pack);
+			return v;
+		}
+		case Qt::DisplayRole: return pack.name;
+		case Qt::SizeHintRole: return QSize(0, 58);
+		// Custom data
+		case UserDataTypes::TITLE: return pack.name;
+		case UserDataTypes::DESCRIPTION: return pack.description;
+		case UserDataTypes::INSTALLED: return false;
+		default: break;
+	}
 
-    return {};
+	return {};
 }
 
 int Technic::ListModel::columnCount(const QModelIndex& parent) const
 {
-    return parent.isValid() ? 0 : 1;
+	return parent.isValid() ? 0 : 1;
 }
 
 int Technic::ListModel::rowCount(const QModelIndex& parent) const
 {
-    return parent.isValid() ? 0 : modpacks.size();
+	return parent.isValid() ? 0 : modpacks.size();
 }
 
 void Technic::ListModel::searchWithTerm(const QString& term)
 {
-    if (currentSearchTerm == term && currentSearchTerm.isNull() == term.isNull()) {
-        return;
-    }
-    currentSearchTerm = term;
-    if (hasActiveSearchJob()) {
-        jobPtr->abort();
-        searchState = ResetRequested;
-        return;
-    }
+	if (currentSearchTerm == term && currentSearchTerm.isNull() == term.isNull())
+	{
+		return;
+	}
+	currentSearchTerm = term;
+	if (hasActiveSearchJob())
+	{
+		jobPtr->abort();
+		searchState = ResetRequested;
+		return;
+	}
 
-    beginResetModel();
-    modpacks.clear();
-    endResetModel();
-    searchState = None;
+	beginResetModel();
+	modpacks.clear();
+	endResetModel();
+	searchState = None;
 
-    performSearch();
+	performSearch();
 }
 
 void Technic::ListModel::performSearch()
 {
-    if (hasActiveSearchJob())
-        return;
+	if (hasActiveSearchJob())
+		return;
 
-    auto netJob = makeShared<NetJob>("Technic::Search", APPLICATION->network());
-    QString searchUrl = "";
-    if (currentSearchTerm.isEmpty()) {
-        searchUrl = QString("%1trending?build=%2").arg(BuildConfig.TECHNIC_API_BASE_URL, BuildConfig.TECHNIC_API_BUILD);
-        searchMode = List;
-    } else if (currentSearchTerm.startsWith("http://api.technicpack.net/modpack/")) {
-        searchUrl = QString("https://%1?build=%2").arg(currentSearchTerm.mid(7), BuildConfig.TECHNIC_API_BUILD);
-        searchMode = Single;
-    } else if (currentSearchTerm.startsWith("https://api.technicpack.net/modpack/")) {
-        searchUrl = QString("%1?build=%2").arg(currentSearchTerm, BuildConfig.TECHNIC_API_BUILD);
-        searchMode = Single;
-    } else if (currentSearchTerm.startsWith("#")) {
-        searchUrl = QString("https://api.technicpack.net/modpack/%1?build=%2").arg(currentSearchTerm.mid(1), BuildConfig.TECHNIC_API_BUILD);
-        searchMode = Single;
-    } else {
-        searchUrl =
-            QString("%1search?build=%2&q=%3").arg(BuildConfig.TECHNIC_API_BASE_URL, BuildConfig.TECHNIC_API_BUILD, currentSearchTerm);
-        searchMode = List;
-    }
-    auto clientId = APPLICATION->settings()->get("TechnicClientID").toString();
-    if (!clientId.isEmpty()) {
-        searchUrl += "?cid=" + clientId;
-    }
-    netJob->addNetAction(Net::ApiDownload::makeByteArray(QUrl(searchUrl), response));
-    jobPtr = netJob;
-    jobPtr->start();
-    connect(netJob.get(), &NetJob::succeeded, this, &ListModel::searchRequestFinished);
-    connect(netJob.get(), &NetJob::failed, this, &ListModel::searchRequestFailed);
+	auto netJob		  = makeShared<NetJob>("Technic::Search", APPLICATION->network());
+	QString searchUrl = "";
+	if (currentSearchTerm.isEmpty())
+	{
+		searchUrl = QString("%1trending?build=%2").arg(BuildConfig.TECHNIC_API_BASE_URL, BuildConfig.TECHNIC_API_BUILD);
+		searchMode = List;
+	}
+	else if (currentSearchTerm.startsWith("http://api.technicpack.net/modpack/"))
+	{
+		searchUrl  = QString("https://%1?build=%2").arg(currentSearchTerm.mid(7), BuildConfig.TECHNIC_API_BUILD);
+		searchMode = Single;
+	}
+	else if (currentSearchTerm.startsWith("https://api.technicpack.net/modpack/"))
+	{
+		searchUrl  = QString("%1?build=%2").arg(currentSearchTerm, BuildConfig.TECHNIC_API_BUILD);
+		searchMode = Single;
+	}
+	else if (currentSearchTerm.startsWith("#"))
+	{
+		searchUrl = QString("https://api.technicpack.net/modpack/%1?build=%2")
+						.arg(currentSearchTerm.mid(1), BuildConfig.TECHNIC_API_BUILD);
+		searchMode = Single;
+	}
+	else
+	{
+		searchUrl = QString("%1search?build=%2&q=%3")
+						.arg(BuildConfig.TECHNIC_API_BASE_URL, BuildConfig.TECHNIC_API_BUILD, currentSearchTerm);
+		searchMode = List;
+	}
+	auto clientId = APPLICATION->settings()->get("TechnicClientID").toString();
+	if (!clientId.isEmpty())
+	{
+		searchUrl += "?cid=" + clientId;
+	}
+	netJob->addNetAction(Net::ApiDownload::makeByteArray(QUrl(searchUrl), response));
+	jobPtr = netJob;
+	jobPtr->start();
+	connect(netJob.get(), &NetJob::succeeded, this, &ListModel::searchRequestFinished);
+	connect(netJob.get(), &NetJob::failed, this, &ListModel::searchRequestFailed);
 }
 
 void Technic::ListModel::searchRequestFinished()
 {
-    jobPtr.reset();
+	jobPtr.reset();
 
-    QJsonParseError parse_error;
-    QJsonDocument doc = QJsonDocument::fromJson(*response, &parse_error);
-    if (parse_error.error != QJsonParseError::NoError) {
-        qWarning() << "Error while parsing JSON response from Technic at " << parse_error.offset
-                   << " reason: " << parse_error.errorString();
-        qWarning() << *response;
-        return;
-    }
+	QJsonParseError parse_error;
+	QJsonDocument doc = QJsonDocument::fromJson(*response, &parse_error);
+	if (parse_error.error != QJsonParseError::NoError)
+	{
+		qWarning() << "Error while parsing JSON response from Technic at " << parse_error.offset
+				   << " reason: " << parse_error.errorString();
+		qWarning() << *response;
+		return;
+	}
 
-    QList<Modpack> newList;
-    try {
-        auto root = Json::requireObject(doc);
+	QList<Modpack> newList;
+	try
+	{
+		auto root = Json::requireObject(doc);
 
-        switch (searchMode) {
-            case List: {
-                auto objs = Json::requireArray(root, "modpacks");
-                for (auto technicPack : objs) {
-                    Modpack pack;
-                    auto technicPackObject = Json::requireObject(technicPack);
-                    pack.name = Json::requireString(technicPackObject, "name");
-                    pack.slug = Json::requireString(technicPackObject, "slug");
-                    if (pack.slug == "vanilla")
-                        continue;
+		switch (searchMode)
+		{
+			case List:
+			{
+				auto objs = Json::requireArray(root, "modpacks");
+				for (auto technicPack : objs)
+				{
+					Modpack pack;
+					auto technicPackObject = Json::requireObject(technicPack);
+					pack.name			   = Json::requireString(technicPackObject, "name");
+					pack.slug			   = Json::requireString(technicPackObject, "slug");
+					if (pack.slug == "vanilla")
+						continue;
 
-                    auto rawURL = Json::ensureString(technicPackObject, "iconUrl", "null");
-                    if (rawURL == "null") {
-                        pack.logoUrl = "null";
-                        pack.logoName = "null";
-                    } else {
-                        pack.logoUrl = rawURL;
-                        pack.logoName = pack.slug + "." + QFileInfo(QUrl(rawURL).fileName()).suffix();
-                    }
-                    pack.broken = false;
-                    newList.append(pack);
-                }
-                break;
-            }
-            case Single: {
-                if (root.contains("error")) {
-                    // Invalid API url
-                    break;
-                }
+					auto rawURL = Json::ensureString(technicPackObject, "iconUrl", "null");
+					if (rawURL == "null")
+					{
+						pack.logoUrl  = "null";
+						pack.logoName = "null";
+					}
+					else
+					{
+						pack.logoUrl  = rawURL;
+						pack.logoName = pack.slug + "." + QFileInfo(QUrl(rawURL).fileName()).suffix();
+					}
+					pack.broken = false;
+					newList.append(pack);
+				}
+				break;
+			}
+			case Single:
+			{
+				if (root.contains("error"))
+				{
+					// Invalid API url
+					break;
+				}
 
-                Modpack pack;
-                pack.name = Json::requireString(root, "displayName");
-                pack.slug = Json::requireString(root, "name");
+				Modpack pack;
+				pack.name = Json::requireString(root, "displayName");
+				pack.slug = Json::requireString(root, "name");
 
-                if (root.contains("icon")) {
-                    auto iconObj = Json::requireObject(root, "icon");
-                    auto iconUrl = Json::requireString(iconObj, "url");
+				if (root.contains("icon"))
+				{
+					auto iconObj = Json::requireObject(root, "icon");
+					auto iconUrl = Json::requireString(iconObj, "url");
 
-                    pack.logoUrl = iconUrl;
-                    pack.logoName = pack.slug + "." + QFileInfo(QUrl(iconUrl).fileName()).suffix();
-                } else {
-                    pack.logoUrl = "null";
-                    pack.logoName = "null";
-                }
+					pack.logoUrl  = iconUrl;
+					pack.logoName = pack.slug + "." + QFileInfo(QUrl(iconUrl).fileName()).suffix();
+				}
+				else
+				{
+					pack.logoUrl  = "null";
+					pack.logoName = "null";
+				}
 
-                pack.broken = false;
-                newList.append(pack);
-                break;
-            }
-        }
-    } catch (const JSONValidationError& err) {
-        qCritical() << "Couldn't parse technic search results:" << err.cause();
-        return;
-    }
-    searchState = Finished;
+				pack.broken = false;
+				newList.append(pack);
+				break;
+			}
+		}
+	}
+	catch (const JSONValidationError& err)
+	{
+		qCritical() << "Couldn't parse technic search results:" << err.cause();
+		return;
+	}
+	searchState = Finished;
 
-    // When you have a Qt build with assertions turned on, proceeding here will abort the application
-    if (newList.size() == 0)
-        return;
+	// When you have a Qt build with assertions turned on, proceeding here will abort the application
+	if (newList.size() == 0)
+		return;
 
-    beginInsertRows(QModelIndex(), modpacks.size(), modpacks.size() + newList.size() - 1);
-    modpacks.append(newList);
-    endInsertRows();
+	beginInsertRows(QModelIndex(), modpacks.size(), modpacks.size() + newList.size() - 1);
+	modpacks.append(newList);
+	endInsertRows();
 }
 
 void Technic::ListModel::getLogo(const QString& logo, const QString& logoUrl, Technic::LogoCallback callback)
 {
-    if (m_logoMap.contains(logo)) {
-        callback(APPLICATION->metacache()->resolveEntry("TechnicPacks", QString("logos/%1").arg(logo))->getFullPath());
-    } else {
-        requestLogo(logo, logoUrl);
-    }
+	if (m_logoMap.contains(logo))
+	{
+		callback(APPLICATION->metacache()->resolveEntry("TechnicPacks", QString("logos/%1").arg(logo))->getFullPath());
+	}
+	else
+	{
+		requestLogo(logo, logoUrl);
+	}
 }
 
 void Technic::ListModel::searchRequestFailed()
 {
-    jobPtr.reset();
+	jobPtr.reset();
 
-    if (searchState == ResetRequested) {
-        beginResetModel();
-        modpacks.clear();
-        endResetModel();
+	if (searchState == ResetRequested)
+	{
+		beginResetModel();
+		modpacks.clear();
+		endResetModel();
 
-        performSearch();
-    } else {
-        searchState = Finished;
-    }
+		performSearch();
+	}
+	else
+	{
+		searchState = Finished;
+	}
 }
 
 void Technic::ListModel::logoLoaded(QString logo, QString out)
 {
-    m_loadingLogos.removeAll(logo);
-    m_logoMap.insert(logo, QIcon(out));
-    for (int i = 0; i < modpacks.size(); i++) {
-        if (modpacks[i].logoName == logo) {
-            emit dataChanged(createIndex(i, 0), createIndex(i, 0), { Qt::DecorationRole });
-        }
-    }
+	m_loadingLogos.removeAll(logo);
+	m_logoMap.insert(logo, QIcon(out));
+	for (int i = 0; i < modpacks.size(); i++)
+	{
+		if (modpacks[i].logoName == logo)
+		{
+			emit dataChanged(createIndex(i, 0), createIndex(i, 0), { Qt::DecorationRole });
+		}
+	}
 }
 
 void Technic::ListModel::logoFailed(QString logo)
 {
-    m_failedLogos.append(logo);
-    m_loadingLogos.removeAll(logo);
+	m_failedLogos.append(logo);
+	m_loadingLogos.removeAll(logo);
 }
 
 void Technic::ListModel::requestLogo(QString logo, QString url)
 {
-    if (m_loadingLogos.contains(logo) || m_failedLogos.contains(logo) || logo == "null") {
-        return;
-    }
+	if (m_loadingLogos.contains(logo) || m_failedLogos.contains(logo) || logo == "null")
+	{
+		return;
+	}
 
-    MetaEntryPtr entry = APPLICATION->metacache()->resolveEntry("TechnicPacks", QString("logos/%1").arg(logo));
-    auto job = new NetJob(QString("Technic Icon Download %1").arg(logo), APPLICATION->network());
-    job->setAskRetry(false);
-    job->addNetAction(Net::ApiDownload::makeCached(QUrl(url), entry));
+	MetaEntryPtr entry = APPLICATION->metacache()->resolveEntry("TechnicPacks", QString("logos/%1").arg(logo));
+	auto job		   = new NetJob(QString("Technic Icon Download %1").arg(logo), APPLICATION->network());
+	job->setAskRetry(false);
+	job->addNetAction(Net::ApiDownload::makeCached(QUrl(url), entry));
 
-    auto fullPath = entry->getFullPath();
+	auto fullPath = entry->getFullPath();
 
-    connect(job, &NetJob::succeeded, this, [this, logo, fullPath, job] {
-        job->deleteLater();
-        logoLoaded(logo, fullPath);
-    });
+	connect(job,
+			&NetJob::succeeded,
+			this,
+			[this, logo, fullPath, job]
+			{
+				job->deleteLater();
+				logoLoaded(logo, fullPath);
+			});
 
-    connect(job, &NetJob::failed, this, [this, logo, job] {
-        job->deleteLater();
-        logoFailed(logo);
-    });
+	connect(job,
+			&NetJob::failed,
+			this,
+			[this, logo, job]
+			{
+				job->deleteLater();
+				logoFailed(logo);
+			});
 
-    job->start();
+	job->start();
 
-    m_loadingLogos.append(logo);
+	m_loadingLogos.append(logo);
 }
