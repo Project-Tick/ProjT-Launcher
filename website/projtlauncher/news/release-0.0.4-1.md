@@ -2,7 +2,7 @@
 title: ProjT Launcher Update 0.0.4-1, now available
 description: Our official ProjT Launcher 0.0.4-1 release!
 date: 2026-01-12
-macos_signature: #TODO: Add signature.
+macos_signature: N8Y/c0edGgJumIsjFLW9Wru+ILXMRclImfvwepb3bHa7yS7FKlMiJXx3lFU700Oy8lJgwyhHE/UJqPjf4BEaDQ==
 
 tags:
   - release

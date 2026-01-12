@@ -315,7 +315,7 @@ jobs:
         run: |
           git config --local user.email "gitbot@yongdohyun.org.tr"
           git config --local user.name "Project-Tick-Bot"
-          git add ./website/_data/contributors.json
+          git add ./website/projtlauncher/_data/contributors.json
           git commit -m "chore: Update contributors" || true
 
       - name: Prepare clean state for PR
