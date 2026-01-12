@@ -283,7 +283,7 @@ endif()
 ######## Set URLs ########
 set(Launcher_NEWS_RSS_URL "https://projecttick.org/projtlauncher/feed/feed.xml" CACHE STRING "URL to fetch ProjT Launcher's news RSS feed from.")
 set(Launcher_NEWS_OPEN_URL "https://projecttick.org/projtlauncher/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
-set(Launcher_HELP_URL "https://projecttick.org/projtlauncher/wiki/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
+set(Launcher_HELP_URL "https://projecttick.org/handbook/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
 set(Launcher_LOGIN_CALLBACK_URL "https://projecttick.org/projtlauncher/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
 set(Launcher_FMLLIBS_BASE_URL "https://files.yongdohyun.org/fmllibs/" CACHE STRING "URL for FML Libraries.")
 
@@ -725,7 +725,7 @@ if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND APPLE)
     set(MACOSX_BUNDLE_LONG_VERSION_STRING "${Launcher_VERSION_NAME}")
     set(MACOSX_BUNDLE_ICON_FILE ${Launcher_Name}.icns)
     set(MACOSX_BUNDLE_COPYRIGHT "${Launcher_Copyright_Mac}")
-    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "+VhpenS1HNf0LFA0vLxdxczWXdW5AntvE5AWPlGznbc=" CACHE STRING "Public key for Sparkle update feed")
+    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "Lju8CtOHHDmev7KkEl3ks/6wWkG1mlZ0G89XIG8hNLQ=" CACHE STRING "Public key for Sparkle update feed")
     set(MACOSX_SPARKLE_UPDATE_FEED_URL "https://projecttick.org/projtlauncher/feed/appcast.xml" CACHE STRING "URL for Sparkle update feed")
 
     set(MACOSX_SPARKLE_DOWNLOAD_URL "https://github.com/sparkle-project/Sparkle/releases/download/2.8.0/Sparkle-2.8.0.tar.xz" CACHE STRING "URL to Sparkle release archive")
