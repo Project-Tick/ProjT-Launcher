@@ -737,7 +737,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14-xlarge
+          - os: macos-14
             artifact-name: macOS
             cmake-preset: macos_universal
             macosx-deployment-target: 12.0
