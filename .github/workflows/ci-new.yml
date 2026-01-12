@@ -116,6 +116,7 @@ jobs:
     with:
       ref: ${{ github.sha }}
       build-type: Debug
+    secrets: inherit
       
   build-projt-launcher-release:
     name: Build ProjT Launcher ( RELEASE )
