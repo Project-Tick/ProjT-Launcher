@@ -112,7 +112,7 @@ hero:
     <p>Download ProjT Launcher and take control of your Minecraft experience.</p>
     <div class="cta-actions">
       <a href="{{ '/download?from=button' | url }}" class="btn btn-white btn-lg"><i class="fa fa-download"></i> Download Now</a>
-      <a href="{{ '/wiki/' | url }}" class="btn btn-outline btn-lg">Read the Docs</a>
+      <a href="{{ '/projtlauncher/wiki/' | url }}" class="btn btn-outline btn-lg">Read the Docs</a>
     </div>
   </div>
 </section>
