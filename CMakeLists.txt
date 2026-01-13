@@ -283,15 +283,15 @@ endif()
 ######## Set URLs ########
 set(Launcher_NEWS_RSS_URL "https://projecttick.org/projtlauncher/feed/feed.xml" CACHE STRING "URL to fetch ProjT Launcher's news RSS feed from.")
 set(Launcher_NEWS_OPEN_URL "https://projecttick.org/projtlauncher/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
-set(Launcher_HELP_URL "https://projecttick.org/handbook/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
+set(Launcher_HELP_URL "https://projecttick.org/handbook/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
 set(Launcher_LOGIN_CALLBACK_URL "https://projecttick.org/projtlauncher/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
-set(Launcher_FMLLIBS_BASE_URL "https://files.yongdohyun.org/fmllibs/" CACHE STRING "URL for FML Libraries.")
+set(Launcher_FMLLIBS_BASE_URL "https://files.projecttick.org/fmllibs/" CACHE STRING "URL for FML Libraries.")
 
 ######## Set version numbers ########
 set(Launcher_VERSION_MAJOR 0)
 set(Launcher_VERSION_MINOR 0)
 set(Launcher_VERSION_PATCH 4)
-set(Launcher_VERSION_TWEAK 1)
+set(Launcher_VERSION_TWEAK 2)
 
 set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.${Launcher_VERSION_TWEAK}")
 set(Launcher_VERSION_NAME4 "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.${Launcher_VERSION_TWEAK}")

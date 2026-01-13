@@ -9,7 +9,7 @@ on:
         required: true
         type: string
       is-release:
-        required: false
+        required: true
         type: string
     secrets:
       LINUX_GPG_KEY:
@@ -225,18 +225,3 @@ jobs:
             cmark-${{ env.VERSION }}.zip.asc
             cmark-${{ env.VERSION }}.tar.gz.asc
             cmark-${{ env.VERSION }}.tar.xz.asc
-
-  winget:
-    name: Winget
-    if: inputs.is-release == 'true'
-    needs: create-release
-    runs-on: windows-latest
-
-    steps:
-      - name: Publish on Winget
-        uses: vedantmgoyal2009/winget-releaser@19e706d4c9121098010096f9c495a70a7518b30f
-        with:
-          identifier: ProjectTick.ProjTLauncher
-          version: ${{ github.event.release.tag_name }}
-          installers-regex: 'ProjTLauncher-Windows-MSVC(:?-arm64|-Legacy)?-Setup-.+\.exe$'
-          token: ${{ secrets.WINGET_TOKEN }}

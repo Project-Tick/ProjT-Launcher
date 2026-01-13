@@ -1458,7 +1458,13 @@ int ProjTUpdaterApp::parseReleasePage(const QByteArray* response)
 			release.draft		  = Json::requireBoolean(release_obj, "draft");
 			release.prerelease	  = Json::requireBoolean(release_obj, "prerelease");
 			release.body		  = Json::ensureString(release_obj, "body");
-			release.version		  = Version(release.tag_name);
+
+			auto normalized_tag = release.tag_name;
+			if (normalized_tag.startsWith(QLatin1Char('v'), Qt::CaseInsensitive))
+			{
+				normalized_tag.remove(0, 1); // drop common tag prefix to avoid false update prompts
+			}
+			release.version = Version(normalized_tag);
 
 			auto release_assets_obj = Json::requireArray(release_obj, "assets");
 			for (auto asset_json : release_assets_obj)
@@ -1508,8 +1514,46 @@ GitHubRelease ProjTUpdaterApp::getLatestRelease()
 
 bool ProjTUpdaterApp::needUpdate(const GitHubRelease& release)
 {
-	auto current_ver =
-		Version(QString("%1.%2.%3").arg(m_projtVersionMajor).arg(m_projtVersionMinor).arg(m_projtVersionPatch));
+	auto normalizeVersionString = [](QString ver)
+	{
+		ver = ver.trimmed();
+		if (ver.startsWith(QLatin1Char('v'), Qt::CaseInsensitive))
+		{
+			ver.remove(0, 1);
+		}
+		return ver;
+	};
+
+	auto appendChannelIfMissing = [](QString ver, const QString& channel)
+	{
+		if (!channel.isEmpty() && channel != "stable" && !ver.contains(QString("-%1").arg(channel)))
+		{
+			ver += QString("-%1").arg(channel);
+		}
+		return ver;
+	};
+
+	auto buildVersionFromConfig = [appendChannelIfMissing]()
+	{
+		QString ver = BuildConfig.versionString();
+		if (BuildConfig.VERSION_CHANNEL != "stable" && BuildConfig.GIT_TAG != ver)
+		{
+			ver = appendChannelIfMissing(ver, BuildConfig.VERSION_CHANNEL);
+		}
+		return ver;
+	};
+
+	QString current_version = m_projtVersion;
+	if (current_version.isEmpty())
+	{
+		current_version = buildVersionFromConfig();
+	}
+
+	// If we parsed a channel from the running binary, ensure it is present.
+	current_version = appendChannelIfMissing(current_version, m_prsimVersionChannel);
+
+	current_version	 = normalizeVersionString(current_version);
+	auto current_ver = Version(current_version);
 	return current_ver < release.version;
 }
 

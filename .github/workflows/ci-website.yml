@@ -39,61 +39,7 @@ jobs:
           pip3 install --user poxy
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # ─────────────────────────────────────────────────────────────
-      # HANDBOOK SYNC: Copy docs/handbook to website-root/handbook
-      # ─────────────────────────────────────────────────────────────
-      - name: Sync handbook from docs to website-root
-        run: |
-          echo "📚 Syncing handbook documentation..."
-          
-          # Create handbook pages directory
-          mkdir -p website-root/handbook/pages
-          
-          # Copy all markdown files from docs/handbook
-          for file in docs/handbook/*.md; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              # Skip README.md (index is separate)
-              if [ "$filename" != "README.md" ]; then
-                # Convert filename to URL-friendly format
-                slug=$(echo "$filename" | sed 's/.md$//' | tr '_' '-')
-                
-                # Create individual page with frontmatter
-                cat > "website-root/handbook/pages/${slug}.md" << EOF
-          ---
-          permalink: /handbook/${slug}/index.html
-          eleventyExcludeFromCollections: true
-          ---
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>${slug} - Developer Handbook</title>
-            <link rel="stylesheet" href="/handbook/style.css">
-          </head>
-          <body>
-            <nav class="nav">
-              <a href="/handbook/">← Handbook</a>
-            </nav>
-            <article class="content">
-          EOF
-                
-                # Convert markdown to simple HTML (basic conversion)
-                cat "$file" >> "website-root/handbook/pages/${slug}.md"
-                
-                cat >> "website-root/handbook/pages/${slug}.md" << EOF
-            </article>
-          </body>
-          </html>
-          EOF
-                
-                echo "  ✓ Synced: $filename → $slug"
-              fi
-            fi
-          done
-          
-          echo "✅ Handbook sync complete"
+      # Handbook pages sync removed — site builds directly from website-root/handbook
 
       - name: Install dependencies & build
         run: |

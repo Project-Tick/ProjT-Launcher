@@ -1,5 +1,0 @@
----
-permalink: /handbook/style.css
-eleventyExcludeFromCollections: true
----
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#000;background:#fff;max-width:72ch;margin:0 auto;padding:20px}a{color:#00e}a:visited{color:#609}a:hover{color:#c00}h1{font-size:1.4em;border-bottom:1px solid #000;padding-bottom:5px}h2{font-size:1.2em;margin-top:1.5em}h3{font-size:1em;margin-top:1em}p{margin:.5em 0}hr{border:0;border-top:1px solid #ccc;margin:1.5em 0}ul,ol{margin:.5em 0 .5em 2em}li{margin:.3em 0}pre,code{font-family:"SF Mono",Consolas,"Liberation Mono",Menlo,monospace;font-size:14px;background:#f5f5f5}code{padding:1px 4px}pre{padding:10px;overflow-x:auto;border:1px solid #ccc;margin:1em 0}pre code{padding:0;background:none}table{border-collapse:collapse;margin:1em 0}th,td{border:1px solid #ccc;padding:4px 8px;text-align:left}th{background:#f0f0f0}blockquote{margin:1em 0;padding-left:1em;border-left:2px solid #ccc;color:#333}img{max-width:100%}.nav{margin-bottom:1.5em}.nav a{margin-right:1em}.direct-link{color:#999;margin-left:.3em;text-decoration:none}.direct-link:hover{color:#00e}

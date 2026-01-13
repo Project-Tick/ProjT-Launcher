@@ -1,62 +1,69 @@
 ---
 permalink: /handbook/index.html
-eleventyExcludeFromCollections: true
+title: Handbook
 ---
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Developer Handbook</title>
-  <style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#000;background:#fff;max-width:72ch;margin:0 auto;padding:20px}a{color:#00e}a:visited{color:#609}a:hover{color:#c00}h1{font-size:1.4em;border-bottom:1px solid #000;padding-bottom:5px}h2{font-size:1.2em;margin-top:1.5em}h3{font-size:1em;margin-top:1em}p{margin:.5em 0}hr{border:0;border-top:1px solid #ccc;margin:1.5em 0}ul{margin:.5em 0 .5em 2em}li{margin:.3em 0}.nav{margin-bottom:1.5em}.nav a{margin-right:1em}</style>
-</head>
-<body>
-  <div class="nav"><a href="/">Project Tick</a> <a href="/projtlauncher/">ProjT Launcher</a></div>
 
-  <h1>Developer Handbook</h1>
-  <p>Documentation for ProjT Launcher contributors.</p>
+# Handbook
 
-  <hr>
+Documentation for ProjT Launcher contributors and players.
 
-  <h2>Core Components</h2>
-  <ul>
-    <li><a href="/handbook/program_info/">Program Info</a> - Application branding, URLs</li>
-    <li><a href="/handbook/launcherjava/">LauncherJava</a> - Java launcher component</li>
-    <li><a href="/handbook/javacheck/">JavaCheck</a> - Java runtime detection</li>
-  </ul>
+## For Players
 
-  <h2>Bundled Libraries (Detached Forks)</h2>
+- [Help Pages](/handbook/help-pages/) - Launcher help (settings, instances, mod platforms)
+- [Full Wiki](/handbook/wiki/) - Getting started, overview, development notes (mirrored)
 
-  <h3>Compression</h3>
-  <ul>
-    <li><a href="/handbook/zlib/">zlib</a> - PNG/DEFLATE compression</li>
-    <li><a href="/handbook/bzip2/">bzip2</a> - Block-sorting compression</li>
-    <li><a href="/handbook/quazip/">QuaZip</a> - Qt ZIP wrapper</li>
-  </ul>
+## For Contributors
 
-  <h3>Data Formats</h3>
-  <ul>
-    <li><a href="/handbook/tomlplusplus/">toml++</a> - TOML parser for C++17</li>
-    <li><a href="/handbook/libnbtplusplus/">libnbt++</a> - Minecraft NBT format</li>
-    <li><a href="/handbook/cmark/">cmark</a> - CommonMark Markdown parser</li>
-    <li><a href="/handbook/libqrencode/">libqrencode</a> - QR code generation</li>
-  </ul>
+### Core Components
 
-  <h2>CI/CD & Automation</h2>
-  <ul>
-    <li><a href="/handbook/workflows/">Workflows</a> - GitHub Actions architecture</li>
-    <li><a href="/handbook/ci_support/">CI Support</a> - Configuration files</li>
-    <li><a href="/handbook/bot/">Bot</a> - PR automation</li>
-  </ul>
+- [Program Info](/handbook/program_info/) - Application branding and configuration
+- [LauncherJava](/handbook/launcherjava/) - Java launcher component
+- [JavaCheck](/handbook/javacheck/) - Java runtime detection
 
-  <h2>Platform Support</h2>
-  <ul>
-    <li><a href="/handbook/nix/">Nix Packaging</a> - NixOS/Nix flake guide</li>
-  </ul>
+### Detached Fork Libraries
 
-  <hr>
+Libraries independently maintained by Project Tick.
 
-  <p>Source: <a href="https://github.com/Project-Tick/ProjT-Launcher/tree/develop/docs/handbook">docs/handbook/</a></p>
-  <p><a href="/">Back to Project Tick</a></p>
-</body>
-</html>
+#### Compression
+
+- [zlib](/handbook/zlib/) - DEFLATE compression
+- [bzip2](/handbook/bzip2/) - Block-sorting compression
+- [QuaZip](/handbook/quazip/) - Qt ZIP wrapper
+
+#### Data Formats
+
+- [toml++](/handbook/tomlplusplus/) - TOML parser
+- [libnbt++](/handbook/libnbtplusplus/) - NBT format
+- [cmark](/handbook/cmark/) - Markdown parser
+- [libqrencode](/handbook/libqrencode/) - QR code generation
+
+### Build System
+
+- [Extra CMake Modules](/handbook/extra-cmake-modules/) - KDE CMake modules
+- [bzip2 Compiling](/handbook/bzip2-compiling/) - bzip2 build instructions
+- [bzip2 Tests](/handbook/bzip2-tests/) - bzip2 test suite
+- [bzip2 Testfiles](/handbook/bzip2-testfiles/) - Test file collection
+
+### CI/CD & Automation
+
+- [Workflows](/handbook/workflows/) - GitHub Actions architecture
+- [CI Support](/handbook/ci_support/) - CI configuration files
+- [Bot](/handbook/bot/) - PR automation bot
+- [ptcigh](/handbook/ptcigh/) - GitHub script helpers
+- [ptcieval](/handbook/ptcieval/) - Nix-based validation
+
+### Platform Support
+
+- [Nix](/handbook/nix/) - Nix/NixOS packaging
+- [Linux Packaging](/handbook/linux-packaging/) - Linux distribution packaging
+- [Images](/handbook/images/) - CI Docker images
+
+### Reference
+
+- [Third-party](/handbook/third-party/) - All external dependencies
+- [website-tomlplusplus](/handbook/website-tomlplusplus/) - toml++ docs build
+- [Help Pages Overview](/handbook/help-pages/overview/) - Help pages overview and locations
+
+---
+
+See also: [Contributing Guide](/CONTRIBUTING/)

@@ -191,12 +191,25 @@ jobs:
   release:
     name: Release
     needs: [prepare, build-projt-launcher-release]
-    if: needs.prepare.outputs.run-release-build == 'true' || needs.prepare.outputs.is-release == 'true'
+    if: needs.prepare.outputs.run-release-build == 'true'
     uses: ./.github/workflows/ci-release.yml
     with:
       run-release-build: ${{ needs.prepare.outputs.run-release-build }}
       is-release: ${{ needs.prepare.outputs.is-release }}
     secrets: inherit
+
+  winget:
+    name: Winget
+    if: needs.prepare.outputs.is-release == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Publish on Winget
+        uses: vedantmgoyal2009/winget-releaser@19e706d4c9121098010096f9c495a70a7518b30f
+        with:
+          identifier: ProjectTick.ProjTLauncher
+          version: ${{ github.event.release.tag_name }}
+          installers-regex: 'ProjTLauncher-Windows-MSVC(:?-arm64|-Legacy)?-Setup-.+\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}
 
   # ═══════════════════════════════════════════════════════════════════════════
   # QUAZIP TESTS
