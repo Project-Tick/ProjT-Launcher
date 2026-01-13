@@ -29,7 +29,7 @@ export default {
         return json({ ok: true, message: "GitHub webhook endpoint. Use POST with signature." });
       }
       if (request.method !== "POST") {
-        return json({ ok: true, message: "This method is allowed" });
+        return json({ ok: false, error: "Method not allowed. Only POST is supported." }, 405);
       }
       const rawBody = await request.text();
       const signature = request.headers.get("x-hub-signature-256") ?? "";
@@ -132,7 +132,7 @@ export default {
         return json({ ok: true, result }, 200);
       }
 
-      if (request.method === "POST" || request.method === "GET") {
+      if (request.method === "GET") {
         const pr = url.searchParams.get("pr");
         if (pr) {
           const prNumber = Number(pr);
@@ -670,7 +670,18 @@ async function getMaintainers({ owner, repo, ref, env }) {
       method: "GET",
       path: `/repos/${owner}/${repo}/contents/${path}${refSuffix}`,
     });
-    const content = data?.content ? atob(data.content) : "";
+    let content = "";
+    if (data?.content) {
+      try {
+        content = atob(data.content);
+      } catch (decodeError) {
+        console.warn(
+          `Failed to decode base64 maintainers content from ${path}:`,
+          decodeError?.message ?? decodeError
+        );
+        content = "";
+      }
+    }
     const githubMatches = [...String(content).matchAll(/github\s*=\s*"([^"]+)"/g)];
     for (const m of githubMatches) {
       if (m[1]) maintainers.add(m[1].toLowerCase());
@@ -1413,6 +1424,14 @@ function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
+function safeBase64Decode(text) {
+  try {
+    return atob(text);
+  } catch (e) {
+    return null;
+  }
+}
+
 let labelerCache = null;
 
 async function loadLabelerRules({ owner, repo, env, ref }) {
@@ -1428,7 +1447,11 @@ async function loadLabelerRules({ owner, repo, env, ref }) {
       method: "GET",
       path: `/repos/${owner}/${repo}/contents/${path}${refSuffix}`,
     });
-    const content = data?.content ? atob(data.content) : "";
+    const content = data?.content ? safeBase64Decode(data.content) : "";
+    if (content == null) {
+      console.warn("Failed to decode labeler config: invalid base64 content");
+      return [];
+    }
     const rules = parseLabelerYaml(content);
     labelerCache = { ts: now, rules };
     return rules;
