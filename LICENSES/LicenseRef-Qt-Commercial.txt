@@ -1,0 +1,13 @@
+Qt Commercial License
+
+This project contains files that are subject to the Qt Commercial License.
+
+The Qt Commercial License is a proprietary license provided by The Qt Company
+and is not publicly redistributable as a standard license text.
+
+Use, modification, and redistribution of these files are governed by the
+terms of the Qt Commercial License agreement obtained directly from
+The Qt Company.
+
+For details, see:
+https://www.qt.io/licensing

@@ -1,0 +1,27 @@
+{
+  "title": "ProjT Launcher",
+  "url": "https://projecttick.org/projtlauncher/",
+  "pathPrefix": "/projtlauncher",
+  "githubEdit": "https://github.com/Project-Tick/ProjT-Launcher/edit/develop/",
+  "language": "en",
+  "description": "An Open Source Minecraft launcher with the ability to manage multiple instances, accounts and mods. Focused on user freedom and free redistributability.",
+  "feed": {
+    "subtitle": "An Open Source Minecraft launcher with the ability to manage multiple instances, accounts and mods. Focused on user freedom and free redistributability.",
+    "filename": "feed.xml",
+    "path": "/projtlauncher/feed/feed.xml",
+    "id": "https://projecttick.org/projtlauncher/"
+  },
+  "jsonfeed": {
+    "path": "/projtlauncher/feed/feed.json",
+    "url": "https://projecttick.org/projtlauncher/feed/feed.json"
+  },
+  "appcast": {
+    "path": "/projtlauncher/feed/appcast.xml",
+    "url": "https://projecttick.org/projtlauncher/feed/appcast.xml"
+  },
+  "author": {
+    "name": "YongDo-Hyun",
+    "email": "froster12@naver.com",
+    "url": "https://projecttick.org/projtlauncher/about/"
+  }
+}

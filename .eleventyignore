@@ -1,0 +1,7 @@
+README.md
+website/tomlplusplus/
+
+# Do not build the source handbook under `docs/handbook`
+docs/handbook/
+
+# Allow `website-root/handbook/` to be processed (this is the built website source)

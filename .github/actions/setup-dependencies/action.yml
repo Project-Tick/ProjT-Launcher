@@ -1,0 +1,64 @@
+name: Setup Dependencies
+description: Install and setup dependencies for building ProjT Launcher
+
+inputs:
+  build-type:
+    description: Type for the build
+    required: true
+    default: Debug
+  artifact-name:
+    description: Name of the uploaded artifact
+    required: true
+  msystem:
+    description: MSYS2 subsystem to use
+    required: false
+  vcvars-arch:
+    description: Visual Studio architecture to use
+    required: false
+  qt-architecture:
+    description: Qt architecture
+    required: false
+  qt-version:
+    description: Version of Qt to use
+    required: true
+    default: 6.10.0
+
+outputs:
+  build-type:
+    description: Type of build used
+    value: ${{ inputs.build-type }}
+  qt-version:
+    description: Version of Qt used
+    value: ${{ inputs.qt-version }}
+
+runs:
+  using: composite
+
+  steps:
+    - name: Setup Linux dependencies
+      if: ${{ runner.os == 'Linux' }}
+      uses: ./.github/actions/setup-dependencies/linux
+
+    - name: Setup macOS dependencies
+      if: ${{ runner.os == 'macOS' }}
+      uses: ./.github/actions/setup-dependencies/macos
+      with:
+        build-type: ${{ inputs.build-type }}
+
+    - name: Setup Windows dependencies
+      if: ${{ runner.os == 'Windows' }}
+      uses: ./.github/actions/setup-dependencies/windows
+      with:
+        build-type: ${{ inputs.build-type }}
+        msystem: ${{ inputs.msystem }}
+        vcvars-arch: ${{ inputs.vcvars-arch }}
+
+    - name: Install Qt
+      if: ${{ inputs.msystem == '' }}
+      uses: jurplel/install-qt-action@v4
+      with:
+        aqtversion: "==3.1.*"
+        version: ${{ inputs.qt-version }}
+        arch: ${{ inputs.qt-architecture }}
+        modules: qt5compat qtimageformats qtnetworkauth
+        cache: ${{ inputs.build-type == 'Debug' }}

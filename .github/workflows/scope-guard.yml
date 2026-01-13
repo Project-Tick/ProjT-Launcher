@@ -1,0 +1,170 @@
+name: Scope Guard
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  scope-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const marker = '<!-- scope-guard -->';
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+            const isForkPr =
+              pr.head &&
+              pr.head.repo &&
+              pr.base &&
+              pr.base.repo &&
+              pr.head.repo.full_name &&
+              pr.base.repo.full_name &&
+              pr.head.repo.full_name.toLowerCase() !== pr.base.repo.full_name.toLowerCase();
+
+            if (isForkPr) {
+              core.info('Scope guard skipped: fork PR does not allow comment/label writes.');
+              return;
+            }
+
+            const scopeDefs = [
+              { key: 'launcher', label: 'Launcher', patterns: [/^launcher\//, /^libraries\//, /^tests\//, /^buildconfig\//, /^cmake\//, /^program_info\//, /^CMakeLists\.txt$/, /\.cpp$/, /\.h$/, /\.ui$/] },
+              { key: 'website', label: 'Website', patterns: [/^website\//, /^public\//, /^\.eleventy/, /^package\.json$/, /^pnpm-lock\.yaml$/] },
+              { key: 'bot', label: 'Bot', patterns: [/^bot\//, /^wrangler\.toml$/, /^wrangler\.json$/] },
+              { key: 'meta', label: 'Metadata Generator', patterns: [/^meta\//, /^pyproject\.toml$/, /^poetry\.lock$/, /^requirements\.txt$/, /^init\.sh$/, /^update\.sh$/] },
+              { key: 'quazip', label: 'Quazip', patterns: [/^quazip\//] },
+              { key: 'bzip2', label: 'bzip2', patterns: [/^bzip2\//] },
+              { key: 'zlib', label: 'Zlib', patterns: [/^zlib\//] },
+              { key: 'docs', label: 'Docs', patterns: [/^docs\//, /\.md$/] },
+              { key: 'ci', label: 'CI', patterns: [/^\.github\//, /^ci\//, /^scripts\//, /^tools\//] },
+              { key: 'tools', label: 'Tools', patterns: [/^tools\//, /^scripts\//] },
+              { key: 'branding', label: 'Branding', patterns: [/^program_info\//, /^website\/img\//, /^public\//] },
+              { key: 'launcherjava', label: 'Launcher Java System', patterns: [/^launcherjava\//] },
+              { key: 'javacheck', label: 'JavaCheck', patterns: [/^javacheck\//] },
+              { key: 'libnbtplusplus', label: 'libnbtplusplus', patterns: [/^libnbtplusplus\//] },
+              { key: 'packages', label: 'Packages', patterns: [/^nix\//, /^flatpak\//, /^aur\//, /^buildconfig\//] },
+            ];
+
+            const isChecked = (text, label) => {
+              const pattern = new RegExp(`- \\[[xX]\\]\\s+${label}\\b`, 'i');
+              return pattern.test(text);
+            };
+
+            const selected = new Set(
+              scopeDefs
+                .filter((scope) => isChecked(body, scope.label))
+                .map((scope) => scope.key)
+            );
+            const otherSelected = isChecked(body, 'Other');
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            const changedScopes = new Set();
+            for (const file of files) {
+              const path = file.filename;
+              for (const scope of scopeDefs) {
+                if (scope.patterns.some((re) => re.test(path))) {
+                  changedScopes.add(scope.key);
+                }
+              }
+            }
+
+            const missingSelections = Array.from(changedScopes).filter((key) => !selected.has(key));
+            const selectedNoFiles = Array.from(selected).filter((key) => !changedScopes.has(key));
+
+            const hasMismatch = (!otherSelected && missingSelections.length > 0) || selectedNoFiles.length > 0;
+
+            const formatScopes = (keys) =>
+              keys
+                .map((key) => scopeDefs.find((s) => s.key === key)?.label || key)
+                .join(', ') || 'none';
+
+            const bodyLines = [
+              marker,
+              '## Scope Guard Report',
+              '',
+              `- Selected scopes: ${formatScopes(Array.from(selected))}`,
+              `- Detected scopes from files: ${formatScopes(Array.from(changedScopes))}`,
+            ];
+
+            if (missingSelections.length > 0) {
+              bodyLines.push(`- Missing selections: ${formatScopes(missingSelections)}`);
+            }
+            if (selectedNoFiles.length > 0) {
+              bodyLines.push(`- Selected but no matching files: ${formatScopes(selectedNoFiles)}`);
+            }
+            if (otherSelected) {
+              bodyLines.push('- Other selected: scope guard will not require exact matches.');
+            }
+
+            const reportBody = bodyLines.join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (comment) =>
+                comment.user &&
+                comment.user.type === 'Bot' &&
+                comment.body &&
+                comment.body.includes(marker)
+            );
+
+            if (hasMismatch) {
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body: reportBody,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: reportBody,
+                });
+              }
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['40.scope-mismatch'],
+              });
+            } else {
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body: reportBody,
+                });
+              }
+
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name: '40.scope-mismatch',
+                });
+              } catch (error) {
+                // Label may not exist; ignore.
+              }
+            }

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title or page.fileSlug }} - Developer Handbook</title>
+  <link rel="stylesheet" href="/handbook/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <a href="/">Project Tick</a>
+    <a href="/handbook/">Handbook</a>
+  </nav>
+  <main class="content">
+    {{ content | safe }}
+  </main>
+  <hr>
+  <p><a href="/handbook/">← Back to Handbook</a></p>
+</body>
+</html>

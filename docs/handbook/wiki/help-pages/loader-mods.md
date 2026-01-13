@@ -1,0 +1,11 @@
+﻿> Wiki navigation: [Overview](/handbook/wiki/) | [Getting Started](/handbook/wiki/getting-started/) | [Help Pages](/handbook/wiki/help-pages/) | [Development](/handbook/wiki/development/)
+
+# Mods
+
+![Mods tab under ProjT Launcher settings](/projtlauncher/img/screenshots/projtlauncher_dark_console_window_mods.png)
+
+This page reflects the contents of the instance's mods folder and is used for mods that loaders like Forge, Fabric, NeoForge, Quilt and LiteLoader can read and add to the game. Unlike an ordinary file explorer, it also shows details about the mods like version and name.
+
+You can drag and drop more mods into the view, just like any other folder. The mods also have a checkbox next to them, which allows you to temporarily disable them.
+
+Clicking "Download Mods" you can download mods from Modrinth and CurseForge.

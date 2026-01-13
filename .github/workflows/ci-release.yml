@@ -1,0 +1,227 @@
+name: CI Release
+
+# This workflow is called by ci-new.yml only.
+# Do not add push/pull_request triggers here.
+on:
+  workflow_call:
+    inputs:
+      run-release-build:
+        required: true
+        type: string
+      is-release:
+        required: true
+        type: string
+    secrets:
+      LINUX_GPG_KEY:
+        required: false
+      LINUX_GPG_ID:
+        required: false
+      WINGET_TOKEN:
+        required: false
+
+jobs:
+  create-release:
+    timeout-minutes: 10
+    name: Create Release
+    if: inputs.run-release-build == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          submodules: "true"
+          path: "ProjTLauncher-source"
+
+      - name: Free disk space (Linux)
+        shell: bash
+        run: |
+          echo "Disk usage before cleanup:"
+          df -h
+          SUDO=""
+          if command -v sudo >/dev/null 2>&1; then
+            SUDO="sudo"
+          fi
+          $SUDO swapoff -a || true
+          $SUDO rm -rf /swapfile || true
+
+          $SUDO rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/share/swift /usr/local/.ghcup || true
+          $SUDO rm -rf /opt/hostedtoolcache/CodeQL || true
+          $SUDO rm -rf /usr/local/share/boost /usr/local/share/powershell || true
+
+          $SUDO apt-get clean || true
+          $SUDO rm -rf /var/lib/apt/lists/* || true
+          echo "Disk usage after cleanup:"
+          df -h
+
+      - name: Download artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      - name: Grab and store version
+        run: |
+          tag_name=$(echo ${{ github.ref }} | grep -oE "[^/]+$")
+          echo "VERSION=$tag_name" >> $GITHUB_ENV
+      - name: Package source libraries
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.LINUX_GPG_KEY }}
+          GPG_KEY_ID: ${{ secrets.LINUX_GPG_ID }}
+        run: |
+          cd "${{ github.workspace }}"
+          SRC_DIR="ProjTLauncher-source"
+          libs=(libnbtplusplus zlib quazip bzip2 launcherjava tomlplusplus libqrencode extra-cmake-modules cmark)
+
+          sign_file() {
+            local path="$1"
+            if [ -n "${GPG_PRIVATE_KEY}" ]; then
+              echo "${GPG_PRIVATE_KEY}" | gpg --batch --yes --import
+              if [ -n "${GPG_KEY_ID}" ]; then
+                gpg --batch --yes --armor --default-key "${GPG_KEY_ID}" --output "${path}.asc" --detach-sign "${path}"
+              else
+                gpg --batch --yes --armor --output "${path}.asc" --detach-sign "${path}"
+              fi
+            fi
+          }
+
+          for d in "${libs[@]}"; do
+            base="${d}-${{ env.VERSION }}"
+            tar -C "${SRC_DIR}" -czf "${base}.tar.gz" "${d}"
+            tar -C "${SRC_DIR}" -cJf "${base}.tar.xz" "${d}"
+            (cd "${SRC_DIR}" && zip -r "../${base}.zip" "${d}")
+
+            sign_file "${base}.tar.gz"
+            sign_file "${base}.tar.xz"
+            sign_file "${base}.zip"
+          done
+      - name: Package artifacts properly
+        run: |
+          mv ${{ github.workspace }}/ProjTLauncher-source ProjTLauncher-${{ env.VERSION }}
+          mv ProjTLauncher-Linux-Qt6-Portable*/ProjTLauncher-portable.tar.gz ProjTLauncher-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
+          mv ProjTLauncher-*.AppImage/ProjTLauncher-*-x86_64.AppImage ProjTLauncher-Linux-x86_64.AppImage
+          mv ProjTLauncher-*.AppImage.zsync/ProjTLauncher-*-x86_64.AppImage.zsync ProjTLauncher-Linux-x86_64.AppImage.zsync
+          mv ProjTLauncher-*.AppImage/ProjTLauncher-*-aarch64.AppImage ProjTLauncher-Linux-aarch64.AppImage
+          mv ProjTLauncher-*.AppImage.zsync/ProjTLauncher-*-aarch64.AppImage.zsync ProjTLauncher-Linux-aarch64.AppImage.zsync
+          mv ProjTLauncher-macOS*/ProjTLauncher.zip ProjTLauncher-macOS-${{ env.VERSION }}.zip
+
+          tar --exclude='.git' -czf ProjTLauncher-${{ env.VERSION }}.tar.gz ProjTLauncher-${{ env.VERSION }}
+
+          for d in ProjTLauncher-Windows-MSVC*; do
+            cd "${d}" || continue
+            LEGACY="$(echo -n ${d} | grep -o Legacy || true)"
+            ARM64="$(echo -n ${d} | grep -o arm64 || true)"
+            INST="$(echo -n ${d} | grep -o Setup || true)"
+            PORT="$(echo -n ${d} | grep -o Portable || true)"
+            NAME="ProjTLauncher-Windows-MSVC"
+            test -z "${LEGACY}" || NAME="${NAME}-Legacy"
+            test -z "${ARM64}" || NAME="${NAME}-arm64"
+            test -z "${PORT}" || NAME="${NAME}-Portable"
+            test -z "${INST}" || mv ProjTLauncher-*.exe ../${NAME}-Setup-${{ env.VERSION }}.exe
+            test -n "${INST}" || zip -r -9 "../${NAME}-${{ env.VERSION }}.zip" *
+            cd ..
+          done
+
+          for d in ProjTLauncher-Windows-MinGW-w64*; do
+            cd "${d}" || continue
+            INST="$(echo -n ${d} | grep -o Setup || true)"
+            PORT="$(echo -n ${d} | grep -o Portable || true)"
+            NAME="ProjTLauncher-Windows-MinGW-w64"
+            test -z "${PORT}" || NAME="${NAME}-Portable"
+            test -z "${INST}" || mv ProjTLauncher-*.exe ../${NAME}-Setup-${{ env.VERSION }}.exe
+            test -n "${INST}" || zip -r -9 "../${NAME}-${{ env.VERSION }}.zip" *
+            cd ..
+          done
+
+          for d in ProjTLauncher-Windows-MinGW-arm64*; do
+            cd "${d}" || continue
+            INST="$(echo -n ${d} | grep -o Setup || true)"
+            PORT="$(echo -n ${d} | grep -o Portable || true)"
+            NAME="ProjTLauncher-Windows-MinGW-arm64"
+            test -z "${PORT}" || NAME="${NAME}-Portable"
+            test -z "${INST}" || mv ProjTLauncher-*.exe ../${NAME}-Setup-${{ env.VERSION }}.exe
+            test -n "${INST}" || zip -r -9 "../${NAME}-${{ env.VERSION }}.zip" *
+            cd ..
+          done
+
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@5122b4edc95f85501a71628a57dc180a03ec7588
+        with:
+          token: ${{ github.token }}
+          tag_name: ${{ github.ref }}
+          name: ProjTLauncher ${{ env.VERSION }}
+          draft: true
+          prerelease: false
+          files: |
+            ProjTLauncher-Linux-x86_64.AppImage
+            ProjTLauncher-Linux-x86_64.AppImage.zsync
+            ProjTLauncher-Linux-aarch64.AppImage
+            ProjTLauncher-Linux-aarch64.AppImage.zsync
+            ProjTLauncher-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
+            ProjTLauncher-Linux-aarch64-Qt6-Portable-${{ env.VERSION }}.tar.gz
+            ProjTLauncher-Windows-MinGW-w64-${{ env.VERSION }}.zip
+            ProjTLauncher-Windows-MinGW-w64-Portable-${{ env.VERSION }}.zip
+            ProjTLauncher-Windows-MinGW-w64-Setup-${{ env.VERSION }}.exe
+            ProjTLauncher-Windows-MinGW-arm64-${{ env.VERSION }}.zip
+            ProjTLauncher-Windows-MinGW-arm64-Portable-${{ env.VERSION }}.zip
+            ProjTLauncher-Windows-MinGW-arm64-Setup-${{ env.VERSION }}.exe
+            ProjTLauncher-Windows-MSVC-arm64-${{ env.VERSION }}.zip
+            ProjTLauncher-Windows-MSVC-arm64-Portable-${{ env.VERSION }}.zip
+            ProjTLauncher-Windows-MSVC-arm64-Setup-${{ env.VERSION }}.exe
+            ProjTLauncher-Windows-MSVC-${{ env.VERSION }}.zip
+            ProjTLauncher-Windows-MSVC-Portable-${{ env.VERSION }}.zip
+            ProjTLauncher-Windows-MSVC-Setup-${{ env.VERSION }}.exe
+            ProjTLauncher-macOS-${{ env.VERSION }}.zip
+            ProjTLauncher-${{ env.VERSION }}.tar.gz
+            libnbtplusplus-${{ env.VERSION }}.zip
+            libnbtplusplus-${{ env.VERSION }}.tar.gz
+            libnbtplusplus-${{ env.VERSION }}.tar.xz
+            libnbtplusplus-${{ env.VERSION }}.zip.asc
+            libnbtplusplus-${{ env.VERSION }}.tar.gz.asc
+            libnbtplusplus-${{ env.VERSION }}.tar.xz.asc
+            zlib-${{ env.VERSION }}.zip
+            zlib-${{ env.VERSION }}.tar.gz
+            zlib-${{ env.VERSION }}.tar.xz
+            zlib-${{ env.VERSION }}.zip.asc
+            zlib-${{ env.VERSION }}.tar.gz.asc
+            zlib-${{ env.VERSION }}.tar.xz.asc
+            quazip-${{ env.VERSION }}.zip
+            quazip-${{ env.VERSION }}.tar.gz
+            quazip-${{ env.VERSION }}.tar.xz
+            quazip-${{ env.VERSION }}.zip.asc
+            quazip-${{ env.VERSION }}.tar.gz.asc
+            quazip-${{ env.VERSION }}.tar.xz.asc
+            bzip2-${{ env.VERSION }}.zip
+            bzip2-${{ env.VERSION }}.tar.gz
+            bzip2-${{ env.VERSION }}.tar.xz
+            bzip2-${{ env.VERSION }}.zip.asc
+            bzip2-${{ env.VERSION }}.tar.gz.asc
+            bzip2-${{ env.VERSION }}.tar.xz.asc
+            launcherjava-${{ env.VERSION }}.zip
+            launcherjava-${{ env.VERSION }}.tar.gz
+            launcherjava-${{ env.VERSION }}.tar.xz
+            launcherjava-${{ env.VERSION }}.zip.asc
+            launcherjava-${{ env.VERSION }}.tar.gz.asc
+            launcherjava-${{ env.VERSION }}.tar.xz.asc
+            tomlplusplus-${{ env.VERSION }}.zip
+            tomlplusplus-${{ env.VERSION }}.tar.gz
+            tomlplusplus-${{ env.VERSION }}.tar.xz
+            tomlplusplus-${{ env.VERSION }}.zip.asc
+            tomlplusplus-${{ env.VERSION }}.tar.gz.asc
+            tomlplusplus-${{ env.VERSION }}.tar.xz.asc
+            libqrencode-${{ env.VERSION }}.zip
+            libqrencode-${{ env.VERSION }}.tar.gz
+            libqrencode-${{ env.VERSION }}.tar.xz
+            libqrencode-${{ env.VERSION }}.zip.asc
+            libqrencode-${{ env.VERSION }}.tar.gz.asc
+            libqrencode-${{ env.VERSION }}.tar.xz.asc
+            extra-cmake-modules-${{ env.VERSION }}.zip
+            extra-cmake-modules-${{ env.VERSION }}.tar.gz
+            extra-cmake-modules-${{ env.VERSION }}.tar.xz
+            extra-cmake-modules-${{ env.VERSION }}.zip.asc
+            extra-cmake-modules-${{ env.VERSION }}.tar.gz.asc
+            extra-cmake-modules-${{ env.VERSION }}.tar.xz.asc
+            cmark-${{ env.VERSION }}.zip
+            cmark-${{ env.VERSION }}.tar.gz
+            cmark-${{ env.VERSION }}.tar.xz
+            cmark-${{ env.VERSION }}.zip.asc
+            cmark-${{ env.VERSION }}.tar.gz.asc
+            cmark-${{ env.VERSION }}.tar.xz.asc

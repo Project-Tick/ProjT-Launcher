@@ -1,0 +1,215 @@
+from copy import deepcopy
+import os
+import re
+import sys
+from operator import attrgetter
+from typing import Collection, Optional
+import hashlib
+
+
+from meta.common import ensure_component_dir, launcher_path, upstream_path, default_session
+from meta.common.neoforge import (
+    NEOFORGE_COMPONENT,
+    INSTALLER_MANIFEST_DIR,
+    VERSION_MANIFEST_DIR,
+    DERIVED_INDEX_FILE,
+    INSTALLER_INFO_DIR,
+)
+from meta.common.forge import FORGEWRAPPER_LIBRARY
+from meta.common.mojang import MINECRAFT_COMPONENT
+from meta.model import (
+    MetaVersion,
+    Dependency,
+    Library,
+    GradleSpecifier,
+    MojangLibraryDownloads,
+    MojangArtifact,
+    MetaPackage,
+)
+from meta.model.neoforge import (
+    NeoForgeVersion,
+    NeoForgeInstallerProfileV2,
+    InstallerInfo,
+    DerivedNeoForgeIndex,
+)
+from meta.model.mojang import MojangVersion
+
+LAUNCHER_DIR = launcher_path()
+UPSTREAM_DIR = upstream_path()
+
+ensure_component_dir(NEOFORGE_COMPONENT)
+
+sess = default_session()
+
+def update_library_info(lib: Library):
+    if not lib.downloads:
+        lib.downloads = MojangLibraryDownloads()
+    if not lib.downloads.artifact:
+        url = lib.url
+        if not url and lib.name:
+            url = f"https://maven.neoforged.net/{lib.name.path()}"
+        if url:
+             lib.downloads.artifact = MojangArtifact(url=url, sha1=None, size=None)
+
+    art = lib.downloads.artifact
+    if art and art.url:
+        try:
+            # Check/Fetch SHA1
+            if not art.sha1:
+                r = sess.get(art.url + ".sha1")
+                if r.status_code == 200:
+                    art.sha1 = r.text.strip()
+            
+            # Check/Fetch Size
+            if not art.size:
+                r = sess.head(art.url)
+                if r.status_code == 200 and 'Content-Length' in r.headers:
+                    art.size = int(r.headers['Content-Length'])
+        except Exception as e:
+            eprint(f"Failed to update info for {lib.name}: {e}")
+
+
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
+def version_from_build_system_installer(
+    installer: MojangVersion,
+    profile: NeoForgeInstallerProfileV2,
+    version: NeoForgeVersion,
+) -> MetaVersion:
+    v = MetaVersion(name="NeoForge", version=version.rawVersion, uid=NEOFORGE_COMPONENT)
+    v.requires = [Dependency(uid=MINECRAFT_COMPONENT, equals=version.mc_version_sane)]
+    v.main_class = "io.github.zekerzhayard.forgewrapper.installer.Main"
+
+    v.main_class = "io.github.zekerzhayard.forgewrapper.installer.Main"
+
+    v.maven_files = []
+
+    # load the locally cached installer file info and use it to add the installer entry in the json
+    info = InstallerInfo.parse_file(
+        os.path.join(UPSTREAM_DIR, INSTALLER_INFO_DIR, f"{version.long_version}.json")
+    )
+    installer_lib = Library(
+        name=GradleSpecifier(
+            "net.neoforged", version.artifact, version.long_version, "installer"
+        )
+    )
+    installer_lib.downloads = MojangLibraryDownloads()
+    installer_lib.downloads.artifact = MojangArtifact(
+        url="https://maven.neoforged.net/%s" % (installer_lib.name.path()),
+        sha1=info.sha1hash,
+        size=info.size,
+    )
+    v.maven_files.append(installer_lib)
+
+    for forge_lib in profile.libraries:
+        if forge_lib.name.is_log4j():
+            continue
+
+        update_library_info(forge_lib)
+        v.maven_files.append(forge_lib)
+
+    v.libraries = []
+
+    v.libraries.append(FORGEWRAPPER_LIBRARY)
+
+    for forge_lib in installer.libraries:
+        if forge_lib.name.is_log4j():
+            continue
+
+        v.libraries.append(forge_lib)
+
+    v.release_time = installer.release_time
+    v.order = 5
+    mc_args = (
+        "--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} "
+        "--assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} "
+        "--accessToken ${auth_access_token} --userType ${user_type} --versionType ${version_type}"
+    )
+    for arg in installer.arguments.game:
+        mc_args += f" {arg}"
+    v.minecraft_arguments = mc_args
+    return v
+
+
+def main():
+    # load the locally cached version list
+    remote_versions = DerivedNeoForgeIndex.parse_file(
+        os.path.join(UPSTREAM_DIR, DERIVED_INDEX_FILE)
+    )
+    recommended_versions = []
+
+    for key, entry in remote_versions.versions.items():
+        if entry.mc_version is None:
+            eprint("Skipping %s with invalid MC version" % key)
+            continue
+
+        version = NeoForgeVersion(entry)
+
+        if version.url() is None:
+            eprint("Skipping %s with no valid files" % key)
+            continue
+        eprint("Processing Forge %s" % version.rawVersion)
+        version_elements = version.rawVersion.split(".")
+        if len(version_elements) < 1:
+            eprint("Skipping version %s with not enough version elements" % key)
+            continue
+
+        major_version_str = version_elements[0]
+        if not major_version_str.isnumeric():
+            eprint(
+                "Skipping version %s with non-numeric major version %s"
+                % (key, major_version_str)
+            )
+            continue
+
+        if entry.recommended:
+            recommended_versions.append(version.rawVersion)
+
+        # If we do not have the corresponding Minecraft version, we ignore it
+        if not os.path.isfile(
+            os.path.join(
+                LAUNCHER_DIR, MINECRAFT_COMPONENT, f"{version.mc_version_sane}.json"
+            )
+        ):
+            eprint(
+                "Skipping %s with no corresponding Minecraft version %s"
+                % (key, version.mc_version_sane)
+            )
+            continue
+
+        # Path for new-style build system based installers
+        installer_version_filepath = os.path.join(
+            UPSTREAM_DIR, VERSION_MANIFEST_DIR, f"{version.long_version}.json"
+        )
+        profile_filepath = os.path.join(
+            UPSTREAM_DIR, INSTALLER_MANIFEST_DIR, f"{version.long_version}.json"
+        )
+
+        eprint(installer_version_filepath)
+        assert os.path.isfile(
+            installer_version_filepath
+        ), f"version {installer_version_filepath} does not have installer version manifest"
+        installer = MojangVersion.parse_file(installer_version_filepath)
+        profile = NeoForgeInstallerProfileV2.parse_file(profile_filepath)
+        v = version_from_build_system_installer(installer, profile, version)
+
+        v.write(os.path.join(LAUNCHER_DIR, NEOFORGE_COMPONENT, f"{v.version}.json"))
+
+        recommended_versions.sort()
+
+        print("Recommended versions:", recommended_versions)
+
+        package = MetaPackage(
+            uid=NEOFORGE_COMPONENT,
+            name="NeoForge",
+            project_url="https://neoforged.net",
+        )
+        package.recommended = recommended_versions
+        package.write(os.path.join(LAUNCHER_DIR, NEOFORGE_COMPONENT, "package.json"))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,105 @@
+// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+// SPDX-FileCopyrightText: 2026 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2026 Project Tick
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * === Upstream License Block (Do Not Modify) ==============================
+ *
+ * Copyright 2015-2021 MultiMC Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ======================================================================== */
+
+#pragma once
+
+#include <QAbstractListModel>
+
+#include "BaseEntity.h"
+#include "meta/VersionList.h"
+#include "net/Mode.h"
+
+class Task;
+
+namespace Meta
+{
+
+	class Index : public QAbstractListModel, public BaseEntity
+	{
+		Q_OBJECT
+	  public:
+		explicit Index(QObject* parent = nullptr);
+		explicit Index(const QList<VersionList::Ptr>& lists, QObject* parent = nullptr);
+		virtual ~Index() = default;
+
+		enum
+		{
+			UidRole = Qt::UserRole,
+			NameRole,
+			ListPtrRole
+		};
+
+		QVariant data(const QModelIndex& index, int role) const override;
+		int rowCount(const QModelIndex& parent) const override;
+		int columnCount(const QModelIndex& parent) const override;
+		QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+
+		QString localFilename() const override
+		{
+			return "index.json";
+		}
+
+		// queries
+		VersionList::Ptr get(const QString& uid);
+		Version::Ptr get(const QString& uid, const QString& version);
+		bool hasUid(const QString& uid) const;
+
+		QList<VersionList::Ptr> lists() const
+		{
+			return m_lists;
+		}
+
+		Task::Ptr loadVersion(const QString& uid,
+							  const QString& version = {},
+							  Net::Mode mode		 = Net::Mode::Online,
+							  bool force			 = false);
+
+		// this blocks until the version is loaded
+		Version::Ptr getLoadedVersion(const QString& uid, const QString& version);
+
+	  public: // for usage by parsers only
+		void merge(const std::shared_ptr<Index>& other);
+
+	  protected:
+		void parse(const QJsonObject& obj) override;
+
+	  private:
+		QList<VersionList::Ptr> m_lists;
+		QHash<QString, VersionList::Ptr> m_uids;
+
+		void connectVersionList(int row, const VersionList::Ptr& list);
+	};
+} // namespace Meta

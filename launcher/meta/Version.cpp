@@ -1,0 +1,185 @@
+// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+// SPDX-FileCopyrightText: 2026 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2026 Project Tick
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * === Upstream License Block (Do Not Modify) ==============================
+ *
+ * Copyright 2015-2021 MultiMC Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ======================================================================== */
+
+#include "Version.h"
+
+#include <QDateTime>
+#include <algorithm>
+
+#include "JsonFormat.h"
+
+Meta::Version::Version(const QString& uid, const QString& version) : BaseVersion(), m_uid(uid), m_version(version)
+{}
+
+QString Meta::Version::descriptor() const
+{
+	return m_version;
+}
+QString Meta::Version::name() const
+{
+	if (m_data)
+		return m_data->name;
+	return m_uid;
+}
+QString Meta::Version::typeString() const
+{
+	return m_type;
+}
+
+QString Meta::Version::parentVersion() const
+{
+	// Prioritize net.minecraft
+	auto iter =
+		std::find_if(m_requires.begin(),
+					 m_requires.end(),
+					 [](const Require& req) { return req.uid == "net.minecraft" && !req.equalsVersion.isEmpty(); });
+	if (iter != m_requires.end())
+	{
+		return iter->equalsVersion;
+	}
+	// Fallback to any hard dependency
+	iter = std::find_if(m_requires.begin(),
+						m_requires.end(),
+						[](const Require& req) { return !req.equalsVersion.isEmpty(); });
+	if (iter != m_requires.end())
+	{
+		return iter->equalsVersion;
+	}
+	return QString();
+}
+
+QDateTime Meta::Version::time() const
+{
+	return QDateTime::fromMSecsSinceEpoch(m_time * 1000, Qt::UTC);
+}
+
+void Meta::Version::parse(const QJsonObject& obj)
+{
+	parseVersion(obj, this);
+}
+
+void Meta::Version::mergeFromList(const Meta::Version::Ptr& other)
+{
+	if (other->m_providesRecommendations)
+	{
+		if (m_recommended != other->m_recommended)
+		{
+			setRecommended(other->m_recommended);
+		}
+	}
+	if (m_type != other->m_type)
+	{
+		setType(other->m_type);
+	}
+	if (m_time != other->m_time)
+	{
+		setTime(other->m_time);
+	}
+	if (m_requires != other->m_requires)
+	{
+		m_requires = other->m_requires;
+	}
+	if (m_conflicts != other->m_conflicts)
+	{
+		m_conflicts = other->m_conflicts;
+	}
+	if (m_volatile != other->m_volatile)
+	{
+		setVolatile(other->m_volatile);
+	}
+	if (!other->m_sha256.isEmpty())
+	{
+		m_sha256 = other->m_sha256;
+	}
+}
+
+void Meta::Version::merge(const Version::Ptr& other)
+{
+	mergeFromList(other);
+	if (other->m_data)
+	{
+		setData(other->m_data);
+	}
+}
+
+QString Meta::Version::localFilename() const
+{
+	return m_uid + '/' + m_version + ".json";
+}
+
+::Version Meta::Version::toComparableVersion() const
+{
+	return { descriptor() };
+}
+
+void Meta::Version::setType(const QString& type)
+{
+	m_type = type;
+	emit typeChanged();
+}
+
+void Meta::Version::setTime(const qint64 time)
+{
+	m_time = time;
+	emit timeChanged();
+}
+
+void Meta::Version::setRequires(const Meta::RequireSet& reqs, const Meta::RequireSet& conflicts)
+{
+	m_requires	= reqs;
+	m_conflicts = conflicts;
+	emit requiresChanged();
+}
+
+void Meta::Version::setVolatile(bool volatile_)
+{
+	m_volatile = volatile_;
+}
+
+void Meta::Version::setData(const VersionFilePtr& data)
+{
+	m_data = data;
+}
+
+void Meta::Version::setProvidesRecommendations()
+{
+	m_providesRecommendations = true;
+}
+
+void Meta::Version::setRecommended(bool recommended)
+{
+	m_recommended = recommended;
+}

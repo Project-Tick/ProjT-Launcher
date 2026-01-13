@@ -1,0 +1,186 @@
+# Used by `.github/workflows/bot.yml` (actions/labeler@v5).
+# Applies labels to PRs based on changed files.
+
+1.main-ci-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**/*
+          - ci/**/*
+          - .clang-format
+          - .clang-tidy
+          - .editorconfig
+          - .gitattributes
+          - .gitmodules
+          - .markdownlint.yaml
+          - .markdownlintignore
+          - renovate.json
+
+1.ci-script-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ci/github-script/**/*
+          - .github/workflows/**/*.yml
+
+1.ci-config-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ci/pinned.json
+          - ci/supportedSystems.json
+          - ci/supportedBranches.js
+          - ci/default.nix
+          - ci/eval/**/*
+
+2.code-base-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/**/*.{cpp,h,mm,ui,json,yml,xml,js}
+          - launcher/**/*.sh
+          - launcher/**/*.bat
+          - launcher/**/*.ps1
+          - launcher/CMakeLists.txt
+
+2.ui-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/ui/**/*
+          - launcher/resources/**/*
+          - launcher/qtquick/**/*
+          - launcher/resources/**/*
+          - launcher/icons/**/*
+          - launcher/news/**/*
+
+2.updater-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/updater/**/*
+
+2.modplatform-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/modplatform/**/*
+          - launcher/minecraft/**/*
+          - launcher/minecraft/**/*
+          - launcher/launch/**/*
+
+2.settings-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/settings/**/*
+          - launcher/tasks/**/*
+          - launcher/meta/**/*
+          - launcher/logs/**/*
+          - launcher/tools/**/*
+          - launcher/console/**/*
+
+2.launcher-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/java/**/*
+          - launcher/launch/**/*
+
+2.launcher-network-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/net/**/*
+          - launcher/filelink/**/*
+          - launcher/console/**/*
+
+3.libraries-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - systeminfo/**/*
+          - qdcss/**/*
+          - rainbow/**/*
+          - tomlplusplus/**/*
+          - libnbtplusplus/**/*
+          - quazip/**/*
+          - murmur2/**/*
+          - qrcodegenerator/**/*
+          - LocalPeer/**/*
+          - launcher/**/*
+          - gamemode/**/*
+          - javacheck/**/*
+
+4.main-compile-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - CMakeLists.txt
+          - CMakePresets.json
+          - cmake/**/*
+          - buildconfig/**/*
+          - vcpkg.json
+          - vcpkg-configuration.json
+          - vcpkg-ports/**/*
+          - vcpkg-triplets/**/*
+
+5.packaging-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - debian/**/*
+          - flatpak/**/*
+          - nix/**/*
+          - buildconfig/**/*
+          - vcpkg.json
+          - vcpkg-configuration.json
+          - ci/vcpkg-ports/**/*
+          - ci/vcpkg-triplets/**/*
+          - flake.nix
+          - flake.lock
+          - default.nix
+          - shell.nix
+          - program_info/**/*
+
+6.docs-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**/*
+          - README.md
+          - CONTRIBUTING.md
+          - CODE_OF_CONDUCT.md
+          - SECURITY.md
+          - .github/workflows/README.md
+
+7.test-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - tests/**/*
+          - ci/github-script/test/**/*
+
+8.script-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - scripts/**/*
+          - tools/**/*
+          - launcher/tools/**/*
+
+9.translation-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - launcher/translations/**/*
+          - launcher/resources/translations/**/*
+          - translations/**/*.{po,pot,ts,txt,json}
+
+10.Linux-based-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - debian/**/*
+          - flatpak/**/*
+          - nix/**/*
+          - systeminfo/src/sys_unix.cpp
+          - systeminfo/src/distroutils.cpp
+
+10.macOS-based-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.mm"
+          - systeminfo/src/sys_apple.cpp
+          - launcher/updater/MacSparkleUpdater.h
+          - launcher/updater/MacSparkleUpdater.mm
+
+10.Windows-based-system-changes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.rc"
+          - "**/*.iss"
+          - "**/*.exe.manifest"
+          - systeminfo/src/sys_win32.cpp

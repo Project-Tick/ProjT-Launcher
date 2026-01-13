@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2026 Project Tick
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+#include "AutoJavaWizardPage.h"
+#include "ui_AutoJavaWizardPage.h"
+
+#include "Application.h"
+
+AutoJavaWizardPage::AutoJavaWizardPage(QWidget* parent) : BaseWizardPage(parent), ui(new Ui::AutoJavaWizardPage)
+{
+	ui->setupUi(this);
+}
+
+AutoJavaWizardPage::~AutoJavaWizardPage()
+{
+	delete ui;
+}
+
+void AutoJavaWizardPage::initializePage()
+{}
+
+bool AutoJavaWizardPage::validatePage()
+{
+	auto s = APPLICATION->settings();
+
+	if (!ui->previousSettingsRadioButton->isChecked())
+	{
+		s->set("AutomaticJavaSwitch", true);
+		s->set("AutomaticJavaDownload", true);
+	}
+	s->set("UserAskedAboutAutomaticJavaDownload", true);
+	return true;
+}
+
+void AutoJavaWizardPage::retranslate()
+{
+	ui->retranslateUi(this);
+}

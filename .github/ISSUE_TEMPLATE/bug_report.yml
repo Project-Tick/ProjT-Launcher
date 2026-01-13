@@ -1,0 +1,243 @@
+﻿name: Bug report
+description: Report a bug in Project Tick's monorepo (detached forks are maintained here)
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. This repo is a monorepo and all detached forks are maintained by Project Tick.
+
+  - type: checkboxes
+    attributes:
+      label: Pre-checks
+      options:
+        - label: I searched existing issues and discussions.
+          required: true
+        - label: I am on the latest release or a recent commit.
+          required: true
+        - label: This is not a security issue (see SECURITY.md).
+          required: true
+        - label: I understand all code here (including detached forks) is maintained by Project Tick and should be reported here, not upstream.
+          required: true
+
+  - type: checkboxes
+    attributes:
+      label: Scope (select all that apply)
+      options:
+        - label: Launcher (C++/Qt)
+        - label: Website (Eleventy)
+        - label: Bot (Cloudflare Workers)
+        - label: Metadata Generator (Python)
+        - label: Quazip
+        - label: bzip2
+        - label: Docs
+        - label: CI
+        - label: Tools
+        - label: Branding
+        - label: Launcher Java System
+        - label: JavaCheck
+        - label: libnbtplusplus
+        - label: Zlib
+        - label: libqrencode
+        - label: cmark
+        - label: tomlplusplus
+        - label: Packages
+        - label: Other (describe in Summary)
+
+  - type: checkboxes
+    attributes:
+      label: Package type (if Packages is selected)
+      options:
+        - label: NixOS
+        - label: Flatpak
+        - label: AUR
+        - label: AppImage
+        - label: Other (describe in Summary)
+
+  - type: input
+    id: affected_paths
+    attributes:
+      label: Affected paths
+      description: Paths in this repo (examples: launcher/, website/, bot/, meta/, docs/, ci/).
+      placeholder: launcher/ui/, website/projtlauncher/, .github/workflows/
+
+  - type: input
+    id: fork_name
+    attributes:
+      label: Detached fork name (if applicable)
+      description: Example: zlib, quazip, cmark.
+      placeholder: zlib
+
+  - type: input
+    id: upstream_link
+    attributes:
+      label: Upstream issue link (optional)
+      description: If you found related upstream context, link it here.
+      placeholder: https://...
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Clear and concise description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide a minimal, reproducible set of steps.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen.
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and artifacts
+      description: |
+        - Launcher logs: logs/ under your data folder (see docs/handbook/wiki/getting-started/data-location.md)
+        - Crash/stack trace (if applicable)
+        - Screenshots/recordings (if UI-related)
+        - Website: browser console + network errors
+        - Bot: Cloudflare Workers logs + request ID
+        - Meta: command output + input files
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Reproduction frequency
+      options:
+        - Always
+        - Sometimes
+        - Rare
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Windows 11, macOS 14, Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: input
+    id: install_method
+    attributes:
+      label: Install method
+      placeholder: release, flatpak, appimage, aur, source
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release tag or commit hash.
+      placeholder: 0.0.x or abc1234
+
+  - type: input
+    id: build_type
+    attributes:
+      label: Build type
+      placeholder: release or debug
+
+  - type: input
+    id: qt_version
+    attributes:
+      label: Qt version (launcher, if built)
+      placeholder: 6.10.x
+
+  - type: input
+    id: compiler
+    attributes:
+      label: Compiler + version (if built)
+      placeholder: MSVC 19.x, Clang 18.x, GCC 13.x
+
+  - type: input
+    id: java_version
+    attributes:
+      label: Java version (launcher, if relevant)
+      placeholder: 17.0.x
+
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU + driver (if rendering or UI issues)
+      placeholder: NVIDIA 555.xx, AMD 24.x, Intel 31.x
+
+  - type: input
+    id: cmake_preset
+    attributes:
+      label: CMake preset used (if built from source)
+      placeholder: default
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Component-specific details
+        Fill out only the sections that apply to your selected scope.
+
+  - type: textarea
+    id: launcher_details
+    attributes:
+      label: Launcher details
+      description: Instance type, mod loader, account type, and any recent changes.
+      placeholder: Fabric instance, Prism import, Microsoft account, etc.
+
+  - type: textarea
+    id: website_details
+    attributes:
+      label: Website details
+      description: Page path, browser + version, console errors.
+      placeholder: /projtlauncher/download/linux, Chrome 122, console error...
+
+  - type: textarea
+    id: bot_details
+    attributes:
+      label: Bot details
+      description: Worker name, route, request ID, and observed behavior.
+
+  - type: textarea
+    id: meta_details
+    attributes:
+      label: Metadata generator details
+      description: Command you ran and the input files used.
+
+  - type: textarea
+    id: docs_details
+    attributes:
+      label: Docs details
+      description: Docs path and what is incorrect or missing.
+
+  - type: textarea
+    id: ci_details
+    attributes:
+      label: CI details
+      description: Workflow file or run URL (for example: .github/workflows/check.yml).
+
+  - type: textarea
+    id: packaging_details
+    attributes:
+      label: Packaging details
+      description: Distro, package name, repo, and install logs if applicable.
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that helps (settings, instance type, mod loader, etc).

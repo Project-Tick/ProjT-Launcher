@@ -1,0 +1,559 @@
+name: Project Tick Infra
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN CI ENTRY POINT
+# ═══════════════════════════════════════════════════════════════════════════════
+# This is the ONLY workflow that should have push/pull_request triggers.
+# All other ci-* workflows are called from here via workflow_call.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+on:
+  merge_group:
+  push:
+    tags:
+      - "*"
+    branches:
+      - "develop"
+      - "release-*"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *" # Every hour
+    - cron: "0 3 * * *" # Daily at 03:00 UTC
+    - cron: "0 3 * * 0" # Every Sunday at 03:00 UTC
+    - cron: "0 */5 * * *" # Every 5 hours
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened, edited, closed]
+  release:
+    types: [released]
+  workflow_run:
+    workflows:
+      - Reviewed
+    types: [completed]
+  pull_request_review:
+    types: [submitted]
+  branch_protection_rule:
+
+concurrency:
+  group: ${{ (github.event_name == 'schedule' || github.event_name == 'merge_group')
+    && format('projt-infra-{0}-{1}', github.event_name, github.run_id)
+    || format('projt-infra-{0}-{1}-{2}', github.workflow, github.event_name, github.event.pull_request.number || github.ref) }}
+  cancel-in-progress: ${{ (github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'push' && github.ref_type == 'branch') }}
+
+env:
+  NODE_NO_WARNINGS: 1
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PREPARATION - Determine what to run based on context
+  # ═══════════════════════════════════════════════════════════════════════════
+  prepare:
+    name: Prepare
+    uses: ./.github/workflows/ci-prepare.yml
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # LINT & QUALITY CHECKS
+  # ═══════════════════════════════════════════════════════════════════════════
+  lint:
+    name: Lint & Quality
+    needs: prepare
+    if: needs.prepare.outputs.should-test == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
+    uses: ./.github/workflows/ci-lint.yml
+    with:
+      should-test: ${{ needs.prepare.outputs.should-test }}
+      is-schedule: ${{ needs.prepare.outputs.is-schedule }}
+      is-release: ${{ needs.prepare.outputs.is-release }}
+      is-pr-closed: ${{ needs.prepare.outputs.is-pr-closed }}
+      run-bot: ${{ needs.prepare.outputs.run-bot }}
+      run-meta: ${{ needs.prepare.outputs.run-meta }}
+      run-branding: ${{ needs.prepare.outputs.run-branding }}
+      head-ref: ${{ needs.prepare.outputs.head-ref }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PR CHECK
+  # ═══════════════════════════════════════════════════════════════════════════
+  check:
+    name: Check
+    needs: [prepare]
+    if: needs.prepare.outputs.should-test == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true' && needs.prepare.outputs.is-pr == 'true'
+    uses: ./.github/workflows/check.yml
+    permissions:
+      pull-requests: write
+    with:
+      baseBranch: ${{ needs.prepare.outputs.base-ref }}
+      headBranch: ${{ needs.prepare.outputs.head-ref }}
+      mergedSha: ${{ needs.prepare.outputs.head-ref }}
+      targetSha: ${{ needs.prepare.outputs.base-ref }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # META UPDATE (Scheduled)
+  # ═══════════════════════════════════════════════════════════════════════════
+  meta-update:
+    name: Update Meta Files
+    needs: prepare
+    if: needs.prepare.outputs.schedule-cron == '0 * * * *'
+    uses: ./.github/workflows/meta-update.yml
+    secrets: inherit
+    permissions:
+      contents: write
+    with:
+      ref: ${{ github.sha }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # BUILD LAUNCHER
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-projt-launcher-debug:
+    name: Build ProjT Launcher ( DEBUG )
+    needs: prepare
+    if: needs.prepare.outputs.run-regular-build == 'true'
+    uses: ./.github/workflows/build-projt-launcher.yml
+    permissions:
+      contents: read
+      packages: write
+      pages: write
+      id-token: write
+    with:
+      ref: ${{ github.sha }}
+      build-type: Debug
+    secrets: inherit
+      
+  build-projt-launcher-release:
+    name: Build ProjT Launcher ( RELEASE )
+    needs: prepare
+    if: needs.prepare.outputs.run-release-build == 'true'
+    uses: ./.github/workflows/build-projt-launcher.yml
+    permissions:
+      contents: read
+      packages: write
+      pages: write
+      id-token: write
+    with:
+      ref: ${{ github.sha }}
+      build-type: Release
+      force-prepare-yes: true
+    secrets: inherit
+
+  flatpak-build:
+    name: Flatpak Build (${{ matrix.arch }})
+    if: needs.prepare.outputs.run-regular-build == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+
+    runs-on: ${{ matrix.os }}
+
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+          submodules: true
+
+      - name: Set short version
+        id: short-version
+        shell: bash
+        run: |
+          echo "version=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Free disk space
+        shell: bash
+        run: |
+          df -h
+          rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift || true
+          rm -rf /var/lib/apt/lists/* /var/cache/apt/* || true
+          if command -v apt-get >/dev/null 2>&1; then
+            apt-get clean || true
+          fi
+          df -h
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: ProjTLauncher-${{ runner.os }}-${{ steps.short-version.outputs.version }}-Flatpak.flatpak
+          manifest-path: flatpak/org.projecttick.ProjTLauncher.yml
+          arch: ${{ matrix.arch }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # RELEASE
+  # ═══════════════════════════════════════════════════════════════════════════
+  release:
+    name: Release
+    needs: [prepare, build-projt-launcher-release]
+    if: needs.prepare.outputs.run-release-build == 'true'
+    uses: ./.github/workflows/ci-release.yml
+    with:
+      run-release-build: ${{ needs.prepare.outputs.run-release-build }}
+      is-release: ${{ needs.prepare.outputs.is-release }}
+    secrets: inherit
+
+  winget:
+    name: Winget
+    if: needs.prepare.outputs.is-release == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Publish on Winget
+        uses: vedantmgoyal2009/winget-releaser@19e706d4c9121098010096f9c495a70a7518b30f
+        with:
+          identifier: ProjectTick.ProjTLauncher
+          version: ${{ github.event.release.tag_name }}
+          installers-regex: 'ProjTLauncher-Windows-MSVC(:?-arm64|-Legacy)?-Setup-.+\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # QUAZIP TESTS
+  # ═══════════════════════════════════════════════════════════════════════════
+  quazip:
+    name: Quazip
+    needs: prepare
+    if: needs.prepare.outputs.run-quazip == 'true'
+    uses: ./.github/workflows/ci-quazip.yml
+    with:
+      ref: ${{ github.sha }}
+      run-quazip: ${{ needs.prepare.outputs.run-quazip }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # BZIP2 TESTS
+  # ═══════════════════════════════════════════════════════════════════════════
+  bzip2:
+    name: Bzip2
+    needs: prepare
+    if: needs.prepare.outputs.run-bzip2 == 'true'
+    uses: ./.github/workflows/ci-bzip2.yml
+    with:
+      run-bzip2: ${{ needs.prepare.outputs.run-bzip2 }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ZLIB TESTS
+  # ═══════════════════════════════════════════════════════════════════════════
+  zlib:
+    name: Zlib
+    needs: prepare
+    if: needs.prepare.outputs.run-zlib == 'true'
+    uses: ./.github/workflows/ci-zlib.yml
+    with:
+      run-zlib: ${{ needs.prepare.outputs.run-zlib }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # WEBSITE BUILD & DEPLOY
+  # ═══════════════════════════════════════════════════════════════════════════
+  website:
+    name: Website
+    needs: prepare
+    if: needs.prepare.outputs.run-website == 'true'
+    uses: ./.github/workflows/ci-website.yml
+    permissions:
+      pages: write
+      id-token: write
+    with:
+      run-website: ${{ needs.prepare.outputs.run-website }}
+      is-pr: ${{ needs.prepare.outputs.is-pr }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # LIBRARIES (cmark, toml++, libqrencode) - Each has independent CI
+  # ═══════════════════════════════════════════════════════════════════════════
+  cmark:
+    name: cmark
+    needs: prepare
+    if: needs.prepare.outputs.run-cmark == 'true'
+    uses: ./.github/workflows/ci-cmark.yml
+    with:
+      ref: ${{ github.sha }}
+      run-cmark: ${{ needs.prepare.outputs.run-cmark }}
+
+  tomlplusplus:
+    name: toml++
+    needs: prepare
+    if: needs.prepare.outputs.run-tomlplusplus == 'true'
+    uses: ./.github/workflows/ci-tomlplusplus.yml
+    with:
+      ref: ${{ github.sha }}
+      run-tomlplusplus: ${{ needs.prepare.outputs.run-tomlplusplus }}
+
+  libqrencode:
+    name: libqrencode
+    needs: prepare
+    if: needs.prepare.outputs.run-libqrencode == 'true'
+    uses: ./.github/workflows/ci-libqrencode.yml
+    with:
+      ref: ${{ github.sha }}
+      run-libqrencode: ${{ needs.prepare.outputs.run-libqrencode }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # SCHEDULED JOBS
+  # ═══════════════════════════════════════════════════════════════════════════
+  scheduled:
+    name: Scheduled
+    needs: prepare
+    if: needs.prepare.outputs.is-schedule == 'true' || needs.prepare.outputs.is-pr-closed == 'true' || needs.prepare.outputs.is-pr-review == 'true' || needs.prepare.outputs.is-workflow-run == 'true'
+    uses: ./.github/workflows/ci-scheduled.yml
+    with:
+      schedule-cron: ${{ needs.prepare.outputs.schedule-cron }}
+      is-pr-closed: ${{ needs.prepare.outputs.is-pr-closed }}
+      is-release: ${{ needs.prepare.outputs.is-release }}
+    secrets: inherit
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # UNLOCK - Status check for merge requirements
+  # ═══════════════════════════════════════════════════════════════════════════
+  unlock:
+    if: (needs.prepare.outputs.is-merge-group == 'true' || needs.prepare.outputs.is-pr == 'true') && always()
+    needs: [prepare, lint, check, build-projt-launcher-debug, quazip, bzip2, zlib, website, cmark, tomlplusplus, libqrencode]
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        env:
+          RUN_ZLIB: ${{ needs.prepare.outputs.run-zlib }}
+          RUN_BZIP2: ${{ needs.prepare.outputs.run-bzip2 }}
+          RUN_QUAZIP: ${{ needs.prepare.outputs.run-quazip }}
+          RUN_WEBSITE: ${{ needs.prepare.outputs.run-website }}
+          RUN_NIX: ${{ needs.prepare.outputs.run-nix }}
+          RUN_BOT: ${{ needs.prepare.outputs.run-bot }}
+          RUN_META: ${{ needs.prepare.outputs.run-meta }}
+          RUN_BRANDING: ${{ needs.prepare.outputs.run-branding }}
+          RUN_CMARK: ${{ needs.prepare.outputs.run-cmark }}
+          RUN_TOMLPLUSPLUS: ${{ needs.prepare.outputs.run-tomlplusplus }}
+          RUN_LIBQRENCODE: ${{ needs.prepare.outputs.run-libqrencode }}
+          RUN_RELEASE_BUILD: ${{ needs.prepare.outputs.run-release-build }}
+          RUN_REGULAR_BUILD: ${{ needs.prepare.outputs.run-regular-build }}
+          SHOULD_BUILD: ${{ needs.prepare.outputs.should-build }}
+          SHOULD_TEST: ${{ needs.prepare.outputs.should-test }}
+          IS_PR: ${{ needs.prepare.outputs.is-pr }}
+          IS_PR_REVIEW: ${{ needs.prepare.outputs.is-pr-review }}
+          IS_WORKFLOW_RUN: ${{ needs.prepare.outputs.is-workflow-run }}
+          IS_MERGE_GROUP: ${{ needs.prepare.outputs.is-merge-group }}
+          IS_SCHEDULE: ${{ needs.prepare.outputs.is-schedule }}
+          IS_RELEASE: ${{ needs.prepare.outputs.is-release }}
+          IS_PR_CLOSED: ${{ needs.prepare.outputs.is-pr-closed }}
+        with:
+          script: |
+            const { serverUrl, repo, runId, payload, job, eventName } = context;
+            const target_url = `${serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${runId}`;
+
+            const runFlags = {
+              zlib: process.env.RUN_ZLIB === 'true',
+              bzip2: process.env.RUN_BZIP2 === 'true',
+              quazip: process.env.RUN_QUAZIP === 'true',
+              website: process.env.RUN_WEBSITE === 'true',
+              nix: process.env.RUN_NIX === 'true',
+              bot: process.env.RUN_BOT === 'true',
+              meta: process.env.RUN_META === 'true',
+              branding: process.env.RUN_BRANDING === 'true',
+              cmark: process.env.RUN_CMARK === 'true',
+              tomlplusplus: process.env.RUN_TOMLPLUSPLUS === 'true',
+              libqrencode: process.env.RUN_LIBQRENCODE === 'true',
+              release_build: process.env.RUN_RELEASE_BUILD === 'true',
+              regular_build: process.env.RUN_REGULAR_BUILD === 'true',
+              should_build: process.env.SHOULD_BUILD === 'true',
+              should_test: process.env.SHOULD_TEST === 'true',
+              run_schedule: process.env.RUN_SCHEDULE === 'true' || eventName === 'schedule',
+              is_pr: process.env.IS_PR === 'true',
+              is_schedule: process.env.IS_SCHEDULE === 'true',
+              is_pr_review: process.env.IS_PR_REVIEW === 'true',
+              is_workflow_run: process.env.IS_WORKFLOW_RUN === 'true',
+              is_release: process.env.IS_RELEASE === 'true',
+              is_pr_closed: process.env.IS_PR_CLOSED === 'true',
+            };
+            const isPr = process.env.IS_PR === 'true';
+            const isMergeGroup = process.env.IS_MERGE_GROUP === 'true';
+
+            const slugify = value =>
+              (value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const currentJobSlug = slugify(job);
+            const currentJobName = process.env.GITHUB_JOB || job;
+            const currentJobId = Number(process.env.GITHUB_JOB_ID || 0);
+
+            const listJobs = async () => {
+              const jobs = [];
+              let page = 1;
+              while (true) {
+                const res = await github.rest.actions.listJobsForWorkflowRun({
+                  owner: repo.owner,
+                  repo: repo.repo,
+                  run_id: runId,
+                  per_page: 100,
+                  page,
+                });
+                jobs.push(...res.data.jobs);
+                if (res.data.jobs.length < 100) break;
+                page += 1;
+              }
+              return jobs;
+            };
+
+            const waitForJobs = async () => {
+              const maxMinutes = 120;
+              const intervalMs = 60_000;
+              const iterations = Math.ceil((maxMinutes * 60_000) / intervalMs);
+              for (let i = 0; i < iterations; i++) {
+                const jobs = await listJobs();
+                const pending = jobs.filter(j => {
+                  const jobSlug = slugify(j.name);
+                  const isSelf =
+                    jobSlug === currentJobSlug ||
+                    j.name === currentJobName ||
+                    (currentJobId !== 0 && j.id === currentJobId);
+                  return !isSelf && (j.status !== 'completed' || !j.conclusion);
+                });
+                if (pending.length === 0) {
+                  return jobs;
+                }
+                await new Promise(resolve => setTimeout(resolve, intervalMs));
+              }
+              return await listJobs();
+            };
+
+            const jobs = await waitForJobs();
+
+            // Filter jobs to only keep the latest attempt for each job name.
+            const latestJobsMap = new Map();
+            for (const j of jobs) {
+              const existing = latestJobsMap.get(j.name);
+              if (!existing || j.id > existing.id) {
+                latestJobsMap.set(j.name, j);
+              }
+            }
+            const latestJobs = Array.from(latestJobsMap.values());
+
+            const statusCounts = { success: 0, failure: 0, cancelled: 0, skipped: 0, neutral: 0, timed_out: 0, action_required: 0, unknown: 0 };
+            const failedJobs = [];
+            const skippedJobs = [];
+            const neutralJobs = [];
+            const cancelledJobs = [];
+            const timedOutJobs = [];
+            const actionRequiredJobs = [];
+            const pendingOrMissing = [];
+            const failedRequired = [];
+
+            for (const j of latestJobs) {
+              const jobSlug = slugify(j.name);
+              if (
+                jobSlug === currentJobSlug ||
+                j.name === currentJobName ||
+                (currentJobId !== 0 && j.id === currentJobId)
+              )
+                continue; // skip self
+              const conclusion = j.conclusion || 'unknown';
+              if (statusCounts[conclusion] === undefined) statusCounts[conclusion] = 0;
+              statusCounts[conclusion] += 1;
+              if (conclusion === 'failure') failedJobs.push(j.name);
+              else if (conclusion === 'skipped') skippedJobs.push(j.name);
+              else if (conclusion === 'neutral') neutralJobs.push(j.name);
+              else if (conclusion === 'cancelled') cancelledJobs.push(j.name);
+              else if (conclusion === 'timed_out') timedOutJobs.push(j.name);
+              else if (conclusion === 'action_required') actionRequiredJobs.push(j.name);
+            }
+
+            const isNormalTest = runFlags.should_test && !runFlags.is_schedule && !runFlags.is_release && !runFlags.is_pr_closed;
+
+            const requiredJobs = [
+              { name: 'Clang Lint', needed: isNormalTest },
+              { name: 'Markdown Lint', needed: isNormalTest },
+              { name: 'Bot Smoke', needed: runFlags.bot },
+              { name: 'Meta Smoke', needed: runFlags.meta },
+              { name: 'Branding Check', needed: runFlags.branding },
+              { name: 'Check', needed: isNormalTest && runFlags.is_pr },
+              { name: 'Build ProjT Launcher ( DEBUG )', needed: runFlags.regular_build },
+              { name: 'Build ProjT Launcher ( RELEASE )', needed: runFlags.release_build && !runFlags.is_pr && !isMergeGroup },
+              { name: 'Create Release', needed: runFlags.release_build && !isPr && !isMergeGroup },
+              { name: 'Winget', needed: runFlags.release_build && !isPr && !isMergeGroup },
+              { name: 'System Evaluation', needed: isNormalTest },
+            ];
+
+            for (const req of requiredJobs) {
+              if (!req.needed) continue;
+              const reqSlug = slugify(req.name);
+              
+              const matchingJobs = latestJobs.filter(j => {
+                const jSlug = slugify(j.name);
+                return (
+                  jSlug === reqSlug || 
+                  jSlug.startsWith(reqSlug + "-") || 
+                  j.name === req.name || 
+                  j.name.startsWith(req.name + " / ")
+                );
+              });
+
+              if (matchingJobs.length === 0) {
+                pendingOrMissing.push(req.name);
+              } else {
+                const nonSuccess = matchingJobs.filter(j => 
+                  j.conclusion && 
+                  j.conclusion !== 'success' && 
+                  j.conclusion !== 'skipped' &&
+                  j.conclusion !== 'neutral'
+                );
+                if (nonSuccess.length > 0) {
+                  failedRequired.push(req.name);
+                }
+              }
+            }
+
+            const hasFailure =
+              failedJobs.length > 0 ||
+              timedOutJobs.length > 0 ||
+              actionRequiredJobs.length > 0 ||
+              pendingOrMissing.length > 0 ||
+              failedRequired.length > 0;
+
+            const state = hasFailure ? 'error' : 'success';
+            const summaryLines = [
+              `- Results: ${JSON.stringify(statusCounts)}`,
+              `- Failed jobs: ${failedJobs.length ? failedJobs.join(', ') : 'none'}`,
+              `- Timed out jobs: ${timedOutJobs.length ? timedOutJobs.join(', ') : 'none'}`,
+              `- Action required jobs: ${actionRequiredJobs.length ? actionRequiredJobs.join(', ') : 'none'}`,
+              `- Skipped jobs: ${skippedJobs.length ? skippedJobs.join(', ') : 'none'}`,
+              `- Neutral jobs: ${neutralJobs.length ? neutralJobs.join(', ') : 'none'}`,
+              `- Cancelled jobs: ${cancelledJobs.length ? cancelledJobs.join(', ') : 'none'}`,
+              `- Required jobs not successful: ${failedRequired.length ? failedRequired.join(', ') : 'none'}`,
+              `- Pending/missing required jobs: ${pendingOrMissing.length ? pendingOrMissing.join(', ') : 'none'}`,
+              `- Run flags: ${JSON.stringify(runFlags)}`,
+              `- Decision: ${state === 'success' ? 'no PR failures' : 'failures detected'}`,
+            ];
+
+            await core.summary
+              .addHeading('Unlock Status')
+              .addList(summaryLines)
+              .write();
+
+            const sha =
+              (payload.merge_group && payload.merge_group.head_sha) ||
+              (payload.pull_request && payload.pull_request.head && payload.pull_request.head.sha) ||
+              github.sha;
+
+            const isForkPr =
+              payload.pull_request &&
+              payload.pull_request.head &&
+              payload.pull_request.head.repo &&
+              payload.pull_request.head.repo.full_name &&
+              payload.pull_request.head.repo.full_name.toLowerCase() !== `${repo.owner}/${repo.repo}`.toLowerCase();
+
+            if (!sha) {
+              core.warning('No SHA found for status reporting; skipping status update.');
+            } else if (isForkPr) {
+              console.log("info", "Skipping status update for fork PR (no permissions)", { sha });
+            } else {
+              await github.rest.repos.createCommitStatus({
+                ...repo,
+                sha,
+                // WARNING:
+                // Do NOT change the name of this, otherwise the rule will not catch it anymore.
+                // This would prevent all PRs from merging.
+                context: 'no PR failures',
+                state,
+                target_url,
+              });
+            }

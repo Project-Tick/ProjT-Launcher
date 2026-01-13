@@ -1,0 +1,90 @@
+# =================================================
+# ProjT Launcher - Global defaults
+# =================================================
+# Let Git decide what is text, do not force LF globally
+* text=auto
+
+# =================================================
+# Binary / never-touch files
+# =================================================
+*.ref           binary
+*.pem           binary
+
+*.doc           binary
+*.docx          binary
+*.pdf           binary
+*.ai            binary
+*.bin           binary
+*.bmp           binary
+*.dat           binary
+*.gif           binary
+*.ico           binary
+*.jpeg          binary
+*.jpg           binary
+*.otf           binary
+*.png           binary
+*.psd           binary
+*.ttf           binary
+*.woff          binary
+*.woff2         binary
+*.xlsx          binary
+
+# =================================================
+# Git export hygiene
+# =================================================
+.gitattributes  export-ignore
+.gitignore      export-ignore
+.github/**      export-ignore
+
+# =================================================
+# Test data must remain byte-exact
+# =================================================
+**/testdata/**  -text -diff
+
+# =================================================
+# quazip subproject (upstream-accurate behavior)
+# =================================================
+# Old Git compatibility (do not normalize)
+quazip/*.h              -crlf
+quazip/*.cpp            -crlf
+quazip/*.c              -crlf
+quazip/*.dox            -crlf
+quazip/CMakeLists.txt   -crlf
+quazip/*.in             -crlf
+quazip/*.cmakein        -crlf
+quazip/*.symbols        -crlf
+quazip/.editorconfig    -crlf
+
+# Modern Git behavior
+quazip/*.h              text eol=lf
+quazip/*.cpp            text eol=lf
+quazip/*.c              text eol=lf
+quazip/*.dox            text eol=lf
+quazip/CMakeLists.txt   text eol=lf
+quazip/*.in             text eol=lf
+quazip/*.cmakein        text eol=lf
+quazip/*.symbols        text eol=lf
+quazip/.editorconfig    eol=lf
+
+# =================================================
+# tomlplusplus (Windows toolchain aware)
+# =================================================
+# Visual Studio / Windows-native files
+tomlplusplus/*.sln              text eol=crlf encoding=UTF-8-BOM
+tomlplusplus/*.vcxproj          text eol=crlf encoding=UTF-8-BOM
+tomlplusplus/*.vcxproj.filters  text eol=crlf encoding=UTF-8-BOM
+tomlplusplus/*.rc               text eol=crlf encoding=UTF-8
+tomlplusplus/*.hlsl             text eol=crlf encoding=UTF-8
+
+# Language-specific diffs
+tomlplusplus/*.cs               text eol=lf diff=csharp
+tomlplusplus/*.dot              diff=astextplain
+tomlplusplus/*.DOT              diff=astextplain
+tomlplusplus/*.rtf              diff=astextplain
+tomlplusplus/*.RTF              diff=astextplain
+
+# =================================================
+# Vendor / third-party code
+# =================================================
+vendor/**                linguist-vendored
+tomlplusplus/vendor/**   linguist-vendored

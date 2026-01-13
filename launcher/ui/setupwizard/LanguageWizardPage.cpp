@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2026 Project Tick
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+#include "LanguageWizardPage.h"
+#include <Application.h>
+#include <translations/TranslationsModel.h>
+
+#include <BuildConfig.h>
+#include <QVBoxLayout>
+#include "ui/widgets/LanguageSelectionWidget.h"
+
+LanguageWizardPage::LanguageWizardPage(QWidget* parent) : BaseWizardPage(parent)
+{
+	setObjectName(QStringLiteral("languagePage"));
+	auto layout = new QVBoxLayout(this);
+	mainWidget	= new LanguageSelectionWidget(this);
+	layout->setContentsMargins(0, 0, 0, 0);
+	layout->addWidget(mainWidget);
+
+	retranslate();
+}
+
+LanguageWizardPage::~LanguageWizardPage()
+{}
+
+bool LanguageWizardPage::wantsRefreshButton()
+{
+	return true;
+}
+
+void LanguageWizardPage::refresh()
+{
+	auto translations = APPLICATION->translations();
+	translations->downloadIndex();
+}
+
+bool LanguageWizardPage::validatePage()
+{
+	auto settings = APPLICATION->settings();
+	QString key	  = mainWidget->getSelectedLanguageKey();
+	settings->set("Language", key);
+	return true;
+}
+
+void LanguageWizardPage::retranslate()
+{
+	setTitle(tr("Language"));
+	setSubTitle(tr("Select the language to use in %1").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+	mainWidget->retranslate();
+}

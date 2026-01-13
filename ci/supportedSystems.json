@@ -1,0 +1,64 @@
+{
+  "build": [
+    {
+      "name": "linux-x64",
+      "os": "ubuntu-24.04",
+      "arch": "x86_64",
+      "nix": "x86_64-linux"
+    },
+    {
+      "name": "linux-arm64",
+      "os": "ubuntu-24.04-arm",
+      "arch": "aarch64",
+      "nix": "aarch64-linux"
+    },
+    {
+      "name": "macos-arm64",
+      "os": "macos-14",
+      "arch": "arm64",
+      "nix": "aarch64-darwin"
+    },
+    {
+      "name": "windows-x64",
+      "os": "windows-2022",
+      "arch": "x86_64",
+      "compiler": "msvc"
+    },
+    {
+      "name": "windows-arm64",
+      "os": "windows-11-arm",
+      "arch": "aarch64",
+      "compiler": "msvc"
+    },
+    {
+      "name": "windows-mingw-x64",
+      "os": "windows-2022",
+      "arch": "x86_64",
+      "compiler": "mingw",
+      "msystem": "CLANG64"
+    },
+    {
+      "name": "windows-mingw-arm64",
+      "os": "windows-11-arm",
+      "arch": "aarch64",
+      "compiler": "mingw",
+      "msystem": "CLANGARM64"
+    }
+  ],
+  "test": [
+    "linux-x64",
+    "linux-arm64",
+    "macos-arm64",
+    "windows-x64",
+    "windows-arm64"
+  ],
+  "package": [
+    "linux-x64",
+    "linux-arm64",
+    "macos-arm64",
+    "windows-x64",
+    "windows-arm64",
+    "windows-mingw-x64",
+    "windows-mingw-arm64"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "projtlauncher-bot",
+  "main": "index.js",
+  "compatibility_date": "2024-07-01",
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "vars": {
+    "GITHUB_OWNER": "Project-Tick",
+    "GITHUB_REPO": "ProjT-Launcher",
+    "BOT_DRY_RUN": "false"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    }
+  }
+}

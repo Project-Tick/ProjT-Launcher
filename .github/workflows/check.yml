@@ -1,0 +1,226 @@
+name: Check
+
+on:
+  merge_group:
+  workflow_call:
+    inputs:
+      baseBranch:
+        description: 'Base branch classification JSON'
+        required: false
+        type: string
+      headBranch:
+        description: 'Head branch classification JSON'
+        required: false
+        type: string
+      mergedSha:
+        description: 'Merge commit SHA'
+        required: true
+        type: string
+      targetSha:
+        description: 'Target commit SHA'
+        required: true
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # Validate commit messages and structure
+  commits:
+    name: Commit Validation
+    if: inputs.baseBranch && inputs.headBranch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    
+    steps:
+      - name: Checkout CI scripts
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          path: trusted
+          sparse-checkout: |
+            ci/github-script
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd trusted/ci/github-script
+          npm install
+          npm ci --omit=dev
+
+      - name: Log API rate limits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api /rate_limit | jq '.rate'
+
+      - name: Check commits
+        uses: actions/github-script@v8
+        env:
+          BASE_BRANCH: ${{ inputs.baseBranch }}
+          HEAD_BRANCH: ${{ inputs.headBranch }}
+        with:
+          script: |
+            const commits = require('./trusted/ci/github-script/commits.js');
+            
+            await commits({
+              github,
+              context,
+              core,
+              dry: context.eventName === 'pull_request',
+            });
+
+      - name: Log API rate limits (after)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api /rate_limit | jq '.rate'
+
+  # Validate CODEOWNERS
+  owners:
+    name: CODEOWNERS Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.mergedSha }}
+
+      - name: Check CODEOWNERS syntax
+        run: |
+          echo "Checking CODEOWNERS file..."
+          
+          if [ -f ".github/CODEOWNERS" ]; then
+            # Check for basic syntax errors
+            while IFS= read -r line || [[ -n "$line" ]]; do
+              # Skip comments and empty lines
+              [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+              
+              # Check pattern format
+              if ! [[ "$line" =~ ^[^[:space:]]+[[:space:]]+@.+ ]]; then
+                echo "Warning: Invalid CODEOWNERS entry: $line"
+              fi
+            done < ".github/CODEOWNERS"
+            
+            echo "CODEOWNERS check completed"
+          else
+            echo "No CODEOWNERS file found at .github/CODEOWNERS"
+          fi
+
+  # Code quality checks
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout merged code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.mergedSha }}
+          fetch-depth: 0
+
+      - name: Checkout target for comparison
+        run: |
+          git fetch origin ${{ inputs.targetSha }}
+          git checkout -b target FETCH_HEAD
+
+      - name: Check for common issues
+        run: |
+          echo "=== Code Quality Check ==="
+          
+          # Get changed files
+          changed_files=$(git diff --name-only ${{ inputs.targetSha }} ${{ inputs.mergedSha }})
+          
+          echo "Changed files:"
+          echo "$changed_files"
+          echo ""
+          
+          # Check for debug statements
+          debug_count=0
+          while IFS= read -r file; do
+            if [[ "$file" =~ \.(cpp|h)$ ]]; then
+              if grep -l "qDebug\|std::cout" "$file" 2>/dev/null | grep -v "// DEBUG"; then
+                echo "Warning: Debug statement in $file"
+                ((debug_count++)) || true
+              fi
+            fi
+          done <<< "$changed_files"
+          
+          if [ $debug_count -gt 0 ]; then
+            echo "Found $debug_count files with debug statements"
+          fi
+          
+          # Check for TODO/FIXME
+          todo_count=0
+          while IFS= read -r file; do
+            if [[ -f "$file" ]]; then
+              count=$(grep -c "TODO\|FIXME" "$file" 2>/dev/null || echo 0)
+              if [ "$count" -gt 0 ]; then
+                echo "Info: $file has $count TODO/FIXME comments"
+                ((todo_count+=count)) || true
+              fi
+            fi
+          done <<< "$changed_files"
+          
+          echo ""
+          echo "Summary:"
+          echo "  Files with debug statements: $debug_count"
+          echo "  Total TODO/FIXME comments: $todo_count"
+          echo ""
+          echo "=== Code Quality Check Complete ==="
+
+  check-status:
+    name: Check Status Report
+    runs-on: ubuntu-latest
+    needs: [commits, owners, quality]
+    if: always()
+    
+    steps:
+      - name: Check results
+        id: check-results
+        run: |
+          echo "## Check Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** Check" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          commits_result='${{ needs.commits.result }}'
+          owners_result='${{ needs.owners.result }}'
+          quality_result='${{ needs.quality.result }}'
+          
+          echo "**Commits:** \`$commits_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Owners:** \`$owners_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Quality:** \`$quality_result\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "$commits_result" == "failure" ]] || [[ "$owners_result" == "failure" ]] || [[ "$quality_result" == "failure" ]]; then
+            status="failure"
+            echo "**Status:** Checks Failed" >> $GITHUB_STEP_SUMMARY
+          elif [[ "$commits_result" == "cancelled" ]] || [[ "$owners_result" == "cancelled" ]] || [[ "$quality_result" == "cancelled" ]]; then
+            status="cancelled"
+            echo "**Status:** Checks Cancelled" >> $GITHUB_STEP_SUMMARY
+          elif [[ "$commits_result" == "success" ]] && [[ "$owners_result" == "success" ]] && [[ "$quality_result" == "success" ]]; then
+            status="success"
+            echo "**Status:** Checks Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            status="unknown"
+            echo "**Status:** Unknown" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Full Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          
+          echo "status=$status" >> $GITHUB_OUTPUT

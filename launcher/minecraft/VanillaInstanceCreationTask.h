@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2026 Project Tick
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+#pragma once
+
+#include "InstanceCreationTask.h"
+
+#include <utility>
+
+class VanillaCreationTask final : public InstanceCreationTask
+{
+	Q_OBJECT
+  public:
+	VanillaCreationTask(BaseVersion::Ptr version) : InstanceCreationTask(), m_version(std::move(version))
+	{}
+	VanillaCreationTask(BaseVersion::Ptr version, QString loader, BaseVersion::Ptr loader_version);
+
+	bool createInstance() override;
+
+  private:
+	// Version to update to / create of the instance.
+	BaseVersion::Ptr m_version;
+
+	bool m_using_loader = false;
+	QString m_loader;
+	BaseVersion::Ptr m_loader_version;
+};

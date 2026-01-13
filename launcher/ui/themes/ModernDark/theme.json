@@ -1,0 +1,36 @@
+{
+    "name": "Modern Dark",
+    "widgets": "Fusion",
+    "qssFilePath": "themeStyle.css",
+    "colors": {
+        "Window": "#1e1e2e",
+        "WindowText": "#cdd6f4",
+        "Base": "#181825",
+        "AlternateBase": "#11111b",
+        "ToolTipBase": "#181825",
+        "ToolTipText": "#cdd6f4",
+        "Text": "#cdd6f4",
+        "Button": "#313244",
+        "ButtonText": "#cdd6f4",
+        "BrightText": "#f5e0dc",
+        "Link": "#89b4fa",
+        "Highlight": "#cba6f7",
+        "HighlightedText": "#1e1e2e",
+        "fadeColor": "#11111b",
+        "fadeAmount": 0.5
+    },
+    "logColors": {
+        "Message": "#cdd6f4",
+        "Launcher": "#89b4fa",
+        "Debug": "#6c7086",
+        "Warning": "#f9e2af",
+        "Error": "#f38ba8",
+        "Fatal": "#f38ba8",
+        "MessageHighlight": "#313244",
+        "LauncherHighlight": "#1e1e2e",
+        "DebugHighlight": "#1e1e2e",
+        "WarningHighlight": "#313244",
+        "ErrorHighlight": "#313244",
+        "FatalHighlight": "#313244"
+    }
+}

@@ -1,0 +1,13 @@
+beautifulsoup4==4.14.3
+CacheControl==0.14.2
+certifi==2025.11.12
+charset-normalizer==3.4.4
+filelock==3.20.1
+idna==3.11
+msgpack==1.1.2
+packaging==25.0
+pydantic==1.10.24
+requests==2.32.4
+soupsieve==2.8.1
+typing_extensions==4.15.0
+urllib3==2.6.3

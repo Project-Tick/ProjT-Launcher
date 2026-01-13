@@ -1,0 +1,20 @@
+# build / generated
+_site/
+node_modules/
+
+# vendored / forked upstreams
+bzip2/
+quazip/
+tomlplusplus/
+libnbtplusplus/
+libqrencode/
+cmark/
+extra-cmake-modules/
+zlib/
+
+# generated reports
+TODO_FIXME_REPORT.md
+
+COPYING.md
+docs
+website-root/handbook
