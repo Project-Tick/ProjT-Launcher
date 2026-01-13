@@ -305,31 +305,32 @@ const CONFIG = {
     },
   },
   autoMerge: {
-    // Controlled via env BOT_AUTO_MERGE_ENABLED (default true)
     enabledEnv: "BOT_AUTO_MERGE_ENABLED",
+    enabled: false,
     mergeMethodEnv: "BOT_AUTO_MERGE_METHOD",
     mergeMethod: "merge",
   },
   autoApprove: {
     enabledEnv: "BOT_AUTO_APPROVE_RUNS",
+    enabled: false,
     workflowRules: [
       {
         scopes: ["Zlib"],
-        workflows: ["ci.yml"],
+        workflows: ["ci-new.yml"],
       },
       {
         scopes: ["bzip2", "Quazip"],
-        workflows: ["ci.yml"],
+        workflows: ["ci-new.yml"],
       },
       {
         scopes: ["Launcher (C++/Qt)"],
-        workflows: ["ci.yml"],
+        workflows: ["ci-new.yml"],
       },
     ],
   },
   ciSummary: {
     marker: "<!-- projt-bot:pr-summary -->",
-    workflowFile: "ci.yml",
+    workflowFile: "ci-new.yml",
     jobs: [
       { label: "Prepare", match: ["prepare"] },
       { label: "Check", match: ["check"] },
@@ -349,7 +350,7 @@ const CONFIG = {
   statusPage: {
     path: "/status",
     workflows: [
-      { file: "ci.yml", label: "CI" },
+      { file: "ci-new.yml", label: "CI" },
     ],
   },
   labeler: {
