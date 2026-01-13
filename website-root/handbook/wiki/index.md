@@ -5,7 +5,7 @@ title: Wiki
 
 # Wiki
 
-Welcome to the ProjT Launcher wiki mirror.
+Welcome to the ProjT Launcher wiki.
 
 - [Overview](/handbook/wiki/overview/)
 - [Getting Started](/handbook/wiki/getting-started/)
