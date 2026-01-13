@@ -550,7 +550,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: Setup cygwin
-      uses: cygwin/cygwin-install-action@e3df4cc46ec1b854269677f3fa26f9256cceefcc
+      uses: cygwin/cygwin-install-action@4210deba1a995b9e15478134b1d5ad09a5633959
       with:
         packages: >-
           cmake
