@@ -29,7 +29,7 @@ export default {
         return json({ ok: true, message: "GitHub webhook endpoint. Use POST with signature." });
       }
       if (request.method !== "POST") {
-        return json({ ok: true, message: "This method is allowed" });
+        return json({ ok: false, error: "Method not allowed. Only POST is supported." }, 405);
       }
       const rawBody = await request.text();
       const signature = request.headers.get("x-hub-signature-256") ?? "";
