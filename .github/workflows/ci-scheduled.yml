@@ -371,3 +371,10 @@ jobs:
           pr-title: "chore(nix): update lockfile"
           pr-labels: |
             41.changelog:omit
+
+      - name: Enable Pull Request Automerge
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        uses: peter-evans/enable-pull-request-automerge@23c09f60046c64f1b0079b44af614bfa411395b9
+        with:
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: merge
