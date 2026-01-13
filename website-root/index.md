@@ -41,8 +41,8 @@ eleventyExcludeFromCollections: true
 
   <h2>Documentation</h2>
   
-  <h3>Developer Handbook</h3>
-  <p>Documentation for contributors: architecture, libraries, CI/CD.</p>
+  <h3>Handbook</h3>
+  <p>Documentation for Project Tick: ProjT Launcher, architecture, libraries, CI/CD.</p>
   <ul>
     <li><a href="/handbook/">Browse Handbook</a></li>
   </ul>

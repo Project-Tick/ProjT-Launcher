@@ -3,7 +3,7 @@ tags: nav
 eleventyNavigation:
   key: Wiki
   order: 4
-  url: /projtlauncher/wiki/
+  url: /handbook/wiki/overview
 permalink: false
 ---
 
