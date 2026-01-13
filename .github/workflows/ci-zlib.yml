@@ -87,7 +87,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
     - name: Install packages (Linux)
       if: runner.os == 'Linux' && matrix.arch.tag == 'i386'
@@ -186,7 +186,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
     - name: Generate project files (cmake)
       run: |
@@ -304,7 +304,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
     - name: Install packages (Windows)
       if: runner.os == 'Windows'
@@ -450,7 +450,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
     - name: Install packages (Ubuntu)
       if: runner.os == 'Linux' && matrix.packages
@@ -504,7 +504,7 @@ jobs:
         working-directory: zlib
     steps:
     - name: Checkout
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       with:
         fetch-depth: 0
     - name: Setup MSYS2
@@ -546,7 +546,7 @@ jobs:
     name: Cygwin
     steps:
     - name: Checkout
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       with:
         fetch-depth: 0
     - name: Setup cygwin

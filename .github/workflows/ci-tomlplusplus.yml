@@ -36,7 +36,7 @@ jobs:
       clang_version: "14"
       gcc_version: "11"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Install base dependencies
         run: |
           sudo apt -y update
@@ -96,7 +96,7 @@ jobs:
         shell: cmd
         working-directory: tomlplusplus
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Install dependencies
         run: |
           python3 -m pip install -U pip
