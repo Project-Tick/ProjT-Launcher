@@ -132,7 +132,7 @@ export default {
         return json({ ok: true, result }, 200);
       }
 
-      if (request.method === "POST" || request.method === "GET") {
+      if (request.method === "GET") {
         const pr = url.searchParams.get("pr");
         if (pr) {
           const prNumber = Number(pr);
