@@ -13,8 +13,7 @@ on:
     tags:
       - "*"
     branches:
-      - "develop"
-      - "release-*"
+      - "main"
   workflow_dispatch:
   schedule:
     - cron: "0 * * * *" # Every hour
