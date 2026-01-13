@@ -1,6 +1,6 @@
 ﻿> Wiki navigation: [Overview](/handbook/wiki/) | [Getting Started](/handbook/wiki/getting-started/) | [Help Pages](/handbook/help-pages/) | [Development](/handbook/wiki/development/)
 
-# Migrating instances from ProjT Launcher
+# Migrating instances from Prism Launcher
 
 ## <img src="https://avatars.githubusercontent.com/u/116031705" alt="Prism Launcher Logo" height="20" /> In Prism Launcher
 
