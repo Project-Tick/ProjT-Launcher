@@ -670,7 +670,18 @@ async function getMaintainers({ owner, repo, ref, env }) {
       method: "GET",
       path: `/repos/${owner}/${repo}/contents/${path}${refSuffix}`,
     });
-    const content = data?.content ? atob(data.content) : "";
+    let content = "";
+    if (data?.content) {
+      try {
+        content = atob(data.content);
+      } catch (decodeError) {
+        console.warn(
+          `Failed to decode base64 maintainers content from ${path}:`,
+          decodeError?.message ?? decodeError
+        );
+        content = "";
+      }
+    }
     const githubMatches = [...String(content).matchAll(/github\s*=\s*"([^"]+)"/g)];
     for (const m of githubMatches) {
       if (m[1]) maintainers.add(m[1].toLowerCase());
