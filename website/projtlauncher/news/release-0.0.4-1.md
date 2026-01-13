@@ -39,7 +39,7 @@ While user-facing behavior remains stable, the internal structure, infrastructur
   - Refactored download handling and removed unsafe signal usage in `ManifestDownloadTask` (#173)
   - Dependency updates and internal cleanup across Java and C++ components (#132, #164)
 - **UI improvements**
-  - Enterprise Premium UI overhaul for ProjT Launcher only website (#144)
+  - Enterprise Premium UI overhaul for ProjT Launcher-only website (#144)
 
 ### Fixed
 
