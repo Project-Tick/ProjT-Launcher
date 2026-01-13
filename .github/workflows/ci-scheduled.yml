@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
           fetch-depth: 0
           token: ${{ github.token }}
@@ -136,7 +136,7 @@ jobs:
     
     steps:
       - name: Checkout CI scripts
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
           persist-credentials: false
           sparse-checkout: |
@@ -289,7 +289,7 @@ jobs:
           git config --global core.autocrlf false
           git config --global core.eol lf
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
           persist-credentials: false
 
@@ -351,7 +351,7 @@ jobs:
           git config --global core.autocrlf false
           git config --global core.eol lf
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
           persist-credentials: false
 

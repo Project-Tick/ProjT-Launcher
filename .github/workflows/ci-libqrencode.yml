@@ -26,7 +26,7 @@ jobs:
         working-directory: libqrencode
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -57,7 +57,7 @@ jobs:
     env:
       BUILD_TYPE: Release
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build
       - name: Configure CMake
@@ -86,7 +86,7 @@ jobs:
     env:
       BUILD_TYPE: Release
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Install dependencies
         run: |
           sudo apt-get update

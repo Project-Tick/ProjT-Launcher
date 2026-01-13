@@ -112,7 +112,7 @@ jobs:
     steps:
       - name: Show OS info
         run: cat /etc/os-release
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
       - name: Install build tools
         working-directory: quazip
@@ -247,7 +247,7 @@ jobs:
         runner:
           - "fedora:42"
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - name: Install build tools
         run: dnf -y install g++ make cmake qt6-qtbase-devel qt6-qt5compat-devel zlib-ng-devel zlib-ng-compat-devel
       - name: Run cmake
@@ -275,7 +275,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
       - name: Configure CMake
         run: cmake -DCMAKE_BUILD_TYPE="${{env.BUILD_TYPE}}" -DBUILD_SHARED_LIBS=OFF -DQUAZIP_ENABLE_TESTS=ON -DQUAZIP_USE_QT_ZLIB=ON -DCMAKE_PREFIX_PATH="/usr/local/Qt-${{ matrix.qt_version }}" -B build
@@ -304,7 +304,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
       - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
         with:
@@ -460,7 +460,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
       - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
         with:
