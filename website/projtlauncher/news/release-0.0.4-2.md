@@ -51,7 +51,7 @@ User-facing behavior remains unchanged, while internal systems are now significa
   - Removed unused `handbook.11tydata.js` and corrected Eleventy ignore rules (#271)
 
 - **Release consistency**
-  - Consolidated post–0.0.4-1 cleanup fixes to ensure metadata and version state correctness (#264, #265)
+  - Consolidated post-0.0.4-1 cleanup fixes to ensure metadata and version state correctness (#264, #265)
 
 ### Removed
 
