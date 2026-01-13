@@ -1413,6 +1413,14 @@ function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
+function safeBase64Decode(text) {
+  try {
+    return atob(text);
+  } catch (e) {
+    return null;
+  }
+}
+
 let labelerCache = null;
 
 async function loadLabelerRules({ owner, repo, env, ref }) {
@@ -1428,7 +1436,11 @@ async function loadLabelerRules({ owner, repo, env, ref }) {
       method: "GET",
       path: `/repos/${owner}/${repo}/contents/${path}${refSuffix}`,
     });
-    const content = data?.content ? atob(data.content) : "";
+    const content = data?.content ? safeBase64Decode(data.content) : "";
+    if (content == null) {
+      console.warn("Failed to decode labeler config: invalid base64 content");
+      return [];
+    }
     const rules = parseLabelerYaml(content);
     labelerCache = { ts: now, rules };
     return rules;
