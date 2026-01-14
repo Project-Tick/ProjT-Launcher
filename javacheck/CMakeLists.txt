@@ -6,6 +6,11 @@ include(UseJava)
 set(CMAKE_JAVA_JAR_ENTRY_POINT JavaCheck)
 set(CMAKE_JAVA_COMPILE_FLAGS -target 8 -source 8 -Xlint:deprecation -Xlint:unchecked)
 
+# Set default JARS_DEST_DIR if not already defined by parent CMakeLists.txt
+if(NOT DEFINED JARS_DEST_DIR)
+    set(JARS_DEST_DIR "${CMAKE_BINARY_DIR}/jars")
+endif()
+
 set(SRC
     src/main/java/org/projecttick/javacheck/JavaCheck.java
 )

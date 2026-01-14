@@ -44,5 +44,5 @@ jobs:
     - name: Upload ProjectTick JavaCheck Artifact
       uses: actions/upload-artifact@v5
       with:
-        name: ProjectTick-JavaCheck-${{ github.run_id }}
-        path: javacheck/build/
+        name: ProjectTick-JavaCheck-${{ github.run_id }}.jar
+        path: javacheck/build/jars/JavaCheck.jar
