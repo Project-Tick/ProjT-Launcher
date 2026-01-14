@@ -251,7 +251,7 @@ jobs:
             "javacheck": r"- \[[xX]\]\s+JavaCheck\b",
             "libnbtplusplus": r"- \[[xX]\]\s+libnbtplusplus\b",
             "cmark": r"- \[[xX]\]\s+cmark\b",
-            "tomlplusplus": r"- \[[xX]\]\s+toml\+\+\b",
+            "tomlplusplus": r"- \[[xX]\]\s+tomlplusplus\b",
             "libqrencode": r"- \[[xX]\]\s+libqrencode\b",
           }
 
