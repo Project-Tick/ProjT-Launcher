@@ -1,6 +1,6 @@
 # This file is a part of toml++ and is subject to the the terms of the MIT license.
 # Copyright (c) Mark Gillard <mark.gillard@outlook.com.au>
-# See https://github.com/marzer/tomlplusplus/blob/master/LICENSE for the full license text.
+# See https://github.com/Project-Tick/ProjT-Launcher/blob/main/tomlplusplus/LICENSE for the full license text.
 # SPDX-License-Identifier: MIT
 
 assert(build_lib) # not header-only mode
@@ -55,9 +55,10 @@ endif
 # cmake
 if get_option('generate_cmake_config') and not is_subproject and not is_devel
 	cmake = import('cmake')
+	# Write package version using the full version (may include tweak) if available.
 	cmake.write_basic_package_version_file(
 		name: meson.project_name(),
-		version: meson.project_version(),
+		version: version_full,
 	)
 
 	# This gets the full path of the library, then considers just the last

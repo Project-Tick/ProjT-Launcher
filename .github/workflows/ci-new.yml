@@ -199,6 +199,7 @@ jobs:
 
   winget:
     name: Winget
+    needs: [prepare]
     if: needs.prepare.outputs.is-release == 'true'
     runs-on: windows-latest
     steps:

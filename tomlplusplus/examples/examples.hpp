@@ -1,6 +1,7 @@
 //# This file is a part of toml++ and is subject to the the terms of the MIT license.
 //# Copyright (c) 2019-2020 Mark Gillard <mark.gillard@outlook.com.au>
-//# See https://github.com/marzer/tomlplusplus/blob/master/LICENSE for the full license text.
+//# Copyright (c) 2026 Project Tick
+//# See https://github.com/Project-Tick/ProjT-Launcher/blob/main/tomlplusplus/LICENSE for the full license text.
 // SPDX-License-Identifier: MIT
 
 // this file is for boilerplate unrelated to the toml++ example learning outcomes.

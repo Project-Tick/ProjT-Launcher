@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # This file is a part of toml++ and is subject to the the terms of the MIT license.
 # Copyright (c) Mark Gillard <mark.gillard@outlook.com.au>
-# See https://github.com/marzer/tomlplusplus/blob/master/LICENSE for the full license text.
+# Copyright (c) 2026 Project Tick
+# See https://github.com/Project-Tick/ProjT-Launcher/blob/main/tomlplusplus/LICENSE for the full license text.
 # SPDX-License-Identifier: MIT
 
 import sys
@@ -56,6 +57,7 @@ if __name__ == '__main__':
 		text = re.sub(r'''(\s*#\s*define\s+TOML_LIB_MAJOR)\s+[0-9]+''', rf"\1 {version[0]}", text)
 		text = re.sub(r'''(\s*#\s*define\s+TOML_LIB_MINOR)\s+[0-9]+''', rf"\1 {version[1]}", text)
 		text = re.sub(r'''(\s*#\s*define\s+TOML_LIB_PATCH)\s+[0-9]+''', rf"\1 {version[2]}", text)
+		text = re.sub(r'''(\s*#\s*define\s+TOML_LIB_TWEAK)\s+[0-9]+''', rf"\1 {version[3]}", text)
 		write_text_file(path, text)
 
 	noop_sub = r'#$%^nbsp^%$#'

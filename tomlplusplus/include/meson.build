@@ -1,6 +1,7 @@
 # This file is a part of toml++ and is subject to the the terms of the MIT license.
 # Copyright (c) Mark Gillard <mark.gillard@outlook.com.au>
-# See https://github.com/marzer/tomlplusplus/blob/master/LICENSE for the full license text.
+# Copyright (c) 2026 Project Tick
+# See https://github.com/Project-Tick/ProjT-Launcher/blob/main/tomlplusplus/LICENSE for the full license text.
 # SPDX-License-Identifier: MIT
 
 include_dir = include_directories('.')
@@ -35,7 +36,8 @@ if not build_lib # header-only mode
 		#)
 		# In the meantime, install a pre-generated Package Version file
 		configure_file(
-			configuration: {'version': meson.project_version()},
+			# use full version (may include tweak) when generating the package version file
+			configuration: {'version': version_full},
 			input: '..'/'cmake'/'tomlplusplusConfigVersion.cmake.meson.in',
 			output: 'tomlplusplusConfigVersion.cmake',
 			install_dir: get_option('datadir')/'cmake'/meson.project_name()

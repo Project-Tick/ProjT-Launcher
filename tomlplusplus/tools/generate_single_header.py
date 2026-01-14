@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # This file is a part of toml++ and is subject to the the terms of the MIT license.
 # Copyright (c) Mark Gillard <mark.gillard@outlook.com.au>
-# See https://github.com/marzer/tomlplusplus/blob/master/LICENSE for the full license text.
+# Copyright (c) 2026 Project Tick
+# See https://github.com/Project-Tick/ProjT-Launcher/blob/main/tomlplusplus/LICENSE for the full license text.
 # SPDX-License-Identifier: MIT
 
 import sys
@@ -139,18 +140,19 @@ def main():
 	match = re.search(
 			r'#\s*define\s+TOML_LIB_MAJOR\s+([0-9]+)[^0-9].*'
 			+ r'#\s*define\s+TOML_LIB_MINOR\s+([0-9]+)[^0-9].*'
-			+ r'#\s*define\s+TOML_LIB_PATCH\s+([0-9]+)[^0-9]',
+			+ r'#\s*define\s+TOML_LIB_PATCH\s+([0-9]+)[^0-9].*'
+			+ r'#\s*define\s+TOML_LIB_TWEAK\s+([0-9]+)[^0-9]',
 			version_h, re.I | re.S)
 	if match is None:
-		raise Exception("could not find TOML_LIB_MAJOR, TOML_LIB_MINOR or TOML_LIB_PATCH impl/version.hpp")
-	version = rf'{int(match[1])}.{int(match[2])}.{int(match[3])}'
+		raise Exception("could not find TOML_LIB_MAJOR, TOML_LIB_MINOR TOML_LIB_PATCH or TOML_LIB_TWEAK impl/version.hpp")
+	version = rf'{int(match[1])}.{int(match[2])}.{int(match[3])}-{int(match[4])}'
 	print(rf'Library version: {version}')
 
 	# build the preamble (license etc)
 	preamble = []
 	preamble.append(rf'''
-// toml++ v{version}
-// https://github.com/marzer/tomlplusplus
+// toml++ {version}
+// https://github.com/Project-Tick/ProjT-Launcher/
 // SPDX-License-Identifier: MIT''')
 	preamble.append(r'''
 // -         THIS FILE WAS ASSEMBLED FROM MULTIPLE HEADER FILES BY A SCRIPT - PLEASE DON'T EDIT IT DIRECTLY            -
@@ -231,6 +233,7 @@ def main():
 				r'TOML_LIB_MAJOR',
 				r'TOML_LIB_MINOR',
 				r'TOML_LIB_PATCH',
+				r'TOML_LIB_TWEAK',
 				r'TOML_LIB_SINGLE_HEADER',
 				r'TOML_MAX_NESTED_VALUES',
 				r'TOML_MAX_DOTTED_KEYS_DEPTH',
