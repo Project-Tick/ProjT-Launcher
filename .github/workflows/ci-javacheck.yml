@@ -34,7 +34,7 @@ jobs:
           libtiff6 \
           lcov
     - name: Build with Maven
-      run: mvn -B package
+      run: cd javacheck && mvn -B package
     - name: Upload ProjectTick JavaCheck Artifact
       uses: actions/upload-artifact@v5
       with:
