@@ -184,6 +184,22 @@ jobs:
           manifest-path: flatpak/org.projecttick.ProjTLauncher.yml
           arch: ${{ matrix.arch }}
 
+  build-javacheck:
+    name: Build javacheck
+    needs: prepare
+    if: needs.prepare.outputs.run-javacheck == 'true'
+    uses: ./.github/workflows/ci-javacheck.yml
+    permissions:
+      contents: read
+      packages: write
+      pages: write
+      id-token: write
+    with:
+      ref: ${{ github.sha }}
+      build-type: Release
+      force-prepare-yes: true
+    secrets: inherit
+
   # ═══════════════════════════════════════════════════════════════════════════
   # RELEASE
   # ═══════════════════════════════════════════════════════════════════════════
