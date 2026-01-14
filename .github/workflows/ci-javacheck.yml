@@ -1,0 +1,48 @@
+name: CI JavaCheck
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+      run-javacheck:
+        description: 'Whether to run javacheck jobs'
+        required: false
+        type: string
+        default: 'true'
+
+jobs:
+  build:
+    defaults:
+      run:
+        working-directory: javacheck
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.ref }}
+    - name: Install host dependencies
+      shell: bash
+      run: |
+        sudo apt-get -y update
+        sudo apt-get -y install \
+          dpkg-dev \
+          ninja-build scdoc \
+          appstream libxcb-cursor-dev \
+          openjdk-21-jdk \
+          libtiff6 \
+          lcov \
+          cmake \
+          build-essential
+    - name: Build with CMake
+      run: |
+        mkdir -p build
+        cd build
+        cmake ..
+        make
+    - name: Upload ProjectTick JavaCheck Artifact
+      uses: actions/upload-artifact@v5
+      with:
+        name: ProjectTick-JavaCheck-${{ github.run_id }}.jar
+        path: javacheck/build/*.jar

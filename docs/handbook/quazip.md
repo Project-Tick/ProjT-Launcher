@@ -6,7 +6,7 @@
 > **Status**: Detached Fork (independently maintained)  
 > **Dependencies**: Qt 5/6, zlib
 
-[![CI](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci.yml)
+[![CI](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci-new.yml/badge.svg?branch=develop)](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci-new.yml)
 
 ---
 
