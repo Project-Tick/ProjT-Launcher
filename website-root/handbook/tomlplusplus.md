@@ -6,7 +6,7 @@
 > **Status**: Detached Fork (independently maintained)  
 > **Specification**: [TOML v1.0.0](https://toml.io/en/v1.0.0)
 
-[![CI](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci.yml)
+[![CI](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci-new.yml/badge.svg)](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci-new.yml)
 
 ---
 

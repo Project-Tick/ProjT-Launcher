@@ -7,7 +7,7 @@ set(CMAKE_JAVA_JAR_ENTRY_POINT JavaCheck)
 set(CMAKE_JAVA_COMPILE_FLAGS -target 8 -source 8 -Xlint:deprecation -Xlint:unchecked)
 
 set(SRC
-    JavaCheck.java
+    src/main/java/org/projecttick/JavaCheck.java
 )
 
 add_jar(JavaCheck ${SRC})

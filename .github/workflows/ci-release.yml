@@ -68,7 +68,7 @@ jobs:
         run: |
           cd "${{ github.workspace }}"
           SRC_DIR="ProjTLauncher-source"
-          libs=(libnbtplusplus zlib quazip bzip2 launcherjava tomlplusplus libqrencode extra-cmake-modules cmark)
+          libs=(libnbtplusplus zlib quazip bzip2 launcherjava tomlplusplus libqrencode extra-cmake-modules cmark javacheck)
 
           sign_file() {
             local path="$1"
@@ -101,6 +101,7 @@ jobs:
           mv ProjTLauncher-*.AppImage/ProjTLauncher-*-aarch64.AppImage ProjTLauncher-Linux-aarch64.AppImage
           mv ProjTLauncher-*.AppImage.zsync/ProjTLauncher-*-aarch64.AppImage.zsync ProjTLauncher-Linux-aarch64.AppImage.zsync
           mv ProjTLauncher-macOS*/ProjTLauncher.zip ProjTLauncher-macOS-${{ env.VERSION }}.zip
+          mv ProjectTick-JavaCheck-${{ github.run_id }}.jar ProjectTick-JavaCheck-${{ env.VERSION }}.jar
 
           tar --exclude='.git' -czf ProjTLauncher-${{ env.VERSION }}.tar.gz ProjTLauncher-${{ env.VERSION }}
 
@@ -151,6 +152,7 @@ jobs:
           draft: true
           prerelease: false
           files: |
+            JavaCheck-${{ env.VERSION }}.jar
             ProjTLauncher-Linux-x86_64.AppImage
             ProjTLauncher-Linux-x86_64.AppImage.zsync
             ProjTLauncher-Linux-aarch64.AppImage
@@ -225,3 +227,9 @@ jobs:
             cmark-${{ env.VERSION }}.zip.asc
             cmark-${{ env.VERSION }}.tar.gz.asc
             cmark-${{ env.VERSION }}.tar.xz.asc
+            javacheck-${{ env.VERSION }}.zip
+            javacheck-${{ env.VERSION }}.tar.gz
+            javacheck-${{ env.VERSION }}.tar.xz
+            javacheck-${{ env.VERSION }}.zip.asc
+            javacheck-${{ env.VERSION }}.tar.gz.asc
+            javacheck-${{ env.VERSION }}.tar.xz.asc
