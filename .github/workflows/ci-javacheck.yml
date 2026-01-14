@@ -14,6 +14,9 @@ on:
 
 jobs:
   build:
+    defaults:
+      run:
+        working-directory: javacheck
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
@@ -25,12 +28,10 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
-        cache-dependency-path: javacheck/pom.xml
     - name: Build with Maven
-      working-directory: javacheck
       run: mvn -B package --file pom.xml
     - name: Upload ProjectTick JavaCheck Artifact
       uses: actions/upload-artifact@v5
       with:
         name: ProjectTick-JavaCheck-${{ github.run_id }}.jar
-        path: javacheck/target/*.jar
+        path: target/*.jar
