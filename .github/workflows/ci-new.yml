@@ -196,8 +196,7 @@ jobs:
       id-token: write
     with:
       ref: ${{ github.sha }}
-      build-type: Release
-      force-prepare-yes: true
+      run-javacheck: ${{ needs.prepare.outputs.run-javacheck }}
     secrets: inherit
 
   # ═══════════════════════════════════════════════════════════════════════════
