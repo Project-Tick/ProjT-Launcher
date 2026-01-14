@@ -15,6 +15,17 @@
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
+ * 
+ *  License Version Restriction
+ * 
+ *  Redistribution, modification, or contribution to this program,
+ *  including substantial or material contributions, does not grant
+ *  the right to relicense the program, in whole or in part, under any
+ *  later version of the GNU General Public License.
+ *
+ *  Any modified or derivative version of this program must be
+ *  distributed under GPL version 2 only, unless an explicit written
+ *  exception is granted by the original copyright holder.
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see
