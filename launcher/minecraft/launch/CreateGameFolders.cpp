@@ -19,15 +19,15 @@
  */
 #include "CreateGameFolders.h"
 #include "FileSystem.h"
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
 #include "minecraft/MinecraftInstance.h"
 
-CreateGameFolders::CreateGameFolders(LaunchTask* parent) : LaunchStep(parent)
+CreateGameFolders::CreateGameFolders(projt::launch::LaunchPipeline* parent) : projt::launch::LaunchStage(parent)
 {}
 
 void CreateGameFolders::executeTask()
 {
-	auto instance = m_parent->instance();
+	auto instance = m_flow->instance();
 
 	if (!FS::ensureFolderPathExists(instance->gameRoot()))
 	{

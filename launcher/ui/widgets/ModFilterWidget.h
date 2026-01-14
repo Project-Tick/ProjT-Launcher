@@ -65,7 +65,7 @@
 #include "Version.h"
 
 #include "VersionProxyModel.h"
-#include "meta/VersionList.h"
+#include "meta/VersionList.hpp"
 
 #include "minecraft/MinecraftInstance.h"
 #include "modplatform/ModIndex.h"
@@ -159,7 +159,7 @@ class ModFilterWidget : public QTabWidget
 	std::shared_ptr<Filter> m_filter;
 	bool m_filter_changed = false;
 
-	Meta::VersionList::Ptr m_version_list;
+	projt::meta::MetaVersionList::Ptr m_version_list;
 	VersionProxyModel* m_versions_proxy = nullptr;
 
 	QList<ModPlatform::Category> m_categories;

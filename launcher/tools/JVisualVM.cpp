@@ -23,7 +23,7 @@
 #include <QStandardPaths>
 
 #include "BaseInstance.h"
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
 #include "settings/SettingsObject.h"
 
 class JVisualVM : public BaseProfiler
@@ -37,7 +37,7 @@ class JVisualVM : public BaseProfiler
 	void profilerFinished(int exit, QProcess::ExitStatus status);
 
   protected:
-	void beginProfilingImpl(shared_qobject_ptr<LaunchTask> process);
+	void beginProfilingImpl(shared_qobject_ptr<projt::launch::LaunchPipeline> process);
 };
 
 JVisualVM::JVisualVM(SettingsObjectPtr settings, InstancePtr instance, QObject* parent)
@@ -62,7 +62,7 @@ void JVisualVM::profilerFinished([[maybe_unused]] int exit, QProcess::ExitStatus
 	}
 }
 
-void JVisualVM::beginProfilingImpl(shared_qobject_ptr<LaunchTask> process)
+void JVisualVM::beginProfilingImpl(shared_qobject_ptr<projt::launch::LaunchPipeline> process)
 {
 	QProcess* profiler		 = new QProcess(this);
 	QStringList profilerArgs = { "--openpid", QString::number(process->pid()) };

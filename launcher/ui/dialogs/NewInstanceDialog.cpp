@@ -64,7 +64,7 @@
 
 #include <BaseVersion.h>
 #include <InstanceList.h>
-#include <icons/IconList.h>
+#include <icons/IconList.hpp>
 #include <tasks/Task.h>
 
 #include "IconPickerDialog.h"
@@ -377,3 +377,4 @@ void NewInstanceDialog::selectedPageChanged(BasePage* previous, BasePage* select
 		nextPage->setSearchTerm(m_searchTerm);
 	}
 }
+

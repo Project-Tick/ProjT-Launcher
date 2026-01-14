@@ -12,16 +12,14 @@ project(Launcher)
 # Force bzip2 to build static library (required for quazip)
 set(ENABLE_STATIC_LIB ON CACHE BOOL "Enable static lib for bzip2" FORCE)
 
-# Set default build type for single-config generators (Unix/macOS)
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
-endif()
-
-# For multi-config generators (MSVC), ensure CMAKE_CONFIGURATION_TYPES is set
+# Set default build type for single-config generators only.
 if(CMAKE_CONFIGURATION_TYPES)
-    string(TOUPPER "${CMAKE_BUILD_TYPE}" _config)
-    if(NOT _config IN_LIST CMAKE_CONFIGURATION_TYPES)
-        list(APPEND CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}")
+    if(DEFINED CMAKE_BUILD_TYPE)
+        unset(CMAKE_BUILD_TYPE CACHE)
+    endif()
+else()
+    if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
     endif()
 endif()
 

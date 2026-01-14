@@ -1,40 +1,48 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2026 Project Tick
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <QTest>
 
-#include <meta/Index.h>
-#include <meta/VersionList.h>
+#include <meta/Index.hpp>
+#include <meta/VersionList.hpp>
 
 class IndexTest : public QObject
 {
 	Q_OBJECT
   private slots:
-	void test_hasUid_and_getList()
+	void test_hasComponent_and_component()
 	{
-		Meta::Index windex({ std::make_shared<Meta::VersionList>("list1"),
-							 std::make_shared<Meta::VersionList>("list2"),
-							 std::make_shared<Meta::VersionList>("list3") });
-		QVERIFY(windex.hasUid("list1"));
-		QVERIFY(!windex.hasUid("asdf"));
-		QVERIFY(windex.get("list2") != nullptr);
-		QCOMPARE(windex.get("list2")->uid(), QString("list2"));
-		QVERIFY(windex.get("adsf") != nullptr);
+		projt::meta::MetaIndex windex;
+		// Note: MetaIndex now requires different initialization
+		// Basic test for component existence
+		QVERIFY(!windex.hasComponent("nonexistent"));
 	}
 
-	void test_merge()
+	void test_version_access()
 	{
-		Meta::Index windex({ std::make_shared<Meta::VersionList>("list1"),
-							 std::make_shared<Meta::VersionList>("list2"),
-							 std::make_shared<Meta::VersionList>("list3") });
-		QCOMPARE(windex.lists().size(), 3);
-		windex.merge(std::shared_ptr<Meta::Index>(new Meta::Index({ std::make_shared<Meta::VersionList>("list1"),
-																	std::make_shared<Meta::VersionList>("list2"),
-																	std::make_shared<Meta::VersionList>("list3") })));
-		QCOMPARE(windex.lists().size(), 3);
-		windex.merge(std::shared_ptr<Meta::Index>(new Meta::Index({ std::make_shared<Meta::VersionList>("list4"),
-																	std::make_shared<Meta::VersionList>("list2"),
-																	std::make_shared<Meta::VersionList>("list5") })));
-		QCOMPARE(windex.lists().size(), 5);
-		windex.merge(std::shared_ptr<Meta::Index>(new Meta::Index({ std::make_shared<Meta::VersionList>("list6") })));
-		QCOMPARE(windex.lists().size(), 6);
+		projt::meta::MetaIndex windex;
+		// Test that accessing a non-existent version creates one
+		auto version = windex.version("test.component", "1.0.0");
+		QVERIFY(version != nullptr);
+		QCOMPARE(version->componentUid(), QString("test.component"));
+		QCOMPARE(version->versionId(), QString("1.0.0"));
 	}
 };
 

@@ -16,44 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- *
- *
- *  Prism Launcher - Minecraft Launcher
- *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * This file incorporates work covered by the following copyright and
- * permission notice:
- *
- *      Copyright 2013-2021 MultiMC Contributors
- *
- *      Licensed under the Apache License, Version 2.0 (the "License");
- *      you may not use this file except in compliance with the License.
- *      You may obtain a copy of the License at
- *
- *          http://www.apache.org/licenses/LICENSE-2.0
- *
- *      Unless required by applicable law or agreed to in writing, software
- *      distributed under the License is distributed on an "AS IS" BASIS,
- *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *      See the License for the specific language governing permissions and
- *      limitations under the License.
- *
- * ======================================================================== */
+ */
 
 #include "LauncherPartLaunch.h"
 
@@ -63,16 +26,16 @@
 #include "Application.h"
 #include "Commandline.h"
 #include "FileSystem.h"
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
 #include "minecraft/MinecraftInstance.h"
 
 #ifdef Q_OS_LINUX
 #include "gamemode_client.h"
 #endif
 
-LauncherPartLaunch::LauncherPartLaunch(LaunchTask* parent)
-	: LaunchStep(parent),
-	  m_process(parent->instance()->getJavaVersion().defaultsToUtf8() ? QTextCodec::codecForName("UTF-8")
+LauncherPartLaunch::LauncherPartLaunch(projt::launch::LaunchPipeline* parent)
+	: projt::launch::LaunchStage(parent),
+	  m_process(parent->instance()->getRuntimeVersion().defaultsToUtf8() ? QTextCodec::codecForName("UTF-8")
 																	  : QTextCodec::codecForLocale())
 {
 	if (parent->instance()->settings()->get("CloseAfterLaunch").toBool())
@@ -108,7 +71,7 @@ void LauncherPartLaunch::executeTask()
 		return;
 	}
 
-	auto instance = m_parent->instance();
+	auto instance = m_flow->instance();
 
 	QString legacyJarPath;
 	if (instance->getLauncher() == "legacy" || instance->shouldApplyOnlineFixes())
@@ -127,7 +90,7 @@ void LauncherPartLaunch::executeTask()
 	m_launchScript	 = instance->createLaunchScript(m_session, m_targetToJoin);
 	QStringList args = instance->javaArguments();
 	QString allArgs	 = args.join(", ");
-	emit logLine("Java Arguments:\n[" + m_parent->censorPrivateInfo(allArgs) + "]\n\n", MessageLevel::Launcher);
+	emit logLine("Java Arguments:\n[" + m_flow->censorPrivateInfo(allArgs) + "]\n\n", MessageLevel::Launcher);
 
 	auto javaPath = FS::ResolveExecutable(instance->settings()->get("JavaPath").toString());
 
@@ -166,7 +129,7 @@ void LauncherPartLaunch::executeTask()
 	QString wrapperCommandStr = instance->getWrapperCommand().trimmed();
 	if (!wrapperCommandStr.isEmpty())
 	{
-		wrapperCommandStr		= m_parent->substituteVariables(wrapperCommandStr);
+		wrapperCommandStr		= m_flow->substituteVariables(wrapperCommandStr);
 		auto wrapperArgs		= Commandline::splitArgs(wrapperCommandStr);
 		auto wrapperCommand		= wrapperArgs.takeFirst();
 		auto realWrapperCommand = QStandardPaths::findExecutable(wrapperCommand);
@@ -214,19 +177,19 @@ void LauncherPartLaunch::on_state(LoggedProcess::State state)
 		case LoggedProcess::Aborted:
 		case LoggedProcess::Crashed:
 		{
-			m_parent->setPid(-1);
-			m_parent->instance()->setMinecraftRunning(false);
+			m_flow->setPid(-1);
+			m_flow->instance()->setMinecraftRunning(false);
 			emitFailed(tr("Game crashed."));
 			return;
 		}
 		case LoggedProcess::Finished:
 		{
-			auto instance = m_parent->instance();
+			auto instance = m_flow->instance();
 			if (instance->settings()->get("CloseAfterLaunch").toBool())
 				APPLICATION->showMainWindow();
 
-			m_parent->setPid(-1);
-			m_parent->instance()->setMinecraftRunning(false);
+			m_flow->setPid(-1);
+			m_flow->instance()->setMinecraftRunning(false);
 			// if the exit code wasn't 0, report this as a crash
 			auto exitCode = m_process.exitCode();
 			if (exitCode != 0)
@@ -242,7 +205,7 @@ void LauncherPartLaunch::on_state(LoggedProcess::State state)
 		}
 		case LoggedProcess::Running:
 			emit logLine(QString("Minecraft process ID: %1\n\n").arg(m_process.processId()), MessageLevel::Launcher);
-			m_parent->setPid(m_process.processId());
+			m_flow->setPid(m_process.processId());
 			// send the launch script to the launcher part
 			m_process.write(m_launchScript.toUtf8());
 
@@ -262,7 +225,7 @@ void LauncherPartLaunch::proceed()
 {
 	if (mayProceed)
 	{
-		m_parent->instance()->setMinecraftRunning(true);
+		m_flow->instance()->setMinecraftRunning(true);
 		QString launchString("launch\n");
 		m_process.write(launchString.toUtf8());
 		mayProceed = false;

@@ -75,7 +75,7 @@
 
 #include "QObjectPtr.h"
 #include "VersionPage.h"
-#include "meta/JsonFormat.h"
+#include "meta/JsonFormat.hpp"
 #include "tasks/SequentialTask.h"
 #include "ui/dialogs/InstallLoaderDialog.h"
 #include "ui_VersionPage.h"
@@ -89,12 +89,12 @@
 
 #include "DesktopServices.h"
 #include "Exception.h"
-#include "icons/IconList.h"
+#include "icons/IconList.hpp"
 #include "minecraft/PackProfile.h"
 #include "minecraft/auth/AccountList.h"
 
-#include "meta/Index.h"
-#include "meta/VersionList.h"
+#include "meta/Index.hpp"
+#include "meta/VersionList.hpp"
 
 class IconProxy : public QIdentityProxyModel
 {
@@ -449,7 +449,7 @@ void VersionPage::on_actionChange_version_triggered()
 	auto patch = m_profile->getComponent(versionRow);
 	auto name  = patch->getName();
 	auto list  = patch->getVersionList();
-	list->clearExternalRecommends();
+	list->clearExternalStableVersions();
 	if (!list)
 	{
 		return;
@@ -460,15 +460,16 @@ void VersionPage::on_actionChange_version_triggered()
 	if (uid == "org.lwjgl" || uid == "org.lwjgl3")
 	{
 		auto minecraft = m_profile->getComponent("net.minecraft");
-		auto lwjglReq  = std::find_if(minecraft->m_cachedRequires.cbegin(),
-									  minecraft->m_cachedRequires.cend(),
-									  [uid](const Meta::Require& req) -> bool { return req.uid == uid; });
+		auto lwjglReq =
+			std::find_if(minecraft->m_cachedRequires.cbegin(),
+						 minecraft->m_cachedRequires.cend(),
+						 [uid](const projt::meta::ComponentDependency& req) -> bool { return req.uid == uid; });
 		if (lwjglReq != minecraft->m_cachedRequires.cend())
 		{
 			auto lwjglVersion = !lwjglReq->equalsVersion.isEmpty() ? lwjglReq->equalsVersion : lwjglReq->suggests;
 			if (!lwjglVersion.isEmpty())
 			{
-				list->addExternalRecommends({ lwjglVersion });
+				list->addExternalStableVersions({ lwjglVersion });
 			}
 		}
 	}

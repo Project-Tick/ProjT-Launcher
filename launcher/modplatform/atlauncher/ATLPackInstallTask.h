@@ -59,11 +59,11 @@
 
 #pragma once
 
-#include <meta/VersionList.h>
+#include <meta/VersionList.hpp>
 #include "ATLPackManifest.h"
 
 #include "InstanceTask.h"
-#include "meta/Version.h"
+#include "meta/Version.hpp"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "net/NetJob.h"
@@ -95,7 +95,7 @@ namespace ATLauncher
 		 * Requests a user interaction to select a component version from a given version list
 		 * and constrained to a given Minecraft version.
 		 */
-		virtual QString chooseVersion(Meta::VersionList::Ptr vlist, QString minecraftVersion) = 0;
+		virtual QString chooseVersion(projt::meta::MetaVersionList::Ptr vlist, QString minecraftVersion) = 0;
 
 		/**
 		 * Requests a user interaction to display a message.
@@ -173,8 +173,8 @@ namespace ATLauncher
 
 		QString archivePath;
 		QStringList jarmods;
-		Meta::Version::Ptr minecraftVersion;
-		QMap<QString, Meta::Version::Ptr> componentsToInstall;
+		projt::meta::MetaVersion::Ptr minecraftVersion;
+		QMap<QString, projt::meta::MetaVersion::Ptr> componentsToInstall;
 
 		QFuture<std::optional<QStringList>> m_extractFuture;
 		QFutureWatcher<std::optional<QStringList>> m_extractFutureWatcher;

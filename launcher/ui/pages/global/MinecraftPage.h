@@ -60,7 +60,6 @@
 #include <QDialog>
 #include <memory>
 
-#include "java/JavaChecker.h"
 #include "ui/pages/BasePage.h"
 #include "ui/widgets/MinecraftSettingsWidget.h"
 
@@ -98,3 +97,4 @@ class MinecraftPage : public MinecraftSettingsWidget, public BasePage
 		return true;
 	}
 };
+

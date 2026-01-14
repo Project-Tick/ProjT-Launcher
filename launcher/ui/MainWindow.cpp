@@ -97,10 +97,8 @@
 #include <DesktopServices.h>
 #include <InstanceList.h>
 #include <MMCZip.h>
-#include <icons/IconList.h>
-#include <java/JavaInstallList.h>
-#include <java/JavaUtils.h>
-#include <launch/LaunchTask.h>
+#include <icons/IconList.hpp>
+#include <launch/LaunchPipeline.hpp>
 #include <minecraft/MinecraftInstance.h>
 #include <minecraft/auth/AccountList.h>
 #include <net/ApiDownload.h>
@@ -400,7 +398,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 	connect(view->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::instanceChanged);
 
 	// track icon changes and update the toolbar!
-	connect(APPLICATION->icons().get(), &IconList::iconUpdated, this, &MainWindow::iconUpdated);
+	connect(APPLICATION->icons().get(),
+			&projt::icons::IconList::iconUpdated,
+			this,
+			&MainWindow::iconUpdated);
 
 	// model reset -> selection is invalid. All the instance pointers are wrong.
 	connect(APPLICATION->instances().get(), &InstanceList::dataIsInvalid, this, &MainWindow::selectionBad);
@@ -1913,3 +1914,5 @@ void MainWindow::refreshCurrentInstance()
 	auto current = view->selectionModel()->currentIndex();
 	instanceChanged(current, current);
 }
+
+

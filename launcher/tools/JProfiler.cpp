@@ -22,7 +22,7 @@
 #include <QDir>
 
 #include "BaseInstance.h"
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
 #include "settings/SettingsObject.h"
 
 class JProfiler : public BaseProfiler
@@ -36,7 +36,7 @@ class JProfiler : public BaseProfiler
 	void profilerFinished(int exit, QProcess::ExitStatus status);
 
   protected:
-	void beginProfilingImpl(shared_qobject_ptr<LaunchTask> process);
+	void beginProfilingImpl(shared_qobject_ptr<projt::launch::LaunchPipeline> process);
 
   private:
 	int listeningPort = 0;
@@ -64,7 +64,7 @@ void JProfiler::profilerFinished([[maybe_unused]] int exit, QProcess::ExitStatus
 	}
 }
 
-void JProfiler::beginProfilingImpl(shared_qobject_ptr<LaunchTask> process)
+void JProfiler::beginProfilingImpl(shared_qobject_ptr<projt::launch::LaunchPipeline> process)
 {
 	listeningPort			 = globalSettings->get("JProfilerPort").toInt();
 	QProcess* profiler		 = new QProcess(this);

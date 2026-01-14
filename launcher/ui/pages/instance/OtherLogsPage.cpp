@@ -57,11 +57,17 @@
  * ======================================================================== */
 
 #include "OtherLogsPage.h"
+
+#include "launch/LaunchLogModel.hpp"
+#include "logs/LogEventParser.hpp"
 #include "ui_OtherLogsPage.h"
 
 #include <QMessageBox>
 
 #include "ui/GuiUtil.h"
+
+using projt::launch::LaunchLogModel;
+using projt::logs::LogEventParser;
 #include "ui/themes/ThemeManager.h"
 
 #include <FileSystem.h>
@@ -87,7 +93,7 @@ OtherLogsPage::OtherLogsPage(QString id, QString displayName, QString helpPage, 
 	m_proxy = new LogFormatProxyModel(this);
 	if (m_instance)
 	{
-		m_model.reset(new LogModel(this));
+		m_model.reset(new LaunchLogModel(this));
 		ui->trackLogCheckbox->hide();
 	}
 	else
@@ -368,13 +374,13 @@ void OtherLogsPage::reload()
 				// If the level is still undetermined, guess level
 				if (level == MessageLevel::StdErr || level == MessageLevel::StdOut || level == MessageLevel::Unknown)
 				{
-					level = LogParser::guessLevel(line, last);
+					level = LogEventParser::guessLevelFromLine(line, last);
 				}
 			}
 
 			last = level;
 			m_model->append(level, line);
-			return m_model->isOverFlow();
+			return m_model->isOverflow();
 		};
 
 		// Try to determine a level for each line
@@ -382,7 +388,7 @@ void OtherLogsPage::reload()
 		ui->text->setModel(nullptr);
 		if (!m_instance)
 		{
-			m_model.reset(new LogModel(this));
+			m_model.reset(new LaunchLogModel(this));
 			m_model->setMaxLines(getConsoleMaxLines(APPLICATION->settings()));
 			m_model->setStopOnOverflow(shouldStopOnConsoleOverflow(APPLICATION->settings()));
 			m_model->setOverflowMessage(

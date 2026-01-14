@@ -22,9 +22,9 @@
 #include <quazip/quazipdir.h>
 #include "InstanceTask.h"
 #include "PackHelpers.h"
-#include "meta/Index.h"
-#include "meta/Version.h"
-#include "meta/VersionList.h"
+#include "meta/Index.hpp"
+#include "meta/Version.hpp"
+#include "meta/VersionList.hpp"
 #include "net/NetJob.h"
 
 #include "net/NetJob.h"

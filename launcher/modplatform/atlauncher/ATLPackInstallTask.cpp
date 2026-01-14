@@ -68,9 +68,9 @@
 #include "Json.h"
 #include "MMCZip.h"
 #include "Version.h"
-#include "meta/Index.h"
-#include "meta/Version.h"
-#include "meta/VersionList.h"
+#include "meta/Index.hpp"
+#include "meta/Version.hpp"
+#include "meta/VersionList.hpp"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/OneSixVersionFormat.h"
 #include "minecraft/PackProfile.h"
@@ -87,7 +87,7 @@
 namespace ATLauncher
 {
 
-	static Meta::Version::Ptr getComponentVersion(const QString& uid, const QString& version);
+	static projt::meta::MetaVersion::Ptr getComponentVersion(const QString& uid, const QString& version);
 
 	PackInstallTask::PackInstallTask(UserInteractionSupport* support,
 									 QString packName,
@@ -377,21 +377,21 @@ namespace ATLauncher
 	{
 		if (m_version.loader.recommended || m_version.loader.latest || m_version.loader.choose)
 		{
-			auto vlist = APPLICATION->metadataIndex()->get(uid);
+			auto vlist = APPLICATION->metadataIndex()->component(uid);
 			if (!vlist)
 			{
 				emitFailed(tr("Failed to get local metadata index for %1").arg(uid));
 				return Q_NULLPTR;
 			}
 
-			vlist->waitToLoad();
+			vlist->waitUntilReady();
 
 			if (m_version.loader.recommended || m_version.loader.latest)
 			{
-				for (int i = 0; i < vlist->versions().size(); i++)
+				for (int i = 0; i < vlist->allVersions().size(); i++)
 				{
-					auto version = vlist->versions().at(i);
-					auto reqs	 = version->requiredSet();
+					auto version = vlist->allVersions().at(i);
+					auto reqs	 = version->dependencies();
 
 					// filter by minecraft version, if the loader depends on a certain version.
 					// not all mod loaders depend on a given Minecraft version, so we won't do this
@@ -400,7 +400,8 @@ namespace ATLauncher
 					{
 						auto iter = std::find_if(reqs.begin(),
 												 reqs.end(),
-												 [](const Meta::Require& req) { return req.uid == "net.minecraft"; });
+												 [](const projt::meta::ComponentDependency& req)
+												 { return req.uid == "net.minecraft"; });
 						if (iter == reqs.end())
 							continue;
 						if (iter->equalsVersion != m_version.minecraft)
@@ -410,7 +411,7 @@ namespace ATLauncher
 					if (m_version.loader.recommended)
 					{
 						// first recommended build we find, we use.
-						if (!version->isRecommended())
+						if (!version->isStable())
 							continue;
 					}
 
@@ -491,9 +492,9 @@ namespace ATLauncher
 		for (const auto& componentUid : componentsToInstall.keys())
 		{
 			auto componentVersion = componentsToInstall.value(componentUid);
-			if (componentVersion->data())
+			if (componentVersion->detailedData())
 			{
-				for (const auto& library : componentVersion->data()->libraries)
+				for (const auto& library : componentVersion->detailedData()->libraries)
 				{
 					GradleSpecifier lib(library->rawName());
 					exempt.append(lib);
@@ -501,9 +502,9 @@ namespace ATLauncher
 			}
 		}
 
-		if (minecraftVersion->data())
+		if (minecraftVersion->detailedData())
 		{
-			for (const auto& library : minecraftVersion->data()->libraries)
+			for (const auto& library : minecraftVersion->detailedData()->libraries)
 			{
 				GradleSpecifier lib(library->rawName());
 				exempt.append(lib);
@@ -673,13 +674,13 @@ namespace ATLauncher
 		{
 			auto componentVersion = componentsToInstall.value(componentUid);
 
-			if (componentVersion->data())
+			if (componentVersion->detailedData())
 			{
-				if (componentVersion->data()->mainClass != QString(""))
+				if (componentVersion->detailedData()->mainClass != QString(""))
 				{
-					mainClasses.append(componentVersion->data()->mainClass);
+					mainClasses.append(componentVersion->detailedData()->mainClass);
 				}
-				tweakers.append(componentVersion->data()->addTweakers);
+				tweakers.append(componentVersion->detailedData()->addTweakers);
 			}
 		}
 
@@ -1231,7 +1232,7 @@ namespace ATLauncher
 		for (const auto& componentUid : componentsToInstall.keys())
 		{
 			auto version = componentsToInstall.value(componentUid);
-			components->setComponentVersion(componentUid, version->version());
+			components->setComponentVersion(componentUid, version->versionId());
 		}
 
 		components->installJarMods(jarmods);
@@ -1255,9 +1256,9 @@ namespace ATLauncher
 		emitSucceeded();
 	}
 
-	static Meta::Version::Ptr getComponentVersion(const QString& uid, const QString& version)
+	static projt::meta::MetaVersion::Ptr getComponentVersion(const QString& uid, const QString& version)
 	{
-		return APPLICATION->metadataIndex()->getLoadedVersion(uid, version);
+		return APPLICATION->metadataIndex()->loadVersionBlocking(uid, version);
 	}
 
 } // namespace ATLauncher

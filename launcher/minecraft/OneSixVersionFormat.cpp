@@ -59,7 +59,7 @@
 #include <Json.h>
 #include <minecraft/MojangVersionFormat.h>
 #include <QList>
-#include "java/JavaMetadata.h"
+#include "java/core/RuntimePackage.hpp"
 #include "minecraft/Agent.h"
 #include "minecraft/ParseUtils.h"
 
@@ -118,11 +118,11 @@ VersionFilePtr OneSixVersionFormat::versionFileFromJson(const QJsonDocument& doc
 
 	QJsonObject root = doc.object();
 
-	Meta::MetadataVersion formatVersion = Meta::parseFormatVersion(root, false);
+	projt::meta::SchemaVersion formatVersion = projt::meta::detectSchemaVersion(root, false);
 	switch (formatVersion)
 	{
-		case Meta::MetadataVersion::InitialRelease: break;
-		case Meta::MetadataVersion::Invalid:
+		case projt::meta::SchemaVersion::V1: break;
+		case projt::meta::SchemaVersion::Unknown:
 			throw JSONValidationError(filename + " does not contain a recognizable version of the metadata format.");
 	}
 
@@ -302,12 +302,12 @@ VersionFilePtr OneSixVersionFormat::versionFileFromJson(const QJsonDocument& doc
 
 	if (root.contains("requires"))
 	{
-		Meta::parseRequires(root, &out->m_requires);
+		out->m_requires = projt::meta::parseDependencies(root, "requires");
 	}
 	QString dependsOnMinecraftVersion = root.value("mcVersion").toString();
 	if (!dependsOnMinecraftVersion.isEmpty())
 	{
-		Meta::Require mcReq;
+		projt::meta::ComponentDependency mcReq;
 		mcReq.uid			= "net.minecraft";
 		mcReq.equalsVersion = dependsOnMinecraftVersion;
 		if (out->m_requires.count(mcReq) == 0)
@@ -317,7 +317,7 @@ VersionFilePtr OneSixVersionFormat::versionFileFromJson(const QJsonDocument& doc
 	}
 	if (root.contains("conflicts"))
 	{
-		Meta::parseRequires(root, &out->conflicts);
+		out->conflicts = projt::meta::parseDependencies(root, "conflicts");
 	}
 	if (root.contains("volatile"))
 	{
@@ -329,7 +329,7 @@ VersionFilePtr OneSixVersionFormat::versionFileFromJson(const QJsonDocument& doc
 		out->runtimes = {};
 		for (auto runtime : ensureArray(root, "runtimes"))
 		{
-			out->runtimes.append(Java::parseJavaMeta(ensureObject(runtime)));
+			out->runtimes.append(projt::java::parseRuntimePackage(ensureObject(runtime)));
 		}
 	}
 
@@ -368,7 +368,7 @@ QJsonDocument OneSixVersionFormat::versionFileToJson(const VersionFilePtr& patch
 
 	writeString(root, "version", patch->version);
 
-	Meta::serializeFormatVersion(root, Meta::MetadataVersion::InitialRelease);
+	projt::meta::writeSchemaVersion(root, projt::meta::SchemaVersion::V1);
 
 	MojangVersionFormat::writeVersionProperties(patch.get(), root);
 
@@ -431,11 +431,11 @@ QJsonDocument OneSixVersionFormat::versionFileToJson(const VersionFilePtr& patch
 	}
 	if (!patch->m_requires.empty())
 	{
-		Meta::serializeRequires(root, &patch->m_requires, "requires");
+		projt::meta::writeDependencies(root, patch->m_requires, "requires");
 	}
 	if (!patch->conflicts.empty())
 	{
-		Meta::serializeRequires(root, &patch->conflicts, "conflicts");
+		projt::meta::writeDependencies(root, patch->conflicts, "conflicts");
 	}
 	if (patch->m_volatile)
 	{

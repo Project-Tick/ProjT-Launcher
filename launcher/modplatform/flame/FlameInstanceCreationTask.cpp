@@ -84,7 +84,7 @@
 #include <QDebug>
 #include <QFileInfo>
 
-#include "meta/Index.h"
+#include "meta/Index.hpp"
 #include "minecraft/World.h"
 #include "minecraft/mod/tasks/LocalResourceParse.h"
 #include "net/ApiDownload.h"
@@ -144,8 +144,8 @@ bool FlameCreationTask::updateInstance()
 
 		if (!inst)
 		{
-			// New instance creation flow continues...
-			return true;
+			// New instance creation flow - return false to call createInstance()
+			return false;
 		}
 	}
 
@@ -358,7 +358,7 @@ QString FlameCreationTask::getVersionForLoader(QString uid,
 {
 	if (loaderVersion == "recommended")
 	{
-		auto vlist = APPLICATION->metadataIndex()->get(uid);
+		auto vlist = APPLICATION->metadataIndex()->component(uid);
 		if (!vlist)
 		{
 			setError(tr("Failed to get local metadata index for %1").arg(uid));
@@ -376,12 +376,12 @@ QString FlameCreationTask::getVersionForLoader(QString uid,
 			loadVersionLoop.exec();
 		}
 
-		for (auto version : vlist->versions())
+		for (auto version : vlist->allVersions())
 		{
 			// first recommended build we find, we use.
-			if (!version->isRecommended())
+			if (!version->isStable())
 				continue;
-			auto reqs = version->requiredSet();
+			auto reqs = version->dependencies();
 
 			// filter by minecraft version, if the loader depends on a certain version.
 			// not all mod loaders depend on a given Minecraft version, so we won't do this
@@ -390,7 +390,7 @@ QString FlameCreationTask::getVersionForLoader(QString uid,
 			{
 				auto iter = std::find_if(reqs.begin(),
 										 reqs.end(),
-										 [mcVersion](const Meta::Require& req)
+										 [mcVersion](const projt::meta::ComponentDependency& req)
 										 { return req.uid == "net.minecraft" && req.equalsVersion == mcVersion; });
 				if (iter == reqs.end())
 					continue;

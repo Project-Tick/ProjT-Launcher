@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -16,46 +16,24 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- *
- *
- *
- *
- *
- *  Prism Launcher - Minecraft Launcher
- *  Copyright (C) 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * ======================================================================== */
+ */
 
-#include "FileLink.h"
+#include "FileLink.hpp"
 
 int main(int argc, char* argv[])
 {
-	FileLinkApp ldh(argc, argv);
+	projt::filelink::FileLinkApp app(argc, argv);
+	using Status = projt::filelink::FileLinkApp::Status;
 
-	switch (ldh.status())
+	switch (app.status())
 	{
-		case FileLinkApp::Starting:
-		case FileLinkApp::Initialized:
+		case Status::Starting:
+		case Status::Initialized:
 		{
-			return ldh.exec();
+			return app.exec();
 		}
-		case FileLinkApp::Failed: return 1;
-		case FileLinkApp::Succeeded: return 0;
+		case Status::Failed: return 1;
+		case Status::Succeeded: return 0;
 		default: return -1;
 	}
 }

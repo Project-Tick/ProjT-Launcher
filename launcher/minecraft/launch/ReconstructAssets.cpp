@@ -35,14 +35,14 @@
  * ======================================================================== */
 
 #include "ReconstructAssets.h"
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
 #include "minecraft/AssetsUtils.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 
 void ReconstructAssets::executeTask()
 {
-	auto instance	= m_parent->instance();
+	auto instance	= m_flow->instance();
 	auto components = instance->getPackProfile();
 	auto profile	= components->getProfile();
 	auto assets		= profile->getMinecraftAssets();

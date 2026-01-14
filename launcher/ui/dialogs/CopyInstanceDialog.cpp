@@ -71,7 +71,7 @@
 #include "DesktopServices.h"
 #include "FileSystem.h"
 #include "InstanceList.h"
-#include "icons/IconList.h"
+#include "icons/IconList.hpp"
 
 CopyInstanceDialog::CopyInstanceDialog(InstancePtr original, QWidget* parent)
 	: QDialog(parent),
@@ -349,3 +349,4 @@ void CopyInstanceDialog::on_useCloneCheckbox_stateChanged(int state)
 	updateUseCloneCheckbox();
 	updateLinkOptions();
 }
+

@@ -16,44 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- *
- *
- *  Prism Launcher - Minecraft Launcher
- *  Copyright (c) 2023-2024 Trial97 <alexandru.tripon97@gmail.com>
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * This file incorporates work covered by the following copyright and
- * permission notice:
- *
- *      Copyright 2013-2021 MultiMC Contributors
- *
- *      Licensed under the Apache License, Version 2.0 (the "License");
- *      you may not use this file except in compliance with the License.
- *      You may obtain a copy of the License at
- *
- *          http://www.apache.org/licenses/LICENSE-2.0
- *
- *      Unless required by applicable law or agreed to in writing, software
- *      distributed under the License is distributed on an "AS IS" BASIS,
- *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *      See the License for the specific language governing permissions and
- *      limitations under the License.
- *
- * ======================================================================== */
+ */
 
 #include "AutoInstallJava.h"
 #include <QDir>
@@ -65,22 +28,22 @@
 #include "MessageLevel.h"
 #include "QObjectPtr.h"
 #include "SysInfo.h"
-#include "java/JavaInstall.h"
-#include "java/JavaInstallList.h"
-#include "java/JavaUtils.h"
-#include "java/JavaVersion.h"
-#include "java/download/ArchiveDownloadTask.h"
-#include "java/download/ManifestDownloadTask.h"
-#include "java/download/SymlinkTask.h"
-#include "meta/Index.h"
+#include "java/core/RuntimeInstall.hpp"
+#include "java/core/RuntimeVersion.hpp"
+#include "java/services/RuntimeCatalog.hpp"
+#include "java/services/RuntimeScanner.hpp"
+#include "java/download/RuntimeArchiveTask.hpp"
+#include "java/download/RuntimeManifestTask.hpp"
+#include "java/download/RuntimeLinkTask.hpp"
+#include "meta/Index.hpp"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "net/Mode.h"
 #include "tasks/SequentialTask.h"
 
-AutoInstallJava::AutoInstallJava(LaunchTask* parent)
-	: LaunchStep(parent),
-	  m_instance(m_parent->instance()),
+AutoInstallJava::AutoInstallJava(projt::launch::LaunchPipeline* parent)
+	: projt::launch::LaunchStage(parent),
+	  m_instance(m_flow->instance()),
 	  m_supported_arch(SysInfo::getSupportedJavaArchitecture()) {};
 
 void AutoInstallJava::executeTask()
@@ -111,7 +74,7 @@ void AutoInstallJava::executeTask()
 		}
 		else
 		{
-			JavaVersion javaVersion(storedVersion);
+			projt::java::RuntimeVersion javaVersion(storedVersion);
 			compatibleJava = compatibleMajors.contains(javaVersion.major());
 		}
 	}
@@ -122,31 +85,31 @@ void AutoInstallJava::executeTask()
 	}
 	if (!APPLICATION->settings()->get("AutomaticJavaDownload").toBool())
 	{
-		auto javas	   = APPLICATION->javalist();
+		auto javas	   = APPLICATION->runtimeCatalog();
 		m_current_task = javas->getLoadTask();
-		connect(m_current_task.get(),
-				&Task::finished,
-				this,
-				[this, javas, packProfile]
+		connect(
+			m_current_task.get(),
+			&Task::finished,
+			this,
+			[this, javas, packProfile]
+			{
+				for (auto i = 0; i < javas->count(); i++)
 				{
-					for (auto i = 0; i < javas->count(); i++)
+					auto java = std::dynamic_pointer_cast<projt::java::RuntimeInstall>(javas->at(i));
+					if (java && packProfile->getProfile()->getCompatibleJavaMajors().contains(java->version.major()))
 					{
-						auto java = std::dynamic_pointer_cast<JavaInstall>(javas->at(i));
-						if (java && packProfile->getProfile()->getCompatibleJavaMajors().contains(java->id.major()))
+						if (!java->is_64bit)
 						{
-							if (!java->is_64bit)
-							{
-								emit logLine(tr("The automatic Java mechanism detected a 32-bit installation of Java."),
-											 MessageLevel::Launcher);
-							}
-							setJavaPath(java->path);
-							return;
+							emit logLine(tr("The automatic Java mechanism detected a 32-bit installation of Java."),
+										 MessageLevel::Launcher);
 						}
+						setJavaPath(java->path);
+						return;
 					}
-					emit logLine(tr("No compatible Java version was found. Using the default one."),
-								 MessageLevel::Warning);
-					emitSucceeded();
-				});
+				}
+				emit logLine(tr("No compatible Java version was found. Using the default one."), MessageLevel::Warning);
+				emitSucceeded();
+			});
 		connect(m_current_task.get(), &Task::progress, this, &AutoInstallJava::setProgress);
 		connect(m_current_task.get(), &Task::stepProgress, this, &AutoInstallJava::propagateStepProgress);
 		connect(m_current_task.get(), &Task::status, this, &AutoInstallJava::setStatus);
@@ -181,7 +144,7 @@ void AutoInstallJava::executeTask()
 		setJavaPathFromPartial();
 		return;
 	}
-	auto versionList = APPLICATION->metadataIndex()->get("net.minecraft.java");
+	auto versionList = APPLICATION->metadataIndex()->component("net.minecraft.java");
 	m_current_task	 = versionList->getLoadTask();
 	connect(m_current_task.get(), &Task::succeeded, this, &AutoInstallJava::tryNextMajorJava);
 	connect(m_current_task.get(), &Task::failed, this, &AutoInstallJava::emitFailed);
@@ -214,7 +177,7 @@ void AutoInstallJava::setJavaPathFromPartial()
 	// just checking if the executable is there should suffice
 	// but if needed this can be achieved through refreshing the javalist
 	// and retrieving the path that contains the java name
-	auto relativeBinary = FS::PathCombine(javaName, "bin", JavaUtils::javaExecutable);
+	auto relativeBinary = FS::PathCombine(javaName, "bin", projt::java::RuntimeScanner::executableName());
 	auto finalPath		= javaDir.absoluteFilePath(relativeBinary);
 	if (QFileInfo::exists(finalPath))
 	{
@@ -230,35 +193,37 @@ void AutoInstallJava::setJavaPathFromPartial()
 	return;
 }
 
-void AutoInstallJava::downloadJava(Meta::Version::Ptr version, QString javaName)
+void AutoInstallJava::downloadJava(projt::meta::MetaVersion::Ptr version, QString javaName)
 {
-	auto runtimes = version->data()->runtimes;
+	auto runtimes = version->detailedData()->runtimes;
 	for (auto java : runtimes)
 	{
 		if (java->runtimeOS == m_supported_arch && java->name() == javaName)
 		{
 			QDir javaDir(APPLICATION->javaPath());
-			auto final_path = javaDir.absoluteFilePath(java->m_name);
-			switch (java->downloadType)
+			auto final_path = javaDir.absoluteFilePath(java->displayName);
+			switch (java->downloadKind)
 			{
-				case Java::DownloadType::Manifest:
-					m_current_task = makeShared<Java::ManifestDownloadTask>(java->url,
-																			final_path,
-																			java->checksumType,
-																			java->checksumHash);
+				case projt::java::PackageKind::Manifest:
+					m_current_task = makeShared<projt::java::RuntimeManifestTask>(java->url,
+																				  final_path,
+																				  java->checksumType,
+																				  java->checksumHash);
 					break;
-				case Java::DownloadType::Archive:
-					m_current_task = makeShared<Java::ArchiveDownloadTask>(java->url,
-																		   final_path,
-																		   java->checksumType,
-																		   java->checksumHash);
+				case projt::java::PackageKind::Archive:
+					m_current_task = makeShared<projt::java::RuntimeArchiveTask>(java->url,
+																				 final_path,
+																				 java->checksumType,
+																				 java->checksumHash);
 					break;
-				case Java::DownloadType::Unknown: emitFailed(tr("Could not determine Java download type!")); return;
+				case projt::java::PackageKind::Unknown:
+					emitFailed(tr("Could not determine Java download type!"));
+					return;
 			}
 #if defined(Q_OS_MACOS)
 			auto seq = makeShared<SequentialTask>(tr("Install Java"));
 			seq->addTask(m_current_task);
-			seq->addTask(makeShared<Java::SymlinkTask>(final_path));
+			seq->addTask(makeShared<projt::java::RuntimeLinkTask>(final_path));
 			m_current_task = seq;
 #endif
 			auto deletePath = [final_path] { FS::deletePath(final_path); };
@@ -288,7 +253,7 @@ void AutoInstallJava::tryNextMajorJava()
 {
 	if (!isRunning())
 		return;
-	auto versionList	   = APPLICATION->metadataIndex()->get("net.minecraft.java");
+	auto versionList	   = APPLICATION->metadataIndex()->component("net.minecraft.java");
 	auto packProfile	   = m_instance->getPackProfile();
 	auto wantedJavaName	   = packProfile->getProfile()->getCompatibleJavaName();
 	auto majorJavaVersions = packProfile->getProfile()->getCompatibleJavaMajors();
@@ -304,16 +269,17 @@ void AutoInstallJava::tryNextMajorJava()
 	auto majorJavaVersion = majorJavaVersions[m_majorJavaVersionIndex];
 	m_majorJavaVersionIndex++;
 
-	auto javaMajor = versionList->getVersion(QString("java%1").arg(majorJavaVersion));
+	auto javaMajor = versionList->getMetaVersion(QString("java%1").arg(majorJavaVersion));
 
-	if (javaMajor->isLoaded())
+	if (javaMajor->isFullyLoaded())
 	{
 		downloadJava(javaMajor, wantedJavaName);
 	}
 	else
 	{
-		m_current_task =
-			APPLICATION->metadataIndex()->loadVersion("net.minecraft.java", javaMajor->version(), Net::Mode::Online);
+		m_current_task = APPLICATION->metadataIndex()->loadVersionTask("net.minecraft.java",
+																	   javaMajor->versionId(),
+																	   Net::Mode::Online);
 		connect(m_current_task.get(),
 				&Task::succeeded,
 				this,

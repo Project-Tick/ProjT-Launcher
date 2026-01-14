@@ -27,16 +27,16 @@
 #include <variant>
 #include "ProblemProvider.h"
 #include "QObjectPtr.h"
-#include "meta/JsonFormat.h"
+#include "meta/JsonFormat.hpp"
 #include "modplatform/ModIndex.h"
 
 class PackProfile;
 class LaunchProfile;
-namespace Meta
+namespace projt::meta
 {
-	class Version;
-	class VersionList;
-} // namespace Meta
+	class MetaVersion;
+	class MetaVersionList;
+} // namespace projt::meta
 class VersionFile;
 
 struct UpdateActionChangeVersion
@@ -111,13 +111,13 @@ class Component : public QObject, public ProblemProvider
 	QString getID();
 	QString getName();
 	QString getVersion();
-	std::shared_ptr<Meta::Version> getMeta();
+	std::shared_ptr<projt::meta::MetaVersion> getMeta();
 	QDateTime getReleaseDateTime();
 
 	QString getFilename();
 
 	std::shared_ptr<class VersionFile> getVersionFile() const;
-	std::shared_ptr<class Meta::VersionList> getVersionList() const;
+	std::shared_ptr<projt::meta::MetaVersionList> getVersionList() const;
 
 	void setImportant(bool state);
 
@@ -161,8 +161,8 @@ class Component : public QObject, public ProblemProvider
 	/// cached version for display AND other purposes, taken from the version file (meta or local override)
 	QString m_cachedVersion;
 	/// cached set of requirements, taken from the version file (meta or local override)
-	Meta::RequireSet m_cachedRequires;
-	Meta::RequireSet m_cachedConflicts;
+	projt::meta::DependencySet m_cachedRequires;
+	projt::meta::DependencySet m_cachedConflicts;
 	/// if true, the component is volatile and may be automatically removed when no longer needed
 	bool m_cachedVolatile = false;
 	// END: persistent component list properties
@@ -173,7 +173,7 @@ class Component : public QObject, public ProblemProvider
 	int m_order			 = 0;
 
 	// load state
-	std::shared_ptr<Meta::Version> m_metaVersion;
+	std::shared_ptr<projt::meta::MetaVersion> m_metaVersion;
 	std::shared_ptr<VersionFile> m_file;
 	bool m_loaded = false;
 

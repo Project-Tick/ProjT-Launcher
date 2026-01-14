@@ -46,7 +46,7 @@
 #include "Application.h"
 #include "BuildConfig.h"
 #include "DesktopServices.h"
-#include "meta/Index.h"
+#include "meta/Index.hpp"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "ui/widgets/PageContainer.h"
@@ -95,7 +95,7 @@ class InstallLoaderPage : public VersionSelectWidget, public BasePage
 		if (loaded)
 			return;
 
-		const auto versions = APPLICATION->metadataIndex()->get(uid);
+		const auto versions = APPLICATION->metadataIndex()->component(uid);
 		if (!versions)
 			return;
 

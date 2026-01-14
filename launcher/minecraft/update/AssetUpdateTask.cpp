@@ -20,7 +20,7 @@
 #include "AssetUpdateTask.h"
 
 #include "BuildConfig.h"
-#include "launch/LaunchStep.h"
+#include "launch/LaunchStage.hpp"
 #include "minecraft/AssetsUtils.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"

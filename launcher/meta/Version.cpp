@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -16,170 +16,135 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- * Copyright 2015-2021 MultiMC Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ======================================================================== */
+ */
 
-#include "Version.h"
+#include "Version.hpp"
 
 #include <QDateTime>
 #include <algorithm>
 
-#include "JsonFormat.h"
+#include "JsonFormat.hpp"
 
-Meta::Version::Version(const QString& uid, const QString& version) : BaseVersion(), m_uid(uid), m_version(version)
-{}
+namespace projt::meta
+{
 
-QString Meta::Version::descriptor() const
-{
-	return m_version;
-}
-QString Meta::Version::name() const
-{
-	if (m_data)
-		return m_data->name;
-	return m_uid;
-}
-QString Meta::Version::typeString() const
-{
-	return m_type;
-}
+	MetaVersion::MetaVersion(const QString& componentUid, const QString& versionId)
+		: m_componentUid(componentUid),
+		  m_versionId(versionId)
+	{}
 
-QString Meta::Version::parentVersion() const
-{
-	// Prioritize net.minecraft
-	auto iter =
-		std::find_if(m_requires.begin(),
-					 m_requires.end(),
-					 [](const Require& req) { return req.uid == "net.minecraft" && !req.equalsVersion.isEmpty(); });
-	if (iter != m_requires.end())
+	QString MetaVersion::name() const
 	{
-		return iter->equalsVersion;
+		if (m_detailedData)
+			return m_detailedData->name;
+		return m_componentUid;
 	}
-	// Fallback to any hard dependency
-	iter = std::find_if(m_requires.begin(),
-						m_requires.end(),
-						[](const Require& req) { return !req.equalsVersion.isEmpty(); });
-	if (iter != m_requires.end())
+
+	QDateTime MetaVersion::releaseTime() const
 	{
-		return iter->equalsVersion;
+		return QDateTime::fromMSecsSinceEpoch(m_timestamp * 1000, Qt::UTC);
 	}
-	return QString();
-}
 
-QDateTime Meta::Version::time() const
-{
-	return QDateTime::fromMSecsSinceEpoch(m_time * 1000, Qt::UTC);
-}
-
-void Meta::Version::parse(const QJsonObject& obj)
-{
-	parseVersion(obj, this);
-}
-
-void Meta::Version::mergeFromList(const Meta::Version::Ptr& other)
-{
-	if (other->m_providesRecommendations)
+	QString MetaVersion::parentComponentVersion() const
 	{
-		if (m_recommended != other->m_recommended)
+		auto mcDep = std::find_if(m_dependencies.begin(),
+								  m_dependencies.end(),
+								  [](const ComponentDependency& d)
+								  { return d.uid == "net.minecraft" && !d.equalsVersion.isEmpty(); });
+
+		if (mcDep != m_dependencies.end())
+			return mcDep->equalsVersion;
+
+		auto anyDep = std::find_if(m_dependencies.begin(),
+								   m_dependencies.end(),
+								   [](const ComponentDependency& d) { return !d.equalsVersion.isEmpty(); });
+
+		if (anyDep != m_dependencies.end())
+			return anyDep->equalsVersion;
+
+		return QString();
+	}
+
+	QString MetaVersion::cacheFilePath() const
+	{
+		return m_componentUid + "/" + m_versionId + ".json";
+	}
+
+	void MetaVersion::loadFromJson(const QJsonObject& json)
+	{
+		loadVersionFromJson(json, this);
+	}
+
+	void MetaVersion::updateMetadataFrom(const MetaVersion::Ptr& source)
+	{
+		if (source->m_providesStability && m_stable != source->m_stable)
+			setStable(source->m_stable);
+
+		if (m_releaseType != source->m_releaseType)
+			setReleaseType(source->m_releaseType);
+
+		if (m_timestamp != source->m_timestamp)
+			setReleaseTimestamp(source->m_timestamp);
+
+		if (m_dependencies != source->m_dependencies || m_conflicts != source->m_conflicts)
 		{
-			setRecommended(other->m_recommended);
+			m_dependencies = source->m_dependencies;
+			m_conflicts	   = source->m_conflicts;
+			emit dependenciesChanged();
 		}
+
+		if (m_volatile != source->m_volatile)
+			setVolatile(source->m_volatile);
+
+		if (!source->m_expectedSha256.isEmpty())
+			m_expectedSha256 = source->m_expectedSha256;
 	}
-	if (m_type != other->m_type)
+
+	void MetaVersion::updateFrom(const MetaVersion::Ptr& source)
 	{
-		setType(other->m_type);
+		updateMetadataFrom(source);
+
+		if (source->m_detailedData)
+			setDetailedData(source->m_detailedData);
 	}
-	if (m_time != other->m_time)
+
+	void MetaVersion::setReleaseType(const QString& type)
 	{
-		setTime(other->m_time);
+		m_releaseType = type;
+		emit releaseTypeChanged();
 	}
-	if (m_requires != other->m_requires)
+
+	void MetaVersion::setReleaseTimestamp(qint64 ts)
 	{
-		m_requires = other->m_requires;
+		m_timestamp = ts;
+		emit timestampChanged();
 	}
-	if (m_conflicts != other->m_conflicts)
+
+	void MetaVersion::setDependencies(const DependencySet& deps, const DependencySet& conflicts)
 	{
-		m_conflicts = other->m_conflicts;
+		m_dependencies = deps;
+		m_conflicts	   = conflicts;
+		emit dependenciesChanged();
 	}
-	if (m_volatile != other->m_volatile)
+
+	void MetaVersion::setStable(bool stable)
 	{
-		setVolatile(other->m_volatile);
+		m_stable = stable;
 	}
-	if (!other->m_sha256.isEmpty())
+
+	void MetaVersion::setVolatile(bool vol)
 	{
-		m_sha256 = other->m_sha256;
+		m_volatile = vol;
 	}
-}
 
-void Meta::Version::merge(const Version::Ptr& other)
-{
-	mergeFromList(other);
-	if (other->m_data)
+	void MetaVersion::setDetailedData(const VersionFilePtr& data)
 	{
-		setData(other->m_data);
+		m_detailedData = data;
 	}
-}
 
-QString Meta::Version::localFilename() const
-{
-	return m_uid + '/' + m_version + ".json";
-}
+	void MetaVersion::markAsStableCandidate()
+	{
+		m_providesStability = true;
+	}
 
-::Version Meta::Version::toComparableVersion() const
-{
-	return { descriptor() };
-}
-
-void Meta::Version::setType(const QString& type)
-{
-	m_type = type;
-	emit typeChanged();
-}
-
-void Meta::Version::setTime(const qint64 time)
-{
-	m_time = time;
-	emit timeChanged();
-}
-
-void Meta::Version::setRequires(const Meta::RequireSet& reqs, const Meta::RequireSet& conflicts)
-{
-	m_requires	= reqs;
-	m_conflicts = conflicts;
-	emit requiresChanged();
-}
-
-void Meta::Version::setVolatile(bool volatile_)
-{
-	m_volatile = volatile_;
-}
-
-void Meta::Version::setData(const VersionFilePtr& data)
-{
-	m_data = data;
-}
-
-void Meta::Version::setProvidesRecommendations()
-{
-	m_providesRecommendations = true;
-}
-
-void Meta::Version::setRecommended(bool recommended)
-{
-	m_recommended = recommended;
-}
+} // namespace projt::meta

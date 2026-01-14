@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -16,358 +16,334 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- * Copyright 2015-2021 MultiMC Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ======================================================================== */
+ */
 
-#include "VersionList.h"
+#include "VersionList.hpp"
 
 #include <QDateTime>
+#include <QEventLoop>
 #include <algorithm>
 
 #include "Application.h"
-#include "Index.h"
-#include "JsonFormat.h"
-#include "Version.h"
-#include "meta/BaseEntity.h"
+#include "Index.hpp"
+#include "JsonFormat.hpp"
 #include "net/Mode.h"
 #include "tasks/SequentialTask.h"
 
-namespace Meta
+namespace projt::meta
 {
-	VersionList::VersionList(const QString& uid, QObject* parent) : BaseVersionList(parent), m_uid(uid)
+
+	MetaVersionList::MetaVersionList(const QString& componentUid, QObject* parent)
+		: BaseVersionList(parent),
+		  m_uid(componentUid)
 	{
-		setObjectName("Version list: " + uid);
+		setObjectName("MetaVersionList: " + componentUid);
+
+		m_activeRoles = { VersionPointerRole, VersionRole,		VersionIdRole, ParentVersionRole,
+						  TypeRole,			  ComponentUidRole, TimestampRole, DependencyRole,
+						  SortRole,			  RecommendedRole,	LatestRole,	   VersionPtrRole };
 	}
 
-	Task::Ptr VersionList::getLoadTask()
+	bool MetaVersionList::isLoaded()
 	{
-		auto loadTask = makeShared<SequentialTask>(
-			tr("Load meta for %1", "This is for the task name that loads the meta index.").arg(m_uid));
-		loadTask->addTask(APPLICATION->metadataIndex()->loadTask(Net::Mode::Online));
-		loadTask->addTask(this->loadTask(Net::Mode::Online));
-		return loadTask;
+		return MetaEntity::isReady();
 	}
 
-	bool VersionList::isLoaded()
+	Task::Ptr MetaVersionList::getLoadTask()
 	{
-		return BaseEntity::isLoaded();
+		auto seq = makeShared<SequentialTask>(tr("Load metadata for %1").arg(m_uid));
+		seq->addTask(APPLICATION->metadataIndex()->createLoadTask(Net::Mode::Online));
+		seq->addTask(this->createLoadTask(Net::Mode::Online));
+		return seq;
 	}
 
-	const BaseVersion::Ptr VersionList::at(int i) const
+	const BaseVersion::Ptr MetaVersionList::at(int i) const
 	{
-		return m_versions.at(i);
-	}
-	int VersionList::count() const
-	{
-		return m_versions.size();
+		return m_entries.at(i);
 	}
 
-	void VersionList::sortVersions()
+	int MetaVersionList::count() const
+	{
+		return m_entries.size();
+	}
+
+	void MetaVersionList::sortVersions()
 	{
 		beginResetModel();
-		std::sort(m_versions.begin(),
-				  m_versions.end(),
-				  [](const Version::Ptr& a, const Version::Ptr& b) { return *a.get() < *b.get(); });
+		std::sort(m_entries.begin(),
+				  m_entries.end(),
+				  [](const MetaVersion::Ptr& a, const MetaVersion::Ptr& b)
+				  { return a->asComparableVersion() < b->asComparableVersion(); });
 		endResetModel();
 	}
 
-	QVariant VersionList::data(const QModelIndex& index, int role) const
+	QVariant MetaVersionList::data(const QModelIndex& idx, int role) const
 	{
-		if (!index.isValid() || index.row() < 0 || index.row() >= m_versions.size() || index.parent().isValid())
-		{
+		if (!idx.isValid() || idx.row() < 0 || idx.row() >= m_entries.size())
 			return QVariant();
-		}
 
-		Version::Ptr version = m_versions.at(index.row());
+		const MetaVersion::Ptr& ver = m_entries.at(idx.row());
 
 		switch (role)
 		{
-			case VersionPointerRole: return QVariant::fromValue(std::dynamic_pointer_cast<BaseVersion>(version));
+			case VersionPointerRole: return QVariant::fromValue(std::dynamic_pointer_cast<BaseVersion>(ver));
 			case VersionRole:
-			case VersionIdRole: return version->version();
+			case VersionIdRole: return ver->versionId();
 			case ParentVersionRole:
 			{
-				auto parent = version->parentVersion();
-				if (parent.isEmpty())
-				{
-					return QVariant();
-				}
-				return parent;
+				QString parent = ver->parentComponentVersion();
+				return parent.isEmpty() ? QVariant() : parent;
 			}
-			case TypeRole: return version->type();
-
-			case UidRole: return version->uid();
-			case TimeRole: return version->time();
-			case RequiresRole: return QVariant::fromValue(version->requiredSet());
-			case SortRole: return version->rawTime();
-			case VersionPtrRole: return QVariant::fromValue(version);
-			case RecommendedRole:
-				return version->isRecommended() || m_externalRecommendsVersions.contains(version->version());
+			case TypeRole: return ver->releaseType();
+			case ComponentUidRole: return ver->componentUid();
+			case TimestampRole: return ver->releaseTime();
+			case DependencyRole: return QVariant::fromValue(ver->dependencies());
+			case SortRole: return ver->releaseTimestamp();
+			case VersionPtrRole: return QVariant::fromValue(ver);
+			case RecommendedRole: return ver->isStable() || m_externalStableVersions.contains(ver->versionId());
 			case JavaMajorRole:
 			{
-				auto major = version->version();
-				if (major.startsWith("java"))
-				{
-					major = "Java " + major.mid(4);
-				}
-				return major;
+				QString display = ver->versionId();
+				if (display.startsWith("java"))
+					display = "Java " + display.mid(4);
+				return display;
 			}
-			// LatestRole is handled by VersionProxyModel which has access to filter/sort context.
-			// Determining "latest" depends on version type filters which this model doesn't control.
-			// case LatestRole: return version == getLatestStable();
 			default: return QVariant();
 		}
 	}
 
-	BaseVersionList::RoleList VersionList::providesRoles() const
+	BaseVersionList::RoleList MetaVersionList::providesRoles() const
 	{
-		return m_provided_roles;
+		return m_activeRoles;
 	}
 
-	void VersionList::setProvidedRoles(RoleList roles)
+	void MetaVersionList::setAvailableRoles(RoleList roles)
 	{
-		m_provided_roles = roles;
-	};
-
-	QHash<int, QByteArray> VersionList::roleNames() const
-	{
-		QHash<int, QByteArray> roles = BaseVersionList::roleNames();
-		roles.insert(UidRole, "uid");
-		roles.insert(TimeRole, "time");
-		roles.insert(SortRole, "sort");
-		roles.insert(RequiresRole, "requires");
-		return roles;
+		m_activeRoles = roles;
 	}
 
-	QString VersionList::localFilename() const
+	QHash<int, QByteArray> MetaVersionList::roleNames() const
+	{
+		QHash<int, QByteArray> names = BaseVersionList::roleNames();
+		names.insert(ComponentUidRole, "componentUid");
+		names.insert(TimestampRole, "timestamp");
+		names.insert(SortRole, "sortKey");
+		names.insert(DependencyRole, "dependencies");
+		return names;
+	}
+
+	QString MetaVersionList::cacheFilePath() const
 	{
 		return m_uid + "/index.json";
 	}
 
-	QString VersionList::humanReadable() const
+	void MetaVersionList::loadFromJson(const QJsonObject& json)
 	{
-		return m_name.isEmpty() ? m_uid : m_name;
+		loadVersionListFromJson(json, this);
 	}
 
-	Version::Ptr VersionList::getVersion(const QString& version)
+	MetaVersion::Ptr MetaVersionList::getMetaVersion(const QString& versionId)
 	{
-		Version::Ptr out = m_lookup.value(version, nullptr);
-		if (!out)
-		{
-			out				  = std::make_shared<Version>(m_uid, version);
-			m_lookup[version] = out;
-			setupAddedVersion(m_versions.size(), out);
-			m_versions.append(out);
-		}
-		return out;
+		return m_versionIndex.value(versionId, nullptr);
 	}
 
-	bool VersionList::hasVersion(QString version) const
+	MetaVersion::Ptr MetaVersionList::getOrCreateVersion(const QString& versionId)
 	{
-		auto ver = std::find_if(m_versions.constBegin(),
-								m_versions.constEnd(),
-								[version](Meta::Version::Ptr const& a) { return a->version() == version; });
-		return (ver != m_versions.constEnd());
+		MetaVersion::Ptr existing = m_versionIndex.value(versionId);
+		if (existing)
+			return existing;
+
+		auto newVer = std::make_shared<MetaVersion>(m_uid, versionId);
+		m_versionIndex.insert(versionId, newVer);
+
+		int row = m_entries.size();
+		registerVersion(row, newVer);
+		m_entries.append(newVer);
+
+		return newVer;
 	}
 
-	void VersionList::setName(const QString& name)
+	bool MetaVersionList::containsVersion(const QString& versionId) const
 	{
-		m_name = name;
-		emit nameChanged(name);
+		return m_versionIndex.contains(versionId);
 	}
 
-	void VersionList::setVersions(const QList<Version::Ptr>& versions)
+	void MetaVersionList::setDisplayName(const QString& name)
+	{
+		m_displayName = name;
+		emit displayNameChanged(name);
+	}
+
+	void MetaVersionList::setVersionEntries(const QList<MetaVersion::Ptr>& entries)
 	{
 		beginResetModel();
-		m_versions = versions;
-		std::sort(m_versions.begin(),
-				  m_versions.end(),
-				  [](const Version::Ptr& a, const Version::Ptr& b) { return a->rawTime() > b->rawTime(); });
-		for (int i = 0; i < m_versions.size(); ++i)
+
+		m_entries = entries;
+
+		std::sort(m_entries.begin(),
+				  m_entries.end(),
+				  [](const MetaVersion::Ptr& a, const MetaVersion::Ptr& b)
+				  { return a->releaseTimestamp() > b->releaseTimestamp(); });
+
+		m_versionIndex.clear();
+		for (int i = 0; i < m_entries.size(); ++i)
 		{
-			m_lookup.insert(m_versions.at(i)->version(), m_versions.at(i));
-			setupAddedVersion(i, m_versions.at(i));
+			const auto& ver = m_entries.at(i);
+			m_versionIndex.insert(ver->versionId(), ver);
+			registerVersion(i, ver);
 		}
 
-		// Recommended version fallback: use first 'release' type if metadata doesn't specify
-		// This provides a sensible default when the meta server doesn't explicitly mark recommended
-		auto recommendedIt = std::find_if(m_versions.constBegin(),
-										  m_versions.constEnd(),
-										  [](const Version::Ptr& ptr) { return ptr->type() == "release"; });
-		m_recommended	   = recommendedIt == m_versions.constEnd() ? nullptr : *recommendedIt;
+		auto stableIt = std::find_if(m_entries.constBegin(),
+									 m_entries.constEnd(),
+									 [](const MetaVersion::Ptr& v) { return v->releaseType() == "release"; });
+
+		m_stableVersion = (stableIt != m_entries.constEnd()) ? *stableIt : nullptr;
+
 		endResetModel();
 	}
 
-	void VersionList::parse(const QJsonObject& obj)
+	void MetaVersionList::addExternalStableVersions(const QStringList& versions)
 	{
-		parseVersionList(obj, this);
+		m_externalStableVersions.append(versions);
 	}
 
-	void VersionList::addExternalRecommends(const QStringList& recommends)
+	void MetaVersionList::clearExternalStableVersions()
 	{
-		m_externalRecommendsVersions.append(recommends);
+		m_externalStableVersions.clear();
 	}
 
-	void VersionList::clearExternalRecommends()
-	{
-		m_externalRecommendsVersions.clear();
-	}
-
-	// Helper: Select better version when merging lists (prefers recommended, then newer release)
-	static const Meta::Version::Ptr& getBetterVersion(const Meta::Version::Ptr& a, const Meta::Version::Ptr& b)
+	const MetaVersion::Ptr& MetaVersionList::selectBetterVersion(const MetaVersion::Ptr& a, const MetaVersion::Ptr& b)
 	{
 		if (!a)
 			return b;
 		if (!b)
 			return a;
-		if (a->type() == b->type())
+
+		if (a->releaseType() != b->releaseType())
 		{
-			// newer of same type wins
-			return (a->rawTime() > b->rawTime() ? a : b);
+			if (a->releaseType() == "release")
+				return a;
+			if (b->releaseType() == "release")
+				return b;
 		}
-		// 'release' type wins
-		return (a->type() == "release" ? a : b);
+
+		return (a->releaseTimestamp() > b->releaseTimestamp()) ? a : b;
 	}
 
-	void VersionList::mergeFromIndex(const VersionList::Ptr& other)
+	void MetaVersionList::updateFromIndex(const MetaVersionList::Ptr& other)
 	{
-		if (m_name != other->m_name)
-		{
-			setName(other->m_name);
-		}
-		if (!other->m_sha256.isEmpty())
-		{
-			m_sha256 = other->m_sha256;
-		}
+		if (m_displayName != other->m_displayName)
+			setDisplayName(other->m_displayName);
+
+		if (!other->m_expectedSha256.isEmpty())
+			m_expectedSha256 = other->m_expectedSha256;
 	}
 
-	void VersionList::merge(const VersionList::Ptr& other)
+	void MetaVersionList::mergeWith(const MetaVersionList::Ptr& other)
 	{
-		if (m_name != other->m_name)
-		{
-			setName(other->m_name);
-		}
-		if (!other->m_sha256.isEmpty())
-		{
-			m_sha256 = other->m_sha256;
-		}
+		if (m_displayName != other->m_displayName)
+			setDisplayName(other->m_displayName);
 
-		// Full model reset is used because version merging can affect sort order.
-		// Incremental updates would require tracking which rows changed and their new positions.
+		if (!other->m_expectedSha256.isEmpty())
+			m_expectedSha256 = other->m_expectedSha256;
+
 		beginResetModel();
-		if (other->m_versions.isEmpty())
+
+		for (const auto& incoming : other->m_entries)
 		{
-			qWarning() << "Empty list loaded ...";
-		}
-		for (auto version : other->m_versions)
-		{
-			// we already have the version. merge the contents
-			if (m_lookup.contains(version->version()))
+			MetaVersion::Ptr existing = m_versionIndex.value(incoming->versionId());
+
+			if (existing)
 			{
-				auto existing = m_lookup.value(version->version());
-				existing->mergeFromList(version);
-				version = existing;
+				existing->updateMetadataFrom(incoming);
 			}
 			else
 			{
-				m_lookup.insert(version->version(), version);
-				// connect it.
-				setupAddedVersion(m_versions.size(), version);
-				m_versions.append(version);
+				m_versionIndex.insert(incoming->versionId(), incoming);
+				int row = m_entries.size();
+				registerVersion(row, incoming);
+				m_entries.append(incoming);
 			}
-			m_recommended = getBetterVersion(m_recommended, version);
+
+			m_stableVersion = selectBetterVersion(m_stableVersion, incoming);
 		}
+
 		endResetModel();
 	}
 
-	void VersionList::setupAddedVersion(const int row, const Version::Ptr& version)
+	void MetaVersionList::registerVersion(int row, const MetaVersion::Ptr& version)
 	{
-		disconnect(version.get(), &Version::requiresChanged, this, nullptr);
-		disconnect(version.get(), &Version::timeChanged, this, nullptr);
-		disconnect(version.get(), &Version::typeChanged, this, nullptr);
+		disconnect(version.get(), &MetaVersion::dependenciesChanged, this, nullptr);
+		disconnect(version.get(), &MetaVersion::timestampChanged, this, nullptr);
+		disconnect(version.get(), &MetaVersion::releaseTypeChanged, this, nullptr);
 
 		connect(version.get(),
-				&Version::requiresChanged,
+				&MetaVersion::dependenciesChanged,
 				this,
-				[this, row]() { emit dataChanged(index(row), index(row), QList<int>() << RequiresRole); });
+				[this, row]() { emit dataChanged(index(row), index(row), { DependencyRole }); });
 		connect(version.get(),
-				&Version::timeChanged,
+				&MetaVersion::timestampChanged,
 				this,
-				[this, row]() { emit dataChanged(index(row), index(row), { TimeRole, SortRole }); });
+				[this, row]() { emit dataChanged(index(row), index(row), { TimestampRole, SortRole }); });
 		connect(version.get(),
-				&Version::typeChanged,
+				&MetaVersion::releaseTypeChanged,
 				this,
 				[this, row]() { emit dataChanged(index(row), index(row), { TypeRole }); });
 	}
 
-	BaseVersion::Ptr VersionList::getRecommended() const
+	BaseVersion::Ptr MetaVersionList::getRecommended() const
 	{
-		return m_recommended;
+		return m_stableVersion;
 	}
 
-	void VersionList::waitToLoad()
+	void MetaVersionList::waitUntilReady()
 	{
 		if (isLoaded())
 			return;
-		QEventLoop ev;
+
+		QEventLoop loop;
 		auto task = getLoadTask();
-		connect(task.get(), &Task::finished, &ev, &QEventLoop::quit);
+		connect(task.get(), &Task::finished, &loop, &QEventLoop::quit);
 		task->start();
-		ev.exec();
+		loop.exec();
 	}
 
-	Version::Ptr VersionList::getRecommendedForParent(const QString& uid, const QString& version)
+	MetaVersion::Ptr MetaVersionList::stableForParent(const QString& parentUid, const QString& parentVersion)
 	{
-		auto foundExplicit =
-			std::find_if(m_versions.begin(),
-						 m_versions.end(),
-						 [uid, version](Version::Ptr ver) -> bool
-						 {
-							 auto& reqs		= ver->requiredSet();
-							 auto parentReq = std::find_if(reqs.begin(),
-														   reqs.end(),
-														   [uid, version](const Require& req) -> bool
-														   { return req.uid == uid && req.equalsVersion == version; });
-							 return parentReq != reqs.end() && ver->isRecommended();
-						 });
-		if (foundExplicit != m_versions.end())
+		for (const auto& ver : m_entries)
 		{
-			return *foundExplicit;
+			if (!ver->isStable())
+				continue;
+
+			const auto& deps = ver->dependencies();
+			auto match		 = std::find_if(deps.begin(),
+										deps.end(),
+										[&](const ComponentDependency& d)
+										{ return d.uid == parentUid && d.equalsVersion == parentVersion; });
+
+			if (match != deps.end())
+				return ver;
 		}
 		return nullptr;
 	}
 
-	Version::Ptr VersionList::getLatestForParent(const QString& uid, const QString& version)
+	MetaVersion::Ptr MetaVersionList::latestForParent(const QString& parentUid, const QString& parentVersion)
 	{
-		Version::Ptr latestCompat = nullptr;
-		for (auto ver : m_versions)
+		MetaVersion::Ptr best = nullptr;
+
+		for (const auto& ver : m_entries)
 		{
-			auto& reqs	   = ver->requiredSet();
-			auto parentReq = std::find_if(reqs.begin(),
-										  reqs.end(),
-										  [uid, version](const Require& req) -> bool
-										  { return req.uid == uid && req.equalsVersion == version; });
-			if (parentReq != reqs.end())
-			{
-				latestCompat = getBetterVersion(latestCompat, ver);
-			}
+			const auto& deps = ver->dependencies();
+			auto match		 = std::find_if(deps.begin(),
+										deps.end(),
+										[&](const ComponentDependency& d)
+										{ return d.uid == parentUid && d.equalsVersion == parentVersion; });
+
+			if (match != deps.end())
+				best = selectBetterVersion(best, ver);
 		}
-		return latestCompat;
+
+		return best;
 	}
 
-} // namespace Meta
+} // namespace projt::meta

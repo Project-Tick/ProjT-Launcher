@@ -17,44 +17,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-/* === Upstream License Block (Do Not Modify) ==============================
- *
- *  Prism Launcher - Minecraft Launcher
- *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * This file incorporates work covered by the following copyright and
- * permission notice:
- *
- *      Copyright 2013-2021 MultiMC Contributors
- *
- *      Licensed under the Apache License, Version 2.0 (the "License");
- *      you may not use this file except in compliance with the License.
- *      You may obtain a copy of the License at
- *
- *          http://www.apache.org/licenses/LICENSE-2.0
- *
- *      Unless required by applicable law or agreed to in writing, software
- *      distributed under the License is distributed on an "AS IS" BASIS,
- *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *      See the License for the specific language governing permissions and
- *      limitations under the License.
- *
-   ======================================================================== */
-
 #include "JavaCommon.h"
-#include "java/JavaUtils.h"
+#include "java/services/RuntimeProbeTask.hpp"
 #include "ui/dialogs/CustomMessageBox.h"
 
 #include <QRegularExpression>
@@ -90,25 +54,25 @@ bool JavaCommon::checkJVMArgs(QString jvmargs, QWidget* parent)
 	return true;
 }
 
-void JavaCommon::javaWasOk(QWidget* parent, const JavaChecker::Result& result)
+void JavaCommon::javaWasOk(QWidget* parent, const projt::java::RuntimeProbeTask::ProbeReport& result)
 {
 	QString text;
 	text += QObject::tr("Java test succeeded!<br />Platform reported: %1<br />Java version "
 						"reported: %2<br />Java vendor "
 						"reported: %3<br />")
-				.arg(result.realPlatform, result.javaVersion.toString(), result.javaVendor);
-	if (result.errorLog.size())
+				.arg(result.platformArch, result.version.toString(), result.vendor);
+	if (result.stderrLog.size())
 	{
-		auto htmlError = result.errorLog;
+		auto htmlError = result.stderrLog;
 		htmlError.replace('\n', "<br />");
 		text += QObject::tr("<br />Warnings:<br /><font color=\"orange\">%1</font>").arg(htmlError);
 	}
 	CustomMessageBox::selectable(parent, QObject::tr("Java test success"), text, QMessageBox::Information)->show();
 }
 
-void JavaCommon::javaArgsWereBad(QWidget* parent, const JavaChecker::Result& result)
+void JavaCommon::javaArgsWereBad(QWidget* parent, const projt::java::RuntimeProbeTask::ProbeReport& result)
 {
-	auto htmlError = result.errorLog;
+	auto htmlError = result.stderrLog;
 	QString text;
 	htmlError.replace('\n', "<br />");
 	text += QObject::tr("The specified Java binary didn't work with the arguments you provided:<br />");
@@ -116,7 +80,7 @@ void JavaCommon::javaArgsWereBad(QWidget* parent, const JavaChecker::Result& res
 	CustomMessageBox::selectable(parent, QObject::tr("Java test failure"), text, QMessageBox::Warning)->show();
 }
 
-void JavaCommon::javaBinaryWasBad(QWidget* parent, const JavaChecker::Result& result)
+void JavaCommon::javaBinaryWasBad(QWidget* parent, const projt::java::RuntimeProbeTask::ProbeReport& result)
 {
 	QString text;
 	text += QObject::tr("The specified Java binary didn't work.<br />You should press 'Detect', "
@@ -138,34 +102,44 @@ void JavaCommon::TestCheck::run()
 		emit finished();
 		return;
 	}
-	if (JavaUtils::getJavaCheckPath().isEmpty())
+	if (projt::java::RuntimeProbeTask::probeJarPath().isEmpty())
 	{
 		javaCheckNotFound(m_parent);
 		emit finished();
 		return;
 	}
-	checker.reset(new JavaChecker(m_path, "", 0, 0, 0, 0));
-	connect(checker.get(), &JavaChecker::checkFinished, this, &JavaCommon::TestCheck::checkFinished);
+	projt::java::RuntimeProbeTask::ProbeSettings settings;
+	settings.binaryPath = m_path;
+	checker.reset(new projt::java::RuntimeProbeTask(settings));
+	connect(checker.get(), &projt::java::RuntimeProbeTask::probeFinished, this, &JavaCommon::TestCheck::checkFinished);
 	checker->start();
 }
 
-void JavaCommon::TestCheck::checkFinished(const JavaChecker::Result& result)
+void JavaCommon::TestCheck::checkFinished(const projt::java::RuntimeProbeTask::ProbeReport& result)
 {
-	if (result.validity != JavaChecker::Result::Validity::Valid)
+	if (result.status != projt::java::RuntimeProbeTask::ProbeReport::Status::Valid)
 	{
 		javaBinaryWasBad(m_parent, result);
 		emit finished();
 		return;
 	}
-	checker.reset(
-		new JavaChecker(m_path, m_args, m_maxMem, m_maxMem, result.javaVersion.requiresPermGen() ? m_permGen : 0, 0));
-	connect(checker.get(), &JavaChecker::checkFinished, this, &JavaCommon::TestCheck::checkFinishedWithArgs);
+	projt::java::RuntimeProbeTask::ProbeSettings settings;
+	settings.binaryPath = m_path;
+	settings.extraArgs = m_args;
+	settings.minMem = m_minMem;
+	settings.maxMem = m_maxMem;
+	settings.permGen = result.version.needsPermGen() ? m_permGen : 0;
+	checker.reset(new projt::java::RuntimeProbeTask(settings));
+	connect(checker.get(),
+			&projt::java::RuntimeProbeTask::probeFinished,
+			this,
+			&JavaCommon::TestCheck::checkFinishedWithArgs);
 	checker->start();
 }
 
-void JavaCommon::TestCheck::checkFinishedWithArgs(const JavaChecker::Result& result)
+void JavaCommon::TestCheck::checkFinishedWithArgs(const projt::java::RuntimeProbeTask::ProbeReport& result)
 {
-	if (result.validity == JavaChecker::Result::Validity::Valid)
+	if (result.status == projt::java::RuntimeProbeTask::ProbeReport::Status::Valid)
 	{
 		javaWasOk(m_parent, result);
 		emit finished();
@@ -174,3 +148,4 @@ void JavaCommon::TestCheck::checkFinishedWithArgs(const JavaChecker::Result& res
 	javaArgsWereBad(m_parent, result);
 	emit finished();
 }
+

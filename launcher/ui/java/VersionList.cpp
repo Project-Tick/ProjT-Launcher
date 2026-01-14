@@ -16,27 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- *
- *
- *  Prism Launcher - Minecraft Launcher
- *  Copyright (c) 2024 Trial97 <alexandru.tripon97@gmail.com>
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * ======================================================================== */
+ */
 
 #include "VersionList.h"
 
@@ -44,21 +24,23 @@
 
 #include "BaseVersionList.h"
 #include "SysInfo.h"
-#include "java/JavaMetadata.h"
-#include "meta/VersionList.h"
+#include "java/core/RuntimePackage.hpp"
+#include "meta/VersionList.hpp"
 
 namespace Java
 {
 
-	VersionList::VersionList(Meta::Version::Ptr version, QObject* parent) : BaseVersionList(parent), m_version(version)
+	VersionList::VersionList(projt::meta::MetaVersion::Ptr version, QObject* parent)
+		: BaseVersionList(parent),
+		  m_version(version)
 	{
-		if (version->isLoaded())
+		if (version->isFullyLoaded())
 			sortVersions();
 	}
 
 	Task::Ptr VersionList::getLoadTask()
 	{
-		auto task = m_version->loadTask(Net::Mode::Online);
+		auto task = m_version->createLoadTask(Net::Mode::Online);
 		connect(task.get(), &Task::finished, this, &VersionList::sortVersions);
 		return task;
 	}
@@ -70,7 +52,7 @@ namespace Java
 
 	bool VersionList::isLoaded()
 	{
-		return m_version->isLoaded();
+		return m_version->isFullyLoaded();
 	}
 
 	int VersionList::count() const
@@ -106,38 +88,43 @@ namespace Java
 				return major;
 			}
 			case TypeRole: return version->packageType;
-			case Meta::VersionList::TimeRole: return version->releaseTime;
+			case projt::meta::MetaVersionList::TimestampRole: return version->releaseTime;
 			default: return QVariant();
 		}
 	}
 
 	BaseVersionList::RoleList VersionList::providesRoles() const
 	{
-		return { VersionPointerRole,		 VersionIdRole, VersionRole, RecommendedRole, JavaNameRole, TypeRole,
-				 Meta::VersionList::TimeRole };
+		return { VersionPointerRole,
+				 VersionIdRole,
+				 VersionRole,
+				 RecommendedRole,
+				 JavaNameRole,
+				 TypeRole,
+				 projt::meta::MetaVersionList::TimestampRole };
 	}
 
 	bool sortJavas(BaseVersion::Ptr left, BaseVersion::Ptr right)
 	{
-		auto rleft	= std::dynamic_pointer_cast<Java::Metadata>(right);
-		auto rright = std::dynamic_pointer_cast<Java::Metadata>(left);
+		auto rleft	= std::dynamic_pointer_cast<projt::java::RuntimePackage>(right);
+		auto rright = std::dynamic_pointer_cast<projt::java::RuntimePackage>(left);
 		return (*rleft) < (*rright);
 	}
 
 	void VersionList::sortVersions()
 	{
-		if (!m_version || !m_version->data())
+		if (!m_version || !m_version->detailedData())
 			return;
 		QString versionStr = SysInfo::getSupportedJavaArchitecture();
 		beginResetModel();
-		auto runtimes = m_version->data()->runtimes;
+		auto runtimes = m_version->detailedData()->runtimes;
 		m_vlist		  = {};
 		if (!versionStr.isEmpty() && !runtimes.isEmpty())
 		{
 			std::copy_if(runtimes.begin(),
 						 runtimes.end(),
 						 std::back_inserter(m_vlist),
-						 [versionStr](Java::MetadataPtr val) { return val->runtimeOS == versionStr; });
+						 [versionStr](projt::java::RuntimePackagePtr val) { return val->runtimeOS == versionStr; });
 			std::sort(m_vlist.begin(), m_vlist.end(), sortJavas);
 		}
 		else

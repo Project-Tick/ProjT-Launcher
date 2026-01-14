@@ -80,7 +80,10 @@
 
 class QDir;
 class Task;
-class LaunchTask;
+namespace projt::launch
+{
+class LaunchPipeline;
+}
 class BaseInstance;
 
 // pointer for lazy people
@@ -241,12 +244,12 @@ class BaseInstance : public QObject, public std::enable_shared_from_this<BaseIns
 	/// returns a valid update task
 	virtual QList<Task::Ptr> createUpdateTask() = 0;
 
-	/// returns a valid launcher (task container)
-	virtual shared_qobject_ptr<LaunchTask> createLaunchTask(AuthSessionPtr account,
-															MinecraftTarget::Ptr targetToJoin) = 0;
+	/// returns a valid launcher (pipeline container)
+	virtual shared_qobject_ptr<projt::launch::LaunchPipeline> createLaunchPipeline(AuthSessionPtr account,
+																				  MinecraftTarget::Ptr targetToJoin) = 0;
 
-	/// returns the current launch task (if any)
-	shared_qobject_ptr<LaunchTask> getLaunchTask();
+	/// returns the current launch pipeline (if any)
+	shared_qobject_ptr<projt::launch::LaunchPipeline> getLaunchPipeline();
 
 	/*!
 	 * Create envrironment variables for running the instance
@@ -360,7 +363,7 @@ class BaseInstance : public QObject, public std::enable_shared_from_this<BaseIns
 	 */
 	void propertiesChanged(BaseInstance* inst);
 
-	void launchTaskChanged(shared_qobject_ptr<LaunchTask>);
+	void launchPipelineChanged(shared_qobject_ptr<projt::launch::LaunchPipeline>);
 
 	void runningStatusChanged(bool running);
 
@@ -376,7 +379,7 @@ class BaseInstance : public QObject, public std::enable_shared_from_this<BaseIns
 	SettingsObjectPtr m_settings;
 	// InstanceFlags m_flags;
 	bool m_isRunning = false;
-	shared_qobject_ptr<LaunchTask> m_launchProcess;
+	shared_qobject_ptr<projt::launch::LaunchPipeline> m_launchProcess;
 	QDateTime m_timeStarted;
 	RuntimeContext m_runtimeContext;
 

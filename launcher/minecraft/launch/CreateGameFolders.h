@@ -37,15 +37,15 @@
 #pragma once
 
 #include <LoggedProcess.h>
-#include <launch/LaunchStep.h>
+#include <launch/LaunchStage.hpp>
 #include <minecraft/auth/AuthSession.h>
 
 // Create the main .minecraft for the instance and any other necessary folders
-class CreateGameFolders : public LaunchStep
+class CreateGameFolders : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit CreateGameFolders(LaunchTask* parent);
+	explicit CreateGameFolders(projt::launch::LaunchPipeline* parent);
 	virtual ~CreateGameFolders() {};
 
 	virtual void executeTask();

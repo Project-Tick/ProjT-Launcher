@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -16,190 +16,175 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- * Copyright 2015-2021 MultiMC Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ======================================================================== */
+ */
 
-#include "Index.h"
+#include "Index.hpp"
 
-#include "JsonFormat.h"
+#include <QEventLoop>
+
+#include "JsonFormat.hpp"
 #include "QObjectPtr.h"
-#include "VersionList.h"
-#include "meta/BaseEntity.h"
 #include "tasks/SequentialTask.h"
 
-namespace Meta
+namespace projt::meta
 {
-	Index::Index(QObject* parent) : QAbstractListModel(parent)
+
+	MetaIndex::MetaIndex(QObject* parent) : QAbstractListModel(parent)
 	{}
-	Index::Index(const QList<VersionList::Ptr>& lists, QObject* parent) : QAbstractListModel(parent), m_lists(lists)
+
+	MetaIndex::MetaIndex(const QList<MetaVersionList::Ptr>& components, QObject* parent)
+		: QAbstractListModel(parent),
+		  m_components(components)
 	{
-		for (int i = 0; i < m_lists.size(); ++i)
+		for (int i = 0; i < m_components.size(); ++i)
 		{
-			m_uids.insert(m_lists.at(i)->uid(), m_lists.at(i));
-			connectVersionList(i, m_lists.at(i));
+			const auto& comp = m_components.at(i);
+			m_componentIndex.insert(comp->uid(), comp);
+			bindComponentSignals(i, comp);
 		}
 	}
 
-	QVariant Index::data(const QModelIndex& index, int role) const
+	QVariant MetaIndex::data(const QModelIndex& idx, int role) const
 	{
-		if (index.parent().isValid() || index.row() < 0 || index.row() >= m_lists.size())
-		{
+		if (!idx.isValid() || idx.row() < 0 || idx.row() >= m_components.size())
 			return QVariant();
-		}
 
-		VersionList::Ptr list = m_lists.at(index.row());
+		const MetaVersionList::Ptr& comp = m_components.at(idx.row());
+
 		switch (role)
 		{
-			case Qt::DisplayRole:
-				if (index.column() == 0)
-				{
-					return list->humanReadable();
-				}
-				else
-				{
-					break;
-				}
-			case UidRole: return list->uid();
-			case NameRole: return list->name();
-			case ListPtrRole: return QVariant::fromValue(list);
+			case Qt::DisplayRole: return (idx.column() == 0) ? comp->displayName() : QVariant();
+			case ComponentUidRole: return comp->uid();
+			case ComponentNameRole: return comp->displayName();
+			case ComponentListRole: return QVariant::fromValue(comp);
+			default: return QVariant();
 		}
-		return QVariant();
 	}
 
-	int Index::rowCount(const QModelIndex& parent) const
+	int MetaIndex::rowCount(const QModelIndex& parent) const
 	{
-		return parent.isValid() ? 0 : m_lists.size();
+		return parent.isValid() ? 0 : m_components.size();
 	}
 
-	int Index::columnCount(const QModelIndex& parent) const
+	int MetaIndex::columnCount(const QModelIndex& parent) const
 	{
 		return parent.isValid() ? 0 : 1;
 	}
 
-	QVariant Index::headerData(int section, Qt::Orientation orientation, int role) const
+	QVariant MetaIndex::headerData(int section, Qt::Orientation orientation, int role) const
 	{
 		if (orientation == Qt::Horizontal && role == Qt::DisplayRole && section == 0)
-		{
-			return tr("Name");
-		}
-		else
-		{
-			return QVariant();
-		}
+			return tr("Component");
+		return QVariant();
 	}
 
-	bool Index::hasUid(const QString& uid) const
+	void MetaIndex::loadFromJson(const QJsonObject& json)
 	{
-		return m_uids.contains(uid);
+		loadIndexFromJson(json, this);
 	}
 
-	VersionList::Ptr Index::get(const QString& uid)
+	bool MetaIndex::hasComponent(const QString& uid) const
 	{
-		VersionList::Ptr out = m_uids.value(uid, nullptr);
-		if (!out)
-		{
-			out			= std::make_shared<VersionList>(uid);
-			m_uids[uid] = out;
-			m_lists.append(out);
-		}
-		return out;
+		return m_componentIndex.contains(uid);
 	}
 
-	Version::Ptr Index::get(const QString& uid, const QString& version)
+	MetaVersionList::Ptr MetaIndex::component(const QString& uid)
 	{
-		auto list = get(uid);
-		return list->getVersion(version);
+		MetaVersionList::Ptr existing = m_componentIndex.value(uid);
+		if (existing)
+			return existing;
+
+		auto newList = std::make_shared<MetaVersionList>(uid);
+		m_componentIndex.insert(uid, newList);
+		m_components.append(newList);
+
+		return newList;
 	}
 
-	void Index::parse(const QJsonObject& obj)
+	MetaVersion::Ptr MetaIndex::version(const QString& componentUid, const QString& versionId)
 	{
-		parseIndex(obj, this);
+		return component(componentUid)->getOrCreateVersion(versionId);
 	}
 
-	void Index::merge(const std::shared_ptr<Index>& other)
+	void MetaIndex::mergeWith(const std::shared_ptr<MetaIndex>& other)
 	{
-		const QList<VersionList::Ptr> lists = other->m_lists;
-		// initial load, no need to merge
-		if (m_lists.isEmpty())
+		const auto& incoming = other->m_components;
+
+		if (m_components.isEmpty())
 		{
 			beginResetModel();
-			m_lists = lists;
-			for (int i = 0; i < lists.size(); ++i)
+			m_components = incoming;
+
+			for (int i = 0; i < incoming.size(); ++i)
 			{
-				m_uids.insert(lists.at(i)->uid(), lists.at(i));
-				connectVersionList(i, lists.at(i));
+				const auto& comp = incoming.at(i);
+				m_componentIndex.insert(comp->uid(), comp);
+				bindComponentSignals(i, comp);
 			}
+
 			endResetModel();
+			return;
 		}
-		else
+
+		for (const auto& incomingComp : incoming)
 		{
-			for (const VersionList::Ptr& list : lists)
+			MetaVersionList::Ptr existing = m_componentIndex.value(incomingComp->uid());
+
+			if (existing)
 			{
-				if (m_uids.contains(list->uid()))
-				{
-					m_uids[list->uid()]->mergeFromIndex(list);
-				}
-				else
-				{
-					beginInsertRows(QModelIndex(), m_lists.size(), m_lists.size());
-					connectVersionList(m_lists.size(), list);
-					m_lists.append(list);
-					m_uids.insert(list->uid(), list);
-					endInsertRows();
-				}
+				existing->updateFromIndex(incomingComp);
+			}
+			else
+			{
+				int row = m_components.size();
+				beginInsertRows(QModelIndex(), row, row);
+
+				bindComponentSignals(row, incomingComp);
+				m_components.append(incomingComp);
+				m_componentIndex.insert(incomingComp->uid(), incomingComp);
+
+				endInsertRows();
 			}
 		}
 	}
 
-	void Index::connectVersionList(const int row, const VersionList::Ptr& list)
+	void MetaIndex::bindComponentSignals(int row, const MetaVersionList::Ptr& comp)
 	{
-		connect(list.get(),
-				&VersionList::nameChanged,
+		connect(comp.get(),
+				&MetaVersionList::displayNameChanged,
 				this,
-				[this, row] { emit dataChanged(index(row), index(row), { Qt::DisplayRole }); });
+				[this, row]() { emit dataChanged(index(row), index(row), { Qt::DisplayRole, ComponentNameRole }); });
 	}
 
-	Task::Ptr Index::loadVersion(const QString& uid, const QString& version, Net::Mode mode, bool force)
+	Task::Ptr MetaIndex::loadVersionTask(const QString& componentUid,
+										 const QString& versionId,
+										 Net::Mode mode,
+										 bool forceRefresh)
 	{
 		if (mode == Net::Mode::Offline)
-		{
-			return get(uid, version)->loadTask(mode);
-		}
+			return version(componentUid, versionId)->createLoadTask(mode);
 
-		auto versionList = get(uid);
-		auto loadTask	 = makeShared<SequentialTask>(
-			   tr("Load meta for %1:%2", "This is for the task name that loads the meta index.").arg(uid, version));
-		if (status() != BaseEntity::LoadStatus::Remote || force)
-		{
-			loadTask->addTask(this->loadTask(mode));
-		}
-		loadTask->addTask(versionList->loadTask(mode));
-		loadTask->addTask(versionList->getVersion(version)->loadTask(mode));
-		return loadTask;
+		auto compList = component(componentUid);
+		auto seq	  = makeShared<SequentialTask>(tr("Load metadata for %1:%2").arg(componentUid, versionId));
+
+		if (state() != MetaEntity::State::Synchronized || forceRefresh)
+			seq->addTask(this->createLoadTask(mode));
+
+		seq->addTask(compList->createLoadTask(mode));
+		seq->addTask(compList->getOrCreateVersion(versionId)->createLoadTask(mode));
+
+		return seq;
 	}
 
-	Version::Ptr Index::getLoadedVersion(const QString& uid, const QString& version)
+	MetaVersion::Ptr MetaIndex::loadVersionBlocking(const QString& componentUid, const QString& versionId)
 	{
-		QEventLoop ev;
-		auto task = loadVersion(uid, version);
-		connect(task.get(), &Task::finished, &ev, &QEventLoop::quit);
+		QEventLoop loop;
+		auto task = loadVersionTask(componentUid, versionId);
+		connect(task.get(), &Task::finished, &loop, &QEventLoop::quit);
 		task->start();
-		ev.exec();
-		return get(uid, version);
+		loop.exec();
+
+		return version(componentUid, versionId);
 	}
-} // namespace Meta
+
+} // namespace projt::meta

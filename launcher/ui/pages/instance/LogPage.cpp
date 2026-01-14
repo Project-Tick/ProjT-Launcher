@@ -66,7 +66,7 @@
 #include <QScrollBar>
 #include <QShortcut>
 
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
 #include "settings/Setting.h"
 
 #include "ui/GuiUtil.h"
@@ -74,6 +74,8 @@
 
 #include <BuildConfig.h>
 
+using projt::launch::LaunchLogModel;
+using projt::launch::LaunchPipeline;
 QVariant LogFormatProxyModel::data(const QModelIndex& index, int role) const
 {
 	const LogColors& colors = APPLICATION->themeManager()->getLogColors();
@@ -83,7 +85,7 @@ QVariant LogFormatProxyModel::data(const QModelIndex& index, int role) const
 		case Qt::FontRole: return m_font;
 		case Qt::ForegroundRole:
 		{
-			auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LogModel::LevelRole).toInt());
+			auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LaunchLogModel::LevelRole).toInt());
 			QColor result = colors.foreground.value(level);
 
 			if (result.isValid())
@@ -93,7 +95,7 @@ QVariant LogFormatProxyModel::data(const QModelIndex& index, int role) const
 		}
 		case Qt::BackgroundRole:
 		{
-			auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LogModel::LevelRole).toInt());
+			auto level = static_cast<MessageLevel::Enum>(QIdentityProxyModel::data(index, LaunchLogModel::LevelRole).toInt());
 			QColor result = colors.background.value(level);
 
 			if (result.isValid())
@@ -183,12 +185,15 @@ LogPage::LogPage(InstancePtr instance, QWidget* parent) : QWidget(parent), ui(ne
 
 	// set up instance and launch process recognition
 	{
-		auto launchTask = m_instance->getLaunchTask();
+		auto launchTask = m_instance->getLaunchPipeline();
 		if (launchTask)
 		{
-			setInstanceLaunchTaskChanged(launchTask, true);
+			setInstanceLaunchPipelineChanged(launchTask, true);
 		}
-		connect(m_instance.get(), &BaseInstance::launchTaskChanged, this, &LogPage::onInstanceLaunchTaskChanged);
+		connect(m_instance.get(),
+				&BaseInstance::launchPipelineChanged,
+				this,
+				&LogPage::onInstanceLaunchPipelineChanged);
 	}
 
 	auto findShortcut = new QShortcut(QKeySequence(QKeySequence::Find), this);
@@ -248,12 +253,12 @@ void LogPage::UIToModelState()
 	m_model->suspend(ui->trackLogCheckbox->checkState() != Qt::Checked);
 }
 
-void LogPage::setInstanceLaunchTaskChanged(shared_qobject_ptr<LaunchTask> proc, bool initial)
+void LogPage::setInstanceLaunchPipelineChanged(shared_qobject_ptr<LaunchPipeline> proc, bool initial)
 {
 	m_process = proc;
 	if (m_process)
 	{
-		m_model = proc->getLogModel();
+		m_model = proc->logModel();
 		m_proxy->setSourceModel(m_model.get());
 		if (initial)
 		{
@@ -271,9 +276,9 @@ void LogPage::setInstanceLaunchTaskChanged(shared_qobject_ptr<LaunchTask> proc, 
 	}
 }
 
-void LogPage::onInstanceLaunchTaskChanged(shared_qobject_ptr<LaunchTask> proc)
+void LogPage::onInstanceLaunchPipelineChanged(shared_qobject_ptr<LaunchPipeline> proc)
 {
-	setInstanceLaunchTaskChanged(proc, false);
+	setInstanceLaunchPipelineChanged(proc, false);
 }
 
 bool LogPage::apply()

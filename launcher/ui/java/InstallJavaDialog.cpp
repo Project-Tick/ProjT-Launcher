@@ -16,27 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- *
- *
- *  Prism Launcher - Minecraft Launcher
- *  Copyright (c) 2024 Trial97 <alexandru.tripon97@gmail.com>
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * ======================================================================== */
+ */
 
 #include "InstallJavaDialog.h"
 
@@ -51,11 +31,12 @@
 #include "BaseVersionList.h"
 #include "FileSystem.h"
 #include "Filter.h"
-#include "java/download/ArchiveDownloadTask.h"
-#include "java/download/ManifestDownloadTask.h"
-#include "java/download/SymlinkTask.h"
-#include "meta/Index.h"
-#include "meta/VersionList.h"
+#include "java/core/RuntimePackage.hpp"
+#include "java/download/RuntimeArchiveTask.hpp"
+#include "java/download/RuntimeManifestTask.hpp"
+#include "java/download/RuntimeLinkTask.hpp"
+#include "meta/Index.hpp"
+#include "meta/VersionList.hpp"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "tasks/SequentialTask.h"
@@ -114,16 +95,16 @@ class InstallJavaPage : public QWidget, public BasePage
 	}
 
 	//! loads the list if needed.
-	void initialize(Meta::VersionList::Ptr vlist)
+	void initialize(projt::meta::MetaVersionList::Ptr vlist)
 	{
-		vlist->setProvidedRoles(
+		vlist->setAvailableRoles(
 			{ BaseVersionList::JavaMajorRole, BaseVersionList::RecommendedRole, BaseVersionList::VersionPointerRole });
 		majorVersionSelect->initialize(vlist.get());
 	}
 
 	void setSelectedVersion(BaseVersion::Ptr version)
 	{
-		auto dcast = std::dynamic_pointer_cast<Meta::Version>(version);
+		auto dcast = std::dynamic_pointer_cast<projt::meta::MetaVersion>(version);
 		if (!dcast)
 		{
 			return;
@@ -150,7 +131,7 @@ class InstallJavaPage : public QWidget, public BasePage
 		if (loaded)
 			return;
 
-		const auto versions = APPLICATION->metadataIndex()->get(uid);
+		const auto versions = APPLICATION->metadataIndex()->component(uid);
 		if (!versions)
 			return;
 
@@ -227,12 +208,12 @@ static InstallJavaPage* pageCast(BasePage* page)
 }
 namespace Java
 {
-	QStringList getRecommendedJavaVersionsFromVersionList(Meta::VersionList::Ptr list)
+	QStringList getRecommendedJavaVersionsFromVersionList(projt::meta::MetaVersionList::Ptr list)
 	{
 		QStringList recommendedJavas;
-		for (auto ver : list->versions())
+		for (auto ver : list->allVersions())
 		{
-			auto major = ver->version();
+			auto major = ver->versionId();
 			if (major.startsWith("java"))
 			{
 				major = "Java " + major.mid(4);
@@ -310,7 +291,7 @@ namespace Java
 		}
 		else
 		{
-			const auto versions = APPLICATION->metadataIndex()->get("net.minecraft.java");
+			const auto versions = APPLICATION->metadataIndex()->component("net.minecraft.java");
 			if (versions)
 			{
 				if (versions->isLoaded())
@@ -384,7 +365,8 @@ namespace Java
 	void InstallDialog::validate(BasePage* selected)
 	{
 		buttons->button(QDialogButtonBox::Ok)
-			->setEnabled(!!std::dynamic_pointer_cast<Java::Metadata>(pageCast(selected)->selectedVersion()));
+			->setEnabled(
+				!!std::dynamic_pointer_cast<projt::java::RuntimePackage>(pageCast(selected)->selectedVersion()));
 	}
 
 	void InstallDialog::done(int result)
@@ -394,27 +376,27 @@ namespace Java
 			auto* page = pageCast(container->selectedPage());
 			if (page->selectedVersion())
 			{
-				auto meta = std::dynamic_pointer_cast<Java::Metadata>(page->selectedVersion());
+				auto meta = std::dynamic_pointer_cast<projt::java::RuntimePackage>(page->selectedVersion());
 				if (meta)
 				{
 					Task::Ptr task;
-					auto final_path = FS::PathCombine(APPLICATION->javaPath(), meta->m_name);
+					auto final_path = FS::PathCombine(APPLICATION->javaPath(), meta->displayName);
 					auto deletePath = [final_path] { FS::deletePath(final_path); };
-					switch (meta->downloadType)
+					switch (meta->downloadKind)
 					{
-						case Java::DownloadType::Manifest:
-							task = makeShared<ManifestDownloadTask>(meta->url,
-																	final_path,
-																	meta->checksumType,
-																	meta->checksumHash);
+						case projt::java::PackageKind::Manifest:
+							task = makeShared<projt::java::RuntimeManifestTask>(meta->url,
+																				final_path,
+																				meta->checksumType,
+																				meta->checksumHash);
 							break;
-						case Java::DownloadType::Archive:
-							task = makeShared<ArchiveDownloadTask>(meta->url,
-																   final_path,
-																   meta->checksumType,
-																   meta->checksumHash);
+						case projt::java::PackageKind::Archive:
+							task = makeShared<projt::java::RuntimeArchiveTask>(meta->url,
+																			   final_path,
+																			   meta->checksumType,
+																			   meta->checksumHash);
 							break;
-						case Java::DownloadType::Unknown:
+						case projt::java::PackageKind::Unknown:
 							QString error = QString(tr("Could not determine Java download type!"));
 							CustomMessageBox::selectable(this, tr("Error"), error, QMessageBox::Warning)->show();
 							deletePath();
@@ -422,7 +404,7 @@ namespace Java
 #if defined(Q_OS_MACOS)
 					auto seq = makeShared<SequentialTask>(tr("Install Java"));
 					seq->addTask(task);
-					seq->addTask(makeShared<Java::SymlinkTask>(final_path));
+					seq->addTask(makeShared<projt::java::RuntimeLinkTask>(final_path));
 					task = seq;
 #endif
 					connect(task.get(),

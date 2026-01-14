@@ -62,6 +62,10 @@
 #include "minecraft/launch/MinecraftTarget.h"
 
 class InstanceWindow;
+namespace projt::launch
+{
+class LaunchPipeline;
+}
 class LaunchController : public Task
 {
 	Q_OBJECT
@@ -148,6 +152,6 @@ class LaunchController : public Task
 	InstanceWindow* m_console		   = nullptr;
 	MinecraftAccountPtr m_accountToUse = nullptr;
 	AuthSessionPtr m_session;
-	shared_qobject_ptr<LaunchTask> m_launcher;
+	shared_qobject_ptr<projt::launch::LaunchPipeline> m_launcher;
 	MinecraftTarget::Ptr m_targetToJoin;
 };

@@ -48,8 +48,8 @@
 #include "ui/instanceview/InstanceDelegate.h"
 
 #include <DesktopServices.h>
-#include "icons/IconList.h"
-#include "icons/IconUtils.h"
+#include "icons/IconList.hpp"
+#include "icons/IconUtils.hpp"
 
 IconPickerDialog::IconPickerDialog(QWidget* parent) : QDialog(parent), ui(new Ui::IconPickerDialog)
 {
@@ -112,7 +112,13 @@ IconPickerDialog::IconPickerDialog(QWidget* parent) : QDialog(parent), ui(new Ui
 	connect(buttonFolder, &QPushButton::clicked, this, &IconPickerDialog::openFolder);
 	connect(searchBar, &QLineEdit::textChanged, this, &IconPickerDialog::filterIcons);
 	// Prevent incorrect indices from e.g. filesystem changes
-	connect(APPLICATION->icons().get(), &IconList::iconUpdated, this, [this]() { proxyModel->invalidate(); });
+	connect(APPLICATION->icons().get(),
+			&projt::icons::IconList::iconUpdated,
+			this,
+			[this]()
+			{
+				proxyModel->invalidate();
+			});
 }
 
 bool IconPickerDialog::eventFilter(QObject* obj, QEvent* evt)
@@ -138,7 +144,7 @@ void IconPickerDialog::addNewIcon()
 	//: The title of the select icons open file dialog
 	QString selectIcons = tr("Select Icons");
 	//: The type of icon files
-	auto filter			  = IconUtils::getIconFilter();
+	auto filter			  = projt::icons::getIconFilter();
 	QStringList fileNames = QFileDialog::getOpenFileNames(this, selectIcons, QString(), tr("Icons %1").arg(filter));
 	APPLICATION->icons()->installIcons(fileNames);
 }

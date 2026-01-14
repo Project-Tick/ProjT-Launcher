@@ -37,7 +37,7 @@
 #include <fstream>
 #include <string>
 
-#include <launch/LaunchTask.h>
+#include <launch/LaunchPipeline.hpp>
 #include "PrintInstanceInfo.h"
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
@@ -155,7 +155,7 @@ namespace
 
 void PrintInstanceInfo::executeTask()
 {
-	auto instance = m_parent->instance();
+	auto instance = m_flow->instance();
 	QStringList log;
 
 #if defined(Q_OS_LINUX)

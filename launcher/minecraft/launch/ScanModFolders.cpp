@@ -58,13 +58,13 @@
 #include "ScanModFolders.h"
 #include "FileSystem.h"
 #include "MMCZip.h"
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/mod/ModFolderModel.h"
 
 void ScanModFolders::executeTask()
 {
-	auto m_inst = m_parent->instance();
+	auto m_inst = m_flow->instance();
 
 	auto loaders = m_inst->loaderModList();
 	connect(loaders.get(), &ModFolderModel::updateFinished, this, &ScanModFolders::modsDone);

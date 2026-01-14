@@ -37,16 +37,16 @@
 #pragma once
 
 #include <LoggedProcess.h>
-#include <launch/LaunchStep.h>
+#include <launch/LaunchStage.hpp>
 #include <minecraft/auth/AuthSession.h>
 
 #include "MinecraftTarget.h"
 
-class LauncherPartLaunch : public LaunchStep
+class LauncherPartLaunch : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit LauncherPartLaunch(LaunchTask* parent);
+	explicit LauncherPartLaunch(projt::launch::LaunchPipeline* parent);
 	virtual ~LauncherPartLaunch() = default;
 
 	virtual void executeTask();

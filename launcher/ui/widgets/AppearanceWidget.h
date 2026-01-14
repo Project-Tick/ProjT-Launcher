@@ -47,7 +47,6 @@
 #include <Application.h>
 #include <translations/TranslationsModel.h>
 #include <QTextCursor>
-#include "java/JavaChecker.h"
 #include "ui/pages/BasePage.h"
 
 class QTextCharFormat;
@@ -84,3 +83,4 @@ class AppearanceWidget : public QWidget
 	QTextCharFormat m_defaultFormat;
 	bool m_themesOnly;
 };
+

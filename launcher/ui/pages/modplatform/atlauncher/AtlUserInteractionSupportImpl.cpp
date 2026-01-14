@@ -76,7 +76,7 @@ std::optional<QList<QString>> AtlUserInteractionSupportImpl::chooseOptionalMods(
 	return optionalModDialog.getResult();
 }
 
-QString AtlUserInteractionSupportImpl::chooseVersion(Meta::VersionList::Ptr vlist, QString minecraftVersion)
+QString AtlUserInteractionSupportImpl::chooseVersion(projt::meta::MetaVersionList::Ptr vlist, QString minecraftVersion)
 {
 	VersionSelectDialog vselect(vlist.get(), "Choose Version", m_parent, false);
 	if (minecraftVersion != nullptr)
@@ -91,17 +91,18 @@ QString AtlUserInteractionSupportImpl::chooseVersion(Meta::VersionList::Ptr vlis
 	vselect.setEmptyErrorString(tr("Couldn't load or download the version lists!"));
 
 	// select recommended build
-	for (int i = 0; i < vlist->versions().size(); i++)
+	for (int i = 0; i < vlist->allVersions().size(); i++)
 	{
-		auto version = vlist->versions().at(i);
-		auto reqs	 = version->requiredSet();
+		auto version = vlist->allVersions().at(i);
+		auto reqs	 = version->dependencies();
 
 		// filter by minecraft version, if the loader depends on a certain version.
 		if (minecraftVersion != nullptr)
 		{
-			auto iter = std::find_if(reqs.begin(),
-									 reqs.end(),
-									 [](const Meta::Require& req) { return req.uid == "net.minecraft"; });
+			auto iter =
+				std::find_if(reqs.begin(),
+							 reqs.end(),
+							 [](const projt::meta::ComponentDependency& req) { return req.uid == "net.minecraft"; });
 			if (iter == reqs.end())
 				continue;
 			if (iter->equalsVersion != minecraftVersion)
@@ -109,7 +110,7 @@ QString AtlUserInteractionSupportImpl::chooseVersion(Meta::VersionList::Ptr vlis
 		}
 
 		// first recommended build we find, we use.
-		if (version->isRecommended())
+		if (version->isStable())
 		{
 			vselect.setCurrentVersion(version->descriptor());
 			break;
