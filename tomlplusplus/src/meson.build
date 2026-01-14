@@ -1,6 +1,6 @@
 # This file is a part of toml++ and is subject to the the terms of the MIT license.
 # Copyright (c) Mark Gillard <mark.gillard@outlook.com.au>
-# See https://github.com/marzer/tomlplusplus/blob/master/LICENSE for the full license text.
+# See https://github.com/Project-Tick/ProjT-Launcher/blob/main/tomlplusplus/LICENSE for the full license text.
 # SPDX-License-Identifier: MIT
 
 assert(build_lib) # not header-only mode
