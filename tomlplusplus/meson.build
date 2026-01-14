@@ -35,7 +35,7 @@ if python.found()
 		python,
 		'-c',
 		'import re,sys; path=sys.argv[1]; text=open(path,"r",encoding="utf-8").read(); m=re.search(r"#\\s*define\\s+TOML_LIB_MAJOR\\s+([0-9]+)[^0-9].*#\\s*define\\s+TOML_LIB_MINOR\\s+([0-9]+)[^0-9].*#\\s*define\\s+TOML_LIB_PATCH\\s+([0-9]+)[^0-9].*(?:#\\s*define\\s+TOML_LIB_TWEAK\\s+([0-9]+)[^0-9])?", text, re.I|re.S); import sys as _s; print(_s.argv[2] if not m else (f"{int(m.group(1))}.{int(m.group(2))}.{int(m.group(3))}.{int(m.group(4))}" if m.group(4) else f"{int(m.group(1))}.{int(m.group(2))}.{int(m.group(3))}"))',
-		str(ver_file), meson.project_version()
+		ver_file, meson.project_version()
 	    ]
 	    res = run_command(cmd)
 	if res.returncode() == 0
