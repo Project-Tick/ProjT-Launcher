@@ -301,8 +301,8 @@
 
 ## JavaCheck (`javacheck/`)
 
-  Project Tick JavaCheck - A simple Java system property checker
-  Copyright (C) 2026 Project Tick
+     Project Tick JavaCheck - A simple Java system property checker
+     Copyright (C) 2026 Project Tick
 
      This program is free software; you can redistribute it and/or
      modify it under the terms of the GNU General Public License
