@@ -55,9 +55,10 @@ endif
 # cmake
 if get_option('generate_cmake_config') and not is_subproject and not is_devel
 	cmake = import('cmake')
+	# Write package version using the full version (may include tweak) if available.
 	cmake.write_basic_package_version_file(
 		name: meson.project_name(),
-		version: meson.project_version(),
+		version: version_full,
 	)
 
 	# This gets the full path of the library, then considers just the last

@@ -7,7 +7,8 @@ project(
 	'tomlplusplus',
 	'cpp',
 	license: 'MIT',
-	version: '0.0.4.2',
+	# Use three-component version (major.minor.patch) — tweak/info not allowed by Meson
+	version: '0.0.4',
 	meson_version: '>=0.61.0',
 	default_options: [
 		# https://mesonbuild.com/Builtin-options.html
@@ -21,6 +22,43 @@ project(
 		'cpp_std=c++17'
 	]
 )
+
+# Derive full package version (including tweak) from include/impl/version.hpp so
+# we can expose a 4-component version string to packaging files while keeping
+# `meson.project_version()` a valid X.Y.Z for shared library versioning.
+python = find_program('python3', required: false)
+version_full = meson.project_version()
+if python.found()
+	ver_file = meson.project_source_root() / 'include' / 'toml++' / 'impl' / 'version.hpp'
+	# Python one-liner: read file, regex major/minor/patch/tweak (tweak optional)
+	cmd = [
+		python,
+		'-c',
+		"""
+import re,sys
+path = sys.argv[1]
+text = open(path,'r',encoding='utf-8').read()
+m = re.search(r'#\s*define\s+TOML_LIB_MAJOR\s+([0-9]+)[^0-9].*'#
+							 r'#\s*define\s+TOML_LIB_MINOR\s+([0-9]+)[^0-9].*'#
+							 r'#\s*define\s+TOML_LIB_PATCH\s+([0-9]+)[^0-9].*'#
+							 r'(?:#\s*define\s+TOML_LIB_TWEAK\s+([0-9]+)[^0-9])?', text, re.I|re.S)
+if not m:
+		print(sys.argv[2])
+else:
+		maj=int(m.group(1)); min=int(m.group(2)); pat=int(m.group(3)); twe=int(m.group(4)) if m.group(4) else 0
+		if twe:
+				print(f"{maj}.{min}.{pat}.{twe}")
+		else:
+				print(f"{maj}.{min}.{pat}")
+""",
+		str(ver_file), meson.project_version()
+	]
+	res = run_command(cmd)
+	if res.returncode() == 0
+		version_full = res.stdout().strip()
+	endif
+endif
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # global vars + imports

@@ -36,7 +36,8 @@ if not build_lib # header-only mode
 		#)
 		# In the meantime, install a pre-generated Package Version file
 		configure_file(
-			configuration: {'version': meson.project_version()},
+			# use full version (may include tweak) when generating the package version file
+			configuration: {'version': version_full},
 			input: '..'/'cmake'/'tomlplusplusConfigVersion.cmake.meson.in',
 			output: 'tomlplusplusConfigVersion.cmake',
 			install_dir: get_option('datadir')/'cmake'/meson.project_name()
