@@ -136,6 +136,7 @@ jobs:
   flatpak-build:
     name: Flatpak Build (${{ matrix.arch }})
     if: needs.prepare.outputs.run-regular-build == 'true'
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
