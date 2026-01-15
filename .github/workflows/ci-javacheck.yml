@@ -42,7 +42,7 @@ jobs:
         cmake ..
         make
     - name: Upload ProjectTick JavaCheck Artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: ProjectTick-JavaCheck-${{ github.run_id }}.jar
         path: javacheck/build/*.jar
