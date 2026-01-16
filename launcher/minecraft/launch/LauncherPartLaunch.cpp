@@ -36,7 +36,7 @@
 LauncherPartLaunch::LauncherPartLaunch(projt::launch::LaunchPipeline* parent)
 	: projt::launch::LaunchStage(parent),
 	  m_process(parent->instance()->getRuntimeVersion().defaultsToUtf8() ? QTextCodec::codecForName("UTF-8")
-																	  : QTextCodec::codecForLocale())
+																		 : QTextCodec::codecForLocale())
 {
 	if (parent->instance()->settings()->get("CloseAfterLaunch").toBool())
 	{

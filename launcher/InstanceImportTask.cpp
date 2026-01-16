@@ -642,4 +642,3 @@ void InstanceImportTask::processModrinth()
 	setAbortable(true);
 	m_task->start();
 }
-

@@ -44,7 +44,9 @@ class PrintInstanceInfo : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit PrintInstanceInfo(projt::launch::LaunchPipeline* parent, AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin)
+	explicit PrintInstanceInfo(projt::launch::LaunchPipeline* parent,
+							   AuthSessionPtr session,
+							   MinecraftTarget::Ptr targetToJoin)
 		: projt::launch::LaunchStage(parent),
 		  m_session(session),
 		  m_targetToJoin(targetToJoin) {};

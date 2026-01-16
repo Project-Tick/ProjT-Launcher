@@ -398,10 +398,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 	connect(view->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::instanceChanged);
 
 	// track icon changes and update the toolbar!
-	connect(APPLICATION->icons().get(),
-			&projt::icons::IconList::iconUpdated,
-			this,
-			&MainWindow::iconUpdated);
+	connect(APPLICATION->icons().get(), &projt::icons::IconList::iconUpdated, this, &MainWindow::iconUpdated);
 
 	// model reset -> selection is invalid. All the instance pointers are wrong.
 	connect(APPLICATION->instances().get(), &InstanceList::dataIsInvalid, this, &MainWindow::selectionBad);
@@ -1914,5 +1911,3 @@ void MainWindow::refreshCurrentInstance()
 	auto current = view->selectionModel()->currentIndex();
 	instanceChanged(current, current);
 }
-
-

@@ -1173,20 +1173,24 @@ QList<Task::Ptr> MinecraftInstance::createUpdateTask()
 	};
 }
 
-shared_qobject_ptr<projt::launch::LaunchPipeline> MinecraftInstance::createLaunchPipeline(AuthSessionPtr session,
-																   MinecraftTarget::Ptr targetToJoin)
+shared_qobject_ptr<projt::launch::LaunchPipeline> MinecraftInstance::createLaunchPipeline(
+	AuthSessionPtr session,
+	MinecraftTarget::Ptr targetToJoin)
 {
 	updateRuntimeContext();
 	// Using static_pointer_cast since 'this' is guaranteed to be a MinecraftInstance
-	auto process = projt::launch::LaunchPipeline::create(std::dynamic_pointer_cast<MinecraftInstance>(shared_from_this()));
-	auto pptr	 = process.get();
+	auto process =
+		projt::launch::LaunchPipeline::create(std::dynamic_pointer_cast<MinecraftInstance>(shared_from_this()));
+	auto pptr = process.get();
 
 	APPLICATION->icons()->saveIcon(iconKey(), FS::PathCombine(gameRoot(), "icon.png"), "PNG");
 
 	// print a header
 	{
 		process->appendStage(
-			makeShared<projt::launch::steps::LogMessageStep>(pptr, "Minecraft folder is:\n" + gameRoot() + "\n\n", MessageLevel::Launcher));
+			makeShared<projt::launch::steps::LogMessageStep>(pptr,
+															 "Minecraft folder is:\n" + gameRoot() + "\n\n",
+															 MessageLevel::Launcher));
 	}
 
 	// create the .minecraft folder and server-resource-packs (workaround for Minecraft bug MCL-3732)
@@ -1223,7 +1227,8 @@ shared_qobject_ptr<projt::launch::LaunchPipeline> MinecraftInstance::createLaunc
 	// load meta
 	{
 		auto mode = session->status != AuthSession::PlayableOffline ? Net::Mode::Online : Net::Mode::Offline;
-		process->appendStage(makeShared<projt::launch::TaskBridgeStage>(pptr, makeShared<MinecraftLoadAndCheck>(this, mode)));
+		process->appendStage(
+			makeShared<projt::launch::TaskBridgeStage>(pptr, makeShared<MinecraftLoadAndCheck>(this, mode)));
 	}
 
 	// check java
@@ -1298,10 +1303,10 @@ shared_qobject_ptr<projt::launch::LaunchPipeline> MinecraftInstance::createLaunc
 	// run post-exit command if that's needed
 	if (getPostExitCommand().size())
 	{
-		auto step = makeShared<projt::launch::steps::LaunchCommandStep>(
-			pptr,
-			projt::launch::steps::LaunchCommandStep::Hook::PostExit,
-			getPostExitCommand());
+		auto step =
+			makeShared<projt::launch::steps::LaunchCommandStep>(pptr,
+																projt::launch::steps::LaunchCommandStep::Hook::PostExit,
+																getPostExitCommand());
 		step->setWorkingDirectory(gameRoot());
 		process->appendStage(step);
 	}
@@ -1423,6 +1428,3 @@ QList<Mod*> MinecraftInstance::getJarMods() const
 }
 
 #include "MinecraftInstance.moc"
-
-
-

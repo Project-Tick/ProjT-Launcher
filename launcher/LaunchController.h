@@ -64,7 +64,7 @@
 class InstanceWindow;
 namespace projt::launch
 {
-class LaunchPipeline;
+	class LaunchPipeline;
 }
 class LaunchController : public Task
 {

@@ -28,20 +28,24 @@
 
 namespace projt::launch
 {
-class LaunchLogModel;
+	class LaunchLogModel;
 
-class LaunchLineRouter
-{
-  public:
-	void routeLine(QString line, MessageLevel::Enum defaultLevel, LaunchLogModel& model,
-				   const QMap<QString, QString>& redactions);
+	class LaunchLineRouter
+	{
+	  public:
+		void routeLine(QString line,
+					   MessageLevel::Enum defaultLevel,
+					   LaunchLogModel& model,
+					   const QMap<QString, QString>& redactions);
 
-  private:
-	bool parseStructured(const QString& line, MessageLevel::Enum level, LaunchLogModel& model,
-						 const QMap<QString, QString>& redactions);
-	QString applyRedactions(QString input, const QMap<QString, QString>& redactions) const;
+	  private:
+		bool parseStructured(const QString& line,
+							 MessageLevel::Enum level,
+							 LaunchLogModel& model,
+							 const QMap<QString, QString>& redactions);
+		QString applyRedactions(QString input, const QMap<QString, QString>& redactions) const;
 
-	projt::logs::LogEventParser m_stdoutParser;
-	projt::logs::LogEventParser m_stderrParser;
-};
+		projt::logs::LogEventParser m_stdoutParser;
+		projt::logs::LogEventParser m_stderrParser;
+	};
 } // namespace projt::launch

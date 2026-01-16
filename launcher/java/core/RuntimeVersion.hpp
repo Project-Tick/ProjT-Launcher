@@ -76,8 +76,8 @@ namespace projt::java
 		void parse(const QString& raw);
 
 		QString m_raw;
-		int m_major = 0;
-		int m_minor = 0;
+		int m_major	   = 0;
+		int m_minor	   = 0;
 		int m_security = 0;
 		QString m_name;
 		bool m_valid = false;

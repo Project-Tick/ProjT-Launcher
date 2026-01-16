@@ -50,14 +50,13 @@ namespace
 
 namespace projt::java
 {
-	RuntimeLinkTask::RuntimeLinkTask(QString finalPath)
-		: m_path(std::move(finalPath))
+	RuntimeLinkTask::RuntimeLinkTask(QString finalPath) : m_path(std::move(finalPath))
 	{}
 
 	void RuntimeLinkTask::executeTask()
 	{
 		setStatus(tr("Checking for Java binary path"));
-		const auto binPath = FS::PathCombine("bin", "java");
+		const auto binPath	  = FS::PathCombine("bin", "java");
 		const auto wantedPath = FS::PathCombine(m_path, binPath);
 		if (QFileInfo::exists(wantedPath))
 		{
@@ -67,7 +66,7 @@ namespace projt::java
 
 		setStatus(tr("Searching for Java binary path"));
 		const auto contentsPartialPath = FS::PathCombine("Contents", "Home", binPath);
-		const auto relativePathToBin = findBinPath(m_path, contentsPartialPath);
+		const auto relativePathToBin   = findBinPath(m_path, contentsPartialPath);
 		if (relativePathToBin.isEmpty())
 		{
 			emitFailed(tr("Failed to find Java binary path"));

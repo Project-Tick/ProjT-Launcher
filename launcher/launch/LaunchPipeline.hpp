@@ -36,84 +36,84 @@ class BaseInstance;
 
 namespace projt::launch
 {
-class LaunchPipeline : public Task
-{
-	Q_OBJECT
-  public:
-	using Ptr = shared_qobject_ptr<LaunchPipeline>;
-	using StagePtr = shared_qobject_ptr<LaunchStage>;
-
-	enum class State
+	class LaunchPipeline : public Task
 	{
-		Idle,
-		Running,
-		Waiting,
-		Failed,
-		Aborted,
-		Finished
+		Q_OBJECT
+	  public:
+		using Ptr	   = shared_qobject_ptr<LaunchPipeline>;
+		using StagePtr = shared_qobject_ptr<LaunchStage>;
+
+		enum class State
+		{
+			Idle,
+			Running,
+			Waiting,
+			Failed,
+			Aborted,
+			Finished
+		};
+
+		static Ptr create(MinecraftInstancePtr instance);
+		explicit LaunchPipeline(MinecraftInstancePtr instance);
+		~LaunchPipeline() override = default;
+
+		void appendStage(StagePtr stage);
+		void prependStage(StagePtr stage);
+		void setCensorFilter(QMap<QString, QString> filter);
+
+		MinecraftInstancePtr instance() const
+		{
+			return m_instanceRef;
+		}
+
+		void setPid(qint64 pid)
+		{
+			m_processId = pid;
+		}
+
+		qint64 pid() const
+		{
+			return m_processId;
+		}
+
+		void executeTask() override;
+		void proceed();
+		bool abort() override;
+		bool canAbort() const override;
+
+		shared_qobject_ptr<LaunchLogModel> logModel();
+
+		QString substituteVariables(const QString& cmd, bool isLaunch = false) const;
+		QString censorPrivateInfo(QString input) const;
+
+	  signals:
+		void readyForLaunch();
+		void requestProgress(Task* task);
+
+	  public slots:
+		void onLogLines(const QStringList& lines, MessageLevel::Enum defaultLevel = MessageLevel::Launcher);
+		void onLogLine(QString line, MessageLevel::Enum defaultLevel = MessageLevel::Launcher);
+		void onReadyForLaunch();
+		void onStageFinished();
+		void onProgressReportingRequested();
+
+	  protected:
+		void emitFailed(QString reason) override;
+		void emitSucceeded() override;
+
+	  private:
+		void advanceStage();
+		void closeStages(bool successful, const QString& error);
+
+		MinecraftInstancePtr m_instanceRef;
+		shared_qobject_ptr<LaunchLogModel> m_logStore;
+		QList<StagePtr> m_stageQueue;
+		QList<StagePtr> m_stageHistory;
+		StagePtr m_activeStage;
+		QMap<QString, QString> m_redactions;
+		State m_state	   = State::Idle;
+		qint64 m_processId = -1;
+		LaunchLineRouter m_lineRouter;
+		LaunchVariableExpander m_expander;
 	};
-
-	static Ptr create(MinecraftInstancePtr instance);
-	explicit LaunchPipeline(MinecraftInstancePtr instance);
-	~LaunchPipeline() override = default;
-
-	void appendStage(StagePtr stage);
-	void prependStage(StagePtr stage);
-	void setCensorFilter(QMap<QString, QString> filter);
-
-	MinecraftInstancePtr instance() const
-	{
-		return m_instanceRef;
-	}
-
-	void setPid(qint64 pid)
-	{
-		m_processId = pid;
-	}
-
-	qint64 pid() const
-	{
-		return m_processId;
-	}
-
-	void executeTask() override;
-	void proceed();
-	bool abort() override;
-	bool canAbort() const override;
-
-	shared_qobject_ptr<LaunchLogModel> logModel();
-
-	QString substituteVariables(const QString& cmd, bool isLaunch = false) const;
-	QString censorPrivateInfo(QString input) const;
-
-  signals:
-	void readyForLaunch();
-	void requestProgress(Task* task);
-
-  public slots:
-	void onLogLines(const QStringList& lines, MessageLevel::Enum defaultLevel = MessageLevel::Launcher);
-	void onLogLine(QString line, MessageLevel::Enum defaultLevel = MessageLevel::Launcher);
-	void onReadyForLaunch();
-	void onStageFinished();
-	void onProgressReportingRequested();
-
-  protected:
-	void emitFailed(QString reason) override;
-	void emitSucceeded() override;
-
-  private:
-	void advanceStage();
-	void closeStages(bool successful, const QString& error);
-
-	MinecraftInstancePtr m_instanceRef;
-	shared_qobject_ptr<LaunchLogModel> m_logStore;
-	QList<StagePtr> m_stageQueue;
-	QList<StagePtr> m_stageHistory;
-	StagePtr m_activeStage;
-	QMap<QString, QString> m_redactions;
-	State m_state = State::Idle;
-	qint64 m_processId = -1;
-	LaunchLineRouter m_lineRouter;
-	LaunchVariableExpander m_expander;
-};
 } // namespace projt::launch

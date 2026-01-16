@@ -33,16 +33,16 @@ namespace projt::java
 		Q_OBJECT
 	  public:
 		using QProcessPtr = shared_qobject_ptr<QProcess>;
-		using Ptr = shared_qobject_ptr<RuntimeProbeTask>;
+		using Ptr		  = shared_qobject_ptr<RuntimeProbeTask>;
 
 		struct ProbeSettings
 		{
 			QString binaryPath;
 			QString extraArgs;
-			int minMem = 0;
-			int maxMem = 0;
+			int minMem	= 0;
+			int maxMem	= 0;
 			int permGen = 0;
-			int token = 0;
+			int token	= 0;
 		};
 
 		struct ProbeReport

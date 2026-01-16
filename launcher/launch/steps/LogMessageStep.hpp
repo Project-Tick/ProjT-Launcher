@@ -26,20 +26,20 @@
 
 namespace projt::launch::steps
 {
-class LogMessageStep : public projt::launch::LaunchStage
-{
-	Q_OBJECT
-  public:
-	explicit LogMessageStep(projt::launch::LaunchPipeline* parent, QStringList lines, MessageLevel::Enum level);
-	explicit LogMessageStep(projt::launch::LaunchPipeline* parent, const QString& line, MessageLevel::Enum level);
-	~LogMessageStep() override = default;
+	class LogMessageStep : public projt::launch::LaunchStage
+	{
+		Q_OBJECT
+	  public:
+		explicit LogMessageStep(projt::launch::LaunchPipeline* parent, QStringList lines, MessageLevel::Enum level);
+		explicit LogMessageStep(projt::launch::LaunchPipeline* parent, const QString& line, MessageLevel::Enum level);
+		~LogMessageStep() override = default;
 
-	void executeTask() override;
-	bool canAbort() const override;
-	bool abort() override;
+		void executeTask() override;
+		bool canAbort() const override;
+		bool abort() override;
 
-  private:
-	QStringList m_lines;
-	MessageLevel::Enum m_level;
-};
+	  private:
+		QStringList m_lines;
+		MessageLevel::Enum m_level;
+	};
 } // namespace projt::launch::steps

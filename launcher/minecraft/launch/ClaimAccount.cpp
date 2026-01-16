@@ -23,7 +23,8 @@
 #include "Application.h"
 #include "minecraft/auth/AccountList.h"
 
-ClaimAccount::ClaimAccount(projt::launch::LaunchPipeline* parent, AuthSessionPtr session) : projt::launch::LaunchStage(parent)
+ClaimAccount::ClaimAccount(projt::launch::LaunchPipeline* parent, AuthSessionPtr session)
+	: projt::launch::LaunchStage(parent)
 {
 	if (session->status == AuthSession::Status::PlayableOnline && !session->demo)
 	{

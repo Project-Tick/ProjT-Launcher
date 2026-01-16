@@ -22,34 +22,32 @@
 
 namespace projt::launch::steps
 {
-LogMessageStep::LogMessageStep(projt::launch::LaunchPipeline* parent, QStringList lines, MessageLevel::Enum level)
-	: projt::launch::LaunchStage(parent),
-	  m_lines(lines),
-	  m_level(level)
-{
-}
+	LogMessageStep::LogMessageStep(projt::launch::LaunchPipeline* parent, QStringList lines, MessageLevel::Enum level)
+		: projt::launch::LaunchStage(parent),
+		  m_lines(lines),
+		  m_level(level)
+	{}
 
-LogMessageStep::LogMessageStep(projt::launch::LaunchPipeline* parent, const QString& line, MessageLevel::Enum level)
-	: projt::launch::LaunchStage(parent),
-	  m_lines(QStringList{ line }),
-	  m_level(level)
-{
-}
+	LogMessageStep::LogMessageStep(projt::launch::LaunchPipeline* parent, const QString& line, MessageLevel::Enum level)
+		: projt::launch::LaunchStage(parent),
+		  m_lines(QStringList{ line }),
+		  m_level(level)
+	{}
 
-void LogMessageStep::executeTask()
-{
-	emit logLines(m_lines, m_level);
-	emitSucceeded();
-}
+	void LogMessageStep::executeTask()
+	{
+		emit logLines(m_lines, m_level);
+		emitSucceeded();
+	}
 
-bool LogMessageStep::canAbort() const
-{
-	return true;
-}
+	bool LogMessageStep::canAbort() const
+	{
+		return true;
+	}
 
-bool LogMessageStep::abort()
-{
-	emitFailed("Aborted.");
-	return true;
-}
+	bool LogMessageStep::abort()
+	{
+		emitFailed("Aborted.");
+		return true;
+	}
 } // namespace projt::launch::steps

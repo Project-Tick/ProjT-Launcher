@@ -56,29 +56,29 @@ namespace projt::java
 	{
 		auto meta = std::make_shared<RuntimePackage>();
 
-		meta->displayName = Json::ensureString(in, "name", "");
-		meta->vendor = Json::ensureString(in, "vendor", "");
-		meta->url = Json::ensureString(in, "url", "");
-		meta->releaseTime = timeFromS3Time(Json::ensureString(in, "releaseTime", ""));
+		meta->displayName  = Json::ensureString(in, "name", "");
+		meta->vendor	   = Json::ensureString(in, "vendor", "");
+		meta->url		   = Json::ensureString(in, "url", "");
+		meta->releaseTime  = timeFromS3Time(Json::ensureString(in, "releaseTime", ""));
 		meta->downloadKind = parsePackageKind(Json::ensureString(in, "downloadType", ""));
-		meta->packageType = Json::ensureString(in, "packageType", "");
-		meta->runtimeOS = Json::ensureString(in, "runtimeOS", "unknown");
+		meta->packageType  = Json::ensureString(in, "packageType", "");
+		meta->runtimeOS	   = Json::ensureString(in, "runtimeOS", "unknown");
 
 		if (in.contains("checksum"))
 		{
-			auto obj = Json::requireObject(in, "checksum");
+			auto obj		   = Json::requireObject(in, "checksum");
 			meta->checksumHash = Json::ensureString(obj, "hash", "");
 			meta->checksumType = Json::ensureString(obj, "type", "");
 		}
 
 		if (in.contains("version"))
 		{
-			auto obj = Json::requireObject(in, "version");
-			auto name = Json::ensureString(obj, "name", "");
-			auto major = Json::ensureInteger(obj, "major", 0);
-			auto minor = Json::ensureInteger(obj, "minor", 0);
+			auto obj	  = Json::requireObject(in, "version");
+			auto name	  = Json::ensureString(obj, "name", "");
+			auto major	  = Json::ensureInteger(obj, "major", 0);
+			auto minor	  = Json::ensureInteger(obj, "minor", 0);
 			auto security = Json::ensureInteger(obj, "security", 0);
-			auto build = Json::ensureInteger(obj, "build", 0);
+			auto build	  = Json::ensureInteger(obj, "build", 0);
 			meta->version = RuntimeVersion(major, minor, security, build, name);
 		}
 		return meta;

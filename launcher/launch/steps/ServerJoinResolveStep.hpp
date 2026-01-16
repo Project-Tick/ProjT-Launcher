@@ -30,32 +30,32 @@ class QDnsLookup;
 
 namespace projt::launch::steps
 {
-class ServerJoinResolveStep : public projt::launch::LaunchStage
-{
-	Q_OBJECT
-  public:
-	explicit ServerJoinResolveStep(projt::launch::LaunchPipeline* parent);
-	~ServerJoinResolveStep() override = default;
-
-	void executeTask() override;
-	bool abort() override;
-	bool canAbort() const override
+	class ServerJoinResolveStep : public projt::launch::LaunchStage
 	{
-		return true;
-	}
+		Q_OBJECT
+	  public:
+		explicit ServerJoinResolveStep(projt::launch::LaunchPipeline* parent);
+		~ServerJoinResolveStep() override = default;
 
-	void setLookupAddress(const QString& address);
-	void setOutputTarget(MinecraftTarget::Ptr target);
+		void executeTask() override;
+		bool abort() override;
+		bool canAbort() const override
+		{
+			return true;
+		}
 
-  private slots:
-	void onLookupFinished();
+		void setLookupAddress(const QString& address);
+		void setOutputTarget(MinecraftTarget::Ptr target);
 
-  private:
-	void finalizeTarget(const QString& address, quint16 port);
+	  private slots:
+		void onLookupFinished();
 
-	QPointer<QDnsLookup> m_lookup;
-	QString m_lookupAddress;
-	QString m_queryName;
-	MinecraftTarget::Ptr m_output;
-};
+	  private:
+		void finalizeTarget(const QString& address, quint16 port);
+
+		QPointer<QDnsLookup> m_lookup;
+		QString m_lookupAddress;
+		QString m_queryName;
+		MinecraftTarget::Ptr m_output;
+	};
 } // namespace projt::launch::steps

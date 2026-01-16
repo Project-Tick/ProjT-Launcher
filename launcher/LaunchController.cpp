@@ -509,8 +509,8 @@ void LaunchController::launchInstance()
 	}
 
 	m_launcher->prependStage(makeShared<steps::LogMessageStep>(m_launcher.get(),
-															 "Launched instance in " + online_mode + " mode\n",
-															 MessageLevel::Launcher));
+															   "Launched instance in " + online_mode + " mode\n",
+															   MessageLevel::Launcher));
 
 	// Prepend Version
 	{

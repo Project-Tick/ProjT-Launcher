@@ -32,9 +32,7 @@
 
 namespace projt::java
 {
-	RuntimeProbeTask::RuntimeProbeTask(ProbeSettings settings)
-		: Task(),
-		  m_settings(std::move(settings))
+	RuntimeProbeTask::RuntimeProbeTask(ProbeSettings settings) : Task(), m_settings(std::move(settings))
 	{}
 
 	QString RuntimeProbeTask::probeJarPath()
@@ -50,8 +48,8 @@ namespace projt::java
 		{
 			qDebug() << "Java checker library could not be found. Please check your installation.";
 			ProbeReport report;
-			report.path = m_settings.binaryPath;
-			report.token = m_settings.token;
+			report.path	  = m_settings.binaryPath;
+			report.token  = m_settings.token;
 			report.status = ProbeReport::Status::Errored;
 			emit probeFinished(report);
 			emitSucceeded();
@@ -100,7 +98,7 @@ namespace projt::java
 	void RuntimeProbeTask::stdoutReady()
 	{
 		QByteArray data = process->readAllStandardOutput();
-		QString added = QString::fromLocal8Bit(data);
+		QString added	= QString::fromLocal8Bit(data);
 		added.remove('\r');
 		m_stdout += added;
 	}
@@ -108,7 +106,7 @@ namespace projt::java
 	void RuntimeProbeTask::stderrReady()
 	{
 		QByteArray data = process->readAllStandardError();
-		QString added = QString::fromLocal8Bit(data);
+		QString added	= QString::fromLocal8Bit(data);
 		added.remove('\r');
 		m_stderr += added;
 	}
@@ -120,8 +118,8 @@ namespace projt::java
 		process.reset();
 
 		ProbeReport report;
-		report.path = m_settings.binaryPath;
-		report.token = m_settings.token;
+		report.path		 = m_settings.binaryPath;
+		report.token	 = m_settings.token;
 		report.stderrLog = m_stderr;
 		report.stdoutLog = m_stdout;
 		qDebug() << "STDOUT" << m_stdout;
@@ -164,18 +162,18 @@ namespace projt::java
 			return;
 		}
 
-		auto osArch = results["os.arch"];
+		auto osArch		 = results["os.arch"];
 		auto javaVersion = results["java.version"];
-		auto javaVendor = results["java.vendor"];
-		bool is64 = osArch == "x86_64" || osArch == "amd64" || osArch == "aarch64" || osArch == "arm64" ||
-				 osArch == "riscv64";
+		auto javaVendor	 = results["java.vendor"];
+		bool is64 =
+			osArch == "x86_64" || osArch == "amd64" || osArch == "aarch64" || osArch == "arm64" || osArch == "riscv64";
 
-		report.status = ProbeReport::Status::Valid;
-		report.is_64bit = is64;
-		report.platformTag = is64 ? "64" : "32";
+		report.status		= ProbeReport::Status::Valid;
+		report.is_64bit		= is64;
+		report.platformTag	= is64 ? "64" : "32";
 		report.platformArch = osArch;
-		report.version = javaVersion;
-		report.vendor = javaVendor;
+		report.version		= javaVersion;
+		report.vendor		= javaVendor;
 		qDebug() << "Runtime probe succeeded.";
 		emit probeFinished(report);
 		emitSucceeded();
@@ -192,7 +190,7 @@ namespace projt::java
 			qDebug() << QProcessEnvironment::systemEnvironment().toStringList();
 			killTimer.stop();
 			ProbeReport report;
-			report.path = m_settings.binaryPath;
+			report.path	 = m_settings.binaryPath;
 			report.token = m_settings.token;
 			emit probeFinished(report);
 		}

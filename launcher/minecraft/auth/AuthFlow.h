@@ -63,14 +63,14 @@ class AuthFlow : public Task
 {
 	Q_OBJECT
 
-public:
+  public:
 	/**
 	 * Authentication action to perform.
 	 */
 	enum class Action
 	{
 		Refresh,   ///< Silent token refresh
-		Login,     ///< Interactive browser login
+		Login,	   ///< Interactive browser login
 		DeviceCode ///< Device code flow
 	};
 
@@ -79,12 +79,15 @@ public:
 
 	void executeTask() override;
 
-	[[nodiscard]] AccountTaskState taskState() const noexcept { return m_taskState; }
+	[[nodiscard]] AccountTaskState taskState() const noexcept
+	{
+		return m_taskState;
+	}
 
-public slots:
+  public slots:
 	bool abort() override;
 
-signals:
+  signals:
 	/**
 	 * Emitted when browser authorization is required.
 	 */
@@ -95,10 +98,10 @@ signals:
 	 */
 	void authorizeWithBrowserWithExtra(QString url, QString code, int expiresIn);
 
-private slots:
+  private slots:
 	void onStepCompleted(projt::minecraft::auth::StepResult result, QString message);
 
-private:
+  private:
 	/**
 	 * Build the authentication pipeline based on account type and action.
 	 * @return true if pipeline was successfully built, false on configuration error
@@ -121,7 +124,7 @@ private:
 	projt::minecraft::auth::Step::Ptr m_currentStep;
 
 	// Flow control
-	bool m_aborted = false;
+	bool m_aborted		 = false;
 	bool m_pipelineValid = false;
 
 	// Legacy AccountData for compatibility with existing consumers

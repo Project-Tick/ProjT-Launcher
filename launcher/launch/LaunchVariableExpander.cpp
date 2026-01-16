@@ -22,86 +22,86 @@
 
 namespace projt::launch
 {
-QString LaunchVariableExpander::expand(const QString& input, const QProcessEnvironment& env) const
-{
-	QString output = input;
-
-	enum class Mode
+	QString LaunchVariableExpander::expand(const QString& input, const QProcessEnvironment& env) const
 	{
-		Idle,
-		Sigil,
-		Name,
-		Brace
-	};
+		QString output = input;
 
-	Mode mode = Mode::Idle;
-	int tokenStart = -1;
-
-	for (int idx = 0; idx < output.length();)
-	{
-		const QChar c = output.at(idx++);
-		switch (mode)
+		enum class Mode
 		{
-			case Mode::Idle:
-				if (c == '$')
-				{
-					mode = Mode::Sigil;
-				}
-				break;
-			case Mode::Sigil:
-				if (c == '{')
-				{
-					mode = Mode::Brace;
-					tokenStart = idx;
-				}
-				else if (c.isLetterOrNumber() || c == '_')
-				{
-					mode = Mode::Name;
-					tokenStart = idx - 1;
-				}
-				else
-				{
-					mode = Mode::Idle;
-				}
-				break;
-			case Mode::Brace:
-				if (c == '}')
-				{
-					const auto key = output.mid(tokenStart, idx - 1 - tokenStart);
-					const auto value = env.value(key, "");
-					if (!value.isEmpty())
-					{
-						output.replace(tokenStart - 2, idx - tokenStart + 2, value);
-						idx = tokenStart - 2 + value.length();
-					}
-					mode = Mode::Idle;
-				}
-				break;
-			case Mode::Name:
-				if (!c.isLetterOrNumber() && c != '_')
-				{
-					const auto key = output.mid(tokenStart, idx - tokenStart - 1);
-					const auto value = env.value(key, "");
-					if (!value.isEmpty())
-					{
-						output.replace(tokenStart - 1, idx - tokenStart, value);
-						idx = tokenStart - 1 + value.length();
-					}
-					mode = Mode::Idle;
-				}
-				break;
-		}
-	}
+			Idle,
+			Sigil,
+			Name,
+			Brace
+		};
 
-	if (mode == Mode::Name)
-	{
-		const auto value = env.value(output.mid(tokenStart), "");
-		if (!value.isEmpty())
+		Mode mode	   = Mode::Idle;
+		int tokenStart = -1;
+
+		for (int idx = 0; idx < output.length();)
 		{
-			output.replace(tokenStart - 1, output.length() - tokenStart + 1, value);
+			const QChar c = output.at(idx++);
+			switch (mode)
+			{
+				case Mode::Idle:
+					if (c == '$')
+					{
+						mode = Mode::Sigil;
+					}
+					break;
+				case Mode::Sigil:
+					if (c == '{')
+					{
+						mode	   = Mode::Brace;
+						tokenStart = idx;
+					}
+					else if (c.isLetterOrNumber() || c == '_')
+					{
+						mode	   = Mode::Name;
+						tokenStart = idx - 1;
+					}
+					else
+					{
+						mode = Mode::Idle;
+					}
+					break;
+				case Mode::Brace:
+					if (c == '}')
+					{
+						const auto key	 = output.mid(tokenStart, idx - 1 - tokenStart);
+						const auto value = env.value(key, "");
+						if (!value.isEmpty())
+						{
+							output.replace(tokenStart - 2, idx - tokenStart + 2, value);
+							idx = tokenStart - 2 + value.length();
+						}
+						mode = Mode::Idle;
+					}
+					break;
+				case Mode::Name:
+					if (!c.isLetterOrNumber() && c != '_')
+					{
+						const auto key	 = output.mid(tokenStart, idx - tokenStart - 1);
+						const auto value = env.value(key, "");
+						if (!value.isEmpty())
+						{
+							output.replace(tokenStart - 1, idx - tokenStart, value);
+							idx = tokenStart - 1 + value.length();
+						}
+						mode = Mode::Idle;
+					}
+					break;
+			}
 		}
-	}
 
-	return output;
-}
+		if (mode == Mode::Name)
+		{
+			const auto value = env.value(output.mid(tokenStart), "");
+			if (!value.isEmpty())
+			{
+				output.replace(tokenStart - 1, output.length() - tokenStart + 1, value);
+			}
+		}
+
+		return output;
+	}
 } // namespace projt::launch

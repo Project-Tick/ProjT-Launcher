@@ -47,9 +47,7 @@
 //
 // ============================================================================
 
-AuthFlow::AuthFlow(AccountData* data, Action action)
-	: Task()
-	, m_legacyData(data)
+AuthFlow::AuthFlow(AccountData* data, Action action) : Task(), m_legacyData(data)
 {
 	Q_ASSERT(data != nullptr);
 
@@ -57,7 +55,7 @@ AuthFlow::AuthFlow(AccountData* data, Action action)
 	if (action == Action::Refresh && data)
 	{
 		m_credentials.msaClientId			= data->msaClientID;
-		m_credentials.msaToken.accessToken  = data->msaToken.token;
+		m_credentials.msaToken.accessToken	= data->msaToken.token;
 		m_credentials.msaToken.refreshToken = data->msaToken.refresh_token;
 		m_credentials.msaToken.issuedAt		= data->msaToken.issueInstant;
 		m_credentials.msaToken.expiresAt	= data->msaToken.notAfter;
@@ -68,8 +66,7 @@ AuthFlow::AuthFlow(AccountData* data, Action action)
 
 	if (!m_pipelineValid)
 	{
-		qWarning() << "AuthFlow: Pipeline build failed for account type"
-				   << static_cast<int>(data->type);
+		qWarning() << "AuthFlow: Pipeline build failed for account type" << static_cast<int>(data->type);
 	}
 
 	updateState(AccountTaskState::STATE_CREATED);
@@ -114,36 +111,34 @@ bool AuthFlow::buildPipeline(Action action)
 	}
 
 	// Step 2: Xbox Live User Token
-	m_steps.append(projt::minecraft::auth::Step::Ptr(
-		new projt::minecraft::auth::XboxLiveUserStep(m_credentials)));
+	m_steps.append(projt::minecraft::auth::Step::Ptr(new projt::minecraft::auth::XboxLiveUserStep(m_credentials)));
 
 	// Step 3: Xbox XSTS Token for Xbox Live services
 	m_steps.append(projt::minecraft::auth::Step::Ptr(
-		new projt::minecraft::auth::XboxSecurityTokenStep(m_credentials, projt::minecraft::auth::XstsTarget::XboxLive)));
+		new projt::minecraft::auth::XboxSecurityTokenStep(m_credentials,
+														  projt::minecraft::auth::XstsTarget::XboxLive)));
 
 	// Step 4: Xbox XSTS Token for Minecraft services
 	m_steps.append(projt::minecraft::auth::Step::Ptr(
-		new projt::minecraft::auth::XboxSecurityTokenStep(m_credentials, projt::minecraft::auth::XstsTarget::MinecraftServices)));
+		new projt::minecraft::auth::XboxSecurityTokenStep(m_credentials,
+														  projt::minecraft::auth::XstsTarget::MinecraftServices)));
 
 	// Step 5: Minecraft Services Login (get access token)
-	m_steps.append(projt::minecraft::auth::Step::Ptr(
-		new projt::minecraft::auth::MinecraftServicesLoginStep(m_credentials)));
+	m_steps.append(
+		projt::minecraft::auth::Step::Ptr(new projt::minecraft::auth::MinecraftServicesLoginStep(m_credentials)));
 
 	// Step 6: Xbox Profile (optional, for display - gamertag extraction)
-	m_steps.append(projt::minecraft::auth::Step::Ptr(
-		new projt::minecraft::auth::XboxProfileFetchStep(m_credentials)));
+	m_steps.append(projt::minecraft::auth::Step::Ptr(new projt::minecraft::auth::XboxProfileFetchStep(m_credentials)));
 
 	// Step 7: Game Entitlements
-	m_steps.append(projt::minecraft::auth::Step::Ptr(
-		new projt::minecraft::auth::GameEntitlementsStep(m_credentials)));
+	m_steps.append(projt::minecraft::auth::Step::Ptr(new projt::minecraft::auth::GameEntitlementsStep(m_credentials)));
 
 	// Step 8: Minecraft Profile
-	m_steps.append(projt::minecraft::auth::Step::Ptr(
-		new projt::minecraft::auth::MinecraftProfileFetchStep(m_credentials)));
+	m_steps.append(
+		projt::minecraft::auth::Step::Ptr(new projt::minecraft::auth::MinecraftProfileFetchStep(m_credentials)));
 
 	// Step 9: Skin Download
-	m_steps.append(projt::minecraft::auth::Step::Ptr(
-		new projt::minecraft::auth::SkinDownloadStep(m_credentials)));
+	m_steps.append(projt::minecraft::auth::Step::Ptr(new projt::minecraft::auth::SkinDownloadStep(m_credentials)));
 
 	qDebug() << "AuthFlow: Built pipeline with" << m_steps.size() << "steps";
 	return true;
@@ -175,8 +170,7 @@ void AuthFlow::executeTask()
 	if (m_steps.isEmpty())
 	{
 		qWarning() << "AuthFlow: Pipeline is empty after successful build - this is a bug";
-		failWithState(AccountTaskState::STATE_FAILED_HARD,
-					  tr("Authentication pipeline is empty (internal error)"));
+		failWithState(AccountTaskState::STATE_FAILED_HARD, tr("Authentication pipeline is empty (internal error)"));
 		return;
 	}
 
@@ -210,10 +204,7 @@ void AuthFlow::executeNextStep()
 
 	qDebug() << "AuthFlow:" << m_currentStep->description();
 
-	connect(m_currentStep.get(),
-			&projt::minecraft::auth::Step::completed,
-			this,
-			&AuthFlow::onStepCompleted);
+	connect(m_currentStep.get(), &projt::minecraft::auth::Step::completed, this, &AuthFlow::onStepCompleted);
 
 	m_currentStep->execute();
 }
@@ -236,7 +227,7 @@ void AuthFlow::succeed()
 	// Sync new credentials back to legacy AccountData
 	if (m_legacyData)
 	{
-		m_legacyData->msaClientID		   = m_credentials.msaClientId;
+		m_legacyData->msaClientID			 = m_credentials.msaClientId;
 		m_legacyData->msaToken.token		 = m_credentials.msaToken.accessToken;
 		m_legacyData->msaToken.refresh_token = m_credentials.msaToken.refreshToken;
 		m_legacyData->msaToken.issueInstant	 = m_credentials.msaToken.issuedAt;
@@ -401,23 +392,17 @@ AccountTaskState AuthFlow::stepResultToFlowState(projt::minecraft::auth::StepRes
 	switch (result)
 	{
 		case projt::minecraft::auth::StepResult::Continue:
-		case projt::minecraft::auth::StepResult::Succeeded:
-			return AccountTaskState::STATE_WORKING;
+		case projt::minecraft::auth::StepResult::Succeeded: return AccountTaskState::STATE_WORKING;
 
-		case projt::minecraft::auth::StepResult::Offline:
-			return AccountTaskState::STATE_OFFLINE;
+		case projt::minecraft::auth::StepResult::Offline: return AccountTaskState::STATE_OFFLINE;
 
-		case projt::minecraft::auth::StepResult::SoftFailure:
-			return AccountTaskState::STATE_FAILED_SOFT;
+		case projt::minecraft::auth::StepResult::SoftFailure: return AccountTaskState::STATE_FAILED_SOFT;
 
-		case projt::minecraft::auth::StepResult::HardFailure:
-			return AccountTaskState::STATE_FAILED_HARD;
+		case projt::minecraft::auth::StepResult::HardFailure: return AccountTaskState::STATE_FAILED_HARD;
 
-		case projt::minecraft::auth::StepResult::Disabled:
-			return AccountTaskState::STATE_DISABLED;
+		case projt::minecraft::auth::StepResult::Disabled: return AccountTaskState::STATE_DISABLED;
 
-		case projt::minecraft::auth::StepResult::Gone:
-			return AccountTaskState::STATE_FAILED_GONE;
+		case projt::minecraft::auth::StepResult::Gone: return AccountTaskState::STATE_FAILED_GONE;
 	}
 
 	return AccountTaskState::STATE_FAILED_HARD;

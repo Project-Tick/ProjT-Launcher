@@ -25,56 +25,61 @@
 
 namespace projt::logs
 {
-struct RedactionRule
-{
-	QRegularExpression pattern;
-	QString replacement;
-};
-
-static QVector<RedactionRule> buildDefaultRules()
-{
-	QVector<RedactionRule> rules;
-	rules.reserve(7);
-	rules.push_back({ QRegularExpression("C:\\\\Users\\\\([^\\\\]+)\\\\", QRegularExpression::CaseInsensitiveOption),
-					  "C:\\Users\\********\\" });
-	rules.push_back({ QRegularExpression("C:\\/Users\\/([^\\/]+)\\/", QRegularExpression::CaseInsensitiveOption),
-					  "C:/Users/********/" });
-	rules.push_back({ QRegularExpression("(?<!\\\\w)\\/home\\/[^\\/]+\\/", QRegularExpression::CaseInsensitiveOption),
-					  "/home/********/" });
-	rules.push_back({ QRegularExpression("(?<!\\\\w)\\/Users\\/[^\\/]+\\/", QRegularExpression::CaseInsensitiveOption),
-					  "/Users/********/" });
-	rules.push_back({ QRegularExpression("\\(Session ID is [^\\)]+\\)", QRegularExpression::CaseInsensitiveOption),
-					  "(Session ID is <SESSION_TOKEN>)" });
-	rules.push_back({ QRegularExpression("new refresh token: \"[^\"]+\"", QRegularExpression::CaseInsensitiveOption),
-					  "new refresh token: \"<TOKEN>\"" });
-	rules.push_back({ QRegularExpression("\"device_code\" :  \"[^\"]+\"", QRegularExpression::CaseInsensitiveOption),
-					  "\"device_code\" :  \"<DEVICE_CODE>\"" });
-
-	for (auto& rule : rules)
+	struct RedactionRule
 	{
-		rule.pattern.optimize();
-	}
-	return rules;
-}
+		QRegularExpression pattern;
+		QString replacement;
+	};
 
-static const QVector<RedactionRule>& ruleset()
-{
-	static const QVector<RedactionRule> rules = buildDefaultRules();
-	return rules;
-}
-
-void redactLog(QString& text)
-{
-	for (const auto& rule : ruleset())
+	static QVector<RedactionRule> buildDefaultRules()
 	{
-		text.replace(rule.pattern, rule.replacement);
-	}
-}
+		QVector<RedactionRule> rules;
+		rules.reserve(7);
+		rules.push_back(
+			{ QRegularExpression("C:\\\\Users\\\\([^\\\\]+)\\\\", QRegularExpression::CaseInsensitiveOption),
+			  "C:\\Users\\********\\" });
+		rules.push_back({ QRegularExpression("C:\\/Users\\/([^\\/]+)\\/", QRegularExpression::CaseInsensitiveOption),
+						  "C:/Users/********/" });
+		rules.push_back(
+			{ QRegularExpression("(?<!\\\\w)\\/home\\/[^\\/]+\\/", QRegularExpression::CaseInsensitiveOption),
+			  "/home/********/" });
+		rules.push_back(
+			{ QRegularExpression("(?<!\\\\w)\\/Users\\/[^\\/]+\\/", QRegularExpression::CaseInsensitiveOption),
+			  "/Users/********/" });
+		rules.push_back({ QRegularExpression("\\(Session ID is [^\\)]+\\)", QRegularExpression::CaseInsensitiveOption),
+						  "(Session ID is <SESSION_TOKEN>)" });
+		rules.push_back(
+			{ QRegularExpression("new refresh token: \"[^\"]+\"", QRegularExpression::CaseInsensitiveOption),
+			  "new refresh token: \"<TOKEN>\"" });
+		rules.push_back(
+			{ QRegularExpression("\"device_code\" :  \"[^\"]+\"", QRegularExpression::CaseInsensitiveOption),
+			  "\"device_code\" :  \"<DEVICE_CODE>\"" });
 
-QString redactCopy(const QString& text)
-{
-	QString output = text;
-	redactLog(output);
-	return output;
-}
+		for (auto& rule : rules)
+		{
+			rule.pattern.optimize();
+		}
+		return rules;
+	}
+
+	static const QVector<RedactionRule>& ruleset()
+	{
+		static const QVector<RedactionRule> rules = buildDefaultRules();
+		return rules;
+	}
+
+	void redactLog(QString& text)
+	{
+		for (const auto& rule : ruleset())
+		{
+			text.replace(rule.pattern, rule.replacement);
+		}
+	}
+
+	QString redactCopy(const QString& text)
+	{
+		QString output = text;
+		redactLog(output);
+		return output;
+	}
 } // namespace projt::logs

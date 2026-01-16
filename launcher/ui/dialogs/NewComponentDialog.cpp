@@ -150,4 +150,3 @@ void NewComponentDialog::setBlacklist(QStringList badUids)
 {
 	uidBlacklist = badUids;
 }
-

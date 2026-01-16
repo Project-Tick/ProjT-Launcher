@@ -125,10 +125,10 @@ void JavaCommon::TestCheck::checkFinished(const projt::java::RuntimeProbeTask::P
 	}
 	projt::java::RuntimeProbeTask::ProbeSettings settings;
 	settings.binaryPath = m_path;
-	settings.extraArgs = m_args;
-	settings.minMem = m_minMem;
-	settings.maxMem = m_maxMem;
-	settings.permGen = result.version.needsPermGen() ? m_permGen : 0;
+	settings.extraArgs	= m_args;
+	settings.minMem		= m_minMem;
+	settings.maxMem		= m_maxMem;
+	settings.permGen	= result.version.needsPermGen() ? m_permGen : 0;
 	checker.reset(new projt::java::RuntimeProbeTask(settings));
 	connect(checker.get(),
 			&projt::java::RuntimeProbeTask::probeFinished,
@@ -148,4 +148,3 @@ void JavaCommon::TestCheck::checkFinishedWithArgs(const projt::java::RuntimeProb
 	javaArgsWereBad(m_parent, result);
 	emit finished();
 }
-

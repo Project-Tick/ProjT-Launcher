@@ -58,4 +58,3 @@ namespace projt::icons
 	}
 
 } // namespace projt::icons
-

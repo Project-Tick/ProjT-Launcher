@@ -27,33 +27,33 @@
 
 namespace projt::launch
 {
-class LaunchPipeline;
+	class LaunchPipeline;
 
-class LaunchStage : public Task
-{
-	Q_OBJECT
-  public:
-	using Ptr = shared_qobject_ptr<LaunchStage>;
-
-	explicit LaunchStage(LaunchPipeline* pipeline);
-	~LaunchStage() override = default;
-
-	LaunchPipeline* pipeline() const
+	class LaunchStage : public Task
 	{
-		return m_flow;
-	}
+		Q_OBJECT
+	  public:
+		using Ptr = shared_qobject_ptr<LaunchStage>;
 
-  signals:
-	void logLines(QStringList lines, MessageLevel::Enum level);
-	void logLine(QString line, MessageLevel::Enum level);
-	void readyForLaunch();
-	void progressReportingRequest();
+		explicit LaunchStage(LaunchPipeline* pipeline);
+		~LaunchStage() override = default;
 
-  public slots:
-	virtual void proceed() {};
-	virtual void finalize() {};
+		LaunchPipeline* pipeline() const
+		{
+			return m_flow;
+		}
 
-  protected:
-	LaunchPipeline* m_flow;
-};
+	  signals:
+		void logLines(QStringList lines, MessageLevel::Enum level);
+		void logLine(QString line, MessageLevel::Enum level);
+		void readyForLaunch();
+		void progressReportingRequest();
+
+	  public slots:
+		virtual void proceed() {};
+		virtual void finalize() {};
+
+	  protected:
+		LaunchPipeline* m_flow;
+	};
 } // namespace projt::launch

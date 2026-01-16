@@ -114,4 +114,3 @@ class LauncherPage : public QWidget, public BasePage
   private:
 	Ui::LauncherPage* ui;
 };
-

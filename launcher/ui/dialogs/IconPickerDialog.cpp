@@ -115,10 +115,7 @@ IconPickerDialog::IconPickerDialog(QWidget* parent) : QDialog(parent), ui(new Ui
 	connect(APPLICATION->icons().get(),
 			&projt::icons::IconList::iconUpdated,
 			this,
-			[this]()
-			{
-				proxyModel->invalidate();
-			});
+			[this]() { proxyModel->invalidate(); });
 }
 
 bool IconPickerDialog::eventFilter(QObject* obj, QEvent* evt)

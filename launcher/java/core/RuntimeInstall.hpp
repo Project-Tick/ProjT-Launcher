@@ -61,8 +61,8 @@ namespace projt::java
 		QString path;
 		QString vendor;
 		bool recommended = false;
-		bool is_64bit = false;
-		bool managed = false;
+		bool is_64bit	 = false;
+		bool managed	 = false;
 	};
 
 	using RuntimeInstallPtr = std::shared_ptr<RuntimeInstall>;
