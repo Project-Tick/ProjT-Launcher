@@ -25,28 +25,6 @@
 #include "Application.h"
 #include "minecraft/auth/steps/Steps.hpp"
 
-// ============================================================================
-// AuthFlow Implementation
-// ============================================================================
-//
-// This orchestrator bridges legacy AccountData with the new Credentials-based
-// authentication system. Key architectural decisions:
-//
-// 1. LEGACY SYNC: After successful auth, we copy Credentials -> AccountData.
-//    This maintains backward compatibility without modifying 50+ consumer files.
-//
-// 2. STEP OWNERSHIP: Steps use shared_qobject_ptr for deterministic cleanup.
-//    No Qt parent is set; the reference count manages lifetime.
-//
-// 3. ABORT HANDLING: A dedicated flag (m_aborted) prevents new steps from
-//    starting after abort() is called, while still allowing current step
-//    to complete its cleanup gracefully.
-//
-// 4. PIPELINE VALIDATION: buildPipeline() returns bool to catch configuration
-//    errors early rather than silently succeeding with empty pipeline.
-//
-// ============================================================================
-
 AuthFlow::AuthFlow(AccountData* data, Action action) : Task(), m_legacyData(data)
 {
 	Q_ASSERT(data != nullptr);

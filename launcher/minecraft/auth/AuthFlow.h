@@ -30,35 +30,6 @@
 #include "minecraft/auth/steps/Credentials.hpp"
 #include "tasks/Task.h"
 
-/**
- * Authentication flow orchestrator.
- *
- * # Design Rationale
- *
- * This class serves as a bridge between the legacy AccountData-based auth system
- * and the new projt::minecraft::auth namespace. The rewrite was necessary because:
- *
- * 1. **License Isolation**: GPL-2.0-only target requires clean separation from
- *    upstream GPL-3.0 code. The new Step/Credentials API provides this boundary.
- *
- * 2. **Stateless Steps**: Each Step operates on a shared Credentials reference,
- *    eliminating inter-step coupling and enabling future parallelization.
- *
- * 3. **Testability**: Pure Credentials-based flow can be unit tested without
- *    Qt event loop or AccountData persistence concerns.
- *
- * The legacy sync in succeed() maintains backward compatibility with existing
- * consumers (MinecraftAccount, AccountList, UI dialogs) while the internal
- * implementation uses the new architecture.
- *
- * # Ownership Model
- *
- * Steps are managed via shared_qobject_ptr (Step::Ptr) which combines Qt's
- * parent-child model with reference counting. This is intentional:
- * - QObject is required for signal/slot connections
- * - Reference counting prevents double-delete when steps are queued
- * - No explicit parent is set; the Ptr handles cleanup automatically
- */
 class AuthFlow : public Task
 {
 	Q_OBJECT
