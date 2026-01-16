@@ -349,4 +349,3 @@ void CopyInstanceDialog::on_useCloneCheckbox_stateChanged(int state)
 	updateUseCloneCheckbox();
 	updateLinkOptions();
 }
-

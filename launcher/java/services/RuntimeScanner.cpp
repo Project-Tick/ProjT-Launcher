@@ -73,11 +73,11 @@ namespace projt::java
 	QStringList RuntimeScanner::appendEnvPaths(const QStringList& base) const
 	{
 		QStringList expanded = base;
-		auto env = qEnvironmentVariable("PROJTLAUNCHER_JAVA_PATHS");
+		auto env			 = qEnvironmentVariable("PROJTLAUNCHER_JAVA_PATHS");
 #if defined(Q_OS_WIN32)
 		QStringList javaPaths = env.replace("\\", "/").split(QLatin1String(";"), Qt::SkipEmptyParts);
 
-		auto envPath = qEnvironmentVariable("PATH");
+		auto envPath			= qEnvironmentVariable("PATH");
 		QStringList pathEntries = envPath.replace("\\", "/").split(QLatin1String(";"), Qt::SkipEmptyParts);
 		for (const QString& entry : pathEntries)
 		{
@@ -95,9 +95,9 @@ namespace projt::java
 
 #if defined(Q_OS_WIN32)
 	QStringList RuntimeScanner::collectRegistryPaths(DWORD keyType,
-										 const QString& keyName,
-										 const QString& valueName,
-										 const QString& suffix) const
+													 const QString& keyName,
+													 const QString& valueName,
+													 const QString& suffix) const
 	{
 		QStringList entries;
 
@@ -131,22 +131,17 @@ namespace projt::java
 					QString versionKey = keyName + "\\" + QString::fromWCharArray(subKeyName) + suffix;
 					HKEY versionHandle;
 					if (RegOpenKeyExW(baseRegistry,
-										  versionKey.toStdWString().c_str(),
-										  0,
-										  KEY_READ | keyType,
-										  &versionHandle)
+									  versionKey.toStdWString().c_str(),
+									  0,
+									  KEY_READ | keyType,
+									  &versionHandle)
 						!= ERROR_SUCCESS)
 					{
 						continue;
 					}
 
 					DWORD valueSize = 0;
-					if (RegQueryValueExW(versionHandle,
-										 valueName.toStdWString().c_str(),
-										 NULL,
-										 NULL,
-										 NULL,
-										 &valueSize)
+					if (RegQueryValueExW(versionHandle, valueName.toStdWString().c_str(), NULL, NULL, NULL, &valueSize)
 						== ERROR_SUCCESS)
 					{
 						std::vector<WCHAR> buffer(valueSize / sizeof(WCHAR) + 1, 0);
@@ -205,15 +200,15 @@ namespace projt::java
 		QStringList processPaths;
 #if defined(Q_OS_MACOS)
 		processPaths << FS::PathCombine(QDir::homePath(),
-							FS::PathCombine("Library", "Application Support", "minecraft", "runtime"));
+										FS::PathCombine("Library", "Application Support", "minecraft", "runtime"));
 #elif defined(Q_OS_WIN32)
 		auto appDataPath = QProcessEnvironment::systemEnvironment().value("APPDATA", "");
 		processPaths << FS::PathCombine(QFileInfo(appDataPath).absoluteFilePath(), ".minecraft", "runtime");
 
-		auto localAppDataPath = QProcessEnvironment::systemEnvironment().value("LOCALAPPDATA", "");
+		auto localAppDataPath	= QProcessEnvironment::systemEnvironment().value("LOCALAPPDATA", "");
 		auto minecraftStorePath = FS::PathCombine(QFileInfo(localAppDataPath).absoluteFilePath(),
-									  "Packages",
-									  "Microsoft.4297127D64EC6_8wekyb3d8bbwe");
+												  "Packages",
+												  "Microsoft.4297127D64EC6_8wekyb3d8bbwe");
 		processPaths << FS::PathCombine(minecraftStorePath, "LocalCache", "Local", "runtime");
 #else
 		processPaths << FS::PathCombine(QDir::homePath(), ".minecraft", "runtime");
@@ -228,7 +223,7 @@ namespace projt::java
 			{
 				continue;
 			}
-			auto entries = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+			auto entries  = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
 			bool foundBin = false;
 			for (const auto& entry : entries)
 			{
@@ -260,28 +255,42 @@ namespace projt::java
 		}
 
 #if defined(Q_OS_WIN32)
-		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\JavaSoft\\Java Runtime Environment", "JavaHome", ""));
-		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\JavaSoft\\Java Development Kit", "JavaHome", ""));
-		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\JavaSoft\\Java Runtime Environment", "JavaHome", ""));
-		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\JavaSoft\\Java Development Kit", "JavaHome", ""));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\JavaSoft\\Java Runtime Environment", "JavaHome", ""));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\JavaSoft\\Java Development Kit", "JavaHome", ""));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\JavaSoft\\Java Runtime Environment", "JavaHome", ""));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\JavaSoft\\Java Development Kit", "JavaHome", ""));
 
 		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\JavaSoft\\JRE", "JavaHome", ""));
 		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\JavaSoft\\JDK", "JavaHome", ""));
 		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\JavaSoft\\JRE", "JavaHome", ""));
 		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\JavaSoft\\JDK", "JavaHome", ""));
 
-		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\AdoptOpenJDK\\JRE", "Path", "\\hotspot\\MSI"));
-		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\AdoptOpenJDK\\JRE", "Path", "\\hotspot\\MSI"));
-		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\AdoptOpenJDK\\JDK", "Path", "\\hotspot\\MSI"));
-		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\AdoptOpenJDK\\JDK", "Path", "\\hotspot\\MSI"));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\AdoptOpenJDK\\JRE", "Path", "\\hotspot\\MSI"));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\AdoptOpenJDK\\JRE", "Path", "\\hotspot\\MSI"));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\AdoptOpenJDK\\JDK", "Path", "\\hotspot\\MSI"));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\AdoptOpenJDK\\JDK", "Path", "\\hotspot\\MSI"));
 
-		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\Eclipse Foundation\\JDK", "Path", "\\hotspot\\MSI"));
-		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\Eclipse Foundation\\JDK", "Path", "\\hotspot\\MSI"));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\Eclipse Foundation\\JDK", "Path", "\\hotspot\\MSI"));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\Eclipse Foundation\\JDK", "Path", "\\hotspot\\MSI"));
 
-		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\Eclipse Adoptium\\JRE", "Path", "\\hotspot\\MSI"));
-		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\Eclipse Adoptium\\JRE", "Path", "\\hotspot\\MSI"));
-		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\Eclipse Adoptium\\JDK", "Path", "\\hotspot\\MSI"));
-		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\Eclipse Adoptium\\JDK", "Path", "\\hotspot\\MSI"));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\Eclipse Adoptium\\JRE", "Path", "\\hotspot\\MSI"));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\Eclipse Adoptium\\JRE", "Path", "\\hotspot\\MSI"));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\Eclipse Adoptium\\JDK", "Path", "\\hotspot\\MSI"));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\Eclipse Adoptium\\JDK", "Path", "\\hotspot\\MSI"));
 
 		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\Semeru\\JRE", "Path", "\\openj9\\MSI"));
 		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\Semeru\\JRE", "Path", "\\openj9\\MSI"));
@@ -290,11 +299,15 @@ namespace projt::java
 
 		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\Microsoft\\JDK", "Path", "\\hotspot\\MSI"));
 
-		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\Azul Systems\\Zulu", "InstallationPath", ""));
-		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\Azul Systems\\Zulu", "InstallationPath", ""));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\Azul Systems\\Zulu", "InstallationPath", ""));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\Azul Systems\\Zulu", "InstallationPath", ""));
 
-		candidates.append(collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\BellSoft\\Liberica", "InstallationPath", ""));
-		candidates.append(collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\BellSoft\\Liberica", "InstallationPath", ""));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_64KEY, "SOFTWARE\\BellSoft\\Liberica", "InstallationPath", ""));
+		candidates.append(
+			collectRegistryPaths(KEY_WOW64_32KEY, "SOFTWARE\\BellSoft\\Liberica", "InstallationPath", ""));
 
 		candidates.append("C:/Program Files/Java/jre8/bin/javaw.exe");
 		candidates.append("C:/Program Files/Java/jre7/bin/javaw.exe");
@@ -306,7 +319,8 @@ namespace projt::java
 		candidates.append("javaw");
 #elif defined(Q_OS_MAC)
 		candidates.append("java");
-		candidates.append("/Applications/Xcode.app/Contents/Applications/Application Loader.app/Contents/MacOS/itms/java/bin/java");
+		candidates.append(
+			"/Applications/Xcode.app/Contents/Applications/Application Loader.app/Contents/MacOS/itms/java/bin/java");
 		candidates.append("/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin/java");
 		candidates.append("/System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/java");
 
@@ -353,8 +367,10 @@ namespace projt::java
 		}
 #elif defined(Q_OS_LINUX) || defined(Q_OS_OPENBSD) || defined(Q_OS_FREEBSD)
 		candidates.append("java");
-		auto scanJavaDir = [&candidates](const QString& dirPath,
-									const std::function<bool(const QFileInfo&)>& filter = [](const QFileInfo&) { return true; })
+		auto scanJavaDir =
+			[&candidates](
+				const QString& dirPath,
+				const std::function<bool(const QFileInfo&)>& filter = [](const QFileInfo&) { return true; })
 		{
 			QDir dir(dirPath);
 			if (!dir.exists())
@@ -369,7 +385,7 @@ namespace projt::java
 				candidates.append(FS::PathCombine(prefix, "bin/java"));
 			}
 		};
-		auto snap = qEnvironmentVariable("SNAP");
+		auto snap		  = qEnvironmentVariable("SNAP");
 		auto scanJavaDirs = [scanJavaDir, snap](const QString& dirPath)
 		{
 			scanJavaDir(dirPath);

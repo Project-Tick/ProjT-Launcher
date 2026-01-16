@@ -377,4 +377,3 @@ void NewInstanceDialog::selectedPageChanged(BasePage* previous, BasePage* select
 		nextPage->setSearchTerm(m_searchTerm);
 	}
 }
-

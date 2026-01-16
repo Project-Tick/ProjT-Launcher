@@ -97,4 +97,3 @@ class MinecraftPage : public MinecraftSettingsWidget, public BasePage
 		return true;
 	}
 };
-

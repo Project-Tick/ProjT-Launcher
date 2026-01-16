@@ -79,7 +79,7 @@ namespace projt::icons
 		void iconUpdated(QString key);
 
 	  private:
-		IconList(const IconList&) = delete;
+		IconList(const IconList&)			 = delete;
 		IconList& operator=(const IconList&) = delete;
 
 		void reindex();

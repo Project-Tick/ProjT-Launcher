@@ -528,9 +528,9 @@ void JavaWizardWidget::checkJavaPath(const QString& path)
 	setJavaStatus(JavaStatus::Pending);
 	projt::java::RuntimeProbeTask::ProbeSettings settings;
 	settings.binaryPath = path;
-	settings.minMem = minHeapSize();
-	settings.maxMem = maxHeapSize();
-	settings.permGen = m_permGenSpinBox->isVisible() ? m_permGenSpinBox->value() : 0;
+	settings.minMem		= minHeapSize();
+	settings.maxMem		= maxHeapSize();
+	settings.permGen	= m_permGenSpinBox->isVisible() ? m_permGenSpinBox->value() : 0;
 	m_checker.reset(new projt::java::RuntimeProbeTask(settings));
 	connect(m_checker.get(), &projt::java::RuntimeProbeTask::probeFinished, this, &JavaWizardWidget::checkFinished);
 	m_checker->start();
@@ -646,5 +646,3 @@ JavaWizardWidget::~JavaWizardWidget()
 {
 	delete m_verticalSpacer;
 };
-
-

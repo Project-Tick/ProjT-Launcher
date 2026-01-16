@@ -33,57 +33,57 @@
 
 namespace projt::logs
 {
-class LogEventParser
-{
-  public:
-	struct LogRecord
+	class LogEventParser
 	{
-		QString logger;
-		MessageLevel::Enum level = MessageLevel::Unknown;
-		QString levelText;
-		QDateTime timestamp;
-		QString thread;
-		QString message;
+	  public:
+		struct LogRecord
+		{
+			QString logger;
+			MessageLevel::Enum level = MessageLevel::Unknown;
+			QString levelText;
+			QDateTime timestamp;
+			QString thread;
+			QString message;
+		};
+
+		struct RawLine
+		{
+			QString text;
+		};
+
+		struct PendingChunk
+		{
+			QString data;
+		};
+
+		struct ParseFailure
+		{
+			QString message;
+			QXmlStreamReader::Error code = QXmlStreamReader::Error::NoError;
+		};
+
+		using Item = std::variant<LogRecord, RawLine, PendingChunk>;
+
+		LogEventParser() = default;
+
+		void pushLine(QAnyStringView data);
+		std::optional<Item> popNext();
+		QList<Item> drainAvailable();
+		std::optional<ParseFailure> lastError() const;
+
+		static MessageLevel::Enum guessLevelFromLine(const QString& line, MessageLevel::Enum fallback);
+
+	  private:
+		std::optional<LogRecord> readEventAttributes();
+		std::optional<Item> parseLog4jEvent();
+		bool isPotentialLog4j(QStringView view) const;
+		bool looksCompleteLog4j() const;
+		void captureError();
+		void clearError();
+
+		QString m_buffer;
+		QString m_holdover;
+		QXmlStreamReader m_reader;
+		std::optional<ParseFailure> m_error;
 	};
-
-	struct RawLine
-	{
-		QString text;
-	};
-
-	struct PendingChunk
-	{
-		QString data;
-	};
-
-	struct ParseFailure
-	{
-		QString message;
-		QXmlStreamReader::Error code = QXmlStreamReader::Error::NoError;
-	};
-
-	using Item = std::variant<LogRecord, RawLine, PendingChunk>;
-
-	LogEventParser() = default;
-
-	void pushLine(QAnyStringView data);
-	std::optional<Item> popNext();
-	QList<Item> drainAvailable();
-	std::optional<ParseFailure> lastError() const;
-
-	static MessageLevel::Enum guessLevelFromLine(const QString& line, MessageLevel::Enum fallback);
-
-  private:
-	std::optional<LogRecord> readEventAttributes();
-	std::optional<Item> parseLog4jEvent();
-	bool isPotentialLog4j(QStringView view) const;
-	bool looksCompleteLog4j() const;
-	void captureError();
-	void clearError();
-
-	QString m_buffer;
-	QString m_holdover;
-	QXmlStreamReader m_reader;
-	std::optional<ParseFailure> m_error;
-};
 } // namespace projt::logs

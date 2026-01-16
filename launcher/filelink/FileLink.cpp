@@ -41,9 +41,7 @@ namespace fs = std::filesystem;
 
 namespace projt::filelink
 {
-	FileLinkApp::FileLinkApp(int& argc, char** argv)
-		: QCoreApplication(argc, argv)
-		, m_socket(this)
+	FileLinkApp::FileLinkApp(int& argc, char** argv) : QCoreApplication(argc, argv), m_socket(this)
 	{
 #if defined Q_OS_WIN32
 		if (projt::console::AttachWindowsConsole())
@@ -65,7 +63,7 @@ namespace projt::filelink
 		parser.process(arguments());
 
 		const QString serverToJoin = parser.value("server");
-		m_useHardLinks = QVariant(parser.value("hard")).toBool();
+		m_useHardLinks			   = QVariant(parser.value("hard")).toBool();
 
 		qDebug() << "file link helper launched";
 		m_input.setDevice(&m_socket);
@@ -165,7 +163,9 @@ namespace projt::filelink
 			else if (fs::is_directory(StringUtils::toStdString(srcPath)))
 			{
 				qDebug() << "making directory_symlink:" << srcPath << "to" << dstPath;
-				fs::create_directory_symlink(StringUtils::toStdString(srcPath), StringUtils::toStdString(dstPath), osErr);
+				fs::create_directory_symlink(StringUtils::toStdString(srcPath),
+											 StringUtils::toStdString(dstPath),
+											 osErr);
 			}
 			else
 			{
@@ -221,7 +221,7 @@ namespace projt::filelink
 		}
 
 		qint64 bytesWritten = m_socket.write(block);
-		bool bytesFlushed = m_socket.flush();
+		bool bytesFlushed	= m_socket.flush();
 		qDebug() << "block flushed" << bytesWritten << bytesFlushed;
 	}
 

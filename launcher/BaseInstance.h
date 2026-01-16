@@ -82,7 +82,7 @@ class QDir;
 class Task;
 namespace projt::launch
 {
-class LaunchPipeline;
+	class LaunchPipeline;
 }
 class BaseInstance;
 
@@ -245,8 +245,9 @@ class BaseInstance : public QObject, public std::enable_shared_from_this<BaseIns
 	virtual QList<Task::Ptr> createUpdateTask() = 0;
 
 	/// returns a valid launcher (pipeline container)
-	virtual shared_qobject_ptr<projt::launch::LaunchPipeline> createLaunchPipeline(AuthSessionPtr account,
-																				  MinecraftTarget::Ptr targetToJoin) = 0;
+	virtual shared_qobject_ptr<projt::launch::LaunchPipeline> createLaunchPipeline(
+		AuthSessionPtr account,
+		MinecraftTarget::Ptr targetToJoin) = 0;
 
 	/// returns the current launch pipeline (if any)
 	shared_qobject_ptr<projt::launch::LaunchPipeline> getLaunchPipeline();

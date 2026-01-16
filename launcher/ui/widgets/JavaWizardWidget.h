@@ -134,4 +134,3 @@ class JavaWizardWidget : public QWidget
 	projt::java::RuntimeProbeTask::ProbeReport m_result;
 	QTimer* m_memoryTimer;
 };
-

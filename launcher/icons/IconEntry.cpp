@@ -22,10 +22,7 @@
 
 namespace projt::icons
 {
-	IconEntry::ThemeIconProvider IconEntry::s_themeProvider = [](const QString& key)
-	{
-		return QIcon::fromTheme(key);
-	};
+	IconEntry::ThemeIconProvider IconEntry::s_themeProvider = [](const QString& key) { return QIcon::fromTheme(key); };
 
 	void IconEntry::setThemeIconProvider(ThemeIconProvider provider)
 	{
@@ -86,7 +83,7 @@ namespace projt::icons
 	void IconEntry::remove(IconType rm_type)
 	{
 		m_images[rm_type].filename = QString();
-		m_images[rm_type].icon = QIcon();
+		m_images[rm_type].icon	   = QIcon();
 		for (auto iter = rm_type; iter != IconType::ToBeDeleted; iter--)
 		{
 			if (m_images[iter].present())
@@ -104,9 +101,9 @@ namespace projt::icons
 		{
 			m_current_type = new_type;
 		}
-		m_images[new_type].icon = icon;
+		m_images[new_type].icon		= icon;
 		m_images[new_type].filename = path;
-		m_images[new_type].key = QString();
+		m_images[new_type].key		= QString();
 	}
 
 	void IconEntry::replace(IconType new_type, const QString& key)
@@ -115,9 +112,9 @@ namespace projt::icons
 		{
 			m_current_type = new_type;
 		}
-		m_images[new_type].icon = QIcon();
+		m_images[new_type].icon		= QIcon();
 		m_images[new_type].filename = QString();
-		m_images[new_type].key = key;
+		m_images[new_type].key		= key;
 	}
 
 	QString IconEntry::getFilePath() const

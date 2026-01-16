@@ -26,7 +26,7 @@ class BaseInstance;
 class SettingsObject;
 namespace projt::launch
 {
-class LaunchPipeline;
+	class LaunchPipeline;
 }
 class QProcess;
 

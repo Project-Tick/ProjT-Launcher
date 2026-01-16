@@ -56,7 +56,7 @@ namespace projt::filelink
 		void runLink();
 		void sendResults();
 
-		Status m_status = Status::Starting;
+		Status m_status		= Status::Starting;
 		bool m_useHardLinks = false;
 
 		QLocalSocket m_socket;

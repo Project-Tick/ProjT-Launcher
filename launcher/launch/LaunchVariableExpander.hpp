@@ -25,9 +25,9 @@
 
 namespace projt::launch
 {
-class LaunchVariableExpander
-{
-  public:
-	QString expand(const QString& input, const QProcessEnvironment& env) const;
-};
+	class LaunchVariableExpander
+	{
+	  public:
+		QString expand(const QString& input, const QProcessEnvironment& env) const;
+	};
 } // namespace projt::launch

@@ -134,18 +134,18 @@ ModPlatform::ResourceType getResourceType(int classId)
 			return ModPlatform::ResourceType::World;
 		case 6: // Mods
 			return ModPlatform::ResourceType::Mod;
-		case 12: // Resource Packs
-				 // return ModPlatform::ResourceType::ResourcePack; // not really a resourcepack
-			/* fallthrough */
+		case 12:   // Resource Packs
+				   // return ModPlatform::ResourceType::ResourcePack; // not really a resourcepack
+				   /* fallthrough */
 		case 4546: // Customization
 				   // return ModPlatform::ResourceType::ShaderPack; // not really a shaderPack
-			/* fallthrough */
+				   /* fallthrough */
 		case 4471: // Modpacks
-			/* fallthrough */
-		case 5: // Bukkit Plugins
-			/* fallthrough */
+				   /* fallthrough */
+		case 5:	   // Bukkit Plugins
+				   /* fallthrough */
 		case 4559: // Addons
-			/* fallthrough */
+				   /* fallthrough */
 		default: return ModPlatform::ResourceType::Unknown;
 	}
 }

@@ -27,37 +27,37 @@
 
 namespace projt::launch::steps
 {
-class LaunchCommandStep : public projt::launch::LaunchStage
-{
-	Q_OBJECT
-  public:
-	enum class Hook
+	class LaunchCommandStep : public projt::launch::LaunchStage
 	{
-		PreLaunch,
-		PostExit
+		Q_OBJECT
+	  public:
+		enum class Hook
+		{
+			PreLaunch,
+			PostExit
+		};
+
+		LaunchCommandStep(projt::launch::LaunchPipeline* parent, Hook hook, QString commandTemplate);
+		~LaunchCommandStep() override = default;
+
+		void executeTask() override;
+		bool canAbort() const override
+		{
+			return true;
+		}
+		bool abort() override;
+
+		void setWorkingDirectory(const QString& workDir);
+
+	  private slots:
+		void onProcessState(LoggedProcess::State state);
+
+	  private:
+		QString hookLabel() const;
+		QString buildFailure() const;
+
+		LoggedProcess m_runner;
+		QString m_commandTemplate;
+		Hook m_hook;
 	};
-
-	LaunchCommandStep(projt::launch::LaunchPipeline* parent, Hook hook, QString commandTemplate);
-	~LaunchCommandStep() override = default;
-
-	void executeTask() override;
-	bool canAbort() const override
-	{
-		return true;
-	}
-	bool abort() override;
-
-	void setWorkingDirectory(const QString& workDir);
-
-  private slots:
-	void onProcessState(LoggedProcess::State state);
-
-  private:
-	QString hookLabel() const;
-	QString buildFailure() const;
-
-	LoggedProcess m_runner;
-	QString m_commandTemplate;
-	Hook m_hook;
-};
 } // namespace projt::launch::steps

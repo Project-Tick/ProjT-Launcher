@@ -81,7 +81,7 @@ namespace projt::icons
 		reindex();
 	}
 
-// Helper function to add directories recursively
+	// Helper function to add directories recursively
 	bool IconList::addPathRecursively(const QString& path)
 	{
 		QDir dir(path);
@@ -175,7 +175,7 @@ namespace projt::icons
 		}
 		m_dir.refresh();
 		const QStringList newFileNamesList = getIconFilePaths();
-		const QSet<QString> newSet = toStringSet(newFileNamesList);
+		const QSet<QString> newSet		   = toStringSet(newFileNamesList);
 		QSet<QString> currentSet;
 		for (const IconEntry& it : m_icons)
 		{
@@ -187,14 +187,14 @@ namespace projt::icons
 			currentSet.insert(icon.absoluteFilePath());
 		}
 		QSet<QString> toRemove = currentSet - newSet;
-		QSet<QString> toAdd = newSet - currentSet;
+		QSet<QString> toAdd	   = newSet - currentSet;
 
 		for (const QString& removedPath : toRemove)
 		{
 			qDebug() << "Removing icon " << removedPath;
 			QFileInfo removedFile(removedPath);
 			QString relativePath = m_dir.relativeFilePath(removedFile.absoluteFilePath());
-			QString key = QFileInfo(relativePath).completeBaseName();
+			QString key			 = QFileInfo(relativePath).completeBaseName();
 
 			int idx = getIconIndex(key);
 			if (idx == -1)
@@ -223,8 +223,8 @@ namespace projt::icons
 
 			QFileInfo addfile(addedPath);
 			QString relativePath = m_dir.relativeFilePath(addfile.absoluteFilePath());
-			QString key = QFileInfo(relativePath).completeBaseName();
-			QString name = formatName(m_dir, addfile);
+			QString key			 = QFileInfo(relativePath).completeBaseName();
+			QString name		 = formatName(m_dir, addfile);
 
 			if (addIcon(key, name, addfile.filePath(), IconType::FileBased))
 			{
@@ -245,7 +245,7 @@ namespace projt::icons
 			return;
 		}
 		QString key = m_dir.relativeFilePath(checkfile.absoluteFilePath());
-		int idx = getIconIndex(key);
+		int idx		= getIconIndex(key);
 		if (idx == -1)
 		{
 			return;
@@ -442,7 +442,7 @@ namespace projt::icons
 		{
 			IconEntry iconEntry;
 			iconEntry.m_name = key;
-			iconEntry.m_key = key;
+			iconEntry.m_key	 = key;
 			iconEntry.replace(Builtin, key);
 			m_icons.push_back(iconEntry);
 			m_nameIndex[key] = m_icons.size() - 1;
@@ -472,7 +472,7 @@ namespace projt::icons
 		{
 			IconEntry iconEntry;
 			iconEntry.m_name = name;
-			iconEntry.m_key = key;
+			iconEntry.m_key	 = key;
 			iconEntry.replace(type, icon, path);
 			m_icons.push_back(iconEntry);
 			m_nameIndex[key] = m_icons.size() - 1;
@@ -483,7 +483,7 @@ namespace projt::icons
 
 	void IconList::saveIcon(const QString& key, const QString& path, const char* format) const
 	{
-		auto icon = getIcon(key);
+		auto icon	= getIcon(key);
 		auto pixmap = icon.pixmap(128, 128);
 		pixmap.save(path, format);
 	}
@@ -547,4 +547,3 @@ namespace projt::icons
 		return getDirectory();
 	}
 } // namespace projt::icons
-

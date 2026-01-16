@@ -26,104 +26,102 @@
 
 namespace projt::launch::steps
 {
-LaunchCommandStep::LaunchCommandStep(projt::launch::LaunchPipeline* parent, Hook hook, QString commandTemplate)
-	: projt::launch::LaunchStage(parent),
-	  m_commandTemplate(commandTemplate),
-	  m_hook(hook)
-{
-	auto instance = m_flow->instance();
-	m_runner.setProcessEnvironment(instance->createEnvironment());
-	connect(&m_runner, &LoggedProcess::log, this, &LaunchCommandStep::logLines);
-	connect(&m_runner, &LoggedProcess::stateChanged, this, &LaunchCommandStep::onProcessState);
-}
-
-void LaunchCommandStep::executeTask()
-{
-	QString commandLine = m_flow->substituteVariables(m_commandTemplate).trimmed();
-	if (commandLine.isEmpty())
+	LaunchCommandStep::LaunchCommandStep(projt::launch::LaunchPipeline* parent, Hook hook, QString commandTemplate)
+		: projt::launch::LaunchStage(parent),
+		  m_commandTemplate(commandTemplate),
+		  m_hook(hook)
 	{
-		auto error = tr("%1 command is empty.").arg(hookLabel());
-		emit logLine(error, MessageLevel::Error);
-		emitFailed(error);
-		return;
+		auto instance = m_flow->instance();
+		m_runner.setProcessEnvironment(instance->createEnvironment());
+		connect(&m_runner, &LoggedProcess::log, this, &LaunchCommandStep::logLines);
+		connect(&m_runner, &LoggedProcess::stateChanged, this, &LaunchCommandStep::onProcessState);
 	}
 
-	emit logLine(tr("Running %1 command: %2").arg(hookLabel(), commandLine), MessageLevel::Launcher);
-
-	auto parts = QProcess::splitCommand(commandLine);
-	if (parts.isEmpty())
+	void LaunchCommandStep::executeTask()
 	{
-		auto error = tr("%1 command is empty.").arg(hookLabel());
-		emit logLine(error, MessageLevel::Error);
-		emitFailed(error);
-		return;
-	}
-
-	QString program = parts.takeFirst();
-	m_runner.start(program, parts);
-}
-
-void LaunchCommandStep::onProcessState(LoggedProcess::State state)
-{
-	switch (state)
-	{
-		case LoggedProcess::Aborted:
-		case LoggedProcess::Crashed:
-		case LoggedProcess::FailedToStart:
+		QString commandLine = m_flow->substituteVariables(m_commandTemplate).trimmed();
+		if (commandLine.isEmpty())
 		{
-			auto error = buildFailure();
-			emit logLine(error, MessageLevel::Fatal);
+			auto error = tr("%1 command is empty.").arg(hookLabel());
+			emit logLine(error, MessageLevel::Error);
 			emitFailed(error);
 			return;
 		}
-		case LoggedProcess::Finished:
+
+		emit logLine(tr("Running %1 command: %2").arg(hookLabel(), commandLine), MessageLevel::Launcher);
+
+		auto parts = QProcess::splitCommand(commandLine);
+		if (parts.isEmpty())
 		{
-			if (m_runner.exitCode() != 0)
+			auto error = tr("%1 command is empty.").arg(hookLabel());
+			emit logLine(error, MessageLevel::Error);
+			emitFailed(error);
+			return;
+		}
+
+		QString program = parts.takeFirst();
+		m_runner.start(program, parts);
+	}
+
+	void LaunchCommandStep::onProcessState(LoggedProcess::State state)
+	{
+		switch (state)
+		{
+			case LoggedProcess::Aborted:
+			case LoggedProcess::Crashed:
+			case LoggedProcess::FailedToStart:
 			{
 				auto error = buildFailure();
 				emit logLine(error, MessageLevel::Fatal);
 				emitFailed(error);
+				return;
 			}
-			else
+			case LoggedProcess::Finished:
 			{
-				emit logLine(tr("%1 command ran successfully.\n\n").arg(hookLabel()), MessageLevel::Launcher);
-				emitSucceeded();
+				if (m_runner.exitCode() != 0)
+				{
+					auto error = buildFailure();
+					emit logLine(error, MessageLevel::Fatal);
+					emitFailed(error);
+				}
+				else
+				{
+					emit logLine(tr("%1 command ran successfully.\n\n").arg(hookLabel()), MessageLevel::Launcher);
+					emitSucceeded();
+				}
+				return;
 			}
-			return;
+			default: break;
 		}
-		default: break;
 	}
-}
 
-void LaunchCommandStep::setWorkingDirectory(const QString& workDir)
-{
-	m_runner.setWorkingDirectory(workDir);
-}
-
-bool LaunchCommandStep::abort()
-{
-	auto state = m_runner.state();
-	if (state == LoggedProcess::Running || state == LoggedProcess::Starting)
+	void LaunchCommandStep::setWorkingDirectory(const QString& workDir)
 	{
-		m_runner.kill();
+		m_runner.setWorkingDirectory(workDir);
 	}
-	return true;
-}
 
-QString LaunchCommandStep::hookLabel() const
-{
-	switch (m_hook)
+	bool LaunchCommandStep::abort()
 	{
-		case Hook::PreLaunch:
-			return tr("Pre-Launch");
-		case Hook::PostExit:
-			return tr("Post-Launch");
+		auto state = m_runner.state();
+		if (state == LoggedProcess::Running || state == LoggedProcess::Starting)
+		{
+			m_runner.kill();
+		}
+		return true;
 	}
-	return tr("Launch");
-}
 
-QString LaunchCommandStep::buildFailure() const
-{
-	return tr("%1 command failed with code %2.\n\n").arg(hookLabel()).arg(m_runner.exitCode());
-}
+	QString LaunchCommandStep::hookLabel() const
+	{
+		switch (m_hook)
+		{
+			case Hook::PreLaunch: return tr("Pre-Launch");
+			case Hook::PostExit: return tr("Post-Launch");
+		}
+		return tr("Launch");
+	}
+
+	QString LaunchCommandStep::buildFailure() const
+	{
+		return tr("%1 command failed with code %2.\n\n").arg(hookLabel()).arg(m_runner.exitCode());
+	}
 } // namespace projt::launch::steps

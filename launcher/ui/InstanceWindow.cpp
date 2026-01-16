@@ -263,4 +263,3 @@ bool InstanceWindow::requestClose()
 	}
 	return false;
 }
-

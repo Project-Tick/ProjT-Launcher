@@ -24,17 +24,17 @@
 
 namespace projt::launch::steps
 {
-class QuitAfterGameStep : public projt::launch::LaunchStage
-{
-	Q_OBJECT
-  public:
-	explicit QuitAfterGameStep(projt::launch::LaunchPipeline* parent);
-	~QuitAfterGameStep() override = default;
-
-	void executeTask() override;
-	bool canAbort() const override
+	class QuitAfterGameStep : public projt::launch::LaunchStage
 	{
-		return false;
-	}
-};
+		Q_OBJECT
+	  public:
+		explicit QuitAfterGameStep(projt::launch::LaunchPipeline* parent);
+		~QuitAfterGameStep() override = default;
+
+		void executeTask() override;
+		bool canAbort() const override
+		{
+			return false;
+		}
+	};
 } // namespace projt::launch::steps

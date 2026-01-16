@@ -24,14 +24,12 @@
 
 namespace projt::launch::steps
 {
-QuitAfterGameStep::QuitAfterGameStep(projt::launch::LaunchPipeline* parent)
-	: projt::launch::LaunchStage(parent)
-{
-}
+	QuitAfterGameStep::QuitAfterGameStep(projt::launch::LaunchPipeline* parent) : projt::launch::LaunchStage(parent)
+	{}
 
-void QuitAfterGameStep::executeTask()
-{
-	APPLICATION->quit();
-	emitSucceeded();
-}
+	void QuitAfterGameStep::executeTask()
+	{
+		APPLICATION->quit();
+		emitSucceeded();
+	}
 } // namespace projt::launch::steps

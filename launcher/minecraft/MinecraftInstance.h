@@ -73,7 +73,7 @@ class TexturePackFolderModel;
 class WorldList;
 namespace projt::launch
 {
-class LaunchPipeline;
+	class LaunchPipeline;
 }
 class PackProfile;
 
@@ -208,5 +208,3 @@ class MinecraftInstance : public BaseInstance
 };
 
 using MinecraftInstancePtr = std::shared_ptr<MinecraftInstance>;
-
-

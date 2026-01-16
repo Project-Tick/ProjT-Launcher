@@ -77,5 +77,3 @@ void VerifyJavaInstall::executeTask()
 
 	emitFailed(QString("Incompatible Java major version"));
 }
-
-

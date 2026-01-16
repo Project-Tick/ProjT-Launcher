@@ -25,24 +25,24 @@
 
 namespace projt::launch
 {
-class TaskBridgeStage : public LaunchStage
-{
-	Q_OBJECT
-  public:
-	explicit TaskBridgeStage(LaunchPipeline* pipeline, Task::Ptr task);
-	~TaskBridgeStage() override = default;
+	class TaskBridgeStage : public LaunchStage
+	{
+		Q_OBJECT
+	  public:
+		explicit TaskBridgeStage(LaunchPipeline* pipeline, Task::Ptr task);
+		~TaskBridgeStage() override = default;
 
-	void executeTask() override;
-	bool canAbort() const override;
-	void proceed() override;
+		void executeTask() override;
+		bool canAbort() const override;
+		void proceed() override;
 
-  public slots:
-	bool abort() override;
+	  public slots:
+		bool abort() override;
 
-  private slots:
-	void onPayloadFinished();
+	  private slots:
+		void onPayloadFinished();
 
-  private:
-	Task::Ptr m_payload;
-};
+	  private:
+		Task::Ptr m_payload;
+	};
 } // namespace projt::launch

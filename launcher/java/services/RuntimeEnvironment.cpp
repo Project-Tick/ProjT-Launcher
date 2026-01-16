@@ -34,7 +34,7 @@ namespace projt::java
 #endif
 
 		QStringList targetItems = value.split(delimiter);
-		QStringList toRemove = remove.split(delimiter);
+		QStringList toRemove	= remove.split(delimiter);
 
 		for (const QString& item : toRemove)
 		{
@@ -51,8 +51,8 @@ namespace projt::java
 		QProcessEnvironment rawenv = QProcessEnvironment::systemEnvironment();
 		QProcessEnvironment env;
 
-		QStringList ignored = { "JAVA_ARGS", "CLASSPATH", "CONFIGPATH", "JAVA_HOME", "JRE_HOME", "_JAVA_OPTIONS",
-							   "JAVA_OPTIONS", "JAVA_TOOL_OPTIONS" };
+		QStringList ignored = { "JAVA_ARGS", "CLASSPATH",	  "CONFIGPATH",	  "JAVA_HOME",
+								"JRE_HOME",	 "_JAVA_OPTIONS", "JAVA_OPTIONS", "JAVA_TOOL_OPTIONS" };
 
 		QStringList stripped = {
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)

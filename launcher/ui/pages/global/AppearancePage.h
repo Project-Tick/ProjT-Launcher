@@ -104,4 +104,3 @@ class AppearancePage : public AppearanceWidget, public BasePage
 		retranslateUi();
 	}
 };
-

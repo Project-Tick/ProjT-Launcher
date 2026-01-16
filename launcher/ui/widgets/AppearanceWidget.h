@@ -83,4 +83,3 @@ class AppearanceWidget : public QWidget
 	QTextCharFormat m_defaultFormat;
 	bool m_themesOnly;
 };
-

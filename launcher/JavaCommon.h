@@ -71,4 +71,3 @@ namespace JavaCommon
 		int m_permGen = 64;
 	};
 } // namespace JavaCommon
-

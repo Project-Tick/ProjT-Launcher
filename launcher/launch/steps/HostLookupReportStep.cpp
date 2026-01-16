@@ -25,75 +25,74 @@
 
 namespace projt::launch::steps
 {
-HostLookupReportStep::HostLookupReportStep(projt::launch::LaunchPipeline* parent, QStringList hosts)
-	: projt::launch::LaunchStage(parent),
-	  m_hosts(hosts)
-{
-}
+	HostLookupReportStep::HostLookupReportStep(projt::launch::LaunchPipeline* parent, QStringList hosts)
+		: projt::launch::LaunchStage(parent),
+		  m_hosts(hosts)
+	{}
 
-void HostLookupReportStep::executeTask()
-{
-	if (m_hosts.isEmpty())
+	void HostLookupReportStep::executeTask()
 	{
+		if (m_hosts.isEmpty())
+		{
+			emitSucceeded();
+			return;
+		}
+
+		m_pending = m_hosts.size();
+		for (const auto& host : m_hosts)
+		{
+			int lookupId = QHostInfo::lookupHost(host, this, &HostLookupReportStep::onLookupFinished);
+			m_lookupById.insert(lookupId, host);
+		}
+	}
+
+	void HostLookupReportStep::onLookupFinished(const QHostInfo& info)
+	{
+		if (isFinished())
+		{
+			return;
+		}
+
+		QString host = m_lookupById.value(info.lookupId(), info.hostName());
+		m_messages.insert(host, formatMessage(host, info));
+		m_pending--;
+		finalizeIfReady();
+	}
+
+	QString HostLookupReportStep::formatMessage(const QString& host, const QHostInfo& info) const
+	{
+		QStringList addresses;
+		for (const auto& address : info.addresses())
+		{
+			addresses.append(address.toString());
+		}
+
+		QString addressText = addresses.isEmpty() ? "N/A" : addresses.join(", ");
+		QString errorSuffix;
+		if (info.error() != QHostInfo::NoError && !info.errorString().isEmpty())
+		{
+			errorSuffix = QString(" (%1)").arg(info.errorString());
+		}
+
+		return QString("%1 resolves to:\n    [%2]%3\n\n").arg(host, addressText, errorSuffix);
+	}
+
+	void HostLookupReportStep::finalizeIfReady()
+	{
+		if (m_pending > 0)
+		{
+			return;
+		}
+
+		for (const auto& host : m_hosts)
+		{
+			emit logLine(m_messages.value(host), MessageLevel::Launcher);
+		}
 		emitSucceeded();
-		return;
 	}
 
-	m_pending = m_hosts.size();
-	for (const auto& host : m_hosts)
+	bool HostLookupReportStep::canAbort() const
 	{
-		int lookupId = QHostInfo::lookupHost(host, this, &HostLookupReportStep::onLookupFinished);
-		m_lookupById.insert(lookupId, host);
+		return true;
 	}
-}
-
-void HostLookupReportStep::onLookupFinished(const QHostInfo& info)
-{
-	if (isFinished())
-	{
-		return;
-	}
-
-	QString host = m_lookupById.value(info.lookupId(), info.hostName());
-	m_messages.insert(host, formatMessage(host, info));
-	m_pending--;
-	finalizeIfReady();
-}
-
-QString HostLookupReportStep::formatMessage(const QString& host, const QHostInfo& info) const
-{
-	QStringList addresses;
-	for (const auto& address : info.addresses())
-	{
-		addresses.append(address.toString());
-	}
-
-	QString addressText = addresses.isEmpty() ? "N/A" : addresses.join(", ");
-	QString errorSuffix;
-	if (info.error() != QHostInfo::NoError && !info.errorString().isEmpty())
-	{
-		errorSuffix = QString(" (%1)").arg(info.errorString());
-	}
-
-	return QString("%1 resolves to:\n    [%2]%3\n\n").arg(host, addressText, errorSuffix);
-}
-
-void HostLookupReportStep::finalizeIfReady()
-{
-	if (m_pending > 0)
-	{
-		return;
-	}
-
-	for (const auto& host : m_hosts)
-	{
-		emit logLine(m_messages.value(host), MessageLevel::Launcher);
-	}
-	emitSucceeded();
-}
-
-bool HostLookupReportStep::canAbort() const
-{
-	return true;
-}
 } // namespace projt::launch::steps

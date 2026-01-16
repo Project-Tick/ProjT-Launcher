@@ -23,16 +23,16 @@
 
 namespace projt::launch
 {
-LaunchStage::LaunchStage(LaunchPipeline* pipeline) : Task(), m_flow(pipeline)
-{
-	if (!m_flow)
+	LaunchStage::LaunchStage(LaunchPipeline* pipeline) : Task(), m_flow(pipeline)
 	{
-		return;
+		if (!m_flow)
+		{
+			return;
+		}
+		connect(this, &LaunchStage::readyForLaunch, m_flow, &LaunchPipeline::onReadyForLaunch);
+		connect(this, &LaunchStage::logLine, m_flow, &LaunchPipeline::onLogLine);
+		connect(this, &LaunchStage::logLines, m_flow, &LaunchPipeline::onLogLines);
+		connect(this, &LaunchStage::finished, m_flow, &LaunchPipeline::onStageFinished);
+		connect(this, &LaunchStage::progressReportingRequest, m_flow, &LaunchPipeline::onProgressReportingRequested);
 	}
-	connect(this, &LaunchStage::readyForLaunch, m_flow, &LaunchPipeline::onReadyForLaunch);
-	connect(this, &LaunchStage::logLine, m_flow, &LaunchPipeline::onLogLine);
-	connect(this, &LaunchStage::logLines, m_flow, &LaunchPipeline::onLogLines);
-	connect(this, &LaunchStage::finished, m_flow, &LaunchPipeline::onStageFinished);
-	connect(this, &LaunchStage::progressReportingRequest, m_flow, &LaunchPipeline::onProgressReportingRequested);
-}
 } // namespace projt::launch

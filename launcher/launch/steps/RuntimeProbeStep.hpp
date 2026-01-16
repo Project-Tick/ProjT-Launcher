@@ -29,45 +29,45 @@ class QFileInfo;
 
 namespace projt::launch::steps
 {
-class RuntimeProbeStep : public projt::launch::LaunchStage
-{
-	Q_OBJECT
-  public:
-	explicit RuntimeProbeStep(projt::launch::LaunchPipeline* parent);
-	~RuntimeProbeStep() override = default;
-
-	void executeTask() override;
-	bool canAbort() const override
+	class RuntimeProbeStep : public projt::launch::LaunchStage
 	{
-		return false;
-	}
+		Q_OBJECT
+	  public:
+		explicit RuntimeProbeStep(projt::launch::LaunchPipeline* parent);
+		~RuntimeProbeStep() override = default;
 
-  private slots:
-	void onProbeFinished(const projt::java::RuntimeProbeTask::ProbeReport& report);
+		void executeTask() override;
+		bool canAbort() const override
+		{
+			return false;
+		}
 
-  private:
-	struct CachedRuntimeInfo
-	{
-		QString signature;
-		QString version;
-		QString arch;
-		QString realArch;
-		QString vendor;
+	  private slots:
+		void onProbeFinished(const projt::java::RuntimeProbeTask::ProbeReport& report);
 
-		bool isComplete() const;
+	  private:
+		struct CachedRuntimeInfo
+		{
+			QString signature;
+			QString version;
+			QString arch;
+			QString realArch;
+			QString vendor;
+
+			bool isComplete() const;
+		};
+
+		CachedRuntimeInfo readCache() const;
+		QString computeSignature(const QFileInfo& info, const QString& resolvedPath) const;
+		bool needsProbe(const CachedRuntimeInfo& cache, const QString& signature) const;
+		void storeProbeResult(const projt::java::RuntimeProbeTask::ProbeReport& report) const;
+		void printRuntimeInfo(const QString& version,
+							  const QString& architecture,
+							  const QString& realArchitecture,
+							  const QString& vendor);
+
+		QString m_resolvedPath;
+		QString m_signature;
+		projt::java::RuntimeProbeTask::Ptr m_probeTask;
 	};
-
-	CachedRuntimeInfo readCache() const;
-	QString computeSignature(const QFileInfo& info, const QString& resolvedPath) const;
-	bool needsProbe(const CachedRuntimeInfo& cache, const QString& signature) const;
-	void storeProbeResult(const projt::java::RuntimeProbeTask::ProbeReport& report) const;
-	void printRuntimeInfo(const QString& version,
-						  const QString& architecture,
-						  const QString& realArchitecture,
-						  const QString& vendor);
-
-	QString m_resolvedPath;
-	QString m_signature;
-	projt::java::RuntimeProbeTask::Ptr m_probeTask;
-};
 } // namespace projt::launch::steps

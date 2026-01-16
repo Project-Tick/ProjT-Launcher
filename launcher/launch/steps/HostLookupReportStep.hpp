@@ -29,26 +29,26 @@ class QHostInfo;
 
 namespace projt::launch::steps
 {
-class HostLookupReportStep : public projt::launch::LaunchStage
-{
-	Q_OBJECT
-  public:
-	HostLookupReportStep(projt::launch::LaunchPipeline* parent, QStringList hosts);
-	~HostLookupReportStep() override = default;
+	class HostLookupReportStep : public projt::launch::LaunchStage
+	{
+		Q_OBJECT
+	  public:
+		HostLookupReportStep(projt::launch::LaunchPipeline* parent, QStringList hosts);
+		~HostLookupReportStep() override = default;
 
-	void executeTask() override;
-	bool canAbort() const override;
+		void executeTask() override;
+		bool canAbort() const override;
 
-  private slots:
-	void onLookupFinished(const QHostInfo& info);
+	  private slots:
+		void onLookupFinished(const QHostInfo& info);
 
-  private:
-	void finalizeIfReady();
-	QString formatMessage(const QString& host, const QHostInfo& info) const;
+	  private:
+		void finalizeIfReady();
+		QString formatMessage(const QString& host, const QHostInfo& info) const;
 
-	QHash<int, QString> m_lookupById;
-	QHash<QString, QString> m_messages;
-	QStringList m_hosts;
-	int m_pending = 0;
-};
+		QHash<int, QString> m_lookupById;
+		QHash<QString, QString> m_messages;
+		QStringList m_hosts;
+		int m_pending = 0;
+	};
 } // namespace projt::launch::steps

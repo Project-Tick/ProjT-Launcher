@@ -46,7 +46,7 @@ namespace projt::java
 		MetaEntryPtr entry = APPLICATION->metacache()->resolveEntry("java", m_url.fileName());
 
 		auto download = makeShared<NetJob>(QString("JRE::DownloadJava"), APPLICATION->network());
-		auto action = Net::Download::makeCached(m_url, entry);
+		auto action	  = Net::Download::makeCached(m_url, entry);
 		if (!m_checksum_hash.isEmpty() && !m_checksum_type.isEmpty())
 		{
 			auto hashType = QCryptographicHash::Algorithm::Sha1;
@@ -118,28 +118,44 @@ namespace projt::java
 			m_task = makeShared<MMCZip::ExtractZipTask>(zip, m_final_path, files[0]);
 
 			auto progressStep = std::make_shared<TaskStepProgress>();
-			connect(m_task.get(), &Task::finished, this, [this, progressStep] {
-				progressStep->state = TaskStepState::Succeeded;
-				stepProgress(*progressStep);
-			});
+			connect(m_task.get(),
+					&Task::finished,
+					this,
+					[this, progressStep]
+					{
+						progressStep->state = TaskStepState::Succeeded;
+						stepProgress(*progressStep);
+					});
 
 			connect(m_task.get(), &Task::succeeded, this, &RuntimeArchiveTask::emitSucceeded);
 			connect(m_task.get(), &Task::aborted, this, &RuntimeArchiveTask::emitAborted);
-			connect(m_task.get(), &Task::failed, this, [this, progressStep](QString reason) {
-				progressStep->state = TaskStepState::Failed;
-				stepProgress(*progressStep);
-				emitFailed(reason);
-			});
+			connect(m_task.get(),
+					&Task::failed,
+					this,
+					[this, progressStep](QString reason)
+					{
+						progressStep->state = TaskStepState::Failed;
+						stepProgress(*progressStep);
+						emitFailed(reason);
+					});
 			connect(m_task.get(), &Task::stepProgress, this, &RuntimeArchiveTask::propagateStepProgress);
 
-			connect(m_task.get(), &Task::progress, this, [this, progressStep](qint64 current, qint64 total) {
-				progressStep->update(current, total);
-				stepProgress(*progressStep);
-			});
-			connect(m_task.get(), &Task::status, this, [this, progressStep](QString status) {
-				progressStep->status = status;
-				stepProgress(*progressStep);
-			});
+			connect(m_task.get(),
+					&Task::progress,
+					this,
+					[this, progressStep](qint64 current, qint64 total)
+					{
+						progressStep->update(current, total);
+						stepProgress(*progressStep);
+					});
+			connect(m_task.get(),
+					&Task::status,
+					this,
+					[this, progressStep](QString status)
+					{
+						progressStep->status = status;
+						stepProgress(*progressStep);
+					});
 			m_task->start();
 			return;
 		}

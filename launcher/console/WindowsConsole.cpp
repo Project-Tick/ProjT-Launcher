@@ -124,7 +124,7 @@ namespace projt::console
 
 	bool AttachWindowsConsole()
 	{
-		bool bindStdIn = ShouldBindStdHandle(STD_INPUT_HANDLE);
+		bool bindStdIn	= ShouldBindStdHandle(STD_INPUT_HANDLE);
 		bool bindStdOut = ShouldBindStdHandle(STD_OUTPUT_HANDLE);
 		bool bindStdErr = ShouldBindStdHandle(STD_ERROR_HANDLE);
 
@@ -139,9 +139,13 @@ namespace projt::console
 
 	std::error_code EnableAnsiSupport()
 	{
-		HANDLE console_handle =
-			CreateFileW(L"CONOUT$", FILE_GENERIC_READ | FILE_GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL,
-						OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		HANDLE console_handle = CreateFileW(L"CONOUT$",
+											FILE_GENERIC_READ | FILE_GENERIC_WRITE,
+											FILE_SHARE_WRITE | FILE_SHARE_READ,
+											NULL,
+											OPEN_EXISTING,
+											FILE_ATTRIBUTE_NORMAL,
+											NULL);
 		if (console_handle == INVALID_HANDLE_VALUE)
 		{
 			return std::error_code(GetLastError(), std::system_category());

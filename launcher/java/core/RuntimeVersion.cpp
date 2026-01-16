@@ -31,11 +31,11 @@ namespace projt::java
 	}
 
 	RuntimeVersion::RuntimeVersion(int major, int minor, int security, int build, QString name)
-		: m_major(major)
-		, m_minor(minor)
-		, m_security(security)
-		, m_name(name)
-		, m_valid(true)
+		: m_major(major),
+		  m_minor(minor),
+		  m_security(security),
+		  m_name(name),
+		  m_valid(true)
 	{
 		QStringList parts;
 		if (build != 0)
@@ -72,26 +72,26 @@ namespace projt::java
 
 	void RuntimeVersion::parse(const QString& raw)
 	{
-		m_raw = raw.trimmed();
-		m_major = 0;
-		m_minor = 0;
+		m_raw	   = raw.trimmed();
+		m_major	   = 0;
+		m_minor	   = 0;
 		m_security = 0;
 		m_prerelease.clear();
 		m_valid = false;
 
 		QString numeric = m_raw;
-		auto dashIndex = numeric.indexOf('-');
+		auto dashIndex	= numeric.indexOf('-');
 		if (dashIndex >= 0)
 		{
 			m_prerelease = numeric.mid(dashIndex + 1).trimmed();
-			numeric = numeric.left(dashIndex);
+			numeric		 = numeric.left(dashIndex);
 		}
 
 		int updateNumber = 0;
 		auto updateIndex = numeric.indexOf('_');
 		if (updateIndex >= 0)
 		{
-			bool ok = false;
+			bool ok		 = false;
 			updateNumber = numeric.mid(updateIndex + 1).toInt(&ok);
 			if (!ok)
 			{
@@ -113,7 +113,7 @@ namespace projt::java
 
 		auto parsePart = [](const QString& value, int& out)
 		{
-			bool ok = false;
+			bool ok	   = false;
 			int parsed = value.toInt(&ok);
 			if (!ok)
 			{
@@ -180,7 +180,7 @@ namespace projt::java
 			}
 
 			bool thisPre = !m_prerelease.isEmpty();
-			bool rhsPre = !rhs.m_prerelease.isEmpty();
+			bool rhsPre	 = !rhs.m_prerelease.isEmpty();
 			if (thisPre != rhsPre)
 			{
 				return thisPre;

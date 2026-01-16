@@ -24,6 +24,6 @@
 
 namespace projt::logs
 {
-void redactLog(QString& text);
-QString redactCopy(const QString& text);
+	void redactLog(QString& text);
+	QString redactCopy(const QString& text);
 } // namespace projt::logs

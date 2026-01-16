@@ -52,7 +52,7 @@ namespace projt::java
 	{
 		setStatus(tr("Downloading Java"));
 		auto download = makeShared<NetJob>(QString("JRE::DownloadJava"), APPLICATION->network());
-		auto files = std::make_shared<QByteArray>();
+		auto files	  = std::make_shared<QByteArray>();
 
 		auto action = Net::Download::makeByteArray(m_url, files);
 		if (!m_checksum_hash.isEmpty() && !m_checksum_type.isEmpty())
@@ -72,19 +72,22 @@ namespace projt::java
 		connect(download.get(), &Task::status, this, &RuntimeManifestTask::setStatus);
 		connect(download.get(), &Task::details, this, &RuntimeManifestTask::setDetails);
 
-		connect(download.get(), &Task::succeeded, [files, this] {
-			QJsonParseError parse_error{};
-			QJsonDocument doc = QJsonDocument::fromJson(*files, &parse_error);
-			if (parse_error.error != QJsonParseError::NoError)
-			{
-				qWarning() << "Error while parsing JSON response at " << parse_error.offset
-						   << ". Reason: " << parse_error.errorString();
-				qWarning() << *files;
-				emitFailed(parse_error.errorString());
-				return;
-			}
-			downloadRuntime(doc);
-		});
+		connect(download.get(),
+				&Task::succeeded,
+				[files, this]
+				{
+					QJsonParseError parse_error{};
+					QJsonDocument doc = QJsonDocument::fromJson(*files, &parse_error);
+					if (parse_error.error != QJsonParseError::NoError)
+					{
+						qWarning() << "Error while parsing JSON response at " << parse_error.offset
+								   << ". Reason: " << parse_error.errorString();
+						qWarning() << *files;
+						emitFailed(parse_error.errorString());
+						return;
+					}
+					downloadRuntime(doc);
+				});
 		m_task = download;
 		m_task->start();
 	}
@@ -96,9 +99,9 @@ namespace projt::java
 		auto list = Json::ensureObject(Json::ensureObject(doc.object()), "files");
 		for (const auto& pathKey : list.keys())
 		{
-			auto filePath = FS::PathCombine(m_final_path, pathKey);
+			auto filePath			= FS::PathCombine(m_final_path, pathKey);
 			const QJsonObject& meta = Json::ensureObject(list, pathKey);
-			auto type = Json::ensureString(meta, "type");
+			auto type				= Json::ensureString(meta, "type");
 			if (type == "directory")
 			{
 				FS::ensureFolderPathExists(filePath);
@@ -114,15 +117,15 @@ namespace projt::java
 			else if (type == "file")
 			{
 				auto downloads = Json::ensureObject(meta, "downloads");
-				auto isExec = Json::ensureBoolean(meta, "executable", false);
+				auto isExec	   = Json::ensureBoolean(meta, "executable", false);
 				QString url;
 				QByteArray hash;
 
 				if (downloads.contains("raw"))
 				{
 					auto raw = Json::ensureObject(downloads, "raw");
-					url = Json::ensureString(raw, "url");
-					hash = QByteArray::fromHex(Json::ensureString(raw, "sha1").toLatin1());
+					url		 = Json::ensureString(raw, "url");
+					hash	 = QByteArray::fromHex(Json::ensureString(raw, "sha1").toLatin1());
 				}
 				else
 				{
@@ -147,9 +150,13 @@ namespace projt::java
 			}
 			if (file.isExec)
 			{
-				connect(dl.get(), &Net::Download::succeeded, [file] {
-					QFile(file.path).setPermissions(QFile(file.path).permissions() | QFileDevice::Permissions(0x1111));
-				});
+				connect(dl.get(),
+						&Net::Download::succeeded,
+						[file]
+						{
+							QFile(file.path).setPermissions(QFile(file.path).permissions()
+															| QFileDevice::Permissions(0x1111));
+						});
 			}
 			elementDownload->addNetAction(dl);
 		}

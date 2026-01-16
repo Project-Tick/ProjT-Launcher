@@ -119,7 +119,7 @@ namespace projt::minecraft::auth
 			return;
 		}
 
-		const auto root = doc.object();
+		const auto root			= doc.object();
 		const auto profileUsers = root.value(QStringLiteral("profileUsers")).toArray();
 
 		if (profileUsers.isEmpty())
@@ -128,14 +128,14 @@ namespace projt::minecraft::auth
 			return;
 		}
 
-		const auto user = profileUsers.first().toObject();
+		const auto user		= profileUsers.first().toObject();
 		const auto settings = user.value(QStringLiteral("settings")).toArray();
 
 		for (const auto& settingValue : settings)
 		{
 			const auto setting = settingValue.toObject();
-			const auto id = setting.value(QStringLiteral("id")).toString();
-			const auto value = setting.value(QStringLiteral("value")).toString();
+			const auto id	   = setting.value(QStringLiteral("id")).toString();
+			const auto value   = setting.value(QStringLiteral("value")).toString();
 
 			if (id == QStringLiteral("Gamertag"))
 			{
@@ -152,4 +152,3 @@ namespace projt::minecraft::auth
 	}
 
 } // namespace projt::minecraft::auth
-

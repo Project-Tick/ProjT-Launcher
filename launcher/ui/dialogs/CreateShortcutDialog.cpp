@@ -260,4 +260,3 @@ void CreateShortcutDialog::createShortcut()
 	else
 		ShortcutUtils::createInstanceShortcutInOther(args);
 }
-

@@ -303,7 +303,8 @@ void JavaSettingsWidget::onJavaAutodetect()
 
 	if (versionDialog.result() == QDialog::Accepted && versionDialog.selectedVersion())
 	{
-		projt::java::RuntimeInstallPtr java = std::dynamic_pointer_cast<projt::java::RuntimeInstall>(versionDialog.selectedVersion());
+		projt::java::RuntimeInstallPtr java =
+			std::dynamic_pointer_cast<projt::java::RuntimeInstall>(versionDialog.selectedVersion());
 		m_ui->javaPathTextBox->setText(java->path);
 
 		if (!java->is_64bit && m_ui->maxMemSpinBox->value() > 2048)
@@ -352,6 +353,3 @@ void JavaSettingsWidget::updateThresholds()
 		m_ui->labelMaxMemNotice->hide();
 	}
 }
-
-
-

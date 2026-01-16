@@ -95,4 +95,3 @@ bool InstanceProxyModel::subSortLessThan(const QModelIndex& left, const QModelIn
 		return m_naturalSort.compare(pdataLeft->name(), pdataRight->name()) < 0;
 	}
 }
-

@@ -236,4 +236,3 @@ QString ExportInstanceDialog::ignoreFileName()
 {
 	return FS::PathCombine(m_instance->instanceRoot(), ".packignore");
 }
-

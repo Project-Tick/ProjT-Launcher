@@ -88,7 +88,8 @@ class NullInstance : public BaseInstance
 	{
 		return instanceRoot();
 	};
-	shared_qobject_ptr<projt::launch::LaunchPipeline> createLaunchPipeline(AuthSessionPtr, MinecraftTarget::Ptr) override
+	shared_qobject_ptr<projt::launch::LaunchPipeline> createLaunchPipeline(AuthSessionPtr,
+																		   MinecraftTarget::Ptr) override
 	{
 		return nullptr;
 	}

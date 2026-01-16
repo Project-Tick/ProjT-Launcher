@@ -32,9 +32,7 @@
 
 namespace projt::java
 {
-	RuntimeCatalog::RuntimeCatalog(QObject* parent, Scope scope)
-		: BaseVersionList(parent),
-		  m_scope(scope)
+	RuntimeCatalog::RuntimeCatalog(QObject* parent, Scope scope) : BaseVersionList(parent), m_scope(scope)
 	{}
 
 	Task::Ptr RuntimeCatalog::getLoadTask()
@@ -124,7 +122,7 @@ namespace projt::java
 
 	static bool sortRuntimes(BaseVersion::Ptr left, BaseVersion::Ptr right)
 	{
-		auto rleft = std::dynamic_pointer_cast<RuntimeInstall>(right);
+		auto rleft	= std::dynamic_pointer_cast<RuntimeInstall>(right);
 		auto rright = std::dynamic_pointer_cast<RuntimeInstall>(left);
 		return (*rleft) > (*rright);
 	}
@@ -147,7 +145,8 @@ namespace projt::java
 		RuntimeScanner scanner;
 		QStringList candidatePaths = scanner.collectPaths(m_scope == RuntimeCatalog::Scope::ManagedOnly);
 
-		ConcurrentTask::Ptr job(new ConcurrentTask("Runtime detection", APPLICATION->settings()->get("NumberOfConcurrentTasks").toInt()));
+		ConcurrentTask::Ptr job(
+			new ConcurrentTask("Runtime detection", APPLICATION->settings()->get("NumberOfConcurrentTasks").toInt()));
 		m_job.reset(job);
 		connect(m_job.get(), &Task::finished, this, &RuntimeCatalogTask::probeFinished);
 		connect(m_job.get(), &Task::progress, this, &Task::setProgress);
@@ -158,11 +157,12 @@ namespace projt::java
 		{
 			RuntimeProbeTask::ProbeSettings settings;
 			settings.binaryPath = candidate;
-			settings.token = token;
-			auto probe = new RuntimeProbeTask(settings);
-			connect(probe, &RuntimeProbeTask::probeFinished, this, [this](const RuntimeProbeTask::ProbeReport& report) {
-				m_results << report;
-			});
+			settings.token		= token;
+			auto probe			= new RuntimeProbeTask(settings);
+			connect(probe,
+					&RuntimeProbeTask::probeFinished,
+					this,
+					[this](const RuntimeProbeTask::ProbeReport& report) { m_results << report; });
 			job->addTask(Task::Ptr(probe));
 			token++;
 		}
@@ -173,9 +173,10 @@ namespace projt::java
 	void RuntimeCatalogTask::probeFinished()
 	{
 		QList<RuntimeInstallPtr> candidates;
-		std::sort(m_results.begin(), m_results.end(), [](const RuntimeProbeTask::ProbeReport& a, const RuntimeProbeTask::ProbeReport& b) {
-			return a.token < b.token;
-		});
+		std::sort(m_results.begin(),
+				  m_results.end(),
+				  [](const RuntimeProbeTask::ProbeReport& a, const RuntimeProbeTask::ProbeReport& b)
+				  { return a.token < b.token; });
 
 		qDebug() << "Found the following valid Java installations:";
 		for (const auto& result : m_results)
@@ -183,12 +184,12 @@ namespace projt::java
 			if (result.status == RuntimeProbeTask::ProbeReport::Status::Valid)
 			{
 				RuntimeInstallPtr runtime(new RuntimeInstall());
-				runtime->version = result.version;
-				runtime->arch = result.platformArch;
-				runtime->path = result.path;
-				runtime->vendor = result.vendor;
+				runtime->version  = result.version;
+				runtime->arch	  = result.platformArch;
+				runtime->path	  = result.path;
+				runtime->vendor	  = result.vendor;
 				runtime->is_64bit = result.is_64bit;
-				runtime->managed = (m_scope == RuntimeCatalog::Scope::ManagedOnly);
+				runtime->managed  = (m_scope == RuntimeCatalog::Scope::ManagedOnly);
 				candidates.append(runtime);
 
 				qDebug() << " " << runtime->version.toString() << runtime->arch << runtime->path;
