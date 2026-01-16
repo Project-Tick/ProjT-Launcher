@@ -36,13 +36,13 @@
 
 #pragma once
 
-#include <launch/LaunchStep.h>
+#include <launch/LaunchStage.hpp>
 
-class ExtractNatives : public LaunchStep
+class ExtractNatives : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit ExtractNatives(LaunchTask* parent) : LaunchStep(parent) {};
+	explicit ExtractNatives(projt::launch::LaunchPipeline* parent) : projt::launch::LaunchStage(parent) {};
 	virtual ~ExtractNatives() {};
 
 	void executeTask() override;

@@ -43,7 +43,7 @@
 #include "GenericProfiler.h"
 
 #include "BaseInstance.h"
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
 #include "settings/SettingsObject.h"
 
 class GenericProfiler : public BaseProfiler
@@ -53,14 +53,14 @@ class GenericProfiler : public BaseProfiler
 	GenericProfiler(SettingsObjectPtr settings, InstancePtr instance, QObject* parent = 0);
 
   protected:
-	void beginProfilingImpl(shared_qobject_ptr<LaunchTask> process);
+	void beginProfilingImpl(shared_qobject_ptr<projt::launch::LaunchPipeline> process);
 };
 
 GenericProfiler::GenericProfiler(SettingsObjectPtr settings, InstancePtr instance, QObject* parent)
 	: BaseProfiler(settings, instance, parent)
 {}
 
-void GenericProfiler::beginProfilingImpl(shared_qobject_ptr<LaunchTask> process)
+void GenericProfiler::beginProfilingImpl(shared_qobject_ptr<projt::launch::LaunchPipeline> process)
 {
 	emit readyToLaunch(tr("Started process: %1").arg(process->pid()));
 }

@@ -1,8 +1,30 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2026 Project Tick
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <QTest>
 
-#include <java/JavaVersion.h>
+#include <java/core/RuntimeVersion.hpp>
 
-class JavaVersionTest : public QObject
+using projt::java::RuntimeVersion;
+
+class RuntimeVersionTest : public QObject
 {
 	Q_OBJECT
   private slots:
@@ -31,13 +53,12 @@ class JavaVersionTest : public QObject
 		QFETCH(int, security);
 		QFETCH(QString, prerelease);
 
-		JavaVersion test(string);
-		QCOMPARE(test.m_string, string);
+		RuntimeVersion test(string);
 		QCOMPARE(test.toString(), string);
-		QCOMPARE(test.m_major, major);
-		QCOMPARE(test.m_minor, minor);
-		QCOMPARE(test.m_security, security);
-		QCOMPARE(test.m_prerelease, prerelease);
+		QCOMPARE(test.major(), major);
+		QCOMPARE(test.minor(), minor);
+		QCOMPARE(test.security(), security);
+		QCOMPARE(test.prerelease(), prerelease);
 	}
 
 	void test_Sort_data()
@@ -105,8 +126,8 @@ class JavaVersionTest : public QObject
 		QFETCH(bool, smaller);
 		QFETCH(bool, equal);
 		QFETCH(bool, bigger);
-		JavaVersion lver(lhs);
-		JavaVersion rver(rhs);
+		RuntimeVersion lver(lhs);
+		RuntimeVersion rver(rhs);
 		QCOMPARE(lver < rver, smaller);
 		QCOMPARE(lver == rver, equal);
 		QCOMPARE(lver > rver, bigger);
@@ -125,11 +146,12 @@ class JavaVersionTest : public QObject
 	{
 		QFETCH(QString, version);
 		QFETCH(bool, needs_permgen);
-		JavaVersion v(version);
-		QCOMPARE(needs_permgen, v.requiresPermGen());
+		RuntimeVersion v(version);
+		QCOMPARE(needs_permgen, v.needsPermGen());
 	}
 };
 
-QTEST_GUILESS_MAIN(JavaVersionTest)
+QTEST_GUILESS_MAIN(RuntimeVersionTest)
 
 #include "JavaVersion_test.moc"
+

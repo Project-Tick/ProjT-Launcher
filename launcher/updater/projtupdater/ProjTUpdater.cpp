@@ -70,7 +70,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
-#include "console/WindowsConsole.h"
+#include "console/WindowsConsole.hpp"
 #endif
 
 #include <filesystem>
@@ -112,7 +112,7 @@ ProjTUpdaterApp::ProjTUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
 {
 #if defined Q_OS_WIN32
 	// attach the parent console if stdout not already captured
-	if (AttachWindowsConsole())
+	if (projt::console::AttachWindowsConsole())
 	{
 		consoleAttached = true;
 	}

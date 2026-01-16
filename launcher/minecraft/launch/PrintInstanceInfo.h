@@ -36,16 +36,16 @@
 
 #pragma once
 
-#include <launch/LaunchStep.h>
+#include <launch/LaunchStage.hpp>
 #include "minecraft/auth/AuthSession.h"
 #include "minecraft/launch/MinecraftTarget.h"
 
-class PrintInstanceInfo : public LaunchStep
+class PrintInstanceInfo : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit PrintInstanceInfo(LaunchTask* parent, AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin)
-		: LaunchStep(parent),
+	explicit PrintInstanceInfo(projt::launch::LaunchPipeline* parent, AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin)
+		: projt::launch::LaunchStage(parent),
 		  m_session(session),
 		  m_targetToJoin(targetToJoin) {};
 	virtual ~PrintInstanceInfo() = default;

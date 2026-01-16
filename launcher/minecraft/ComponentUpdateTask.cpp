@@ -27,8 +27,8 @@
 #include "ProblemProvider.h"
 #include "Version.h"
 #include "cassert"
-#include "meta/Index.h"
-#include "meta/Version.h"
+#include "meta/Index.hpp"
+#include "meta/Version.hpp"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/OneSixVersionFormat.h"
 #include "minecraft/ProfileUtils.h"
@@ -137,20 +137,21 @@ namespace
 		}
 		else
 		{
-			auto metaVersion		 = APPLICATION->metadataIndex()->get(component->m_uid, component->m_version);
+			auto metaVersion		 = APPLICATION->metadataIndex()->version(component->m_uid, component->m_version);
 			component->m_metaVersion = metaVersion;
-			if (metaVersion->isLoaded())
+			if (metaVersion->isFullyLoaded())
 			{
 				component->m_loaded = true;
 				result				= LoadResult::LoadedLocal;
 			}
 			else
 			{
-				loadTask = APPLICATION->metadataIndex()->loadVersion(component->m_uid, component->m_version, netmode);
+				loadTask =
+					APPLICATION->metadataIndex()->loadVersionTask(component->m_uid, component->m_version, netmode);
 				loadTask->start();
 				if (netmode == Net::Mode::Online)
 					result = LoadResult::RequiresRemote;
-				else if (metaVersion->isLoaded())
+				else if (metaVersion->isFullyLoaded())
 					result = LoadResult::LoadedLocal;
 				else
 					result = LoadResult::Failed;
@@ -251,7 +252,7 @@ void ComponentUpdateTask::loadComponents()
 
 namespace
 {
-	struct RequireEx : public Meta::Require
+	struct RequireEx : public projt::meta::ComponentDependency
 	{
 		size_t indexOfFirstDependee = 0;
 	};
@@ -315,10 +316,10 @@ static bool gatherRequirementsFromComponents(const ComponentContainer& input, Re
 		auto& componentRequires = component->m_cachedRequires;
 		for (const auto& componentRequire : componentRequires)
 		{
-			auto found =
-				std::find_if(output.cbegin(),
-							 output.cend(),
-							 [componentRequire](const Meta::Require& req) { return req.uid == componentRequire.uid; });
+			auto found = std::find_if(output.cbegin(),
+									  output.cend(),
+									  [componentRequire](const projt::meta::ComponentDependency& req)
+									  { return req.uid == componentRequire.uid; });
 
 			RequireEx componenRequireEx;
 			componenRequireEx.uid				   = componentRequire.uid;
@@ -488,7 +489,7 @@ ComponentContainer ComponentUpdateTask::collectTreeLinked(const QString& uid)
 										 << "scanning" << comp->getID() << ":" << comp->getVersion() << "for tree link";
 		auto dep = std::find_if(comp->m_cachedRequires.cbegin(),
 								comp->m_cachedRequires.cend(),
-								[uid](const Meta::Require& req) -> bool { return req.uid == uid; });
+								[uid](const projt::meta::ComponentDependency& req) -> bool { return req.uid == uid; });
 		if (dep != comp->m_cachedRequires.cend())
 		{
 			qCDebug(instanceProfileResolveC)
@@ -612,10 +613,10 @@ void ComponentUpdateTask::resolveDependencies(bool checkOnly)
 				else
 				{
 					// Try to get recommended version from metadata
-					auto versionList = APPLICATION->metadataIndex()->get(add.uid);
+					auto versionList = APPLICATION->metadataIndex()->component(add.uid);
 					if (versionList)
 					{
-						versionList->waitToLoad();
+						versionList->waitUntilReady();
 						auto recommended = versionList->getRecommended();
 						if (recommended)
 						{
@@ -732,18 +733,18 @@ void ComponentUpdateTask::performUpdateActions()
 						<< "UpdateActionLatestRecommendedCompatible" << component->getID() << ":"
 						<< component->getVersion() << "updating to latest recommend or compatible with" << lrc.parentUid
 						<< lrc.version;
-					auto versionList = APPLICATION->metadataIndex()->get(component->getID());
+					auto versionList = APPLICATION->metadataIndex()->component(component->getID());
 					if (versionList)
 					{
-						versionList->waitToLoad();
-						auto recommended = versionList->getRecommendedForParent(lrc.parentUid, lrc.version);
+						versionList->waitUntilReady();
+						auto recommended = versionList->stableForParent(lrc.parentUid, lrc.version);
 						if (!recommended)
 						{
-							recommended = versionList->getLatestForParent(lrc.parentUid, lrc.version);
+							recommended = versionList->latestForParent(lrc.parentUid, lrc.version);
 						}
 						if (recommended)
 						{
-							component->setVersion(recommended->version());
+							component->setVersion(recommended->versionId());
 							component->waitLoadMeta();
 							return;
 						}
@@ -774,8 +775,9 @@ void ComponentUpdateTask::performUpdateActions()
 						<< instance->name() << "|"
 						<< "UpdateImportantChanged" << component->getID() << ":" << component->getVersion()
 						<< "was changed from" << ic.oldVersion << "updating linked components";
-					auto oldVersion = APPLICATION->metadataIndex()->getLoadedVersion(component->getID(), ic.oldVersion);
-					for (auto oldReq : oldVersion->requiredSet())
+					auto oldVersion =
+						APPLICATION->metadataIndex()->loadVersionBlocking(component->getID(), ic.oldVersion);
+					for (auto oldReq : oldVersion->dependencies())
 					{
 						auto currentlyRequired = component->m_cachedRequires.find(oldReq);
 						if (currentlyRequired == component->m_cachedRequires.cend())
@@ -795,11 +797,11 @@ void ComponentUpdateTask::performUpdateActions()
 						{
 							continue;
 						}
-						auto compUid = comp->getID();
-						auto parentReq =
-							std::find_if(component->m_cachedRequires.begin(),
-										 component->m_cachedRequires.end(),
-										 [compUid](const Meta::Require& req) { return req.uid == compUid; });
+						auto compUid   = comp->getID();
+						auto parentReq = std::find_if(component->m_cachedRequires.begin(),
+													  component->m_cachedRequires.end(),
+													  [compUid](const projt::meta::ComponentDependency& req)
+													  { return req.uid == compUid; });
 						if (parentReq != component->m_cachedRequires.end())
 						{
 							auto newVersion =

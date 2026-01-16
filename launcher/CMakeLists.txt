@@ -143,30 +143,32 @@ set(NET_SOURCES
 
 # Game launch logic
 set(LAUNCH_SOURCES
-    launch/steps/CheckJava.cpp
-    launch/steps/CheckJava.h
-    launch/steps/LookupServerAddress.cpp
-    launch/steps/LookupServerAddress.h
-    launch/steps/PostLaunchCommand.cpp
-    launch/steps/PostLaunchCommand.h
-    launch/steps/PreLaunchCommand.cpp
-    launch/steps/PreLaunchCommand.h
-    launch/steps/TextPrint.cpp
-    launch/steps/TextPrint.h
-    launch/steps/QuitAfterGameStop.cpp
-    launch/steps/QuitAfterGameStop.h
-    launch/steps/PrintServers.cpp
-    launch/steps/PrintServers.h
-    launch/LaunchStep.cpp
-    launch/LaunchStep.h
-    launch/LaunchTask.cpp
-    launch/LaunchTask.h
-    launch/LogModel.cpp
-    launch/LogModel.h
-    launch/TaskStepWrapper.cpp
-    launch/TaskStepWrapper.h
-    logs/LogParser.cpp
-    logs/LogParser.h
+    launch/steps/RuntimeProbeStep.cpp
+    launch/steps/RuntimeProbeStep.hpp
+    launch/steps/ServerJoinResolveStep.cpp
+    launch/steps/ServerJoinResolveStep.hpp
+    launch/steps/LaunchCommandStep.cpp
+    launch/steps/LaunchCommandStep.hpp
+    launch/steps/LogMessageStep.cpp
+    launch/steps/LogMessageStep.hpp
+    launch/steps/QuitAfterGameStep.cpp
+    launch/steps/QuitAfterGameStep.hpp
+    launch/steps/HostLookupReportStep.cpp
+    launch/steps/HostLookupReportStep.hpp
+    launch/LaunchStage.cpp
+    launch/LaunchStage.hpp
+    launch/LaunchPipeline.cpp
+    launch/LaunchPipeline.hpp
+    launch/LaunchLineRouter.cpp
+    launch/LaunchLineRouter.hpp
+    launch/LaunchLogModel.cpp
+    launch/LaunchLogModel.hpp
+    launch/TaskBridgeStage.cpp
+    launch/TaskBridgeStage.hpp
+    launch/LaunchVariableExpander.cpp
+    launch/LaunchVariableExpander.hpp
+    logs/LogEventParser.cpp
+    logs/LogEventParser.hpp
 )
 
 # Old update system
@@ -196,7 +198,7 @@ set(NEWS_SOURCES
 # Icon interface
 set(ICONS_SOURCES
     # Icons System and related code
-    icons/IconUtils.h
+    icons/IconUtils.hpp
     icons/IconUtils.cpp
 )
 
@@ -218,7 +220,6 @@ set(MINECRAFT_SOURCES
     minecraft/auth/AccountList.h
     minecraft/auth/AuthSession.cpp
     minecraft/auth/AuthSession.h
-    minecraft/auth/AuthStep.h
     minecraft/auth/MinecraftAccount.cpp
     minecraft/auth/MinecraftAccount.h
     minecraft/auth/Parsers.cpp
@@ -227,24 +228,28 @@ set(MINECRAFT_SOURCES
     minecraft/auth/AuthFlow.cpp
     minecraft/auth/AuthFlow.h
 
-    minecraft/auth/steps/EntitlementsStep.cpp
-    minecraft/auth/steps/EntitlementsStep.h
-    minecraft/auth/steps/GetSkinStep.cpp
-    minecraft/auth/steps/GetSkinStep.h
-    minecraft/auth/steps/LauncherLoginStep.cpp
-    minecraft/auth/steps/LauncherLoginStep.h
-    minecraft/auth/steps/MinecraftProfileStep.cpp
-    minecraft/auth/steps/MinecraftProfileStep.h
-    minecraft/auth/steps/MSADeviceCodeStep.cpp
-    minecraft/auth/steps/MSADeviceCodeStep.h
-    minecraft/auth/steps/MSAStep.cpp
-    minecraft/auth/steps/MSAStep.h
-    minecraft/auth/steps/XboxAuthorizationStep.cpp
-    minecraft/auth/steps/XboxAuthorizationStep.h
-    minecraft/auth/steps/XboxProfileStep.cpp
-    minecraft/auth/steps/XboxProfileStep.h
-    minecraft/auth/steps/XboxUserStep.cpp
-    minecraft/auth/steps/XboxUserStep.h
+    # New auth steps (projt::minecraft::auth namespace)
+    minecraft/auth/steps/Step.hpp
+    minecraft/auth/steps/Credentials.hpp
+    minecraft/auth/steps/Steps.hpp
+    minecraft/auth/steps/MicrosoftOAuthStep.hpp
+    minecraft/auth/steps/MicrosoftOAuthStep.cpp
+    minecraft/auth/steps/DeviceCodeAuthStep.hpp
+    minecraft/auth/steps/DeviceCodeAuthStep.cpp
+    minecraft/auth/steps/XboxLiveUserStep.hpp
+    minecraft/auth/steps/XboxLiveUserStep.cpp
+    minecraft/auth/steps/XboxSecurityTokenStep.hpp
+    minecraft/auth/steps/XboxSecurityTokenStep.cpp
+    minecraft/auth/steps/XboxProfileFetchStep.hpp
+    minecraft/auth/steps/XboxProfileFetchStep.cpp
+    minecraft/auth/steps/MinecraftServicesLoginStep.hpp
+    minecraft/auth/steps/MinecraftServicesLoginStep.cpp
+    minecraft/auth/steps/MinecraftProfileFetchStep.hpp
+    minecraft/auth/steps/MinecraftProfileFetchStep.cpp
+    minecraft/auth/steps/GameEntitlementsStep.hpp
+    minecraft/auth/steps/GameEntitlementsStep.cpp
+    minecraft/auth/steps/SkinDownloadStep.hpp
+    minecraft/auth/steps/SkinDownloadStep.cpp
 
     minecraft/update/AssetUpdateTask.h
     minecraft/update/AssetUpdateTask.cpp
@@ -274,7 +279,7 @@ set(MINECRAFT_SOURCES
     minecraft/launch/ScanModFolders.cpp
     minecraft/launch/ScanModFolders.h
     minecraft/launch/VerifyJavaInstall.cpp
-    minecraft/launch/VerifyJavaInstall.h
+    minecraft/launch/VerifyJavaInstall.hpp
     minecraft/launch/AutoInstallJava.cpp
     minecraft/launch/AutoInstallJava.h
 
@@ -421,25 +426,26 @@ set(SETTINGS_SOURCES
 )
 
 set(JAVA_SOURCES
-    java/JavaChecker.h
-    java/JavaChecker.cpp
-    java/JavaInstall.h
-    java/JavaInstall.cpp
-    java/JavaInstallList.h
-    java/JavaInstallList.cpp
-    java/JavaUtils.h
-    java/JavaUtils.cpp
-    java/JavaVersion.h
-    java/JavaVersion.cpp
-
-    java/JavaMetadata.h
-    java/JavaMetadata.cpp
-    java/download/ArchiveDownloadTask.cpp
-    java/download/ArchiveDownloadTask.h
-    java/download/ManifestDownloadTask.cpp
-    java/download/ManifestDownloadTask.h
-    java/download/SymlinkTask.cpp
-    java/download/SymlinkTask.h
+    java/core/RuntimeVersion.hpp
+    java/core/RuntimeVersion.cpp
+    java/core/RuntimeInstall.hpp
+    java/core/RuntimeInstall.cpp
+    java/core/RuntimePackage.hpp
+    java/core/RuntimePackage.cpp
+    java/services/RuntimeEnvironment.hpp
+    java/services/RuntimeEnvironment.cpp
+    java/services/RuntimeScanner.hpp
+    java/services/RuntimeScanner.cpp
+    java/services/RuntimeProbeTask.hpp
+    java/services/RuntimeProbeTask.cpp
+    java/services/RuntimeCatalog.hpp
+    java/services/RuntimeCatalog.cpp
+    java/download/RuntimeArchiveTask.cpp
+    java/download/RuntimeArchiveTask.hpp
+    java/download/RuntimeManifestTask.cpp
+    java/download/RuntimeManifestTask.hpp
+    java/download/RuntimeLinkTask.cpp
+    java/download/RuntimeLinkTask.hpp
 
     ui/java/InstallJavaDialog.h
     ui/java/InstallJavaDialog.cpp
@@ -471,17 +477,17 @@ set(TOOLS_SOURCES
 )
 
 set(META_SOURCES
-    # Metadata sources
-    meta/JsonFormat.cpp
-    meta/JsonFormat.h
+    # Metadata sources (projt::meta namespace)
     meta/BaseEntity.cpp
-    meta/BaseEntity.h
-    meta/VersionList.cpp
-    meta/VersionList.h
+    meta/BaseEntity.hpp
+    meta/JsonFormat.cpp
+    meta/JsonFormat.hpp
     meta/Version.cpp
-    meta/Version.h
+    meta/Version.hpp
+    meta/VersionList.cpp
+    meta/VersionList.hpp
     meta/Index.cpp
-    meta/Index.h
+    meta/Index.hpp
 )
 
 set(API_SOURCES
@@ -583,10 +589,10 @@ set(ATLAUNCHER_SOURCES
 )
 
 set(LINKEXE_SOURCES
-    console/WindowsConsole.h
+    console/WindowsConsole.hpp
     console/WindowsConsole.cpp
 
-    filelink/FileLink.h
+    filelink/FileLink.hpp
     filelink/FileLink.cpp
     FileSystem.h
     FileSystem.cpp
@@ -655,7 +661,7 @@ set(PROJTUPDATER_SOURCES
 
 if(WIN32)
     set(PROJTUPDATER_SOURCES
-        console/WindowsConsole.h
+        console/WindowsConsole.hpp
         console/WindowsConsole.cpp
         ${PROJTUPDATER_SOURCES}
     )
@@ -788,7 +794,7 @@ SET(LAUNCHER_SOURCES
     SysInfo.cpp
 
     # console utils
-    console/Console.h
+    console/Console.hpp
 
     # GUI - general utilities
     DesktopServices.h
@@ -820,14 +826,14 @@ SET(LAUNCHER_SOURCES
     "${CMAKE_CURRENT_BINARY_DIR}/../${Launcher_Branding_LogoQRC}"
 
     # Icons
-    icons/MMCIcon.h
-    icons/MMCIcon.cpp
-    icons/IconList.h
+    icons/IconEntry.hpp
+    icons/IconEntry.cpp
+    icons/IconList.hpp
     icons/IconList.cpp
 
     # log utils
-    logs/AnonymizeLog.cpp
-    logs/AnonymizeLog.h
+    logs/LogRedactor.cpp
+    logs/LogRedactor.hpp
 
     # GUI - windows
     ui/GuiUtil.h
@@ -1187,7 +1193,7 @@ endif()
 
 if(WIN32)
     set(LAUNCHER_SOURCES
-        console/WindowsConsole.h
+        console/WindowsConsole.hpp
         console/WindowsConsole.cpp
         ${LAUNCHER_SOURCES}
     )
@@ -1666,3 +1672,5 @@ if(APPLE)
     # Install ModernDark theme to bundle resources
     install(DIRECTORY "ui/themes/ModernDark" DESTINATION "${RESOURCES_DEST_DIR}/themes" COMPONENT Runtime)
 endif()
+
+

@@ -56,8 +56,8 @@
  * ======================================================================== */
 
 #include "Component.h"
-#include <meta/Index.h>
-#include <meta/VersionList.h>
+#include <meta/Index.hpp>
+#include <meta/VersionList.hpp>
 
 #include <QSaveFile>
 
@@ -65,7 +65,7 @@
 #include "FileSystem.h"
 #include "OneSixVersionFormat.h"
 #include "VersionFile.h"
-#include "meta/Version.h"
+#include "meta/Version.hpp"
 #include "minecraft/Component.h"
 #include "minecraft/PackProfile.h"
 
@@ -103,7 +103,7 @@ Component::Component(PackProfile* parent, const QString& uid, std::shared_ptr<Ve
 	m_loaded		= true;
 }
 
-std::shared_ptr<Meta::Version> Component::getMeta()
+std::shared_ptr<projt::meta::MetaVersion> Component::getMeta()
 {
 	return m_metaVersion;
 }
@@ -130,7 +130,7 @@ std::shared_ptr<class VersionFile> Component::getVersionFile() const
 {
 	if (m_metaVersion)
 	{
-		return m_metaVersion->data();
+		return m_metaVersion->detailedData();
 	}
 	else
 	{
@@ -138,15 +138,15 @@ std::shared_ptr<class VersionFile> Component::getVersionFile() const
 	}
 }
 
-std::shared_ptr<class Meta::VersionList> Component::getVersionList() const
+std::shared_ptr<projt::meta::MetaVersionList> Component::getVersionList() const
 {
 	// Return nullptr if metadata index isn't loaded yet - caller should handle this case
 	auto index = APPLICATION->metadataIndex();
-	if (!index || !index->hasUid(m_uid))
+	if (!index || !index->hasComponent(m_uid))
 	{
 		return nullptr;
 	}
-	return index->get(m_uid);
+	return index->component(m_uid);
 }
 
 int Component::getOrder()
@@ -194,7 +194,7 @@ QDateTime Component::getReleaseDateTime()
 {
 	if (m_metaVersion)
 	{
-		return m_metaVersion->time();
+		return m_metaVersion->releaseTime();
 	}
 	auto vfile = getVersionFile();
 	if (vfile)
@@ -250,7 +250,7 @@ bool Component::isRevertible()
 {
 	if (isCustom())
 	{
-		if (APPLICATION->metadataIndex()->hasUid(m_uid))
+		if (APPLICATION->metadataIndex()->hasComponent(m_uid))
 		{
 			return true;
 		}
@@ -271,7 +271,7 @@ bool Component::isVersionChangeable(bool wait)
 	if (list)
 	{
 		if (wait)
-			list->waitToLoad();
+			list->waitUntilReady();
 		return list->count() != 0;
 	}
 	return false;
@@ -366,8 +366,8 @@ void Component::setVersion(const QString& version)
 			// we don't have a file, therefore we are loaded with metadata
 			m_cachedVersion = version;
 			// see if the meta version is loaded
-			auto metaVersion = APPLICATION->metadataIndex()->get(m_uid, version);
-			if (metaVersion->isLoaded())
+			auto metaVersion = APPLICATION->metadataIndex()->version(m_uid, version);
+			if (metaVersion->isFullyLoaded())
 			{
 				// if yes, we can continue with that.
 				m_metaVersion = metaVersion;
@@ -450,8 +450,8 @@ bool Component::revert()
 		m_file.reset();
 
 		// check local cache for metadata...
-		auto version = APPLICATION->metadataIndex()->get(m_uid, m_version);
-		if (version->isLoaded())
+		auto version = APPLICATION->metadataIndex()->version(m_uid, m_version);
+		if (version->isFullyLoaded())
 		{
 			m_metaVersion = version;
 		}
@@ -470,9 +470,9 @@ bool Component::revert()
  * By default, only uids are compared for set operations.
  * This compares all fields of the Require structs in the sets.
  */
-static bool deepCompare(const std::set<Meta::Require>& a, const std::set<Meta::Require>& b)
+static bool deepCompare(const projt::meta::DependencySet& a, const projt::meta::DependencySet& b)
 {
-	// NOTE: this needs to be rewritten if the type of Meta::RequireSet changes
+	// NOTE: this needs to be rewritten if the type of DependencySet changes
 	if (a.size() != b.size())
 	{
 		return false;
@@ -542,10 +542,10 @@ void Component::waitLoadMeta()
 {
 	if (!m_loaded)
 	{
-		if (!m_metaVersion || !m_metaVersion->isLoaded())
+		if (!m_metaVersion || !m_metaVersion->isFullyLoaded())
 		{
 			// wait for the loaded version from meta
-			m_metaVersion = APPLICATION->metadataIndex()->getLoadedVersion(m_uid, m_version);
+			m_metaVersion = APPLICATION->metadataIndex()->loadVersionBlocking(m_uid, m_version);
 		}
 		m_loaded = true;
 		updateCachedData();

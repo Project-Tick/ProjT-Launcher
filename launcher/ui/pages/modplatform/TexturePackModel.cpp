@@ -29,8 +29,8 @@
 
 #include "Application.h"
 
-#include "meta/Index.h"
-#include "meta/Version.h"
+#include "meta/Index.hpp"
+#include "meta/Version.hpp"
 
 static std::list<Version> s_availableVersions = {};
 
@@ -41,7 +41,7 @@ namespace ResourceDownload
 													   QString debugName,
 													   QString metaEntryBase)
 		: ResourcePackResourceModel(inst, api, debugName, metaEntryBase),
-		  m_version_list(APPLICATION->metadataIndex()->get("net.minecraft"))
+		  m_version_list(APPLICATION->metadataIndex()->component("net.minecraft"))
 	{
 		if (!m_version_list->isLoaded())
 		{
@@ -52,7 +52,7 @@ namespace ResourceDownload
 		}
 	}
 
-	void waitOnVersionListLoad(Meta::VersionList::Ptr version_list)
+	void waitOnVersionListLoad(projt::meta::MetaVersionList::Ptr version_list)
 	{
 		QEventLoop load_version_list_loop;
 
@@ -86,11 +86,11 @@ namespace ResourceDownload
 
 		if (s_availableVersions.empty())
 		{
-			for (auto&& version : m_version_list->versions())
+			for (auto&& version : m_version_list->allVersions())
 			{
 				// NOTE: Logic duplicated from meta 'texturepacks' trait due to lack of index file access.
 				//        Avoiding download of every version file for check.
-				if (auto ver = version->toComparableVersion(); ver <= maximumTexturePackVersion())
+				if (auto ver = version->asComparableVersion(); ver <= maximumTexturePackVersion())
 					s_availableVersions.push_back(ver);
 			}
 		}

@@ -66,7 +66,7 @@
 #include <QStandardPaths>
 
 #include "FileSystem.h"
-#include "logs/AnonymizeLog.h"
+#include "logs/LogRedactor.hpp"
 #include "net/NetJob.h"
 #include "net/NetRequest.h"
 #include "net/PasteUpload.h"
@@ -217,7 +217,7 @@ std::optional<QString> GuiUtil::uploadPaste(const QString& name, const QString& 
 
 void GuiUtil::setClipboardText(QString text)
 {
-	anonymizeLog(text);
+	projt::logs::redactLog(text);
 	QApplication::clipboard()->setText(text);
 }
 

@@ -138,6 +138,22 @@ enum class AccountState
 	Gone
 };
 
+/**
+ * State of an authentication task.
+ * Used by AuthFlow to communicate progress and results.
+ */
+enum class AccountTaskState
+{
+	STATE_CREATED,
+	STATE_WORKING,
+	STATE_SUCCEEDED,
+	STATE_OFFLINE,
+	STATE_DISABLED,
+	STATE_FAILED_SOFT,
+	STATE_FAILED_HARD,
+	STATE_FAILED_GONE
+};
+
 struct AccountData
 {
 	QJsonObject saveState() const;

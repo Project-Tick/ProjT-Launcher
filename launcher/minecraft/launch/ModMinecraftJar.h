@@ -36,14 +36,14 @@
 
 #pragma once
 
-#include <launch/LaunchStep.h>
+#include <launch/LaunchStage.hpp>
 #include <memory>
 
-class ModMinecraftJar : public LaunchStep
+class ModMinecraftJar : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit ModMinecraftJar(LaunchTask* parent) : LaunchStep(parent) {};
+	explicit ModMinecraftJar(projt::launch::LaunchPipeline* parent) : projt::launch::LaunchStage(parent) {};
 	virtual ~ModMinecraftJar() {};
 
 	virtual void executeTask() override;

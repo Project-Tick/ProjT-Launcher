@@ -61,7 +61,7 @@
 
 #include <BaseVersion.h>
 #include <InstanceList.h>
-#include <icons/IconList.h>
+#include <icons/IconList.hpp>
 #include <tasks/Task.h>
 
 #include "IconPickerDialog.h"
@@ -73,8 +73,8 @@
 #include <QPushButton>
 #include <QValidator>
 
-#include <meta/Index.h>
-#include <meta/VersionList.h>
+#include <meta/Index.hpp>
+#include <meta/VersionList.hpp>
 
 NewComponentDialog::NewComponentDialog(const QString& initialName, const QString& initialUid, QWidget* parent)
 	: QDialog(parent),
@@ -150,3 +150,4 @@ void NewComponentDialog::setBlacklist(QStringList badUids)
 {
 	uidBlacklist = badUids;
 }
+

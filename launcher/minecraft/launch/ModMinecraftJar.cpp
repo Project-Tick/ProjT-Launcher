@@ -58,13 +58,13 @@
 #include "ModMinecraftJar.h"
 #include "FileSystem.h"
 #include "MMCZip.h"
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 
 void ModMinecraftJar::executeTask()
 {
-	auto m_inst = m_parent->instance();
+	auto m_inst = m_flow->instance();
 
 	if (!m_inst->getJarMods().size())
 	{
@@ -109,7 +109,7 @@ void ModMinecraftJar::finalize()
 
 bool ModMinecraftJar::removeJar()
 {
-	auto m_inst		  = m_parent->instance();
+	auto m_inst		  = m_flow->instance();
 	auto finalJarPath = QDir(m_inst->binRoot()).absoluteFilePath("minecraft.jar");
 	QFile finalJar(finalJarPath);
 	if (finalJar.exists())

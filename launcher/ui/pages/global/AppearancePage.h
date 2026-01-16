@@ -59,7 +59,6 @@
 
 #include <QDialog>
 #include <QLayout>
-#include "java/JavaChecker.h"
 #include "translations/TranslationsModel.h"
 #include "ui/pages/BasePage.h"
 #include "ui/widgets/AppearanceWidget.h"
@@ -105,3 +104,4 @@ class AppearancePage : public AppearanceWidget, public BasePage
 		retranslateUi();
 	}
 };
+

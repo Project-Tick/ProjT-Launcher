@@ -37,7 +37,7 @@
 #include "InstanceProxyModel.h"
 
 #include <BaseInstance.h>
-#include <icons/IconList.h>
+#include <icons/IconList.hpp>
 #include "Application.h"
 #include "InstanceView.h"
 
@@ -95,3 +95,4 @@ bool InstanceProxyModel::subSortLessThan(const QModelIndex& left, const QModelIn
 		return m_naturalSort.compare(pdataLeft->name(), pdataRight->name()) < 0;
 	}
 }
+

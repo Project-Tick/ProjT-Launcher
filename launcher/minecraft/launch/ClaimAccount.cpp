@@ -18,12 +18,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "ClaimAccount.h"
-#include <launch/LaunchTask.h>
+#include <launch/LaunchPipeline.hpp>
 
 #include "Application.h"
 #include "minecraft/auth/AccountList.h"
 
-ClaimAccount::ClaimAccount(LaunchTask* parent, AuthSessionPtr session) : LaunchStep(parent)
+ClaimAccount::ClaimAccount(projt::launch::LaunchPipeline* parent, AuthSessionPtr session) : projt::launch::LaunchStage(parent)
 {
 	if (session->status == AuthSession::Status::PlayableOnline && !session->demo)
 	{

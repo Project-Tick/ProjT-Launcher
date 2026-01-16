@@ -62,6 +62,7 @@
 #include <Application.h>
 #include <QFileSystemWatcher>
 #include "LogPage.h"
+#include "launch/LaunchLogModel.hpp"
 #include "ui/pages/BasePage.h"
 
 namespace Ui
@@ -145,5 +146,5 @@ class OtherLogsPage : public QWidget, public BasePage
 	QFileSystemWatcher m_watcher;
 
 	LogFormatProxyModel* m_proxy;
-	shared_qobject_ptr<LogModel> m_model;
+	shared_qobject_ptr<projt::launch::LaunchLogModel> m_model;
 };

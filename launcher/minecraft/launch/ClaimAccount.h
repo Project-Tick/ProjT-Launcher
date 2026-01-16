@@ -36,14 +36,14 @@
 
 #pragma once
 
-#include <launch/LaunchStep.h>
+#include <launch/LaunchStage.hpp>
 #include <minecraft/auth/MinecraftAccount.h>
 
-class ClaimAccount : public LaunchStep
+class ClaimAccount : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit ClaimAccount(LaunchTask* parent, AuthSessionPtr session);
+	explicit ClaimAccount(projt::launch::LaunchPipeline* parent, AuthSessionPtr session);
 	virtual ~ClaimAccount() = default;
 
 	void executeTask() override;

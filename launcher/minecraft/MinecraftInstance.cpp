@@ -76,27 +76,26 @@
 
 #include "FileSystem.h"
 #include "MMCTime.h"
-#include "java/JavaVersion.h"
+#include "java/core/RuntimeVersion.hpp"
 
-#include "launch/LaunchTask.h"
-#include "launch/TaskStepWrapper.h"
-#include "launch/steps/CheckJava.h"
-#include "launch/steps/LookupServerAddress.h"
-#include "launch/steps/PostLaunchCommand.h"
-#include "launch/steps/PreLaunchCommand.h"
-#include "launch/steps/QuitAfterGameStop.h"
-#include "launch/steps/TextPrint.h"
+#include "launch/LaunchPipeline.hpp"
+#include "launch/TaskBridgeStage.hpp"
+#include "launch/steps/RuntimeProbeStep.hpp"
+#include "launch/steps/ServerJoinResolveStep.hpp"
+#include "launch/steps/LaunchCommandStep.hpp"
+#include "launch/steps/QuitAfterGameStep.hpp"
+#include "launch/steps/LogMessageStep.hpp"
 
 #include "minecraft/launch/ClaimAccount.h"
 #include "minecraft/launch/LauncherPartLaunch.h"
 #include "minecraft/launch/ModMinecraftJar.h"
 #include "minecraft/launch/ReconstructAssets.h"
 #include "minecraft/launch/ScanModFolders.h"
-#include "minecraft/launch/VerifyJavaInstall.h"
+#include "minecraft/launch/VerifyJavaInstall.hpp"
 
-#include "java/JavaUtils.h"
+#include "java/services/RuntimeEnvironment.hpp"
 
-#include "icons/IconList.h"
+#include "icons/IconList.hpp"
 
 #include "mod/ModFolderModel.h"
 #include "mod/ResourcePackFolderModel.h"
@@ -579,8 +578,8 @@ QStringList MinecraftInstance::javaArguments()
 	}
 
 	// No PermGen in newer java.
-	JavaVersion javaVersion = getJavaVersion();
-	if (javaVersion.requiresPermGen())
+	projt::java::RuntimeVersion javaVersion = getRuntimeVersion();
+	if (javaVersion.needsPermGen())
 	{
 		auto permgen = settings()->get("PermGen").toInt();
 		if (permgen != 64)
@@ -591,7 +590,7 @@ QStringList MinecraftInstance::javaArguments()
 
 	args << "-Duser.language=en";
 
-	if (javaVersion.isModular() && shouldApplyOnlineFixes())
+	if (javaVersion.supportsModules() && shouldApplyOnlineFixes())
 		// allow reflective access to java.net - required by the skin fix
 		args << "--add-opens"
 			 << "java.base/java.net=ALL-UNNAMED";
@@ -637,7 +636,7 @@ QMap<QString, QString> MinecraftInstance::getVariables()
 QProcessEnvironment MinecraftInstance::createEnvironment()
 {
 	// prepare the process environment
-	QProcessEnvironment env = CleanEnviroment();
+	QProcessEnvironment env = projt::java::buildCleanEnvironment();
 
 	// export some infos
 	auto variables = getVariables();
@@ -1160,7 +1159,7 @@ QString MinecraftInstance::getStatusbarDescription()
 	return description;
 }
 
-QList<LaunchStep::Ptr> MinecraftInstance::createUpdateTask()
+QList<Task::Ptr> MinecraftInstance::createUpdateTask()
 {
 	return {
 		// create folders
@@ -1174,25 +1173,25 @@ QList<LaunchStep::Ptr> MinecraftInstance::createUpdateTask()
 	};
 }
 
-shared_qobject_ptr<LaunchTask> MinecraftInstance::createLaunchTask(AuthSessionPtr session,
+shared_qobject_ptr<projt::launch::LaunchPipeline> MinecraftInstance::createLaunchPipeline(AuthSessionPtr session,
 																   MinecraftTarget::Ptr targetToJoin)
 {
 	updateRuntimeContext();
 	// Using static_pointer_cast since 'this' is guaranteed to be a MinecraftInstance
-	auto process = LaunchTask::create(std::dynamic_pointer_cast<MinecraftInstance>(shared_from_this()));
+	auto process = projt::launch::LaunchPipeline::create(std::dynamic_pointer_cast<MinecraftInstance>(shared_from_this()));
 	auto pptr	 = process.get();
 
 	APPLICATION->icons()->saveIcon(iconKey(), FS::PathCombine(gameRoot(), "icon.png"), "PNG");
 
 	// print a header
 	{
-		process->appendStep(
-			makeShared<TextPrint>(pptr, "Minecraft folder is:\n" + gameRoot() + "\n\n", MessageLevel::Launcher));
+		process->appendStage(
+			makeShared<projt::launch::steps::LogMessageStep>(pptr, "Minecraft folder is:\n" + gameRoot() + "\n\n", MessageLevel::Launcher));
 	}
 
 	// create the .minecraft folder and server-resource-packs (workaround for Minecraft bug MCL-3732)
 	{
-		process->appendStep(makeShared<CreateGameFolders>(pptr));
+		process->appendStage(makeShared<CreateGameFolders>(pptr));
 	}
 
 	if (!targetToJoin && settings()->get("JoinServerOnLaunch").toBool())
@@ -1215,30 +1214,33 @@ shared_qobject_ptr<LaunchTask> MinecraftInstance::createLaunchTask(AuthSessionPt
 	if (targetToJoin && targetToJoin->port == 25565)
 	{
 		// Resolve server address to join on launch
-		auto step = makeShared<LookupServerAddress>(pptr);
+		auto step = makeShared<projt::launch::steps::ServerJoinResolveStep>(pptr);
 		step->setLookupAddress(targetToJoin->address);
-		step->setOutputAddressPtr(targetToJoin);
-		process->appendStep(step);
+		step->setOutputTarget(targetToJoin);
+		process->appendStage(step);
 	}
 
 	// load meta
 	{
 		auto mode = session->status != AuthSession::PlayableOffline ? Net::Mode::Online : Net::Mode::Offline;
-		process->appendStep(makeShared<TaskStepWrapper>(pptr, makeShared<MinecraftLoadAndCheck>(this, mode)));
+		process->appendStage(makeShared<projt::launch::TaskBridgeStage>(pptr, makeShared<MinecraftLoadAndCheck>(this, mode)));
 	}
 
 	// check java
 	{
-		process->appendStep(makeShared<AutoInstallJava>(pptr));
-		process->appendStep(makeShared<CheckJava>(pptr));
+		process->appendStage(makeShared<AutoInstallJava>(pptr));
+		process->appendStage(makeShared<projt::launch::steps::RuntimeProbeStep>(pptr));
 	}
 
 	// run pre-launch command if that's needed
 	if (getPreLaunchCommand().size())
 	{
-		auto step = makeShared<PreLaunchCommand>(pptr);
+		auto step = makeShared<projt::launch::steps::LaunchCommandStep>(
+			pptr,
+			projt::launch::steps::LaunchCommandStep::Hook::PreLaunch,
+			getPreLaunchCommand());
 		step->setWorkingDirectory(gameRoot());
-		process->appendStep(step);
+		process->appendStage(step);
 	}
 
 	// if we aren't in offline mode,.
@@ -1246,42 +1248,42 @@ shared_qobject_ptr<LaunchTask> MinecraftInstance::createLaunchTask(AuthSessionPt
 	{
 		if (!session->demo)
 		{
-			process->appendStep(makeShared<ClaimAccount>(pptr, session));
+			process->appendStage(makeShared<ClaimAccount>(pptr, session));
 		}
 		for (auto t : createUpdateTask())
 		{
-			process->appendStep(makeShared<TaskStepWrapper>(pptr, t));
+			process->appendStage(makeShared<projt::launch::TaskBridgeStage>(pptr, t));
 		}
 	}
 
 	// if there are any jar mods
 	{
-		process->appendStep(makeShared<ModMinecraftJar>(pptr));
+		process->appendStage(makeShared<ModMinecraftJar>(pptr));
 	}
 
 	// Scan mods folders for mods
 	{
-		process->appendStep(makeShared<ScanModFolders>(pptr));
+		process->appendStage(makeShared<ScanModFolders>(pptr));
 	}
 
 	// print some instance info here...
 	{
-		process->appendStep(makeShared<PrintInstanceInfo>(pptr, session, targetToJoin));
+		process->appendStage(makeShared<PrintInstanceInfo>(pptr, session, targetToJoin));
 	}
 
 	// extract native jars if needed
 	{
-		process->appendStep(makeShared<ExtractNatives>(pptr));
+		process->appendStage(makeShared<ExtractNatives>(pptr));
 	}
 
 	// reconstruct assets if needed
 	{
-		process->appendStep(makeShared<ReconstructAssets>(pptr));
+		process->appendStage(makeShared<ReconstructAssets>(pptr));
 	}
 
 	// verify that minimum Java requirements are met
 	{
-		process->appendStep(makeShared<VerifyJavaInstall>(pptr));
+		process->appendStage(makeShared<VerifyJavaInstall>(pptr));
 	}
 
 	{
@@ -1290,15 +1292,18 @@ shared_qobject_ptr<LaunchTask> MinecraftInstance::createLaunchTask(AuthSessionPt
 		step->setWorkingDirectory(gameRoot());
 		step->setAuthSession(session);
 		step->setTargetToJoin(targetToJoin);
-		process->appendStep(step);
+		process->appendStage(step);
 	}
 
 	// run post-exit command if that's needed
 	if (getPostExitCommand().size())
 	{
-		auto step = makeShared<PostLaunchCommand>(pptr);
+		auto step = makeShared<projt::launch::steps::LaunchCommandStep>(
+			pptr,
+			projt::launch::steps::LaunchCommandStep::Hook::PostExit,
+			getPostExitCommand());
 		step->setWorkingDirectory(gameRoot());
-		process->appendStep(step);
+		process->appendStage(step);
 	}
 	if (session)
 	{
@@ -1306,16 +1311,16 @@ shared_qobject_ptr<LaunchTask> MinecraftInstance::createLaunchTask(AuthSessionPt
 	}
 	if (m_settings->get("QuitAfterGameStop").toBool())
 	{
-		process->appendStep(makeShared<QuitAfterGameStop>(pptr));
+		process->appendStage(makeShared<projt::launch::steps::QuitAfterGameStep>(pptr));
 	}
 	m_launchProcess = process;
-	emit launchTaskChanged(m_launchProcess);
+	emit launchPipelineChanged(m_launchProcess);
 	return m_launchProcess;
 }
 
-JavaVersion MinecraftInstance::getJavaVersion()
+projt::java::RuntimeVersion MinecraftInstance::getRuntimeVersion()
 {
-	return JavaVersion(settings()->get("JavaVersion").toString());
+	return projt::java::RuntimeVersion(settings()->get("JavaVersion").toString());
 }
 
 std::shared_ptr<ModFolderModel> MinecraftInstance::loaderModList()
@@ -1418,3 +1423,6 @@ QList<Mod*> MinecraftInstance::getJarMods() const
 }
 
 #include "MinecraftInstance.moc"
+
+
+

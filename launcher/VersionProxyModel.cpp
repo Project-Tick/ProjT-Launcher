@@ -58,7 +58,7 @@
 
 #include "VersionProxyModel.h"
 #include <Version.h>
-#include <meta/VersionList.h>
+#include <meta/VersionList.hpp>
 #include <QIcon>
 #include <QPixmapCache>
 #include <QSortFilterProxyModel>
@@ -207,7 +207,8 @@ QVariant VersionProxyModel::data(const QModelIndex& index, int role) const
 				case Path: return sourceModel()->data(parentIndex, BaseVersionList::PathRole);
 				case JavaName: return sourceModel()->data(parentIndex, BaseVersionList::JavaNameRole);
 				case JavaMajor: return sourceModel()->data(parentIndex, BaseVersionList::JavaMajorRole);
-				case Time: return sourceModel()->data(parentIndex, Meta::VersionList::TimeRole).toDate();
+				case Time:
+					return sourceModel()->data(parentIndex, projt::meta::MetaVersionList::TimestampRole).toDate();
 				default: return QVariant();
 			}
 		}
@@ -350,10 +351,10 @@ void VersionProxyModel::setSourceModel(QAbstractItemModel* replacingRaw)
 	}
 
 	// Extract parent version name from metadata if available
-	auto versionList = dynamic_cast<Meta::VersionList*>(replacing);
+	auto versionList = dynamic_cast<projt::meta::MetaVersionList*>(replacing);
 	if (versionList)
 	{
-		m_parentVersionName = versionList->humanReadable();
+		m_parentVersionName = versionList->displayName();
 	}
 	else
 	{
@@ -387,7 +388,7 @@ void VersionProxyModel::setSourceModel(QAbstractItemModel* replacingRaw)
 	{
 		m_columns.push_back(JavaMajor);
 	}
-	if (roles.contains(Meta::VersionList::TimeRole))
+	if (roles.contains(projt::meta::MetaVersionList::TimestampRole))
 	{
 		m_columns.push_back(Time);
 	}

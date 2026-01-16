@@ -57,7 +57,7 @@
  * ======================================================================== */
 
 #pragma once
-#include <java/JavaVersion.h>
+#include <java/core/RuntimeVersion.hpp>
 #include <minecraft/mod/DataPackFolderModel.h>
 #include <QDir>
 #include <QProcess>
@@ -71,7 +71,10 @@ class ResourcePackFolderModel;
 class ShaderPackFolderModel;
 class TexturePackFolderModel;
 class WorldList;
-class LaunchStep;
+namespace projt::launch
+{
+class LaunchPipeline;
+}
 class PackProfile;
 
 class MinecraftInstance : public BaseInstance
@@ -152,7 +155,8 @@ class MinecraftInstance : public BaseInstance
 
 	//////  Launch stuff //////
 	QList<Task::Ptr> createUpdateTask() override;
-	shared_qobject_ptr<LaunchTask> createLaunchTask(AuthSessionPtr account, MinecraftTarget::Ptr targetToJoin) override;
+	shared_qobject_ptr<projt::launch::LaunchPipeline> createLaunchPipeline(AuthSessionPtr account,
+																		   MinecraftTarget::Ptr targetToJoin) override;
 	QStringList extraArguments();
 	QStringList verboseDescription(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin) override;
 	QList<Mod*> getJarMods() const;
@@ -183,7 +187,7 @@ class MinecraftInstance : public BaseInstance
 	/// @deprecated Argument processing should be in launch steps, not instance
 	virtual QStringList processMinecraftArgs(AuthSessionPtr account, MinecraftTarget::Ptr targetToJoin) const;
 
-	virtual JavaVersion getJavaVersion();
+	virtual projt::java::RuntimeVersion getRuntimeVersion();
 
   signals:
 	void profilerChanged();
@@ -204,3 +208,5 @@ class MinecraftInstance : public BaseInstance
 };
 
 using MinecraftInstancePtr = std::shared_ptr<MinecraftInstance>;
+
+

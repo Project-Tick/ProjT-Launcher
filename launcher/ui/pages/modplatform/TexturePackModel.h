@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "meta/VersionList.h"
+#include "meta/VersionList.hpp"
 #include "ui/pages/modplatform/ResourcePackModel.h"
 
 namespace ResourceDownload
@@ -49,7 +49,7 @@ namespace ResourceDownload
 		ResourceAPI::VersionSearchArgs createVersionsArguments(const QModelIndex&) override;
 
 	  protected:
-		Meta::VersionList::Ptr m_version_list;
+		projt::meta::MetaVersionList::Ptr m_version_list;
 		Task::Ptr m_task;
 	};
 

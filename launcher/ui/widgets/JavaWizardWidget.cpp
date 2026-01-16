@@ -36,10 +36,10 @@
 #include "DesktopServices.h"
 #include "FileSystem.h"
 #include "JavaCommon.h"
-#include "java/JavaChecker.h"
-#include "java/JavaInstall.h"
-#include "java/JavaInstallList.h"
-#include "java/JavaUtils.h"
+#include "java/core/RuntimeInstall.hpp"
+#include "java/services/RuntimeCatalog.hpp"
+#include "java/services/RuntimeProbeTask.hpp"
+#include "java/services/RuntimeScanner.hpp"
 
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/java/InstallJavaDialog.h"
@@ -221,7 +221,7 @@ void JavaWizardWidget::setupUi()
 
 void JavaWizardWidget::initialize()
 {
-	m_versionWidget->initialize(APPLICATION->javalist().get());
+	m_versionWidget->initialize(APPLICATION->runtimeCatalog().get());
 	m_versionWidget->selectSearch();
 	m_versionWidget->setResizeOn(2);
 	auto s = APPLICATION->settings();
@@ -245,7 +245,7 @@ void JavaWizardWidget::refresh()
 	{
 		return;
 	}
-	if (JavaUtils::getJavaCheckPath().isEmpty())
+	if (projt::java::RuntimeProbeTask::probeJarPath().isEmpty())
 	{
 		JavaCommon::javaCheckNotFound(this);
 		return;
@@ -269,7 +269,7 @@ JavaWizardWidget::ValidationStatus JavaWizardWidget::validate()
 			if (!(BuildConfig.JAVA_DOWNLOADER_ENABLED && m_autodownloadCheckBox->isChecked()))
 			{ // the java will not be autodownloaded
 				int button = QMessageBox::No;
-				if (m_result.mojangPlatform == "32" && maxHeapSize() > 2048)
+				if (m_result.platformTag == "32" && maxHeapSize() > 2048)
 				{
 					button = CustomMessageBox::selectable(this,
 														  tr("32-bit Java detected"),
@@ -392,12 +392,12 @@ void JavaWizardWidget::memoryValueChanged()
 
 void JavaWizardWidget::javaVersionSelected(BaseVersion::Ptr version)
 {
-	auto java = std::dynamic_pointer_cast<JavaInstall>(version);
+	auto java = std::dynamic_pointer_cast<projt::java::RuntimeInstall>(version);
 	if (!java)
 	{
 		return;
 	}
-	auto visible = java->id.requiresPermGen();
+	auto visible = java->version.needsPermGen();
 	m_labelPermGen->setVisible(visible);
 	m_permGenSpinBox->setVisible(visible);
 	m_javaPathTextBox->setText(java->path);
@@ -406,7 +406,7 @@ void JavaWizardWidget::javaVersionSelected(BaseVersion::Ptr version)
 
 void JavaWizardWidget::on_javaBrowseBtn_clicked()
 {
-	auto filter	  = QString("Java (%1)").arg(JavaUtils::javaExecutable);
+	auto filter	  = QString("Java (%1)").arg(projt::java::RuntimeScanner::executableName());
 	auto raw_path = QFileDialog::getOpenFileName(this, tr("Find Java executable"), QString(), filter);
 	if (raw_path.isEmpty())
 	{
@@ -437,7 +437,7 @@ void JavaWizardWidget::on_javaStatusBtn_clicked()
 		case JavaStatus::DoesNotStart:
 		{
 			text += QObject::tr("The specified Java binary didn't start properly.<br />");
-			auto htmlError = m_result.errorLog;
+			auto htmlError = m_result.stderrLog;
 			if (!htmlError.isEmpty())
 			{
 				htmlError.replace('\n', "<br />");
@@ -449,7 +449,7 @@ void JavaWizardWidget::on_javaStatusBtn_clicked()
 		case JavaStatus::ReturnedInvalidData:
 		{
 			text += QObject::tr("The specified Java binary returned unexpected results:<br />");
-			auto htmlOut = m_result.outLog;
+			auto htmlOut = m_result.stdoutLog;
 			if (!htmlOut.isEmpty())
 			{
 				htmlOut.replace('\n', "<br />");
@@ -461,7 +461,7 @@ void JavaWizardWidget::on_javaStatusBtn_clicked()
 		case JavaStatus::Good:
 			text += QObject::tr("Java test succeeded!<br />Platform reported: %1<br />Java version "
 								"reported: %2<br />")
-						.arg(m_result.realPlatform, m_result.javaVersion.toString());
+						.arg(m_result.platformArch, m_result.version.toString());
 			break;
 		case JavaStatus::Pending:
 			CustomMessageBox::selectable(this,
@@ -526,32 +526,32 @@ void JavaWizardWidget::checkJavaPath(const QString& path)
 		return;
 	}
 	setJavaStatus(JavaStatus::Pending);
-	m_checker.reset(new JavaChecker(path,
-									"",
-									minHeapSize(),
-									maxHeapSize(),
-									m_permGenSpinBox->isVisible() ? m_permGenSpinBox->value() : 0,
-									0));
-	connect(m_checker.get(), &JavaChecker::checkFinished, this, &JavaWizardWidget::checkFinished);
+	projt::java::RuntimeProbeTask::ProbeSettings settings;
+	settings.binaryPath = path;
+	settings.minMem = minHeapSize();
+	settings.maxMem = maxHeapSize();
+	settings.permGen = m_permGenSpinBox->isVisible() ? m_permGenSpinBox->value() : 0;
+	m_checker.reset(new projt::java::RuntimeProbeTask(settings));
+	connect(m_checker.get(), &projt::java::RuntimeProbeTask::probeFinished, this, &JavaWizardWidget::checkFinished);
 	m_checker->start();
 }
 
-void JavaWizardWidget::checkFinished(const JavaChecker::Result& result)
+void JavaWizardWidget::checkFinished(const projt::java::RuntimeProbeTask::ProbeReport& result)
 {
 	m_result = result;
-	switch (result.validity)
+	switch (result.status)
 	{
-		case JavaChecker::Result::Validity::Valid:
+		case projt::java::RuntimeProbeTask::ProbeReport::Status::Valid:
 		{
 			setJavaStatus(JavaStatus::Good);
 			break;
 		}
-		case JavaChecker::Result::Validity::ReturnedInvalidData:
+		case projt::java::RuntimeProbeTask::ProbeReport::Status::InvalidData:
 		{
 			setJavaStatus(JavaStatus::ReturnedInvalidData);
 			break;
 		}
-		case JavaChecker::Result::Validity::Errored:
+		case projt::java::RuntimeProbeTask::ProbeReport::Status::Errored:
 		{
 			setJavaStatus(JavaStatus::DoesNotStart);
 			break;
@@ -646,3 +646,5 @@ JavaWizardWidget::~JavaWizardWidget()
 {
 	delete m_verticalSpacer;
 };
+
+

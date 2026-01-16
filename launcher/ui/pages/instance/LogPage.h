@@ -61,7 +61,8 @@
 #include <QWidget>
 
 #include "BaseInstance.h"
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
+#include "launch/LaunchLogModel.hpp"
 #include "ui/pages/BasePage.h"
 
 namespace Ui
@@ -132,18 +133,18 @@ class LogPage : public QWidget, public BasePage
 	void findNextActivated();
 	void findPreviousActivated();
 
-	void onInstanceLaunchTaskChanged(shared_qobject_ptr<LaunchTask> proc);
+	void onInstanceLaunchPipelineChanged(shared_qobject_ptr<projt::launch::LaunchPipeline> proc);
 
   private:
 	void modelStateToUI();
 	void UIToModelState();
-	void setInstanceLaunchTaskChanged(shared_qobject_ptr<LaunchTask> proc, bool initial);
+	void setInstanceLaunchPipelineChanged(shared_qobject_ptr<projt::launch::LaunchPipeline> proc, bool initial);
 
   private:
 	Ui::LogPage* ui;
 	InstancePtr m_instance;
-	shared_qobject_ptr<LaunchTask> m_process;
+	shared_qobject_ptr<projt::launch::LaunchPipeline> m_process;
 
 	LogFormatProxyModel* m_proxy;
-	shared_qobject_ptr<LogModel> m_model;
+	shared_qobject_ptr<projt::launch::LaunchLogModel> m_model;
 };

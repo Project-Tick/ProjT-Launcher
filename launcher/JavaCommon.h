@@ -18,7 +18,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <java/JavaChecker.h>
+#include <java/services/RuntimeProbeTask.hpp>
 
 class QWidget;
 
@@ -30,11 +30,11 @@ namespace JavaCommon
 	bool checkJVMArgs(QString args, QWidget* parent);
 
 	// Show a dialog saying that the Java binary was usable
-	void javaWasOk(QWidget* parent, const JavaChecker::Result& result);
+	void javaWasOk(QWidget* parent, const projt::java::RuntimeProbeTask::ProbeReport& result);
 	// Show a dialog saying that the Java binary was not usable because of bad options
-	void javaArgsWereBad(QWidget* parent, const JavaChecker::Result& result);
+	void javaArgsWereBad(QWidget* parent, const projt::java::RuntimeProbeTask::ProbeReport& result);
 	// Show a dialog saying that the Java binary was not usable
-	void javaBinaryWasBad(QWidget* parent, const JavaChecker::Result& result);
+	void javaBinaryWasBad(QWidget* parent, const projt::java::RuntimeProbeTask::ProbeReport& result);
 	// Show a dialog if we couldn't find Java Checker
 	void javaCheckNotFound(QWidget* parent);
 
@@ -58,11 +58,11 @@ namespace JavaCommon
 		void finished();
 
 	  private slots:
-		void checkFinished(const JavaChecker::Result& result);
-		void checkFinishedWithArgs(const JavaChecker::Result& result);
+		void checkFinished(const projt::java::RuntimeProbeTask::ProbeReport& result);
+		void checkFinishedWithArgs(const projt::java::RuntimeProbeTask::ProbeReport& result);
 
 	  private:
-		JavaChecker::Ptr checker;
+		projt::java::RuntimeProbeTask::Ptr checker;
 		QWidget* m_parent = nullptr;
 		QString m_path;
 		QString m_args;
@@ -71,3 +71,4 @@ namespace JavaCommon
 		int m_permGen = 64;
 	};
 } // namespace JavaCommon
+

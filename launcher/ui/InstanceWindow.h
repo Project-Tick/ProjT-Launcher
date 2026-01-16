@@ -63,7 +63,7 @@
 #include <QToolButton>
 
 #include "LaunchController.h"
-#include "launch/LaunchTask.h"
+#include "launch/LaunchPipeline.hpp"
 
 #include "ui/pages/BasePageContainer.h"
 
@@ -95,7 +95,7 @@ class InstanceWindow : public QMainWindow, public BasePageContainer
 	void isClosing();
 
   private slots:
-	void instanceLaunchTaskChanged(shared_qobject_ptr<LaunchTask> proc);
+	void instanceLaunchPipelineChanged(shared_qobject_ptr<projt::launch::LaunchPipeline> proc);
 	void runningStateChanged(bool running);
 	void on_instanceStatusChanged(BaseInstance::Status, BaseInstance::Status newStatus);
 
@@ -106,7 +106,7 @@ class InstanceWindow : public QMainWindow, public BasePageContainer
 	void updateButtons();
 
   private:
-	shared_qobject_ptr<LaunchTask> m_proc;
+	shared_qobject_ptr<projt::launch::LaunchPipeline> m_proc;
 	InstancePtr m_instance;
 	bool m_doNotSave			= false;
 	PageContainer* m_container	= nullptr;

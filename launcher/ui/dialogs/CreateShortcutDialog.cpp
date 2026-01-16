@@ -70,7 +70,7 @@
 #include "DesktopServices.h"
 #include "FileSystem.h"
 #include "InstanceList.h"
-#include "icons/IconList.h"
+#include "icons/IconList.hpp"
 
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/ShortcutUtils.h"
@@ -260,3 +260,4 @@ void CreateShortcutDialog::createShortcut()
 	else
 		ShortcutUtils::createInstanceShortcutInOther(args);
 }
+

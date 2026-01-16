@@ -31,7 +31,7 @@
 
 #include <FileSystem.h>
 #include <MessageLevel.h>
-#include <logs/LogParser.h>
+#include <logs/LogEventParser.hpp>
 
 class XmlLogParseTest : public QObject
 {
@@ -114,7 +114,7 @@ class XmlLogParseTest : public QObject
 	}
 
   private:
-	LogParser m_parser;
+	projt::logs::LogEventParser m_parser;
 
 	QList<std::pair<MessageLevel::Enum, QString>> parseLines(const QStringList& lines)
 	{
@@ -123,14 +123,14 @@ class XmlLogParseTest : public QObject
 
 		for (const auto& line : lines)
 		{
-			m_parser.appendLine(line);
+			m_parser.pushLine(line);
 
-			auto items = m_parser.parseAvailable();
+			auto items = m_parser.drainAvailable();
 			for (const auto& item : items)
 			{
-				if (std::holds_alternative<LogParser::LogEntry>(item))
+				if (std::holds_alternative<projt::logs::LogEventParser::LogRecord>(item))
 				{
-					auto entry = std::get<LogParser::LogEntry>(item);
+					auto entry = std::get<projt::logs::LogEventParser::LogRecord>(item);
 					auto msg   = QString("[%1] [%2/%3] [%4]: %5")
 								   .arg(entry.timestamp.toString("HH:mm:ss"))
 								   .arg(entry.thread)
@@ -140,10 +140,10 @@ class XmlLogParseTest : public QObject
 					out.append(std::make_pair(entry.level, msg));
 					last = entry.level;
 				}
-				else if (std::holds_alternative<LogParser::PlainText>(item))
+				else if (std::holds_alternative<projt::logs::LogEventParser::RawLine>(item))
 				{
-					auto msg   = std::get<LogParser::PlainText>(item).message;
-					auto level = LogParser::guessLevel(msg, last);
+					auto msg   = std::get<projt::logs::LogEventParser::RawLine>(item).text;
+					auto level = projt::logs::LogEventParser::guessLevelFromLine(msg, last);
 					out.append(std::make_pair(level, msg));
 					last = level;
 				}

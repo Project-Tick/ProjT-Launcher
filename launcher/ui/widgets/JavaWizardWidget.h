@@ -22,7 +22,7 @@
 
 #include <BaseVersion.h>
 #include <QObjectPtr.h>
-#include <java/JavaChecker.h>
+#include <java/services/RuntimeProbeTask.hpp>
 #include <qcheckbox.h>
 #include <QIcon>
 
@@ -86,7 +86,7 @@ class JavaWizardWidget : public QWidget
 	void on_javaBrowseBtn_clicked();
 	void on_javaStatusBtn_clicked();
 	void javaDownloadBtn_clicked();
-	void checkFinished(const JavaChecker::Result& result);
+	void checkFinished(const projt::java::RuntimeProbeTask::ProbeReport& result);
 
   protected: /* methods */
 	void checkJavaPathOnEdit(const QString& path);
@@ -130,7 +130,8 @@ class JavaWizardWidget : public QWidget
 	unsigned int observedPermGenMemory = 0;
 	QString queuedCheck;
 	uint64_t m_availableMemory = 0ull;
-	shared_qobject_ptr<JavaChecker> m_checker;
-	JavaChecker::Result m_result;
+	shared_qobject_ptr<projt::java::RuntimeProbeTask> m_checker;
+	projt::java::RuntimeProbeTask::ProbeReport m_result;
 	QTimer* m_memoryTimer;
 };
+

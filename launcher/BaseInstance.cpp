@@ -508,7 +508,7 @@ QString BaseInstance::windowTitle() const
 	return BuildConfig.LAUNCHER_DISPLAYNAME + ": " + name();
 }
 
-shared_qobject_ptr<LaunchTask> BaseInstance::getLaunchTask()
+shared_qobject_ptr<projt::launch::LaunchPipeline> BaseInstance::getLaunchPipeline()
 {
 	return m_launchProcess;
 }

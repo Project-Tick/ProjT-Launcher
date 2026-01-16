@@ -61,7 +61,6 @@
 #include <memory>
 
 #include <translations/TranslationsModel.h>
-#include "java/JavaChecker.h"
 #include "ui/pages/BasePage.h"
 
 class QTextCharFormat;
@@ -115,3 +114,4 @@ class LauncherPage : public QWidget, public BasePage
   private:
 	Ui::LauncherPage* ui;
 };
+

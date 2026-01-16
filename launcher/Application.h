@@ -66,7 +66,7 @@
 
 #include <BaseInstance.h>
 
-#include "launch/LogModel.h"
+#include "launch/LaunchLogModel.hpp"
 #include "minecraft/launch/MinecraftTarget.h"
 
 class LaunchController;
@@ -81,9 +81,15 @@ class HttpMetaCache;
 class SettingsObject;
 class InstanceList;
 class AccountList;
-class IconList;
+namespace projt::icons
+{
+	class IconList;
+}
 class QNetworkAccessManager;
-class JavaInstallList;
+namespace projt::java
+{
+	class RuntimeCatalog;
+}
 class ExternalUpdater;
 class BaseProfilerFactory;
 class BaseDetachedToolFactory;
@@ -93,9 +99,9 @@ class MCEditTool;
 class ThemeManager;
 class IconTheme;
 
-namespace Meta
+namespace projt::meta
 {
-	class Index;
+	class MetaIndex;
 }
 
 #if defined(APPLICATION)
@@ -165,14 +171,14 @@ class Application : public QApplication
 
 	std::shared_ptr<TranslationsModel> translations();
 
-	std::shared_ptr<JavaInstallList> javalist();
+	std::shared_ptr<projt::java::RuntimeCatalog> runtimeCatalog();
 
 	std::shared_ptr<InstanceList> instances() const
 	{
 		return m_instances;
 	}
 
-	std::shared_ptr<IconList> icons() const
+	std::shared_ptr<projt::icons::IconList> icons() const
 	{
 		return m_icons;
 	}
@@ -203,7 +209,7 @@ class Application : public QApplication
 
 	shared_qobject_ptr<HttpMetaCache> metacache();
 
-	shared_qobject_ptr<Meta::Index> metadataIndex();
+	shared_qobject_ptr<projt::meta::MetaIndex> metadataIndex();
 
 	void updateCapabilities();
 
@@ -323,12 +329,12 @@ class Application : public QApplication
 	shared_qobject_ptr<AccountList> m_accounts;
 
 	shared_qobject_ptr<HttpMetaCache> m_metacache;
-	shared_qobject_ptr<Meta::Index> m_metadataIndex;
+	shared_qobject_ptr<projt::meta::MetaIndex> m_metadataIndex;
 
 	std::shared_ptr<SettingsObject> m_settings;
 	std::shared_ptr<InstanceList> m_instances;
-	std::shared_ptr<IconList> m_icons;
-	std::shared_ptr<JavaInstallList> m_javalist;
+	std::shared_ptr<projt::icons::IconList> m_icons;
+	std::shared_ptr<projt::java::RuntimeCatalog> m_runtimeCatalog;
 	std::shared_ptr<TranslationsModel> m_translations;
 	std::shared_ptr<GenericPageProvider> m_globalSettingsProvider;
 	std::unique_ptr<MCEditTool> m_mcedit;
@@ -390,7 +396,7 @@ class Application : public QApplication
 	QList<QUrl> m_urlsToImport;
 	QString m_instanceIdToShowWindowOf;
 	std::unique_ptr<QFile> logFile;
-	shared_qobject_ptr<LogModel> logModel;
+	shared_qobject_ptr<projt::launch::LaunchLogModel> logModel;
 
   public:
 	void addQSavePath(QString);

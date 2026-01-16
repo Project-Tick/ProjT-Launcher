@@ -74,8 +74,8 @@
 #include "Exception.h"
 #include "FileSystem.h"
 #include "Json.h"
-#include "meta/Index.h"
-#include "meta/JsonFormat.h"
+#include "meta/Index.hpp"
+#include "meta/JsonFormat.hpp"
 #include "minecraft/Component.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/OneSixVersionFormat.h"
@@ -141,8 +141,8 @@ static QJsonObject componentToJsonV1(ComponentPtr component)
 	{
 		obj.insert("cachedName", component->m_cachedName);
 	}
-	Meta::serializeRequires(obj, &component->m_cachedRequires, "cachedRequires");
-	Meta::serializeRequires(obj, &component->m_cachedConflicts, "cachedConflicts");
+	projt::meta::writeDependencies(obj, component->m_cachedRequires, "cachedRequires");
+	projt::meta::writeDependencies(obj, component->m_cachedConflicts, "cachedConflicts");
 	if (component->m_cachedVolatile)
 	{
 		obj.insert("cachedVolatile", true);
@@ -164,12 +164,12 @@ static ComponentPtr componentFromJsonV1(PackProfile* parent,
 
 	// cached
 	// TODO @RESILIENCE: ignore invalid values/structure here?
-	component->m_cachedVersion = Json::ensureString(obj.value("cachedVersion"));
-	component->m_cachedName	   = Json::ensureString(obj.value("cachedName"));
-	Meta::parseRequires(obj, &component->m_cachedRequires, "cachedRequires");
-	Meta::parseRequires(obj, &component->m_cachedConflicts, "cachedConflicts");
-	component->m_cachedVolatile = Json::ensureBoolean(obj.value("volatile"), false);
-	bool disabled				= Json::ensureBoolean(obj.value("disabled"), false);
+	component->m_cachedVersion	 = Json::ensureString(obj.value("cachedVersion"));
+	component->m_cachedName		 = Json::ensureString(obj.value("cachedName"));
+	component->m_cachedRequires	 = projt::meta::parseDependencies(obj, "cachedRequires");
+	component->m_cachedConflicts = projt::meta::parseDependencies(obj, "cachedConflicts");
+	component->m_cachedVolatile	 = Json::ensureBoolean(obj.value("volatile"), false);
+	bool disabled				 = Json::ensureBoolean(obj.value("disabled"), false);
 	component->setEnabled(!disabled);
 	return component;
 }

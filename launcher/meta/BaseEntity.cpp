@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -16,26 +16,15 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- * Copyright 2015-2021 MultiMC Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ======================================================================== */
+ */
 
-#include "BaseEntity.h"
+#include "BaseEntity.hpp"
 
+#include <QDir>
+#include <QFile>
+
+#include "Application.h"
+#include "BuildConfig.h"
 #include "Exception.h"
 #include "FileSystem.h"
 #include "Json.h"
@@ -43,203 +32,213 @@
 #include "net/ApiDownload.h"
 #include "net/ChecksumValidator.h"
 #include "net/HttpMetaCache.h"
-#include "net/Mode.h"
-#include "net/NetJob.h"
 
-#include "Application.h"
-#include "BuildConfig.h"
-#include "tasks/Task.h"
-
-namespace Meta
+namespace projt::meta
 {
 
-	class ParsingValidator : public Net::Validator
+	namespace
 	{
-	  public: /* con/des */
-		ParsingValidator(BaseEntity* entity) : m_entity(entity) {};
-		virtual ~ParsingValidator() = default;
 
-	  public: /* methods */
-		bool init(QNetworkRequest&) override
+		/**
+		 * @brief Validator that parses downloaded JSON into the target entity.
+		 */
+		class JsonParseValidator : public Net::Validator
 		{
-			m_data.clear();
-			return true;
-		}
-		bool write(QByteArray& data) override
-		{
-			this->m_data.append(data);
-			return true;
-		}
-		bool abort() override
-		{
-			m_data.clear();
-			return true;
-		}
-		bool validate(QNetworkReply&) override
-		{
-			auto fname = m_entity->localFilename();
-			try
+		  public:
+			explicit JsonParseValidator(MetaEntity* entity) : m_entity(entity)
+			{}
+
+			bool init(QNetworkRequest&) override
 			{
-				auto doc = Json::requireDocument(m_data, fname);
-				auto obj = Json::requireObject(doc, fname);
-				m_entity->parse(obj);
+				m_buffer.clear();
 				return true;
 			}
-			catch (const Exception& e)
+
+			bool write(QByteArray& chunk) override
 			{
-				qWarning() << "Unable to parse response:" << e.cause();
-				return false;
+				m_buffer.append(chunk);
+				return true;
 			}
-		}
 
-	  private: /* data */
-		QByteArray m_data;
-		BaseEntity* m_entity;
-	};
+			bool abort() override
+			{
+				m_buffer.clear();
+				return true;
+			}
 
-	QUrl BaseEntity::url() const
+			bool validate(QNetworkReply&) override
+			{
+				QString filename = m_entity->cacheFilePath();
+				try
+				{
+					QJsonDocument doc = Json::requireDocument(m_buffer, filename);
+					QJsonObject root  = Json::requireObject(doc, filename);
+					m_entity->loadFromJson(root);
+					return true;
+				}
+				catch (const Exception& ex)
+				{
+					qWarning() << "Failed to parse metadata:" << ex.cause();
+					return false;
+				}
+			}
+
+		  private:
+			QByteArray m_buffer;
+			MetaEntity* m_entity;
+		};
+
+	} // anonymous namespace
+
+	QUrl MetaEntity::remoteUrl() const
 	{
-		auto s				 = APPLICATION->settings();
-		QString metaOverride = s->get("MetaURLOverride").toString();
-		if (metaOverride.isEmpty())
-		{
-			return QUrl(BuildConfig.META_URL).resolved(localFilename());
-		}
-		return QUrl(metaOverride).resolved(localFilename());
+		auto settings	 = APPLICATION->settings();
+		QString override = settings->get("MetaURLOverride").toString();
+
+		QString baseUrl = override.isEmpty() ? BuildConfig.META_URL : override;
+		return QUrl(baseUrl).resolved(cacheFilePath());
 	}
 
-	Task::Ptr BaseEntity::loadTask(Net::Mode mode)
+	Task::Ptr MetaEntity::createLoadTask(Net::Mode mode)
 	{
-		if (m_task && m_task->isRunning())
-		{
-			return m_task;
-		}
-		m_task.reset(new BaseEntityLoadTask(this, mode));
-		return m_task;
+		if (m_activeTask && m_activeTask->isRunning())
+			return m_activeTask;
+
+		m_activeTask = Task::Ptr(new EntityLoader(this, mode));
+		return m_activeTask;
 	}
 
-	bool BaseEntity::isLoaded() const
-	{
-		// consider it loaded only if the main hash is either empty and was remote loadded or the hashes match and was
-		// loaded
-		return m_sha256.isEmpty() ? m_load_status == LoadStatus::Remote
-								  : m_load_status != LoadStatus::NotLoaded && m_sha256 == m_file_sha256;
-	}
+	// EntityLoader implementation
 
-	void BaseEntity::setSha256(QString sha256)
-	{
-		m_sha256 = sha256;
-	}
-
-	BaseEntity::LoadStatus BaseEntity::status() const
-	{
-		return m_load_status;
-	}
-
-	BaseEntityLoadTask::BaseEntityLoadTask(BaseEntity* parent, Net::Mode mode) : m_entity(parent), m_mode(mode)
+	EntityLoader::EntityLoader(MetaEntity* target, Net::Mode mode) : m_target(target), m_mode(mode)
 	{}
 
-	void BaseEntityLoadTask::executeTask()
+	void EntityLoader::executeTask()
 	{
-		const QString fname = QDir("meta").absoluteFilePath(m_entity->localFilename());
-		auto hashMatches	= false;
-		// the file exists on disk try to load it
-		if (QFile::exists(fname))
-		{
-			try
-			{
-				QByteArray fileData;
-				// read local file if nothing is loaded yet
-				if (m_entity->m_load_status == BaseEntity::LoadStatus::NotLoaded || m_entity->m_file_sha256.isEmpty())
-				{
-					setStatus(tr("Loading local file"));
-					fileData				= FS::read(fname);
-					m_entity->m_file_sha256 = Hashing::hash(fileData, Hashing::Algorithm::Sha256);
-				}
+		attemptLocalLoad();
+	}
 
-				// on online the hash needs to match
-				hashMatches = m_entity->m_sha256 == m_entity->m_file_sha256;
-				if (m_mode == Net::Mode::Online && !m_entity->m_sha256.isEmpty() && !hashMatches)
-				{
-					throw Exception("mismatched checksum");
-				}
+	void EntityLoader::attemptLocalLoad()
+	{
+		QString cachePath = QDir("meta").absoluteFilePath(m_target->cacheFilePath());
 
-				// load local file
-				if (m_entity->m_load_status == BaseEntity::LoadStatus::NotLoaded)
-				{
-					auto doc = Json::requireDocument(fileData, fname);
-					auto obj = Json::requireObject(doc, fname);
-					m_entity->parse(obj);
-					m_entity->m_load_status = BaseEntity::LoadStatus::Local;
-				}
-			}
-			catch (const Exception& e)
-			{
-				qDebug() << QString("Unable to parse file %1: %2").arg(fname, e.cause());
-				// just make sure it's gone and we never consider it again.
-				FS::deletePath(fname);
-				m_entity->m_load_status = BaseEntity::LoadStatus::NotLoaded;
-			}
-		}
-		// if we need remote update, run the update task
-		auto wasLoadedOffline =
-			m_entity->m_load_status != BaseEntity::LoadStatus::NotLoaded && m_mode == Net::Mode::Offline;
-		// if has is not present allways fetch from remote(e.g. the main index file), else only fetch if hash doesn't
-		// match
-		auto wasLoadedRemote =
-			m_entity->m_sha256.isEmpty() ? m_entity->m_load_status == BaseEntity::LoadStatus::Remote : hashMatches;
-		if (wasLoadedOffline || wasLoadedRemote)
+		if (!QFile::exists(cachePath))
 		{
-			emitSucceeded();
+			// No local cache, need remote fetch
+			if (m_mode == Net::Mode::Offline)
+			{
+				emitFailed(tr("Metadata not available offline: %1").arg(m_target->cacheFilePath()));
+				return;
+			}
+			initiateRemoteFetch();
 			return;
 		}
-		m_task.reset(
-			new NetJob(QObject::tr("Download of meta file %1").arg(m_entity->localFilename()), APPLICATION->network()));
-		auto url   = m_entity->url();
-		auto entry = APPLICATION->metacache()->resolveEntry("meta", m_entity->localFilename());
-		entry->setStale(true);
-		auto dl = Net::ApiDownload::makeCached(url, entry);
-		/*
-		 * The validator parses the file and loads it into the object.
-		 * If that fails, the file is not written to storage.
-		 */
-		if (!m_entity->m_sha256.isEmpty())
-			dl->addValidator(new Net::ChecksumValidator(QCryptographicHash::Algorithm::Sha256, m_entity->m_sha256));
-		dl->addValidator(new ParsingValidator(m_entity));
-		m_task->addNetAction(dl);
-		m_task->setAskRetry(false);
-		connect(m_task.get(), &Task::failed, this, &BaseEntityLoadTask::emitFailed);
-		connect(m_task.get(), &Task::succeeded, this, &BaseEntityLoadTask::emitSucceeded);
-		connect(m_task.get(),
-				&Task::succeeded,
-				this,
-				[this]()
-				{
-					m_entity->m_load_status = BaseEntity::LoadStatus::Remote;
-					m_entity->m_file_sha256 = m_entity->m_sha256;
-				});
 
-		connect(m_task.get(), &Task::progress, this, &Task::setProgress);
-		connect(m_task.get(), &Task::stepProgress, this, &BaseEntityLoadTask::propagateStepProgress);
-		connect(m_task.get(), &Task::status, this, &Task::setStatus);
-		connect(m_task.get(), &Task::details, this, &Task::setDetails);
+		// Try loading from cache
+		try
+		{
+			setStatus(tr("Loading cached metadata"));
 
-		m_task->start();
+			QByteArray content		 = FS::read(cachePath);
+			m_target->m_actualSha256 = Hashing::hash(content, Hashing::Algorithm::Sha256);
+
+			// Validate checksum if we have an expected one
+			bool checksumValid =
+				m_target->m_expectedSha256.isEmpty() || (m_target->m_expectedSha256 == m_target->m_actualSha256);
+
+			if (m_mode == Net::Mode::Online && !checksumValid)
+			{
+				// Checksum mismatch in online mode - need fresh copy
+				initiateRemoteFetch();
+				return;
+			}
+
+			// Parse the cached file
+			if (m_target->m_state == MetaEntity::State::Pending)
+			{
+				QJsonDocument doc = Json::requireDocument(content, cachePath);
+				QJsonObject root  = Json::requireObject(doc, cachePath);
+				m_target->loadFromJson(root);
+				finalizeLoad(MetaEntity::State::Cached);
+			}
+			else
+			{
+				// Already loaded, just succeed
+				emitSucceeded();
+			}
+		}
+		catch (const Exception& ex)
+		{
+			qDebug() << "Cache parse failed for" << cachePath << ":" << ex.cause();
+			FS::deletePath(cachePath);
+			m_target->m_state = MetaEntity::State::Pending;
+
+			if (m_mode == Net::Mode::Offline)
+			{
+				emitFailed(tr("Cached metadata corrupted and offline mode active"));
+				return;
+			}
+			initiateRemoteFetch();
+		}
 	}
 
-	bool BaseEntityLoadTask::canAbort() const
+	void EntityLoader::initiateRemoteFetch()
 	{
-		return m_task ? m_task->canAbort() : false;
+		setStatus(tr("Downloading metadata: %1").arg(m_target->cacheFilePath()));
+
+		m_netTask = NetJob::Ptr(new NetJob(tr("Fetch %1").arg(m_target->cacheFilePath()), APPLICATION->network()));
+
+		auto cacheEntry = APPLICATION->metacache()->resolveEntry("meta", m_target->cacheFilePath());
+		cacheEntry->setStale(true);
+
+		auto download = Net::ApiDownload::makeCached(m_target->remoteUrl(), cacheEntry);
+
+		// Add checksum validator if available
+		if (!m_target->m_expectedSha256.isEmpty())
+		{
+			download->addValidator(new Net::ChecksumValidator(QCryptographicHash::Sha256, m_target->m_expectedSha256));
+		}
+
+		// Add JSON parsing validator
+		download->addValidator(new JsonParseValidator(m_target));
+
+		m_netTask->addNetAction(download);
+		m_netTask->setAskRetry(false);
+
+		// Connect signals
+		connect(m_netTask.get(), &Task::succeeded, this, [this]() { finalizeLoad(MetaEntity::State::Synchronized); });
+		connect(m_netTask.get(), &Task::failed, this, &EntityLoader::emitFailed);
+		connect(m_netTask.get(), &Task::progress, this, &Task::setProgress);
+		connect(m_netTask.get(), &Task::stepProgress, this, &EntityLoader::propagateStepProgress);
+		connect(m_netTask.get(), &Task::status, this, &Task::setStatus);
+		connect(m_netTask.get(), &Task::details, this, &Task::setDetails);
+
+		m_netTask->start();
 	}
 
-	bool BaseEntityLoadTask::abort()
+	void EntityLoader::finalizeLoad(MetaEntity::State newState)
 	{
-		if (m_task)
+		m_target->m_state = newState;
+		if (newState == MetaEntity::State::Synchronized)
+		{
+			m_target->m_actualSha256 = m_target->m_expectedSha256;
+		}
+		emitSucceeded();
+	}
+
+	bool EntityLoader::canAbort() const
+	{
+		return m_netTask ? m_netTask->canAbort() : false;
+	}
+
+	bool EntityLoader::abort()
+	{
+		if (m_netTask)
 		{
 			Task::abort();
-			return m_task->abort();
+			return m_netTask->abort();
 		}
 		return Task::abort();
 	}
 
-} // namespace Meta
+} // namespace projt::meta

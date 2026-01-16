@@ -71,7 +71,7 @@
 
 #include "InstancePageProvider.h"
 
-#include "icons/IconList.h"
+#include "icons/IconList.hpp"
 
 InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent) : QMainWindow(parent), m_instance(instance)
 {
@@ -150,9 +150,12 @@ InstanceWindow::InstanceWindow(InstancePtr instance, QWidget* parent) : QMainWin
 
 	// set up instance and launch process recognition
 	{
-		auto launchTask = m_instance->getLaunchTask();
-		instanceLaunchTaskChanged(launchTask);
-		connect(m_instance.get(), &BaseInstance::launchTaskChanged, this, &InstanceWindow::instanceLaunchTaskChanged);
+		auto launchTask = m_instance->getLaunchPipeline();
+		instanceLaunchPipelineChanged(launchTask);
+		connect(m_instance.get(),
+				&BaseInstance::launchPipelineChanged,
+				this,
+				&InstanceWindow::instanceLaunchPipelineChanged);
 		connect(m_instance.get(), &BaseInstance::runningStatusChanged, this, &InstanceWindow::runningStateChanged);
 	}
 
@@ -192,7 +195,7 @@ void InstanceWindow::updateButtons()
 	m_launchButton->setMenu(launchMenu);
 }
 
-void InstanceWindow::instanceLaunchTaskChanged(shared_qobject_ptr<LaunchTask> proc)
+void InstanceWindow::instanceLaunchPipelineChanged(shared_qobject_ptr<projt::launch::LaunchPipeline> proc)
 {
 	m_proc = proc;
 }
@@ -260,3 +263,4 @@ bool InstanceWindow::requestClose()
 	}
 	return false;
 }
+

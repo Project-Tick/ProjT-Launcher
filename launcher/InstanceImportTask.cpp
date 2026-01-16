@@ -67,8 +67,8 @@
 #include "NullInstance.h"
 
 #include "QObjectPtr.h"
-#include "icons/IconList.h"
-#include "icons/IconUtils.h"
+#include "icons/IconList.hpp"
+#include "icons/IconUtils.hpp"
 
 #include "modplatform/flame/FlameInstanceCreationTask.h"
 #include "modplatform/modrinth/ModrinthInstanceCreationTask.h"
@@ -322,11 +322,11 @@ void InstanceImportTask::extractFinished()
 
 bool installIcon(QString root, QString instIconKey)
 {
-	auto importIconPath = IconUtils::findBestIconIn(root, instIconKey);
+	auto importIconPath = projt::icons::findBestIconIn(root, instIconKey);
 	if (importIconPath.isNull() || !QFile::exists(importIconPath))
-		importIconPath = IconUtils::findBestIconIn(root, "icon.png");
+		importIconPath = projt::icons::findBestIconIn(root, "icon.png");
 	if (importIconPath.isNull() || !QFile::exists(importIconPath))
-		importIconPath = IconUtils::findBestIconIn(FS::PathCombine(root, "overrides"), "icon.png");
+		importIconPath = projt::icons::findBestIconIn(FS::PathCombine(root, "overrides"), "icon.png");
 	if (!importIconPath.isNull() && QFile::exists(importIconPath))
 	{
 		// import icon
@@ -642,3 +642,4 @@ void InstanceImportTask::processModrinth()
 	setAbortable(true);
 	m_task->start();
 }
+

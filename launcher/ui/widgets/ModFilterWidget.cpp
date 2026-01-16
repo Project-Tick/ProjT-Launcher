@@ -64,7 +64,7 @@
 #include "BaseVersionList.h"
 #include "Json.h"
 #include "Version.h"
-#include "meta/Index.h"
+#include "meta/Index.hpp"
 #include "modplatform/ModIndex.h"
 #include "ui/widgets/CheckComboBox.h"
 #include "ui_ModFilterWidget.h"
@@ -237,7 +237,7 @@ ModFilterWidget::~ModFilterWidget()
 
 void ModFilterWidget::loadVersionList()
 {
-	m_version_list = APPLICATION->metadataIndex()->get("net.minecraft");
+	m_version_list = APPLICATION->metadataIndex()->component("net.minecraft");
 	if (!m_version_list->isLoaded())
 	{
 		QEventLoop load_version_list_loop;

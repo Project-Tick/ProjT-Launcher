@@ -16,33 +16,13 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- *
- *
- *  Prism Launcher - Minecraft Launcher
- *  Copyright (c) 2024 Trial97 <alexandru.tripon97@gmail.com>
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * ======================================================================== */
+ */
 
 #pragma once
 
 #include "BaseVersionList.h"
-#include "java/JavaMetadata.h"
-#include "meta/Version.h"
+#include "java/core/RuntimePackage.hpp"
+#include "meta/Version.hpp"
 
 namespace Java
 {
@@ -52,7 +32,7 @@ namespace Java
 		Q_OBJECT
 
 	  public:
-		explicit VersionList(Meta::Version::Ptr m_version, QObject* parent = 0);
+		explicit VersionList(projt::meta::MetaVersion::Ptr m_version, QObject* parent = 0);
 
 		Task::Ptr getLoadTask() override;
 		bool isLoaded() override;
@@ -68,8 +48,10 @@ namespace Java
 		{}
 
 	  protected:
-		Meta::Version::Ptr m_version;
-		QList<Java::MetadataPtr> m_vlist;
+		projt::meta::MetaVersion::Ptr m_version;
+		QList<projt::java::RuntimePackagePtr> m_vlist;
 	};
 
 } // namespace Java
+
+

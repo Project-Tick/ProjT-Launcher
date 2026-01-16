@@ -70,7 +70,7 @@
 #include "ui_ExportInstanceDialog.h"
 
 #include <FileSystem.h>
-#include <icons/IconList.h>
+#include <icons/IconList.hpp>
 #include <QDebug>
 #include <QFileInfo>
 #include <QPushButton>
@@ -236,3 +236,4 @@ QString ExportInstanceDialog::ignoreFileName()
 {
 	return FS::PathCombine(m_instance->instanceRoot(), ".packignore");
 }
+

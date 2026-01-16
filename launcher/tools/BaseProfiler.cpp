@@ -26,7 +26,7 @@ BaseProfiler::BaseProfiler(SettingsObjectPtr settings, InstancePtr instance, QOb
 	: BaseExternalTool(settings, instance, parent)
 {}
 
-void BaseProfiler::beginProfiling(shared_qobject_ptr<LaunchTask> process)
+void BaseProfiler::beginProfiling(shared_qobject_ptr<projt::launch::LaunchPipeline> process)
 {
 	beginProfilingImpl(process);
 }

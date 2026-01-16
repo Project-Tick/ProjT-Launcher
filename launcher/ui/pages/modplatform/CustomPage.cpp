@@ -63,8 +63,8 @@
 #include "Application.h"
 #include "Filter.h"
 #include "Version.h"
-#include "meta/Index.h"
-#include "meta/VersionList.h"
+#include "meta/Index.hpp"
+#include "meta/VersionList.hpp"
 #include "minecraft/VanillaInstanceCreationTask.h"
 #include "ui/dialogs/NewInstanceDialog.h"
 
@@ -99,7 +99,7 @@ void CustomPage::openedImpl()
 {
 	if (!initialized)
 	{
-		auto vlist = APPLICATION->metadataIndex()->get("net.minecraft");
+		auto vlist = APPLICATION->metadataIndex()->component("net.minecraft");
 		ui->versionList->initialize(vlist.get());
 		initialized = true;
 	}
@@ -197,7 +197,7 @@ void CustomPage::loaderFilterChanged()
 		m_selectedLoader = "com.mumfrey.liteloader";
 	}
 
-	auto vlist = APPLICATION->metadataIndex()->get(m_selectedLoader);
+	auto vlist = APPLICATION->metadataIndex()->component(m_selectedLoader);
 	ui->loaderVersionList->initialize(vlist.get());
 	ui->loaderVersionList->selectRecommended();
 	ui->loaderVersionList->setEmptyString(

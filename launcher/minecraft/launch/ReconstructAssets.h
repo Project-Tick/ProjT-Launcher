@@ -36,14 +36,14 @@
 
 #pragma once
 
-#include <launch/LaunchStep.h>
+#include <launch/LaunchStage.hpp>
 #include <memory>
 
-class ReconstructAssets : public LaunchStep
+class ReconstructAssets : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit ReconstructAssets(LaunchTask* parent) : LaunchStep(parent) {};
+	explicit ReconstructAssets(projt::launch::LaunchPipeline* parent) : projt::launch::LaunchStage(parent) {};
 	virtual ~ReconstructAssets() {};
 
 	void executeTask() override;

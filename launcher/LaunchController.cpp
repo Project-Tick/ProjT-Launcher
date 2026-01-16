@@ -56,7 +56,8 @@
 
 #include "LaunchController.h"
 #include "Application.h"
-#include "launch/steps/PrintServers.h"
+#include "launch/LaunchPipeline.hpp"
+#include "launch/steps/HostLookupReportStep.hpp"
 #include "minecraft/auth/AccountData.h"
 #include "minecraft/auth/AccountList.h"
 
@@ -79,8 +80,11 @@
 
 #include "BuildConfig.h"
 #include "JavaCommon.h"
-#include "launch/steps/TextPrint.h"
+#include "launch/steps/LogMessageStep.hpp"
 #include "tasks/Task.h"
+
+namespace steps = projt::launch::steps;
+using projt::launch::LaunchPipeline;
 
 LaunchController::LaunchController() : Task()
 {}
@@ -467,7 +471,7 @@ void LaunchController::launchInstance()
 		return;
 	}
 
-	m_launcher = m_instance->createLaunchTask(m_session, m_targetToJoin);
+	m_launcher = m_instance->createLaunchPipeline(m_session, m_targetToJoin);
 	if (!m_launcher)
 	{
 		emitFailed(tr("Couldn't instantiate a launcher."));
@@ -480,10 +484,10 @@ void LaunchController::launchInstance()
 	{
 		APPLICATION->showInstanceWindow(m_instance);
 	}
-	connect(m_launcher.get(), &LaunchTask::readyForLaunch, this, &LaunchController::readyForLaunch);
-	connect(m_launcher.get(), &LaunchTask::succeeded, this, &LaunchController::onSucceeded);
-	connect(m_launcher.get(), &LaunchTask::failed, this, &LaunchController::onFailed);
-	connect(m_launcher.get(), &LaunchTask::requestProgress, this, &LaunchController::onProgressRequested);
+	connect(m_launcher.get(), &LaunchPipeline::readyForLaunch, this, &LaunchController::readyForLaunch);
+	connect(m_launcher.get(), &LaunchPipeline::succeeded, this, &LaunchController::onSucceeded);
+	connect(m_launcher.get(), &LaunchPipeline::failed, this, &LaunchController::onFailed);
+	connect(m_launcher.get(), &LaunchPipeline::requestProgress, this, &LaunchController::onProgressRequested);
 
 	// Prepend Online and Auth Status
 	QString online_mode;
@@ -497,16 +501,16 @@ void LaunchController::launchInstance()
 								"textures.minecraft.net",
 								"api.mojang.com" };
 
-		m_launcher->prependStep(makeShared<PrintServers>(m_launcher.get(), servers));
+		m_launcher->prependStage(makeShared<steps::HostLookupReportStep>(m_launcher.get(), servers));
 	}
 	else
 	{
 		online_mode = m_demo ? "demo" : "offline";
 	}
 
-	m_launcher->prependStep(makeShared<TextPrint>(m_launcher.get(),
-												  "Launched instance in " + online_mode + " mode\n",
-												  MessageLevel::Launcher));
+	m_launcher->prependStage(makeShared<steps::LogMessageStep>(m_launcher.get(),
+															 "Launched instance in " + online_mode + " mode\n",
+															 MessageLevel::Launcher));
 
 	// Prepend Version
 	{
@@ -514,8 +518,8 @@ void LaunchController::launchInstance()
 								 .arg(BuildConfig.LAUNCHER_DISPLAYNAME,
 									  BuildConfig.printableVersionString(),
 									  BuildConfig.BUILD_PLATFORM);
-		m_launcher->prependStep(
-			makeShared<TextPrint>(m_launcher.get(), versionString + "\n\n", MessageLevel::Launcher));
+		m_launcher->prependStage(
+			makeShared<steps::LogMessageStep>(m_launcher.get(), versionString + "\n\n", MessageLevel::Launcher));
 	}
 	m_launcher->start();
 }

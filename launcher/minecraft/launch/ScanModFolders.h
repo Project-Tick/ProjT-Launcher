@@ -36,14 +36,14 @@
 
 #pragma once
 
-#include <launch/LaunchStep.h>
+#include <launch/LaunchStage.hpp>
 #include <memory>
 
-class ScanModFolders : public LaunchStep
+class ScanModFolders : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit ScanModFolders(LaunchTask* parent) : LaunchStep(parent) {};
+	explicit ScanModFolders(projt::launch::LaunchPipeline* parent) : projt::launch::LaunchStage(parent) {};
 	virtual ~ScanModFolders() {};
 
 	virtual void executeTask() override;

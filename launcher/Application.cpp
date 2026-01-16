@@ -60,7 +60,7 @@
 #include "BuildConfig.h"
 
 #include "DataMigrationTask.h"
-#include "java/JavaInstallList.h"
+#include "java/services/RuntimeCatalog.hpp"
 #include "minecraft/BackupManager.h"
 #include "net/PasteUpload.h"
 #include "tasks/Task.h"
@@ -125,10 +125,10 @@
 #include "MTPixmapCache.h"
 
 #include <minecraft/auth/AccountList.h>
-#include "icons/IconList.h"
+#include "icons/IconList.hpp"
 #include "net/HttpMetaCache.h"
 
-#include "java/JavaInstallList.h"
+#include "java/services/RuntimeCatalog.hpp"
 
 #include "updater/ExternalUpdater.h"
 
@@ -139,7 +139,7 @@
 #include "settings/INISettingsObject.h"
 #include "settings/Setting.h"
 
-#include "meta/Index.h"
+#include "meta/Index.hpp"
 #include "translations/TranslationsModel.h"
 
 #include <DesktopServices.h>
@@ -180,10 +180,10 @@
 #endif
 #include <windows.h>
 #include <QStyleHints>
-#include "console/WindowsConsole.h"
+#include "console/WindowsConsole.hpp"
 #endif
 
-#include "console/Console.h"
+#include "console/Console.hpp"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x)	 STRINGIFY(x)
@@ -324,10 +324,10 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 {
 #if defined Q_OS_WIN32
 	// attach the parent console if stdout not already captured
-	if (AttachWindowsConsole())
+	if (projt::console::AttachWindowsConsole())
 	{
 		consoleAttached = true;
-		if (auto err = EnableAnsiSupport(); !err)
+		if (auto err = projt::console::EnableAnsiSupport(); !err)
 		{
 			isANSIColorConsole = true;
 		}
@@ -337,7 +337,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 		}
 	}
 #else
-	if (console::isConsole())
+	if (projt::console::isConsole())
 	{
 		isANSIColorConsole = true;
 	}
@@ -619,7 +619,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 		qInstallMessageHandler(appDebugOutput);
 		qSetMessagePattern(defaultLogFormat);
 
-		logModel.reset(new LogModel(this));
+		logModel.reset(new projt::launch::LaunchLogModel(this));
 
 		bool foundLoggingRules = false;
 
@@ -1039,7 +1039,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 									":/icons/multimc/50x50/instances/",
 									":/icons/multimc/128x128/instances/",
 									":/icons/multimc/scalable/instances/" };
-		m_icons.reset(new IconList(instFolders, setting->get().toString()));
+		m_icons.reset(new projt::icons::IconList(instFolders, setting->get().toString()));
 		connect(setting.get(),
 				&Setting::SettingChanged,
 				[this](const Setting&, QVariant value) { m_icons->directoryChanged(value.toString()); });
@@ -1659,13 +1659,13 @@ std::shared_ptr<TranslationsModel> Application::translations()
 	return m_translations;
 }
 
-std::shared_ptr<JavaInstallList> Application::javalist()
+std::shared_ptr<projt::java::RuntimeCatalog> Application::runtimeCatalog()
 {
-	if (!m_javalist)
+	if (!m_runtimeCatalog)
 	{
-		m_javalist.reset(new JavaInstallList());
+		m_runtimeCatalog.reset(new projt::java::RuntimeCatalog());
 	}
-	return m_javalist;
+	return m_runtimeCatalog;
 }
 
 QIcon Application::logo()
@@ -2109,11 +2109,11 @@ shared_qobject_ptr<QNetworkAccessManager> Application::network()
 	return m_network;
 }
 
-shared_qobject_ptr<Meta::Index> Application::metadataIndex()
+shared_qobject_ptr<projt::meta::MetaIndex> Application::metadataIndex()
 {
 	if (!m_metadataIndex)
 	{
-		m_metadataIndex.reset(new Meta::Index());
+		m_metadataIndex.reset(new projt::meta::MetaIndex());
 	}
 	return m_metadataIndex;
 }

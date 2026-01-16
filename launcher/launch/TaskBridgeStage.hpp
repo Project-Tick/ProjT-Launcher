@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Project Tick
+// SPDX-FileContributor: Project Tick Team
+/*
+ *  ProjT Launcher - Minecraft Launcher
+ *  Copyright (C) 2026 Project Tick
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+#include <QObjectPtr.h>
+#include <launch/LaunchStage.hpp>
+
+namespace projt::launch
+{
+class TaskBridgeStage : public LaunchStage
+{
+	Q_OBJECT
+  public:
+	explicit TaskBridgeStage(LaunchPipeline* pipeline, Task::Ptr task);
+	~TaskBridgeStage() override = default;
+
+	void executeTask() override;
+	bool canAbort() const override;
+	void proceed() override;
+
+  public slots:
+	bool abort() override;
+
+  private slots:
+	void onPayloadFinished();
+
+  private:
+	Task::Ptr m_payload;
+};
+} // namespace projt::launch

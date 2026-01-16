@@ -65,7 +65,7 @@
 #include <QJsonObject>
 #include <QRegularExpression>
 #include <QUrlQuery>
-#include "logs/AnonymizeLog.h"
+#include "logs/LogRedactor.hpp"
 
 const std::array<PasteUpload::PasteTypeInfo, 4> PasteUpload::PasteTypes = {
 	{ { "0x0.st", "https://0x0.st", "" },
@@ -262,7 +262,7 @@ PasteUpload::PasteUpload(const QString& log, QString url, PasteType pasteType)
 	  m_baseUrl(url),
 	  m_paste_type(pasteType)
 {
-	anonymizeLog(m_log);
+	projt::logs::redactLog(m_log);
 	auto base = PasteUpload::PasteTypes.at(pasteType);
 	if (m_baseUrl.isEmpty())
 		m_baseUrl = base.defaultBase;

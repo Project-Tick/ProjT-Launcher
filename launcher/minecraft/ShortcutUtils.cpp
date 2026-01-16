@@ -66,7 +66,7 @@
 
 #include <BuildConfig.h>
 #include <DesktopServices.h>
-#include <icons/IconList.h>
+#include <icons/IconList.hpp>
 
 namespace ShortcutUtils
 {
@@ -320,3 +320,4 @@ namespace ShortcutUtils
 	}
 
 } // namespace ShortcutUtils
+
