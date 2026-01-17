@@ -236,7 +236,8 @@ namespace projt::logs
 			if (!looksCompleteLog4j())
 			{
 				m_holdover = m_buffer;
-				return PendingChunk{ m_buffer };
+				m_buffer.clear();
+				return PendingChunk{ m_holdover };
 			}
 			return parseLog4jEvent();
 		}
@@ -261,7 +262,8 @@ namespace projt::logs
 					return RawLine{ text };
 				}
 				m_holdover = m_buffer;
-				return PendingChunk{ m_buffer };
+				m_buffer.clear();
+				return PendingChunk{ m_holdover };
 			}
 			offset = pos + 1;
 		}
