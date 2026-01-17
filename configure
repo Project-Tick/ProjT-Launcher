@@ -1,0 +1,468 @@
+#!/bin/sh
+# ProjT Launcher - Configure Script
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 Project Tick
+#
+# Usage: ./configure [options]
+# Run ./configure --help for available options.
+
+# start off configure.log
+echo "==================" >> configure.log
+echo "ProjT Launcher configure" >> configure.log
+date >> configure.log
+echo "$0 $*" >> configure.log
+
+# get source directory
+SRCDIR=$(dirname "$0")
+if test "$SRCDIR" = "."; then
+    SRCDIR=""
+else
+    SRCDIR="$SRCDIR/"
+fi
+
+# --- Read project.conf ---
+read_conf() {
+    grep "^$1=" "${SRCDIR}project.conf" 2>/dev/null | head -1 | cut -d'=' -f2-
+}
+
+VERSION_MAJOR=$(read_conf VERSION_MAJOR)
+VERSION_MINOR=$(read_conf VERSION_MINOR)
+VERSION_PATCH=$(read_conf VERSION_PATCH)
+VERSION_TWEAK=$(read_conf VERSION_TWEAK)
+VERSION_NAME="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}"
+
+LAUNCHER_NAME=$(read_conf LAUNCHER_NAME)
+LAUNCHER_DISPLAYNAME=$(read_conf LAUNCHER_DISPLAYNAME)
+LAUNCHER_APP_BINARY_NAME=$(read_conf LAUNCHER_APP_BINARY_NAME)
+LAUNCHER_CONFIGFILE=$(read_conf LAUNCHER_CONFIGFILE)
+LAUNCHER_DOMAIN=$(read_conf LAUNCHER_DOMAIN)
+LAUNCHER_APPID=$(read_conf LAUNCHER_APPID)
+LAUNCHER_GIT=$(read_conf LAUNCHER_GIT)
+LAUNCHER_COPYRIGHT=$(read_conf LAUNCHER_COPYRIGHT)
+LAUNCHER_SVGFILENAME=$(read_conf LAUNCHER_SVGFILENAME)
+
+NEWS_RSS_URL=$(read_conf NEWS_RSS_URL)
+META_URL=$(read_conf META_URL)
+BUG_TRACKER_URL=$(read_conf BUG_TRACKER_URL)
+DISCORD_URL=$(read_conf DISCORD_URL)
+MSA_CLIENT_ID=$(read_conf MSA_CLIENT_ID)
+IMGUR_CLIENT_ID=$(read_conf IMGUR_CLIENT_ID)
+FLAME_API_KEY=$(read_conf FLAME_API_KEY)
+UPDATER_GITHUB_REPO=$(read_conf UPDATER_GITHUB_REPO)
+
+echo ""
+echo "=========================================="
+echo "  ProjT Launcher Configure"
+echo "  Version $VERSION_NAME"
+echo "=========================================="
+echo ""
+
+# --- Default values ---
+prefix=/usr/local
+exec_prefix='${prefix}'
+bindir='${exec_prefix}/bin'
+libdir='${exec_prefix}/lib'
+includedir='${prefix}/include'
+datadir='${prefix}/share'
+BUILDDIR=build
+
+CC=${CC-cc}
+CXX=${CXX-c++}
+AR=${AR-ar}
+RANLIB=${RANLIB-ranlib}
+ARFLAGS=${ARFLAGS-rc}
+CFLAGS=${CFLAGS--O2}
+CXXFLAGS=${CXXFLAGS--O2 -std=c++20}
+LDFLAGS=${LDFLAGS-}
+
+debug=0
+shared=1
+static=1
+qt_prefix=""
+
+# --- Leave function ---
+leave() {
+    if test "$1" != "0"; then
+        echo "** $0 aborting." | tee -a configure.log
+    fi
+    echo "==================" >> configure.log
+    exit $1
+}
+
+# --- Process command line options ---
+while test $# -ge 1; do
+    case "$1" in
+        -h* | --help)
+            echo "Usage: $0 [options]"
+            echo ""
+            echo "Options:"
+            echo "  --prefix=PREFIX      Install prefix [/usr/local]"
+            echo "  --bindir=DIR         Binary directory [PREFIX/bin]"
+            echo "  --libdir=DIR         Library directory [PREFIX/lib]"
+            echo "  --with-qt=PATH       Qt installation path"
+            echo "  --debug              Enable debug build"
+            echo "  --static             Build static libraries only"
+            echo "  --shared             Build shared libraries only"
+            echo ""
+            exit 0
+            ;;
+        -p*=* | --prefix=*) prefix=$(echo "$1" | sed 's/.*=//'); shift ;;
+        --bindir=*) bindir=$(echo "$1" | sed 's/.*=//'); shift ;;
+        --libdir=*) libdir=$(echo "$1" | sed 's/.*=//'); shift ;;
+        --with-qt=*) qt_prefix=$(echo "$1" | sed 's/.*=//'); shift ;;
+        -d* | --debug) debug=1; shift ;;
+        --static) shared=0; static=1; shift ;;
+        --shared) shared=1; static=0; shift ;;
+        *) echo "Unknown option: $1"; shift ;;
+    esac
+done
+
+# --- Detect platform ---
+echo "Checking platform..." | tee -a configure.log
+uname_s=$(uname -s 2>/dev/null || echo unknown)
+uname_m=$(uname -m 2>/dev/null || echo unknown)
+
+case "$uname_s" in
+    Linux*)     PLATFORM=linux; EXE_SUFFIX=""; OBJ_SUFFIX=".o"; LIB_SUFFIX=".a" ;;
+    Darwin*)    PLATFORM=macos; EXE_SUFFIX=""; OBJ_SUFFIX=".o"; LIB_SUFFIX=".a" ;;
+    MINGW*|MSYS*|CYGWIN*) PLATFORM=windows; EXE_SUFFIX=".exe"; OBJ_SUFFIX=".o"; LIB_SUFFIX=".a" ;;
+    *)          PLATFORM=unknown; EXE_SUFFIX=""; OBJ_SUFFIX=".o"; LIB_SUFFIX=".a" ;;
+esac
+
+case "$uname_m" in
+    x86_64|amd64) ARCH=x86_64 ;;
+    aarch64|arm64) ARCH=arm64 ;;
+    i*86) ARCH=x86 ;;
+    *) ARCH=$uname_m ;;
+esac
+
+echo "  Platform: $PLATFORM ($ARCH)" | tee -a configure.log
+
+# --- Detect compiler ---
+echo "Checking for C++ compiler..." | tee -a configure.log
+
+# Try to find a working C++ compiler
+test_compile() {
+    echo "int main() { return 0; }" > conftest.cpp
+    $1 -c conftest.cpp -o conftest.o >/dev/null 2>&1
+    ret=$?
+    rm -f conftest.cpp conftest.o
+    return $ret
+}
+
+if test -z "$CXX" || ! test_compile "$CXX"; then
+    for try_cxx in g++ clang++ c++; do
+        if test_compile "$try_cxx"; then
+            CXX=$try_cxx
+            break
+        fi
+    done
+fi
+
+if ! test_compile "$CXX"; then
+    echo "ERROR: No working C++ compiler found!" | tee -a configure.log
+    leave 1
+fi
+
+# Get compiler info
+COMPILER_NAME=$($CXX --version 2>/dev/null | head -1)
+echo "  Compiler: $CXX" | tee -a configure.log
+echo "  Version: $COMPILER_NAME" | tee -a configure.log
+
+# Set C compiler based on CXX
+case "$CXX" in
+    *g++*) CC=${CC-gcc} ;;
+    *clang++*) CC=${CC-clang} ;;
+esac
+
+# --- Set compiler flags ---
+if test $debug -eq 1; then
+    BUILD_TYPE=Debug
+    CFLAGS="-g -O0 -DDEBUG"
+    CXXFLAGS="-g -O0 -std=c++20 -DDEBUG"
+else
+    BUILD_TYPE=Release
+    CFLAGS="-O2 -DNDEBUG"
+    CXXFLAGS="-O2 -std=c++20 -DNDEBUG"
+fi
+
+# Add platform-specific flags
+case "$PLATFORM" in
+    linux)
+        CFLAGS="$CFLAGS -fPIC"
+        CXXFLAGS="$CXXFLAGS -fPIC"
+        LDFLAGS="$LDFLAGS -Wl,--as-needed"
+        ;;
+    macos)
+        CFLAGS="$CFLAGS -fPIC"
+        CXXFLAGS="$CXXFLAGS -fPIC"
+        ;;
+esac
+
+# --- Detect Qt ---
+echo "Checking for Qt6..." | tee -a configure.log
+
+find_qt() {
+    # Check if qt_prefix was provided
+    if test -n "$qt_prefix" && test -d "$qt_prefix/include/QtCore"; then
+        echo "$qt_prefix"
+        return 0
+    fi
+    
+    # Try pkg-config
+    if command -v pkg-config >/dev/null 2>&1; then
+        qt_dir=$(pkg-config --variable=prefix Qt6Core 2>/dev/null)
+        if test -n "$qt_dir" && test -d "$qt_dir"; then
+            echo "$qt_dir"
+            return 0
+        fi
+    fi
+    
+    # Try qmake6
+    if command -v qmake6 >/dev/null 2>&1; then
+        qt_dir=$(qmake6 -query QT_INSTALL_PREFIX 2>/dev/null)
+        if test -n "$qt_dir" && test -d "$qt_dir"; then
+            echo "$qt_dir"
+            return 0
+        fi
+    fi
+    
+    # Try qmake
+    if command -v qmake >/dev/null 2>&1; then
+        qt_dir=$(qmake -query QT_INSTALL_PREFIX 2>/dev/null)
+        if test -n "$qt_dir" && test -d "$qt_dir"; then
+            echo "$qt_dir"
+            return 0
+        fi
+    fi
+    
+    # Try common paths (Linux/macOS)
+    for path in /usr /usr/local /opt/Qt6 /opt/qt6 "$HOME/Qt/6.7.0/gcc_64" "$HOME/Qt/6.6.0/gcc_64"; do
+        if test -d "$path/include/QtCore" || test -d "$path/include/qt6/QtCore"; then
+            echo "$path"
+            return 0
+        fi
+    done
+    
+    # Try Windows paths (for Git Bash / MSYS2)
+    for path in /c/Qt/6.*/msvc2022_64 /c/Qt/6.*/msvc2019_64 /c/Qt/6.*/mingw_64 \
+                /mingw64 /ucrt64 /clang64; do
+        if test -d "$path/include/QtCore"; then
+            echo "$path"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+QT_PREFIX=$(find_qt)
+if test -z "$QT_PREFIX"; then
+    echo "ERROR: Qt6 not found! Use --with-qt=PATH to specify Qt location." | tee -a configure.log
+    leave 1
+fi
+
+echo "  Qt6 found: $QT_PREFIX" | tee -a configure.log
+
+# Set Qt paths
+QT_BINDIR="$QT_PREFIX/bin"
+QT_INCDIR="$QT_PREFIX/include"
+QT_LIBDIR="$QT_PREFIX/lib"
+QT_MOC="$QT_BINDIR/moc"
+QT_UIC="$QT_BINDIR/uic"
+QT_RCC="$QT_BINDIR/rcc"
+
+# Check for qt6 subdirectory in include
+if test -d "$QT_INCDIR/qt6"; then
+    QT_INCDIR="$QT_INCDIR/qt6"
+fi
+
+# Qt compile flags
+QT_CFLAGS="-I$QT_INCDIR -I$QT_INCDIR/QtCore -I$QT_INCDIR/QtGui -I$QT_INCDIR/QtWidgets"
+QT_CFLAGS="$QT_CFLAGS -I$QT_INCDIR/QtNetwork -I$QT_INCDIR/QtXml -I$QT_INCDIR/QtConcurrent"
+QT_CFLAGS="$QT_CFLAGS -I$QT_INCDIR/QtCore5Compat"
+
+# Qt link flags
+QT_LIBS="-L$QT_LIBDIR -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network -lQt6Xml -lQt6Concurrent -lQt6Core5Compat"
+
+# --- Create build directories ---
+echo "Creating build directories..." | tee -a configure.log
+mkdir -p "$BUILDDIR"
+mkdir -p "$BUILDDIR/obj"
+mkdir -p "$BUILDDIR/obj/zlib"
+mkdir -p "$BUILDDIR/obj/bzip2"
+mkdir -p "$BUILDDIR/obj/cmark"
+mkdir -p "$BUILDDIR/obj/qrencode"
+mkdir -p "$BUILDDIR/obj/libnbt"
+mkdir -p "$BUILDDIR/obj/libnbt/text"
+mkdir -p "$BUILDDIR/obj/libnbt/io"
+mkdir -p "$BUILDDIR/obj/quazip"
+mkdir -p "$BUILDDIR/obj/launcher"
+mkdir -p "$BUILDDIR/obj/localpeer"
+mkdir -p "$BUILDDIR/obj/systeminfo"
+mkdir -p "$BUILDDIR/obj/murmur2"
+mkdir -p "$BUILDDIR/obj/qdcss"
+mkdir -p "$BUILDDIR/obj/rainbow"
+mkdir -p "$BUILDDIR/deps/lib"
+mkdir -p "$BUILDDIR/deps/include"
+mkdir -p "$BUILDDIR/bin"
+mkdir -p "$BUILDDIR/gen"
+mkdir -p "$BUILDDIR/moc"
+mkdir -p "$BUILDDIR/ui"
+mkdir -p "$BUILDDIR/rcc"
+
+# Create launcher subdirs
+for subdir in net minecraft minecraft/auth minecraft/auth/steps minecraft/update \
+              minecraft/launch minecraft/mod minecraft/mod/tasks minecraft/skins \
+              ui ui/dialogs ui/widgets ui/pages launch launch/steps logs \
+              java java/core java/services java/download news icons screenshots \
+              tasks settings translations tools meta updater modplatform \
+              modplatform/flame modplatform/modrinth modplatform/packwiz \
+              modplatform/legacy_ftb modplatform/import_ftb modplatform/technic \
+              modplatform/atlauncher modplatform/helpers; do
+    mkdir -p "$BUILDDIR/obj/launcher/$subdir"
+done
+
+# --- Generate config.mk ---
+echo "Generating mk/config.mk..." | tee -a configure.log
+
+cat > mk/config.mk << EOF
+# ProjT Launcher - Generated Configuration
+# Generated by configure on $(date)
+# DO NOT EDIT - Regenerate with ./configure
+
+# Version
+VERSION_MAJOR = $VERSION_MAJOR
+VERSION_MINOR = $VERSION_MINOR
+VERSION_PATCH = $VERSION_PATCH
+VERSION_TWEAK = $VERSION_TWEAK
+VERSION_NAME = $VERSION_NAME
+
+# Launcher Info
+LAUNCHER_NAME = $LAUNCHER_NAME
+LAUNCHER_DISPLAYNAME = $LAUNCHER_DISPLAYNAME
+LAUNCHER_APP_BINARY_NAME = $LAUNCHER_APP_BINARY_NAME
+LAUNCHER_CONFIGFILE = $LAUNCHER_CONFIGFILE
+LAUNCHER_DOMAIN = $LAUNCHER_DOMAIN
+LAUNCHER_APPID = $LAUNCHER_APPID
+LAUNCHER_GIT = $LAUNCHER_GIT
+LAUNCHER_COPYRIGHT = $LAUNCHER_COPYRIGHT
+LAUNCHER_SVGFILENAME = $LAUNCHER_SVGFILENAME
+LAUNCHER_USERAGENT = $LAUNCHER_NAME/$VERSION_NAME
+
+# URLs
+NEWS_RSS_URL = $NEWS_RSS_URL
+META_URL = $META_URL
+BUG_TRACKER_URL = $BUG_TRACKER_URL
+DISCORD_URL = $DISCORD_URL
+UPDATER_GITHUB_REPO = $UPDATER_GITHUB_REPO
+
+# API Keys
+MSA_CLIENT_ID = $MSA_CLIENT_ID
+IMGUR_CLIENT_ID = $IMGUR_CLIENT_ID
+FLAME_API_KEY = $FLAME_API_KEY
+
+# Build
+BUILD_TYPE = $BUILD_TYPE
+DEBUG = $debug
+PLATFORM = $PLATFORM
+ARCH = $ARCH
+
+# Paths
+SRCDIR = .
+BUILDDIR = $BUILDDIR
+prefix = $prefix
+exec_prefix = $exec_prefix
+bindir = $bindir
+libdir = $libdir
+datadir = $datadir
+
+# Compilers
+CC = $CC
+CXX = $CXX
+AR = $AR
+RANLIB = $RANLIB
+ARFLAGS = $ARFLAGS
+
+# Compiler info
+COMPILER_NAME = $COMPILER_NAME
+
+# Flags
+CFLAGS = $CFLAGS
+CXXFLAGS = $CXXFLAGS
+LDFLAGS = $LDFLAGS
+
+# Suffixes
+EXE_SUFFIX = $EXE_SUFFIX
+OBJ_SUFFIX = $OBJ_SUFFIX
+LIB_SUFFIX = $LIB_SUFFIX
+
+# Qt6
+QT_PREFIX = $QT_PREFIX
+QT_BINDIR = $QT_BINDIR
+QT_INCDIR = $QT_INCDIR
+QT_LIBDIR = $QT_LIBDIR
+QT_MOC = $QT_MOC
+QT_UIC = $QT_UIC
+QT_RCC = $QT_RCC
+QT_CFLAGS = $QT_CFLAGS
+QT_LIBS = $QT_LIBS
+
+# Build timestamp
+BUILD_TIMESTAMP = $(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date +%Y-%m-%dT%H:%M:%SZ)
+BUILD_PLATFORM = $PLATFORM-$ARCH
+EOF
+
+# --- Generate Makefile from Makefile.in ---
+echo "Generating Makefile..." | tee -a configure.log
+
+sed < "${SRCDIR}Makefile.in" "
+s|@SRCDIR@|.|g
+s|@BUILDDIR@|$BUILDDIR|g
+s|@CC@|$CC|g
+s|@CXX@|$CXX|g
+s|@AR@|$AR|g
+s|@ARFLAGS@|$ARFLAGS|g
+s|@RANLIB@|$RANLIB|g
+s|@CFLAGS@|$CFLAGS|g
+s|@CXXFLAGS@|$CXXFLAGS|g
+s|@LDFLAGS@|$LDFLAGS|g
+s|@QT_PREFIX@|$QT_PREFIX|g
+s|@QT_CFLAGS@|$QT_CFLAGS|g
+s|@QT_LIBS@|$QT_LIBS|g
+s|@QT_MOC@|$QT_MOC|g
+s|@QT_UIC@|$QT_UIC|g
+s|@QT_RCC@|$QT_RCC|g
+s|@EXE_SUFFIX@|$EXE_SUFFIX|g
+s|@OBJ_SUFFIX@|$OBJ_SUFFIX|g
+s|@LIB_SUFFIX@|$LIB_SUFFIX|g
+s|@LAUNCHER_APP_BINARY_NAME@|$LAUNCHER_APP_BINARY_NAME|g
+s|@prefix@|$prefix|g
+s|@bindir@|$bindir|g
+s|@libdir@|$libdir|g
+s|@datadir@|$datadir|g
+" > Makefile
+
+echo "" | tee -a configure.log
+echo "=========================================="
+echo "  Configuration Summary"
+echo "=========================================="
+echo ""
+echo "  Platform:       $PLATFORM ($ARCH)"
+echo "  Build type:     $BUILD_TYPE"
+echo "  Compiler:       $CXX"
+echo ""
+echo "  Qt prefix:      $QT_PREFIX"
+echo ""
+echo "  Install prefix: $prefix"
+echo "  Build dir:      $BUILDDIR"
+echo ""
+echo "=========================================="
+echo ""
+echo "Next steps:"
+echo "  make deps       Build dependencies"
+echo "  make            Build everything"
+echo "  make install    Install to $prefix"
+echo ""
+
+leave 0

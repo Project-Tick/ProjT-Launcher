@@ -114,18 +114,17 @@ class XmlLogParseTest : public QObject
 	}
 
   private:
-	projt::logs::LogEventParser m_parser;
-
 	QList<std::pair<MessageLevel::Enum, QString>> parseLines(const QStringList& lines)
 	{
 		QList<std::pair<MessageLevel::Enum, QString>> out;
 		MessageLevel::Enum last = MessageLevel::Unknown;
+		projt::logs::LogEventParser parser;  // Fresh parser for each call
 
 		for (const auto& line : lines)
 		{
-			m_parser.pushLine(line);
+			parser.pushLine(line);
 
-			auto items = m_parser.drainAvailable();
+			auto items = parser.drainAvailable();
 			for (const auto& item : items)
 			{
 				if (std::holds_alternative<projt::logs::LogEventParser::LogRecord>(item))
