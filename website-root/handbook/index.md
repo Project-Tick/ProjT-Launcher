@@ -5,7 +5,7 @@ title: Handbook
 
 # Handbook
 
-Documentation for ProjT Launcher contributors and players.
+Documentation for Project Tick contributors and players.
 
 ## For Players
 
