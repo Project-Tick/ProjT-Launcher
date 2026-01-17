@@ -223,6 +223,15 @@ class PackProfile : public QAbstractListModel
 
   private:
 	Result load();
+
+	/// Helper function to ensure patch and library directories exist.
+	/// Returns true if both directories are ready, false on failure.
+	bool ensureInstallDirs(QString& patchDir, QString& libDir);
+
+	/// Helper function to write a version file and register a component.
+	/// Returns true on success, false on failure.
+	bool writeVersionFile(const QString& patchDir, const std::shared_ptr<VersionFile>& versionFile);
+
 	bool installJarMods_internal(QStringList filepaths);
 	bool installCustomJar_internal(QString filepath);
 	bool installAgents_internal(QStringList filepaths);

@@ -21,7 +21,7 @@ OUT = ROOT / "docs" / "TODO_FIXME_REPORT.md"
 if not OUT.parent.exists():
     OUT.parent.mkdir(parents=True, exist_ok=True)
 
-PATTERN = re.compile(r"\b(TODO|FIXME)\b", re.IGNORECASE)
+PATTERN = re.compile(r"\b(TODO|FIXME|NOTE)\b", re.IGNORECASE)
 
 def is_text_file(path: Path) -> bool:
     try:

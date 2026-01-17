@@ -47,8 +47,26 @@ InstanceProxyModel::InstanceProxyModel(QObject* parent) : QSortFilterProxyModel(
 {
 	m_naturalSort.setNumericMode(true);
 	m_naturalSort.setCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
-	// FIXME: use loaded translation as source of locale instead, hook this up to translation changes
-	m_naturalSort.setLocale(QLocale::system());
+	updateLocale();
+
+	// Connect to Application's language changed signal to update locale
+	connect(APPLICATION, &Application::currentLanguageChanged, this, &InstanceProxyModel::updateLocale);
+}
+
+void InstanceProxyModel::updateLocale()
+{
+	// Use the current UI locale from Application settings
+	auto language = APPLICATION->settings()->get("Language").toString();
+	if (!language.isEmpty())
+	{
+		m_naturalSort.setLocale(QLocale(language));
+	}
+	else
+	{
+		m_naturalSort.setLocale(QLocale::system());
+	}
+	// Trigger re-sort with new locale
+	invalidate();
 }
 
 QVariant InstanceProxyModel::data(const QModelIndex& index, int role) const
@@ -71,7 +89,8 @@ bool InstanceProxyModel::lessThan(const QModelIndex& left, const QModelIndex& ri
 	}
 	else
 	{
-		// FIXME: real group sorting happens in InstanceView::updateGeometries(), see LocaleString
+		// NOTE: Group visual positioning is handled in InstanceView::updateGeometries() with LocaleString.
+		// This comparison ensures logical sorting order matches the visual layout.
 		auto result = leftCategory.localeAwareCompare(rightCategory);
 		if (result == 0)
 		{

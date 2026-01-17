@@ -1765,11 +1765,11 @@ void Application::continueLaunchAfterBackup(QString instanceId, bool online, boo
 	{
 		window = showInstanceWindow(instance);
 	}
-	QMutexLocker locker(&m_instanceExtrasMutex);
-	auto& extras = m_instanceExtras[instanceId];
+
+	// Get window from instance if not already set
 	if (!window)
 	{
-		window = extras.window;
+		window = instance->getInstanceWindow();
 	}
 	if (window)
 	{
@@ -1778,8 +1778,9 @@ void Application::continueLaunchAfterBackup(QString instanceId, bool online, boo
 			return;
 		}
 	}
-	auto& controller = extras.controller;
-	controller.reset(new LaunchController());
+
+	// Create and configure launch controller
+	auto controller = makeShared<LaunchController>();
 	controller->setInstance(instance);
 	controller->setOnline(online);
 	controller->setDemo(demo);
@@ -1796,6 +1797,9 @@ void Application::continueLaunchAfterBackup(QString instanceId, bool online, boo
 	connect(controller.get(), &LaunchController::succeeded, this, &Application::controllerSucceeded);
 	connect(controller.get(), &LaunchController::failed, this, &Application::controllerFailed);
 	connect(controller.get(), &LaunchController::aborted, this, [this] { controllerFailed(tr("Aborted")); });
+
+	// Store controller in instance
+	instance->setLaunchController(controller);
 	controller->executeTask();
 }
 
@@ -1806,11 +1810,9 @@ bool Application::kill(InstancePtr instance)
 		qWarning() << "Attempted to kill instance" << instance->id() << ", which isn't running.";
 		return false;
 	}
-	QMutexLocker locker(&m_instanceExtrasMutex);
-	auto& extras = m_instanceExtras[instance->id()];
-	// NOTE: copy of the shared pointer keeps it alive
-	auto controller = extras.controller;
-	locker.unlock();
+
+	// Get controller from instance
+	auto controller = instance->getLaunchController();
 	if (controller)
 	{
 		return controller->abort();
@@ -1867,20 +1869,20 @@ void Application::controllerSucceeded()
 	auto controller = qobject_cast<LaunchController*>(sender());
 	if (!controller)
 		return;
-	auto id = controller->id();
-
-	QMutexLocker locker(&m_instanceExtrasMutex);
-	auto& extras = m_instanceExtras[id];
+	auto instance = controller->instance();
 
 	// on success, do...
-	if (controller->instance()->settings()->get("AutoCloseConsole").toBool())
+	if (instance->settings()->get("AutoCloseConsole").toBool())
 	{
-		if (extras.window)
+		auto window = instance->getInstanceWindow();
+		if (window)
 		{
-			QMetaObject::invokeMethod(extras.window, &QWidget::close, Qt::QueuedConnection);
+			QMetaObject::invokeMethod(window, &QWidget::close, Qt::QueuedConnection);
 		}
 	}
-	extras.controller.reset();
+
+	// Clear controller from instance
+	instance->setLaunchController(nullptr);
 	subRunningInstance();
 
 	// quit when there are no more windows.
@@ -1897,12 +1899,11 @@ void Application::controllerFailed(const QString& error)
 	auto controller = qobject_cast<LaunchController*>(sender());
 	if (!controller)
 		return;
-	auto id = controller->id();
-	QMutexLocker locker(&m_instanceExtrasMutex);
-	auto& extras = m_instanceExtras[id];
+	auto instance = controller->instance();
 
 	// on failure, do... nothing
-	extras.controller.reset();
+	// Clear controller from instance
+	instance->setLaunchController(nullptr);
 	subRunningInstance();
 
 	// quit when there are no more windows.
@@ -1982,10 +1983,8 @@ InstanceWindow* Application::showInstanceWindow(InstancePtr instance, QString pa
 {
 	if (!instance)
 		return nullptr;
-	auto id = instance->id();
-	QMutexLocker locker(&m_instanceExtrasMutex);
-	auto& extras = m_instanceExtras[id];
-	auto& window = extras.window;
+
+	auto window = instance->getInstanceWindow();
 
 	if (window)
 	{
@@ -2008,6 +2007,7 @@ InstanceWindow* Application::showInstanceWindow(InstancePtr instance, QString pa
 	else
 	{
 		window = new InstanceWindow(instance);
+		instance->setInstanceWindow(window);
 		m_openWindows++;
 		connect(window, &InstanceWindow::isClosing, this, &Application::on_windowClose);
 	}
@@ -2016,9 +2016,12 @@ InstanceWindow* Application::showInstanceWindow(InstancePtr instance, QString pa
 	{
 		window->selectPage(page);
 	}
-	if (extras.controller)
+
+	// Update controller parent if exists
+	auto controller = instance->getLaunchController();
+	if (controller)
 	{
-		extras.controller->setParentWidget(window);
+		controller->setParentWidget(window);
 	}
 	return window;
 }
@@ -2029,12 +2032,18 @@ void Application::on_windowClose()
 	auto instWindow = qobject_cast<InstanceWindow*>(sender());
 	if (instWindow)
 	{
-		QMutexLocker locker(&m_instanceExtrasMutex);
-		auto& extras  = m_instanceExtras[instWindow->instanceId()];
-		extras.window = nullptr;
-		if (extras.controller)
+		// Get instance and clear window reference
+		auto instance = instances()->getInstanceById(instWindow->instanceId());
+		if (instance)
 		{
-			extras.controller->setParentWidget(m_mainWindow);
+			instance->setInstanceWindow(nullptr);
+
+			// Update controller parent if exists
+			auto controller = instance->getLaunchController();
+			if (controller)
+			{
+				controller->setParentWidget(m_mainWindow);
+			}
 		}
 	}
 	auto mainWindow = qobject_cast<MainWindow*>(sender());

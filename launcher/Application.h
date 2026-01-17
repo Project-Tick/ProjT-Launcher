@@ -358,15 +358,6 @@ class Application : public QApplication
 	bool consoleAttached = false;
 #endif
 
-	// FIXME: attach to instances instead.
-	struct InstanceXtras
-	{
-		InstanceWindow* window = nullptr;
-		shared_qobject_ptr<LaunchController> controller;
-	};
-	std::map<QString, InstanceXtras> m_instanceExtras;
-	mutable QMutex m_instanceExtrasMutex;
-
 	// main state variables
 	size_t m_openWindows	  = 0;
 	size_t m_runningInstances = 0;

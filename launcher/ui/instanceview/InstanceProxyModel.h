@@ -46,6 +46,10 @@ class InstanceProxyModel : public QSortFilterProxyModel
   public:
 	InstanceProxyModel(QObject* parent = 0);
 
+  public slots:
+	/// Update collator locale when translation changes
+	void updateLocale();
+
   protected:
 	QVariant data(const QModelIndex& index, int role) const override;
 	bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;

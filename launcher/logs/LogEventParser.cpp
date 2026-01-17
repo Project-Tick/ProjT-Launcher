@@ -28,11 +28,17 @@ namespace projt::logs
 {
 	void LogEventParser::pushLine(QAnyStringView data)
 	{
+		// If we have holdover data from incomplete XML, prepend it
 		if (!m_holdover.isEmpty())
 		{
 			m_buffer = m_holdover;
 			m_buffer.append('\n');
 			m_holdover.clear();
+		}
+		// Otherwise, clear buffer before adding new data to prevent duplicates
+		else if (!m_buffer.isEmpty())
+		{
+			m_buffer.clear();
 		}
 		m_buffer.append(data.toString());
 	}

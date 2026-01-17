@@ -71,6 +71,9 @@
 
 #include "ui/GuiUtil.h"
 #include "ui/themes/ThemeManager.h"
+#include "ui/tasks/LogUploadTask.h"
+#include "ui/dialogs/ProgressDialog.h"
+#include "ui/dialogs/CustomMessageBox.h"
 
 #include <BuildConfig.h>
 
@@ -298,22 +301,35 @@ void LogPage::on_btnPaste_clicked()
 	if (!m_model)
 		return;
 
-	// FIXME: turn this into a proper task and move the upload logic out of GuiUtil!
 	m_model->append(MessageLevel::Launcher,
 					QString("Log upload triggered at: %1").arg(QDateTime::currentDateTime().toString(Qt::RFC2822Date)));
-	auto url = GuiUtil::uploadPaste(tr("Minecraft Log"), m_model->toPlainText(), this);
-	if (!url.has_value())
-	{
+
+	auto uploadTask = new LogUploadTask(tr("Minecraft Log"), m_model->toPlainText(), this);
+
+	connect(uploadTask, &Task::succeeded, this, [this, uploadTask]() {
+		auto url = uploadTask->getUploadedUrl();
+		GuiUtil::setClipboardText(url);
+		m_model->append(MessageLevel::Launcher, QString("Log uploaded to: %1").arg(url));
+
+		CustomMessageBox::selectable(
+			this,
+			tr("Upload finished"),
+			tr("The <a href=\"%1\">link to the uploaded log</a> has been placed in your clipboard.").arg(url),
+			QMessageBox::Information)
+			->exec();
+	});
+
+	connect(uploadTask, &Task::failed, this, [this](QString reason) {
+		m_model->append(MessageLevel::Error, QString("Log upload failed: %1").arg(reason));
+	});
+
+	connect(uploadTask, &Task::aborted, this, [this]() {
 		m_model->append(MessageLevel::Error, QString("Log upload canceled"));
-	}
-	else if (url->isNull())
-	{
-		m_model->append(MessageLevel::Error, QString("Log upload failed!"));
-	}
-	else
-	{
-		m_model->append(MessageLevel::Launcher, QString("Log uploaded to: %1").arg(url.value()));
-	}
+	});
+
+	// Run the task with progress dialog
+	ProgressDialog dialog(this);
+	dialog.execWithTask(uploadTask);
 }
 
 void LogPage::on_btnCopy_clicked()

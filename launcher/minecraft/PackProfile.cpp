@@ -932,6 +932,36 @@ bool PackProfile::removeComponent_internal(ComponentPtr patch)
 	return ok;
 }
 
+bool PackProfile::ensureInstallDirs(QString& patchDir, QString& libDir)
+{
+	patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
+	if (!FS::ensureFolderPathExists(patchDir))
+		return false;
+
+	libDir = d->m_instance->getLocalLibraryPath();
+	if (!FS::ensureFolderPathExists(libDir))
+		return false;
+
+	return true;
+}
+
+bool PackProfile::writeVersionFile(const QString& patchDir, const std::shared_ptr<VersionFile>& versionFile)
+{
+	QString patchFileName = FS::PathCombine(patchDir, versionFile->uid + ".json");
+	QFile file(patchFileName);
+	if (!file.open(QFile::WriteOnly))
+	{
+		qCCritical(instanceProfileC) << d->m_instance->name() << "|"
+									 << "Error opening" << file.fileName() << "for writing:" << file.errorString();
+		return false;
+	}
+	file.write(OneSixVersionFormat::versionFileToJson(versionFile).toJson());
+	file.close();
+
+	appendComponent(makeShared<Component>(this, versionFile->uid, versionFile));
+	return true;
+}
+
 bool PackProfile::installJarMods_internal(QStringList filepaths)
 {
 	QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
@@ -1053,13 +1083,8 @@ bool PackProfile::installCustomJar_internal(QString filepath)
 
 bool PackProfile::installAgents_internal(QStringList filepaths)
 {
-	// FIXME code duplication
-	const QString patchDir = FS::PathCombine(d->m_instance->instanceRoot(), "patches");
-	if (!FS::ensureFolderPathExists(patchDir))
-		return false;
-
-	const QString libDir = d->m_instance->getLocalLibraryPath();
-	if (!FS::ensureFolderPathExists(libDir))
+	QString patchDir, libDir;
+	if (!ensureInstallDirs(patchDir, libDir))
 		return false;
 
 	for (const QString& source : filepaths)
@@ -1069,7 +1094,7 @@ bool PackProfile::installAgents_internal(QStringList filepaths)
 		const QString targetBaseName = id + ".jar";
 		const QString targetId		 = "custom.agent." + id;
 		const QString targetName	 = sourceInfo.completeBaseName() + " (agent)";
-		const QString target		 = FS::PathCombine(d->m_instance->getLocalLibraryPath(), targetBaseName);
+		const QString target		 = FS::PathCombine(libDir, targetBaseName);
 
 		const QFileInfo targetInfo(target);
 		Q_ASSERT(!targetInfo.exists());
@@ -1087,24 +1112,11 @@ bool PackProfile::installAgents_internal(QStringList filepaths)
 		agent->setHint("local");
 
 		versionFile->agents.append(std::make_shared<Agent>(agent, QString()));
-
 		versionFile->name = targetName;
 		versionFile->uid  = targetId;
 
-		QFile patchFile(FS::PathCombine(patchDir, targetId + ".json"));
-
-		if (!patchFile.open(QFile::WriteOnly))
-		{
-			qCCritical(instanceProfileC) << d->m_instance->name() << "|"
-										 << "Error opening" << patchFile.fileName()
-										 << "for reading:" << patchFile.errorString();
+		if (!writeVersionFile(patchDir, versionFile))
 			return false;
-		}
-
-		patchFile.write(OneSixVersionFormat::versionFileToJson(versionFile).toJson());
-		patchFile.close();
-
-		appendComponent(makeShared<Component>(this, versionFile->uid, versionFile));
 	}
 
 	scheduleSave();

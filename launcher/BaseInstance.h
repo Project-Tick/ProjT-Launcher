@@ -80,6 +80,9 @@
 
 class QDir;
 class Task;
+class InstanceWindow;
+class LaunchController;
+
 namespace projt::launch
 {
 	class LaunchPipeline;
@@ -339,6 +342,13 @@ class BaseInstance : public QObject, public std::enable_shared_from_this<BaseIns
 	bool removeLinkedInstanceId(const QString& id);
 	bool isLinkedToInstanceId(const QString& id) const;
 
+	// Instance window and controller management
+	InstanceWindow* getInstanceWindow() const { return m_instanceWindow; }
+	void setInstanceWindow(InstanceWindow* window) { m_instanceWindow = window; }
+
+	shared_qobject_ptr<LaunchController> getLaunchController() const { return m_launchController; }
+	void setLaunchController(shared_qobject_ptr<LaunchController> controller) { m_launchController = controller; }
+
 	bool isLegacy();
 
   protected:
@@ -392,6 +402,10 @@ class BaseInstance : public QObject, public std::enable_shared_from_this<BaseIns
 
 	SettingsObjectWeakPtr m_global_settings;
 	bool m_specific_settings_loaded = false;
+
+	// Instance-specific UI state (moved from Application)
+	InstanceWindow* m_instanceWindow = nullptr;
+	shared_qobject_ptr<LaunchController> m_launchController;
 };
 
 Q_DECLARE_METATYPE(shared_qobject_ptr<BaseInstance>)

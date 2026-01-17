@@ -160,7 +160,49 @@ namespace
 		return result;
 	}
 
-	// Dead code removed: loadPackProfile was unused.
+	static LoadResult loadPackProfile(ComponentPtr component, Task::Ptr& loadTask, Net::Mode netmode)
+	{
+		if (component->m_loaded)
+		{
+			qCDebug(instanceProfileResolveC) << component->getName() << "is already loaded";
+			return LoadResult::LoadedLocal;
+		}
+
+		LoadResult result = LoadResult::Failed;
+
+		// Try to load the component's version list from metadata
+		auto versionList = APPLICATION->metadataIndex()->component(component->m_uid);
+		if (!versionList)
+		{
+			qCWarning(instanceProfileResolveC) << "No version list found for" << component->m_uid;
+			return LoadResult::Failed;
+		}
+
+		component->m_metaVersion = versionList;
+
+		if (versionList->isFullyLoaded())
+		{
+			component->m_loaded = true;
+			return LoadResult::LoadedLocal;
+		}
+		else
+		{
+			// Load the full version list
+			loadTask = APPLICATION->metadataIndex()->loadComponentTask(component->m_uid, netmode);
+			if (loadTask)
+			{
+				loadTask->start();
+				if (netmode == Net::Mode::Online)
+					result = LoadResult::RequiresRemote;
+				else if (versionList->isFullyLoaded())
+					result = LoadResult::LoadedLocal;
+				else
+					result = LoadResult::Failed;
+			}
+		}
+
+		return result;
+	}
 
 } // namespace
 
@@ -178,28 +220,22 @@ void ComponentUpdateTask::loadComponents()
 		LoadResult singleResult;
 		RemoteLoadStatus::Type loadType;
 		component->resetComponentProblems();
-		// FIXME: to do this right, we need to load the lists and decide on which versions to use during dependency
-		// resolution. For now, ignore all that...
-#if 0
-        switch(d->mode)
-        {
-            case Mode::Launch:
-            {
-                singleResult = loadComponent(component, loadTask, d->netmode);
-                loadType = RemoteLoadStatus::Type::Version;
-                break;
-            }
-            case Mode::Resolution:
-            {
-                singleResult = loadPackProfile(component, loadTask, d->netmode);
-                loadType = RemoteLoadStatus::Type::List;
-                break;
-            }
-        }
-#else
-		singleResult = loadComponent(component, loadTask, d->netmode);
-		loadType	 = RemoteLoadStatus::Type::Version;
-#endif
+		// Load version lists or components based on resolution mode
+		switch (d->mode)
+		{
+			case Mode::Launch:
+			{
+				singleResult = loadComponent(component, loadTask, d->netmode);
+				loadType	 = RemoteLoadStatus::Type::Version;
+				break;
+			}
+			case Mode::Resolution:
+			{
+				singleResult = loadPackProfile(component, loadTask, d->netmode);
+				loadType	 = RemoteLoadStatus::Type::List;
+				break;
+			}
+		}
 		if (singleResult == LoadResult::LoadedLocal)
 		{
 			component->updateCachedData();

@@ -1100,6 +1100,10 @@ SET(LAUNCHER_SOURCES
     ui/dialogs/InstallLoaderDialog.cpp
     ui/dialogs/InstallLoaderDialog.h
 
+    # GUI - tasks
+    ui/tasks/LogUploadTask.cpp
+    ui/tasks/LogUploadTask.h
+
     ui/dialogs/skins/SkinManageDialog.cpp
     ui/dialogs/skins/SkinManageDialog.h
 
