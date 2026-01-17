@@ -2,6 +2,7 @@
 
 > **Directory**: `bzip2/`  
 > **Test Suites**: Quick (default), Large
+> **Latest Version**: 0.0.5-1
 
 ---
 

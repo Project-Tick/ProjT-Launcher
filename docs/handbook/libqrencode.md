@@ -5,6 +5,7 @@
 > **Fork Origin**: [GitHub](https://github.com/fukuchi/libqrencode)  
 > **Status**: Detached Fork (independently maintained)  
 > **Standards**: ISO/IEC 18004:2015
+> **Latest Version**: 0.0.5-1
 
 ---
 

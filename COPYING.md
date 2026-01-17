@@ -331,10 +331,10 @@
 
 ## libnbtplusplus (`libnbtplusplus/`)
 
-     libnbt++ 3 - A library for the Minecraft Named Binary Tag format v3.
+     libnbt++ - A library for the Minecraft Named Binary Tag format.
      Copyright (C) 2026 Project Tick
 
-     libnbt++ 3 is free software: you can redistribute it and/or modify
+     libnbt++ is free software: you can redistribute it and/or modify
      it under the terms of the GNU Lesser General Public License as published by
      the Free Software Foundation, either version 3 of the License, or
      (at your option) any later version.
@@ -345,7 +345,7 @@
      GNU Lesser General Public License for more details.
 
      You should have received a copy of the GNU Lesser General Public License
-     along with libnbt++ 3.  If not, see <http://www.gnu.org/licenses/>.
+     along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
 
     This file incorporates work covered by the following copyright and
     permission notice:
@@ -458,13 +458,17 @@
 ## program_info (`program_info/`)
 
 Logos and branding assets in this directory are licensed under
-Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
+Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0).
+
+But instance_icons.svg is licensed under Creative Commons Attribution-ShareAlike 4.0 International
+(CC BY-SA 4.0).
 
 This license applies only to branding assets and does not affect
 the licensing of the ProjT Launcher source code.
 
 See:
-- program_info/LICENSE
+- program_info/LICENSE.projecttick
+- program_info/LICENSE.instanceicons
 
 ## quazip (`quazip/`)
 

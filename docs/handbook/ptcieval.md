@@ -3,6 +3,7 @@
 > **Location**: `ci/eval/`  
 > **Platform**: Nix  
 > **Purpose**: Project configuration validation
+> **Latest Version**: 0.0.5-1
 
 ---
 

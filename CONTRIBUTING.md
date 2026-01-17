@@ -12,9 +12,9 @@ License: GPL-3.0-only (Launcher), AGPL-3.0-only (Website), see COPYING.md
 ```sh
 git clone https://github.com/YongDo-Hyun/ProjT-Launcher.git
 cd ProjT-Launcher
-cmake --preset default
-cmake --build --preset default
-ctest --preset default
+cmake --preset your_os
+cmake --build --preset your_os
+ctest --preset your_os
 ```
 
 ---

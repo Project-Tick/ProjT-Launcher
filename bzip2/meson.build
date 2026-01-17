@@ -1,7 +1,7 @@
 project(
   'bzip2',
   ['c'],
-  version : '1.1.0',
+  version : '0.0.5',
   meson_version : '>= 0.56.0',
   default_options : ['c_std=c89', 'warning_level=1'],
 )

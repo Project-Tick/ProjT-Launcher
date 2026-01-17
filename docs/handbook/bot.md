@@ -3,6 +3,7 @@
 > **Type**: Cloudflare Worker  
 > **Platform**: Cloudflare Workers  
 > **Purpose**: PR Automation & Labeling
+> **Latest Version**: 0.0.5-1
 
 ---
 

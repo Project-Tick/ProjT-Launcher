@@ -157,5 +157,5 @@ EXPORTS
         crc32_combine_gen64                     @177
         crc32_combine_op                        @178
 
-; zlib1 v1.3.1.2 added:
+; zlib1 v0.0.5.1 added:
         deflateUsed                             @179

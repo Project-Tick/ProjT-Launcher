@@ -5,6 +5,7 @@
 > **Fork Origin**: [zlib.net](https://zlib.net) | [GitHub](https://github.com/madler/zlib)  
 > **Status**: Detached Fork (independently maintained)  
 > **Base Version**: 1.3.1.2
+> **Latest Version**: 0.0.5-1
 
 ---
 

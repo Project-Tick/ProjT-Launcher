@@ -2,6 +2,7 @@
 
 > **Location**: `ci/`  
 > **Purpose**: CI configuration and support files
+> **Latest Version**: 0.0.5-1
 
 ---
 

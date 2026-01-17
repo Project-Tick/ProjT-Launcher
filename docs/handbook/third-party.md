@@ -1,4 +1,4 @@
-# Third-party Libraries
+# Libraries
 
 > **Purpose**: Overview of all external dependencies used by ProjT Launcher
 

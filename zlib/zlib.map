@@ -99,6 +99,6 @@ ZLIB_1.2.12 {
 	crc32_combine_op;
 } ZLIB_1.2.9;
 
-ZLIB_1.3.1.2 {
+ZLIB_0.0.5.1 {
 	deflateUsed;
 } ZLIB_1.2.12;

@@ -2,6 +2,7 @@
 
 > **Location**: `docs/packaging/os-specific/linux/`  
 > **Platforms**: Nix, Flatpak, distribution packages
+> **Latest Version**: 0.0.5-1
 
 ---
 

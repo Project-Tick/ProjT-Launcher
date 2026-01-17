@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(QRencode VERSION 4.1.1 LANGUAGES C)
+project(QRencode VERSION 0.0.5 LANGUAGES C)
 
 option(WITH_TOOLS "Build utility tools"  YES )
 option(WITH_TESTS "Build tests"  NO )

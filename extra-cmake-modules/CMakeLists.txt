@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 # Preliminary setup
 #
 
-set(VERSION "6.23.0") # handled by release scripts
+set(VERSION "0.0.5") # handled by release scripts
 
 project(ECM
     VERSION "${VERSION}"

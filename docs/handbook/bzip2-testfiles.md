@@ -1,6 +1,7 @@
 # Bzip2 Test Files
 
 > **Purpose**: Test file collection for bzip2 validation
+> **Latest Version**: 0.0.5-1
 
 ---
 

@@ -1,8 +1,9 @@
 ---
 title: CommonMark Spec
 author: John MacFarlane
-version: '0.31.2'
-date: '2024-01-28'
+maintainer: Project Tick
+version: '0.0.5'
+date: '2026-01-17'
 license: '[CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)'
 ...
 

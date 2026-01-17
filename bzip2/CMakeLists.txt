@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 project(bzip2
-        VERSION 1.1.0
+        VERSION 0.0.5
         DESCRIPTION "This Bzip2/libbz2 a program and library for lossless block-sorting data compression."
         LANGUAGES C)
 
@@ -9,9 +9,9 @@ project(bzip2
 #  http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 #
 # KEEP THESE IN SYNC WITH meson.build OR STUFF WILL BREAK!
-set(LT_CURRENT  1)
-set(LT_REVISION 9)
-set(LT_AGE      0)
+set(LT_CURRENT  0)
+set(LT_REVISION 0)
+set(LT_AGE      5)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 include(Version)

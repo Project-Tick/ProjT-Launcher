@@ -8,7 +8,7 @@ project(
 	'cpp',
 	license: 'MIT',
 	# Use three-component version (major.minor.patch) — tweak/info not allowed by Meson
-	version: '0.0.4',
+	version: '0.0.5',
 	meson_version: '>=0.61.0',
 	default_options: [
 		# https://mesonbuild.com/Builtin-options.html

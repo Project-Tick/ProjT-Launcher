@@ -7,8 +7,8 @@
 
 #define TOML_LIB_MAJOR 0
 #define TOML_LIB_MINOR 0
-#define TOML_LIB_PATCH 4
-#define TOML_LIB_TWEAK 2
+#define TOML_LIB_PATCH 5
+#define TOML_LIB_TWEAK 1
 
 #define TOML_LANG_MAJOR 1
 #define TOML_LANG_MINOR 0

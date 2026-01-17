@@ -1,6 +1,8 @@
 Extra CMake Modules
 *******************
 
+Latest Version: 0.0.5-1
+
 Introduction
 ============
 

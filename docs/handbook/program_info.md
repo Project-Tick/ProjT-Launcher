@@ -2,6 +2,7 @@
 
 > **Location**: `program_info/`  
 > **Purpose**: Application branding and configuration
+> **Latest Version**: 0.0.5-1
 
 ---
 

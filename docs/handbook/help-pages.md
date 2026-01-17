@@ -2,6 +2,7 @@
 
 > **Player docs**: `docs/handbook/help-pages/` (copied from `website/projtlauncher/wiki/help-pages/`)  
 > **Assets**: `website/projtlauncher/img/screenshots/` (`/projtlauncher/img/screenshots/...`)
+> **Latest Version**: 0.0.5-1
 
 ---
 

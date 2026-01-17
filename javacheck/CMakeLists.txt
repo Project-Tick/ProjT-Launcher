@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(javacheck Java)
+project(javacheck VERSION 0.0.5 LANGUAGES Java)
 find_package(Java 1.8 REQUIRED COMPONENTS Development)
 
 include(UseJava)

@@ -1,5 +1,7 @@
 # Extra CMake Modules
 
+> **Latest Version**: 0.0.5-1
+
 ## Introduction
 
 The Extra CMake Modules package, or ECM, adds to the modules provided by CMake,
