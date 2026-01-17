@@ -312,7 +312,7 @@ jobs:
 
       - name: Restore Qt build cache
         id: cache-qt-restore
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7
         with:
           key: windows-qt-${{ matrix.qt_version }}
           path: qt-everywhere-src-${{ matrix.qt_version }}
@@ -320,7 +320,7 @@ jobs:
       - name: Restore Qt zip
         if: steps.cache-qt-restore.outputs.cache-hit != 'true'
         id: cache-qt-zip-restore
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7
         with:
           key: windows-qt-${{ matrix.qt_version }}-zip
           path: qt-everywhere-src-${{ matrix.qt_version }}.zip
@@ -335,7 +335,7 @@ jobs:
       - name: Save Qt zip
         if: steps.cache-qt-restore.outputs.cache-hit != 'true' && steps.cache-qt-zip-restore.outputs.cache-hit != 'true'
         id: cache-qt-zip-save
-        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
+        uses: actions/cache/save@8b402f58fbc84540c8b491a91e594a4576fec3d7
         with:
           path: qt-everywhere-src-${{ matrix.qt_version }}.zip
           key: windows-qt-${{ matrix.qt_version }}-zip
@@ -420,7 +420,7 @@ jobs:
       - name: Cache Qt
         if: steps.cache-qt-restore.outputs.cache-hit != 'true'
         id: cache-qt
-        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
+        uses: actions/cache/save@8b402f58fbc84540c8b491a91e594a4576fec3d7
         with:
           path: qt-everywhere-src-${{ matrix.qt_version }}
           key: windows-qt-${{ matrix.qt_version }}
@@ -468,7 +468,7 @@ jobs:
 
       - name: Restore Qt build cache
         id: cache-qt-restore
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7
         with:
           key: windows-qt-${{ matrix.qt_version }}
           path: qt-everywhere-src-${{ matrix.qt_version }}
@@ -476,7 +476,7 @@ jobs:
       - name: Restore Qt zip
         if: steps.cache-qt-restore.outputs.cache-hit != 'true'
         id: cache-qt-zip-restore
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7
         with:
           key: windows-qt-${{ matrix.qt_version }}-zip
           path: qt-everywhere-src-${{ matrix.qt_version }}.zip
@@ -491,7 +491,7 @@ jobs:
       - name: Save Qt zip
         if: steps.cache-qt-restore.outputs.cache-hit != 'true' && steps.cache-qt-zip-restore.outputs.cache-hit != 'true'
         id: cache-qt-zip-save
-        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
+        uses: actions/cache/save@8b402f58fbc84540c8b491a91e594a4576fec3d7
         with:
           path: qt-everywhere-src-${{ matrix.qt_version }}.zip
           key: windows-qt-${{ matrix.qt_version }}-zip
@@ -576,7 +576,7 @@ jobs:
       - name: Cache Qt
         if: steps.cache-qt-restore.outputs.cache-hit != 'true'
         id: cache-qt
-        uses: actions/cache/save@94b89442628ad1d101e352b7ee38f30e1bef108e
+        uses: actions/cache/save@8b402f58fbc84540c8b491a91e594a4576fec3d7
         with:
           path: qt-everywhere-src-${{ matrix.qt_version }}
           key: windows-qt-${{ matrix.qt_version }}-zip
