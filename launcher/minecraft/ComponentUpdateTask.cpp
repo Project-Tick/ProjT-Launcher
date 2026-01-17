@@ -38,6 +38,8 @@
 #include "tasks/Task.h"
 
 #include "minecraft/Logging.h"
+#include "meta/VersionList.hpp"
+#include "tasks/SequentialTask.h"
 
 /*
  * This is responsible for loading the components of a component list AND resolving dependency issues between them
@@ -162,46 +164,43 @@ namespace
 
 	static LoadResult loadPackProfile(ComponentPtr component, Task::Ptr& loadTask, Net::Mode netmode)
 	{
-		if (component->m_loaded)
-		{
-			qCDebug(instanceProfileResolveC) << component->getName() << "is already loaded";
-			return LoadResult::LoadedLocal;
-		}
-
-		LoadResult result = LoadResult::Failed;
-
-		// Try to load the component's version list from metadata
-		auto versionList = APPLICATION->metadataIndex()->component(component->m_uid);
+		auto versionList = component->getVersionList();
 		if (!versionList)
 		{
 			qCWarning(instanceProfileResolveC) << "No version list found for" << component->m_uid;
 			return LoadResult::Failed;
 		}
 
-		component->m_metaVersion = versionList;
-
-		if (versionList->isFullyLoaded())
+		if (versionList->isLoaded())
 		{
-			component->m_loaded = true;
 			return LoadResult::LoadedLocal;
+		}
+
+		if (netmode == Net::Mode::Offline)
+		{
+			return LoadResult::Failed;
+		}
+
+		auto index = APPLICATION->metadataIndex();
+		if (index->state() != projt::meta::MetaEntity::State::Synchronized)
+		{
+			auto seq = makeShared<SequentialTask>(tr("Updating version list for %1").arg(component->getName()));
+			seq->addTask(index->createLoadTask(netmode));
+			seq->addTask(versionList->createLoadTask(netmode));
+			loadTask = seq;
 		}
 		else
 		{
-			// Load the full version list
-			loadTask = APPLICATION->metadataIndex()->loadComponentTask(component->m_uid, netmode);
-			if (loadTask)
-			{
-				loadTask->start();
-				if (netmode == Net::Mode::Online)
-					result = LoadResult::RequiresRemote;
-				else if (versionList->isFullyLoaded())
-					result = LoadResult::LoadedLocal;
-				else
-					result = LoadResult::Failed;
-			}
+			loadTask = versionList->createLoadTask(netmode);
 		}
 
-		return result;
+		if (loadTask)
+		{
+			loadTask->start();
+			return LoadResult::RequiresRemote;
+		}
+
+		return LoadResult::Failed;
 	}
 
 } // namespace
