@@ -114,7 +114,7 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}/${{ inputs.working_directory }}/build/quazip/Release
         run: |
-          DLL_NAME="quazip1-qt${{ startsWith(inputs.qt_version, '6') && '6' || '5' }}.dll"
+          DLL_NAME="quazip0-qt${{ startsWith(inputs.qt_version, '6') && '6' || '5' }}.dll"
           file "$DLL_NAME"
           file "$DLL_NAME" |grep "${{ inputs.pe_str }}"
 
