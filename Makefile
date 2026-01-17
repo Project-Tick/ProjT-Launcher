@@ -1,10 +1,597 @@
-# ProjT Launcher - Makefile
-# This file is a placeholder until ./configure is run.
+# ProjT Launcher - Makefile.in
 # SPDX-License-Identifier: GPL-3.0-only
 # Copyright (C) 2026 Project Tick
+#
+# This file is processed by ./configure to generate Makefile.
+# To compile: ./configure && make
 
-all:
-	-@echo "Please use ./configure first.  Thank you."
+#============================================================================
+# CONFIGURATION (Set by configure)
+#============================================================================
+SRCDIR = .
+BUILDDIR = build
 
-distclean:
-	$(MAKE) -f Makefile.in distclean
+CC = clang
+CXX = clang++
+AR = llvm-ar
+ARFLAGS = rc
+RANLIB = llvm-ranlib
+
+CFLAGS = -O2 -DNDEBUG
+CXXFLAGS = -O2 -std=c++20 -DNDEBUG
+LDFLAGS = 
+
+QT_PREFIX = /c/Qt/6.10.1/msvc2022_64
+QT_CFLAGS = -Ic:/Qt/6.10.1/msvc2022_64/include -Ic:/Qt/6.10.1/msvc2022_64/include/QtCore -Ic:/Qt/6.10.1/msvc2022_64/include/QtGui -Ic:/Qt/6.10.1/msvc2022_64/include/QtWidgets -Ic:/Qt/6.10.1/msvc2022_64/include/QtNetwork -Ic:/Qt/6.10.1/msvc2022_64/include/QtXml -Ic:/Qt/6.10.1/msvc2022_64/include/QtConcurrent -Ic:/Qt/6.10.1/msvc2022_64/include/QtNetworkAuth -Ic:/Qt/6.10.1/msvc2022_64/include/QtCore5Compat
+QT_LIBS = -Lc:/Qt/6.10.1/msvc2022_64/lib -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network -lQt6Xml -lQt6Concurrent -lQt6NetworkAuth -lQt6Core5Compat
+QT_MOC = /c/Qt/6.10.1/msvc2022_64/bin/moc
+QT_UIC = /c/Qt/6.10.1/msvc2022_64/bin/uic
+QT_RCC = /c/Qt/6.10.1/msvc2022_64/bin/rcc
+
+EXE_SUFFIX = .exe
+OBJ_SUFFIX = .o
+LIB_SUFFIX = .a
+
+LAUNCHER_APP_BINARY_NAME = projtlauncher
+
+prefix = /usr/local
+bindir = ${exec_prefix}/bin
+libdir = ${exec_prefix}/lib
+datadir = ${prefix}/share
+
+#============================================================================
+# INCLUDE GENERATED CONFIG
+#============================================================================
+include mk/config.mk
+
+#============================================================================
+# MSVC COMPATIBILITY
+#============================================================================
+# When using MSVC with GNU Make, we need different syntax for compilation
+ifeq ($(USE_MSVC),1)
+    # MSVC uses /Fo for output, /c for compile-only
+    COMPILE_C = $(CC) $(CFLAGS) /c /Fo$@ $<
+    COMPILE_CXX = $(CXX) $(CXXFLAGS) /c /Fo$@ $<
+    LINK_EXE = $(LD) /OUT:$@ $^ $(LDFLAGS)
+    MAKE_LIB = $(AR) $(ARFLAGS) /OUT:$@ $^
+    # MSVC include flag
+    INCLUDE_FLAG = /I
+    # MSVC define flag
+    DEFINE_FLAG = /D
+    # No ranlib needed for MSVC
+    RANLIB = @echo "No ranlib for MSVC"
+else
+    # GCC/Clang uses -o for output, -c for compile-only
+    COMPILE_C = $(CC) $(CFLAGS) -c -o $@ $<
+    COMPILE_CXX = $(CXX) $(CXXFLAGS) -c -o $@ $<
+    LINK_EXE = $(CXX) $(LDFLAGS) -o $@ $^
+    MAKE_LIB = $(AR) $(ARFLAGS) $@ $^
+    # GCC/Clang include flag
+    INCLUDE_FLAG = -I
+    # GCC/Clang define flag
+    DEFINE_FLAG = -D
+endif
+
+# Shell commands - use PowerShell on Windows if needed
+ifeq ($(PLATFORM),windows)
+    MKDIR = mkdir -p
+    RM = rm -rf
+else
+    MKDIR = mkdir -p
+    RM = rm -rf
+endif
+
+#============================================================================
+# DIRECTORIES
+#============================================================================
+OBJ_DIR = $(BUILDDIR)/obj
+DEPS_LIB = $(BUILDDIR)/deps/lib
+DEPS_INC = $(BUILDDIR)/deps/include
+GEN_DIR = $(BUILDDIR)/gen
+BIN_DIR = $(BUILDDIR)/bin
+
+#============================================================================
+# DEPENDENCY SOURCE DIRECTORIES
+#============================================================================
+ZLIB_SRC = $(SRCDIR)/zlib
+BZIP2_SRC = $(SRCDIR)/bzip2
+CMARK_SRC = $(SRCDIR)/cmark/src
+QRENCODE_SRC = $(SRCDIR)/libqrencode
+NBT_SRC = $(SRCDIR)/libnbtplusplus
+QUAZIP_SRC = $(SRCDIR)/quazip/quazip
+
+#============================================================================
+# DEFAULT TARGET (must be first target in file)
+#============================================================================
+.DEFAULT_GOAL := all
+
+#============================================================================
+# ZLIB
+#============================================================================
+ZLIB_OBJS = $(OBJ_DIR)/zlib/adler32$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/compress$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/crc32$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/deflate$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/gzclose$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/gzlib$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/gzread$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/gzwrite$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/infback$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/inffast$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/inflate$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/inftrees$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/trees$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/uncompr$(OBJ_SUFFIX) \
+            $(OBJ_DIR)/zlib/zutil$(OBJ_SUFFIX)
+
+$(OBJ_DIR)/zlib/%$(OBJ_SUFFIX): $(ZLIB_SRC)/%.c
+	@mkdir -p $(dir $@)
+	@echo "[CC] zlib/$(notdir $<)"
+	@$(CC) $(CFLAGS) -I$(ZLIB_SRC) -c -o $@ $<
+
+$(DEPS_LIB)/libz$(LIB_SUFFIX): $(ZLIB_OBJS)
+	@mkdir -p $(dir $@)
+	@echo "[AR] $@"
+	@$(AR) $(ARFLAGS) $@ $(ZLIB_OBJS)
+	@$(RANLIB) $@
+
+deps-zlib: $(DEPS_LIB)/libz$(LIB_SUFFIX)
+	@echo "[OK] zlib built"
+
+#============================================================================
+# BZIP2
+#============================================================================
+BZIP2_OBJS = $(OBJ_DIR)/bzip2/blocksort$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/bzip2/huffman$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/bzip2/crctable$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/bzip2/randtable$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/bzip2/compress$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/bzip2/decompress$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/bzip2/bzlib$(OBJ_SUFFIX)
+
+$(OBJ_DIR)/bzip2/%$(OBJ_SUFFIX): $(BZIP2_SRC)/%.c $(BZIP2_SRC)/bz_version.h
+	@mkdir -p $(dir $@)
+	@echo "[CC] bzip2/$(notdir $<)"
+	@$(CC) $(CFLAGS) -I$(BZIP2_SRC) -c -o $@ $<
+
+$(BZIP2_SRC)/bz_version.h:
+	@echo "[GEN] bz_version.h"
+	@echo '#define BZ_VERSION "1.0.8"' > $@
+
+$(DEPS_LIB)/libbz2$(LIB_SUFFIX): $(BZIP2_OBJS)
+	@mkdir -p $(dir $@)
+	@echo "[AR] $@"
+	@$(AR) $(ARFLAGS) $@ $(BZIP2_OBJS)
+	@$(RANLIB) $@
+
+deps-bzip2: $(DEPS_LIB)/libbz2$(LIB_SUFFIX)
+	@echo "[OK] bzip2 built"
+
+#============================================================================
+# CMARK
+#============================================================================
+CMARK_OBJS = $(OBJ_DIR)/cmark/cmark$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/node$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/iterator$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/blocks$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/inlines$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/scanners$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/utf8$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/buffer$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/references$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/render$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/man$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/html$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/commonmark$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/xml$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/latex$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/houdini_href_e$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/houdini_html_e$(OBJ_SUFFIX) \
+             $(OBJ_DIR)/cmark/houdini_html_u$(OBJ_SUFFIX)
+
+$(OBJ_DIR)/cmark/%$(OBJ_SUFFIX): $(CMARK_SRC)/%.c
+	@mkdir -p $(dir $@)
+	@echo "[CC] cmark/$(notdir $<)"
+	@$(CC) $(CFLAGS) -I$(CMARK_SRC) -I$(SRCDIR)/cmark -I$(OBJ_DIR)/cmark -c -o $@ $<
+
+$(DEPS_LIB)/libcmark$(LIB_SUFFIX): cmark-config $(CMARK_OBJS)
+	@mkdir -p $(dir $@)
+	@echo "[AR] $@"
+	@$(AR) $(ARFLAGS) $@ $(CMARK_OBJS)
+	@$(RANLIB) $@
+
+cmark-config:
+	@mkdir -p $(OBJ_DIR)/cmark
+	@echo "#ifndef CMARK_EXPORT_H" > $(OBJ_DIR)/cmark/cmark_export.h
+	@echo "#define CMARK_EXPORT_H" >> $(OBJ_DIR)/cmark/cmark_export.h
+	@echo "#define CMARK_EXPORT" >> $(OBJ_DIR)/cmark/cmark_export.h
+	@echo "#define CMARK_NO_EXPORT" >> $(OBJ_DIR)/cmark/cmark_export.h
+	@echo "#endif" >> $(OBJ_DIR)/cmark/cmark_export.h
+	@echo "#ifndef CMARK_VERSION_H" > $(OBJ_DIR)/cmark/cmark_version.h
+	@echo "#define CMARK_VERSION_H" >> $(OBJ_DIR)/cmark/cmark_version.h
+	@echo "#define CMARK_VERSION ((0 << 24) | (31 << 16) | (1 << 8) | 0)" >> $(OBJ_DIR)/cmark/cmark_version.h
+	@echo "#define CMARK_VERSION_STRING \"0.31.1\"" >> $(OBJ_DIR)/cmark/cmark_version.h
+	@echo "#endif" >> $(OBJ_DIR)/cmark/cmark_version.h
+
+deps-cmark: $(DEPS_LIB)/libcmark$(LIB_SUFFIX)
+	@echo "[OK] cmark built"
+
+#============================================================================
+# LIBQRENCODE
+#============================================================================
+QRENCODE_OBJS = $(OBJ_DIR)/qrencode/bitstream$(OBJ_SUFFIX) \
+                $(OBJ_DIR)/qrencode/mask$(OBJ_SUFFIX) \
+                $(OBJ_DIR)/qrencode/mmask$(OBJ_SUFFIX) \
+                $(OBJ_DIR)/qrencode/mqrspec$(OBJ_SUFFIX) \
+                $(OBJ_DIR)/qrencode/qrencode$(OBJ_SUFFIX) \
+                $(OBJ_DIR)/qrencode/qrinput$(OBJ_SUFFIX) \
+                $(OBJ_DIR)/qrencode/qrspec$(OBJ_SUFFIX) \
+                $(OBJ_DIR)/qrencode/rsecc$(OBJ_SUFFIX) \
+                $(OBJ_DIR)/qrencode/split$(OBJ_SUFFIX)
+
+$(OBJ_DIR)/qrencode/%$(OBJ_SUFFIX): $(QRENCODE_SRC)/%.c
+	@mkdir -p $(dir $@)
+	@echo "[CC] qrencode/$(notdir $<)"
+	@$(CC) $(CFLAGS) -I$(QRENCODE_SRC) -I$(OBJ_DIR)/qrencode -DHAVE_CONFIG_H -c -o $@ $<
+
+$(DEPS_LIB)/libqrencode$(LIB_SUFFIX): qrencode-config $(QRENCODE_OBJS)
+	@mkdir -p $(dir $@)
+	@echo "[AR] $@"
+	@$(AR) $(ARFLAGS) $@ $(QRENCODE_OBJS)
+	@$(RANLIB) $@
+
+qrencode-config:
+	@mkdir -p $(OBJ_DIR)/qrencode
+	@echo "#ifndef CONFIG_H" > $(OBJ_DIR)/qrencode/config.h
+	@echo "#define CONFIG_H" >> $(OBJ_DIR)/qrencode/config.h
+	@echo "#define HAVE_STRDUP 1" >> $(OBJ_DIR)/qrencode/config.h
+	@echo "#define STATIC_IN_RELEASE static" >> $(OBJ_DIR)/qrencode/config.h
+	@echo "#define MAJOR_VERSION 4" >> $(OBJ_DIR)/qrencode/config.h
+	@echo "#define MINOR_VERSION 1" >> $(OBJ_DIR)/qrencode/config.h
+	@echo "#define MICRO_VERSION 1" >> $(OBJ_DIR)/qrencode/config.h
+	@echo "#define VERSION \"4.1.1\"" >> $(OBJ_DIR)/qrencode/config.h
+	@echo "#endif" >> $(OBJ_DIR)/qrencode/config.h
+
+deps-qrencode: $(DEPS_LIB)/libqrencode$(LIB_SUFFIX)
+	@echo "[OK] libqrencode built"
+
+#============================================================================
+# LIBNBTPLUSPLUS
+#============================================================================
+NBT_OBJS = $(OBJ_DIR)/libnbt/endian_str$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/tag$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/tag_compound$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/tag_list$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/tag_string$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/text/json_formatter$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/value$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/value_initializer$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/io/stream_reader$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/io/stream_writer$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/io/izlibstream$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/io/ozlibstream$(OBJ_SUFFIX)
+
+$(OBJ_DIR)/libnbt/%$(OBJ_SUFFIX): $(NBT_SRC)/src/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "[CXX] libnbt/$(notdir $<)"
+	@$(CXX) $(CXXFLAGS) -I$(NBT_SRC)/include -I$(ZLIB_SRC) -I$(OBJ_DIR)/libnbt -c -o $@ $<
+
+$(DEPS_LIB)/libnbt++$(LIB_SUFFIX): nbt-config $(NBT_OBJS)
+	@mkdir -p $(dir $@)
+	@echo "[AR] $@"
+	@$(AR) $(ARFLAGS) $@ $(NBT_OBJS)
+	@$(RANLIB) $@
+
+nbt-config:
+	@mkdir -p $(OBJ_DIR)/libnbt
+	@echo "#ifndef NBT_EXPORT_H" > $(OBJ_DIR)/libnbt/nbt_export.h
+	@echo "#define NBT_EXPORT_H" >> $(OBJ_DIR)/libnbt/nbt_export.h
+	@echo "#define NBT_EXPORT" >> $(OBJ_DIR)/libnbt/nbt_export.h
+	@echo "#endif" >> $(OBJ_DIR)/libnbt/nbt_export.h
+
+deps-libnbt: deps-zlib $(DEPS_LIB)/libnbt++$(LIB_SUFFIX)
+	@echo "[OK] libnbtplusplus built"
+
+#============================================================================
+# QUAZIP
+#============================================================================
+QUAZIP_CPP_OBJS = $(OBJ_DIR)/quazip/JlCompress$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/qioapi$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quaadler32$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quachecksum32$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quacrc32$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quagzipfile$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quaziodevice$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quazip$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quazip_textcodec$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quazipdir$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quazipfile$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quazipfileinfo$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quazipnewinfo$(OBJ_SUFFIX)
+
+QUAZIP_C_OBJS = $(OBJ_DIR)/quazip/unzip$(OBJ_SUFFIX) \
+                $(OBJ_DIR)/quazip/zip$(OBJ_SUFFIX)
+
+$(OBJ_DIR)/quazip/%$(OBJ_SUFFIX): $(QUAZIP_SRC)/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "[CXX] quazip/$(notdir $<)"
+	@$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -I$(QUAZIP_SRC) -I$(ZLIB_SRC) -I$(BZIP2_SRC) -DQUAZIP_STATIC -c -o $@ $<
+
+$(OBJ_DIR)/quazip/%$(OBJ_SUFFIX): $(QUAZIP_SRC)/%.c
+	@mkdir -p $(dir $@)
+	@echo "[CC] quazip/$(notdir $<)"
+	@$(CC) $(CFLAGS) $(QT_CFLAGS) -I$(QUAZIP_SRC) -I$(ZLIB_SRC) -DQUAZIP_STATIC -c -o $@ $<
+
+$(DEPS_LIB)/libquazip$(LIB_SUFFIX): deps-zlib deps-bzip2 $(QUAZIP_CPP_OBJS) $(QUAZIP_C_OBJS)
+	@mkdir -p $(dir $@)
+	@echo "[AR] $@"
+	@$(AR) $(ARFLAGS) $@ $(QUAZIP_CPP_OBJS) $(QUAZIP_C_OBJS)
+	@$(RANLIB) $@
+
+deps-quazip: $(DEPS_LIB)/libquazip$(LIB_SUFFIX)
+	@echo "[OK] quazip built"
+
+#============================================================================
+# ALL DEPENDENCIES
+#============================================================================
+deps: deps-zlib deps-bzip2 deps-cmark deps-qrencode deps-libnbt deps-quazip
+	@echo ""
+	@echo "[DEPS] All dependencies built successfully!"
+
+#============================================================================
+# INTERNAL LIBRARIES
+#============================================================================
+LOCALPEER_SRC = $(SRCDIR)/LocalPeer
+SYSTEMINFO_SRC = $(SRCDIR)/systeminfo
+MURMUR2_SRC = $(SRCDIR)/murmur2
+QDCSS_SRC = $(SRCDIR)/qdcss
+RAINBOW_SRC = $(SRCDIR)/rainbow
+TOMLPLUSPLUS_SRC = $(SRCDIR)/tomlplusplus
+
+LOCALPEER_OBJS = $(OBJ_DIR)/localpeer/LocalPeer$(OBJ_SUFFIX) \
+                 $(OBJ_DIR)/localpeer/LockedFile$(OBJ_SUFFIX)
+
+# Platform-specific locked file implementation
+ifeq ($(PLATFORM),windows)
+LOCALPEER_OBJS += $(OBJ_DIR)/localpeer/LockedFile_win$(OBJ_SUFFIX)
+else
+LOCALPEER_OBJS += $(OBJ_DIR)/localpeer/LockedFile_unix$(OBJ_SUFFIX)
+endif
+
+$(OBJ_DIR)/localpeer/%$(OBJ_SUFFIX): $(LOCALPEER_SRC)/src/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "[CXX] localpeer/$(notdir $<)"
+	@$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -I$(LOCALPEER_SRC)/include -c -o $@ $<
+
+SYSTEMINFO_OBJS = $(OBJ_DIR)/systeminfo/distroutils$(OBJ_SUFFIX)
+
+$(OBJ_DIR)/systeminfo/%$(OBJ_SUFFIX): $(SYSTEMINFO_SRC)/src/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "[CXX] systeminfo/$(notdir $<)"
+	@$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -I$(SYSTEMINFO_SRC)/include -c -o $@ $<
+
+MURMUR2_OBJS = $(OBJ_DIR)/murmur2/MurmurHash2$(OBJ_SUFFIX)
+
+$(OBJ_DIR)/murmur2/%$(OBJ_SUFFIX): $(MURMUR2_SRC)/src/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "[CXX] murmur2/$(notdir $<)"
+	@$(CXX) $(CXXFLAGS) -I$(MURMUR2_SRC)/src -c -o $@ $<
+
+QDCSS_OBJS = $(OBJ_DIR)/qdcss/qdcss$(OBJ_SUFFIX)
+
+$(OBJ_DIR)/qdcss/%$(OBJ_SUFFIX): $(QDCSS_SRC)/src/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "[CXX] qdcss/$(notdir $<)"
+	@$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -I$(QDCSS_SRC)/include -c -o $@ $<
+
+RAINBOW_OBJS = $(OBJ_DIR)/rainbow/rainbow$(OBJ_SUFFIX)
+
+$(OBJ_DIR)/rainbow/%$(OBJ_SUFFIX): $(RAINBOW_SRC)/src/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "[CXX] rainbow/$(notdir $<)"
+	@$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -I$(RAINBOW_SRC)/include -c -o $@ $<
+
+INTERNAL_LIBS_OBJS = $(LOCALPEER_OBJS) $(SYSTEMINFO_OBJS) $(MURMUR2_OBJS) $(QDCSS_OBJS) $(RAINBOW_OBJS)
+
+#============================================================================
+# LAUNCHER
+#============================================================================
+LAUNCHER_SRC = $(SRCDIR)/launcher
+LAUNCHER_OBJ = $(OBJ_DIR)/launcher
+# MOC directory
+MOC_DIR = $(BUILDDIR)/moc
+
+# Include paths for launcher (includes MOC output directory and all subdirectories)
+# Note: GEN_DIR is first to allow shadowed headers (Json.h, Logging.h) to work properly
+LAUNCHER_ALL_DIRS = $(shell find $(LAUNCHER_SRC) -type d)
+APP_INCLUDES = -I$(GEN_DIR) -I$(LAUNCHER_SRC) -I$(SRCDIR)/buildconfig \
+               $(patsubst %,-I%,$(LAUNCHER_ALL_DIRS)) \
+               -I$(ZLIB_SRC) -I$(BZIP2_SRC) -I$(CMARK_SRC) -I$(OBJ_DIR)/cmark \
+               -I$(QRENCODE_SRC) -I$(OBJ_DIR)/qrencode \
+               -I$(NBT_SRC)/include -I$(OBJ_DIR)/libnbt \
+               -I$(QUAZIP_SRC) -I$(SRCDIR)/quazip -I$(DEPS_INC) \
+               -I$(TOMLPLUSPLUS_SRC)/include \
+               -I$(LOCALPEER_SRC)/include -I$(SYSTEMINFO_SRC)/include \
+               -I$(MURMUR2_SRC)/src -I$(QDCSS_SRC)/include -I$(RAINBOW_SRC)/include \
+               -I$(MOC_DIR) \
+               $(QT_CFLAGS) -DLAUNCHER_APPLICATION -DQUAZIP_STATIC -DUNICODE -D_UNICODE
+
+# Include launcher sources
+include mk/launcher.mk
+
+#============================================================================
+# MOC GENERATION
+#============================================================================
+# Rule to generate .moc files from headers with Q_OBJECT
+$(MOC_DIR)/%.moc: $(LAUNCHER_SRC)/%.h
+	@mkdir -p $(dir $@)
+	@echo "[MOC] $(notdir $<)"
+	@$(QT_MOC) $(QT_CFLAGS) $< -o $@
+
+# Generate moc for cpp files that include their own moc at the end
+# When a cpp includes "Foo.moc", we need to generate it in the same directory
+$(LAUNCHER_SRC)/%.moc: $(LAUNCHER_SRC)/%.h
+	@echo "[MOC] $(notdir $<) -> $(notdir $@)"
+	@$(QT_MOC) $(QT_CFLAGS) $< -o $@
+
+# Alternative: Generate moc in MOC_DIR with correct path
+define moc_rule
+$(MOC_DIR)/$(1).moc: $(LAUNCHER_SRC)/$(1).h
+	@mkdir -p $$(dir $$@)
+	@echo "[MOC] $$(notdir $$<)"
+	@$$(QT_MOC) $$(QT_CFLAGS) $$< -o $$@
+endef
+
+# Pattern rule for launcher source files - also generates moc if header exists
+$(LAUNCHER_OBJ)/%$(OBJ_SUFFIX): $(LAUNCHER_SRC)/%.cpp
+	@mkdir -p $(dir $@)
+	@for hdr in "$(LAUNCHER_SRC)/$*.h" "$(LAUNCHER_SRC)/$*.hpp"; do \
+		if [ -f "$$hdr" ] && grep -q "Q_OBJECT" "$$hdr" 2>/dev/null; then \
+			echo "[MOC] $${hdr#$(LAUNCHER_SRC)/}"; \
+			$(QT_MOC) $(QT_CFLAGS) "$$hdr" -o "$(dir $(LAUNCHER_SRC)/$*)$(notdir $*).moc"; \
+			break; \
+		fi; \
+	done
+	@echo "[CXX] launcher/$(notdir $<)"
+	@$(CXX) $(CXXFLAGS) $(APP_INCLUDES) -c -o $@ $<
+
+# BuildConfig
+$(LAUNCHER_OBJ)/BuildConfig$(OBJ_SUFFIX): $(GEN_DIR)/BuildConfig.cpp
+	@mkdir -p $(dir $@)
+	@echo "[CXX] BuildConfig.cpp"
+	@$(CXX) $(CXXFLAGS) $(APP_INCLUDES) -c -o $@ $<
+
+#============================================================================
+# GENERATE FILES
+#============================================================================
+gen: $(GEN_DIR)/BuildConfig.cpp $(GEN_DIR)/Logging.h $(GEN_DIR)/Logging.cpp $(GEN_DIR)/Json.h
+	@echo "[OK] Generated files created"
+
+$(GEN_DIR)/Logging.h:
+	@mkdir -p $(dir $@)
+	@echo "[GEN] Logging.h"
+	@echo "#pragma once" > $@
+	@echo "#include \"minecraft/Logging.h\"" >> $@
+	@echo "#include \"net/Logging.h\"" >> $@
+	@echo "#include <QLoggingCategory>" >> $@
+	@echo "Q_DECLARE_LOGGING_CATEGORY(authCredentials)" >> $@
+	@echo "Q_DECLARE_LOGGING_CATEGORY(taskLogC)" >> $@
+
+$(GEN_DIR)/Logging.cpp:
+	@mkdir -p $(dir $@)
+	@echo "[GEN] Logging.cpp"
+	@echo "#include \"Logging.h\"" > $@
+	@echo "Q_LOGGING_CATEGORY(authCredentials, \"launcher.auth.credentials\")" >> $@
+	@echo "Q_LOGGING_CATEGORY(taskLogC, \"launcher.task\")" >> $@
+
+$(GEN_DIR)/Json.h:
+	@mkdir -p $(dir $@)
+	@echo "[GEN] Json.h (shadow fix)"
+	@echo "#pragma once" > $@
+	@echo "#include <QJsonObject>" >> $@
+	@echo "#include <QString>" >> $@
+	@echo "#include \"$(abspath $(LAUNCHER_SRC)/Json.h)\"" >> $@
+	@echo "namespace Json {" >> $@
+	@echo "    inline bool ensureBoolean(const QJsonObject& parent, const char* key, bool default_ = false, const QString& what = \"__placeholder\") {" >> $@
+	@echo "        return ::Json::ensureIsType<bool>(parent, QString(key), default_, what);" >> $@
+	@echo "    }" >> $@
+	@echo "}" >> $@
+
+$(OBJ_DIR)/launcher/Logging$(OBJ_SUFFIX): $(GEN_DIR)/Logging.cpp $(GEN_DIR)/Logging.h
+	@mkdir -p $(dir $@)
+	@echo "[CXX] Logging.cpp"
+	@$(CXX) $(CXXFLAGS) $(APP_INCLUDES) -c -o $@ $<
+
+$(GEN_DIR)/BuildConfig.cpp: $(SRCDIR)/buildconfig/BuildConfig.cpp.in mk/config.mk
+	@mkdir -p $(dir $@)
+	@echo "[GEN] BuildConfig.cpp"
+	@sed < $< \
+		-e "s|@Launcher_Name@|$(LAUNCHER_NAME)|g" \
+		-e "s|@Launcher_APP_BINARY_NAME@|$(LAUNCHER_APP_BINARY_NAME)|g" \
+		-e "s|@Launcher_DisplayName@|$(LAUNCHER_DISPLAYNAME)|g" \
+		-e "s|@Launcher_Copyright@|$(LAUNCHER_COPYRIGHT)|g" \
+		-e "s|@Launcher_Domain@|$(LAUNCHER_DOMAIN)|g" \
+		-e "s|@Launcher_ConfigFile@|$(LAUNCHER_CONFIGFILE)|g" \
+		-e "s|@Launcher_Git@|$(LAUNCHER_GIT)|g" \
+		-e "s|@Launcher_AppID@|$(LAUNCHER_APPID)|g" \
+		-e "s|@Launcher_SVGFileName@|$(LAUNCHER_SVGFILENAME)|g" \
+		-e "s|@Launcher_UserAgent@|$(LAUNCHER_USERAGENT)|g" \
+		-e "s|@Launcher_VERSION_MAJOR@|$(VERSION_MAJOR)|g" \
+		-e "s|@Launcher_VERSION_MINOR@|$(VERSION_MINOR)|g" \
+		-e "s|@Launcher_VERSION_PATCH@|$(VERSION_PATCH)|g" \
+		-e "s|@Launcher_VERSION_TWEAK@|$(VERSION_TWEAK)|g" \
+		-e "s|@Launcher_VERSION_NAME@|$(VERSION_NAME)|g" \
+		-e "s|@Launcher_BUILD_PLATFORM@|$(BUILD_PLATFORM)|g" \
+		-e "s|@Launcher_BUILD_TIMESTAMP@|$(BUILD_TIMESTAMP)|g" \
+		-e "s|@Launcher_NEWS_RSS_URL@|$(NEWS_RSS_URL)|g" \
+		-e "s|@Launcher_META_URL@|$(META_URL)|g" \
+		-e "s|@Launcher_BUG_TRACKER_URL@|$(BUG_TRACKER_URL)|g" \
+		-e "s|@Launcher_DISCORD_URL@|$(DISCORD_URL)|g" \
+		-e "s|@Launcher_MSA_CLIENT_ID@|$(MSA_CLIENT_ID)|g" \
+		-e "s|@Launcher_IMGUR_CLIENT_ID@|$(IMGUR_CLIENT_ID)|g" \
+		-e "s|@Launcher_CURSEFORGE_API_KEY@|$(FLAME_API_KEY)|g" \
+		-e "s|@Launcher_UPDATER_GITHUB_REPO@|$(UPDATER_GITHUB_REPO)|g" \
+		-e "s|@Launcher_COMPILER_NAME@|$(COMPILER_NAME)|g" \
+		-e "s|@Launcher_COMPILER_VERSION@||g" \
+		-e "s|@Launcher_BUILD_ARTIFACT@|bootstrap|g" \
+		-e "s|@Launcher_GIT_COMMIT@||g" \
+		-e "s|@Launcher_GIT_TAG@||g" \
+		-e "s|@Launcher_GIT_REFSPEC@||g" \
+		-e "s|#cmakedefine01 .*||g" \
+		> $@
+
+#============================================================================
+# MAIN TARGETS
+#============================================================================
+all: deps gen launcher
+	@echo ""
+	@echo "========================================"
+	@echo "  Build complete!"
+	@echo "========================================"
+
+launcher: $(BIN_DIR)/$(LAUNCHER_APP_BINARY_NAME)$(EXE_SUFFIX)
+	@echo "[OK] Launcher built: $<"
+
+$(BIN_DIR)/$(LAUNCHER_APP_BINARY_NAME)$(EXE_SUFFIX): $(LAUNCHER_OBJS) $(INTERNAL_LIBS_OBJS) $(OBJ_DIR)/launcher/Logging$(OBJ_SUFFIX)
+	@mkdir -p $(dir $@)
+	@echo "[LINK] $@"
+	@$(CXX) $(LDFLAGS) -o $@ $(LAUNCHER_OBJS) $(INTERNAL_LIBS_OBJS) $(OBJ_DIR)/launcher/Logging$(OBJ_SUFFIX) \
+		-L$(DEPS_LIB) -lz -lbz2 -lcmark -lqrencode -lnbt++ -lquazip \
+		$(QT_LIBS) -lpthread
+
+#============================================================================
+# INSTALL
+#============================================================================
+install: all
+	@echo "[INSTALL] Installing to $(DESTDIR)$(prefix)"
+	@mkdir -p $(DESTDIR)$(bindir)
+	@cp $(BIN_DIR)/$(LAUNCHER_APP_BINARY_NAME)$(EXE_SUFFIX) $(DESTDIR)$(bindir)/
+	@chmod 755 $(DESTDIR)$(bindir)/$(LAUNCHER_APP_BINARY_NAME)$(EXE_SUFFIX)
+	@echo "[OK] Installed"
+
+#============================================================================
+# CLEAN
+#============================================================================
+clean:
+	@echo "[CLEAN] Removing build artifacts"
+	@rm -rf $(BUILDDIR)/obj
+	@rm -rf $(BUILDDIR)/gen
+	@rm -rf $(BUILDDIR)/moc
+	@rm -rf $(BUILDDIR)/ui
+	@rm -rf $(BUILDDIR)/rcc
+	@rm -rf $(BUILDDIR)/bin
+	@echo "[OK] Clean complete"
+
+distclean: clean
+	@echo "[DISTCLEAN] Removing all generated files"
+	@rm -rf $(BUILDDIR)
+	@rm -f Makefile mk/config.mk configure.log
+	@printf 'all:\n\t-@echo "Please use ./configure first.  Thank you."\n\ndistclean:\n\t$$(MAKE) -f Makefile.in distclean\n' > Makefile
+	@echo "[OK] Distclean complete"
+
+#============================================================================
+# PHONY TARGETS
+#============================================================================
+.PHONY: all deps gen launcher install clean distclean \
+        deps-zlib deps-bzip2 deps-cmark deps-qrencode deps-libnbt deps-quazip \
+        cmark-config qrencode-config nbt-config

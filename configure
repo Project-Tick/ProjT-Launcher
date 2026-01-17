@@ -66,8 +66,9 @@ includedir='${prefix}/include'
 datadir='${prefix}/share'
 BUILDDIR=build
 
-CC=${CC-cc}
-CXX=${CXX-c++}
+# Compiler defaults - will be auto-detected if not set
+CC=${CC-}
+CXX=${CXX-}
 AR=${AR-ar}
 RANLIB=${RANLIB-ranlib}
 ARFLAGS=${ARFLAGS-rc}
@@ -142,7 +143,7 @@ echo "  Platform: $PLATFORM ($ARCH)" | tee -a configure.log
 echo "Checking for C++ compiler..." | tee -a configure.log
 
 # Try to find a working C++ compiler
-test_compile() {
+test_compile_cxx() {
     echo "int main() { return 0; }" > conftest.cpp
     $1 -c conftest.cpp -o conftest.o >/dev/null 2>&1
     ret=$?
@@ -150,30 +151,75 @@ test_compile() {
     return $ret
 }
 
-if test -z "$CXX" || ! test_compile "$CXX"; then
+test_compile_c() {
+    echo "int main() { return 0; }" > conftest.c
+    $1 -c conftest.c -o conftest.o >/dev/null 2>&1
+    ret=$?
+    rm -f conftest.c conftest.o
+    return $ret
+}
+
+# Find C++ compiler
+if test -z "$CXX" || ! test_compile_cxx "$CXX"; then
     for try_cxx in g++ clang++ c++; do
-        if test_compile "$try_cxx"; then
+        if command -v "$try_cxx" >/dev/null 2>&1 && test_compile_cxx "$try_cxx"; then
             CXX=$try_cxx
             break
         fi
     done
 fi
 
-if ! test_compile "$CXX"; then
+if test -z "$CXX" || ! test_compile_cxx "$CXX"; then
     echo "ERROR: No working C++ compiler found!" | tee -a configure.log
     leave 1
 fi
 
 # Get compiler info
 COMPILER_NAME=$($CXX --version 2>/dev/null | head -1)
-echo "  Compiler: $CXX" | tee -a configure.log
+echo "  C++ Compiler: $CXX" | tee -a configure.log
 echo "  Version: $COMPILER_NAME" | tee -a configure.log
 
-# Set C compiler based on CXX
-case "$CXX" in
-    *g++*) CC=${CC-gcc} ;;
-    *clang++*) CC=${CC-clang} ;;
-esac
+# Find C compiler based on CXX
+if test -z "$CC"; then
+    case "$CXX" in
+        *clang++*) CC=clang ;;  # Must be before g++ because clang++ contains g++
+        *g++*) CC=gcc ;;
+        *) CC=cc ;;
+    esac
+fi
+
+# Verify C compiler works
+if ! test_compile_c "$CC"; then
+    echo "ERROR: C compiler $CC not working!" | tee -a configure.log
+    leave 1
+fi
+
+echo "  C Compiler: $CC" | tee -a configure.log
+
+# Find AR (archiver) based on compiler toolchain
+if test -z "$AR" || ! command -v "$AR" >/dev/null 2>&1; then
+    case "$CXX" in
+        *clang++*)
+            if command -v llvm-ar >/dev/null 2>&1; then
+                AR=llvm-ar
+                RANLIB=llvm-ranlib
+            elif command -v ar >/dev/null 2>&1; then
+                AR=ar
+            fi
+            ;;
+        *)
+            AR=ar
+            ;;
+    esac
+fi
+
+# Verify AR exists
+if ! command -v "$AR" >/dev/null 2>&1; then
+    echo "ERROR: Archiver $AR not found!" | tee -a configure.log
+    leave 1
+fi
+
+echo "  Archiver: $AR" | tee -a configure.log
 
 # --- Set compiler flags ---
 if test $debug -eq 1; then
@@ -264,26 +310,49 @@ fi
 
 echo "  Qt6 found: $QT_PREFIX" | tee -a configure.log
 
-# Set Qt paths
+# Convert MSYS2 paths to Windows paths for compiler compatibility
+# /c/path -> C:/path
+convert_path() {
+    case "$1" in
+        /[a-zA-Z]/*)
+            echo "$1" | sed 's|^/\([a-zA-Z]\)/|\1:/|'
+            ;;
+        *)
+            echo "$1"
+            ;;
+    esac
+}
+
+# On Windows (MSYS2/MinGW), convert paths to Windows format for clang
+case "$PLATFORM" in
+    windows)
+        QT_PREFIX_WIN=$(convert_path "$QT_PREFIX")
+        ;;
+    *)
+        QT_PREFIX_WIN="$QT_PREFIX"
+        ;;
+esac
+
+# Set Qt paths (use Windows-style paths for compiler)
 QT_BINDIR="$QT_PREFIX/bin"
-QT_INCDIR="$QT_PREFIX/include"
-QT_LIBDIR="$QT_PREFIX/lib"
+QT_INCDIR="$QT_PREFIX_WIN/include"
+QT_LIBDIR="$QT_PREFIX_WIN/lib"
 QT_MOC="$QT_BINDIR/moc"
 QT_UIC="$QT_BINDIR/uic"
 QT_RCC="$QT_BINDIR/rcc"
 
 # Check for qt6 subdirectory in include
-if test -d "$QT_INCDIR/qt6"; then
-    QT_INCDIR="$QT_INCDIR/qt6"
+if test -d "$QT_PREFIX/include/qt6"; then
+    QT_INCDIR="$QT_PREFIX_WIN/include/qt6"
 fi
 
 # Qt compile flags
 QT_CFLAGS="-I$QT_INCDIR -I$QT_INCDIR/QtCore -I$QT_INCDIR/QtGui -I$QT_INCDIR/QtWidgets"
 QT_CFLAGS="$QT_CFLAGS -I$QT_INCDIR/QtNetwork -I$QT_INCDIR/QtXml -I$QT_INCDIR/QtConcurrent"
-QT_CFLAGS="$QT_CFLAGS -I$QT_INCDIR/QtCore5Compat"
+QT_CFLAGS="$QT_CFLAGS -I$QT_INCDIR/QtNetworkAuth -I$QT_INCDIR/QtCore5Compat"
 
 # Qt link flags
-QT_LIBS="-L$QT_LIBDIR -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network -lQt6Xml -lQt6Concurrent -lQt6Core5Compat"
+QT_LIBS="-L$QT_LIBDIR -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network -lQt6Xml -lQt6Concurrent -lQt6NetworkAuth -lQt6Core5Compat"
 
 # --- Create build directories ---
 echo "Creating build directories..." | tee -a configure.log
@@ -360,7 +429,7 @@ UPDATER_GITHUB_REPO = $UPDATER_GITHUB_REPO
 # API Keys
 MSA_CLIENT_ID = $MSA_CLIENT_ID
 IMGUR_CLIENT_ID = $IMGUR_CLIENT_ID
-FLAME_API_KEY = $FLAME_API_KEY
+FLAME_API_KEY = $(echo "$FLAME_API_KEY" | sed 's/\$/\$\$/g')
 
 # Build
 BUILD_TYPE = $BUILD_TYPE

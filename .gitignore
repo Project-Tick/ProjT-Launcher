@@ -167,3 +167,6 @@ mk/config.mk
 dependencies/
 
 configure.log
+Makefile
+*.moc
+bz_version.h

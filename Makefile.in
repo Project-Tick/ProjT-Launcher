@@ -101,6 +101,11 @@ NBT_SRC = $(SRCDIR)/libnbtplusplus
 QUAZIP_SRC = $(SRCDIR)/quazip/quazip
 
 #============================================================================
+# DEFAULT TARGET (must be first target in file)
+#============================================================================
+.DEFAULT_GOAL := all
+
+#============================================================================
 # ZLIB
 #============================================================================
 ZLIB_OBJS = $(OBJ_DIR)/zlib/adler32$(OBJ_SUFFIX) \
@@ -144,10 +149,14 @@ BZIP2_OBJS = $(OBJ_DIR)/bzip2/blocksort$(OBJ_SUFFIX) \
              $(OBJ_DIR)/bzip2/decompress$(OBJ_SUFFIX) \
              $(OBJ_DIR)/bzip2/bzlib$(OBJ_SUFFIX)
 
-$(OBJ_DIR)/bzip2/%$(OBJ_SUFFIX): $(BZIP2_SRC)/%.c
+$(OBJ_DIR)/bzip2/%$(OBJ_SUFFIX): $(BZIP2_SRC)/%.c $(BZIP2_SRC)/bz_version.h
 	@mkdir -p $(dir $@)
 	@echo "[CC] bzip2/$(notdir $<)"
 	@$(CC) $(CFLAGS) -I$(BZIP2_SRC) -c -o $@ $<
+
+$(BZIP2_SRC)/bz_version.h:
+	@echo "[GEN] bz_version.h"
+	@echo '#define BZ_VERSION "1.0.8"' > $@
 
 $(DEPS_LIB)/libbz2$(LIB_SUFFIX): $(BZIP2_OBJS)
 	@mkdir -p $(dir $@)
@@ -250,16 +259,17 @@ deps-qrencode: $(DEPS_LIB)/libqrencode$(LIB_SUFFIX)
 # LIBNBTPLUSPLUS
 #============================================================================
 NBT_OBJS = $(OBJ_DIR)/libnbt/endian_str$(OBJ_SUFFIX) \
-           $(OBJ_DIR)/libnbt/tag_array$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/tag$(OBJ_SUFFIX) \
            $(OBJ_DIR)/libnbt/tag_compound$(OBJ_SUFFIX) \
            $(OBJ_DIR)/libnbt/tag_list$(OBJ_SUFFIX) \
-           $(OBJ_DIR)/libnbt/tag_primitive$(OBJ_SUFFIX) \
            $(OBJ_DIR)/libnbt/tag_string$(OBJ_SUFFIX) \
            $(OBJ_DIR)/libnbt/text/json_formatter$(OBJ_SUFFIX) \
            $(OBJ_DIR)/libnbt/value$(OBJ_SUFFIX) \
            $(OBJ_DIR)/libnbt/value_initializer$(OBJ_SUFFIX) \
            $(OBJ_DIR)/libnbt/io/stream_reader$(OBJ_SUFFIX) \
-           $(OBJ_DIR)/libnbt/io/stream_writer$(OBJ_SUFFIX)
+           $(OBJ_DIR)/libnbt/io/stream_writer$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/io/izlibstream$(OBJ_SUFFIX) \
+           $(OBJ_DIR)/libnbt/io/ozlibstream$(OBJ_SUFFIX)
 
 $(OBJ_DIR)/libnbt/%$(OBJ_SUFFIX): $(NBT_SRC)/src/%.cpp
 	@mkdir -p $(dir $@)
@@ -286,13 +296,14 @@ deps-libnbt: deps-zlib $(DEPS_LIB)/libnbt++$(LIB_SUFFIX)
 # QUAZIP
 #============================================================================
 QUAZIP_CPP_OBJS = $(OBJ_DIR)/quazip/JlCompress$(OBJ_SUFFIX) \
-                  $(OBJ_DIR)/quazip/qiodevice$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/qioapi$(OBJ_SUFFIX) \
                   $(OBJ_DIR)/quazip/quaadler32$(OBJ_SUFFIX) \
                   $(OBJ_DIR)/quazip/quachecksum32$(OBJ_SUFFIX) \
                   $(OBJ_DIR)/quazip/quacrc32$(OBJ_SUFFIX) \
                   $(OBJ_DIR)/quazip/quagzipfile$(OBJ_SUFFIX) \
                   $(OBJ_DIR)/quazip/quaziodevice$(OBJ_SUFFIX) \
                   $(OBJ_DIR)/quazip/quazip$(OBJ_SUFFIX) \
+                  $(OBJ_DIR)/quazip/quazip_textcodec$(OBJ_SUFFIX) \
                   $(OBJ_DIR)/quazip/quazipdir$(OBJ_SUFFIX) \
                   $(OBJ_DIR)/quazip/quazipfile$(OBJ_SUFFIX) \
                   $(OBJ_DIR)/quazip/quazipfileinfo$(OBJ_SUFFIX) \
@@ -309,7 +320,7 @@ $(OBJ_DIR)/quazip/%$(OBJ_SUFFIX): $(QUAZIP_SRC)/%.cpp
 $(OBJ_DIR)/quazip/%$(OBJ_SUFFIX): $(QUAZIP_SRC)/%.c
 	@mkdir -p $(dir $@)
 	@echo "[CC] quazip/$(notdir $<)"
-	@$(CC) $(CFLAGS) -I$(QUAZIP_SRC) -I$(ZLIB_SRC) -c -o $@ $<
+	@$(CC) $(CFLAGS) $(QT_CFLAGS) -I$(QUAZIP_SRC) -I$(ZLIB_SRC) -DQUAZIP_STATIC -c -o $@ $<
 
 $(DEPS_LIB)/libquazip$(LIB_SUFFIX): deps-zlib deps-bzip2 $(QUAZIP_CPP_OBJS) $(QUAZIP_C_OBJS)
 	@mkdir -p $(dir $@)
@@ -335,6 +346,7 @@ SYSTEMINFO_SRC = $(SRCDIR)/systeminfo
 MURMUR2_SRC = $(SRCDIR)/murmur2
 QDCSS_SRC = $(SRCDIR)/qdcss
 RAINBOW_SRC = $(SRCDIR)/rainbow
+TOMLPLUSPLUS_SRC = $(SRCDIR)/tomlplusplus
 
 LOCALPEER_OBJS = $(OBJ_DIR)/localpeer/LocalPeer$(OBJ_SUFFIX) \
                  $(OBJ_DIR)/localpeer/LockedFile$(OBJ_SUFFIX)
@@ -386,23 +398,60 @@ INTERNAL_LIBS_OBJS = $(LOCALPEER_OBJS) $(SYSTEMINFO_OBJS) $(MURMUR2_OBJS) $(QDCS
 #============================================================================
 LAUNCHER_SRC = $(SRCDIR)/launcher
 LAUNCHER_OBJ = $(OBJ_DIR)/launcher
+# MOC directory
+MOC_DIR = $(BUILDDIR)/moc
 
-# Include paths for launcher
-APP_INCLUDES = -I$(LAUNCHER_SRC) -I$(GEN_DIR) -I$(SRCDIR)/buildconfig \
+# Include paths for launcher (includes MOC output directory and all subdirectories)
+# Note: GEN_DIR is first to allow shadowed headers (Json.h, Logging.h) to work properly
+LAUNCHER_ALL_DIRS = $(shell find $(LAUNCHER_SRC) -type d)
+APP_INCLUDES = -I$(GEN_DIR) -I$(LAUNCHER_SRC) -I$(SRCDIR)/buildconfig \
+               $(patsubst %,-I%,$(LAUNCHER_ALL_DIRS)) \
                -I$(ZLIB_SRC) -I$(BZIP2_SRC) -I$(CMARK_SRC) -I$(OBJ_DIR)/cmark \
                -I$(QRENCODE_SRC) -I$(OBJ_DIR)/qrencode \
                -I$(NBT_SRC)/include -I$(OBJ_DIR)/libnbt \
-               -I$(QUAZIP_SRC) -I$(DEPS_INC) \
+               -I$(QUAZIP_SRC) -I$(SRCDIR)/quazip -I$(DEPS_INC) \
+               -I$(TOMLPLUSPLUS_SRC)/include \
                -I$(LOCALPEER_SRC)/include -I$(SYSTEMINFO_SRC)/include \
                -I$(MURMUR2_SRC)/src -I$(QDCSS_SRC)/include -I$(RAINBOW_SRC)/include \
-               $(QT_CFLAGS) -DLAUNCHER_APPLICATION -DQUAZIP_STATIC
+               -I$(MOC_DIR) \
+               $(QT_CFLAGS) -DLAUNCHER_APPLICATION -DQUAZIP_STATIC -DUNICODE -D_UNICODE
 
 # Include launcher sources
 include mk/launcher.mk
 
-# Pattern rule for launcher source files
+#============================================================================
+# MOC GENERATION
+#============================================================================
+# Rule to generate .moc files from headers with Q_OBJECT
+$(MOC_DIR)/%.moc: $(LAUNCHER_SRC)/%.h
+	@mkdir -p $(dir $@)
+	@echo "[MOC] $(notdir $<)"
+	@$(QT_MOC) $(QT_CFLAGS) $< -o $@
+
+# Generate moc for cpp files that include their own moc at the end
+# When a cpp includes "Foo.moc", we need to generate it in the same directory
+$(LAUNCHER_SRC)/%.moc: $(LAUNCHER_SRC)/%.h
+	@echo "[MOC] $(notdir $<) -> $(notdir $@)"
+	@$(QT_MOC) $(QT_CFLAGS) $< -o $@
+
+# Alternative: Generate moc in MOC_DIR with correct path
+define moc_rule
+$(MOC_DIR)/$(1).moc: $(LAUNCHER_SRC)/$(1).h
+	@mkdir -p $$(dir $$@)
+	@echo "[MOC] $$(notdir $$<)"
+	@$$(QT_MOC) $$(QT_CFLAGS) $$< -o $$@
+endef
+
+# Pattern rule for launcher source files - also generates moc if header exists
 $(LAUNCHER_OBJ)/%$(OBJ_SUFFIX): $(LAUNCHER_SRC)/%.cpp
 	@mkdir -p $(dir $@)
+	@for hdr in "$(LAUNCHER_SRC)/$*.h" "$(LAUNCHER_SRC)/$*.hpp"; do \
+		if [ -f "$$hdr" ] && grep -q "Q_OBJECT" "$$hdr" 2>/dev/null; then \
+			echo "[MOC] $${hdr#$(LAUNCHER_SRC)/}"; \
+			$(QT_MOC) $(QT_CFLAGS) "$$hdr" -o "$(dir $(LAUNCHER_SRC)/$*)$(notdir $*).moc"; \
+			break; \
+		fi; \
+	done
 	@echo "[CXX] launcher/$(notdir $<)"
 	@$(CXX) $(CXXFLAGS) $(APP_INCLUDES) -c -o $@ $<
 
@@ -415,45 +464,80 @@ $(LAUNCHER_OBJ)/BuildConfig$(OBJ_SUFFIX): $(GEN_DIR)/BuildConfig.cpp
 #============================================================================
 # GENERATE FILES
 #============================================================================
-gen: $(GEN_DIR)/BuildConfig.cpp
+gen: $(GEN_DIR)/BuildConfig.cpp $(GEN_DIR)/Logging.h $(GEN_DIR)/Logging.cpp $(GEN_DIR)/Json.h
 	@echo "[OK] Generated files created"
+
+$(GEN_DIR)/Logging.h:
+	@mkdir -p $(dir $@)
+	@echo "[GEN] Logging.h"
+	@echo "#pragma once" > $@
+	@echo "#include \"minecraft/Logging.h\"" >> $@
+	@echo "#include \"net/Logging.h\"" >> $@
+	@echo "#include <QLoggingCategory>" >> $@
+	@echo "Q_DECLARE_LOGGING_CATEGORY(authCredentials)" >> $@
+	@echo "Q_DECLARE_LOGGING_CATEGORY(taskLogC)" >> $@
+
+$(GEN_DIR)/Logging.cpp:
+	@mkdir -p $(dir $@)
+	@echo "[GEN] Logging.cpp"
+	@echo "#include \"Logging.h\"" > $@
+	@echo "Q_LOGGING_CATEGORY(authCredentials, \"launcher.auth.credentials\")" >> $@
+	@echo "Q_LOGGING_CATEGORY(taskLogC, \"launcher.task\")" >> $@
+
+$(GEN_DIR)/Json.h:
+	@mkdir -p $(dir $@)
+	@echo "[GEN] Json.h (shadow fix)"
+	@echo "#pragma once" > $@
+	@echo "#include <QJsonObject>" >> $@
+	@echo "#include <QString>" >> $@
+	@echo "#include \"$(abspath $(LAUNCHER_SRC)/Json.h)\"" >> $@
+	@echo "namespace Json {" >> $@
+	@echo "    inline bool ensureBoolean(const QJsonObject& parent, const char* key, bool default_ = false, const QString& what = \"__placeholder\") {" >> $@
+	@echo "        return ::Json::ensureIsType<bool>(parent, QString(key), default_, what);" >> $@
+	@echo "    }" >> $@
+	@echo "}" >> $@
+
+$(OBJ_DIR)/launcher/Logging$(OBJ_SUFFIX): $(GEN_DIR)/Logging.cpp $(GEN_DIR)/Logging.h
+	@mkdir -p $(dir $@)
+	@echo "[CXX] Logging.cpp"
+	@$(CXX) $(CXXFLAGS) $(APP_INCLUDES) -c -o $@ $<
 
 $(GEN_DIR)/BuildConfig.cpp: $(SRCDIR)/buildconfig/BuildConfig.cpp.in mk/config.mk
 	@mkdir -p $(dir $@)
 	@echo "[GEN] BuildConfig.cpp"
 	@sed < $< \
-		-e 's/@Launcher_Name@/$(LAUNCHER_NAME)/g' \
-		-e 's/@Launcher_APP_BINARY_NAME@/$(LAUNCHER_APP_BINARY_NAME)/g' \
-		-e 's/@Launcher_DisplayName@/$(LAUNCHER_DISPLAYNAME)/g' \
-		-e 's/@Launcher_Copyright@/$(LAUNCHER_COPYRIGHT)/g' \
-		-e 's/@Launcher_Domain@/$(LAUNCHER_DOMAIN)/g' \
-		-e 's/@Launcher_ConfigFile@/$(LAUNCHER_CONFIGFILE)/g' \
-		-e 's/@Launcher_Git@/$(LAUNCHER_GIT)/g' \
-		-e 's/@Launcher_AppID@/$(LAUNCHER_APPID)/g' \
-		-e 's/@Launcher_SVGFileName@/$(LAUNCHER_SVGFILENAME)/g' \
-		-e 's/@Launcher_UserAgent@/$(LAUNCHER_USERAGENT)/g' \
-		-e 's/@Launcher_VERSION_MAJOR@/$(VERSION_MAJOR)/g' \
-		-e 's/@Launcher_VERSION_MINOR@/$(VERSION_MINOR)/g' \
-		-e 's/@Launcher_VERSION_PATCH@/$(VERSION_PATCH)/g' \
-		-e 's/@Launcher_VERSION_TWEAK@/$(VERSION_TWEAK)/g' \
-		-e 's/@Launcher_VERSION_NAME@/$(VERSION_NAME)/g' \
-		-e 's/@Launcher_BUILD_PLATFORM@/$(BUILD_PLATFORM)/g' \
-		-e 's/@Launcher_BUILD_TIMESTAMP@/$(BUILD_TIMESTAMP)/g' \
-		-e 's/@Launcher_NEWS_RSS_URL@/$(NEWS_RSS_URL)/g' \
-		-e 's|@Launcher_META_URL@|$(META_URL)|g' \
-		-e 's|@Launcher_BUG_TRACKER_URL@|$(BUG_TRACKER_URL)|g' \
-		-e 's|@Launcher_DISCORD_URL@|$(DISCORD_URL)|g' \
-		-e 's/@Launcher_MSA_CLIENT_ID@/$(MSA_CLIENT_ID)/g' \
-		-e 's/@Launcher_IMGUR_CLIENT_ID@/$(IMGUR_CLIENT_ID)/g' \
-		-e 's/@Launcher_CURSEFORGE_API_KEY@/$(FLAME_API_KEY)/g' \
-		-e 's|@Launcher_UPDATER_GITHUB_REPO@|$(UPDATER_GITHUB_REPO)|g' \
-		-e 's/@Launcher_COMPILER_NAME@/$(COMPILER_NAME)/g' \
-		-e 's/@Launcher_COMPILER_VERSION@//g' \
-		-e 's/@Launcher_BUILD_ARTIFACT@/bootstrap/g' \
-		-e 's/@Launcher_GIT_COMMIT@//g' \
-		-e 's/@Launcher_GIT_TAG@//g' \
-		-e 's/@Launcher_GIT_REFSPEC@//g' \
-		-e 's/#cmakedefine01 .*//g' \
+		-e "s|@Launcher_Name@|$(LAUNCHER_NAME)|g" \
+		-e "s|@Launcher_APP_BINARY_NAME@|$(LAUNCHER_APP_BINARY_NAME)|g" \
+		-e "s|@Launcher_DisplayName@|$(LAUNCHER_DISPLAYNAME)|g" \
+		-e "s|@Launcher_Copyright@|$(LAUNCHER_COPYRIGHT)|g" \
+		-e "s|@Launcher_Domain@|$(LAUNCHER_DOMAIN)|g" \
+		-e "s|@Launcher_ConfigFile@|$(LAUNCHER_CONFIGFILE)|g" \
+		-e "s|@Launcher_Git@|$(LAUNCHER_GIT)|g" \
+		-e "s|@Launcher_AppID@|$(LAUNCHER_APPID)|g" \
+		-e "s|@Launcher_SVGFileName@|$(LAUNCHER_SVGFILENAME)|g" \
+		-e "s|@Launcher_UserAgent@|$(LAUNCHER_USERAGENT)|g" \
+		-e "s|@Launcher_VERSION_MAJOR@|$(VERSION_MAJOR)|g" \
+		-e "s|@Launcher_VERSION_MINOR@|$(VERSION_MINOR)|g" \
+		-e "s|@Launcher_VERSION_PATCH@|$(VERSION_PATCH)|g" \
+		-e "s|@Launcher_VERSION_TWEAK@|$(VERSION_TWEAK)|g" \
+		-e "s|@Launcher_VERSION_NAME@|$(VERSION_NAME)|g" \
+		-e "s|@Launcher_BUILD_PLATFORM@|$(BUILD_PLATFORM)|g" \
+		-e "s|@Launcher_BUILD_TIMESTAMP@|$(BUILD_TIMESTAMP)|g" \
+		-e "s|@Launcher_NEWS_RSS_URL@|$(NEWS_RSS_URL)|g" \
+		-e "s|@Launcher_META_URL@|$(META_URL)|g" \
+		-e "s|@Launcher_BUG_TRACKER_URL@|$(BUG_TRACKER_URL)|g" \
+		-e "s|@Launcher_DISCORD_URL@|$(DISCORD_URL)|g" \
+		-e "s|@Launcher_MSA_CLIENT_ID@|$(MSA_CLIENT_ID)|g" \
+		-e "s|@Launcher_IMGUR_CLIENT_ID@|$(IMGUR_CLIENT_ID)|g" \
+		-e "s|@Launcher_CURSEFORGE_API_KEY@|$(FLAME_API_KEY)|g" \
+		-e "s|@Launcher_UPDATER_GITHUB_REPO@|$(UPDATER_GITHUB_REPO)|g" \
+		-e "s|@Launcher_COMPILER_NAME@|$(COMPILER_NAME)|g" \
+		-e "s|@Launcher_COMPILER_VERSION@||g" \
+		-e "s|@Launcher_BUILD_ARTIFACT@|bootstrap|g" \
+		-e "s|@Launcher_GIT_COMMIT@||g" \
+		-e "s|@Launcher_GIT_TAG@||g" \
+		-e "s|@Launcher_GIT_REFSPEC@||g" \
+		-e "s|#cmakedefine01 .*||g" \
 		> $@
 
 #============================================================================
@@ -468,10 +552,10 @@ all: deps gen launcher
 launcher: $(BIN_DIR)/$(LAUNCHER_APP_BINARY_NAME)$(EXE_SUFFIX)
 	@echo "[OK] Launcher built: $<"
 
-$(BIN_DIR)/$(LAUNCHER_APP_BINARY_NAME)$(EXE_SUFFIX): $(LAUNCHER_OBJS) $(INTERNAL_LIBS_OBJS)
+$(BIN_DIR)/$(LAUNCHER_APP_BINARY_NAME)$(EXE_SUFFIX): $(LAUNCHER_OBJS) $(INTERNAL_LIBS_OBJS) $(OBJ_DIR)/launcher/Logging$(OBJ_SUFFIX)
 	@mkdir -p $(dir $@)
 	@echo "[LINK] $@"
-	@$(CXX) $(LDFLAGS) -o $@ $(LAUNCHER_OBJS) $(INTERNAL_LIBS_OBJS) \
+	@$(CXX) $(LDFLAGS) -o $@ $(LAUNCHER_OBJS) $(INTERNAL_LIBS_OBJS) $(OBJ_DIR)/launcher/Logging$(OBJ_SUFFIX) \
 		-L$(DEPS_LIB) -lz -lbz2 -lcmark -lqrencode -lnbt++ -lquazip \
 		$(QT_LIBS) -lpthread
 
