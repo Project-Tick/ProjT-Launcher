@@ -59,7 +59,7 @@
 #include "Json.h"
 #include "QObjectPtr.h"
 
-#include "minecraft/auth/Parsers.h"
+#include "minecraft/auth/Parsers.hpp"
 #include "minecraft/skins/CapeChange.h"
 #include "minecraft/skins/SkinDelete.h"
 #include "minecraft/skins/SkinList.h"

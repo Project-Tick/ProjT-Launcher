@@ -67,7 +67,7 @@
 #include "Json.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/WorldList.h"
-#include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/AccountList.hpp"
 #include "settings/Setting.h"
 
 MinecraftSettingsWidget::MinecraftSettingsWidget(MinecraftInstancePtr instance, QWidget* parent)

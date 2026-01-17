@@ -19,9 +19,8 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
  *  Prism Launcher - Minecraft Launcher
+ *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -56,135 +55,60 @@
  * ======================================================================== */
 
 #pragma once
-#include <QByteArray>
-#include <QJsonObject>
-#include <QList>
-#include <QString>
 
-#include <QDateTime>
+#include <QDir>
 #include <QMap>
-#include <QString>
-#include <QVariantMap>
+#include <QObject>
+#include <QRunnable>
+#include <memory>
+#include "minecraft/mod/Mod.hpp"
+#include "tasks/Task.h"
 
-enum class Validity
+class ResourceFolderLoadTask : public Task
 {
-	None,
-	Assumed,
-	Certain
-};
+	Q_OBJECT
+  public:
+	struct Result
+	{
+		QMap<QString, Resource::Ptr> resources;
+	};
+	using ResultPtr = std::shared_ptr<Result>;
+	ResultPtr result() const
+	{
+		return m_result;
+	}
 
-struct Token
-{
-	QDateTime issueInstant;
-	QDateTime notAfter;
-	QString token;
-	QString refresh_token;
-	QVariantMap extra;
+  public:
+	ResourceFolderLoadTask(const QDir& resource_dir,
+						   const QDir& index_dir,
+						   bool is_indexed,
+						   bool clean_orphan,
+						   std::function<Resource*(const QFileInfo&)> create_function);
 
-	Validity validity = Validity::None;
-	bool persistent	  = true;
-};
+	bool canAbort() const override
+	{
+		return true;
+	}
+	bool abort() override
+	{
+		m_aborted.store(true);
+		return true;
+	}
 
-struct Skin
-{
-	QString id;
-	QString url;
-	QString variant;
+	void executeTask() override;
 
-	QByteArray data;
-};
+  private:
+	void getFromMetadata();
 
-struct Cape
-{
-	QString id;
-	QString url;
-	QString alias;
+  private:
+	QDir m_resource_dir, m_index_dir;
+	bool m_is_indexed;
+	bool m_clean_orphan;
+	std::function<Resource*(QFileInfo const&)> m_create_func;
+	ResultPtr m_result;
 
-	QByteArray data;
-};
+	std::atomic<bool> m_aborted = false;
 
-struct MinecraftEntitlement
-{
-	bool ownsMinecraft	  = false;
-	bool canPlayMinecraft = false;
-	Validity validity	  = Validity::None;
-};
-
-struct MinecraftProfile
-{
-	QString id;
-	QString name;
-	Skin skin;
-	QString currentCape;
-	QMap<QString, Cape> capes;
-	Validity validity = Validity::None;
-};
-
-enum class AccountType
-{
-	MSA,
-	Offline
-};
-
-enum class AccountState
-{
-	Unchecked,
-	Offline,
-	Working,
-	Online,
-	Disabled,
-	Errored,
-	Expired,
-	Gone
-};
-
-/**
- * State of an authentication task.
- * Used by AuthFlow to communicate progress and results.
- */
-enum class AccountTaskState
-{
-	STATE_CREATED,
-	STATE_WORKING,
-	STATE_SUCCEEDED,
-	STATE_OFFLINE,
-	STATE_DISABLED,
-	STATE_FAILED_SOFT,
-	STATE_FAILED_HARD,
-	STATE_FAILED_GONE
-};
-
-struct AccountData
-{
-	QJsonObject saveState() const;
-	bool resumeStateFromV3(QJsonObject data);
-
-	//! userName for Mojang accounts, gamertag for MSA
-	QString accountDisplayString() const;
-
-	//! Yggdrasil access token, as passed to the game.
-	QString accessToken() const;
-
-	QString profileId() const;
-	QString profileName() const;
-
-	QString lastError() const;
-
-	AccountType type = AccountType::MSA;
-
-	QString msaClientID;
-	Token msaToken;
-	Token userToken;
-	Token xboxApiToken;
-	Token mojangservicesToken;
-
-	Token yggdrasilToken;
-	MinecraftProfile minecraftProfile;
-	MinecraftEntitlement minecraftEntitlement;
-	Validity validity_ = Validity::None;
-
-	// runtime only information (not saved with the account)
-	QString internalId;
-	QString errorString;
-	AccountState accountState = AccountState::Unchecked;
+	/** This is the thread in which we should put new mod objects */
+	QThread* m_thread_to_spawn_into;
 };

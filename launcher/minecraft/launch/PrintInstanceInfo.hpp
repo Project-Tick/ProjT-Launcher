@@ -37,23 +37,28 @@
 #pragma once
 
 #include <launch/LaunchStage.hpp>
-#include <minecraft/auth/MinecraftAccount.h>
+#include "minecraft/auth/AuthSession.hpp"
+#include "minecraft/launch/MinecraftTarget.hpp"
 
-class ClaimAccount : public projt::launch::LaunchStage
+class PrintInstanceInfo : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit ClaimAccount(projt::launch::LaunchPipeline* parent, AuthSessionPtr session);
-	virtual ~ClaimAccount() = default;
+	explicit PrintInstanceInfo(projt::launch::LaunchPipeline* parent,
+							   AuthSessionPtr session,
+							   MinecraftTarget::Ptr targetToJoin)
+		: projt::launch::LaunchStage(parent),
+		  m_session(session),
+		  m_targetToJoin(targetToJoin) {};
+	virtual ~PrintInstanceInfo() = default;
 
-	void executeTask() override;
-	void finalize() override;
-	bool canAbort() const override
+	virtual void executeTask();
+	virtual bool canAbort() const
 	{
 		return false;
 	}
 
   private:
-	std::unique_ptr<UseLock> lock;
-	MinecraftAccountPtr m_account;
+	AuthSessionPtr m_session;
+	MinecraftTarget::Ptr m_targetToJoin;
 };

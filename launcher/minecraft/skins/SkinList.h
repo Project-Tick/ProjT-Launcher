@@ -46,7 +46,7 @@
 
 #include "QObjectPtr.h"
 #include "SkinModel.h"
-#include "minecraft/auth/MinecraftAccount.h"
+#include "minecraft/auth/MinecraftAccount.hpp"
 
 class SkinList : public QAbstractListModel
 {

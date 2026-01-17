@@ -36,21 +36,24 @@
 
 #pragma once
 
-#include <LoggedProcess.h>
 #include <launch/LaunchStage.hpp>
-#include <minecraft/auth/AuthSession.h>
+#include <minecraft/auth/MinecraftAccount.hpp>
 
-// Create the main .minecraft for the instance and any other necessary folders
-class CreateGameFolders : public projt::launch::LaunchStage
+class ClaimAccount : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit CreateGameFolders(projt::launch::LaunchPipeline* parent);
-	virtual ~CreateGameFolders() {};
+	explicit ClaimAccount(projt::launch::LaunchPipeline* parent, AuthSessionPtr session);
+	virtual ~ClaimAccount() = default;
 
-	virtual void executeTask();
-	virtual bool canAbort() const
+	void executeTask() override;
+	void finalize() override;
+	bool canAbort() const override
 	{
 		return false;
 	}
+
+  private:
+	std::unique_ptr<UseLock> lock;
+	MinecraftAccountPtr m_account;
 };

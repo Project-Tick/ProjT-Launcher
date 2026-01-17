@@ -58,12 +58,12 @@
 
 #pragma once
 #include <java/core/RuntimeVersion.hpp>
-#include <minecraft/mod/DataPackFolderModel.h>
+#include <minecraft/mod/DataPackFolderModel.hpp>
 #include <QDir>
 #include <QProcess>
 #include "BaseInstance.h"
-#include "minecraft/launch/MinecraftTarget.h"
-#include "minecraft/mod/Mod.h"
+#include "minecraft/launch/MinecraftTarget.hpp"
+#include "minecraft/mod/Mod.hpp"
 
 class ModFolderModel;
 class ResourceFolderModel;

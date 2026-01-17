@@ -19,11 +19,6 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
- *
- *
- *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
  *
@@ -39,6 +34,23 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
+ * This file incorporates work covered by the following copyright and
+ * permission notice:
+ *
+ *      Copyright 2013-2021 MultiMC Contributors
+ *
+ *      Licensed under the Apache License, Version 2.0 (the "License");
+ *      you may not use this file except in compliance with the License.
+ *      You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *      Unless required by applicable law or agreed to in writing, software
+ *      distributed under the License is distributed on an "AS IS" BASIS,
+ *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *      See the License for the specific language governing permissions and
+ *      limitations under the License.
+ *
  * ======================================================================== */
 
 #pragma once
@@ -46,11 +58,11 @@
 #include <QDebug>
 #include <QObject>
 
-#include "minecraft/mod/WorldSave.h"
+#include "minecraft/mod/DataPack.hpp"
 
 #include "tasks/Task.h"
 
-namespace WorldSaveUtils
+namespace DataPackUtils
 {
 
 	enum class ProcessingLevel
@@ -59,26 +71,33 @@ namespace WorldSaveUtils
 		BasicInfoOnly
 	};
 
-	bool process(WorldSave& save, ProcessingLevel level = ProcessingLevel::Full);
+	bool process(DataPack* pack, ProcessingLevel level = ProcessingLevel::Full);
 
-	bool processZIP(WorldSave& pack, ProcessingLevel level = ProcessingLevel::Full);
-	bool processFolder(WorldSave& pack, ProcessingLevel level = ProcessingLevel::Full);
+	bool processZIP(DataPack* pack, ProcessingLevel level = ProcessingLevel::Full);
+	bool processFolder(DataPack* pack, ProcessingLevel level = ProcessingLevel::Full);
 
+	bool processMCMeta(DataPack* pack, QByteArray&& raw_data);
+
+	QString processComponent(const QJsonValue& value, bool strikethrough = false, bool underline = false);
+
+	bool processPackPNG(const DataPack* pack, QByteArray&& raw_data);
+
+	/// processes ONLY the pack.png (rest of the pack may be invalid)
+	bool processPackPNG(const DataPack* pack);
+
+	/** Checks whether a file is valid as a data pack or not. */
 	bool validate(QFileInfo file);
 
-} // namespace WorldSaveUtils
+	/** Checks whether a file is valid as a resource pack or not. */
+	bool validateResourcePack(QFileInfo file);
 
-class LocalWorldSaveParseTask : public Task
+} // namespace DataPackUtils
+
+class LocalDataPackParseTask : public Task
 {
 	Q_OBJECT
   public:
-	LocalWorldSaveParseTask(int token, WorldSave& save);
-
-	bool canAbort() const override
-	{
-		return true;
-	}
-	bool abort() override;
+	LocalDataPackParseTask(int token, DataPack* dp);
 
 	void executeTask() override;
 
@@ -90,7 +109,5 @@ class LocalWorldSaveParseTask : public Task
   private:
 	int m_token;
 
-	WorldSave& m_save;
-
-	bool m_aborted = false;
+	DataPack* m_data_pack;
 };

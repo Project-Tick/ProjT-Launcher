@@ -19,11 +19,6 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
- *
- *
- *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
  *
@@ -60,13 +55,13 @@
 
 #include <QObject>
 
-#include "LocalResourceParse.h"
+#include "LocalResourceParse.hpp"
 
-#include "LocalDataPackParseTask.h"
-#include "LocalModParseTask.h"
-#include "LocalShaderPackParseTask.h"
-#include "LocalTexturePackParseTask.h"
-#include "LocalWorldSaveParseTask.h"
+#include "LocalDataPackParseTask.hpp"
+#include "LocalModParseTask.hpp"
+#include "LocalShaderPackParseTask.hpp"
+#include "LocalTexturePackParseTask.hpp"
+#include "LocalWorldSaveParseTask.hpp"
 #include "modplatform/ResourceType.h"
 
 namespace ResourceUtils

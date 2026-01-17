@@ -69,7 +69,7 @@
 #include "ui/dialogs/ProgressDialog.h"
 
 #include <Application.h>
-#include "minecraft/auth/Parsers.h"
+#include "minecraft/auth/Parsers.hpp"
 #include "net/Upload.h"
 
 ProfileSetupDialog::ProfileSetupDialog(MinecraftAccountPtr accountToSetup, QWidget* parent)

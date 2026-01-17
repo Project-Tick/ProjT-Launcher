@@ -41,7 +41,7 @@
  *
  * ======================================================================== */
 
-#include "DataPack.h"
+#include "DataPack.hpp"
 
 #include <QDebug>
 #include <QMap>
@@ -49,7 +49,7 @@
 
 #include "MTPixmapCache.h"
 #include "Version.h"
-#include "minecraft/mod/tasks/LocalDataPackParseTask.h"
+#include "minecraft/mod/tasks/LocalDataPackParseTask.hpp"
 
 // Values taken from:
 // https://minecraft.wiki/w/Pack_format#List_of_data_pack_formats

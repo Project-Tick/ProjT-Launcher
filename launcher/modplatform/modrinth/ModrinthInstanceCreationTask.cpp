@@ -28,7 +28,7 @@
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 
-#include "minecraft/mod/Mod.h"
+#include "minecraft/mod/Mod.hpp"
 #include "modplatform/EnsureMetadataTask.h"
 #include "modplatform/helpers/OverrideUtils.h"
 

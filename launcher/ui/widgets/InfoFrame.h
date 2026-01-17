@@ -59,8 +59,8 @@
 
 #include <QFrame>
 
-#include "minecraft/mod/DataPack.h"
-#include "minecraft/mod/Mod.h"
+#include "minecraft/mod/DataPack.hpp"
+#include "minecraft/mod/Mod.hpp"
 #include "minecraft/mod/ResourcePack.h"
 #include "minecraft/mod/TexturePack.h"
 

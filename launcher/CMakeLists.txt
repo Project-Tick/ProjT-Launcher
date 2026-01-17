@@ -215,18 +215,18 @@ set(MINECRAFT_SOURCES
 
     # Minecraft support
     minecraft/auth/AccountData.cpp
-    minecraft/auth/AccountData.h
+    minecraft/auth/AccountData.hpp
     minecraft/auth/AccountList.cpp
-    minecraft/auth/AccountList.h
+    minecraft/auth/AccountList.hpp
     minecraft/auth/AuthSession.cpp
-    minecraft/auth/AuthSession.h
+    minecraft/auth/AuthSession.hpp
     minecraft/auth/MinecraftAccount.cpp
-    minecraft/auth/MinecraftAccount.h
+    minecraft/auth/MinecraftAccount.hpp
     minecraft/auth/Parsers.cpp
-    minecraft/auth/Parsers.h
+    minecraft/auth/Parsers.hpp
 
     minecraft/auth/AuthFlow.cpp
-    minecraft/auth/AuthFlow.h
+    minecraft/auth/AuthFlow.hpp
 
     # New auth steps (projt::minecraft::auth namespace)
     minecraft/auth/steps/Step.hpp
@@ -261,27 +261,27 @@ set(MINECRAFT_SOURCES
     minecraft/update/LibrariesTask.h
 
     minecraft/launch/ClaimAccount.cpp
-    minecraft/launch/ClaimAccount.h
+    minecraft/launch/ClaimAccount.hpp
     minecraft/launch/CreateGameFolders.cpp
-    minecraft/launch/CreateGameFolders.h
+    minecraft/launch/CreateGameFolders.hpp
     minecraft/launch/ModMinecraftJar.cpp
-    minecraft/launch/ModMinecraftJar.h
+    minecraft/launch/ModMinecraftJar.hpp
     minecraft/launch/ExtractNatives.cpp
-    minecraft/launch/ExtractNatives.h
+    minecraft/launch/ExtractNatives.hpp
     minecraft/launch/LauncherPartLaunch.cpp
-    minecraft/launch/LauncherPartLaunch.h
+    minecraft/launch/LauncherPartLaunch.hpp
     minecraft/launch/MinecraftTarget.cpp
-    minecraft/launch/MinecraftTarget.h
+    minecraft/launch/MinecraftTarget.hpp
     minecraft/launch/PrintInstanceInfo.cpp
-    minecraft/launch/PrintInstanceInfo.h
+    minecraft/launch/PrintInstanceInfo.hpp
     minecraft/launch/ReconstructAssets.cpp
-    minecraft/launch/ReconstructAssets.h
+    minecraft/launch/ReconstructAssets.hpp
     minecraft/launch/ScanModFolders.cpp
-    minecraft/launch/ScanModFolders.h
+    minecraft/launch/ScanModFolders.hpp
     minecraft/launch/VerifyJavaInstall.cpp
     minecraft/launch/VerifyJavaInstall.hpp
     minecraft/launch/AutoInstallJava.cpp
-    minecraft/launch/AutoInstallJava.h
+    minecraft/launch/AutoInstallJava.hpp
 
     minecraft/GradleSpecifier.h
     minecraft/MinecraftInstance.cpp
@@ -324,8 +324,8 @@ set(MINECRAFT_SOURCES
     minecraft/WorldList.h
     minecraft/WorldList.cpp
 
-    minecraft/mod/MetadataHandler.h
-    minecraft/mod/Mod.h
+    minecraft/mod/MetadataHandler.hpp
+    minecraft/mod/Mod.hpp
     minecraft/mod/Mod.cpp
     minecraft/mod/ModDetails.h
     minecraft/mod/ModFolderModel.h
@@ -334,9 +334,9 @@ set(MINECRAFT_SOURCES
     minecraft/mod/Resource.cpp
     minecraft/mod/ResourceFolderModel.h
     minecraft/mod/ResourceFolderModel.cpp
-    minecraft/mod/DataPack.h
+    minecraft/mod/DataPack.hpp
     minecraft/mod/DataPack.cpp
-    minecraft/mod/DataPackFolderModel.h
+    minecraft/mod/DataPackFolderModel.hpp
     minecraft/mod/DataPackFolderModel.cpp
     minecraft/mod/ResourcePack.h
     minecraft/mod/ResourcePack.cpp
@@ -351,23 +351,23 @@ set(MINECRAFT_SOURCES
     minecraft/mod/TexturePackFolderModel.h
     minecraft/mod/TexturePackFolderModel.cpp
     minecraft/mod/ShaderPackFolderModel.h
-    minecraft/mod/tasks/ResourceFolderLoadTask.h
+    minecraft/mod/tasks/ResourceFolderLoadTask.hpp
     minecraft/mod/tasks/ResourceFolderLoadTask.cpp
-    minecraft/mod/tasks/LocalModParseTask.h
+    minecraft/mod/tasks/LocalModParseTask.hpp
     minecraft/mod/tasks/LocalModParseTask.cpp
-    minecraft/mod/tasks/LocalResourceUpdateTask.h
+    minecraft/mod/tasks/LocalResourceUpdateTask.hpp
     minecraft/mod/tasks/LocalResourceUpdateTask.cpp
-    minecraft/mod/tasks/LocalDataPackParseTask.h
+    minecraft/mod/tasks/LocalDataPackParseTask.hpp
     minecraft/mod/tasks/LocalDataPackParseTask.cpp
-    minecraft/mod/tasks/LocalTexturePackParseTask.h
+    minecraft/mod/tasks/LocalTexturePackParseTask.hpp
     minecraft/mod/tasks/LocalTexturePackParseTask.cpp
-    minecraft/mod/tasks/LocalShaderPackParseTask.h
+    minecraft/mod/tasks/LocalShaderPackParseTask.hpp
     minecraft/mod/tasks/LocalShaderPackParseTask.cpp
-    minecraft/mod/tasks/LocalWorldSaveParseTask.h
+    minecraft/mod/tasks/LocalWorldSaveParseTask.hpp
     minecraft/mod/tasks/LocalWorldSaveParseTask.cpp
-    minecraft/mod/tasks/LocalResourceParse.h
+    minecraft/mod/tasks/LocalResourceParse.hpp
     minecraft/mod/tasks/LocalResourceParse.cpp
-    minecraft/mod/tasks/GetModDependenciesTask.h
+    minecraft/mod/tasks/GetModDependenciesTask.hpp
     minecraft/mod/tasks/GetModDependenciesTask.cpp
 
     # Assets

@@ -40,7 +40,7 @@
 
 #include <memory>
 
-#include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/AccountList.hpp"
 
 namespace Ui
 {

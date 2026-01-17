@@ -18,7 +18,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "ExtractNatives.h"
+#include "ExtractNatives.hpp"
 #include <launch/LaunchPipeline.hpp>
 #include <minecraft/MinecraftInstance.h>
 

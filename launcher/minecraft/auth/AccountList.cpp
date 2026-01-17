@@ -19,8 +19,6 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *
@@ -55,8 +53,8 @@
  *
  * ======================================================================== */
 
-#include "AccountList.h"
-#include "AccountData.h"
+#include "AccountList.hpp"
+#include "AccountData.hpp"
 #include "tasks/Task.h"
 
 #include <QDir>

@@ -54,7 +54,7 @@
 #include "minecraft/mod/ShaderPackFolderModel.h"
 #include "minecraft/mod/TexturePackFolderModel.h"
 
-#include "minecraft/mod/tasks/GetModDependenciesTask.h"
+#include "minecraft/mod/tasks/GetModDependenciesTask.hpp"
 #include "modplatform/ModIndex.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/ProgressDialog.h"

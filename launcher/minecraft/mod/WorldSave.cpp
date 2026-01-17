@@ -43,7 +43,7 @@
 
 #include "WorldSave.h"
 
-#include "minecraft/mod/tasks/LocalWorldSaveParseTask.h"
+#include "minecraft/mod/tasks/LocalWorldSaveParseTask.hpp"
 
 void WorldSave::setSaveFormat(WorldSaveFormat new_save_format)
 {

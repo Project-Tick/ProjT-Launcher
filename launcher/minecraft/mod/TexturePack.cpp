@@ -45,7 +45,7 @@
 #include <QMap>
 #include "MTPixmapCache.h"
 
-#include "minecraft/mod/tasks/LocalTexturePackParseTask.h"
+#include "minecraft/mod/tasks/LocalTexturePackParseTask.hpp"
 
 void TexturePack::setDescription(QString new_description)
 {

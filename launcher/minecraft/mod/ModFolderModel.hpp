@@ -24,6 +24,7 @@
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
+ *  Copyright (c) 2023 Trial97 <alexandru.tripon97@gmail.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -58,59 +59,68 @@
 
 #pragma once
 
+#include <QAbstractListModel>
 #include <QDir>
+#include <QList>
 #include <QMap>
-#include <QObject>
-#include <QRunnable>
-#include <memory>
-#include "minecraft/mod/Mod.h"
-#include "tasks/Task.h"
+#include <QSet>
+#include <QString>
 
-class ResourceFolderLoadTask : public Task
+#include "Mod.hpp"
+#include "ResourceFolderModel.h"
+
+class BaseInstance;
+class QFileSystemWatcher;
+
+/**
+ * A legacy mod list.
+ * Backed by a folder.
+ */
+class ModFolderModel : public ResourceFolderModel
 {
 	Q_OBJECT
   public:
-	struct Result
+	enum Columns
 	{
-		QMap<QString, Resource::Ptr> resources;
+		ActiveColumn = 0,
+		ImageColumn,
+		NameColumn,
+		VersionColumn,
+		DateColumn,
+		ProviderColumn,
+		SizeColumn,
+		SideColumn,
+		LoadersColumn,
+		McVersionsColumn,
+		ReleaseTypeColumn,
+		NUM_COLUMNS
 	};
-	using ResultPtr = std::shared_ptr<Result>;
-	ResultPtr result() const
+	ModFolderModel(const QDir& dir,
+				   BaseInstance* instance,
+				   bool is_indexed,
+				   bool create_dir,
+				   QObject* parent = nullptr);
+
+	virtual QString id() const override
 	{
-		return m_result;
+		return "mods";
 	}
 
-  public:
-	ResourceFolderLoadTask(const QDir& resource_dir,
-						   const QDir& index_dir,
-						   bool is_indexed,
-						   bool clean_orphan,
-						   std::function<Resource*(const QFileInfo&)> create_function);
+	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
-	bool canAbort() const override
+	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+	int columnCount(const QModelIndex& parent) const override;
+
+	[[nodiscard]] Resource* createResource(const QFileInfo& file) override
 	{
-		return true;
+		return new Mod(file);
 	}
-	bool abort() override
-	{
-		m_aborted.store(true);
-		return true;
-	}
+	[[nodiscard]] Task* createParseTask(Resource&) override;
 
-	void executeTask() override;
+	bool isValid();
 
-  private:
-	void getFromMetadata();
+	RESOURCE_HELPERS(Mod)
 
-  private:
-	QDir m_resource_dir, m_index_dir;
-	bool m_is_indexed;
-	bool m_clean_orphan;
-	std::function<Resource*(QFileInfo const&)> m_create_func;
-	ResultPtr m_result;
-
-	std::atomic<bool> m_aborted = false;
-
-	/** This is the thread in which we should put new mod objects */
-	QThread* m_thread_to_spawn_into;
+  private slots:
+	void onParseSucceeded(int ticket, QString resource_id) override;
 };

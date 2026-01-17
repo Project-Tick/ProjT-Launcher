@@ -18,7 +18,7 @@
 
 #include <QTest>
 #include <QTimer>
-#include "minecraft/mod/tasks/LocalDataPackParseTask.h"
+#include "minecraft/mod/tasks/LocalDataPackParseTask.hpp"
 
 #include <FileSystem.h>
 

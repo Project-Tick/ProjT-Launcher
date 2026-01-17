@@ -57,7 +57,7 @@
  *
  * ======================================================================== */
 
-#include "Mod.h"
+#include "Mod.hpp"
 #include <qpixmap.h>
 
 #include <QDir>
@@ -65,11 +65,11 @@
 #include <QString>
 
 #include "MTPixmapCache.h"
-#include "MetadataHandler.h"
+#include "MetadataHandler.hpp"
 #include "Resource.h"
 #include "Version.h"
 #include "minecraft/mod/ModDetails.h"
-#include "minecraft/mod/tasks/LocalModParseTask.h"
+#include "minecraft/mod/tasks/LocalModParseTask.hpp"
 #include "modplatform/ModIndex.h"
 
 Mod::Mod(const QFileInfo& file) : Resource(file), m_local_details()

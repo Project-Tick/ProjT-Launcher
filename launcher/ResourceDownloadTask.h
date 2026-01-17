@@ -44,7 +44,7 @@
 #include "net/NetJob.h"
 #include "tasks/SequentialTask.h"
 
-#include "minecraft/mod/tasks/LocalResourceUpdateTask.h"
+#include "minecraft/mod/tasks/LocalResourceUpdateTask.hpp"
 #include "modplatform/ModIndex.h"
 
 class ResourceFolderModel;

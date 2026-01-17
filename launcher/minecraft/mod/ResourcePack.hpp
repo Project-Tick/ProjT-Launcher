@@ -20,7 +20,7 @@
 #pragma once
 
 #include "Resource.h"
-#include "minecraft/mod/DataPack.h"
+#include "minecraft/mod/DataPack.hpp"
 
 #include <QImage>
 #include <QMutex>

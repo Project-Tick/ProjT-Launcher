@@ -18,7 +18,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "LoginWizardPage.h"
-#include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/AccountList.hpp"
 #include "ui/dialogs/MSALoginDialog.h"
 #include "ui_LoginWizardPage.h"
 

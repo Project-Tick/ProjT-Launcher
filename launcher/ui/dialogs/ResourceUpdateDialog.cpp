@@ -24,7 +24,7 @@
 #include "ProgressDialog.h"
 #include "ScrollMessageBox.h"
 #include "StringUtils.h"
-#include "minecraft/mod/tasks/GetModDependenciesTask.h"
+#include "minecraft/mod/tasks/GetModDependenciesTask.hpp"
 #include "modplatform/ModIndex.h"
 #include "modplatform/flame/FlameAPI.h"
 #include "tasks/SequentialTask.h"

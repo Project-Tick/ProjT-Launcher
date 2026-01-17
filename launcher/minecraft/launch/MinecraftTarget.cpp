@@ -34,7 +34,7 @@
  * limitations under the License.
  * ======================================================================== */
 
-#include "MinecraftTarget.h"
+#include "MinecraftTarget.hpp"
 
 #include <QRegularExpression>
 #include <QStringList>

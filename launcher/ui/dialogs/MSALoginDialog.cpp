@@ -61,7 +61,7 @@
 #include "ui_MSALoginDialog.h"
 
 #include "DesktopServices.h"
-#include "minecraft/auth/AuthFlow.h"
+#include "minecraft/auth/AuthFlow.hpp"
 
 #include <QApplication>
 #include <QClipboard>

@@ -35,10 +35,10 @@
 #include "Application.h"
 #include "FileSystem.h"
 
-#include "minecraft/mod/tasks/ResourceFolderLoadTask.h"
+#include "minecraft/mod/tasks/ResourceFolderLoadTask.hpp"
 
 #include "Json.h"
-#include "minecraft/mod/tasks/LocalResourceUpdateTask.h"
+#include "minecraft/mod/tasks/LocalResourceUpdateTask.hpp"
 #include "modplatform/flame/FlameAPI.h"
 #include "modplatform/flame/FlameModIndex.h"
 #include "settings/Setting.h"

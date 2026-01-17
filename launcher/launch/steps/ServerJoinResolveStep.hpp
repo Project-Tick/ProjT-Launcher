@@ -21,7 +21,7 @@
 #pragma once
 
 #include <launch/LaunchStage.hpp>
-#include <minecraft/launch/MinecraftTarget.h>
+#include <minecraft/launch/MinecraftTarget.hpp>
 
 #include <QPointer>
 #include <QString>

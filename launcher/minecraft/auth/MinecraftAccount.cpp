@@ -19,8 +19,6 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *
@@ -55,7 +53,7 @@
  *
  * ======================================================================== */
 
-#include "MinecraftAccount.h"
+#include "MinecraftAccount.hpp"
 
 #include <QColor>
 #include <QCryptographicHash>
@@ -70,8 +68,8 @@
 
 #include <QPainter>
 
-#include "minecraft/auth/AccountData.h"
-#include "minecraft/auth/AuthFlow.h"
+#include "minecraft/auth/AccountData.hpp"
+#include "minecraft/auth/AuthFlow.hpp"
 
 MinecraftAccount::MinecraftAccount(QObject* parent) : QObject(parent)
 {

@@ -72,7 +72,7 @@
 #include <optional>
 
 #if defined(LAUNCHER_APPLICATION)
-#include "minecraft/mod/Mod.h"
+#include "minecraft/mod/Mod.hpp"
 #endif
 #include "Filter.h"
 #include "tasks/Task.h"

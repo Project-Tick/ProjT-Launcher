@@ -124,7 +124,7 @@
 #include "InstanceList.h"
 #include "MTPixmapCache.h"
 
-#include <minecraft/auth/AccountList.h>
+#include <minecraft/auth/AccountList.hpp>
 #include "icons/IconList.hpp"
 #include "net/HttpMetaCache.h"
 

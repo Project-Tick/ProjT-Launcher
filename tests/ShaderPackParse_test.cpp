@@ -26,7 +26,7 @@
 #include <FileSystem.h>
 
 #include <minecraft/mod/ShaderPack.h>
-#include <minecraft/mod/tasks/LocalShaderPackParseTask.h>
+#include <minecraft/mod/tasks/LocalShaderPackParseTask.hpp>
 
 class ShaderPackParseTest : public QObject
 {

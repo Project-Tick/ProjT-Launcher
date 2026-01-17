@@ -65,7 +65,7 @@
 
 #include "Version.h"
 
-#include "minecraft/mod/tasks/LocalDataPackParseTask.h"
+#include "minecraft/mod/tasks/LocalDataPackParseTask.hpp"
 
 ResourcePackFolderModel::ResourcePackFolderModel(const QDir& dir,
 												 BaseInstance* instance,

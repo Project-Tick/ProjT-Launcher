@@ -58,8 +58,8 @@
 #include <tools/BaseProfiler.h>
 #include <QObject>
 
-#include "minecraft/auth/MinecraftAccount.h"
-#include "minecraft/launch/MinecraftTarget.h"
+#include "minecraft/auth/MinecraftAccount.hpp"
+#include "minecraft/launch/MinecraftTarget.hpp"
 
 class InstanceWindow;
 namespace projt::launch

@@ -39,8 +39,8 @@
 #include <QTimer>
 #include <QtWidgets/QDialog>
 
-#include "minecraft/auth/AuthFlow.h"
-#include "minecraft/auth/MinecraftAccount.h"
+#include "minecraft/auth/AuthFlow.hpp"
+#include "minecraft/auth/MinecraftAccount.hpp"
 
 namespace Ui
 {

@@ -41,7 +41,7 @@
 
 #include <FileSystem.h>
 
-#include <minecraft/mod/tasks/LocalDataPackParseTask.h>
+#include <minecraft/mod/tasks/LocalDataPackParseTask.hpp>
 
 class MetaComponentParseTest : public QObject
 {

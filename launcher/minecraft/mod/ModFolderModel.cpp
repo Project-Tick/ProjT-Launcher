@@ -71,7 +71,7 @@
 #include <QUrl>
 #include <QUuid>
 
-#include "minecraft/mod/tasks/LocalModParseTask.h"
+#include "minecraft/mod/tasks/LocalModParseTask.hpp"
 
 ModFolderModel::ModFolderModel(const QDir& dir,
 							   BaseInstance* instance,

@@ -38,7 +38,7 @@
 #include <string>
 
 #include <launch/LaunchPipeline.hpp>
-#include "PrintInstanceInfo.h"
+#include "PrintInstanceInfo.hpp"
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
 namespace

@@ -19,8 +19,6 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -39,10 +37,10 @@
  *
  * ======================================================================== */
 
-#include "LocalResourceUpdateTask.h"
+#include "LocalResourceUpdateTask.hpp"
 
 #include "FileSystem.h"
-#include "minecraft/mod/MetadataHandler.h"
+#include "minecraft/mod/MetadataHandler.hpp"
 
 #ifdef Q_OS_WIN32
 #include <windows.h>

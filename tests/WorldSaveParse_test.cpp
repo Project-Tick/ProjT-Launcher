@@ -26,7 +26,7 @@
 #include <FileSystem.h>
 
 #include <minecraft/mod/WorldSave.h>
-#include <minecraft/mod/tasks/LocalWorldSaveParseTask.h>
+#include <minecraft/mod/tasks/LocalWorldSaveParseTask.hpp>
 
 class WorldSaveParseTest : public QObject
 {

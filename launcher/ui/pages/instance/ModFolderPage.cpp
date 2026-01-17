@@ -80,7 +80,7 @@
 
 #include "minecraft/PackProfile.h"
 #include "minecraft/VersionFilterData.h"
-#include "minecraft/mod/Mod.h"
+#include "minecraft/mod/Mod.hpp"
 #include "minecraft/mod/ModFolderModel.h"
 
 #include "tasks/ConcurrentTask.h"

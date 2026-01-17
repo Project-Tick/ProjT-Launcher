@@ -21,7 +21,7 @@
 
 #include <QtWidgets/QDialog>
 
-#include "minecraft/auth/MinecraftAccount.h"
+#include "minecraft/auth/MinecraftAccount.hpp"
 #include "tasks/Task.h"
 
 namespace Ui

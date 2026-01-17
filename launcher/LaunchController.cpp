@@ -58,8 +58,8 @@
 #include "Application.h"
 #include "launch/LaunchPipeline.hpp"
 #include "launch/steps/HostLookupReportStep.hpp"
-#include "minecraft/auth/AccountData.h"
-#include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/AccountData.hpp"
+#include "minecraft/auth/AccountList.hpp"
 
 #include "ui/InstanceWindow.h"
 #include "ui/MainWindow.h"

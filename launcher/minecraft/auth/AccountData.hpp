@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -19,13 +19,8 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
- *
- *
- *
  *  Prism Launcher - Minecraft Launcher
- *  Copyright (C) 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
+ *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -59,60 +54,135 @@
  * ======================================================================== */
 
 #pragma once
+#include <QByteArray>
+#include <QJsonObject>
+#include <QList>
+#include <QString>
 
-#include <QDebug>
-#include <QObject>
+#include <QDateTime>
+#include <QMap>
+#include <QString>
+#include <QVariantMap>
 
-#include "minecraft/mod/DataPack.h"
-
-#include "tasks/Task.h"
-
-namespace DataPackUtils
+enum class Validity
 {
+	None,
+	Assumed,
+	Certain
+};
 
-	enum class ProcessingLevel
-	{
-		Full,
-		BasicInfoOnly
-	};
-
-	bool process(DataPack* pack, ProcessingLevel level = ProcessingLevel::Full);
-
-	bool processZIP(DataPack* pack, ProcessingLevel level = ProcessingLevel::Full);
-	bool processFolder(DataPack* pack, ProcessingLevel level = ProcessingLevel::Full);
-
-	bool processMCMeta(DataPack* pack, QByteArray&& raw_data);
-
-	QString processComponent(const QJsonValue& value, bool strikethrough = false, bool underline = false);
-
-	bool processPackPNG(const DataPack* pack, QByteArray&& raw_data);
-
-	/// processes ONLY the pack.png (rest of the pack may be invalid)
-	bool processPackPNG(const DataPack* pack);
-
-	/** Checks whether a file is valid as a data pack or not. */
-	bool validate(QFileInfo file);
-
-	/** Checks whether a file is valid as a resource pack or not. */
-	bool validateResourcePack(QFileInfo file);
-
-} // namespace DataPackUtils
-
-class LocalDataPackParseTask : public Task
+struct Token
 {
-	Q_OBJECT
-  public:
-	LocalDataPackParseTask(int token, DataPack* dp);
+	QDateTime issueInstant;
+	QDateTime notAfter;
+	QString token;
+	QString refresh_token;
+	QVariantMap extra;
 
-	void executeTask() override;
+	Validity validity = Validity::None;
+	bool persistent	  = true;
+};
 
-	int token() const
-	{
-		return m_token;
-	}
+struct Skin
+{
+	QString id;
+	QString url;
+	QString variant;
 
-  private:
-	int m_token;
+	QByteArray data;
+};
 
-	DataPack* m_data_pack;
+struct Cape
+{
+	QString id;
+	QString url;
+	QString alias;
+
+	QByteArray data;
+};
+
+struct MinecraftEntitlement
+{
+	bool ownsMinecraft	  = false;
+	bool canPlayMinecraft = false;
+	Validity validity	  = Validity::None;
+};
+
+struct MinecraftProfile
+{
+	QString id;
+	QString name;
+	Skin skin;
+	QString currentCape;
+	QMap<QString, Cape> capes;
+	Validity validity = Validity::None;
+};
+
+enum class AccountType
+{
+	MSA,
+	Offline
+};
+
+enum class AccountState
+{
+	Unchecked,
+	Offline,
+	Working,
+	Online,
+	Disabled,
+	Errored,
+	Expired,
+	Gone
+};
+
+/**
+ * State of an authentication task.
+ * Used by AuthFlow to communicate progress and results.
+ */
+enum class AccountTaskState
+{
+	STATE_CREATED,
+	STATE_WORKING,
+	STATE_SUCCEEDED,
+	STATE_OFFLINE,
+	STATE_DISABLED,
+	STATE_FAILED_SOFT,
+	STATE_FAILED_HARD,
+	STATE_FAILED_GONE
+};
+
+struct AccountData
+{
+	QJsonObject saveState() const;
+	bool resumeStateFromV3(QJsonObject data);
+
+	//! userName for Mojang accounts, gamertag for MSA
+	QString accountDisplayString() const;
+
+	//! Yggdrasil access token, as passed to the game.
+	QString accessToken() const;
+
+	QString profileId() const;
+	QString profileName() const;
+
+	QString lastError() const;
+
+	AccountType type = AccountType::MSA;
+
+	QString msaClientID;
+	Token msaToken;
+	Token userToken;
+	Token xboxApiToken;
+	Token mojangservicesToken;
+
+	Token yggdrasilToken;
+	MinecraftProfile minecraftProfile;
+	MinecraftEntitlement minecraftEntitlement;
+	Validity validity_ = Validity::None;
+
+	// runtime only information (not saved with the account)
+	QString internalId;
+	QString errorString;
+	AccountState accountState = AccountState::Unchecked;
 };

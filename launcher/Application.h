@@ -67,7 +67,7 @@
 #include <BaseInstance.h>
 
 #include "launch/LaunchLogModel.hpp"
-#include "minecraft/launch/MinecraftTarget.h"
+#include "minecraft/launch/MinecraftTarget.hpp"
 
 class LaunchController;
 class LocalPeer;

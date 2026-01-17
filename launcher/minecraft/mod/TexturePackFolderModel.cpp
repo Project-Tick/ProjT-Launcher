@@ -57,8 +57,8 @@
  * ======================================================================== */
 #include "TexturePackFolderModel.h"
 
-#include "minecraft/mod/tasks/LocalTexturePackParseTask.h"
-#include "minecraft/mod/tasks/ResourceFolderLoadTask.h"
+#include "minecraft/mod/tasks/LocalTexturePackParseTask.hpp"
+#include "minecraft/mod/tasks/ResourceFolderLoadTask.hpp"
 
 TexturePackFolderModel::TexturePackFolderModel(const QDir& dir,
 											   BaseInstance* instance,

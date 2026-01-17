@@ -63,7 +63,7 @@
 #include <QStringList>
 #include <QUrl>
 
-#include "minecraft/mod/MetadataHandler.h"
+#include "minecraft/mod/MetadataHandler.hpp"
 
 struct ModLicense
 {

@@ -40,7 +40,7 @@
 #pragma once
 #include <QList>
 #include <QString>
-#include "minecraft/mod/Mod.h"
+#include "minecraft/mod/Mod.hpp"
 
 namespace ExportToModList
 {

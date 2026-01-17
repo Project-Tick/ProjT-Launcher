@@ -65,7 +65,7 @@
 #include <QTimer>
 
 #include "BaseInstance.h"
-#include "minecraft/auth/MinecraftAccount.h"
+#include "minecraft/auth/MinecraftAccount.hpp"
 
 class LaunchController;
 class NewsChecker;

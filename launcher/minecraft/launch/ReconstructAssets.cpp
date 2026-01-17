@@ -34,7 +34,7 @@
  * limitations under the License.
  * ======================================================================== */
 
-#include "ReconstructAssets.h"
+#include "ReconstructAssets.hpp"
 #include "launch/LaunchPipeline.hpp"
 #include "minecraft/AssetsUtils.h"
 #include "minecraft/MinecraftInstance.h"

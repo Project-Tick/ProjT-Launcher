@@ -18,7 +18,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "AutoInstallJava.h"
+#include "AutoInstallJava.hpp"
 #include <QDir>
 #include <QFileInfo>
 #include <memory>

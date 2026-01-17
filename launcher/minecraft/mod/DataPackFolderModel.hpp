@@ -60,7 +60,7 @@
 
 #include "ResourceFolderModel.h"
 
-#include "DataPack.h"
+#include "DataPack.hpp"
 #include "ResourcePack.h"
 
 class DataPackFolderModel : public ResourceFolderModel

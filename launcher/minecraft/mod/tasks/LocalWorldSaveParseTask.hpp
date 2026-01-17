@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
 // SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -19,11 +19,8 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
  *  Prism Launcher - Minecraft Launcher
- *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
- *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
+ *  Copyright (C) 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -44,11 +41,11 @@
 #include <QDebug>
 #include <QObject>
 
-#include "minecraft/mod/TexturePack.h"
+#include "minecraft/mod/WorldSave.h"
 
 #include "tasks/Task.h"
 
-namespace TexturePackUtils
+namespace WorldSaveUtils
 {
 
 	enum class ProcessingLevel
@@ -57,26 +54,20 @@ namespace TexturePackUtils
 		BasicInfoOnly
 	};
 
-	bool process(TexturePack& pack, ProcessingLevel level = ProcessingLevel::Full);
+	bool process(WorldSave& save, ProcessingLevel level = ProcessingLevel::Full);
 
-	bool processZIP(TexturePack& pack, ProcessingLevel level = ProcessingLevel::Full);
-	bool processFolder(TexturePack& pack, ProcessingLevel level = ProcessingLevel::Full);
+	bool processZIP(WorldSave& pack, ProcessingLevel level = ProcessingLevel::Full);
+	bool processFolder(WorldSave& pack, ProcessingLevel level = ProcessingLevel::Full);
 
-	bool processPackTXT(TexturePack& pack, QByteArray&& raw_data);
-	bool processPackPNG(const TexturePack& pack, QByteArray&& raw_data);
-
-	/// processes ONLY the pack.png (rest of the pack may be invalid)
-	bool processPackPNG(const TexturePack& pack);
-
-	/** Checks whether a file is valid as a texture pack or not. */
 	bool validate(QFileInfo file);
-} // namespace TexturePackUtils
 
-class LocalTexturePackParseTask : public Task
+} // namespace WorldSaveUtils
+
+class LocalWorldSaveParseTask : public Task
 {
 	Q_OBJECT
   public:
-	LocalTexturePackParseTask(int token, TexturePack& rp);
+	LocalWorldSaveParseTask(int token, WorldSave& save);
 
 	bool canAbort() const override
 	{
@@ -94,7 +85,7 @@ class LocalTexturePackParseTask : public Task
   private:
 	int m_token;
 
-	TexturePack& m_texture_pack;
+	WorldSave& m_save;
 
 	bool m_aborted = false;
 };

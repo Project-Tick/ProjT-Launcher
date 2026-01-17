@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
 // SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -19,12 +19,8 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
  *  Prism Launcher - Minecraft Launcher
- *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
- *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
- *  Copyright (c) 2023 Trial97 <alexandru.tripon97@gmail.com>
+ *  Copyright (C) 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -59,68 +55,10 @@
 
 #pragma once
 
-#include <QAbstractListModel>
-#include <QDir>
-#include <QList>
-#include <QMap>
-#include <QSet>
-#include <QString>
+#include <QFileInfo>
+#include "modplatform/ResourceType.h"
 
-#include "Mod.h"
-#include "ResourceFolderModel.h"
-
-class BaseInstance;
-class QFileSystemWatcher;
-
-/**
- * A legacy mod list.
- * Backed by a folder.
- */
-class ModFolderModel : public ResourceFolderModel
+namespace ResourceUtils
 {
-	Q_OBJECT
-  public:
-	enum Columns
-	{
-		ActiveColumn = 0,
-		ImageColumn,
-		NameColumn,
-		VersionColumn,
-		DateColumn,
-		ProviderColumn,
-		SizeColumn,
-		SideColumn,
-		LoadersColumn,
-		McVersionsColumn,
-		ReleaseTypeColumn,
-		NUM_COLUMNS
-	};
-	ModFolderModel(const QDir& dir,
-				   BaseInstance* instance,
-				   bool is_indexed,
-				   bool create_dir,
-				   QObject* parent = nullptr);
-
-	virtual QString id() const override
-	{
-		return "mods";
-	}
-
-	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-
-	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-	int columnCount(const QModelIndex& parent) const override;
-
-	[[nodiscard]] Resource* createResource(const QFileInfo& file) override
-	{
-		return new Mod(file);
-	}
-	[[nodiscard]] Task* createParseTask(Resource&) override;
-
-	bool isValid();
-
-	RESOURCE_HELPERS(Mod)
-
-  private slots:
-	void onParseSucceeded(int ticket, QString resource_id) override;
-};
+	ModPlatform::ResourceType identify(QFileInfo file);
+} // namespace ResourceUtils

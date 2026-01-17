@@ -25,7 +25,7 @@
 #include <QObject>
 #include <QUrl>
 
-#include "minecraft/auth/AccountData.h"
+#include "minecraft/auth/AccountData.hpp"
 #include "minecraft/auth/steps/Step.hpp"
 #include "minecraft/auth/steps/Credentials.hpp"
 #include "tasks/Task.h"

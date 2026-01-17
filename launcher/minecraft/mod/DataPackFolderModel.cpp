@@ -57,7 +57,7 @@
  *
  * ======================================================================== */
 
-#include "DataPackFolderModel.h"
+#include "DataPackFolderModel.hpp"
 #include <qnamespace.h>
 #include <qsize.h>
 
@@ -66,7 +66,7 @@
 
 #include "Version.h"
 
-#include "minecraft/mod/tasks/LocalDataPackParseTask.h"
+#include "minecraft/mod/tasks/LocalDataPackParseTask.hpp"
 
 DataPackFolderModel::DataPackFolderModel(const QString& dir,
 										 BaseInstance* instance,

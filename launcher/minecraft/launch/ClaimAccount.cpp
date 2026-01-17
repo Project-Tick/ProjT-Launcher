@@ -17,11 +17,11 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "ClaimAccount.h"
+#include "ClaimAccount.hpp"
 #include <launch/LaunchPipeline.hpp>
 
 #include "Application.h"
-#include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/AccountList.hpp"
 
 ClaimAccount::ClaimAccount(projt::launch::LaunchPipeline* parent, AuthSessionPtr session)
 	: projt::launch::LaunchStage(parent)

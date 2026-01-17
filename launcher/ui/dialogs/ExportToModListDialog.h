@@ -42,7 +42,7 @@
 
 #include <QDialog>
 #include <QList>
-#include "minecraft/mod/Mod.h"
+#include "minecraft/mod/Mod.hpp"
 #include "modplatform/helpers/ExportToModList.h"
 
 namespace Ui

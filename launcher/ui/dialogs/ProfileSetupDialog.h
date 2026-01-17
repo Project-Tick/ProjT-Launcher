@@ -41,7 +41,7 @@
 #include <QNetworkReply>
 #include <QTimer>
 
-#include <minecraft/auth/MinecraftAccount.h>
+#include <minecraft/auth/MinecraftAccount.hpp>
 #include <memory>
 #include "net/Download.h"
 #include "net/Upload.h"

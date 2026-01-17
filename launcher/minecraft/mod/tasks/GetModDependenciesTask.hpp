@@ -19,8 +19,6 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2023 Trial97 <alexandru.tripon97@gmail.com>
  *
@@ -46,7 +44,7 @@
 #include <functional>
 #include <memory>
 
-#include "minecraft/mod/MetadataHandler.h"
+#include "minecraft/mod/MetadataHandler.hpp"
 #include "minecraft/mod/ModFolderModel.h"
 #include "modplatform/ModIndex.h"
 #include "modplatform/ResourceAPI.h"

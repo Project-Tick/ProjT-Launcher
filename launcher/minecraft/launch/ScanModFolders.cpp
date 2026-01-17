@@ -19,8 +19,6 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *
@@ -55,7 +53,7 @@
  *
  * ======================================================================== */
 
-#include "ScanModFolders.h"
+#include "ScanModFolders.hpp"
 #include "FileSystem.h"
 #include "MMCZip.h"
 #include "launch/LaunchPipeline.hpp"

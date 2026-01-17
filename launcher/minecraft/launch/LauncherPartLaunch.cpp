@@ -18,7 +18,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "LauncherPartLaunch.h"
+#include "LauncherPartLaunch.hpp"
 
 #include <QRegularExpression>
 #include <QStandardPaths>

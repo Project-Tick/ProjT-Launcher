@@ -47,8 +47,8 @@
 #include <QLayout>
 
 #include "QObjectPtr.h"
-#include "minecraft/mod/DataPackFolderModel.h"
-#include "minecraft/mod/tasks/GetModDependenciesTask.h"
+#include "minecraft/mod/DataPackFolderModel.hpp"
+#include "minecraft/mod/tasks/GetModDependenciesTask.hpp"
 #include "modplatform/ModIndex.h"
 #include "ui/pages/BasePageProvider.h"
 

@@ -19,8 +19,6 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *
@@ -65,11 +63,11 @@
 #include <QPixmap>
 #include <QString>
 
-#include "AccountData.h"
-#include "AuthSession.h"
+#include "AccountData.hpp"
+#include "AuthSession.hpp"
 #include "QObjectPtr.h"
 #include "Usable.h"
-#include "minecraft/auth/AuthFlow.h"
+#include "minecraft/auth/AuthFlow.hpp"
 
 class Task;
 class MinecraftAccount;

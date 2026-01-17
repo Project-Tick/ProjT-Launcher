@@ -44,7 +44,7 @@
 #include <QItemSelection>
 #include <QPixmap>
 
-#include "minecraft/auth/MinecraftAccount.h"
+#include "minecraft/auth/MinecraftAccount.hpp"
 #include "minecraft/skins/SkinList.h"
 #include "minecraft/skins/SkinModel.h"
 #include "ui/dialogs/skins/draw/SkinOpenGLWindow.h"

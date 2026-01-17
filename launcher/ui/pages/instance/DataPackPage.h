@@ -42,7 +42,7 @@
 
 #include <QVBoxLayout>
 #include "ExternalResourcesPage.h"
-#include "minecraft/mod/DataPackFolderModel.h"
+#include "minecraft/mod/DataPackFolderModel.hpp"
 #include "ui/dialogs/ResourceDownloadDialog.h"
 
 class DataPackPage : public ExternalResourcesPage

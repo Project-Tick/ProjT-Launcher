@@ -58,7 +58,7 @@
 #include "FlameInstanceCreationTask.h"
 
 #include "QObjectPtr.h"
-#include "minecraft/mod/tasks/LocalResourceUpdateTask.h"
+#include "minecraft/mod/tasks/LocalResourceUpdateTask.hpp"
 #include "modplatform/flame/FileResolvingTask.h"
 #include "modplatform/flame/FlameAPI.h"
 #include "modplatform/flame/FlameModIndex.h"
@@ -86,7 +86,7 @@
 
 #include "meta/Index.hpp"
 #include "minecraft/World.h"
-#include "minecraft/mod/tasks/LocalResourceParse.h"
+#include "minecraft/mod/tasks/LocalResourceParse.hpp"
 #include "net/ApiDownload.h"
 #include "ui/pages/modplatform/OptionalModDialog.h"
 

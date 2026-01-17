@@ -26,8 +26,8 @@
 #include "Json.h"
 
 #include "QObjectPtr.h"
-#include "minecraft/mod/Mod.h"
-#include "minecraft/mod/tasks/LocalResourceUpdateTask.h"
+#include "minecraft/mod/Mod.hpp"
+#include "minecraft/mod/tasks/LocalResourceUpdateTask.hpp"
 
 #include "modplatform/flame/FlameAPI.h"
 #include "modplatform/flame/FlameModIndex.h"

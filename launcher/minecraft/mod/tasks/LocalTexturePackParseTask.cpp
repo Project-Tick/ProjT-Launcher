@@ -19,8 +19,6 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
@@ -39,7 +37,7 @@
  *
  * ======================================================================== */
 
-#include "LocalTexturePackParseTask.h"
+#include "LocalTexturePackParseTask.hpp"
 
 #include "FileSystem.h"
 

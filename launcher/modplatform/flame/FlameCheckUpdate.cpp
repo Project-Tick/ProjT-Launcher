@@ -30,7 +30,7 @@
 #include "QObjectPtr.h"
 #include "ResourceDownloadTask.h"
 
-#include "minecraft/mod/tasks/GetModDependenciesTask.h"
+#include "minecraft/mod/tasks/GetModDependenciesTask.hpp"
 
 #include "modplatform/ModIndex.h"
 #include "net/ApiDownload.h"

@@ -19,11 +19,6 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
- *
- *
- *
  *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
  *
@@ -58,7 +53,7 @@
  *
  * ======================================================================== */
 
-#include "LocalDataPackParseTask.h"
+#include "LocalDataPackParseTask.hpp"
 
 #include "FileSystem.h"
 #include "Json.h"

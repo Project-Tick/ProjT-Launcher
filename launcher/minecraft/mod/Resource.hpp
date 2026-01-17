@@ -62,7 +62,7 @@
 #include <QObject>
 #include <QPointer>
 
-#include "MetadataHandler.h"
+#include "MetadataHandler.hpp"
 #include "QObjectPtr.h"
 
 enum class ResourceType

@@ -91,7 +91,7 @@
 #include "Exception.h"
 #include "icons/IconList.hpp"
 #include "minecraft/PackProfile.h"
-#include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/AccountList.hpp"
 
 #include "meta/Index.hpp"
 #include "meta/VersionList.hpp"

@@ -100,7 +100,7 @@
 #include <icons/IconList.hpp>
 #include <launch/LaunchPipeline.hpp>
 #include <minecraft/MinecraftInstance.h>
-#include <minecraft/auth/AccountList.h>
+#include <minecraft/auth/AccountList.hpp>
 #include <net/ApiDownload.h>
 #include <net/NetJob.h>
 #include <news/NewsChecker.h>
@@ -135,7 +135,7 @@
 #include "minecraft/mod/ResourcePackFolderModel.h"
 #include "minecraft/mod/ShaderPackFolderModel.h"
 #include "minecraft/mod/TexturePackFolderModel.h"
-#include "minecraft/mod/tasks/LocalResourceParse.h"
+#include "minecraft/mod/tasks/LocalResourceParse.hpp"
 
 #include "modplatform/ModIndex.h"
 #include "modplatform/flame/FlameAPI.h"

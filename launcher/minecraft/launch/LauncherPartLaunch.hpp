@@ -38,9 +38,9 @@
 
 #include <LoggedProcess.h>
 #include <launch/LaunchStage.hpp>
-#include <minecraft/auth/AuthSession.h>
+#include <minecraft/auth/AuthSession.hpp>
 
-#include "MinecraftTarget.h"
+#include "MinecraftTarget.hpp"
 
 class LauncherPartLaunch : public projt::launch::LaunchStage
 {

@@ -19,7 +19,7 @@
  */
 #pragma once
 
-#include "minecraft/mod/tasks/GetModDependenciesTask.h"
+#include "minecraft/mod/tasks/GetModDependenciesTask.hpp"
 #include "modplatform/ModIndex.h"
 #include "tasks/Task.h"
 

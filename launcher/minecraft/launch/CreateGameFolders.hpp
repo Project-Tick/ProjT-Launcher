@@ -36,29 +36,21 @@
 
 #pragma once
 
+#include <LoggedProcess.h>
 #include <launch/LaunchStage.hpp>
-#include "minecraft/auth/AuthSession.h"
-#include "minecraft/launch/MinecraftTarget.h"
+#include <minecraft/auth/AuthSession.hpp>
 
-class PrintInstanceInfo : public projt::launch::LaunchStage
+// Create the main .minecraft for the instance and any other necessary folders
+class CreateGameFolders : public projt::launch::LaunchStage
 {
 	Q_OBJECT
   public:
-	explicit PrintInstanceInfo(projt::launch::LaunchPipeline* parent,
-							   AuthSessionPtr session,
-							   MinecraftTarget::Ptr targetToJoin)
-		: projt::launch::LaunchStage(parent),
-		  m_session(session),
-		  m_targetToJoin(targetToJoin) {};
-	virtual ~PrintInstanceInfo() = default;
+	explicit CreateGameFolders(projt::launch::LaunchPipeline* parent);
+	virtual ~CreateGameFolders() {};
 
 	virtual void executeTask();
 	virtual bool canAbort() const
 	{
 		return false;
 	}
-
-  private:
-	AuthSessionPtr m_session;
-	MinecraftTarget::Ptr m_targetToJoin;
 };

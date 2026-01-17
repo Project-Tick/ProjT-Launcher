@@ -75,7 +75,7 @@
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/ShortcutUtils.h"
 #include "minecraft/WorldList.h"
-#include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/AccountList.hpp"
 
 CreateShortcutDialog::CreateShortcutDialog(InstancePtr instance, QWidget* parent)
 	: QDialog(parent),

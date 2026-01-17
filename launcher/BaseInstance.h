@@ -70,13 +70,13 @@
 
 #include "BaseVersionList.h"
 #include "MessageLevel.h"
-#include "minecraft/auth/MinecraftAccount.h"
+#include "minecraft/auth/MinecraftAccount.hpp"
 #include "settings/INIFile.h"
 
 #include "net/Mode.h"
 
 #include "RuntimeContext.h"
-#include "minecraft/launch/MinecraftTarget.h"
+#include "minecraft/launch/MinecraftTarget.hpp"
 
 class QDir;
 class Task;

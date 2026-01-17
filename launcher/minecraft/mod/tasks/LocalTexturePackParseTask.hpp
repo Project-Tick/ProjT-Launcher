@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 Project Tick
 // SPDX-FileContributor: Project Tick Team
 /*
@@ -19,13 +19,9 @@
  *
  * === Upstream License Block (Do Not Modify) ==============================
  *
- *
- *
- *
- *
- *
  *  Prism Launcher - Minecraft Launcher
- *  Copyright (C) 2022 Rachel Powers <508861+Ryex@users.noreply.github.com>
+ *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
+ *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -39,31 +35,64 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
- * This file incorporates work covered by the following copyright and
- * permission notice:
- *
- *      Copyright 2013-2021 MultiMC Contributors
- *
- *      Licensed under the Apache License, Version 2.0 (the "License");
- *      you may not use this file except in compliance with the License.
- *      You may obtain a copy of the License at
- *
- *          http://www.apache.org/licenses/LICENSE-2.0
- *
- *      Unless required by applicable law or agreed to in writing, software
- *      distributed under the License is distributed on an "AS IS" BASIS,
- *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *      See the License for the specific language governing permissions and
- *      limitations under the License.
- *
  * ======================================================================== */
 
 #pragma once
 
-#include <QFileInfo>
-#include "modplatform/ResourceType.h"
+#include <QDebug>
+#include <QObject>
 
-namespace ResourceUtils
+#include "minecraft/mod/TexturePack.h"
+
+#include "tasks/Task.h"
+
+namespace TexturePackUtils
 {
-	ModPlatform::ResourceType identify(QFileInfo file);
-} // namespace ResourceUtils
+
+	enum class ProcessingLevel
+	{
+		Full,
+		BasicInfoOnly
+	};
+
+	bool process(TexturePack& pack, ProcessingLevel level = ProcessingLevel::Full);
+
+	bool processZIP(TexturePack& pack, ProcessingLevel level = ProcessingLevel::Full);
+	bool processFolder(TexturePack& pack, ProcessingLevel level = ProcessingLevel::Full);
+
+	bool processPackTXT(TexturePack& pack, QByteArray&& raw_data);
+	bool processPackPNG(const TexturePack& pack, QByteArray&& raw_data);
+
+	/// processes ONLY the pack.png (rest of the pack may be invalid)
+	bool processPackPNG(const TexturePack& pack);
+
+	/** Checks whether a file is valid as a texture pack or not. */
+	bool validate(QFileInfo file);
+} // namespace TexturePackUtils
+
+class LocalTexturePackParseTask : public Task
+{
+	Q_OBJECT
+  public:
+	LocalTexturePackParseTask(int token, TexturePack& rp);
+
+	bool canAbort() const override
+	{
+		return true;
+	}
+	bool abort() override;
+
+	void executeTask() override;
+
+	int token() const
+	{
+		return m_token;
+	}
+
+  private:
+	int m_token;
+
+	TexturePack& m_texture_pack;
+
+	bool m_aborted = false;
+};
