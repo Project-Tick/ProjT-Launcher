@@ -39,6 +39,12 @@ eleventyExcludeFromCollections: true
     <li><a href="/tomlplusplus/">Documentation</a></li>
   </ul>
 
+  <h2>Licenses</h2>
+  <p>Project Tick Licenses</p>
+  <ul>
+    <li><a href="/licenses/">View Licenses</a></li>
+  </ul>
+
   <h2>Documentation</h2>
   
   <h3>Handbook</h3>
@@ -49,5 +55,6 @@ eleventyExcludeFromCollections: true
 
   <hr>
   <p><a href="https://github.com/Project-Tick">GitHub</a></p>
+  <p><a href="/licenses/">Licenses</a></p>
 </body>
 </html>

@@ -575,18 +575,24 @@ See:
      Project Tick Website and Handbook - Website and Handbook
      Copyright (C) 2026 Project Tick
 
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU Affero General Public License as
-     published by the Free Software Foundation, either version 3 of the
-     License, or (at your option) any later version.
+     This Work is licensed under the Project Tick General Public
+     License, Version 1.
 
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU Affero General Public License for more details.
+     You are granted the rights to use, operate, modify, and convey
+     this Work, subject to the terms and conditions of that License.
+     Any conveyance of this Work, in original or modified form,
+     must preserve those same rights and obligations.
 
-     You should have received a copy of the GNU Affero General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+     This Work is provided in the expectation that it may be useful,
+     but it is provided WITHOUT ANY WARRANTY. No guarantees are made
+     regarding its fitness, reliability, or suitability for any
+     particular purpose. All risk associated with the use or
+     operation of this Work rests with you.
+
+     A copy of the Project Tick General Public License must accompany
+     this Work in all cases where it is conveyed. Where a copy is
+     not provided directly, it must be made available in a manner
+     consistent with the requirements of the License.
 
 ## zlib
 

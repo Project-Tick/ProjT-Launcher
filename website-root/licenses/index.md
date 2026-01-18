@@ -1,3 +1,35 @@
+---
+permalink: /licenses/
+eleventyExcludeFromCollections: true
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Licenses - Project Tick</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#000;background:#fff;max-width:72ch;margin:0 auto;padding:20px}
+    a{color:#00e}a:visited{color:#609}a:hover{color:#c00}
+    h1{font-size:1.4em;border-bottom:1px solid #000;padding-bottom:5px;margin-bottom:10px}
+    h2{font-size:1.2em;margin-top:1.5em}
+    h3{font-size:1em;margin-top:1em}
+    p{margin:.5em 0}
+    hr{border:0;border-top:1px solid #ccc;margin:2em 0}
+    ul{margin:.5em 0 .5em 2em}li{margin:.2em 0}
+  </style>
+</head>
+<body>
+  <h1>Licenses</h1>
+
+  <p>This page lists Project Tick Licenses</p>
+
+  <h2>Project Tick General Public License (PT-GPL-1.0)</h2>
+  <p>The full text of the Project Tick General Public License is included below and is also available as <a href="/licenses/PT-GPL-1.0.txt">Plain text</a> and <a href="/licenses/PT-GPL-1.0.orig.md">Markdown</a> .</p>
+
+  <details open>
+    <summary>Show full license text</summary>
+    <pre>
              PROJECT TICK GENERAL PUBLIC LICENSE
                   Version 1, 17 January 2026
 
@@ -767,3 +799,9 @@ permitted by the terms of this License. If you intend to permit
 use, linking, or incorporation under different conditions, you
 should carefully evaluate whether a different license better
 suits your goals.
+
+    </pre>
+  </details>
+
+</body>
+</html>

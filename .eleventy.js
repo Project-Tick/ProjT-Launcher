@@ -1,3 +1,16 @@
+module.exports = function(eleventyConfig) {
+  // Copy all license text files to the output so they are accessible as plain text
+  eleventyConfig.addPassthroughCopy({"website-root/licenses": "licenses"});
+  // Ensure the PT-GPL plaintext file is explicitly passthrough-copied
+  eleventyConfig.addPassthroughCopy("website-root/licenses/PT-GPL-1.0.txt");
+
+  return {
+    dir: {
+      input: ".",
+      output: "_site"
+    }
+  };
+};
 const { DateTime } = require("luxon");
 const fs = require("fs");
 const path = require("path");
@@ -98,6 +111,8 @@ module.exports = async function (eleventyConfig) {
   // Root site passthrough
   eleventyConfig.addPassthroughCopy({ "website-root/css": "css" });
   eleventyConfig.addPassthroughCopy({ "website-root/img": "img" });
+  // Preserve original markdown source verbatim for the PT-GPL license
+  eleventyConfig.addPassthroughCopy({ "website-root/licenses/PT-GPL-1.0.md": "licenses/PT-GPL-1.0.orig.md" });
   
   // ProjT Launcher site passthrough with prefix
   eleventyConfig.addPassthroughCopy({ "website/projtlauncher/img": "projtlauncher/img" });
