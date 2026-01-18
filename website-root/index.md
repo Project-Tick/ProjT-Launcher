@@ -54,7 +54,6 @@ eleventyExcludeFromCollections: true
   </ul>
 
   <hr>
-  <p><a href="https://github.com/Project-Tick">GitHub</a></p>
-  <p><a href="/licenses/">Licenses</a></p>
+  <p><a href="https://github.com/Project-Tick/ProjT-Launcher/tree/main/website-root/">GitHub</a></p>
 </body>
 </html>
