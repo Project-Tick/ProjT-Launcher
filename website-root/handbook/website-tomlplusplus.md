@@ -3,6 +3,7 @@
 > **Location**: `website/tomlplusplus/`  
 > **Tools**: Poxy, Doxygen, m.css  
 > **Output**: API documentation HTML
+> **Latest Version**: 0.0.5-1
 
 ---
 

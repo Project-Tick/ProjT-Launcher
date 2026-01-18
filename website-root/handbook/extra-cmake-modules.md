@@ -2,8 +2,9 @@
 
 > **Type**: CMake Module Collection  
 > **License**: BSD-3-Clause  
-> **Fork Origin**: [KDE ECM](https://api.kde.org/ecm/)  
+> **Fork Origin**: [KDE ECM](https://api.kde.org/ecm/)
 > **Status**: Detached Fork (independently maintained)
+> **Latest Version**: 0.0.5-1
 
 ---
 

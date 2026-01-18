@@ -4,6 +4,7 @@
 > **License**: bzip2 License (BSD-like)  
 > **Fork Origin**: [GitLab](https://gitlab.com/bzip2/bzip2) | [Sourceware](https://sourceware.org/bzip2/)  
 > **Status**: Detached Fork (independently maintained)
+> **Latest Version**: 0.0.5-1
 
 ---
 

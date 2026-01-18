@@ -1,10 +1,11 @@
 # libnbt++ `libnbtplusplus/`
 
 > **Type**: NBT Format Library  
-> **License**: GPL-3.0 (with classpath exception)  
+> **License**: LGPL-3.0
 > **Fork Origin**: [GitHub](https://github.com/PrismLauncher/libnbtplusplus)  
 > **Status**: Detached Fork (independently maintained)  
 > **Format**: Minecraft Named Binary Tag
+> **Latest Version**: 0.0.5-1
 
 ---
 
@@ -167,17 +168,6 @@ ctest -V
 ---
 
 ## Copyright & Licensing
-
-```
-Copyright (C) libnbt++ contributors
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3.
-
-As a special exception, you may create a larger work that contains
-parts of this library and distribute it under terms of your choice.
-```
 
 Full license: `libnbtplusplus/COPYING`
 

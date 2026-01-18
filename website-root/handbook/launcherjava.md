@@ -3,6 +3,7 @@
 > **Location**: `launcherjava/`  
 > **Language**: Java  
 > **Purpose**: Minecraft launching component
+> **Latest Version**: 0.0.5-1
 
 ---
 

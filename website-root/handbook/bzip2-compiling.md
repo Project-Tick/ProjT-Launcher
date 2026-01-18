@@ -2,6 +2,7 @@
 
 > **Directory**: `bzip2/`  
 > **Build Systems**: Meson (preferred), CMake
+> **Latest Version**: 0.0.5-1
 
 ---
 

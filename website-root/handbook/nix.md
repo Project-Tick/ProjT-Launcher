@@ -3,6 +3,7 @@
 > **Location**: `nix/`, `flake.nix`, `shell.nix`, `default.nix`  
 > **Platform**: NixOS, Nix package manager  
 > **Purpose**: Reproducible builds and packaging
+> **Latest Version**: 0.0.5-1
 
 ---
 

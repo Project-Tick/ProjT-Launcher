@@ -3,6 +3,7 @@
 > **Location**: `.github/workflows/`  
 > **Platform**: GitHub Actions  
 > **Type**: CI/CD Pipeline
+> **Latest Version**: 0.0.5-1
 
 ---
 

@@ -5,6 +5,7 @@
 > **Fork Origin**: [GitHub](https://github.com/marzer/tomlplusplus)  
 > **Status**: Detached Fork (independently maintained)  
 > **Specification**: [TOML v1.0.0](https://toml.io/en/v1.0.0)
+> **Latest Version**: 0.0.5-1
 
 [![CI](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci-new.yml/badge.svg)](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci-new.yml)
 

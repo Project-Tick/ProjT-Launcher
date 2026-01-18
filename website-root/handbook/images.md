@@ -1,6 +1,7 @@
 # CI Docker Images
 
 > **Purpose**: Minimal Qt build images for CI testing
+> **Latest Version**: 0.0.5-1
 
 ---
 

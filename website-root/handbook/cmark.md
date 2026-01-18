@@ -5,6 +5,7 @@
 > **Fork Origin**: [GitHub](https://github.com/commonmark/cmark)  
 > **Status**: Detached Fork (independently maintained)  
 > **Specification**: [CommonMark](https://commonmark.org/)
+> **Latest Version**: 0.0.5-1
 
 ---
 

@@ -1,6 +1,7 @@
 # Handbook
 
 Documentation for Project Tick contributors and players.
+Latest Version: 0.0.5-1
 
 ## For Players
 
@@ -55,7 +56,7 @@ Libraries independently maintained by Project Tick.
 
 ### Reference
 
-- [third-party.md](./third-party.md) - All external dependencies
+- [third-party.md](./third-party.md) - All Libraries
 - [website-tomlplusplus.md](./website-tomlplusplus.md) - toml++ docs build
 - [help-pages.md](./help-pages.md) - Help pages overview and locations
 

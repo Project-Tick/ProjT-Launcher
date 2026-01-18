@@ -5,6 +5,7 @@
 > **Fork Origin**: [GitHub](https://github.com/stachenov/quazip)  
 > **Status**: Detached Fork (independently maintained)  
 > **Dependencies**: Qt 5/6, zlib
+> **Latest Version**: 0.0.5-1
 
 [![CI](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci-new.yml/badge.svg?branch=develop)](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci-new.yml)
 

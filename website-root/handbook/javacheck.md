@@ -3,6 +3,7 @@
 > **Location**: `javacheck/`  
 > **Language**: Java  
 > **Purpose**: Java runtime property detection
+> **Latest Version**: 0.0.5-1
 
 ---
 

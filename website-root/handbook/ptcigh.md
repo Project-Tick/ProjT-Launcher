@@ -3,6 +3,7 @@
 > **Location**: `ci/github-script/`  
 > **Platform**: GitHub Actions (`actions/github-script`)  
 > **Purpose**: PR automation and validation
+> **Latest Version**: 0.0.5-1
 
 ---
 
