@@ -524,7 +524,7 @@ void ProjTUpdaterApp::run()
 	auto update_candidate = findUpdateCandidate();
 	if (update_candidate.release.isValid())
 		qDebug() << "Latest release" << update_candidate.release.version;
-	auto need_update = update_candidate.kind == UpdateKind::Update;
+	auto need_update   = update_candidate.kind == UpdateKind::Update;
 	auto has_migration = update_candidate.kind == UpdateKind::Migration;
 
 	if (m_checkOnly)
@@ -563,7 +563,8 @@ void ProjTUpdaterApp::run()
 
 	if (need_update || m_forceUpdate || !m_userSelectedVersion.isEmpty())
 	{
-		GitHubRelease update_release = update_candidate.release.isValid() ? update_candidate.release : getLatestRelease();
+		GitHubRelease update_release =
+			update_candidate.release.isValid() ? update_candidate.release : getLatestRelease();
 		if (!m_userSelectedVersion.isEmpty())
 		{
 			bool found = false;
@@ -1516,82 +1517,82 @@ GitHubRelease ProjTUpdaterApp::getLatestRelease()
 
 namespace
 {
-struct LineVersion
-{
-	int x = -1;
-	int y = -1;
-	int z = -1;
-	int t = -1;
-};
-
-std::optional<LineVersion> parseLineVersion(QString ver)
-{
-	ver = ver.trimmed();
-	if (ver.startsWith(QLatin1Char('v'), Qt::CaseInsensitive))
+	struct LineVersion
 	{
-		ver.remove(0, 1);
-	}
+		int x = -1;
+		int y = -1;
+		int z = -1;
+		int t = -1;
+	};
 
-	while (ver.endsWith(QLatin1Char('.')))
+	std::optional<LineVersion> parseLineVersion(QString ver)
 	{
-		ver.chop(1);
-	}
+		ver = ver.trimmed();
+		if (ver.startsWith(QLatin1Char('v'), Qt::CaseInsensitive))
+		{
+			ver.remove(0, 1);
+		}
 
-	const auto dash_parts = ver.split(QLatin1Char('-'), Qt::KeepEmptyParts);
-	if (dash_parts.size() >= 2)
-	{
-		const auto main_part = dash_parts.at(0);
-		const auto t_part	 = dash_parts.at(1);
+		while (ver.endsWith(QLatin1Char('.')))
+		{
+			ver.chop(1);
+		}
 
-		bool ok_t = false;
-		const auto t = t_part.toInt(&ok_t);
-		if (!ok_t)
+		const auto dash_parts = ver.split(QLatin1Char('-'), Qt::KeepEmptyParts);
+		if (dash_parts.size() >= 2)
+		{
+			const auto main_part = dash_parts.at(0);
+			const auto t_part	 = dash_parts.at(1);
+
+			bool ok_t	 = false;
+			const auto t = t_part.toInt(&ok_t);
+			if (!ok_t)
+				return std::nullopt;
+
+			const auto dot_parts = main_part.split(QLatin1Char('.'), Qt::KeepEmptyParts);
+			if (dot_parts.size() != 3)
+				return std::nullopt;
+
+			bool ok_x	 = false;
+			bool ok_y	 = false;
+			bool ok_z	 = false;
+			const auto x = dot_parts.at(0).toInt(&ok_x);
+			const auto y = dot_parts.at(1).toInt(&ok_y);
+			const auto z = dot_parts.at(2).toInt(&ok_z);
+			if (!ok_x || !ok_y || !ok_z)
+				return std::nullopt;
+
+			return LineVersion{ x, y, z, t };
+		}
+
+		const auto dot_parts = ver.split(QLatin1Char('.'), Qt::KeepEmptyParts);
+		if (dot_parts.size() != 4)
 			return std::nullopt;
 
-		const auto dot_parts = main_part.split(QLatin1Char('.'), Qt::KeepEmptyParts);
-		if (dot_parts.size() != 3)
-			return std::nullopt;
-
-		bool ok_x = false;
-		bool ok_y = false;
-		bool ok_z = false;
+		bool ok_x	 = false;
+		bool ok_y	 = false;
+		bool ok_z	 = false;
+		bool ok_t	 = false;
 		const auto x = dot_parts.at(0).toInt(&ok_x);
 		const auto y = dot_parts.at(1).toInt(&ok_y);
 		const auto z = dot_parts.at(2).toInt(&ok_z);
-		if (!ok_x || !ok_y || !ok_z)
+		const auto t = dot_parts.at(3).toInt(&ok_t);
+		if (!ok_x || !ok_y || !ok_z || !ok_t)
 			return std::nullopt;
 
 		return LineVersion{ x, y, z, t };
 	}
 
-	const auto dot_parts = ver.split(QLatin1Char('.'), Qt::KeepEmptyParts);
-	if (dot_parts.size() != 4)
-		return std::nullopt;
-
-	bool ok_x = false;
-	bool ok_y = false;
-	bool ok_z = false;
-	bool ok_t = false;
-	const auto x = dot_parts.at(0).toInt(&ok_x);
-	const auto y = dot_parts.at(1).toInt(&ok_y);
-	const auto z = dot_parts.at(2).toInt(&ok_z);
-	const auto t = dot_parts.at(3).toInt(&ok_t);
-	if (!ok_x || !ok_y || !ok_z || !ok_t)
-		return std::nullopt;
-
-	return LineVersion{ x, y, z, t };
-}
-
-int compareLine(const LineVersion& a, const LineVersion& b)
-{
-	if (a.x != b.x)
-		return a.x < b.x ? -1 : 1;
-	if (a.y != b.y)
-		return a.y < b.y ? -1 : 1;
-	if (a.z != b.z)
-		return a.z < b.z ? -1 : 1;
-	return 0;
-}
+	int compareLine(const LineVersion& a, const LineVersion& b)
+	{
+		if (a.x != b.x)
+			return a.x < b.x ? -1 : 1;
+		if (a.y != b.y)
+			return a.y < b.y ? -1 : 1;
+		if (a.z != b.z)
+			return a.z < b.z ? -1 : 1;
+		return 0;
+	}
 } // namespace
 
 ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
@@ -1634,7 +1635,7 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 	// If we parsed a channel from the running binary, ensure it is present.
 	current_version = appendChannelIfMissing(current_version, m_prsimVersionChannel);
 
-	current_version	 = normalizeVersionString(current_version);
+	current_version		= normalizeVersionString(current_version);
 	auto parsed_current = parseLineVersion(current_version);
 
 	UpdateCandidate candidate;
@@ -1644,7 +1645,7 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 		auto latest = getLatestRelease();
 		if (latest.isValid() && Version(current_version) < latest.version)
 		{
-			candidate.kind	 = UpdateKind::Update;
+			candidate.kind	  = UpdateKind::Update;
 			candidate.release = latest;
 		}
 		return candidate;
@@ -1670,7 +1671,7 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 		if (!parsed_release.has_value())
 			continue;
 
-		auto rel = parsed_release.value();
+		auto rel	  = parsed_release.value();
 		auto line_cmp = compareLine(rel, current);
 		if (line_cmp == 0)
 		{
@@ -1686,15 +1687,15 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 		{
 			if (!has_migration)
 			{
-				best_migration_line	 = rel;
+				best_migration_line	   = rel;
 				best_migration_release = release;
-				has_migration			 = true;
+				has_migration		   = true;
 				continue;
 			}
 			auto best_cmp = compareLine(rel, best_migration_line);
 			if (best_cmp > 0 || (best_cmp == 0 && rel.t > best_migration_line.t))
 			{
-				best_migration_line	 = rel;
+				best_migration_line	   = rel;
 				best_migration_release = release;
 			}
 		}
@@ -1702,14 +1703,14 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 
 	if (has_same_line)
 	{
-		candidate.kind	 = UpdateKind::Update;
+		candidate.kind	  = UpdateKind::Update;
 		candidate.release = best_same_release;
 		return candidate;
 	}
 
 	if (has_migration)
 	{
-		candidate.kind	 = UpdateKind::Migration;
+		candidate.kind	  = UpdateKind::Migration;
 		candidate.release = best_migration_release;
 		return candidate;
 	}

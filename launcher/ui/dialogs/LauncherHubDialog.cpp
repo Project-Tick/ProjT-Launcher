@@ -24,8 +24,7 @@
 
 #include "ui/widgets/LauncherHubWidget.h"
 
-LauncherHubDialog::LauncherHubDialog(QWidget* parent)
-	: QDialog(parent)
+LauncherHubDialog::LauncherHubDialog(QWidget* parent) : QDialog(parent)
 {
 	setWindowTitle(tr("Launcher Hub"));
 	setAttribute(Qt::WA_DeleteOnClose);

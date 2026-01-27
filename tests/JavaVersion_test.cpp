@@ -154,4 +154,3 @@ class RuntimeVersionTest : public QObject
 QTEST_GUILESS_MAIN(RuntimeVersionTest)
 
 #include "JavaVersion_test.moc"
-

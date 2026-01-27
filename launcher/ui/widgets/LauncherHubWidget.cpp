@@ -40,14 +40,14 @@
 
 namespace
 {
-QUrl defaultHubUrl()
-{
-	if (!BuildConfig.HUB_HOME_URL.isEmpty())
+	QUrl defaultHubUrl()
 	{
-		return QUrl(BuildConfig.HUB_HOME_URL);
+		if (!BuildConfig.HUB_HOME_URL.isEmpty())
+		{
+			return QUrl(BuildConfig.HUB_HOME_URL);
+		}
+		return QUrl(QStringLiteral("https://projecttick.org/p/projt-launcher/"));
 	}
-	return QUrl(QStringLiteral("https://projecttick.org/p/projt-launcher/"));
-}
 
 	QUrl resolveInput(const QString& input)
 	{
@@ -63,19 +63,20 @@ QUrl defaultHubUrl()
 			return url;
 		}
 
-	const QString templateUrl = BuildConfig.HUB_SEARCH_URL;
-	if (templateUrl.contains("%1"))
-	{
-		const QByteArray encoded = QUrl::toPercentEncoding(trimmed);
-		return QUrl(templateUrl.arg(QString::fromUtf8(encoded)));
+		const QString templateUrl = BuildConfig.HUB_SEARCH_URL;
+		if (templateUrl.contains("%1"))
+		{
+			const QByteArray encoded = QUrl::toPercentEncoding(trimmed);
+			return QUrl(templateUrl.arg(QString::fromUtf8(encoded)));
+		}
+		QUrl fallback(templateUrl);
+		if (fallback.isValid() && !fallback.scheme().isEmpty())
+		{
+			return fallback;
+		}
+		return QUrl(QStringLiteral("https://www.google.com/search?q=%1")
+						.arg(QString::fromUtf8(QUrl::toPercentEncoding(trimmed))));
 	}
-	QUrl fallback(templateUrl);
-	if (fallback.isValid() && !fallback.scheme().isEmpty())
-	{
-		return fallback;
-	}
-	return QUrl(QStringLiteral("https://www.google.com/search?q=%1").arg(QString::fromUtf8(QUrl::toPercentEncoding(trimmed))));
-}
 }
 
 class LauncherHubBridge final : public QObject
@@ -84,7 +85,8 @@ class LauncherHubBridge final : public QObject
 	Q_PROPERTY(QString launcherVersion READ launcherVersion CONSTANT)
 
   public:
-	explicit LauncherHubBridge(QObject* parent = nullptr) : QObject(parent) {}
+	explicit LauncherHubBridge(QObject* parent = nullptr) : QObject(parent)
+	{}
 
 	QString launcherVersion() const
 	{
@@ -100,10 +102,8 @@ class LauncherHubBridge final : public QObject
 class LauncherHubPage final : public QWebEnginePage
 {
   public:
-	LauncherHubPage(QWebEngineProfile* profile, QObject* parent = nullptr)
-		: QWebEnginePage(profile, parent)
-	{
-	}
+	LauncherHubPage(QWebEngineProfile* profile, QObject* parent = nullptr) : QWebEnginePage(profile, parent)
+	{}
 
   protected:
 	bool acceptNavigationRequest(const QUrl& url, NavigationType type, bool isMainFrame) override
@@ -115,8 +115,7 @@ class LauncherHubPage final : public QWebEnginePage
 	}
 };
 
-LauncherHubWidget::LauncherHubWidget(QWidget* parent)
-	: QWidget(parent)
+LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 {
 	m_homeUrl = defaultHubUrl();
 
@@ -189,21 +188,30 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent)
 	layout->addLayout(toolbar);
 	layout->addWidget(m_stack);
 
-	connect(m_backButton, &QToolButton::clicked, this, [this]()
+	connect(m_backButton,
+			&QToolButton::clicked,
+			this,
+			[this]()
 			{
 				if (auto* view = currentView())
 				{
 					view->back();
 				}
 			});
-	connect(m_forwardButton, &QToolButton::clicked, this, [this]()
+	connect(m_forwardButton,
+			&QToolButton::clicked,
+			this,
+			[this]()
 			{
 				if (auto* view = currentView())
 				{
 					view->forward();
 				}
 			});
-	connect(m_reloadButton, &QToolButton::clicked, this, [this]()
+	connect(m_reloadButton,
+			&QToolButton::clicked,
+			this,
+			[this]()
 			{
 				if (auto* view = currentView())
 				{
@@ -212,20 +220,14 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent)
 			});
 	connect(m_homeButton, &QToolButton::clicked, this, &LauncherHubWidget::loadHome);
 
-	connect(m_goButton, &QToolButton::clicked, this, [this]()
-			{
-				openUrl(resolveInput(m_addressBar->text()));
-			});
-	connect(m_addressBar, &QLineEdit::returnPressed, this, [this]()
-			{
-				openUrl(resolveInput(m_addressBar->text()));
-			});
+	connect(m_goButton, &QToolButton::clicked, this, [this]() { openUrl(resolveInput(m_addressBar->text())); });
+	connect(m_addressBar, &QLineEdit::returnPressed, this, [this]() { openUrl(resolveInput(m_addressBar->text())); });
 
-	connect(m_newTabButton, &QToolButton::clicked, this, [this]()
-			{
-				newTab(m_homeUrl);
-			});
-	connect(m_tabBar, &QTabBar::currentChanged, this, [this](int index)
+	connect(m_newTabButton, &QToolButton::clicked, this, [this]() { newTab(m_homeUrl); });
+	connect(m_tabBar,
+			&QTabBar::currentChanged,
+			this,
+			[this](int index)
 			{
 				if (index >= 0 && index < m_stack->count())
 				{
@@ -233,7 +235,10 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent)
 					updateNavigationState();
 				}
 			});
-	connect(m_tabBar, &QTabBar::tabCloseRequested, this, [this](int index)
+	connect(m_tabBar,
+			&QTabBar::tabCloseRequested,
+			this,
+			[this](int index)
 			{
 				if (index < 0 || index >= m_stack->count())
 				{
@@ -295,15 +300,18 @@ QWebEngineView* LauncherHubWidget::createTab(const QUrl& url, const QString& lab
 	view->settings()->setAttribute(QWebEngineSettings::LocalContentCanAccessFileUrls, false);
 
 	auto* channel = new QWebChannel(view);
-	auto* bridge = new LauncherHubBridge(channel);
+	auto* bridge  = new LauncherHubBridge(channel);
 	channel->registerObject(QStringLiteral("launcher"), bridge);
 	page->setWebChannel(channel);
 
-	const int stackIndex = m_stack->addWidget(view);
+	const int stackIndex	   = m_stack->addWidget(view);
 	const QString initialLabel = label.isEmpty() ? tr("New Tab") : label;
 	m_tabBar->addTab(initialLabel);
 
-	connect(view, &QWebEngineView::titleChanged, this, [this, view](const QString& title)
+	connect(view,
+			&QWebEngineView::titleChanged,
+			this,
+			[this, view](const QString& title)
 			{
 				const int index = m_stack->indexOf(view);
 				if (index >= 0)
@@ -314,7 +322,10 @@ QWebEngineView* LauncherHubWidget::createTab(const QUrl& url, const QString& lab
 					}
 				}
 			});
-	connect(view, &QWebEngineView::urlChanged, this, [this, view](const QUrl& urlChanged)
+	connect(view,
+			&QWebEngineView::urlChanged,
+			this,
+			[this, view](const QUrl& urlChanged)
 			{
 				if (view == currentView())
 				{
@@ -322,7 +333,10 @@ QWebEngineView* LauncherHubWidget::createTab(const QUrl& url, const QString& lab
 					updateNavigationState();
 				}
 			});
-	connect(view, &QWebEngineView::loadFinished, this, [this, view](bool)
+	connect(view,
+			&QWebEngineView::loadFinished,
+			this,
+			[this, view](bool)
 			{
 				if (view == currentView())
 				{
@@ -398,7 +412,7 @@ void LauncherHubWidget::openUrl(const QUrl& url)
 void LauncherHubWidget::setHomeUrl(const QUrl& url)
 {
 	m_homeUrl = url;
-	m_loaded = false;
+	m_loaded  = false;
 }
 
 QUrl LauncherHubWidget::homeUrl() const

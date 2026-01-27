@@ -371,7 +371,8 @@ void ProjTExternalUpdater::offerUpdate(const QString& version_name,
 	UpdateAvailableDialog dlg(BuildConfig.printableVersionString(),
 							  version_name,
 							  release_notes,
-							  isMigration ? UpdateAvailableDialog::Mode::Migration : UpdateAvailableDialog::Mode::Update);
+							  isMigration ? UpdateAvailableDialog::Mode::Migration
+										  : UpdateAvailableDialog::Mode::Update);
 
 	auto result = dlg.exec();
 	qDebug() << "offer dlg result" << result;

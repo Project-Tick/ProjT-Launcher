@@ -55,11 +55,13 @@ InstanceProxyModel::InstanceProxyModel(QObject* parent) : QSortFilterProxyModel(
 	// Update locale when language-related settings change
 	if (auto settings = APPLICATION->settings())
 	{
-		auto updateIfLanguageSettingChanged = [this](const Setting& setting, const QVariant&) {
+		auto updateIfLanguageSettingChanged = [this](const Setting& setting, const QVariant&)
+		{
 			if (setting.id() == "Language" || setting.id() == "UseSystemLocale")
 				updateLocale();
 		};
-		auto updateIfLanguageSettingReset = [this](const Setting& setting) {
+		auto updateIfLanguageSettingReset = [this](const Setting& setting)
+		{
 			if (setting.id() == "Language" || setting.id() == "UseSystemLocale")
 				updateLocale();
 		};

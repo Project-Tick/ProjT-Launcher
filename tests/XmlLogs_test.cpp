@@ -118,7 +118,7 @@ class XmlLogParseTest : public QObject
 	{
 		QList<std::pair<MessageLevel::Enum, QString>> out;
 		MessageLevel::Enum last = MessageLevel::Unknown;
-		projt::logs::LogEventParser parser;  // Fresh parser for each call
+		projt::logs::LogEventParser parser; // Fresh parser for each call
 
 		for (const auto& line : lines)
 		{

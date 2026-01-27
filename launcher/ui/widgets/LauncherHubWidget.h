@@ -49,16 +49,16 @@ class LauncherHubWidget : public QWidget
 	QWebEngineView* createTab(const QUrl& url, const QString& label = QString(), bool switchTo = true);
 	void updateNavigationState();
 
-	QTabBar* m_tabBar = nullptr;
-	QStackedWidget* m_stack = nullptr;
+	QTabBar* m_tabBar			 = nullptr;
+	QStackedWidget* m_stack		 = nullptr;
 	QWebEngineProfile* m_profile = nullptr;
-	QLineEdit* m_addressBar = nullptr;
-	QToolButton* m_backButton = nullptr;
+	QLineEdit* m_addressBar		 = nullptr;
+	QToolButton* m_backButton	 = nullptr;
 	QToolButton* m_forwardButton = nullptr;
-	QToolButton* m_reloadButton = nullptr;
-	QToolButton* m_homeButton = nullptr;
-	QToolButton* m_goButton = nullptr;
-	QToolButton* m_newTabButton = nullptr;
+	QToolButton* m_reloadButton	 = nullptr;
+	QToolButton* m_homeButton	 = nullptr;
+	QToolButton* m_goButton		 = nullptr;
+	QToolButton* m_newTabButton	 = nullptr;
 	QUrl m_homeUrl;
 	bool m_loaded = false;
 };

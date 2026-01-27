@@ -343,11 +343,23 @@ class BaseInstance : public QObject, public std::enable_shared_from_this<BaseIns
 	bool isLinkedToInstanceId(const QString& id) const;
 
 	// Instance window and controller management
-	InstanceWindow* getInstanceWindow() const { return m_instanceWindow; }
-	void setInstanceWindow(InstanceWindow* window) { m_instanceWindow = window; }
+	InstanceWindow* getInstanceWindow() const
+	{
+		return m_instanceWindow;
+	}
+	void setInstanceWindow(InstanceWindow* window)
+	{
+		m_instanceWindow = window;
+	}
 
-	shared_qobject_ptr<LaunchController> getLaunchController() const { return m_launchController; }
-	void setLaunchController(shared_qobject_ptr<LaunchController> controller) { m_launchController = controller; }
+	shared_qobject_ptr<LaunchController> getLaunchController() const
+	{
+		return m_launchController;
+	}
+	void setLaunchController(shared_qobject_ptr<LaunchController> controller)
+	{
+		m_launchController = controller;
+	}
 
 	bool isLegacy();
 

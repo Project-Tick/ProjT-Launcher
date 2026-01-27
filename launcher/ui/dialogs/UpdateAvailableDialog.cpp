@@ -65,11 +65,10 @@ UpdateAvailableDialog::UpdateAvailableDialog(const QString& currentVersion,
 	if (mode == Mode::Migration)
 	{
 		ui->headerLabel->setText(tr("A new release line of %1 is available!").arg(launcherName));
-		ui->versionAvailableLabel->setText(
-			tr("Version %1 is part of a new release line.\n"
-			   "You are currently on %2. Would you like to migrate now?")
-				.arg(availableVersion)
-				.arg(currentVersion));
+		ui->versionAvailableLabel->setText(tr("Version %1 is part of a new release line.\n"
+											  "You are currently on %2. Would you like to migrate now?")
+											   .arg(availableVersion)
+											   .arg(currentVersion));
 	}
 	else
 	{

@@ -52,15 +52,18 @@ static QString truncateLogForMclogs(const QString& logContent)
 }
 
 LogUploadTask::LogUploadTask(const QString& name, const QString& logContent, QWidget* parentWidget)
-	: Task(), m_name(name), m_logContent(logContent), m_parentWidget(parentWidget)
+	: Task(),
+	  m_name(name),
+	  m_logContent(logContent),
+	  m_parentWidget(parentWidget)
 {
 	setObjectName("LogUploadTask");
 }
 
 void LogUploadTask::executeTask()
 {
-	auto pasteType = static_cast<PasteUpload::PasteType>(APPLICATION->settings()->get("PastebinType").toInt());
-	auto baseURL   = APPLICATION->settings()->get("PastebinCustomAPIBase").toString();
+	auto pasteType		= static_cast<PasteUpload::PasteType>(APPLICATION->settings()->get("PastebinType").toInt());
+	auto baseURL		= APPLICATION->settings()->get("PastebinCustomAPIBase").toString();
 	bool shouldTruncate = false;
 
 	if (baseURL.isEmpty())
@@ -124,10 +127,14 @@ void LogUploadTask::executeTask()
 	auto pasteJob = new PasteUpload(textToUpload, baseURL, pasteType);
 	m_uploadJob->addNetAction(Net::NetRequest::Ptr(pasteJob));
 
-	connect(m_uploadJob.get(), &Task::succeeded, this, [this, pasteJob]() {
-		m_uploadedUrl = pasteJob->pasteLink();
-		onUploadSucceeded();
-	});
+	connect(m_uploadJob.get(),
+			&Task::succeeded,
+			this,
+			[this, pasteJob]()
+			{
+				m_uploadedUrl = pasteJob->pasteLink();
+				onUploadSucceeded();
+			});
 
 	connect(m_uploadJob.get(), &Task::failed, this, &LogUploadTask::onUploadFailed);
 	connect(m_uploadJob.get(), &Task::aborted, this, [this]() { emitAborted(); });

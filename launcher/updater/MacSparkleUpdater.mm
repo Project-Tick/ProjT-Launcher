@@ -159,7 +159,7 @@ MacSparkleUpdater::MacSparkleUpdater() {
             }
         }
 
-        QSet<QString> channels{ priv->lineChannel };
+        QSet<QString> channels{priv->lineChannel};
         if (!priv->migrationChannel.isEmpty()) {
             channels.insert(priv->migrationChannel);
         }
@@ -251,7 +251,7 @@ void MacSparkleUpdater::setBetaAllowed(bool allowed) {
         return;
     }
 
-    QSet<QString> channels{ priv->lineChannel };
+    QSet<QString> channels{priv->lineChannel};
     if (!priv->migrationChannel.isEmpty()) {
         channels.insert(priv->migrationChannel);
     }

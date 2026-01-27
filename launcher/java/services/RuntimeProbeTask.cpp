@@ -78,7 +78,7 @@ namespace projt::java
 			args << QString("-XX:PermSize=%1m").arg(m_settings.permGen);
 		}
 
-		args.append({ "-jar", checkerJar, "os.arch", "java.version", "java.vendor" });
+		args.append({ "-jar", checkerJar, "--list", "os.arch", "java.version", "java.vendor" });
 		process->setArguments(args);
 		process->setProgram(m_settings.binaryPath);
 		process->setProcessChannelMode(QProcess::SeparateChannels);
@@ -129,7 +129,7 @@ namespace projt::java
 		}
 		qDebug() << "Runtime probe finished with status" << status << "exit code" << exitcode;
 
-		if (status == QProcess::CrashExit || exitcode == 1)
+		if (status == QProcess::CrashExit)
 		{
 			report.status = ProbeReport::Status::Errored;
 			emit probeFinished(report);
@@ -137,24 +137,81 @@ namespace projt::java
 			return;
 		}
 
-		QMap<QString, QString> results;
-		QStringList lines = m_stdout.split("\n", Qt::SkipEmptyParts);
-		for (QString line : lines)
+		auto parseBlocks = [](const QString& stdoutText)
 		{
-			line = line.trimmed();
-			if (line.contains("/bedrock/strata"))
+			QList<QMap<QString, QString>> blocks;
+			QMap<QString, QString> current;
+			const auto lines = stdoutText.split('\n');
+			for (QString line : lines)
 			{
-				continue;
+				line = line.trimmed();
+				if (line.isEmpty())
+				{
+					if (!current.isEmpty())
+					{
+						blocks.append(current);
+						current.clear();
+					}
+					continue;
+				}
+				if (line.contains("/bedrock/strata"))
+				{
+					continue;
+				}
+				const auto eq = line.indexOf('=');
+				if (eq <= 0)
+				{
+					continue;
+				}
+				const auto key	 = line.left(eq).trimmed();
+				const auto value = line.mid(eq + 1).trimmed();
+				if (!key.isEmpty() && !value.isEmpty())
+				{
+					current.insert(key, value);
+				}
 			}
-			auto parts = line.split('=', Qt::SkipEmptyParts);
-			if (parts.size() != 2 || parts[0].isEmpty() || parts[1].isEmpty())
+			if (!current.isEmpty())
 			{
-				continue;
+				blocks.append(current);
 			}
-			results.insert(parts[0], parts[1]);
+			return blocks;
+		};
+
+		auto resolvePath = [](const QString& path)
+		{
+			if (path.isEmpty())
+			{
+				return QString();
+			}
+			auto resolved  = FS::ResolveExecutable(path);
+			QString chosen = resolved.isEmpty() ? path : resolved;
+			QFileInfo info(chosen);
+			if (info.exists())
+			{
+				return info.canonicalFilePath();
+			}
+			return chosen;
+		};
+
+		const auto targetPath = resolvePath(m_settings.binaryPath);
+		QMap<QString, QString> results;
+		auto blocks = parseBlocks(m_stdout);
+		for (const auto& block : blocks)
+		{
+			const auto candidatePath = resolvePath(block.value("java.path"));
+			if (!targetPath.isEmpty() && candidatePath == targetPath)
+			{
+				results = block;
+				break;
+			}
+		}
+		if (results.isEmpty() && !blocks.isEmpty() && targetPath.isEmpty())
+		{
+			results = blocks.first();
 		}
 
-		if (!results.contains("os.arch") || !results.contains("java.version") || !results.contains("java.vendor"))
+		if (results.isEmpty() || !results.contains("os.arch") || !results.contains("java.version")
+			|| !results.contains("java.vendor"))
 		{
 			report.status = ProbeReport::Status::InvalidData;
 			emit probeFinished(report);

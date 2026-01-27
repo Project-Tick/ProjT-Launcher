@@ -33,7 +33,10 @@ class LogUploadTask : public Task
 	explicit LogUploadTask(const QString& name, const QString& logContent, QWidget* parentWidget = nullptr);
 	~LogUploadTask() override = default;
 
-	QString getUploadedUrl() const { return m_uploadedUrl; }
+	QString getUploadedUrl() const
+	{
+		return m_uploadedUrl;
+	}
 
   protected:
 	void executeTask() override;

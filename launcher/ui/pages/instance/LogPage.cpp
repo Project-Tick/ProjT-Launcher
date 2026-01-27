@@ -306,26 +306,33 @@ void LogPage::on_btnPaste_clicked()
 
 	auto uploadTask = new LogUploadTask(tr("Minecraft Log"), m_model->toPlainText(), this);
 
-	connect(uploadTask, &Task::succeeded, this, [this, uploadTask]() {
-		auto url = uploadTask->getUploadedUrl();
-		GuiUtil::setClipboardText(url);
-		m_model->append(MessageLevel::Launcher, QString("Log uploaded to: %1").arg(url));
-
-		CustomMessageBox::selectable(
+	connect(uploadTask,
+			&Task::succeeded,
 			this,
-			tr("Upload finished"),
-			tr("The <a href=\"%1\">link to the uploaded log</a> has been placed in your clipboard.").arg(url),
-			QMessageBox::Information)
-			->exec();
-	});
+			[this, uploadTask]()
+			{
+				auto url = uploadTask->getUploadedUrl();
+				GuiUtil::setClipboardText(url);
+				m_model->append(MessageLevel::Launcher, QString("Log uploaded to: %1").arg(url));
 
-	connect(uploadTask, &Task::failed, this, [this](QString reason) {
-		m_model->append(MessageLevel::Error, QString("Log upload failed: %1").arg(reason));
-	});
+				CustomMessageBox::selectable(
+					this,
+					tr("Upload finished"),
+					tr("The <a href=\"%1\">link to the uploaded log</a> has been placed in your clipboard.").arg(url),
+					QMessageBox::Information)
+					->exec();
+			});
 
-	connect(uploadTask, &Task::aborted, this, [this]() {
-		m_model->append(MessageLevel::Error, QString("Log upload canceled"));
-	});
+	connect(uploadTask,
+			&Task::failed,
+			this,
+			[this](QString reason)
+			{ m_model->append(MessageLevel::Error, QString("Log upload failed: %1").arg(reason)); });
+
+	connect(uploadTask,
+			&Task::aborted,
+			this,
+			[this]() { m_model->append(MessageLevel::Error, QString("Log upload canceled")); });
 
 	// Run the task with progress dialog
 	ProgressDialog dialog(this);

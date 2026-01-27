@@ -72,7 +72,7 @@ class UpdateAvailableDialog : public QDialog
 	explicit UpdateAvailableDialog(const QString& currentVersion,
 								   const QString& availableVersion,
 								   const QString& releaseNotes,
-								   Mode mode = Mode::Update,
+								   Mode mode	   = Mode::Update,
 								   QWidget* parent = 0);
 	~UpdateAvailableDialog() = default;
 
