@@ -141,7 +141,7 @@ jobs:
           submodules: "true"
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@a2d9de63c2916881d0621fdb7e65abe32141606d
+        uses: github/codeql-action/init@ee1e1399e292f3386c840526dac6a4dc7509ad72
         with:
           config-file: ./.github/codeql/codeql-config.yml
           queries: security-and-quality
@@ -179,7 +179,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@a2d9de63c2916881d0621fdb7e65abe32141606d
+        uses: github/codeql-action/analyze@ee1e1399e292f3386c840526dac6a4dc7509ad72
         with:
           category: "/language:c-cpp"
 
