@@ -22,7 +22,7 @@
 
 #include <FileSystem.h>
 
-#include <minecraft/mod/ResourcePack.h>
+#include <minecraft/mod/ResourcePack.hpp>
 
 class ResourcePackParseTest : public QObject
 {

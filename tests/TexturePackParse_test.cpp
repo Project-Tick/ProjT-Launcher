@@ -22,7 +22,7 @@
 
 #include "FileSystem.h"
 
-#include "minecraft/mod/TexturePack.h"
+#include "minecraft/mod/TexturePack.hpp"
 #include "minecraft/mod/tasks/LocalTexturePackParseTask.hpp"
 
 class TexturePackParseTest : public QObject
