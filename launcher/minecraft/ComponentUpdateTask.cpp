@@ -184,7 +184,8 @@ namespace
 		auto index = APPLICATION->metadataIndex();
 		if (index->state() != projt::meta::MetaEntity::State::Synchronized)
 		{
-			auto seq = makeShared<SequentialTask>(tr("Updating version list for %1").arg(component->getName()));
+			auto seq = makeShared<SequentialTask>(
+				ComponentUpdateTask::tr("Updating version list for %1").arg(component->getName()));
 			seq->addTask(index->createLoadTask(netmode));
 			seq->addTask(versionList->createLoadTask(netmode));
 			loadTask = seq;
