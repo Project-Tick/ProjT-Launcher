@@ -57,7 +57,7 @@ program
 program
   .command('prepare')
   .description('Prepare and validate a pull request')
-  .argument('<owner>', 'Repository owner (e.g., YongDo-Hyun)')
+  .argument('<owner>', 'Repository owner (e.g., Project-Tick)')
   .argument('<repo>', 'Repository name (e.g., ProjT-Launcher)')
   .argument('<pr>', 'Pull Request number')
   .option('--no-dry', 'Make actual modifications')

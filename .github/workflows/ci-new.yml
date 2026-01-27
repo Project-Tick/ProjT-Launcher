@@ -262,21 +262,6 @@ jobs:
       run-zlib: ${{ needs.prepare.outputs.run-zlib }}
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # WEBSITE BUILD & DEPLOY
-  # ═══════════════════════════════════════════════════════════════════════════
-  website:
-    name: Website
-    needs: prepare
-    if: needs.prepare.outputs.run-website == 'true'
-    uses: ./.github/workflows/ci-website.yml
-    permissions:
-      pages: write
-      id-token: write
-    with:
-      run-website: ${{ needs.prepare.outputs.run-website }}
-      is-pr: ${{ needs.prepare.outputs.is-pr }}
-
-  # ═══════════════════════════════════════════════════════════════════════════
   # LIBRARIES (cmark, toml++, libqrencode) - Each has independent CI
   # ═══════════════════════════════════════════════════════════════════════════
   cmark:

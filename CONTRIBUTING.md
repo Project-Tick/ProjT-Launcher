@@ -2,15 +2,40 @@
 
 ```text
 Upstream Maintainer: YongDo-Hyun <yongdohyun@projtlauncher.yongdohyun.org.tr>
-License: GPL-3.0-only (Launcher), AGPL-3.0-only (Website), see COPYING.md
+License: GPL-3.0-only (Launcher), see COPYING.md
 ```
+
+## Contributor License Agreement (CLA)
+
+By submitting a contribution to this repository, you agree that your
+contribution is made under the terms of the **Project Tick Contributor
+License Agreement (CLA)**.
+
+The CLA ensures that:
+
+- you have the legal right to submit the contribution,
+- the contribution does not knowingly infringe third-party rights,
+- Project Tick may distribute the contribution under the applicable
+  Project Tick license(s) governing the component,
+- long-term governance and license consistency across the Project Tick
+  ecosystem can be maintained.
+
+The CLA applies to all intentional contributions, including but not
+limited to source code, documentation, tests, data, media assets, and
+configuration files.
+
+The full text of the current CLA is available at:
+
+- https://projecttick.org/licenses/PT-CLA-2.0.txt
+
+If you do not agree to the CLA, please do not submit contributions.
 
 ---
 
 ## Quick Start
 
 ```sh
-git clone https://github.com/YongDo-Hyun/ProjT-Launcher.git
+git clone https://github.com/Project-Tick/ProjT-Launcher.git
 cd ProjT-Launcher
 cmake --preset your_os
 cmake --build --preset your_os
@@ -236,8 +261,8 @@ Q: How do I update a fork library?
 
 ## Contact
 
-- Issues: [GitHub Issues](https://github.com/YongDo-Hyun/ProjT-Launcher/issues)
-- Discussions: [GitHub Discussions](https://github.com/YongDo-Hyun/ProjT-Launcher/discussions)
+- Issues: [GitHub Issues](https://github.com/Project-Tick/ProjT-Launcher/issues)
+- Discussions: [GitHub Discussions](https://github.com/Project-Tick/ProjT-Launcher/discussions)
 - Email: [yongdohyun@projtlauncher.yongdohyun.org.tr](mailto:yongdohyun@projtlauncher.yongdohyun.org.tr)
 
 ---

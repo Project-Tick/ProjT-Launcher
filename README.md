@@ -1,19 +1,29 @@
 # ProjT Launcher
 
-A Minecraft launcher focused on long-term maintainability and structural clarity.
+A Minecraft launcher engineered for long-term maintainability, architectural clarity,
+and controlled ecosystem evolution.
 
-Fork of [Prism Launcher](https://prismlauncher.org), diverging to keep maintenance healthy over time.
+ProjT Launcher is a structurally disciplined fork of Prism Launcher, diverging
+intentionally to prevent maintenance decay, dependency drift, and architectural
+erosion over time.
 
 ## Why ProjT Launcher?
 
-- **Long-term maintainability**: Strict architectural discipline prevents technical debt accumulation
-- **Controlled third-party handling**: All external dependencies are detached forks with documented patch policies
-- **CI determinism**: Exact version requirements ensure reproducible builds across all environments
-- **Structural clarity**: MVVM enforcement and clear module boundaries simplify contribution and review
+- **Long-term maintainability**  
+  Explicit architectural constraints and review rules prevent uncontrolled technical debt.
+
+- **Controlled third-party integration**  
+  External dependencies are maintained as detached forks with documented patch and update policies.
+
+- **Deterministic CI and builds**  
+  Exact dependency versions and constrained build inputs enable reproducible builds across environments.
+
+- **Structural clarity**  
+  Enforced MVVM boundaries and clearly separated modules simplify review, refactoring, and long-term contribution.
 
 ## Download
 
-- [Releases](https://github.com/YongDo-Hyun/ProjT-Launcher/releases) – Stable builds only. Nightly builds are not provided.
+- [Releases](https://github.com/Project-Tick/ProjT-Launcher/releases) – Stable builds only. Nightly builds are not provided.
 - [Website](https://projecttick.org/projtlauncher/)
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/projtlauncher.svg)](https://repology.org/project/projtlauncher/versions)
@@ -23,7 +33,7 @@ Fork of [Prism Launcher](https://prismlauncher.org), diverging to keep maintenan
 Quick start for release builds:
 
 ```sh
-git clone --recursive https://github.com/YongDo-Hyun/ProjT-Launcher.git
+git clone --recursive https://github.com/Project-Tick/ProjT-Launcher.git
 cd ProjT-Launcher
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
@@ -103,8 +113,8 @@ Contributions to each component are licensed under its respective license. See [
 
 - [Website](https://projecttick.org/projtlauncher/)
 - [Project Tick Website](https://projecttick.org/)
-- [Issues](https://github.com/YongDo-Hyun/ProjT-Launcher/issues)
-- [Discussions](https://github.com/YongDo-Hyun/ProjT-Launcher/discussions)
+- [Issues](https://github.com/Project-Tick/ProjT-Launcher/issues)
+- [Discussions](https://github.com/Project-Tick/ProjT-Launcher/discussions)
 
 ---
 

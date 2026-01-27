@@ -9,7 +9,7 @@
 #
 # Example:
 #   ./ci/code-quality.sh develop
-#   ./ci/code-quality.sh master https://github.com/YongDo-Hyun/ProjT-Launcher.git
+#   ./ci/code-quality.sh master https://github.com/Project-Tick/ProjT-Launcher.git
 # =============================================================================
 
 set -o pipefail -o errexit -o nounset
@@ -28,7 +28,7 @@ cleanup() {
 trap cleanup exit
 
 # Default repository
-repo=https://github.com/YongDo-Hyun/ProjT-Launcher.git
+repo=https://github.com/Project-Tick/ProjT-Launcher.git
 
 # Parse arguments
 if (( $# != 0 )); then

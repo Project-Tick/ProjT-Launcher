@@ -34,7 +34,7 @@ git clone https://github.com/YourName/ProjT-Launcher.git
 cd ProjT-Launcher
 
 # Add upstream remote
-git remote add upstream https://github.com/YongDo-Hyun/ProjT-Launcher.git
+git remote add upstream https://github.com/Project-Tick/ProjT-Launcher.git
 ```
 
 ---

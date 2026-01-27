@@ -28,9 +28,9 @@ Don't be afraid to close an issue that holds valuable information. Closed issues
 
 ## Useful GitHub search queries
 
-- [Open PRs with any stale-bot interaction](https://github.com/YongDo-Hyun/ProjT-Launcher/pulls?q=is%3Apr+is%3Aopen+commenter%3Aapp%2Fstale+)
-- [Open PRs with any stale-bot interaction and `inactive`](https://github.com/YongDo-Hyun/ProjT-Launcher/pulls?q=is%3Apr+is%3Aopen+commenter%3Aapp%2Fstale+label%3Ainactive)
-- [Open PRs with any stale-bot interaction and NOT `inactive`](https://github.com/YongDo-Hyun/ProjT-Launcher/pulls?q=is%3Apr+is%3Aopen+commenter%3Aapp%2Fstale+-label%3Ainactive)
-- [Open Issues with any stale-bot interaction](https://github.com/YongDo-Hyun/ProjT-Launcher/issues?q=is%3Aissue+is%3Aopen+commenter%3Aapp%2Fstale+)
-- [Open Issues with any stale-bot interaction and `inactive`](https://github.com/YongDo-Hyun/ProjT-Launcher/issues?q=is%3Aissue+is%3Aopen+commenter%3Aapp%2Fstale+label%3Ainactive)
-- [Open Issues with any stale-bot interaction and NOT `inactive`](https://github.com/YongDo-Hyun/ProjT-Launcher/issues?q=is%3Aissue+is%3Aopen+commenter%3Aapp%2Fstale+-label%3Ainactive)
+- [Open PRs with any stale-bot interaction](https://github.com/Project-Tick/ProjT-Launcher/pulls?q=is%3Apr+is%3Aopen+commenter%3Aapp%2Fstale+)
+- [Open PRs with any stale-bot interaction and `inactive`](https://github.com/Project-Tick/ProjT-Launcher/pulls?q=is%3Apr+is%3Aopen+commenter%3Aapp%2Fstale+label%3Ainactive)
+- [Open PRs with any stale-bot interaction and NOT `inactive`](https://github.com/Project-Tick/ProjT-Launcher/pulls?q=is%3Apr+is%3Aopen+commenter%3Aapp%2Fstale+-label%3Ainactive)
+- [Open Issues with any stale-bot interaction](https://github.com/Project-Tick/ProjT-Launcher/issues?q=is%3Aissue+is%3Aopen+commenter%3Aapp%2Fstale+)
+- [Open Issues with any stale-bot interaction and `inactive`](https://github.com/Project-Tick/ProjT-Launcher/issues?q=is%3Aissue+is%3Aopen+commenter%3Aapp%2Fstale+label%3Ainactive)
+- [Open Issues with any stale-bot interaction and NOT `inactive`](https://github.com/Project-Tick/ProjT-Launcher/issues?q=is%3Aissue+is%3Aopen+commenter%3Aapp%2Fstale+-label%3Ainactive)

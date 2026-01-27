@@ -128,6 +128,7 @@ Project Tick contributors
 ## External Links
 
 - [zlib Official Website](https://zlib.net)
-- [zlib GitHub Repository](https://github.com/madler/zlib)
+- [zlib Official GitHub Repository](https://github.com/madler/zlib)
+- [zlib Project Tick Github Repository](https://github.com/Project-Tick/ProjT-Launcher/tree/main/zlib)
 - [RFC 1950 - ZLIB Specification](https://tools.ietf.org/html/rfc1950)
 - [RFC 1951 - DEFLATE Specification](https://tools.ietf.org/html/rfc1951)
