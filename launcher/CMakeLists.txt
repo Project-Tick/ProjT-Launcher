@@ -330,7 +330,7 @@ set(MINECRAFT_SOURCES
     minecraft/mod/ModDetails.hpp
     minecraft/mod/ModFolderModel.hpp
     minecraft/mod/ModFolderModel.cpp
-    minecraft/mod/ModFolderModel.hpp
+    minecraft/mod/Resource.hpp
     minecraft/mod/Resource.cpp
     minecraft/mod/ResourceFolderModel.hpp
     minecraft/mod/ResourceFolderModel.cpp

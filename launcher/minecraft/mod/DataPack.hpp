@@ -43,7 +43,7 @@
 
 #pragma once
 
-#include "ModFolderModel.hpp"
+#include "Resource.hpp"
 
 #include <QMutex>
 #include <QPixmapCache>

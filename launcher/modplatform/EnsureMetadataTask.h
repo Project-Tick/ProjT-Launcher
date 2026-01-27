@@ -24,7 +24,7 @@
 
 #include "modplatform/helpers/HashUtils.h"
 
-#include "minecraft/mod/ModFolderModel.hpp"
+#include "minecraft/mod/Resource.hpp"
 #include "tasks/ConcurrentTask.h"
 
 class Mod;

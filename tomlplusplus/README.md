@@ -313,6 +313,7 @@ UTF-8 decoding is performed using a state machine based on Bjoern Hoehrmann's '[
 -   **[@whiterabbit963](https://github.com/whiterabbit963)** - Fixed a bug with value_or conversions
 -   **[@ximion](https://github.com/ximion)** - Added support for installation with meson
 -   **[@rafal-c](https://github.com/rafal-c)** - Added a formatting flag
+-   **[@YongDo-Hyun](https://github.com/YongDo-Hyun)** - New fork maintainer of tomlplusplus
 <br>
 
 ## Contact
@@ -356,4 +357,4 @@ though you're welcome to reach out via other means. In order of likely response 
 [#891]: https://github.com/toml-lang/toml/pull/891
 [something better than std::optional]: https://github.com/TartanLlama/optional
 [m.css]: https://mcss.mosra.cz/documentation/doxygen
-[`toml.hpp`]: https://raw.githubusercontent.com/marzer/tomlplusplus/master/toml.hpp
+[`toml.hpp`]: https://raw.githubusercontent.com/Project-Tick/ProjT-Launcher/main/tomlplusplus/toml.hpp

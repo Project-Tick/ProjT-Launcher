@@ -41,7 +41,7 @@
 
 #pragma once
 
-#include "ModFolderModel.hpp"
+#include "Resource.hpp"
 
 #include <QImage>
 #include <QMutex>

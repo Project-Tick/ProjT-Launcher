@@ -66,7 +66,7 @@
 
 #include "MTPixmapCache.h"
 #include "MetadataHandler.hpp"
-#include "ModFolderModel.hpp"
+#include "Resource.hpp"
 #include "Version.h"
 #include "minecraft/mod/ModDetails.hpp"
 #include "minecraft/mod/tasks/LocalModParseTask.hpp"
