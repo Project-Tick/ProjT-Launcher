@@ -56,6 +56,7 @@ add_executable(cmark_exe
 cmark_add_compile_options(cmark_exe)
 set_target_properties(cmark_exe PROPERTIES
   OUTPUT_NAME "cmark"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
   INSTALL_RPATH "${Base_rpath}")
 target_link_libraries(cmark_exe PRIVATE
   cmark)

@@ -107,7 +107,10 @@ class ProjTExternalUpdater : public ExternalUpdater
 	void disconnectTimer();
 	void connectTimer();
 
-	void offerUpdate(const QString& version_name, const QString& version_tag, const QString& release_notes);
+	void offerUpdate(const QString& version_name,
+					 const QString& version_tag,
+					 const QString& release_notes,
+					 bool isMigration = false);
 	void performUpdate(const QString& version_tag);
 
   public slots:

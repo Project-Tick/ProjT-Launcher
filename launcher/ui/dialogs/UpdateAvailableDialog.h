@@ -56,6 +56,12 @@ class UpdateAvailableDialog : public QDialog
 	Q_OBJECT
 
   public:
+	enum class Mode
+	{
+		Update,
+		Migration
+	};
+
 	enum ResultCode
 	{
 		Install		= 10,
@@ -66,6 +72,7 @@ class UpdateAvailableDialog : public QDialog
 	explicit UpdateAvailableDialog(const QString& currentVersion,
 								   const QString& availableVersion,
 								   const QString& releaseNotes,
+								   Mode mode = Mode::Update,
 								   QWidget* parent = 0);
 	~UpdateAvailableDialog() = default;
 

@@ -53,6 +53,7 @@
 UpdateAvailableDialog::UpdateAvailableDialog(const QString& currentVersion,
 											 const QString& availableVersion,
 											 const QString& releaseNotes,
+											 Mode mode,
 											 QWidget* parent)
 	: QDialog(parent),
 	  ui(new Ui::UpdateAvailableDialog)
@@ -61,11 +62,23 @@ UpdateAvailableDialog::UpdateAvailableDialog(const QString& currentVersion,
 
 	QString launcherName = BuildConfig.LAUNCHER_DISPLAYNAME;
 
-	ui->headerLabel->setText(tr("A new version of %1 is available!").arg(launcherName));
-	ui->versionAvailableLabel->setText(
-		tr("Version %1 is now available - you have %2 . Would you like to download it now?")
-			.arg(availableVersion)
-			.arg(currentVersion));
+	if (mode == Mode::Migration)
+	{
+		ui->headerLabel->setText(tr("A new release line of %1 is available!").arg(launcherName));
+		ui->versionAvailableLabel->setText(
+			tr("Version %1 is part of a new release line.\n"
+			   "You are currently on %2. Would you like to migrate now?")
+				.arg(availableVersion)
+				.arg(currentVersion));
+	}
+	else
+	{
+		ui->headerLabel->setText(tr("A new version of %1 is available!").arg(launcherName));
+		ui->versionAvailableLabel->setText(
+			tr("Version %1 is now available - you have %2 . Would you like to download it now?")
+				.arg(availableVersion)
+				.arg(currentVersion));
+	}
 	ui->icon->setPixmap(QIcon::fromTheme("checkupdate").pixmap(64));
 
 	auto releaseNotesHtml = markdownToHTML(releaseNotes);

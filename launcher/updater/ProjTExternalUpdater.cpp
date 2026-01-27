@@ -226,7 +226,8 @@ void ProjTExternalUpdater::checkForUpdates(bool triggeredByUser)
 			}
 			break;
 		case 100:
-			// update available
+		case 101:
+			// update or migration available
 			{
 				auto [first_line, remainder1]	 = StringUtils::splitFirst(std_output, '\n');
 				auto [second_line, remainder2]	 = StringUtils::splitFirst(remainder1, '\n');
@@ -235,10 +236,13 @@ void ProjTExternalUpdater::checkForUpdates(bool triggeredByUser)
 				auto version_tag				 = StringUtils::splitFirst(second_line, ": ").second.trimmed();
 				auto release_timestamp =
 					QDateTime::fromString(StringUtils::splitFirst(third_line, ": ").second.trimmed(), Qt::ISODate);
-				qDebug() << "Update available:" << version_name << version_tag << release_timestamp;
+				if (exit_code == 100)
+					qDebug() << "Update available:" << version_name << version_tag << release_timestamp;
+				else
+					qDebug() << "Migration available:" << version_name << version_tag << release_timestamp;
 				qDebug() << "Update release notes:" << release_notes;
 
-				offerUpdate(version_name, version_tag, release_notes);
+				offerUpdate(version_name, version_tag, release_notes, exit_code == 101);
 			}
 			break;
 		default:
@@ -344,7 +348,8 @@ void ProjTExternalUpdater::autoCheckTimerFired()
 
 void ProjTExternalUpdater::offerUpdate(const QString& version_name,
 									   const QString& version_tag,
-									   const QString& release_notes)
+									   const QString& release_notes,
+									   bool isMigration)
 {
 	priv->settings->beginGroup("skip");
 	auto should_skip = priv->settings->value(version_tag, false).toBool();
@@ -363,7 +368,10 @@ void ProjTExternalUpdater::offerUpdate(const QString& version_name,
 		return;
 	}
 
-	UpdateAvailableDialog dlg(BuildConfig.printableVersionString(), version_name, release_notes);
+	UpdateAvailableDialog dlg(BuildConfig.printableVersionString(),
+							  version_name,
+							  release_notes,
+							  isMigration ? UpdateAvailableDialog::Mode::Migration : UpdateAvailableDialog::Mode::Update);
 
 	auto result = dlg.exec();
 	qDebug() << "offer dlg result" << result;

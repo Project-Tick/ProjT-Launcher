@@ -100,7 +100,20 @@ class ProjTUpdaterApp : public QApplication
 	void downloadReleasePage(const QString& api_url, int page);
 	int parseReleasePage(const QByteArray* response);
 
-	bool needUpdate(const GitHubRelease& release);
+	enum class UpdateKind
+	{
+		None,
+		Update,
+		Migration
+	};
+
+	struct UpdateCandidate
+	{
+		UpdateKind kind = UpdateKind::None;
+		GitHubRelease release;
+	};
+
+	UpdateCandidate findUpdateCandidate();
 
 	GitHubRelease getLatestRelease();
 	GitHubRelease selectRelease();

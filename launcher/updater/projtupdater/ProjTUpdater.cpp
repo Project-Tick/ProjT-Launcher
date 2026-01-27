@@ -521,22 +521,24 @@ void ProjTUpdaterApp::run()
 	qDebug() << "Version channel:" << m_prsimVersionChannel;
 	qDebug() << "Git Commit:" << m_projtGitCommit;
 
-	auto latest = getLatestRelease();
-	qDebug() << "Latest release" << latest.version;
-	auto need_update = needUpdate(latest);
+	auto update_candidate = findUpdateCandidate();
+	if (update_candidate.release.isValid())
+		qDebug() << "Latest release" << update_candidate.release.version;
+	auto need_update = update_candidate.kind == UpdateKind::Update;
+	auto has_migration = update_candidate.kind == UpdateKind::Migration;
 
 	if (m_checkOnly)
 	{
-		if (need_update)
+		if (need_update || has_migration)
 		{
 			QTextStream stdOutStream(stdout);
-			stdOutStream << "Name: " << latest.name << "\n";
-			stdOutStream << "Version: " << latest.tag_name << "\n";
-			stdOutStream << "TimeStamp: " << latest.created_at.toString(Qt::ISODate) << "\n";
-			stdOutStream << latest.body << "\n";
+			stdOutStream << "Name: " << update_candidate.release.name << "\n";
+			stdOutStream << "Version: " << update_candidate.release.tag_name << "\n";
+			stdOutStream << "TimeStamp: " << update_candidate.release.created_at.toString(Qt::ISODate) << "\n";
+			stdOutStream << update_candidate.release.body << "\n";
 			stdOutStream.flush();
 
-			return exit(100);
+			return exit(need_update ? 100 : 101);
 		}
 		else
 		{
@@ -561,7 +563,7 @@ void ProjTUpdaterApp::run()
 
 	if (need_update || m_forceUpdate || !m_userSelectedVersion.isEmpty())
 	{
-		GitHubRelease update_release = latest;
+		GitHubRelease update_release = update_candidate.release.isValid() ? update_candidate.release : getLatestRelease();
 		if (!m_userSelectedVersion.isEmpty())
 		{
 			bool found = false;
@@ -1512,7 +1514,87 @@ GitHubRelease ProjTUpdaterApp::getLatestRelease()
 	return latest;
 }
 
-bool ProjTUpdaterApp::needUpdate(const GitHubRelease& release)
+namespace
+{
+struct LineVersion
+{
+	int x = -1;
+	int y = -1;
+	int z = -1;
+	int t = -1;
+};
+
+std::optional<LineVersion> parseLineVersion(QString ver)
+{
+	ver = ver.trimmed();
+	if (ver.startsWith(QLatin1Char('v'), Qt::CaseInsensitive))
+	{
+		ver.remove(0, 1);
+	}
+
+	while (ver.endsWith(QLatin1Char('.')))
+	{
+		ver.chop(1);
+	}
+
+	const auto dash_parts = ver.split(QLatin1Char('-'), Qt::KeepEmptyParts);
+	if (dash_parts.size() >= 2)
+	{
+		const auto main_part = dash_parts.at(0);
+		const auto t_part	 = dash_parts.at(1);
+
+		bool ok_t = false;
+		const auto t = t_part.toInt(&ok_t);
+		if (!ok_t)
+			return std::nullopt;
+
+		const auto dot_parts = main_part.split(QLatin1Char('.'), Qt::KeepEmptyParts);
+		if (dot_parts.size() != 3)
+			return std::nullopt;
+
+		bool ok_x = false;
+		bool ok_y = false;
+		bool ok_z = false;
+		const auto x = dot_parts.at(0).toInt(&ok_x);
+		const auto y = dot_parts.at(1).toInt(&ok_y);
+		const auto z = dot_parts.at(2).toInt(&ok_z);
+		if (!ok_x || !ok_y || !ok_z)
+			return std::nullopt;
+
+		return LineVersion{ x, y, z, t };
+	}
+
+	const auto dot_parts = ver.split(QLatin1Char('.'), Qt::KeepEmptyParts);
+	if (dot_parts.size() != 4)
+		return std::nullopt;
+
+	bool ok_x = false;
+	bool ok_y = false;
+	bool ok_z = false;
+	bool ok_t = false;
+	const auto x = dot_parts.at(0).toInt(&ok_x);
+	const auto y = dot_parts.at(1).toInt(&ok_y);
+	const auto z = dot_parts.at(2).toInt(&ok_z);
+	const auto t = dot_parts.at(3).toInt(&ok_t);
+	if (!ok_x || !ok_y || !ok_z || !ok_t)
+		return std::nullopt;
+
+	return LineVersion{ x, y, z, t };
+}
+
+int compareLine(const LineVersion& a, const LineVersion& b)
+{
+	if (a.x != b.x)
+		return a.x < b.x ? -1 : 1;
+	if (a.y != b.y)
+		return a.y < b.y ? -1 : 1;
+	if (a.z != b.z)
+		return a.z < b.z ? -1 : 1;
+	return 0;
+}
+} // namespace
+
+ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 {
 	auto normalizeVersionString = [](QString ver)
 	{
@@ -1553,8 +1635,86 @@ bool ProjTUpdaterApp::needUpdate(const GitHubRelease& release)
 	current_version = appendChannelIfMissing(current_version, m_prsimVersionChannel);
 
 	current_version	 = normalizeVersionString(current_version);
-	auto current_ver = Version(current_version);
-	return current_ver < release.version;
+	auto parsed_current = parseLineVersion(current_version);
+
+	UpdateCandidate candidate;
+
+	if (!parsed_current.has_value())
+	{
+		auto latest = getLatestRelease();
+		if (latest.isValid() && Version(current_version) < latest.version)
+		{
+			candidate.kind	 = UpdateKind::Update;
+			candidate.release = latest;
+		}
+		return candidate;
+	}
+
+	const auto current = parsed_current.value();
+
+	bool has_same_line	  = false;
+	bool has_migration	  = false;
+	LineVersion best_line = current;
+	LineVersion best_migration_line;
+	GitHubRelease best_same_release;
+	GitHubRelease best_migration_release;
+
+	for (const auto& release : m_releases)
+	{
+		if (release.draft)
+			continue;
+		if (release.prerelease && !m_allowPreRelease)
+			continue;
+
+		auto parsed_release = parseLineVersion(release.tag_name);
+		if (!parsed_release.has_value())
+			continue;
+
+		auto rel = parsed_release.value();
+		auto line_cmp = compareLine(rel, current);
+		if (line_cmp == 0)
+		{
+			if (rel.t > current.t && (!has_same_line || rel.t > best_line.t))
+			{
+				best_line		  = rel;
+				best_same_release = release;
+				has_same_line	  = true;
+			}
+			continue;
+		}
+		if (line_cmp > 0)
+		{
+			if (!has_migration)
+			{
+				best_migration_line	 = rel;
+				best_migration_release = release;
+				has_migration			 = true;
+				continue;
+			}
+			auto best_cmp = compareLine(rel, best_migration_line);
+			if (best_cmp > 0 || (best_cmp == 0 && rel.t > best_migration_line.t))
+			{
+				best_migration_line	 = rel;
+				best_migration_release = release;
+			}
+		}
+	}
+
+	if (has_same_line)
+	{
+		candidate.kind	 = UpdateKind::Update;
+		candidate.release = best_same_release;
+		return candidate;
+	}
+
+	if (has_migration)
+	{
+		candidate.kind	 = UpdateKind::Migration;
+		candidate.release = best_migration_release;
+		return candidate;
+	}
+
+	return candidate;
 }
 
 void ProjTUpdaterApp::downloadError(QString reason)

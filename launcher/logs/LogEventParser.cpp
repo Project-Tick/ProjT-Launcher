@@ -230,6 +230,27 @@ namespace projt::logs
 			return {};
 		}
 
+		// Ignore leading whitespace before a log4j XML event.
+		{
+			qsizetype firstNonSpace = -1;
+			for (qsizetype i = 0; i < m_buffer.size(); ++i)
+			{
+				if (!m_buffer.at(i).isSpace())
+				{
+					firstNonSpace = i;
+					break;
+				}
+			}
+			if (firstNonSpace > 0)
+			{
+				const QStringView slice = QStringView{ m_buffer }.sliced(firstNonSpace);
+				if (!slice.isEmpty() && slice.front() == QLatin1Char('<') && isPotentialLog4j(slice))
+				{
+					m_buffer = m_buffer.mid(firstNonSpace);
+				}
+			}
+		}
+
 		if (m_buffer.trimmed().isEmpty())
 		{
 			auto text = QString(m_buffer);

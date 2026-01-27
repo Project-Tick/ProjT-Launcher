@@ -44,6 +44,7 @@
 #include "MacSparkleUpdater.h"
 
 #include "Application.h"
+#include "BuildConfig.h"
 
 #include <Cocoa/Cocoa.h>
 #include <Sparkle/Sparkle.h>
@@ -101,6 +102,8 @@ class MacSparkleUpdater::Private {
     UpdaterObserver* updaterObserver;
     UpdaterDelegate* updaterDelegate;
     NSAutoreleasePool* autoReleasePool;
+    QString lineChannel;
+    QString migrationChannel;
 };
 
 MacSparkleUpdater::MacSparkleUpdater() {
@@ -124,6 +127,44 @@ MacSparkleUpdater::MacSparkleUpdater() {
     priv->updaterObserver.callback = ^(bool canCheck) {
       emit canCheckForUpdatesChanged(canCheck);
     };
+
+    auto extractLineChannel = [](QString version) -> QString {
+        version = version.trimmed();
+        if (version.startsWith(QLatin1Char('v'), Qt::CaseInsensitive)) {
+            version.remove(0, 1);
+        }
+        while (version.endsWith(QLatin1Char('.'))) {
+            version.chop(1);
+        }
+
+        if (version.contains(QLatin1Char('-'))) {
+            return version.section(QLatin1Char('-'), 0, 0);
+        }
+
+        const auto parts = version.split(QLatin1Char('.'), Qt::KeepEmptyParts);
+        if (parts.size() >= 3) {
+            return QString("%1.%2.%3").arg(parts.at(0), parts.at(1), parts.at(2));
+        }
+        return QString();
+    };
+
+    priv->lineChannel = extractLineChannel(BuildConfig.printableVersionString());
+    if (!priv->lineChannel.isEmpty()) {
+        const auto parts = priv->lineChannel.split(QLatin1Char('.'), Qt::KeepEmptyParts);
+        if (parts.size() == 3) {
+            bool ok = false;
+            const auto z = parts.at(2).toInt(&ok);
+            if (ok) {
+                priv->migrationChannel = QString("%1.%2.%3").arg(parts.at(0), parts.at(1)).arg(z + 1);
+            }
+        }
+
+        QSet<QString> channels{ priv->lineChannel };
+        if (!priv->migrationChannel.isEmpty()) {
+            channels.insert(priv->migrationChannel);
+        }
+        setAllowedChannels(channels);
+    }
 }
 
 MacSparkleUpdater::~MacSparkleUpdater() {
@@ -201,9 +242,21 @@ void MacSparkleUpdater::setAllowedChannels(const QSet<QString>& channels) {
 }
 
 void MacSparkleUpdater::setBetaAllowed(bool allowed) {
-    if (allowed) {
-        setAllowedChannel("beta");
-    } else {
-        clearAllowedChannels();
+    if (priv->lineChannel.isEmpty()) {
+        if (allowed) {
+            setAllowedChannel("beta");
+        } else {
+            clearAllowedChannels();
+        }
+        return;
     }
+
+    QSet<QString> channels{ priv->lineChannel };
+    if (!priv->migrationChannel.isEmpty()) {
+        channels.insert(priv->migrationChannel);
+    }
+    if (allowed) {
+        channels.insert("beta");
+    }
+    setAllowedChannels(channels);
 }
