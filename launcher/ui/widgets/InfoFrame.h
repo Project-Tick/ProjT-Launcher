@@ -61,8 +61,8 @@
 
 #include "minecraft/mod/DataPack.hpp"
 #include "minecraft/mod/Mod.hpp"
-#include "minecraft/mod/ResourcePack.h"
-#include "minecraft/mod/TexturePack.h"
+#include "minecraft/mod/ResourcePack.hpp"
+#include "minecraft/mod/TexturePack.hpp"
 
 namespace Ui
 {

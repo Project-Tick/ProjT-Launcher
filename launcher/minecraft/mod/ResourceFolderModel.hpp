@@ -29,7 +29,7 @@
 #include <QSortFilterProxyModel>
 #include <QTreeView>
 
-#include "Resource.h"
+#include "ModFolderModel.hpp"
 
 #include "BaseInstance.h"
 

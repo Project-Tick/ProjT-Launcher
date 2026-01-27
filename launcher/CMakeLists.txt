@@ -327,30 +327,30 @@ set(MINECRAFT_SOURCES
     minecraft/mod/MetadataHandler.hpp
     minecraft/mod/Mod.hpp
     minecraft/mod/Mod.cpp
-    minecraft/mod/ModDetails.h
-    minecraft/mod/ModFolderModel.h
+    minecraft/mod/ModDetails.hpp
+    minecraft/mod/ModFolderModel.hpp
     minecraft/mod/ModFolderModel.cpp
-    minecraft/mod/Resource.h
+    minecraft/mod/ModFolderModel.hpp
     minecraft/mod/Resource.cpp
-    minecraft/mod/ResourceFolderModel.h
+    minecraft/mod/ResourceFolderModel.hpp
     minecraft/mod/ResourceFolderModel.cpp
     minecraft/mod/DataPack.hpp
     minecraft/mod/DataPack.cpp
     minecraft/mod/DataPackFolderModel.hpp
     minecraft/mod/DataPackFolderModel.cpp
-    minecraft/mod/ResourcePack.h
+    minecraft/mod/ResourcePack.hpp
     minecraft/mod/ResourcePack.cpp
-    minecraft/mod/ResourcePackFolderModel.h
+    minecraft/mod/ResourcePackFolderModel.hpp
     minecraft/mod/ResourcePackFolderModel.cpp
-    minecraft/mod/TexturePack.h
+    minecraft/mod/TexturePack.hpp
     minecraft/mod/TexturePack.cpp
-    minecraft/mod/ShaderPack.h
+    minecraft/mod/ShaderPack.hpp
     minecraft/mod/ShaderPack.cpp
-    minecraft/mod/WorldSave.h
+    minecraft/mod/WorldSave.hpp
     minecraft/mod/WorldSave.cpp
-    minecraft/mod/TexturePackFolderModel.h
+    minecraft/mod/TexturePackFolderModel.hpp
     minecraft/mod/TexturePackFolderModel.cpp
-    minecraft/mod/ShaderPackFolderModel.h
+    minecraft/mod/ShaderPackFolderModel.hpp
     minecraft/mod/tasks/ResourceFolderLoadTask.hpp
     minecraft/mod/tasks/ResourceFolderLoadTask.cpp
     minecraft/mod/tasks/LocalModParseTask.hpp

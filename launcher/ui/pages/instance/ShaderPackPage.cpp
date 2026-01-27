@@ -63,7 +63,7 @@
 
 #include "ResourceDownloadTask.h"
 
-#include "minecraft/mod/ShaderPackFolderModel.h"
+#include "minecraft/mod/ShaderPackFolderModel.hpp"
 
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/ProgressDialog.h"

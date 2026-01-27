@@ -40,7 +40,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * ======================================================================== */
-#include "ShaderPack.h"
+#include "ShaderPack.hpp"
 
 void ShaderPack::setPackFormat(ShaderPackFormat new_format)
 {

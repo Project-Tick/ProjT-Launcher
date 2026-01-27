@@ -57,7 +57,7 @@
  *
  * ======================================================================== */
 
-#include "ModFolderModel.h"
+#include "ModFolderModel.hpp"
 
 #include <FileSystem.h>
 #include <QDebug>

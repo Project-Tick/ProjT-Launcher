@@ -104,7 +104,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/Project-Tick/ProjT-Launcher.git
-        tag: 0.0.3-4
-        commit: f0d189dc9dcd5938cc52f385b610165f65198da8 # 0.0.3-4
+        tag: 0.0.4-2
+        commit: f8a93429403005726f4e171ac45386c8cec0ed61 # 0.0.4-2
       - type: file
         path: projtlauncher

@@ -19,9 +19,9 @@
  */
 #pragma once
 
-#include "ResourceFolderModel.h"
+#include "ResourceFolderModel.hpp"
 
-#include "ResourcePack.h"
+#include "ResourcePack.hpp"
 
 class ResourcePackFolderModel : public ResourceFolderModel
 {

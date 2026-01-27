@@ -23,7 +23,7 @@
 #include "ResourceDownloadTask.h"
 #include "ReviewMessageBox.h"
 
-#include "minecraft/mod/ModFolderModel.h"
+#include "minecraft/mod/ModFolderModel.hpp"
 
 #include "modplatform/CheckUpdateTask.h"
 

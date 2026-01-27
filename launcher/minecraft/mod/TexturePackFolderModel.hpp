@@ -58,9 +58,9 @@
 
 #pragma once
 
-#include "ResourceFolderModel.h"
+#include "ResourceFolderModel.hpp"
 
-#include "TexturePack.h"
+#include "TexturePack.hpp"
 
 class TexturePackFolderModel : public ResourceFolderModel
 {

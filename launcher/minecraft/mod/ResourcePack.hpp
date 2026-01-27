@@ -19,7 +19,7 @@
  */
 #pragma once
 
-#include "Resource.h"
+#include "ModFolderModel.hpp"
 #include "minecraft/mod/DataPack.hpp"
 
 #include <QImage>

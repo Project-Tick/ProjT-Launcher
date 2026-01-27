@@ -49,7 +49,7 @@
 #include "MMCZip.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/mod/MetadataHandler.hpp"
-#include "minecraft/mod/ModFolderModel.h"
+#include "minecraft/mod/ModFolderModel.hpp"
 #include "modplatform/ModIndex.h"
 #include "modplatform/helpers/HashUtils.h"
 #include "tasks/Task.h"

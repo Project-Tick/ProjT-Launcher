@@ -41,7 +41,7 @@
 #include <QDebug>
 #include <QObject>
 
-#include "minecraft/mod/WorldSave.h"
+#include "minecraft/mod/WorldSave.hpp"
 
 #include "tasks/Task.h"
 

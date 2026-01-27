@@ -57,7 +57,7 @@
 
 #include "FileSystem.h"
 #include "Json.h"
-#include "minecraft/mod/ResourcePack.h"
+#include "minecraft/mod/ResourcePack.hpp"
 
 #include <quazip/quazip.h>
 #include <quazip/quazipdir.h>

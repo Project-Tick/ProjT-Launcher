@@ -23,7 +23,7 @@
 #include <QObject>
 
 #include "minecraft/mod/Mod.hpp"
-#include "minecraft/mod/ModDetails.h"
+#include "minecraft/mod/ModDetails.hpp"
 
 #include "tasks/Task.h"
 

@@ -58,7 +58,7 @@
 #include "MMCZip.h"
 #include "launch/LaunchPipeline.hpp"
 #include "minecraft/MinecraftInstance.h"
-#include "minecraft/mod/ModFolderModel.h"
+#include "minecraft/mod/ModFolderModel.hpp"
 
 void ScanModFolders::executeTask()
 {

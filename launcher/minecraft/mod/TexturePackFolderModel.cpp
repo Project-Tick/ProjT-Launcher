@@ -55,7 +55,7 @@
  *      limitations under the License.
  *
  * ======================================================================== */
-#include "TexturePackFolderModel.h"
+#include "TexturePackFolderModel.hpp"
 
 #include "minecraft/mod/tasks/LocalTexturePackParseTask.hpp"
 #include "minecraft/mod/tasks/ResourceFolderLoadTask.hpp"

@@ -43,8 +43,8 @@
 
 #include "Application.h"
 
-#include "minecraft/mod/ModFolderModel.h"
-#include "minecraft/mod/ResourceFolderModel.h"
+#include "minecraft/mod/ModFolderModel.hpp"
+#include "minecraft/mod/ResourceFolderModel.hpp"
 
 #include "modplatform/helpers/HashUtils.h"
 #include "net/ApiDownload.h"

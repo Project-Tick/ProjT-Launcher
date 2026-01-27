@@ -32,7 +32,7 @@
 
 #include "FileSystem.h"
 #include "Json.h"
-#include "minecraft/mod/ModDetails.h"
+#include "minecraft/mod/ModDetails.hpp"
 #include "settings/INIFile.h"
 
 static const QRegularExpression s_newlineRegex("\r\n|\n|\r");

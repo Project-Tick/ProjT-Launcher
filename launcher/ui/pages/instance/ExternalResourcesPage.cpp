@@ -61,7 +61,7 @@
 
 #include "DesktopServices.h"
 #include "Version.h"
-#include "minecraft/mod/ResourceFolderModel.h"
+#include "minecraft/mod/ResourceFolderModel.hpp"
 #include "ui/GuiUtil.h"
 
 #include <QHeaderView>

@@ -39,7 +39,7 @@
  *
  * ======================================================================== */
 
-#include "TexturePack.h"
+#include "TexturePack.hpp"
 
 #include <QDebug>
 #include <QMap>

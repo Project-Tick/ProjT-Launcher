@@ -58,10 +58,10 @@
 
 #pragma once
 
-#include "ResourceFolderModel.h"
+#include "ResourceFolderModel.hpp"
 
 #include "DataPack.hpp"
-#include "ResourcePack.h"
+#include "ResourcePack.hpp"
 
 class DataPackFolderModel : public ResourceFolderModel
 {

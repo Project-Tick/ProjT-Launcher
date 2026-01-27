@@ -41,7 +41,7 @@
  *
  * ======================================================================== */
 
-#include "WorldSave.h"
+#include "WorldSave.hpp"
 
 #include "minecraft/mod/tasks/LocalWorldSaveParseTask.hpp"
 

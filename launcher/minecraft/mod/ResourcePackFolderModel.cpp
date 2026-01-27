@@ -56,7 +56,7 @@
  *
  * ======================================================================== */
 
-#include "ResourcePackFolderModel.h"
+#include "ResourcePackFolderModel.hpp"
 #include <qnamespace.h>
 #include <qsize.h>
 

@@ -43,7 +43,7 @@
 
 #pragma once
 
-#include "Resource.h"
+#include "ModFolderModel.hpp"
 
 /* Info:
  * Currently For Optifine / Iris shader packs,

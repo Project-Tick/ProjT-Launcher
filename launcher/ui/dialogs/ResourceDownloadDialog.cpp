@@ -49,10 +49,10 @@
 #include "ResourceDownloadTask.h"
 
 #include "minecraft/PackProfile.h"
-#include "minecraft/mod/ModFolderModel.h"
-#include "minecraft/mod/ResourcePackFolderModel.h"
-#include "minecraft/mod/ShaderPackFolderModel.h"
-#include "minecraft/mod/TexturePackFolderModel.h"
+#include "minecraft/mod/ModFolderModel.hpp"
+#include "minecraft/mod/ResourcePackFolderModel.hpp"
+#include "minecraft/mod/ShaderPackFolderModel.hpp"
+#include "minecraft/mod/TexturePackFolderModel.hpp"
 
 #include "minecraft/mod/tasks/GetModDependenciesTask.hpp"
 #include "modplatform/ModIndex.h"

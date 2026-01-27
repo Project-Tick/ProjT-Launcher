@@ -42,7 +42,7 @@
 #include <QDebug>
 #include <QObject>
 
-#include "minecraft/mod/TexturePack.h"
+#include "minecraft/mod/TexturePack.hpp"
 
 #include "tasks/Task.h"
 

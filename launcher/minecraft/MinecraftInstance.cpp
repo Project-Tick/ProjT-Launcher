@@ -97,10 +97,10 @@
 
 #include "icons/IconList.hpp"
 
-#include "mod/ModFolderModel.h"
-#include "mod/ResourcePackFolderModel.h"
-#include "mod/ShaderPackFolderModel.h"
-#include "mod/TexturePackFolderModel.h"
+#include "mod/ModFolderModel.hpp"
+#include "mod/ResourcePackFolderModel.hpp"
+#include "mod/ShaderPackFolderModel.hpp"
+#include "mod/TexturePackFolderModel.hpp"
 
 #include "WorldList.h"
 

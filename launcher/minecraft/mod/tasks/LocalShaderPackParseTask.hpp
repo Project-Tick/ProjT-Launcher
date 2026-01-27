@@ -41,7 +41,7 @@
 #include <QDebug>
 #include <QObject>
 
-#include "minecraft/mod/ShaderPack.h"
+#include "minecraft/mod/ShaderPack.hpp"
 
 #include "tasks/Task.h"
 

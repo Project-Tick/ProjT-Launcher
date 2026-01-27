@@ -66,7 +66,7 @@
 #include "ui/dialogs/ResourceDownloadDialog.h"
 #include "ui_ExternalResourcesPage.h"
 
-#include "minecraft/mod/ResourcePackFolderModel.h"
+#include "minecraft/mod/ResourcePackFolderModel.hpp"
 
 class ResourcePackPage : public ExternalResourcesPage
 {

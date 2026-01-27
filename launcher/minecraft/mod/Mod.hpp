@@ -68,8 +68,8 @@
 
 #include <optional>
 
-#include "ModDetails.h"
-#include "Resource.h"
+#include "ModDetails.hpp"
+#include "ModFolderModel.hpp"
 
 class Mod : public Resource
 {

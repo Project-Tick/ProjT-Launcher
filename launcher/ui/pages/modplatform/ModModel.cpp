@@ -29,7 +29,7 @@
 
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
-#include "minecraft/mod/ModFolderModel.h"
+#include "minecraft/mod/ModFolderModel.hpp"
 #include "modplatform/ModIndex.h"
 
 #include <QMessageBox>

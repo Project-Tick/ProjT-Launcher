@@ -66,7 +66,7 @@
 #include "ui/dialogs/ResourceDownloadDialog.h"
 #include "ui_ExternalResourcesPage.h"
 
-#include "minecraft/mod/TexturePackFolderModel.h"
+#include "minecraft/mod/TexturePackFolderModel.hpp"
 
 class TexturePackPage : public ExternalResourcesPage
 {

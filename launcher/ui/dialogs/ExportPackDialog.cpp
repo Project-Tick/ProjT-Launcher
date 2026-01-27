@@ -39,7 +39,7 @@
  * ======================================================================== */
 
 #include "ExportPackDialog.h"
-#include "minecraft/mod/ResourceFolderModel.h"
+#include "minecraft/mod/ResourceFolderModel.hpp"
 #include "modplatform/ModIndex.h"
 #include "modplatform/flame/FlamePackExportTask.h"
 #include "ui/dialogs/CustomMessageBox.h"

@@ -62,7 +62,7 @@
 
 #include "ResourceDownloadTask.h"
 
-#include "minecraft/mod/TexturePack.h"
+#include "minecraft/mod/TexturePack.hpp"
 
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/ProgressDialog.h"

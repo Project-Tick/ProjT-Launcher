@@ -67,7 +67,7 @@
 #include <QString>
 
 #include "Mod.hpp"
-#include "ResourceFolderModel.h"
+#include "ResourceFolderModel.hpp"
 
 class BaseInstance;
 class QFileSystemWatcher;
