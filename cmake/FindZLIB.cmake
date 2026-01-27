@@ -25,5 +25,4 @@ if(TARGET ZLIB::ZLIB)
     return()
 endif()
 
-# Fall back to standard CMake FindZLIB for system libraries
-include(${CMAKE_ROOT}/Modules/FindZLIB.cmake)
+message(FATAL_ERROR "Bundled ZLIB target not found. Ensure zlib is included via add_subdirectory(zlib) before find_package(ZLIB).")

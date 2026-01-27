@@ -37,12 +37,32 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 
-# Output all executables and shared libs in the main build folder, not in subfolders.
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-if(UNIX)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-endif()
-set(CMAKE_JAVA_TARGET_OUTPUT_DIR ${PROJECT_BINARY_DIR}/jars)
+# Output layout
+set(Launcher_OUTPUT_ROOT "${PROJECT_BINARY_DIR}/out" CACHE PATH "Root output directory for build artifacts")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${Launcher_OUTPUT_ROOT}/root/$<CONFIG>")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${Launcher_OUTPUT_ROOT}/root/$<CONFIG>")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${Launcher_OUTPUT_ROOT}/root/$<CONFIG>")
+set(CMAKE_JAVA_TARGET_OUTPUT_DIR "${Launcher_OUTPUT_ROOT}/root/jars")
+
+macro(projt_push_output_dirs name)
+    set(_PROJT_PREV_RUNTIME "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+    set(_PROJT_PREV_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+    set(_PROJT_PREV_ARCHIVE "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
+    set(_PROJT_PREV_JAVA "${CMAKE_JAVA_TARGET_OUTPUT_DIR}")
+    set(_projt_dir "${Launcher_OUTPUT_ROOT}/${name}")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${_projt_dir}/$<CONFIG>")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${_projt_dir}/$<CONFIG>")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${_projt_dir}/$<CONFIG>")
+    set(CMAKE_JAVA_TARGET_OUTPUT_DIR "${_projt_dir}/jars")
+endmacro()
+
+macro(projt_pop_output_dirs)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${_PROJT_PREV_RUNTIME}")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${_PROJT_PREV_LIBRARY}")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${_PROJT_PREV_ARCHIVE}")
+    set(CMAKE_JAVA_TARGET_OUTPUT_DIR "${_PROJT_PREV_JAVA}")
+    unset(_projt_dir)
+endmacro()
 
 ######## Set compiler flags ########
 set(CMAKE_CXX_STANDARD_REQUIRED true)
@@ -210,8 +230,8 @@ endif()
 
 option(BUILD_TESTING "Build the testing tree." ON)
 option(BUILD_FUZZERS "Build fuzzing targets." OFF)
-option(Launcher_ALLOW_FETCHCONTENT "Allow FetchContent fallback for tomlplusplus" ON)
-option(Launcher_ALLOW_ECM_FETCHCONTENT "Allow FetchContent fallback for ECM" ON)
+option(Launcher_ALLOW_FETCHCONTENT "Allow FetchContent fallback for tomlplusplus" OFF)
+option(Launcher_ALLOW_ECM_FETCHCONTENT "Allow FetchContent fallback for ECM" OFF)
 
 include(cmake/versions.cmake)
 
@@ -247,15 +267,6 @@ macro(launcher_fetchcontent_makeavailable content_name)
     unset(launcher_suppress_dev_value)
 endmacro()
 
-# NuGet ECM (MSVC)
-if(WIN32 AND NOT MINGW)
-    file(GLOB NUGET_ECM_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/extra-cmake-modules*")
-    if(NUGET_ECM_ROOTS)
-        list(GET NUGET_ECM_ROOTS 0 ECM_ROOT_DIR)
-        list(APPEND CMAKE_PREFIX_PATH "${ECM_ROOT_DIR}/build/native")
-    endif()
-endif()
-
 # extra-cmake-modules (ECM) - Using bundled fork
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/modules")
     message(STATUS "Using bundled extra-cmake-modules")
@@ -264,10 +275,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/modules")
     # Add kde-modules for KDEInstallDirs and other KDE modules
     list(APPEND ECM_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/extra-cmake-modules/kde-modules")
 else()
-    find_package(ECM QUIET NO_MODULE)
-    if(NOT ECM_FOUND)
-        message(FATAL_ERROR "ECM not found. extra-cmake-modules/ directory is missing.")
-    endif()
+    message(FATAL_ERROR "ECM not found. extra-cmake-modules/ directory is missing.")
 endif()
 set(CMAKE_MODULE_PATH "${ECM_MODULE_PATH};${CMAKE_MODULE_PATH}")
 include(CTest)
@@ -279,9 +287,12 @@ endif()
 ##################################### Set Application options #####################################
 
 ######## Set URLs ########
-set(Launcher_NEWS_RSS_URL "https://projecttick.org/projtlauncher/feed/feed.xml" CACHE STRING "URL to fetch ProjT Launcher's news RSS feed from.")
-set(Launcher_NEWS_OPEN_URL "https://projecttick.org/projtlauncher/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
+set(Launcher_NEWS_RSS_URL "https://projecttick.org/product/projt-launcher/feed.xml" CACHE STRING "URL to fetch ProjT Launcher's news RSS feed from.")
+set(Launcher_NEWS_OPEN_URL "https://projecttick.org/product/projt-launcher/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
 set(Launcher_HELP_URL "https://projecttick.org/handbook/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
+set(Launcher_HUB_HOME_URL "https://projecttick.org/p/projt-launcher/" CACHE STRING "Launcher Hub home URL")
+set(Launcher_HUB_COMMUNITY_URL "https://projecttick.org/projtlauncher/discord" CACHE STRING "Launcher Hub community URL")
+set(Launcher_HUB_SEARCH_URL "https://www.google.com/search?q=%1" CACHE STRING "Search URL (with %1 placeholder) used by the Launcher Hub address bar")
 set(Launcher_LOGIN_CALLBACK_URL "https://projecttick.org/projtlauncher/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
 set(Launcher_FMLLIBS_BASE_URL "https://files.projecttick.org/fmllibs/" CACHE STRING "URL for FML Libraries.")
 
@@ -308,7 +319,7 @@ set(Launcher_UPDATER_GITHUB_REPO "https://github.com/Project-Tick/ProjT-Launcher
 set(Launcher_BUILD_ARTIFACT "" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
 
 # The metadata server
-set(Launcher_META_URL "http://meta.projecttick.org/" CACHE STRING "URL to fetch Launcher's meta files from.")
+set(Launcher_META_URL "https://meta.projecttick.org/" CACHE STRING "URL to fetch Launcher's meta files from.")
 
 # Imgur API Client ID
 set(Launcher_IMGUR_CLIENT_ID "5b97b0713fba4a3" CACHE STRING "Client ID you can get from Imgur when you register an application")
@@ -440,31 +451,16 @@ if(WIN32 AND NOT MINGW)
         endif()
     endif()
 
-    # Find tomlplusplus from NuGet (if present)
-    file(GLOB NUGET_TOML_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/tomlplusplus*")
-    if(NUGET_TOML_ROOTS)
-        list(GET NUGET_TOML_ROOTS 0 TOML_ROOT)
-        list(APPEND CMAKE_PREFIX_PATH "${TOML_ROOT}/build/native")
-    endif()
-
-    # Find QuaZip-Qt6 from NuGet (if present)
-    file(GLOB NUGET_QUAZIP_ROOTS "${CMAKE_SOURCE_DIR}/dependencies/quazip-qt6*")
-    if(NUGET_QUAZIP_ROOTS)
-        list(GET NUGET_QUAZIP_ROOTS 0 QUAZIP_ROOT)
-        list(APPEND CMAKE_PREFIX_PATH "${QUAZIP_ROOT}/build/native")
-    endif()
-    
     list(APPEND CMAKE_PREFIX_PATH "${ZLIB_ROOT}" "${OPENSSL_ROOT_DIR}")
     list(APPEND CMAKE_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/dependencies")
 endif()
 
-# Try to find system zlib first
-find_package(ZLIB QUIET)
+# Always use bundled zlib
+set(ZLIB_FOUND FALSE)
 
-# System Libraries - Using bundled zlib (only if ZLIB not already found)
-if(NOT ZLIB_FOUND)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
-        message(STATUS "Using bundled zlib")
+# System Libraries - Using bundled zlib only
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
+    message(STATUS "Using bundled zlib")
         set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
         # For fuzzing builds, disable shared library to avoid sanitizer symbol conflicts
         if(BUILD_FUZZERS)
@@ -489,7 +485,9 @@ if(NOT ZLIB_FOUND)
             message(STATUS "OSS-Fuzz build: Stripping sanitizer flags from zlib")
         endif()
         
+        projt_push_output_dirs("zlib")
         add_subdirectory(zlib)
+        projt_pop_output_dirs()
         
         # Restore flags after zlib subdirectory
         set(CMAKE_C_FLAGS "${_SAVED_CMAKE_C_FLAGS}")
@@ -518,16 +516,15 @@ if(NOT ZLIB_FOUND)
         set(ZLIB_LIBRARY "ZLIB::ZLIB")
         set(ZLIB_LIBRARIES "ZLIB::ZLIB")
         set(ZLIB_FOUND TRUE)
-    else()
-        message(FATAL_ERROR "Bundled zlib not found in ${CMAKE_CURRENT_SOURCE_DIR}/zlib/ and system zlib not found")
-    endif()
+else()
+    message(FATAL_ERROR "Bundled zlib not found in ${CMAKE_CURRENT_SOURCE_DIR}/zlib/")
 endif()
 
 if(NOT LAUNCHER_FUZZ_ONLY)
     if(NOT OpenSSL_FOUND)
         find_package(OpenSSL REQUIRED)
     endif()
-    find_package(Qt6 REQUIRED COMPONENTS Core CoreTools Widgets Concurrent Network Test Xml Core5Compat NetworkAuth OpenGL)
+    find_package(Qt6 REQUIRED COMPONENTS Core CoreTools Widgets Concurrent Network Test Xml Core5Compat NetworkAuth OpenGL WebEngineWidgets WebChannel)
     find_package(Qt6 COMPONENTS DBus)
     list(APPEND Launcher_QT_DBUS Qt6::DBus)
     list(APPEND Launcher_QT_LIBS Qt6::Core5Compat)
@@ -548,7 +545,9 @@ if(NOT LAUNCHER_FUZZ_ONLY)
         # Disable instrumentation for external dependencies to avoid linker issues
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        projt_push_output_dirs("bzip2")
         add_subdirectory(bzip2)
+        projt_pop_output_dirs()
         set(BZIP2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bzip2" CACHE PATH "" FORCE)
     else()
         message(FATAL_ERROR "Bundled bzip2 not found")
@@ -565,67 +564,42 @@ if(NOT LAUNCHER_FUZZ_ONLY)
         # Disable instrumentation for external dependencies to avoid linker issues
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        projt_push_output_dirs("quazip")
         add_subdirectory(quazip)
+        projt_pop_output_dirs()
     else()
         message(FATAL_ERROR "Bundled QuaZip not found")
     endif()
 
-    # tomlplusplus - Using bundled fork
+    # tomlplusplus - Using bundled fork only
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tomlplusplus/CMakeLists.txt")
         message(STATUS "Using bundled tomlplusplus")
+        projt_push_output_dirs("tomlplusplus")
         add_subdirectory(tomlplusplus)
+        projt_pop_output_dirs()
     else()
-        find_package(tomlplusplus 3.2.0 QUIET)
-        if(NOT tomlplusplus_FOUND)
-            message(FATAL_ERROR "tomlplusplus not found. tomlplusplus/ directory is missing.")
-        endif()
+        message(FATAL_ERROR "tomlplusplus not found. tomlplusplus/ directory is missing.")
     endif()
 endif()
 
-# cmark - Using bundled or system library
+# cmark - Using bundled only
 if(NOT LAUNCHER_FUZZ_ONLY)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmark/CMakeLists.txt")
         message(STATUS "Using bundled cmark")
-        set(CMARK_TESTS OFF CACHE BOOL "" FORCE)
         set(CMARK_SHARED ON CACHE BOOL "" FORCE)
+        projt_push_output_dirs("cmark")
         add_subdirectory(cmark)
+        projt_pop_output_dirs()
         if(TARGET cmark AND NOT TARGET cmark::cmark)
             add_library(cmark::cmark ALIAS cmark)
         endif()
     else()
-        find_library(CMARK_LIB NAMES cmark)
-        find_path(CMARK_INC NAMES cmark.h)
-        if(CMARK_LIB AND CMARK_INC)
-            message(STATUS "Found system cmark")
-            if(NOT TARGET cmark::cmark)
-                add_library(cmark::cmark UNKNOWN IMPORTED)
-                set_target_properties(cmark::cmark PROPERTIES 
-                    IMPORTED_LOCATION "${CMARK_LIB}"
-                    INTERFACE_INCLUDE_DIRECTORIES "${CMARK_INC}")
-            endif()
-        else()
-            message(FATAL_ERROR "cmark not found. cmark/ directory is missing and system cmark not available.")
-        endif()
+        message(FATAL_ERROR "cmark not found. cmark/ directory is missing.")
     endif()
 endif()
 
 if(NOT LAUNCHER_FUZZ_ONLY)
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(QRENCODE IMPORTED_TARGET libqrencode)
-    endif()
-
-    if(TARGET PkgConfig::QRENCODE)
-        add_library(qrcodegenerator ALIAS PkgConfig::QRENCODE)
-    else()
-        find_library(QRENCODE_LIB NAMES qrencode libqrencode)
-        find_path(QRENCODE_INC NAMES qrencode.h)
-        if(QRENCODE_LIB AND QRENCODE_INC)
-            add_library(qrcodegenerator UNKNOWN IMPORTED)
-            set_target_properties(qrcodegenerator PROPERTIES
-                IMPORTED_LOCATION "${QRENCODE_LIB}"
-                INTERFACE_INCLUDE_DIRECTORIES "${QRENCODE_INC}")
-        else()
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libqrencode/CMakeLists.txt")
         message(STATUS "Using bundled libqrencode")
         # Set CMake policy version to avoid version compatibility error
         set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
@@ -647,7 +621,9 @@ if(NOT LAUNCHER_FUZZ_ONLY)
         endif()
         set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
         set(WITH_TESTS OFF CACHE BOOL "" FORCE)
+        projt_push_output_dirs("libqrencode")
         add_subdirectory(libqrencode)
+        projt_pop_output_dirs()
         if(WIN32)
             set(BUILD_SHARED_LIBS "${_qrencode_prev_build_shared_libs}" CACHE BOOL "" FORCE)
         endif()
@@ -675,7 +651,8 @@ if(NOT LAUNCHER_FUZZ_ONLY)
         if(NOT DEFINED QRENCODE_INC OR QRENCODE_INC STREQUAL "")
             set(QRENCODE_INC "${CMAKE_CURRENT_SOURCE_DIR}/libqrencode;${CMAKE_CURRENT_SOURCE_DIR}/libqrencode/include;${CMAKE_CURRENT_SOURCE_DIR}/libqrencode/lib" CACHE PATH "QRENCODE include dir" FORCE)
         endif()
-        endif()
+    else()
+        message(FATAL_ERROR "libqrencode not found. libqrencode/ directory is missing.")
     endif()
 endif()
 
@@ -687,7 +664,9 @@ endif()
 
 if(NOT LAUNCHER_FUZZ_ONLY)
     set(Launcher_APP_BINARY_NAME "projtlauncher" CACHE STRING "Name of the Launcher binary")
+    projt_push_output_dirs("program_info")
     add_subdirectory(program_info)
+    projt_pop_output_dirs()
 endif()
 
 ####################################### Install layout #######################################
@@ -796,38 +775,63 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libnbtplusplus/CMakeLists.txt")
     option(NBT_BUILD_SHARED "Build NBT shared library" OFF)
     option(NBT_USE_ZLIB "Build NBT library with zlib support" ON)
     option(NBT_BUILD_TESTS "Build NBT library tests" OFF)
+    projt_push_output_dirs("libnbtplusplus")
     add_subdirectory(./libnbtplusplus)
+    projt_pop_output_dirs()
 else()
-    find_package(libnbt++ REQUIRED)
+    message(FATAL_ERROR "libnbtplusplus not found. libnbtplusplus/ directory is missing.")
 endif()
 
 if(NOT LAUNCHER_FUZZ_ONLY)
+    projt_push_output_dirs("systeminfo")
     add_subdirectory(./systeminfo) # system information library
+    projt_pop_output_dirs()
 endif()
 if(NOT LAUNCHER_FUZZ_ONLY)
+    projt_push_output_dirs("launcherjava")
     add_subdirectory(./launcherjava) # java based launcher part for Minecraft
+    projt_pop_output_dirs()
+    projt_push_output_dirs("javacheck")
     add_subdirectory(./javacheck) # java compatibility checker
+    projt_pop_output_dirs()
+    projt_push_output_dirs("rainbow")
     add_subdirectory(./rainbow) # Qt extension for colors
+    projt_pop_output_dirs()
+    projt_push_output_dirs("LocalPeer")
     add_subdirectory(./LocalPeer) # fork of a library from Qt solutions
+    projt_pop_output_dirs()
+    projt_push_output_dirs("gamemode")
     add_subdirectory(./gamemode)
+    projt_pop_output_dirs()
+    projt_push_output_dirs("murmur2")
     add_subdirectory(./murmur2) # Hash for usage with the CurseForge API
+    projt_pop_output_dirs()
+    projt_push_output_dirs("qdcss")
     add_subdirectory(./qdcss) # css parser
+    projt_pop_output_dirs()
 endif()
 
 ############################### Built Artifacts ###############################
 
 if(NOT LAUNCHER_FUZZ_ONLY)
+    projt_push_output_dirs("buildconfig")
     add_subdirectory(buildconfig)
+    projt_pop_output_dirs()
 endif()
 
 if(BUILD_TESTING)
+    projt_push_output_dirs("tests")
     add_subdirectory(tests)
+    projt_pop_output_dirs()
 endif()
 if(BUILD_FUZZERS)
+    projt_push_output_dirs("fuzz")
     add_subdirectory(fuzz EXCLUDE_FROM_ALL)
+    projt_pop_output_dirs()
 endif()
 # NOTE: this must always be last to appease the CMake deity of quirky install command evaluation order.
 if(NOT LAUNCHER_FUZZ_ONLY)
+    projt_push_output_dirs("launcher")
     add_subdirectory(launcher)
+    projt_pop_output_dirs()
 endif()
-

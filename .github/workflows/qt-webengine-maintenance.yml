@@ -1,0 +1,91 @@
+name: Qt WebEngine Maintenance
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: qt-webengine-maintenance
+  cancel-in-progress: false
+
+jobs:
+  discover-branches:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Build branch matrix
+        id: matrix
+        run: |
+          git fetch --prune --depth=1 origin "+refs/heads/*:refs/remotes/origin/*"
+
+          branches=("main")
+          while read -r ref; do
+            name="${ref##*/}"
+            branches+=("$name")
+          done < <(git ls-remote --heads origin "release-*" | awk '{print $2}')
+
+          uniq=()
+          for b in "${branches[@]}"; do
+            skip=false
+            for u in "${uniq[@]}"; do
+              if [[ "$u" == "$b" ]]; then
+                skip=true
+                break
+              fi
+            done
+            if [[ "$skip" == false ]]; then
+              uniq+=("$b")
+            fi
+          done
+
+          json=$(printf '%s\n' "${uniq[@]}" | jq -R -s -c 'split("\n")[:-1]')
+          echo "matrix={\"branch\":$json}" >> "$GITHUB_OUTPUT"
+
+  update-qt:
+    needs: discover-branches
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-branches.outputs.matrix) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "projt-bot"
+          git config user.email "bot@projecttick.org"
+
+      - name: Update Qt version
+        id: update
+        run: |
+          scripts/update-qt-version.sh
+
+      - name: Create pull request
+        if: steps.update.outputs.qt_version_changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/qt-${{ steps.update.outputs.qt_version_latest }}-${{ matrix.branch }}
+          base: ${{ matrix.branch }}
+          commit-message: "chore: bump Qt to ${{ steps.update.outputs.qt_version_latest }}"
+          title: "chore: bump Qt to ${{ steps.update.outputs.qt_version_latest }}"
+          body: |
+            Automated daily Qt update.
+
+            Current: ${{ steps.update.outputs.qt_version_current }}
+            Latest:  ${{ steps.update.outputs.qt_version_latest }}

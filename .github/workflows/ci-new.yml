@@ -115,6 +115,7 @@ jobs:
     with:
       ref: ${{ github.sha }}
       build-type: Debug
+      output-root: ${{ github.workspace }}/build/out
     secrets: inherit
       
   build-projt-launcher-release:
@@ -131,6 +132,7 @@ jobs:
       ref: ${{ github.sha }}
       build-type: Release
       force-prepare-yes: true
+      output-root: ${{ github.workspace }}/build/out
     secrets: inherit
 
   flatpak-build:

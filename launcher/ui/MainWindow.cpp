@@ -118,8 +118,8 @@
 #include "ui/dialogs/ExportPackDialog.h"
 #include "ui/dialogs/IconPickerDialog.h"
 #include "ui/dialogs/ImportResourceDialog.h"
+#include "ui/dialogs/LauncherHubDialog.h"
 #include "ui/dialogs/NewInstanceDialog.h"
-#include "ui/dialogs/NewsDialog.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/instanceview/InstanceDelegate.h"
 #include "ui/instanceview/InstanceProxyModel.h"
@@ -1227,17 +1227,17 @@ void MainWindow::processURLs(QList<QUrl> urls)
 
 void MainWindow::on_actionREDDIT_triggered()
 {
-	DesktopServices::openUrl(QUrl(BuildConfig.SUBREDDIT_URL));
+	openLauncherHub(QUrl(BuildConfig.SUBREDDIT_URL));
 }
 
 void MainWindow::on_actionDISCORD_triggered()
 {
-	DesktopServices::openUrl(QUrl(BuildConfig.DISCORD_URL));
+	openLauncherHub(QUrl(BuildConfig.DISCORD_URL));
 }
 
 void MainWindow::on_actionMATRIX_triggered()
 {
-	DesktopServices::openUrl(QUrl(BuildConfig.MATRIX_URL));
+	openLauncherHub(QUrl(BuildConfig.MATRIX_URL));
 }
 
 void MainWindow::on_actionChangeInstIcon_triggered()
@@ -1531,22 +1531,43 @@ void MainWindow::on_actionAddToPATH_triggered()
 
 void MainWindow::on_actionOpenWiki_triggered()
 {
-	DesktopServices::openUrl(QUrl(BuildConfig.HELP_URL.arg("")));
+	openLauncherHub(QUrl(BuildConfig.HELP_URL.arg("")));
 }
 
 void MainWindow::on_actionMoreNews_triggered()
 {
-	auto entries = m_newsChecker->getNewsEntries();
-	NewsDialog news_dialog(entries, this);
-	news_dialog.exec();
+	openLauncherHub(QUrl(BuildConfig.NEWS_OPEN_URL));
+}
+
+void MainWindow::on_actionLauncherHub_triggered()
+{
+	openLauncherHub();
 }
 
 void MainWindow::newsButtonClicked()
 {
-	auto entries = m_newsChecker->getNewsEntries();
-	NewsDialog news_dialog(entries, this);
-	news_dialog.toggleArticleList();
-	news_dialog.exec();
+	const auto entries = m_newsChecker->getNewsEntries();
+	if (!entries.isEmpty() && entries.front() && !entries.front()->link.isEmpty())
+	{
+		openLauncherHub(QUrl(entries.front()->link));
+		return;
+	}
+	openLauncherHub(QUrl(BuildConfig.NEWS_OPEN_URL));
+}
+
+void MainWindow::openLauncherHub(const QUrl& url)
+{
+	if (!m_launcherHubDialog)
+	{
+		m_launcherHubDialog = new LauncherHubDialog(this);
+	}
+	if (url.isValid())
+	{
+		m_launcherHubDialog->openUrl(url);
+	}
+	m_launcherHubDialog->show();
+	m_launcherHubDialog->raise();
+	m_launcherHubDialog->activateWindow();
 }
 
 void MainWindow::onCatChanged(int)

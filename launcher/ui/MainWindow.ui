@@ -53,6 +53,7 @@
    <addaction name="separator"/>
    <addaction name="actionFoldersButton"/>
    <addaction name="actionSettings"/>
+   <addaction name="actionLauncherHub"/>
    <addaction name="actionHelpButton"/>
    <addaction name="actionCheckUpdate"/>
    <addaction name="separator"/>
@@ -221,20 +222,38 @@
     <addaction name="separator"/>
     <addaction name="actionMATRIX"/>
     <addaction name="actionDISCORD"/>
-    <addaction name="actionREDDIT"/>
-    <addaction name="separator"/>
+   <addaction name="actionREDDIT"/>
+   <addaction name="separator"/>
     <addaction name="actionMoreNews"/>
     <addaction name="actionCheckUpdate"/>
     <addaction name="actionOpenWiki"/>
     <addaction name="actionAbout"/>
+   </widget>
+   <widget class="QMenu" name="hubMenu">
+    <property name="title">
+     <string>&amp;Hub</string>
+    </property>
+    <addaction name="actionLauncherHub"/>
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="editMenu"/>
    <addaction name="viewMenu"/>
    <addaction name="foldersMenu"/>
    <addaction name="accountsMenu"/>
+   <addaction name="hubMenu"/>
    <addaction name="helpMenu"/>
   </widget>
+  <action name="actionLauncherHub">
+   <property name="icon">
+    <iconset theme="internet-services"/>
+   </property>
+   <property name="text">
+    <string>Launcher Hub...</string>
+   </property>
+   <property name="toolTip">
+    <string>Open the Project Tick Launcher Hub inside the launcher.</string>
+   </property>
+  </action>
   <action name="actionMoreNews">
    <property name="icon">
     <iconset theme="news"/>

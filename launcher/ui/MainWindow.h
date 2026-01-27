@@ -61,7 +61,9 @@
 #include <memory>
 
 #include <QMainWindow>
+#include <QPointer>
 #include <QProcess>
+#include <QUrl>
 #include <QTimer>
 
 #include "BaseInstance.h"
@@ -79,6 +81,7 @@ class InstanceView;
 class KonamiCode;
 class InstanceTask;
 class LabeledToolButton;
+class LauncherHubDialog;
 
 namespace Ui
 {
@@ -163,6 +166,8 @@ class MainWindow : public QMainWindow
 	void on_actionOpenWiki_triggered();
 
 	void on_actionMoreNews_triggered();
+
+	void on_actionLauncherHub_triggered();
 
 	void newsButtonClicked();
 
@@ -252,6 +257,8 @@ class MainWindow : public QMainWindow
 	void updateStatusCenter();
 	void setInstanceActionsEnabled(bool enabled);
 
+	void openLauncherHub(const QUrl& url = QUrl());
+
 	void runModalTask(Task* task);
 	void instanceFromInstanceTask(InstanceTask* task);
 
@@ -277,4 +284,6 @@ class MainWindow : public QMainWindow
 
 	// managed by the application object
 	Task* m_versionLoadTask = nullptr;
+
+	QPointer<LauncherHubDialog> m_launcherHubDialog;
 };

@@ -130,6 +130,9 @@ Config::Config()
     NEWS_RSS_URL = "@Launcher_NEWS_RSS_URL@";
     NEWS_OPEN_URL = "@Launcher_NEWS_OPEN_URL@";
     HELP_URL = "@Launcher_HELP_URL@";
+    HUB_HOME_URL = "@Launcher_HUB_HOME_URL@";
+    HUB_COMMUNITY_URL = "@Launcher_HUB_COMMUNITY_URL@";
+    HUB_SEARCH_URL = "@Launcher_HUB_SEARCH_URL@";
     LOGIN_CALLBACK_URL = "@Launcher_LOGIN_CALLBACK_URL@";
     IMGUR_CLIENT_ID = "@Launcher_IMGUR_CLIENT_ID@";
     MSA_CLIENT_ID = "@Launcher_MSA_CLIENT_ID@";

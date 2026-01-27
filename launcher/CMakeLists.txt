@@ -852,6 +852,8 @@ SET(LAUNCHER_SOURCES
     ui/widgets/FileIgnoreProxy.h
     ui/widgets/FastFileIconProvider.cpp
     ui/widgets/FastFileIconProvider.h
+    ui/widgets/LauncherHubWidget.cpp
+    ui/widgets/LauncherHubWidget.h
 
     # GUI - setup wizard
     ui/setupwizard/SetupWizard.h
@@ -1079,6 +1081,8 @@ SET(LAUNCHER_SOURCES
     ui/dialogs/NewInstanceDialog.h
     ui/dialogs/NewsDialog.cpp
     ui/dialogs/NewsDialog.h
+    ui/dialogs/LauncherHubDialog.cpp
+    ui/dialogs/LauncherHubDialog.h
     ui/pagedialog/PageDialog.cpp
     ui/pagedialog/PageDialog.h
     ui/dialogs/ProgressDialog.cpp
@@ -1322,11 +1326,7 @@ target_link_libraries(Launcher_logic
     Qt${QT_VERSION_MAJOR}::Widgets
     qrcodegenerator
 )
-if(TARGET PkgConfig::tomlplusplus)
-    target_link_libraries(Launcher_logic PkgConfig::tomlplusplus)
-else()
-    target_link_libraries(Launcher_logic tomlplusplus::tomlplusplus)
-endif()
+target_link_libraries(Launcher_logic tomlplusplus::tomlplusplus)
 
 if (UNIX AND NOT CYGWIN AND NOT APPLE)
     target_link_libraries(Launcher_logic
@@ -1340,6 +1340,8 @@ target_link_libraries(Launcher_logic
     Qt${QT_VERSION_MAJOR}::Concurrent
     Qt${QT_VERSION_MAJOR}::Gui
     Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::WebEngineWidgets
+    Qt${QT_VERSION_MAJOR}::WebChannel
     Qt${QT_VERSION_MAJOR}::NetworkAuth
     Qt${QT_VERSION_MAJOR}::OpenGL
     ${Launcher_QT_DBUS}
@@ -1676,5 +1678,3 @@ if(APPLE)
     # Install ModernDark theme to bundle resources
     install(DIRECTORY "ui/themes/ModernDark" DESTINATION "${RESOURCES_DEST_DIR}/themes" COMPONENT Runtime)
 endif()
-
-

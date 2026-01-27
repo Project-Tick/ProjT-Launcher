@@ -15,6 +15,11 @@ on:
         description: 'Ref (branch, tag, or SHA) to check out'
         type: string
         required: false
+      output-root:
+        description: Root directory for build outputs
+        type: string
+        required: false
+        default: ""
   workflow_dispatch:
     inputs:
       build-type:
@@ -32,6 +37,10 @@ on:
         description: Name of the uploaded artifact
         required: true
         default: Linux
+      output-root:
+        description: Root directory for build outputs
+        required: false
+        default: ""
       qt-version:
         description: Version of Qt to use
         required: true
@@ -100,7 +109,8 @@ permissions:
 env:
   NODE_NO_WARNINGS: 1
   CHECKOUT_REF: ${{ inputs.ref || github.event.inputs.ref || github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha || github.sha }}
-  CMAKE_CONFIGURE_ARGS: -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING
+  OUTPUT_ROOT: ${{ inputs.output-root || github.event.inputs.output-root || format('{0}/build/out', github.workspace) }}
+  CMAKE_CONFIGURE_ARGS: -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT=${{ inputs.output-root || github.event.inputs.output-root || format('{0}/build/out', github.workspace) }}
 
 jobs:
   flake-check:

@@ -102,6 +102,8 @@ stdenv.mkDerivation {
     kdePackages.qtbase
     kdePackages.qtnetworkauth
     kdePackages.qt5compat
+    kdePackages.qtwebchannel
+    kdePackages.qtwebengine
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_14 ]
   ++ lib.optional gamemodeSupport gamemode;

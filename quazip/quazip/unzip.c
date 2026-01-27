@@ -73,9 +73,7 @@
 #include <string.h>
 
 #include <zlib.h>
-#if (ZLIB_VERNUM < 0x1270)
-typedef uLongf z_crc_t;
-#endif
+/* z_crc_t is provided by our bundled zlib */
 #include "unzip.h"
 
 #ifdef STDC

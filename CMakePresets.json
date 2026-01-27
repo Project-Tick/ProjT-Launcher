@@ -16,7 +16,8 @@
 				"Launcher_BUILD_ARTIFACT": "$penv{ARTIFACT_NAME}",
 				"Launcher_BUILD_PLATFORM": "$penv{BUILD_PLATFORM}",
 				"Launcher_ENABLE_JAVA_DOWNLOADER": "ON",
-				"ENABLE_LTO": "ON"
+				"ENABLE_LTO": "ON",
+				"Launcher_OUTPUT_ROOT": "${sourceDir}/build/out"
 			}
 		},
 		{
@@ -124,6 +125,530 @@
 				"rhs": "Windows"
 			},
 			"configurePreset": "windows_msvc"
+		},
+		{
+			"name": "build-linux-base",
+			"hidden": true,
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			},
+			"configurePreset": "linux"
+		},
+		{
+			"name": "build-macos-base",
+			"hidden": true,
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
+			},
+			"configurePreset": "macos"
+		},
+		{
+			"name": "build-windows-mingw-base",
+			"hidden": true,
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			},
+			"configurePreset": "windows_mingw"
+		},
+		{
+			"name": "build-windows-msvc-base",
+			"hidden": true,
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			},
+			"configurePreset": "windows_msvc"
+		},
+
+		{
+			"name": "linux-launcher",
+			"inherits": ["build-linux-base"],
+			"targets": ["ProjTLauncher"]
+		},
+		{
+			"name": "macos-launcher",
+			"inherits": ["build-macos-base"],
+			"targets": ["ProjTLauncher"]
+		},
+		{
+			"name": "windows-mingw-launcher",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["ProjTLauncher"]
+		},
+		{
+			"name": "windows-msvc-launcher",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["ProjTLauncher"]
+		},
+
+		{
+			"name": "linux-launcherjava",
+			"inherits": ["build-linux-base"],
+			"targets": ["ProjTLaunch", "ProjTLaunchLegacy"]
+		},
+		{
+			"name": "macos-launcherjava",
+			"inherits": ["build-macos-base"],
+			"targets": ["ProjTLaunch", "ProjTLaunchLegacy"]
+		},
+		{
+			"name": "windows-mingw-launcherjava",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["ProjTLaunch", "ProjTLaunchLegacy"]
+		},
+		{
+			"name": "windows-msvc-launcherjava",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["ProjTLaunch", "ProjTLaunchLegacy"]
+		},
+
+		{
+			"name": "linux-javacheck",
+			"inherits": ["build-linux-base"],
+			"targets": ["JavaCheck"]
+		},
+		{
+			"name": "macos-javacheck",
+			"inherits": ["build-macos-base"],
+			"targets": ["JavaCheck"]
+		},
+		{
+			"name": "windows-mingw-javacheck",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["JavaCheck"]
+		},
+		{
+			"name": "windows-msvc-javacheck",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["JavaCheck"]
+		},
+
+		{
+			"name": "linux-zlib",
+			"inherits": ["build-linux-base"],
+			"targets": ["zlibstatic"]
+		},
+		{
+			"name": "macos-zlib",
+			"inherits": ["build-macos-base"],
+			"targets": ["zlibstatic"]
+		},
+		{
+			"name": "windows-mingw-zlib",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["zlibstatic"]
+		},
+		{
+			"name": "windows-msvc-zlib",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["zlibstatic"]
+		},
+
+		{
+			"name": "linux-bzip2",
+			"inherits": ["build-linux-base"],
+			"targets": ["bz2_static"]
+		},
+		{
+			"name": "macos-bzip2",
+			"inherits": ["build-macos-base"],
+			"targets": ["bz2_static"]
+		},
+		{
+			"name": "windows-mingw-bzip2",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["bz2_static"]
+		},
+		{
+			"name": "windows-msvc-bzip2",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["bz2_static"]
+		},
+
+		{
+			"name": "linux-quazip",
+			"inherits": ["build-linux-base"],
+			"targets": ["QuaZip"]
+		},
+		{
+			"name": "macos-quazip",
+			"inherits": ["build-macos-base"],
+			"targets": ["QuaZip"]
+		},
+		{
+			"name": "windows-mingw-quazip",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["QuaZip"]
+		},
+		{
+			"name": "windows-msvc-quazip",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["QuaZip"]
+		},
+
+		{
+			"name": "linux-cmark",
+			"inherits": ["build-linux-base"],
+			"targets": ["cmark", "cmark_exe"]
+		},
+		{
+			"name": "macos-cmark",
+			"inherits": ["build-macos-base"],
+			"targets": ["cmark", "cmark_exe"]
+		},
+		{
+			"name": "windows-mingw-cmark",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["cmark", "cmark_exe"]
+		},
+		{
+			"name": "windows-msvc-cmark",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["cmark", "cmark_exe"]
+		},
+
+		{
+			"name": "linux-tomlplusplus",
+			"inherits": ["build-linux-base"],
+			"targets": ["tomlplusplus_tomlplusplus"]
+		},
+		{
+			"name": "macos-tomlplusplus",
+			"inherits": ["build-macos-base"],
+			"targets": ["tomlplusplus_tomlplusplus"]
+		},
+		{
+			"name": "windows-mingw-tomlplusplus",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["tomlplusplus_tomlplusplus"]
+		},
+		{
+			"name": "windows-msvc-tomlplusplus",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["tomlplusplus_tomlplusplus"]
+		},
+
+		{
+			"name": "linux-libqrencode",
+			"inherits": ["build-linux-base"],
+			"targets": ["qrencode"]
+		},
+		{
+			"name": "macos-libqrencode",
+			"inherits": ["build-macos-base"],
+			"targets": ["qrencode"]
+		},
+		{
+			"name": "windows-mingw-libqrencode",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["qrencode"]
+		},
+		{
+			"name": "windows-msvc-libqrencode",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["qrencode"]
+		},
+
+		{
+			"name": "linux-libnbtplusplus",
+			"inherits": ["build-linux-base"],
+			"targets": ["nbt++"]
+		},
+		{
+			"name": "macos-libnbtplusplus",
+			"inherits": ["build-macos-base"],
+			"targets": ["nbt++"]
+		},
+		{
+			"name": "windows-mingw-libnbtplusplus",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["nbt++"]
+		},
+		{
+			"name": "windows-msvc-libnbtplusplus",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["nbt++"]
+		},
+
+		{
+			"name": "linux-buildconfig",
+			"inherits": ["build-linux-base"],
+			"targets": ["BuildConfig"]
+		},
+		{
+			"name": "macos-buildconfig",
+			"inherits": ["build-macos-base"],
+			"targets": ["BuildConfig"]
+		},
+		{
+			"name": "windows-mingw-buildconfig",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["BuildConfig"]
+		},
+		{
+			"name": "windows-msvc-buildconfig",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["BuildConfig"]
+		},
+
+		{
+			"name": "linux-systeminfo",
+			"inherits": ["build-linux-base"],
+			"targets": ["systeminfo"]
+		},
+		{
+			"name": "macos-systeminfo",
+			"inherits": ["build-macos-base"],
+			"targets": ["systeminfo"]
+		},
+		{
+			"name": "windows-mingw-systeminfo",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["systeminfo"]
+		},
+		{
+			"name": "windows-msvc-systeminfo",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["systeminfo"]
+		},
+
+		{
+			"name": "linux-qdcss",
+			"inherits": ["build-linux-base"],
+			"targets": ["qdcss"]
+		},
+		{
+			"name": "macos-qdcss",
+			"inherits": ["build-macos-base"],
+			"targets": ["qdcss"]
+		},
+		{
+			"name": "windows-mingw-qdcss",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["qdcss"]
+		},
+		{
+			"name": "windows-msvc-qdcss",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["qdcss"]
+		},
+
+		{
+			"name": "linux-murmur2",
+			"inherits": ["build-linux-base"],
+			"targets": ["Launcher_murmur2"]
+		},
+		{
+			"name": "macos-murmur2",
+			"inherits": ["build-macos-base"],
+			"targets": ["Launcher_murmur2"]
+		},
+		{
+			"name": "windows-mingw-murmur2",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["Launcher_murmur2"]
+		},
+		{
+			"name": "windows-msvc-murmur2",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["Launcher_murmur2"]
+		},
+
+		{
+			"name": "linux-rainbow",
+			"inherits": ["build-linux-base"],
+			"targets": ["Launcher_rainbow"]
+		},
+		{
+			"name": "macos-rainbow",
+			"inherits": ["build-macos-base"],
+			"targets": ["Launcher_rainbow"]
+		},
+		{
+			"name": "windows-mingw-rainbow",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["Launcher_rainbow"]
+		},
+		{
+			"name": "windows-msvc-rainbow",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["Launcher_rainbow"]
+		},
+
+		{
+			"name": "linux-localpeer",
+			"inherits": ["build-linux-base"],
+			"targets": ["LocalPeer"]
+		},
+		{
+			"name": "macos-localpeer",
+			"inherits": ["build-macos-base"],
+			"targets": ["LocalPeer"]
+		},
+		{
+			"name": "windows-mingw-localpeer",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["LocalPeer"]
+		},
+		{
+			"name": "windows-msvc-localpeer",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["LocalPeer"]
+		},
+
+		{
+			"name": "linux-gamemode",
+			"inherits": ["build-linux-base"],
+			"targets": ["gamemode"]
+		},
+		{
+			"name": "macos-gamemode",
+			"inherits": ["build-macos-base"],
+			"targets": ["gamemode"]
+		},
+		{
+			"name": "windows-mingw-gamemode",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["gamemode"]
+		},
+		{
+			"name": "windows-msvc-gamemode",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["gamemode"]
+		},
+
+		{
+			"name": "linux-libs",
+			"inherits": ["build-linux-base"],
+			"targets": [
+				"zlibstatic",
+				"bz2_static",
+				"QuaZip",
+				"cmark",
+				"cmark_exe",
+				"tomlplusplus_tomlplusplus",
+				"qrencode",
+				"nbt++",
+				"BuildConfig",
+				"systeminfo",
+				"qdcss",
+				"Launcher_murmur2",
+				"Launcher_rainbow",
+				"LocalPeer",
+				"gamemode"
+			]
+		},
+		{
+			"name": "macos-libs",
+			"inherits": ["build-macos-base"],
+			"targets": [
+				"zlibstatic",
+				"bz2_static",
+				"QuaZip",
+				"cmark",
+				"cmark_exe",
+				"tomlplusplus_tomlplusplus",
+				"qrencode",
+				"nbt++",
+				"BuildConfig",
+				"systeminfo",
+				"qdcss",
+				"Launcher_murmur2",
+				"Launcher_rainbow",
+				"LocalPeer",
+				"gamemode"
+			]
+		},
+		{
+			"name": "windows-mingw-libs",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": [
+				"zlibstatic",
+				"bz2_static",
+				"QuaZip",
+				"cmark",
+				"cmark_exe",
+				"tomlplusplus_tomlplusplus",
+				"qrencode",
+				"nbt++",
+				"BuildConfig",
+				"systeminfo",
+				"qdcss",
+				"Launcher_murmur2",
+				"Launcher_rainbow",
+				"LocalPeer",
+				"gamemode"
+			]
+		},
+		{
+			"name": "windows-msvc-libs",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": [
+				"zlibstatic",
+				"bz2_static",
+				"QuaZip",
+				"cmark",
+				"cmark_exe",
+				"tomlplusplus_tomlplusplus",
+				"qrencode",
+				"nbt++",
+				"BuildConfig",
+				"systeminfo",
+				"qdcss",
+				"Launcher_murmur2",
+				"Launcher_rainbow",
+				"LocalPeer",
+				"gamemode"
+			]
+		},
+
+		{
+			"name": "linux-java",
+			"inherits": ["build-linux-base"],
+			"targets": ["ProjTLaunch", "ProjTLaunchLegacy", "JavaCheck"]
+		},
+		{
+			"name": "macos-java",
+			"inherits": ["build-macos-base"],
+			"targets": ["ProjTLaunch", "ProjTLaunchLegacy", "JavaCheck"]
+		},
+		{
+			"name": "windows-mingw-java",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["ProjTLaunch", "ProjTLaunchLegacy", "JavaCheck"]
+		},
+		{
+			"name": "windows-msvc-java",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["ProjTLaunch", "ProjTLaunchLegacy", "JavaCheck"]
+		},
+
+		{
+			"name": "linux-core",
+			"inherits": ["build-linux-base"],
+			"targets": ["ProjTLauncher", "ProjTLaunch", "ProjTLaunchLegacy", "JavaCheck"]
+		},
+		{
+			"name": "macos-core",
+			"inherits": ["build-macos-base"],
+			"targets": ["ProjTLauncher", "ProjTLaunch", "ProjTLaunchLegacy", "JavaCheck"]
+		},
+		{
+			"name": "windows-mingw-core",
+			"inherits": ["build-windows-mingw-base"],
+			"targets": ["ProjTLauncher", "ProjTLaunch", "ProjTLaunchLegacy", "JavaCheck"]
+		},
+		{
+			"name": "windows-msvc-core",
+			"inherits": ["build-windows-msvc-base"],
+			"targets": ["ProjTLauncher", "ProjTLaunch", "ProjTLaunchLegacy", "JavaCheck"]
 		}
 	],
 	"testPresets": [

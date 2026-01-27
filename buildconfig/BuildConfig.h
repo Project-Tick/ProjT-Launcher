@@ -157,6 +157,21 @@ class Config
 	QString HELP_URL;
 
 	/**
+	 * Launcher Hub home URL.
+	 */
+	QString HUB_HOME_URL;
+
+	/**
+	 * Launcher Hub community URL (e.g. Discord/Matrix landing page).
+	 */
+	QString HUB_COMMUNITY_URL;
+
+	/**
+	 * Launcher Hub search URL (with %1 placeholder).
+	 */
+	QString HUB_SEARCH_URL;
+
+	/**
 	 * URL that gets opened when the user succesfully logins.
 	 */
 	QString LOGIN_CALLBACK_URL;
