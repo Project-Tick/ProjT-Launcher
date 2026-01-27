@@ -43,14 +43,30 @@
 
 #include <QDebug>
 
+#include "settings/Setting.h"
+#include "settings/SettingsObject.h"
+
 InstanceProxyModel::InstanceProxyModel(QObject* parent) : QSortFilterProxyModel(parent)
 {
 	m_naturalSort.setNumericMode(true);
 	m_naturalSort.setCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
 	updateLocale();
 
-	// Connect to Application's language changed signal to update locale
-	connect(APPLICATION, &Application::currentLanguageChanged, this, &InstanceProxyModel::updateLocale);
+	// Update locale when language-related settings change
+	if (auto settings = APPLICATION->settings())
+	{
+		auto updateIfLanguageSettingChanged = [this](const Setting& setting, const QVariant&) {
+			if (setting.id() == "Language" || setting.id() == "UseSystemLocale")
+				updateLocale();
+		};
+		auto updateIfLanguageSettingReset = [this](const Setting& setting) {
+			if (setting.id() == "Language" || setting.id() == "UseSystemLocale")
+				updateLocale();
+		};
+
+		connect(settings.get(), &SettingsObject::SettingChanged, this, updateIfLanguageSettingChanged);
+		connect(settings.get(), &SettingsObject::settingReset, this, updateIfLanguageSettingReset);
+	}
 }
 
 void InstanceProxyModel::updateLocale()
