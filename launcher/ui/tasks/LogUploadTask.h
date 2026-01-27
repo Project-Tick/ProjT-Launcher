@@ -21,7 +21,9 @@
 #pragma once
 
 #include <QWidget>
-#include <tasks/Task.h>
+
+#include "net/NetJob.h"
+#include "tasks/Task.h"
 
 class LogUploadTask : public Task
 {
@@ -45,5 +47,5 @@ class LogUploadTask : public Task
 	QString m_logContent;
 	QWidget* m_parentWidget;
 	QString m_uploadedUrl;
-	Task::Ptr m_uploadJob;
+	NetJob::Ptr m_uploadJob;
 };

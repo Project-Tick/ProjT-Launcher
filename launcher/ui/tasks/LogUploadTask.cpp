@@ -52,7 +52,7 @@ static QString truncateLogForMclogs(const QString& logContent)
 }
 
 LogUploadTask::LogUploadTask(const QString& name, const QString& logContent, QWidget* parentWidget)
-	: Task(nullptr), m_name(name), m_logContent(logContent), m_parentWidget(parentWidget)
+	: Task(), m_name(name), m_logContent(logContent), m_parentWidget(parentWidget)
 {
 	setObjectName("LogUploadTask");
 }
