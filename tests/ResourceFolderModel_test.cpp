@@ -40,8 +40,8 @@
 
 #include <FileSystem.h>
 
-#include <minecraft/mod/ModFolderModel.h>
-#include <minecraft/mod/ResourceFolderModel.h>
+#include <minecraft/mod/ModFolderModel.hpp>
+#include <minecraft/mod/ResourceFolderModel.hpp>
 
 #if defined(Q_OS_WIN) && (defined(__MINGW32__) || defined(__MINGW64__))
 static constexpr int RESOURCE_MODEL_TIMEOUT_MS		= 30000;
