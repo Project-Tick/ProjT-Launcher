@@ -4,8 +4,11 @@
 
 | Version | Supported |
 | -------- | ----------- |
-| develop | :white_check_mark: |
-| 0.0.x | :white_check_mark: |
+| main | :white_check_mark: |
+| 0.0.4-x | :white_check_mark: |
+| 0.0.3-x | :x: (deprecated) |
+| 0.0.2 | :x: (deprecated) |
+| 0.0.1 | :x: (deprecated) |
 
 ## How to report
 
