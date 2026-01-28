@@ -78,7 +78,7 @@ jobs:
 
       - name: Create pull request
         if: steps.update.outputs.qt_version_changed == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: automation/qt-${{ steps.update.outputs.qt_version_latest }}-${{ matrix.branch }}
           base: ${{ matrix.branch }}
