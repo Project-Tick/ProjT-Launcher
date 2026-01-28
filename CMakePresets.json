@@ -16,8 +16,7 @@
 				"Launcher_BUILD_ARTIFACT": "$penv{ARTIFACT_NAME}",
 				"Launcher_BUILD_PLATFORM": "$penv{BUILD_PLATFORM}",
 				"Launcher_ENABLE_JAVA_DOWNLOADER": "ON",
-				"ENABLE_LTO": "ON",
-				"Launcher_OUTPUT_ROOT": "${sourceDir}/build/out"
+				"ENABLE_LTO": "ON"
 			}
 		},
 		{
