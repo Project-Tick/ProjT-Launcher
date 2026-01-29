@@ -56,13 +56,12 @@
 
 #include "LoggedProcess.h"
 #include <QDebug>
-#include <QTextDecoder>
 #include "MessageLevel.h"
 
-LoggedProcess::LoggedProcess(const QTextCodec* output_codec, QObject* parent)
+LoggedProcess::LoggedProcess(QStringConverter::Encoding encoding, QObject* parent)
 	: QProcess(parent),
-	  m_err_decoder(output_codec),
-	  m_out_decoder(output_codec)
+	  m_err_decoder(encoding),
+	  m_out_decoder(encoding)
 {
 	// QProcess has a strange interface... let's map a lot of those into a few.
 	connect(this, &QProcess::readyReadStandardOutput, this, &LoggedProcess::on_stdOut);
@@ -80,9 +79,9 @@ LoggedProcess::~LoggedProcess()
 	}
 }
 
-QStringList LoggedProcess::reprocess(const QByteArray& data, QTextDecoder& decoder)
+QStringList LoggedProcess::reprocess(const QByteArray& data, QStringDecoder& decoder)
 {
-	auto str = decoder.toUnicode(data);
+	QString str = decoder(data);
 
 	if (!m_leftover_line.isEmpty())
 	{

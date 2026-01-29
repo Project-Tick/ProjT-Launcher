@@ -184,6 +184,10 @@ namespace projt::logs
 				if (m_reader.qualifiedName().compare("log4j:Message"_L1, Qt::CaseInsensitive) == 0)
 				{
 					entry->message = m_reader.readElementText(QXmlStreamReader::IncludeChildElements);
+					if (entry->message.endsWith(QLatin1Char('\n')))
+					{
+						entry->message.chop(1);
+					}
 					haveMessage	   = true;
 				}
 			}

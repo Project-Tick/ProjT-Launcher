@@ -149,7 +149,7 @@ namespace projt::java
 
 	bool RuntimeVersion::needsPermGen() const
 	{
-		return !m_valid || m_major < 8;
+		return !m_valid || m_major <= 8;
 	}
 
 	bool RuntimeVersion::defaultsToUtf8() const

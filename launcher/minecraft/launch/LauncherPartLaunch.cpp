@@ -22,6 +22,7 @@
 
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QStringConverter>
 
 #include "Application.h"
 #include "Commandline.h"
@@ -35,8 +36,8 @@
 
 LauncherPartLaunch::LauncherPartLaunch(projt::launch::LaunchPipeline* parent)
 	: projt::launch::LaunchStage(parent),
-	  m_process(parent->instance()->getRuntimeVersion().defaultsToUtf8() ? QTextCodec::codecForName("UTF-8")
-																		 : QTextCodec::codecForLocale())
+	  m_process(parent->instance()->getRuntimeVersion().defaultsToUtf8() ? QStringConverter::Utf8
+																		 : QStringConverter::System)
 {
 	if (parent->instance()->settings()->get("CloseAfterLaunch").toBool())
 	{
