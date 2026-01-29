@@ -54,7 +54,7 @@ runs:
         vcvars-arch: ${{ inputs.vcvars-arch }}
 
     - name: Install Qt
-      if: ${{ inputs.msystem == '' }}
+      if: ${{ inputs.qt-architecture != '' || inputs.msystem == '' }}
       uses: jurplel/install-qt-action@v4
       with:
         aqtversion: "==3.1.*"

@@ -20,6 +20,10 @@ on:
         type: string
         required: false
         default: ""
+      qt-architecture:
+        description: Qt architecture
+        type: string
+        required: false
   workflow_dispatch:
     inputs:
       build-type:
@@ -563,6 +567,7 @@ jobs:
             cmake-preset: windows_mingw
             msystem: MINGW64
             vcvars-arch: amd64_x86
+            qt-architecture: win64_mingw
 
     runs-on: ${{ matrix.os }}
 
@@ -594,6 +599,7 @@ jobs:
           artifact-name: ${{ matrix.artifact-name }}
           msystem: ${{ matrix.msystem }}
           vcvars-arch: ${{ matrix.vcvars-arch }}
+          qt-architecture: ${{ matrix.qt-architecture }}
 
       - name: Clean build directory for builds
         run: |
