@@ -79,7 +79,6 @@ stdenv.mkDerivation {
       ../tests
       ../tomlplusplus
       ../tools
-      ../website
       ../zlib
     ];
   };
@@ -101,7 +100,6 @@ stdenv.mkDerivation {
   buildInputs = [
     kdePackages.qtbase
     kdePackages.qtnetworkauth
-    kdePackages.qt5compat
     kdePackages.qtwebchannel
     kdePackages.qtwebengine
   ]
