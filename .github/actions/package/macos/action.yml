@@ -96,6 +96,43 @@ runs:
         fi
         ditto -c -k --sequesterRsrc --keepParent "ProjT Launcher.app" ../ProjTLauncher.zip
 
+    - name: Build DMG
+      shell: bash
+      env:
+        INSTALL_DIR: install
+        DMG_NAME: ProjTLauncher.dmg
+        DMG_VOL_NAME: ProjT Launcher
+        DMG_EULA: ${{ github.workspace }}/COPYING.md
+        DMG_BG: ${{ github.workspace }}/program_info/dmg-background.png
+      run: |
+        if ! command -v create-dmg >/dev/null 2>&1; then
+          brew install create-dmg
+        fi
+
+        cd ${{ env.INSTALL_DIR }}
+        rm -rf ../dmg-staging ../${{ env.DMG_NAME }}
+        mkdir -p ../dmg-staging
+        cp -R "ProjT Launcher.app" ../dmg-staging/
+
+        args=(
+          --volname "${{ env.DMG_VOL_NAME }}"
+          --window-size 640 420
+          --icon-size 128
+          --icon "ProjT Launcher.app" 160 210
+          --app-drop-link 480 210
+        )
+
+        if [ -f "${{ env.DMG_BG }}" ]; then
+          args+=(--background "${{ env.DMG_BG }}")
+        fi
+
+        if [ -f "${{ env.DMG_EULA }}" ]; then
+          args+=(--eula "${{ env.DMG_EULA }}")
+        fi
+
+        create-dmg "${args[@]}" ../${{ env.DMG_NAME }} ../dmg-staging || \
+          create-dmg --volname "${{ env.DMG_VOL_NAME }}" ../${{ env.DMG_NAME }} ../dmg-staging
+
     - name: Make Sparkle signature
       shell: bash
       run: |
@@ -118,4 +155,6 @@ runs:
       uses: actions/upload-artifact@v5
       with:
         name: ProjTLauncher-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}
-        path: ProjTLauncher.zip
+        path: |
+          ProjTLauncher.zip
+          ProjTLauncher.dmg

@@ -1,0 +1,102 @@
+checks = Split("""
+	big.bmp
+	classic-cross.bmp
+	classic.bmp
+	colorful.bmp
+	grey-cross.bmp
+	grey.bmp
+	modern.bmp
+	red-round.bmp
+	red.bmp
+	simple-round.bmp
+	simple-round2.bmp
+	simple.bmp
+""")
+
+headers = Split("""
+	ptis-r.bmp
+	ptis.bmp
+	ptis3-branding-r.bmp
+	ptis3-branding.bmp
+	ptis3-grey-right.bmp
+	ptis3-grey.bmp
+	ptis3-metro-right.bmp
+	ptis3-metro.bmp
+	ptis3-vintage-right.bmp
+	ptis3-vintage.bmp
+	orange-ptis.bmp
+	orange-r-ptis.bmp
+	orange-r.bmp
+	orange-uninstall-ptis.bmp
+	orange-uninstall-r-ptis.bmp
+	orange-uninstall-r.bmp
+	orange-uninstall.bmp
+	orange.bmp
+	win.bmp
+""")
+
+icons = Split("""
+	arrow-install.ico
+	arrow-uninstall.ico
+	arrow2-install.ico
+	arrow2-uninstall.ico
+	box-install.ico
+	box-uninstall.ico
+	classic-install.ico
+	classic-uninstall.ico
+	llama-blue.ico
+	llama-grey.ico
+	modern-install-blue-full.ico
+	modern-install-blue.ico
+	modern-install-colorful.ico
+	modern-install-full.ico
+	modern-install.ico
+	modern-uninstall-blue-full.ico
+	modern-uninstall-blue.ico
+	modern-uninstall-colorful.ico
+	modern-uninstall-full.ico
+	modern-uninstall.ico
+	ptis-menu.ico
+	ptis1-install.ico
+	ptis1-uninstall.ico
+	ptis3-install.ico
+	ptis3-install-alt.ico
+	ptis3-uninstall.ico
+	orange-install-ptis.ico
+	orange-install.ico
+	orange-uninstall-ptis.ico
+	orange-uninstall.ico
+	pixel-install.ico
+	pixel-uninstall.ico
+	win-install.ico
+	win-uninstall.ico
+""")
+
+wizards = Split("""
+	arrow.bmp
+	llama.bmp
+	ptis.bmp
+	ptis3-branding.bmp
+	ptis3-grey.bmp
+	ptis3-metro.bmp
+	ptis3-vintage.bmp
+	nullsoft.bmp
+	orange-ptis.bmp
+	orange-uninstall-ptis.bmp
+	orange-uninstall.bmp
+	orange.bmp
+	win.bmp
+""")
+
+Import('defenv')
+
+def join(prefix, list_):
+	return list(map(lambda x: '%s/%s' % (prefix, x), list_))
+
+def dist(dir, files):
+	defenv.DistributeContrib(join(dir, files), path='Graphics/%s' % dir)
+
+dist('Checks', checks)
+dist('Header', headers)
+dist('Icons', icons)
+dist('Wizard', wizards)

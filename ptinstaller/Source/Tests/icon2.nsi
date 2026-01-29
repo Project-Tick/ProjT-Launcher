@@ -1,0 +1,13 @@
+OutFile icon2.exe
+Name icon2
+
+Icon "${PTISDIR}\Contrib\Graphics\Icons\ptis1-install.ico"
+UninstallIcon "${PTISDIR}\Contrib\Graphics\Icons\arrow-install.ico"
+
+Section
+Return
+WriteUninstaller $TEMP\uninst.exe
+SectionEnd
+
+Section uninstall
+SectionEnd

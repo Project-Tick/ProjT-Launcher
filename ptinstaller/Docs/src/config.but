@@ -1,0 +1,37 @@
+\#{**********************************************}
+\#{* Common config shared by all output formats *}
+\#{**********************************************}
+
+\cfg{html-lang}{en}
+
+\cfg{html-suppress-address}{true}
+
+\cfg{html-append-meta}{name="viewport" content="width=device-width, initial-scale=1"}
+
+\define{PtisCopyright} Copyright (C) 1999-2025 Contributors
+
+\copyright \PtisCopyright
+
+\preamble Check \W{https://ptis.sourceforge.io/}{http://ptis.sf.net} for news, information, support, examples, tutorials and more.
+
+\preamble Quick links:\\<br\\>\W{https://ptis.sourceforge.io/support/faq/}{FAQ} - A list of frequently asked questions\\<br\\>\W{https://ptis.sourceforge.io/wiki/}{PTIS Wiki} - Examples, functions, tutorials, plug-ins, software and more\\<br\\>\W{http://forums.winamp.com/forumdisplay.php?forumid=65}{Forum} - Post questions or discuss PTIS features
+
+\define{PtisFuncReqU} This function is only available when building a \R{intro-unicode}{Unicode installer}.
+
+\define{PtisFuncReq64} This function is only available when building a 64-bit installer.
+
+\define{PtisACPcp} system default ANSI codepage (ACP)
+
+\define{PtisInputCharset} ACP|OEM|CP#|UTF8|UTF16<LE|BE>
+
+\define{PtisOutputCharset} ACP|OEM|CP#|UTF8[SIG]|UTF16<LE|BE>[BOM]
+
+\define{PtisWarnBlockContainerBegin} \\<div class=\\"wb\\"\\>
+
+\define{PtisWarnBlockContainerEnd} \\</div\\>
+
+\define{PtisBlockHeaderWarning} \s{Warning:}
+
+\define{PtisBlockHeaderNote} \s{Note:}
+
+\define{PtisBlockHeaderExeheadU} \s{Unicode:}
