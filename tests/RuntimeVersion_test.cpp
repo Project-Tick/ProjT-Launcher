@@ -20,7 +20,7 @@ class RuntimeVersionTest : public QObject
 		QCOMPARE(v.minor(), 0);
 		QCOMPARE(v.security(), 312);
 		QCOMPARE(v.prerelease(), QString());
-		QVERIFY(v.needsPermGen());
+		QVERIFY(!v.needsPermGen());
 		QVERIFY(!v.supportsModules());
 	}
 
