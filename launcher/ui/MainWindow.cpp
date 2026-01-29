@@ -121,6 +121,7 @@
 #include "ui/dialogs/LauncherHubDialog.h"
 #include "ui/dialogs/NewInstanceDialog.h"
 #include "ui/dialogs/ProgressDialog.h"
+#include "ui/dialogs/NewsDialog.h"
 #include "ui/instanceview/InstanceDelegate.h"
 #include "ui/instanceview/InstanceProxyModel.h"
 #include "ui/instanceview/InstanceView.h"
@@ -1536,7 +1537,10 @@ void MainWindow::on_actionOpenWiki_triggered()
 
 void MainWindow::on_actionMoreNews_triggered()
 {
-	openLauncherHub(QUrl(BuildConfig.NEWS_OPEN_URL));
+	auto entries = m_newsChecker->getNewsEntries();
+	NewsDialog news_dialog(entries, this);
+	connect(&news_dialog, &NewsDialog::openHubRequested, this, &MainWindow::openLauncherHub);
+	news_dialog.exec();
 }
 
 void MainWindow::on_actionLauncherHub_triggered()
@@ -1546,13 +1550,11 @@ void MainWindow::on_actionLauncherHub_triggered()
 
 void MainWindow::newsButtonClicked()
 {
-	const auto entries = m_newsChecker->getNewsEntries();
-	if (!entries.isEmpty() && entries.front() && !entries.front()->link.isEmpty())
-	{
-		openLauncherHub(QUrl(entries.front()->link));
-		return;
-	}
-	openLauncherHub(QUrl(BuildConfig.NEWS_OPEN_URL));
+	auto entries = m_newsChecker->getNewsEntries();
+	NewsDialog news_dialog(entries, this);
+	connect(&news_dialog, &NewsDialog::openHubRequested, this, &MainWindow::openLauncherHub);
+	news_dialog.toggleArticleList();
+	news_dialog.exec();
 }
 
 void MainWindow::openLauncherHub(const QUrl& url)

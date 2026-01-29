@@ -22,8 +22,11 @@
 
 #include <QDesktopServices>
 #include <QDir>
+#include <QGraphicsDropShadowEffect>
+#include <QGraphicsOpacityEffect>
 #include <QHBoxLayout>
 #include <QLineEdit>
+#include <QPropertyAnimation>
 #include <QStandardPaths>
 #include <QStackedWidget>
 #include <QTabBar>
@@ -122,8 +125,10 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	auto* layout = new QVBoxLayout(this);
 	layout->setContentsMargins(0, 0, 0, 0);
 
-	auto* tabsLayout = new QHBoxLayout();
-	tabsLayout->setContentsMargins(6, 6, 6, 0);
+	m_tabsBarContainer = new QWidget(this);
+	m_tabsBarContainer->setObjectName("hubTabsBar");
+	auto* tabsLayout = new QHBoxLayout(m_tabsBarContainer);
+	tabsLayout->setContentsMargins(10, 10, 10, 6);
 
 	m_tabBar = new QTabBar(this);
 	m_tabBar->setMovable(true);
@@ -138,8 +143,10 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	tabsLayout->addWidget(m_tabBar, 1);
 	tabsLayout->addWidget(m_newTabButton);
 
-	auto* toolbar = new QHBoxLayout();
-	toolbar->setContentsMargins(6, 6, 6, 6);
+	m_toolbarContainer = new QWidget(this);
+	m_toolbarContainer->setObjectName("hubToolbar");
+	auto* toolbar = new QHBoxLayout(m_toolbarContainer);
+	toolbar->setContentsMargins(10, 8, 10, 10);
 
 	m_backButton = new QToolButton(this);
 	m_backButton->setIcon(QIcon::fromTheme("go-previous"));
@@ -184,9 +191,65 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 
 	m_stack = new QStackedWidget(this);
 
-	layout->addLayout(tabsLayout);
-	layout->addLayout(toolbar);
+	layout->addWidget(m_tabsBarContainer);
+	layout->addWidget(m_toolbarContainer);
 	layout->addWidget(m_stack);
+
+	auto* toolbarShadow = new QGraphicsDropShadowEffect(this);
+	toolbarShadow->setBlurRadius(22);
+	toolbarShadow->setOffset(0, 6);
+	toolbarShadow->setColor(QColor(0, 0, 0, 90));
+	m_toolbarContainer->setGraphicsEffect(toolbarShadow);
+
+	auto* tabsShadow = new QGraphicsDropShadowEffect(this);
+	tabsShadow->setBlurRadius(16);
+	tabsShadow->setOffset(0, 4);
+	tabsShadow->setColor(QColor(0, 0, 0, 60));
+	m_tabsBarContainer->setGraphicsEffect(tabsShadow);
+
+	setStyleSheet(QStringLiteral(R"PROJT_HUB(
+		LauncherHubWidget {
+			background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+				stop:0 #0f141b, stop:1 #141a24);
+		}
+		#hubTabsBar, #hubToolbar {
+			background: rgba(20, 26, 36, 210);
+			border: 1px solid rgba(255, 255, 255, 18);
+			border-radius: 10px;
+		}
+		QTabBar::tab {
+			background: transparent;
+			color: rgba(220, 228, 240, 180);
+			padding: 6px 12px;
+			margin-right: 6px;
+			border-radius: 8px;
+		}
+		QTabBar::tab:selected {
+			background: rgba(88, 140, 255, 180);
+			color: #ffffff;
+		}
+		QTabBar::tab:hover {
+			background: rgba(255, 255, 255, 24);
+			color: #ffffff;
+		}
+		QToolButton {
+			background: rgba(255, 255, 255, 10);
+			border: 1px solid rgba(255, 255, 255, 18);
+			border-radius: 8px;
+			padding: 6px;
+		}
+		QToolButton:hover {
+			background: rgba(255, 255, 255, 22);
+		}
+		QLineEdit {
+			background: rgba(14, 18, 26, 210);
+			color: #e6eefc;
+			border: 1px solid rgba(255, 255, 255, 20);
+			border-radius: 10px;
+			padding: 8px 12px;
+			selection-background-color: rgba(88, 140, 255, 190);
+		}
+	)PROJT_HUB"));
 
 	connect(m_backButton,
 			&QToolButton::clicked,
@@ -223,6 +286,10 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	connect(m_goButton, &QToolButton::clicked, this, [this]() { openUrl(resolveInput(m_addressBar->text())); });
 	connect(m_addressBar, &QLineEdit::returnPressed, this, [this]() { openUrl(resolveInput(m_addressBar->text())); });
 
+	auto* stackFade = new QGraphicsOpacityEffect(m_stack);
+	stackFade->setOpacity(1.0);
+	m_stack->setGraphicsEffect(stackFade);
+
 	connect(m_newTabButton, &QToolButton::clicked, this, [this]() { newTab(m_homeUrl); });
 	connect(m_tabBar,
 			&QTabBar::currentChanged,
@@ -231,6 +298,16 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 			{
 				if (index >= 0 && index < m_stack->count())
 				{
+					auto* effect = qobject_cast<QGraphicsOpacityEffect*>(m_stack->graphicsEffect());
+					if (effect)
+					{
+						auto* anim = new QPropertyAnimation(effect, "opacity", this);
+						anim->setDuration(180);
+						anim->setStartValue(0.85);
+						anim->setEndValue(1.0);
+						anim->setEasingCurve(QEasingCurve::OutCubic);
+						anim->start(QAbstractAnimation::DeleteWhenStopped);
+					}
 					m_stack->setCurrentIndex(index);
 					updateNavigationState();
 				}

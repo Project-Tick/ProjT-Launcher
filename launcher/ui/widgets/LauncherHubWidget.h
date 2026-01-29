@@ -28,6 +28,7 @@ class QTabBar;
 class QToolButton;
 class QWebEngineProfile;
 class QWebEngineView;
+class QWidget;
 
 class LauncherHubWidget : public QWidget
 {
@@ -50,6 +51,8 @@ class LauncherHubWidget : public QWidget
 	void updateNavigationState();
 
 	QTabBar* m_tabBar			 = nullptr;
+	QWidget* m_tabsBarContainer	 = nullptr;
+	QWidget* m_toolbarContainer	 = nullptr;
 	QStackedWidget* m_stack		 = nullptr;
 	QWebEngineProfile* m_profile = nullptr;
 	QLineEdit* m_addressBar		 = nullptr;

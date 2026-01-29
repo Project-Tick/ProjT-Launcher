@@ -73,9 +73,27 @@ inline QString childValue(const QDomElement& element, const QString& childName, 
 
 bool NewsEntry::fromXmlElement(const QDomElement& element, NewsEntry* entry, [[maybe_unused]] QString* errorMsg)
 {
-	QString title	= childValue(element, "title", tr("Untitled"));
-	QString content = childValue(element, "content", tr("No content."));
-	QString link	= childValue(element, "id");
+	QString title = childValue(element, "title", tr("Untitled"));
+	QString content = childValue(element, "content", QString());
+	if (content.isEmpty())
+		content = childValue(element, "content:encoded", QString());
+	if (content.isEmpty())
+		content = childValue(element, "description", QString());
+	if (content.isEmpty())
+		content = childValue(element, "summary", tr("No content."));
+
+	QString link = childValue(element, "id", QString());
+	if (link.isEmpty())
+		link = childValue(element, "link", QString());
+	if (link.isEmpty())
+	{
+		QDomNodeList linkNodes = element.elementsByTagName("link");
+		if (linkNodes.count() > 0)
+		{
+			QDomElement linkElem = linkNodes.at(0).toElement();
+			link = linkElem.attribute("href");
+		}
+	}
 
 	entry->title   = title;
 	entry->content = content;

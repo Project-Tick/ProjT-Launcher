@@ -245,7 +245,7 @@
   </widget>
   <action name="actionLauncherHub">
    <property name="icon">
-    <iconset theme="internet-services"/>
+    <iconset theme="worlds"/>
    </property>
    <property name="text">
     <string>Launcher Hub...</string>

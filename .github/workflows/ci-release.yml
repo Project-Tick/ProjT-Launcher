@@ -101,7 +101,12 @@ jobs:
           mv ProjTLauncher-*.AppImage/ProjTLauncher-*-aarch64.AppImage ProjTLauncher-Linux-aarch64.AppImage
           mv ProjTLauncher-*.AppImage.zsync/ProjTLauncher-*-aarch64.AppImage.zsync ProjTLauncher-Linux-aarch64.AppImage.zsync
           mv ProjTLauncher-macOS*/ProjTLauncher.zip ProjTLauncher-macOS-${{ env.VERSION }}.zip
-          mv ProjectTick-JavaCheck-${{ github.run_id }}.jar ProjectTick-JavaCheck-${{ env.VERSION }}.jar
+          if ls ProjTLauncher-macOS*/ProjTLauncher-Installer.zip >/dev/null 2>&1; then
+            mv ProjTLauncher-macOS*/ProjTLauncher-Installer.zip ProjTLauncher-macOS-Installer-${{ env.VERSION }}.zip
+          fi
+          mv ProjTLauncher-macOS*/ProjTLauncher.dmg ProjTLauncher-macOS-${{ env.VERSION }}.dmg
+          mv ProjTLauncher-macOS*/ProjTLauncher-macOS-*.pkg ProjTLauncher-macOS-${{ env.VERSION }}.pkg
+          mv ProjectTick-JavaCheck-${{ github.run_id }}.jar JavaCheck-${{ env.VERSION }}.jar
 
           tar --exclude='.git' -czf ProjTLauncher-${{ env.VERSION }}.tar.gz ProjTLauncher-${{ env.VERSION }}
 
@@ -172,6 +177,9 @@ jobs:
             ProjTLauncher-Windows-MSVC-Portable-${{ env.VERSION }}.zip
             ProjTLauncher-Windows-MSVC-Setup-${{ env.VERSION }}.exe
             ProjTLauncher-macOS-${{ env.VERSION }}.zip
+            ProjTLauncher-macOS-Installer-${{ env.VERSION }}.zip
+            ProjTLauncher-macOS-${{ env.VERSION }}.dmg
+            ProjTLauncher-macOS-${{ env.VERSION }}.pkg
             ProjTLauncher-${{ env.VERSION }}.tar.gz
             libnbtplusplus-${{ env.VERSION }}.zip
             libnbtplusplus-${{ env.VERSION }}.tar.gz

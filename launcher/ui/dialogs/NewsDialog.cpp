@@ -20,6 +20,8 @@
 #include "NewsDialog.h"
 #include "ui_NewsDialog.h"
 
+#include <QUrl>
+
 NewsDialog::NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent) : QDialog(parent), ui(new Ui::NewsDialog())
 {
 	ui->setupUi(this);
@@ -32,6 +34,12 @@ NewsDialog::NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent) : QDialog(p
 
 	connect(ui->articleListWidget, &QListWidget::currentTextChanged, this, &NewsDialog::selectedArticleChanged);
 	connect(ui->toggleListButton, &QPushButton::clicked, this, &NewsDialog::toggleArticleList);
+	connect(ui->openInHubButton, &QPushButton::clicked, this, [this]() {
+		if (m_current_link.isEmpty())
+			return;
+		emit openHubRequested(QUrl(m_current_link));
+		accept();
+	});
 
 	m_article_list_hidden = ui->articleListWidget->isHidden();
 
@@ -40,6 +48,8 @@ NewsDialog::NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent) : QDialog(p
 
 	auto article_entry = m_entries.constFind(first_item->text()).value();
 	ui->articleTitleLabel->setText(QString("<a href='%1'>%2</a>").arg(article_entry->link, first_item->text()));
+	m_current_link = article_entry->link;
+	ui->openInHubButton->setEnabled(!m_current_link.isEmpty());
 
 	ui->currentArticleContentBrowser->setText(article_entry->content);
 	ui->currentArticleContentBrowser->flush();
@@ -55,6 +65,8 @@ void NewsDialog::selectedArticleChanged(const QString& new_title)
 	auto article_entry = m_entries.constFind(new_title).value();
 
 	ui->articleTitleLabel->setText(QString("<a href='%1'>%2</a>").arg(article_entry->link, new_title));
+	m_current_link = article_entry->link;
+	ui->openInHubButton->setEnabled(!m_current_link.isEmpty());
 
 	ui->currentArticleContentBrowser->setText(article_entry->content);
 	ui->currentArticleContentBrowser->flush();

@@ -21,6 +21,7 @@
 
 #include <QDialog>
 #include <QHash>
+#include <QPointer>
 
 #include "news/NewsEntry.h"
 
@@ -37,6 +38,9 @@ class NewsDialog : public QDialog
 	NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent = nullptr);
 	~NewsDialog();
 
+  signals:
+	void openHubRequested(const QUrl& url);
+
   public slots:
 	void toggleArticleList();
 
@@ -48,4 +52,5 @@ class NewsDialog : public QDialog
 
 	QHash<QString, NewsEntryPtr> m_entries;
 	bool m_article_list_hidden = false;
+	QString m_current_link;
 };

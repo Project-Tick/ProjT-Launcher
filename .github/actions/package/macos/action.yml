@@ -42,8 +42,10 @@ runs:
     - name: Fetch codesign certificate
       shell: bash
       run: |
-        echo '${{ inputs.apple-codesign-cert }}' | base64 --decode > codesign.p12
-        if [ -n '${{ inputs.apple-codesign-id }}' ]; then
+        if [ -n '${{ inputs.apple-codesign-cert }}' ]; then
+          echo '${{ inputs.apple-codesign-cert }}' | base64 --decode > codesign.p12
+        fi
+        if [ -n '${{ inputs.apple-codesign-id }}' ] && [ -s codesign.p12 ]; then
           security create-keychain -p '${{ inputs.apple-codesign-password }}' build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p '${{ inputs.apple-codesign-password }}' build.keychain
@@ -74,6 +76,9 @@ runs:
 
         sudo codesign --sign "$APPLE_CODESIGN_ID" --deep --force --entitlements "$ENTITLEMENTS_FILE" --options runtime "ProjTLauncher.app/Contents/MacOS/projtlauncher"
         mv "ProjTLauncher.app" "ProjT Launcher.app"
+        if [ -d "ProjT Launcher Installer.app" ]; then
+          sudo codesign --sign "$APPLE_CODESIGN_ID" --deep --force --entitlements "$ENTITLEMENTS_FILE" --options runtime "ProjT Launcher Installer.app"
+        fi
 
     - name: Notarize
       shell: bash
@@ -95,7 +100,6 @@ runs:
           echo ":warning: Skipping notarization as credentials are not present." >> $GITHUB_STEP_SUMMARY
         fi
         ditto -c -k --sequesterRsrc --keepParent "ProjT Launcher.app" ../ProjTLauncher.zip
-
     - name: Build DMG
       shell: bash
       env:
@@ -113,12 +117,16 @@ runs:
         rm -rf ../dmg-staging ../${{ env.DMG_NAME }}
         mkdir -p ../dmg-staging
         cp -R "ProjT Launcher.app" ../dmg-staging/
+        if [ -d "ProjT Launcher Installer.app" ]; then
+          cp -R "ProjT Launcher Installer.app" ../dmg-staging/
+        fi
 
         args=(
           --volname "${{ env.DMG_VOL_NAME }}"
           --window-size 640 420
           --icon-size 128
           --icon "ProjT Launcher.app" 160 210
+          --icon "ProjT Launcher Installer.app" 160 90
           --app-drop-link 480 210
         )
 
@@ -132,6 +140,31 @@ runs:
 
         create-dmg "${args[@]}" ../${{ env.DMG_NAME }} ../dmg-staging || \
           create-dmg --volname "${{ env.DMG_VOL_NAME }}" ../${{ env.DMG_NAME }} ../dmg-staging
+
+    - name: Build PKG (Launcher)
+      shell: bash
+      env:
+        INSTALL_DIR: install
+        PKG_NAME: ProjTLauncher-macOS-${{ inputs.version }}.pkg
+      run: |
+        cd ${{ env.INSTALL_DIR }}
+        if [ ! -d "ProjT Launcher.app" ]; then
+          echo ":warning: ProjT Launcher.app not found; skipping PKG build." >> $GITHUB_STEP_SUMMARY
+          exit 0
+        fi
+
+        rm -f ../${{ env.PKG_NAME }}
+        pkgbuild --install-location /Applications \
+          --component "ProjT Launcher.app" \
+          ../bootstrap-component.pkg
+
+        if [ -f "${{ github.workspace }}/COPYING.md" ]; then
+          productbuild --license "${{ github.workspace }}/COPYING.md" \
+            --package ../bootstrap-component.pkg \
+            ../${{ env.PKG_NAME }}
+        else
+          mv ../bootstrap-component.pkg ../${{ env.PKG_NAME }}
+        fi
 
     - name: Make Sparkle signature
       shell: bash
@@ -158,3 +191,4 @@ runs:
         path: |
           ProjTLauncher.zip
           ProjTLauncher.dmg
+          ProjTLauncher-macOS-${{ inputs.version }}.pkg
