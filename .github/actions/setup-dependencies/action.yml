@@ -60,5 +60,5 @@ runs:
         aqtversion: "==3.1.*"
         version: ${{ inputs.qt-version }}
         arch: ${{ inputs.qt-architecture }}
-        modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning
+        modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
         cache: ${{ inputs.build-type == 'Debug' }}

@@ -561,7 +561,7 @@ jobs:
           - os: windows-2022
             artifact-name: Windows-MinGW-w64
             cmake-preset: windows_mingw
-            msystem: CLANG64
+            msystem: MINGW64
             vcvars-arch: amd64_x86
 
     runs-on: ${{ matrix.os }}

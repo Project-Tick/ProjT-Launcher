@@ -159,12 +159,10 @@ runs:
           ../bootstrap-component.pkg
 
         if [ -f "${{ github.workspace }}/COPYING.md" ]; then
-          productbuild --license "${{ github.workspace }}/COPYING.md" \
-            --package ../bootstrap-component.pkg \
-            ../${{ env.PKG_NAME }}
-        else
-          mv ../bootstrap-component.pkg ../${{ env.PKG_NAME }}
+          echo ":warning: productbuild does not support --license; building PKG without embedded license." >> $GITHUB_STEP_SUMMARY
         fi
+        productbuild --package ../bootstrap-component.pkg \
+          ../${{ env.PKG_NAME }}
 
     - name: Make Sparkle signature
       shell: bash
