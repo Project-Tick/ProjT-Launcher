@@ -52,6 +52,26 @@
 			"cacheVariables": {}
 		},
 		{
+			"name": "macos_intel",
+			"displayName": "macOS (Intel x86_64)",
+			"inherits": [
+				"macos"
+			],
+			"cacheVariables": {
+				"CMAKE_OSX_ARCHITECTURES": "x86_64"
+			}
+		},
+		{
+			"name": "macos_arm64",
+			"displayName": "macOS (Apple Silicon arm64)",
+			"inherits": [
+				"macos"
+			],
+			"cacheVariables": {
+				"CMAKE_OSX_ARCHITECTURES": "arm64"
+			}
+		},
+		{
 			"name": "windows_mingw",
 			"displayName": "Windows (MinGW)",
 			"inherits": [
@@ -104,6 +124,22 @@
 				"macos"
 			],
 			"configurePreset": "macos_universal"
+		},
+		{
+			"name": "macos_intel",
+			"displayName": "macOS (Intel x86_64)",
+			"inherits": [
+				"macos"
+			],
+			"configurePreset": "macos_intel"
+		},
+		{
+			"name": "macos_arm64",
+			"displayName": "macOS (Apple Silicon arm64)",
+			"inherits": [
+				"macos"
+			],
+			"configurePreset": "macos_arm64"
 		},
 		{
 			"name": "windows_mingw",
@@ -704,6 +740,32 @@
 				"rhs": "Darwin"
 			},
 			"configurePreset": "macos_universal"
+		},
+		{
+			"name": "macos_intel",
+			"displayName": "macOS (Intel x86_64)",
+			"inherits": [
+				"base"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
+			},
+			"configurePreset": "macos_intel"
+		},
+		{
+			"name": "macos_arm64",
+			"displayName": "macOS (Apple Silicon arm64)",
+			"inherits": [
+				"base"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
+			},
+			"configurePreset": "macos_arm64"
 		},
 		{
 			"name": "windows_mingw",

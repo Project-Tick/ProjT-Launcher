@@ -400,6 +400,13 @@
          with this library; if not, write to the Free Software Foundation, Inc., 51
          Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
+## Project Tick Install System
+
+     Licensed under zlib/libpng license
+     Based on Nullsoft Install System
+
+     See also `ptinstaller/COPYING`
+
 ## meta (`meta/`)
 
      Microsoft Public License (Ms-PL)
