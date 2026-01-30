@@ -142,7 +142,7 @@ jobs:
             artifact-base: Linux
             cmake-preset: linux
             qt-architecture: linux_gcc_64
-            qt-modules: &qt_full
+            qt-modules: &qt_full qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
           - name: Linux-aarch64
             os: ubuntu-24.04-arm
             artifact-base: Linux-aarch64
@@ -200,7 +200,7 @@ jobs:
             cmake-preset: windows_msvc
             vcvars-arch: arm64
             qt-architecture: win64_msvc2022_arm64
-            qt-modules: &qt_no_webengine
+            qt-modules: &qt_no_webengine qtimageformats qtnetworkauth qtpositioning qtserialport
           - name: macOS-14-universal
             os: macos-14
             artifact-base: macOS-14-universal
