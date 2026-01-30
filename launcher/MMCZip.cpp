@@ -622,6 +622,11 @@ namespace MMCZip
 
 	void ExportToZipTask::finish()
 	{
+		if (!isRunning())
+		{
+			FS::deletePath(m_output_path);
+			return;
+		}
 		if (m_build_zip_future.isCanceled())
 		{
 			FS::deletePath(m_output_path);
@@ -643,8 +648,7 @@ namespace MMCZip
 		if (m_build_zip_future.isRunning())
 		{
 			m_build_zip_future.cancel();
-			// NOTE: Here we don't do `emitAborted()` because it will be done when `m_build_zip_future` actually
-			// cancels, which may not occur immediately.
+			emitAborted();
 			return true;
 		}
 		return false;
@@ -784,6 +788,10 @@ namespace MMCZip
 
 	void ExtractZipTask::finish()
 	{
+		if (!isRunning())
+		{
+			return;
+		}
 		if (m_zip_future.isCanceled())
 		{
 			emitAborted();
@@ -803,8 +811,7 @@ namespace MMCZip
 		if (m_zip_future.isRunning())
 		{
 			m_zip_future.cancel();
-			// NOTE: Here we don't do `emitAborted()` because it will be done when `m_build_zip_future` actually
-			// cancels, which may not occur immediately.
+			emitAborted();
 			return true;
 		}
 		return false;

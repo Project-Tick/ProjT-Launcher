@@ -22,13 +22,28 @@
 #include <QUrl>
 #include <QWidget>
 
+#if defined(PROJT_USE_WEBENGINE)
+#include <QWebEngineView>
+#endif
+
+#if defined(PROJT_USE_WEBVIEW2)
+#include "ui/widgets/WebView2Widget.h"
+#endif
+
 class QLineEdit;
 class QStackedWidget;
 class QTabBar;
 class QToolButton;
 class QWebEngineProfile;
 class QWidget;
-class HubView;
+
+#if !defined(PROJT_DISABLE_LAUNCHER_HUB)
+#if defined(PROJT_USE_WEBENGINE)
+using HubView = QWebEngineView;
+#elif defined(PROJT_USE_WEBVIEW2)
+using HubView = WebView2Widget;
+#endif
+#endif
 
 class LauncherHubWidget : public QWidget
 {

@@ -45,7 +45,17 @@ if(NOT CPACK_INCLUDED)
 endif(NOT CPACK_INCLUDED)
 
 if(MINIZIP_ENABLE_BZIP2)
-    find_package(BZip2 REQUIRED)
+    if(TARGET BZip2::BZip2)
+        set(BZIP2_FOUND TRUE)
+    elseif(TARGET bz2_static)
+        add_library(BZip2::BZip2 ALIAS bz2_static)
+        set(BZIP2_FOUND TRUE)
+    elseif(TARGET bz2)
+        add_library(BZip2::BZip2 ALIAS bz2)
+        set(BZIP2_FOUND TRUE)
+    else()
+        find_package(BZip2 REQUIRED)
+    endif()
 endif(MINIZIP_ENABLE_BZIP2)
 
 #

@@ -190,6 +190,10 @@ void InstanceCopyTask::executeTask()
 
 void InstanceCopyTask::copyFinished()
 {
+	if (!isRunning())
+	{
+		return;
+	}
 	auto successful = m_copyFuture.result();
 	if (!successful)
 	{
@@ -263,8 +267,11 @@ void InstanceCopyTask::copyFinished()
 
 void InstanceCopyTask::copyAborted()
 {
-	emitFailed(tr("Instance folder copy has been aborted."));
-	return;
+	if (!isRunning())
+	{
+		return;
+	}
+	emitAborted();
 }
 
 bool InstanceCopyTask::abort()
@@ -272,8 +279,7 @@ bool InstanceCopyTask::abort()
 	if (m_copyFutureWatcher.isRunning())
 	{
 		m_copyFutureWatcher.cancel();
-		// NOTE: Here we don't do `emitAborted()` because it will be done when `m_copyFutureWatcher` actually cancels,
-		// which may not occur immediately.
+		emitAborted();
 		return true;
 	}
 	return false;

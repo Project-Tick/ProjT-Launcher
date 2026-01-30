@@ -117,7 +117,7 @@ jobs:
       build-type: Debug
       output-root: ${{ github.workspace }}/build/out
     secrets: inherit
-      
+
   build-projt-launcher-release:
     name: Build ProjT Launcher ( RELEASE )
     needs: prepare

@@ -41,15 +41,17 @@ runs:
           ninja-build scdoc \
           appstream libxcb-cursor-dev \
           openjdk-21-jdk \
-          libtiff6 \
           lcov
-
-        # Qt imageformat plugin was looking for libtiff.so.5; we standardize on libtiff6 and expose compat symlink.
-        archdir="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"
-        if [ -e "/usr/lib/$archdir/libtiff.so.6" ] && [ ! -e "/usr/lib/$archdir/libtiff.so.5" ]; then
-          sudo ln -sf /usr/lib/$archdir/libtiff.so.6 /usr/lib/$archdir/libtiff.so.5
-          sudo ldconfig
-          echo ":warning: libtiff6 installed; created libtiff.so.5 compat symlink to libtiff6" >> "$GITHUB_STEP_SUMMARY"
+        if apt-cache show libtiff6 >/dev/null 2>&1; then
+          sudo apt-get -y install libtiff6
+          archdir="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"
+          if [ -e "/usr/lib/$archdir/libtiff.so.6" ] && [ ! -e "/usr/lib/$archdir/libtiff.so.5" ]; then
+            sudo ln -sf /usr/lib/$archdir/libtiff.so.6 /usr/lib/$archdir/libtiff.so.5
+            sudo ldconfig
+            echo ":warning: libtiff6 installed; created libtiff.so.5 compat symlink to libtiff6" >> "$GITHUB_STEP_SUMMARY"
+          fi
+        else
+          sudo apt-get -y install libtiff5
         fi
 
     - name: Set JAVA_HOME

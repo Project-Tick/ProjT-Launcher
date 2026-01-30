@@ -163,21 +163,21 @@ jobs:
             artifact-name: Windows-MSVC
             cmake-preset: windows_msvc
             vcvars-arch: amd64
-            qt-architecture: win64_msvc2022
+            qt-architecture: win64_msvc2022_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
           - os: windows-2022
             artifact-name: Windows-MSVC-2022
             cmake-preset: windows_msvc
             vcvars-arch: amd64
-            qt-architecture: win64_msvc2022
+            qt-architecture: win64_msvc2022_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
           - os: windows-2025
             artifact-name: Windows-MSVC-2025
             cmake-preset: windows_msvc
             vcvars-arch: amd64
-            qt-architecture: win64_msvc2022
+            qt-architecture: win64_msvc2022_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
           - os: windows-11-arm
@@ -211,91 +211,91 @@ jobs:
             artifact-name: macOS-14-universal
             cmake-preset: macos_universal
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-15
             artifact-name: macOS-15-universal
             cmake-preset: macos_universal
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-14-intel
             artifact-name: macOS-14-intel-universal
             cmake-preset: macos_universal
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-15-intel
             artifact-name: macOS-15-intel-universal
             cmake-preset: macos_universal
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-26
             artifact-name: macOS-26-universal
             cmake-preset: macos_universal
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-14
             artifact-name: macOS-14-arm64
             cmake-preset: macos_arm64
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-15
             artifact-name: macOS-15-arm64
             cmake-preset: macos_arm64
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-14-intel
             artifact-name: macOS-14-intel
             cmake-preset: macos_intel
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-15-intel
             artifact-name: macOS-15-intel
             cmake-preset: macos_intel
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-26
             artifact-name: macOS-26-arm64
             cmake-preset: macos_arm64
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-26
             artifact-name: macOS-universal
             cmake-preset: macos_universal
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-15
             artifact-name: macOS-intel
             cmake-preset: macos_intel
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
           - os: macos-26
             artifact-name: macOS-arm64
             cmake-preset: macos_arm64
             macosx-deployment-target: 12.0
-            qt-architecture: gcc_64
+            qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
 
@@ -309,7 +309,7 @@ jobs:
 
     defaults:
       run:
-        shell: ${{ matrix.msystem != '' && 'msys2 {0}' || 'bash' }}
+        shell: ${{ matrix.msystem && 'msys2 {0}' || 'bash' }}
 
     steps:
       - name: Checkout Project Tick Launcher Repository

@@ -29,7 +29,17 @@
 #include <windows.h>
 #include <wrl.h>
 #include <WebView2.h>
+#if __has_include(<WebView2Loader.h>)
 #include <WebView2Loader.h>
+#define PROJT_HAVE_WEBVIEW2_LOADER 1
+#else
+#define PROJT_HAVE_WEBVIEW2_LOADER 0
+extern "C" HRESULT STDAPICALLTYPE CreateCoreWebView2EnvironmentWithOptions(
+	PCWSTR browserExecutableFolder,
+	PCWSTR userDataFolder,
+	ICoreWebView2EnvironmentOptions* environmentOptions,
+	ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler* environmentCreatedHandler);
+#endif
 
 using Microsoft::WRL::Callback;
 using Microsoft::WRL::ComPtr;

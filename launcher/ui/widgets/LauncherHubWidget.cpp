@@ -170,12 +170,6 @@ class LauncherHubPage final : public QWebEnginePage
 };
 #endif
 
-#if defined(PROJT_USE_WEBENGINE)
-using HubView = QWebEngineView;
-#elif defined(PROJT_USE_WEBVIEW2)
-using HubView = WebView2Widget;
-#endif
-
 LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 {
 	m_homeUrl = defaultHubUrl();
