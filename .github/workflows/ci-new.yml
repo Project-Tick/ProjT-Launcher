@@ -106,7 +106,7 @@ jobs:
     name: Build ProjT Launcher ( DEBUG )
     needs: prepare
     if: needs.prepare.outputs.run-regular-build == 'true'
-    uses: ./.github/workflows/build-projt-launcher.yml
+    uses: ./.github/workflows/ci-launcher.yml
     permissions:
       contents: read
       packages: write
@@ -122,7 +122,7 @@ jobs:
     name: Build ProjT Launcher ( RELEASE )
     needs: prepare
     if: needs.prepare.outputs.run-release-build == 'true'
-    uses: ./.github/workflows/build-projt-launcher.yml
+    uses: ./.github/workflows/ci-launcher.yml
     permissions:
       contents: read
       packages: write
