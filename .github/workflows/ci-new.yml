@@ -131,7 +131,6 @@ jobs:
     with:
       ref: ${{ github.sha }}
       build-type: Release
-      force-prepare-yes: true
       output-root: ${{ github.workspace }}/build/out
     secrets: inherit
 
