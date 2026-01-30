@@ -22,6 +22,10 @@ inputs:
     description: Version of Qt to use
     required: true
     default: 6.10.0
+  qt-modules:
+    description: Qt modules to install
+    required: false
+    default: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
 
 outputs:
   build-type:
@@ -60,5 +64,5 @@ runs:
         aqtversion: "==3.1.*"
         version: ${{ inputs.qt-version }}
         arch: ${{ inputs.qt-architecture }}
-        modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
+        modules: ${{ inputs.qt-modules }}
         cache: ${{ inputs.build-type == 'Debug' }}

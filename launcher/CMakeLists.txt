@@ -854,6 +854,8 @@ SET(LAUNCHER_SOURCES
     ui/widgets/FastFileIconProvider.h
     ui/widgets/LauncherHubWidget.cpp
     ui/widgets/LauncherHubWidget.h
+    ui/widgets/WebView2Widget.cpp
+    ui/widgets/WebView2Widget.h
 
     # GUI - setup wizard
     ui/setupwizard/SetupWizard.h
@@ -1340,8 +1342,6 @@ target_link_libraries(Launcher_logic
     Qt${QT_VERSION_MAJOR}::Concurrent
     Qt${QT_VERSION_MAJOR}::Gui
     Qt${QT_VERSION_MAJOR}::Widgets
-    Qt${QT_VERSION_MAJOR}::WebEngineWidgets
-    Qt${QT_VERSION_MAJOR}::WebChannel
     Qt${QT_VERSION_MAJOR}::NetworkAuth
     Qt${QT_VERSION_MAJOR}::OpenGL
     ${Launcher_QT_DBUS}
@@ -1355,6 +1355,67 @@ target_link_libraries(Launcher_logic
 )
 if (Launcher_QT_DBUS AND TARGET Qt6::DBus)
     add_compile_definitions(WITH_QTDBUS)
+endif()
+
+set(LAUNCHER_USE_WEBENGINE ON)
+set(LAUNCHER_USE_WEBVIEW2 OFF)
+set(LAUNCHER_DISABLE_HUB OFF)
+if(MINGW)
+    set(LAUNCHER_USE_WEBENGINE OFF)
+    set(LAUNCHER_DISABLE_HUB ON)
+endif()
+if(MSVC AND (CMAKE_VS_PLATFORM_NAME STREQUAL "ARM64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|aarch64"))
+    set(LAUNCHER_USE_WEBENGINE OFF)
+    set(LAUNCHER_USE_WEBVIEW2 ON)
+endif()
+
+if(LAUNCHER_USE_WEBENGINE)
+    target_compile_definitions(Launcher_logic PUBLIC PROJT_USE_WEBENGINE)
+    target_link_libraries(Launcher_logic
+        Qt${QT_VERSION_MAJOR}::WebEngineWidgets
+        Qt${QT_VERSION_MAJOR}::WebChannel
+    )
+endif()
+
+if(LAUNCHER_USE_WEBENGINE AND UNIX AND NOT APPLE AND TARGET MINIZIP::minizip)
+    target_link_libraries(Launcher_logic PUBLIC MINIZIP::minizip)
+endif()
+
+if(LAUNCHER_USE_WEBVIEW2 AND WIN32)
+    target_compile_definitions(Launcher_logic PUBLIC PROJT_USE_WEBVIEW2)
+
+    set(_WEBVIEW2_SDK_GLOB "${CMAKE_SOURCE_DIR}/dependencies/Microsoft.Web.WebView2.*")
+    file(GLOB _WEBVIEW2_SDK_DIR LIST_DIRECTORIES true "${_WEBVIEW2_SDK_GLOB}")
+    list(SORT _WEBVIEW2_SDK_DIR ORDER DESCENDING)
+    if(_WEBVIEW2_SDK_DIR)
+        list(GET _WEBVIEW2_SDK_DIR 0 WEBVIEW2_SDK_DIR)
+    endif()
+
+    find_path(WEBVIEW2_INCLUDE_DIR
+        NAMES WebView2.h
+        PATHS
+            "${WEBVIEW2_SDK_DIR}/build/native/include"
+        NO_DEFAULT_PATH
+    )
+    find_library(WEBVIEW2_LOADER_LIB
+        NAMES WebView2LoaderStatic WebView2Loader
+        PATHS
+            "${WEBVIEW2_SDK_DIR}/build/native/${CMAKE_VS_PLATFORM_NAME}"
+            "${WEBVIEW2_SDK_DIR}/build/native/x64"
+            "${WEBVIEW2_SDK_DIR}/build/native/arm64"
+        NO_DEFAULT_PATH
+    )
+
+    if(NOT WEBVIEW2_INCLUDE_DIR OR NOT WEBVIEW2_LOADER_LIB)
+        message(FATAL_ERROR "WebView2 SDK not found. Ensure Microsoft.Web.WebView2 is restored into dependencies.")
+    endif()
+
+    target_include_directories(Launcher_logic PRIVATE "${WEBVIEW2_INCLUDE_DIR}")
+    target_link_libraries(Launcher_logic "${WEBVIEW2_LOADER_LIB}")
+endif()
+
+if(LAUNCHER_DISABLE_HUB)
+    target_compile_definitions(Launcher_logic PUBLIC PROJT_DISABLE_LAUNCHER_HUB)
 endif()
 
 if(APPLE)

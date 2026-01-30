@@ -40,6 +40,10 @@ NewsDialog::NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent) : QDialog(p
 		emit openHubRequested(QUrl(m_current_link));
 		accept();
 	});
+#if defined(PROJT_DISABLE_LAUNCHER_HUB)
+	ui->openInHubButton->setEnabled(false);
+	ui->openInHubButton->setToolTip(tr("Launcher Hub is not available in this build."));
+#endif
 
 	m_article_list_hidden = ui->articleListWidget->isHidden();
 
@@ -49,7 +53,9 @@ NewsDialog::NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent) : QDialog(p
 	auto article_entry = m_entries.constFind(first_item->text()).value();
 	ui->articleTitleLabel->setText(QString("<a href='%1'>%2</a>").arg(article_entry->link, first_item->text()));
 	m_current_link = article_entry->link;
+#if !defined(PROJT_DISABLE_LAUNCHER_HUB)
 	ui->openInHubButton->setEnabled(!m_current_link.isEmpty());
+#endif
 
 	ui->currentArticleContentBrowser->setText(article_entry->content);
 	ui->currentArticleContentBrowser->flush();
@@ -66,7 +72,9 @@ void NewsDialog::selectedArticleChanged(const QString& new_title)
 
 	ui->articleTitleLabel->setText(QString("<a href='%1'>%2</a>").arg(article_entry->link, new_title));
 	m_current_link = article_entry->link;
+#if !defined(PROJT_DISABLE_LAUNCHER_HUB)
 	ui->openInHubButton->setEnabled(!m_current_link.isEmpty());
+#endif
 
 	ui->currentArticleContentBrowser->setText(article_entry->content);
 	ui->currentArticleContentBrowser->flush();

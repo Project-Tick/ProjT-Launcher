@@ -38,16 +38,10 @@ runs:
         sudo apt-get -y update
         sudo apt-get -y install \
           dpkg-dev \
-          ninja-build extra-cmake-modules scdoc \
+          ninja-build scdoc \
           appstream libxcb-cursor-dev \
           openjdk-21-jdk \
           libtiff6 \
-          zlib1g-dev \
-          libquazip1-qt6-dev \
-          libcmark-dev \
-          cmark \
-          libtomlplusplus-dev \
-          libqrencode-dev \
           lcov
 
         # Qt imageformat plugin was looking for libtiff.so.5; we standardize on libtiff6 and expose compat symlink.

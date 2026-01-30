@@ -20,6 +20,11 @@ on:
         type: string
         required: false
         default: ""
+      enable-windows-arm64:
+        description: Enable Windows MSVC ARM64 build (Qt WebEngine not available on ARM64)
+        type: boolean
+        required: false
+        default: false
       qt-architecture:
         description: Qt architecture
         type: string
@@ -45,6 +50,10 @@ on:
         description: Root directory for build outputs
         required: false
         default: ""
+      enable-windows-arm64:
+        description: Enable Windows MSVC ARM64 build (Qt WebEngine not available on ARM64)
+        required: false
+        default: false
       qt-version:
         description: Version of Qt to use
         required: true
@@ -464,6 +473,7 @@ jobs:
   build-windows-msvc-arm64:
     name: Build (${{ matrix.artifact-name }})
     needs: [project-checkout]
+    if: ${{ inputs.enable-windows-arm64 == true }}
     permissions:
       packages: write
 
@@ -490,7 +500,7 @@ jobs:
     steps:
 
       - name: Set build type
-        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
+        run: echo "BUILD_TYPE=Release" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -504,6 +514,8 @@ jobs:
         with:
           artifact-name: ${{ matrix.artifact-name }}
           vcvars-arch: ${{ matrix.vcvars-arch }}
+          qt-architecture: win64_msvc2022_arm64
+          qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
 
       - name: Clean build directory for builds
         run: |

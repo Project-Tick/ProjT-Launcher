@@ -27,8 +27,8 @@ class QStackedWidget;
 class QTabBar;
 class QToolButton;
 class QWebEngineProfile;
-class QWebEngineView;
 class QWidget;
+class HubView;
 
 class LauncherHubWidget : public QWidget
 {
@@ -46,8 +46,8 @@ class LauncherHubWidget : public QWidget
 	QUrl homeUrl() const;
 
   private:
-	QWebEngineView* currentView() const;
-	QWebEngineView* createTab(const QUrl& url, const QString& label = QString(), bool switchTo = true);
+	HubView* currentView() const;
+	HubView* createTab(const QUrl& url, const QString& label = QString(), bool switchTo = true);
 	void updateNavigationState();
 
 	QTabBar* m_tabBar			 = nullptr;

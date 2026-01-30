@@ -64,6 +64,7 @@
 #include "ui/LaunchMenu.h"
 #include "ui_MainWindow.h"
 
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileInfo>
 #include <QUrl>
@@ -169,6 +170,11 @@ namespace
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
 	ui->setupUi(this);
+
+#if defined(PROJT_DISABLE_LAUNCHER_HUB)
+	ui->actionLauncherHub->setEnabled(false);
+	ui->actionLauncherHub->setToolTip(tr("Launcher Hub is not available in this build."));
+#endif
 
 	setWindowIcon(APPLICATION->logo());
 	setWindowTitle(APPLICATION->applicationDisplayName());
@@ -1559,6 +1565,16 @@ void MainWindow::newsButtonClicked()
 
 void MainWindow::openLauncherHub(const QUrl& url)
 {
+#if defined(PROJT_DISABLE_LAUNCHER_HUB)
+	QMessageBox::information(this,
+							 tr("Launcher Hub"),
+							 tr("Launcher Hub is not available in this version."));
+	if (url.isValid())
+	{
+		QDesktopServices::openUrl(url);
+	}
+	return;
+#endif
 	if (!m_launcherHubDialog)
 	{
 		m_launcherHubDialog = new LauncherHubDialog(this);
