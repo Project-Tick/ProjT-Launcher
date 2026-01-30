@@ -7,7 +7,7 @@
     "test": "node test/commits.test.js"
   },
   "dependencies": {
-    "@actions/artifact": "5.0.3",
+    "@actions/artifact": "6.0.0",
     "@actions/core": "3.0.0",
     "@actions/github": "9.0.0",
     "bottleneck": "2.19.5",
