@@ -8,7 +8,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  workflows: write
 
 concurrency:
   group: qt-webengine-maintenance
@@ -77,10 +76,20 @@ jobs:
         run: |
           scripts/update-qt-version.sh
 
+      - name: Create GitHub App token
+        id: app-token
+        if: steps.update.outputs.qt_version_changed == 'true'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.QT_BOT_APP_ID }}
+          installation-id: ${{ secrets.QT_BOT_APP_INSTALLATION_ID }}
+          private-key: ${{ secrets.QT_BOT_APP_PRIVATE_KEY }}
+
       - name: Create pull request
         if: steps.update.outputs.qt_version_changed == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ steps.app-token.outputs.token }}
           branch: automation/qt-${{ steps.update.outputs.qt_version_latest }}-${{ matrix.branch }}
           base: ${{ matrix.branch }}
           commit-message: "chore: bump Qt to ${{ steps.update.outputs.qt_version_latest }}"
