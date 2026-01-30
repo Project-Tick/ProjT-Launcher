@@ -1378,7 +1378,7 @@ if(LAUNCHER_USE_WEBENGINE)
 endif()
 
 if(LAUNCHER_USE_WEBENGINE AND UNIX AND NOT APPLE AND TARGET MINIZIP::minizip)
-    target_link_libraries(Launcher_logic PUBLIC MINIZIP::minizip)
+    target_link_libraries(Launcher_logic MINIZIP::minizip)
 endif()
 
 if(LAUNCHER_USE_WEBVIEW2 AND WIN32)
