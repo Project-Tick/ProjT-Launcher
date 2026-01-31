@@ -169,7 +169,14 @@ runs:
       run: |
         if [ '${{ inputs.sparkle-ed25519-key }}' != '' ]; then
           echo '${{ inputs.sparkle-ed25519-key }}' > ed25519-priv.pem
-          signature=$(/opt/homebrew/opt/openssl@3/bin/openssl pkeyutl -sign -rawin -in ${{ github.workspace }}/ProjTLauncher.zip -inkey ed25519-priv.pem | openssl base64 | tr -d \\n)
+          openssl_bin="/opt/homebrew/opt/openssl@3/bin/openssl"
+          if [ ! -x "$openssl_bin" ]; then
+            openssl_bin="/usr/local/opt/openssl@3/bin/openssl"
+          fi
+          if [ ! -x "$openssl_bin" ]; then
+            openssl_bin="openssl"
+          fi
+          signature=$("$openssl_bin" pkeyutl -sign -rawin -in ${{ github.workspace }}/ProjTLauncher.zip -inkey ed25519-priv.pem | openssl base64 | tr -d \\n)
           rm ed25519-priv.pem
           cat >> $GITHUB_STEP_SUMMARY << EOF
         ### Artifact Information :information_source:

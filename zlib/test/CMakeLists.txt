@@ -167,6 +167,11 @@ set(GENERATOR ${CMAKE_GENERATOR_PLATFORM})
 if(GENERATOR)
     set(PLATFORM "-A ${GENERATOR}")
 endif(GENERATOR)
+
+set(OSX_ARCH "")
+if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+    set(OSX_ARCH "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}")
+endif()
 #
 # findpackage_test
 #
@@ -177,7 +182,7 @@ add_test(
         -B${CMAKE_CURRENT_BINARY_DIR}/findpackage_test_build
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
+        ${OSX_ARCH} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
         -G "${CMAKE_GENERATOR}" -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_test)
 
 add_test(
@@ -212,7 +217,7 @@ add_test(
         -B${CMAKE_CURRENT_BINARY_DIR}/add_subdirectory_test_build
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
+        ${OSX_ARCH} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
         -G "${CMAKE_GENERATOR}" -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_test)
 
 add_test(
@@ -247,7 +252,7 @@ add_test(
         -B${CMAKE_CURRENT_BINARY_DIR}/add_subdirectory_exclude_test_build
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
+        ${OSX_ARCH} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
         -G "${CMAKE_GENERATOR}" -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_test)
 
 add_test(

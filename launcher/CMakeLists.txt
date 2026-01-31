@@ -1397,14 +1397,32 @@ if(LAUNCHER_USE_WEBVIEW2 AND WIN32)
             "${WEBVIEW2_SDK_DIR}/build/native/include"
         NO_DEFAULT_PATH
     )
-    find_library(WEBVIEW2_LOADER_LIB
-        NAMES WebView2LoaderStatic WebView2Loader
-        PATHS
-            "${WEBVIEW2_SDK_DIR}/build/native/${CMAKE_VS_PLATFORM_NAME}"
-            "${WEBVIEW2_SDK_DIR}/build/native/x64"
-            "${WEBVIEW2_SDK_DIR}/build/native/arm64"
-        NO_DEFAULT_PATH
-    )
+    set(_WEBVIEW2_ARCH_DIR "")
+    if(CMAKE_VS_PLATFORM_NAME STREQUAL "ARM64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|aarch64")
+        set(_WEBVIEW2_ARCH_DIR "arm64")
+    elseif(CMAKE_VS_PLATFORM_NAME MATCHES "64" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(_WEBVIEW2_ARCH_DIR "x64")
+    else()
+        set(_WEBVIEW2_ARCH_DIR "x86")
+    endif()
+
+    if(_WEBVIEW2_ARCH_DIR STREQUAL "arm64")
+        find_library(WEBVIEW2_LOADER_LIB
+            NAMES WebView2LoaderStatic WebView2Loader
+            PATHS
+                "${WEBVIEW2_SDK_DIR}/build/native/arm64"
+            NO_DEFAULT_PATH
+        )
+    else()
+        find_library(WEBVIEW2_LOADER_LIB
+            NAMES WebView2LoaderStatic WebView2Loader
+            PATHS
+                "${WEBVIEW2_SDK_DIR}/build/native/${_WEBVIEW2_ARCH_DIR}"
+                "${WEBVIEW2_SDK_DIR}/build/native/x64"
+                "${WEBVIEW2_SDK_DIR}/build/native/x86"
+            NO_DEFAULT_PATH
+        )
+    endif()
 
     if(NOT WEBVIEW2_INCLUDE_DIR OR NOT WEBVIEW2_LOADER_LIB)
         message(FATAL_ERROR "WebView2 SDK not found. Ensure Microsoft.Web.WebView2 is restored into dependencies.")
@@ -1783,11 +1801,4 @@ if(WIN32 OR (UNIX AND APPLE))
             endforeach()
         ")
     endif()
-endif()
-
-# Copy ModernDark theme to build directory for testing (macOS only)
-if(APPLE)
-    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ui/themes/ModernDark" DESTINATION "${CMAKE_BINARY_DIR}/themes")
-    # Install ModernDark theme to bundle resources
-    install(DIRECTORY "ui/themes/ModernDark" DESTINATION "${RESOURCES_DEST_DIR}/themes" COMPONENT Runtime)
 endif()

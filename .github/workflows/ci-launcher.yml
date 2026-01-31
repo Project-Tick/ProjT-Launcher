@@ -323,7 +323,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
+          ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE"
 
       - name: Upload build
         uses: actions/upload-artifact@v6
