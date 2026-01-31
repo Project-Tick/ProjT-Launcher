@@ -15,6 +15,11 @@ on:
     branches:
       - "main"
   workflow_dispatch:
+    inputs:
+      cache-repository:
+        description: Whether to cache the repository created by Flatpak builds
+        type: boolean
+        default: false
   schedule:
     - cron: "0 * * * *" # Every hour
     - cron: "0 3 * * *" # Daily at 03:00 UTC
@@ -135,11 +140,12 @@ jobs:
     secrets: inherit
 
   flatpak-build:
-    name: Flatpak Build (${{ matrix.arch }})
+    name: Build Flatpak (${{ matrix.arch }})
     if: needs.prepare.outputs.run-regular-build == 'true'
     needs: prepare
     strategy:
       fail-fast: false
+      max-parallel: ${{ (github.event.inputs.cache-repository == 'true') && 1 || 99 }}
       matrix:
         include:
           - os: ubuntu-24.04
@@ -153,38 +159,76 @@ jobs:
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
       options: --privileged
+      volumes:
+        - /opt/hostedtoolcache:/hostedtoolcache
+
+    env:
+      GPG_KEY_ID: ${{ secrets.GPG_PRIVATE_KEY != '' && vars.GPG_KEY_ID || '' }}
+      REPOSITORY_DIR: repo
 
     steps:
+      - name: Free up disk space
+        shell: bash
+        run: |
+          rm -rf /hostedtoolcache/* || true
+
+      - name: Set short version
+        shell: bash
+        run: |
+          echo "VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
-      - name: Set short version
-        id: short-version
-        shell: bash
-        run: |
-          echo "version=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-          echo "VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - name: Restore local repository
+        id: restore-repository
+        if: ${{ github.event.inputs.cache-repository == 'true' }}
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.REPOSITORY_DIR }}
+          key: repository-${{ github.run_id }}-${{ runner.arch }}
+          restore-keys: repository-
 
-      - name: Free disk space
+      - name: Setup signing
         shell: bash
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY || '' }}
         run: |
-          df -h
-          rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift || true
-          rm -rf /var/lib/apt/lists/* /var/cache/apt/* || true
-          if command -v apt-get >/dev/null 2>&1; then
-            apt-get clean || true
+          if [[ -z "$GPG_PRIVATE_KEY" ]]; then
+            echo ":warning: Not signing Flatpaks or ostree repositories, as the signing key was not present" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo -n "$GPG_PRIVATE_KEY" | base64 -d | gpg --import
+            gpg --list-keys --keyid-format=long "$GPG_KEY_ID"
           fi
-          df -h
 
       - name: Build Flatpak
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
-          bundle: ProjTLauncher-${{ runner.os }}-${{ steps.short-version.outputs.version }}-Flatpak.flatpak
           manifest-path: flatpak/org.projecttick.ProjTLauncher.yml
           arch: ${{ matrix.arch }}
+          repo-dir: ${{ env.REPOSITORY_DIR }}
+          gpg-sign: ${{ env.GPG_KEY_ID }}
+          bundle: ProjTLauncher-${{ env.VERSION }}-${{ matrix.arch }}.flatpak
+
+      - name: Update and prune repository
+        if: ${{ github.event.inputs.cache-repository == 'true' }}
+        shell: bash
+        run: |
+          flatpak build-update-repo \
+            "${GPG_KEY_ID:+--gpg-sign="$GPG_KEY_ID"}" \
+            --generate-static-deltas \
+            --prune \
+            "$REPOSITORY_DIR"
+
+      - name: Cache local repository
+        if: ${{ github.event.inputs.cache-repository == 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.REPOSITORY_DIR }}
+          key: ${{ steps.restore-repository.outputs.cache-primary-key }}
 
   build-javacheck:
     name: Build javacheck
