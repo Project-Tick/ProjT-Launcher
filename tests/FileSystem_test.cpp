@@ -19,6 +19,7 @@
  */
 
 #include <QDir>
+#include <QFile>
 #include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QTest>
@@ -31,6 +32,36 @@
 
 #include <filesystem>
 namespace fs = std::filesystem;
+
+#if defined(Q_OS_WIN32)
+static bool canCreateSymlink()
+{
+	QTemporaryDir tempDir;
+	if (!tempDir.isValid())
+		return false;
+
+	const QString target = FS::PathCombine(tempDir.path(), "target.txt");
+	QFile file(target);
+	if (!file.open(QIODevice::WriteOnly))
+		return false;
+	file.write("x");
+	file.close();
+
+	const QString link = FS::PathCombine(tempDir.path(), "link.txt");
+	std::error_code ec;
+	fs::create_symlink(StringUtils::toStdString(target), StringUtils::toStdString(link), ec);
+	if (ec)
+		return false;
+
+	fs::remove(StringUtils::toStdString(link), ec);
+	return true;
+}
+#else
+static bool canCreateSymlink()
+{
+	return true;
+}
+#endif
 
 class LinkTask : public Task
 {
@@ -367,6 +398,10 @@ class FileSystemTest : public QObject
 
 	void test_link()
 	{
+#if defined(Q_OS_WIN32)
+		if (!canCreateSymlink())
+			QSKIP("Symlink creation not permitted on this Windows runner.");
+#endif
 		QString folder = QFINDTESTDATA("testdata/FileSystem/test_folder");
 		auto f		   = [&folder]()
 		{
@@ -474,6 +509,10 @@ class FileSystemTest : public QObject
 
 	void test_link_with_blacklist()
 	{
+#if defined(Q_OS_WIN32)
+		if (!canCreateSymlink())
+			QSKIP("Symlink creation not permitted on this Windows runner.");
+#endif
 		QString folder = QFINDTESTDATA("testdata/FileSystem/test_folder");
 		auto f		   = [&folder]()
 		{
@@ -528,6 +567,10 @@ class FileSystemTest : public QObject
 
 	void test_link_with_whitelist()
 	{
+#if defined(Q_OS_WIN32)
+		if (!canCreateSymlink())
+			QSKIP("Symlink creation not permitted on this Windows runner.");
+#endif
 		QString folder = QFINDTESTDATA("testdata/FileSystem/test_folder");
 		auto f		   = [&folder]()
 		{
@@ -583,6 +626,10 @@ class FileSystemTest : public QObject
 
 	void test_link_with_dot_hidden()
 	{
+#if defined(Q_OS_WIN32)
+		if (!canCreateSymlink())
+			QSKIP("Symlink creation not permitted on this Windows runner.");
+#endif
 		QString folder = QFINDTESTDATA("testdata/FileSystem/test_folder");
 		auto f		   = [&folder]()
 		{
@@ -638,6 +685,10 @@ class FileSystemTest : public QObject
 
 	void test_link_single_file()
 	{
+#if defined(Q_OS_WIN32)
+		if (!canCreateSymlink())
+			QSKIP("Symlink creation not permitted on this Windows runner.");
+#endif
 		QTemporaryDir tempDir;
 		tempDir.setAutoRemove(true);
 
@@ -680,6 +731,10 @@ class FileSystemTest : public QObject
 
 	void test_link_with_max_depth()
 	{
+#if defined(Q_OS_WIN32)
+		if (!canCreateSymlink())
+			QSKIP("Symlink creation not permitted on this Windows runner.");
+#endif
 		QString folder = QFINDTESTDATA("testdata/FileSystem/test_folder");
 		auto f		   = [&folder]()
 		{
@@ -738,6 +793,10 @@ class FileSystemTest : public QObject
 
 	void test_link_with_no_max_depth()
 	{
+#if defined(Q_OS_WIN32)
+		if (!canCreateSymlink())
+			QSKIP("Symlink creation not permitted on this Windows runner.");
+#endif
 		QString folder = QFINDTESTDATA("testdata/FileSystem/test_folder");
 		auto f		   = [&folder]()
 		{
