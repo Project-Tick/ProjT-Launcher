@@ -294,9 +294,6 @@ jobs:
           ref: ${{ env.CHECKOUT_REF }}
           submodules: true
 
-      - name: Set build type
-        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
-
       - name: Setup Dependencies
         id: setup-dependencies
         uses: ./.github/actions/setup-dependencies
@@ -307,6 +304,9 @@ jobs:
           qt-architecture: ${{ matrix.qt-architecture }}
           qt-version: ${{ matrix.qt-version || inputs.qt-version || '6.10.0' }}
           qt-modules: ${{ matrix.qt-modules || '' }}
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Clean build directory for builds
         run: |
