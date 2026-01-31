@@ -116,185 +116,54 @@ env:
 jobs:
   build-launcher:
     environment: ${{ inputs.environment || '' }}
-    name: Build (${{ matrix.artifact-name || format('{0}{1}', matrix.platform['artifact-base'], matrix.qt.suffix) }})
+    name: Build (${{ matrix.artifact-name }})
     permissions:
       packages: write
 
     strategy:
       fail-fast: false
       matrix:
-        qt:
-          - name: latest
+        include:
+          - os: ubuntu-24.04
+            artifact-name: Linux
+            cmake-preset: linux
+            qt-architecture: linux_gcc_64
+            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
-            qt-update: 1
-            suffix: ""
-          - name: qt6.9.3
-            qt-version: 6.9.3
-            qt-update: 0
-            suffix: -qt6.9.3
-          - name: qt6.8.6
-            qt-version: 6.8.6
-            qt-update: 0
-            suffix: -qt6.8.6
-
-        platform:
-          - name: Linux
-            os: ubuntu-24.04
-            artifact-base: Linux
-            cmake-preset: linux
-            qt-architecture: linux_gcc_64
-            qt-modules: &qt_full qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
-          - name: Linux-aarch64
-            os: ubuntu-24.04-arm
-            artifact-base: Linux-aarch64
+          - os: ubuntu-24.04-arm
+            artifact-name: Linux-aarch64
             cmake-preset: linux
             qt-architecture: linux_gcc_arm64
-            qt-modules: *qt_full
-          - name: Linux-24.04
-            os: ubuntu-24.04
-            artifact-base: Linux-24.04
-            cmake-preset: linux
-            qt-architecture: linux_gcc_64
-            qt-modules: *qt_full
-          - name: Linux-24.04-aarch64
-            os: ubuntu-24.04-arm
-            artifact-base: Linux-24.04-aarch64
-            cmake-preset: linux
-            qt-architecture: linux_gcc_arm64
-            qt-modules: *qt_full
-          - name: Linux-22.04
-            os: ubuntu-22.04
-            artifact-base: Linux-22.04
-            cmake-preset: linux
-            qt-architecture: linux_gcc_64
-            qt-modules: *qt_full
-          - name: Linux-22.04-aarch64
-            os: ubuntu-22.04-arm
-            artifact-base: Linux-22.04-aarch64
-            cmake-preset: linux
-            qt-architecture: linux_gcc_arm64
-            qt-modules: *qt_full
-          - name: Windows-MSVC
-            os: windows-2022
-            artifact-base: Windows-MSVC
+            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
+            qt-version: 6.10.2
+          - os: windows-2022
+            artifact-name: Windows-MSVC
             cmake-preset: windows_msvc
             vcvars-arch: amd64
             qt-architecture: win64_msvc2022_64
-            qt-modules: *qt_full
-          - name: Windows-MSVC-2022
-            os: windows-2022
-            artifact-base: Windows-MSVC-2022
+            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
+            qt-version: 6.10.2
+          - os: windows-2022
+            artifact-name: Windows-MSVC-2022
             cmake-preset: windows_msvc
             vcvars-arch: amd64
             qt-architecture: win64_msvc2022_64
-            qt-modules: *qt_full
-          - name: Windows-MSVC-2025
-            os: windows-2025
-            artifact-base: Windows-MSVC-2025
+            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
+            qt-version: 6.10.2
+          - os: windows-2025
+            artifact-name: Windows-MSVC-2025
             cmake-preset: windows_msvc
             vcvars-arch: amd64
             qt-architecture: win64_msvc2022_64
-            qt-modules: *qt_full
-          - name: Windows-MSVC-arm64
-            os: windows-11-arm
-            artifact-base: Windows-MSVC-arm64
+            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
+            qt-version: 6.10.2
+          - os: windows-11-arm
+            artifact-name: Windows-MSVC-arm64
             cmake-preset: windows_msvc
             vcvars-arch: arm64
             qt-architecture: win64_msvc2022_arm64
-            qt-modules: &qt_no_webengine qtimageformats qtnetworkauth qtpositioning qtserialport
-          - name: macOS-14-universal
-            os: macos-14
-            artifact-base: macOS-14-universal
-            cmake-preset: macos_universal
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-15-universal
-            os: macos-15
-            artifact-base: macOS-15-universal
-            cmake-preset: macos_universal
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-14-intel-universal
-            os: macos-14-intel
-            artifact-base: macOS-14-intel-universal
-            cmake-preset: macos_universal
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-15-intel-universal
-            os: macos-15-intel
-            artifact-base: macOS-15-intel-universal
-            cmake-preset: macos_universal
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-26-universal
-            os: macos-26
-            artifact-base: macOS-26-universal
-            cmake-preset: macos_universal
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-14-arm64
-            os: macos-14
-            artifact-base: macOS-14-arm64
-            cmake-preset: macos_arm64
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-15-arm64
-            os: macos-15
-            artifact-base: macOS-15-arm64
-            cmake-preset: macos_arm64
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-14-intel
-            os: macos-14-intel
-            artifact-base: macOS-14-intel
-            cmake-preset: macos_intel
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-15-intel
-            os: macos-15-intel
-            artifact-base: macOS-15-intel
-            cmake-preset: macos_intel
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-26-arm64
-            os: macos-26
-            artifact-base: macOS-26-arm64
-            cmake-preset: macos_arm64
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-universal
-            os: macos-26
-            artifact-base: macOS-universal
-            cmake-preset: macos_universal
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-intel
-            os: macos-15
-            artifact-base: macOS-intel
-            cmake-preset: macos_intel
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-          - name: macOS-arm64
-            os: macos-26
-            artifact-base: macOS-arm64
-            cmake-preset: macos_arm64
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: *qt_full
-
-        include:
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
+            qt-version: 6.10.2
           - os: windows-2022
             artifact-name: Windows-MinGW-w64-2022
             cmake-preset: windows_mingw
@@ -315,16 +184,105 @@ jobs:
             cmake-preset: windows_mingw
             msystem: CLANGARM64
             vcvars-arch: arm64
+          - os: macos-14
+            artifact-name: macOS-14-universal
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-15
+            artifact-name: macOS-15-universal
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-14-intel
+            artifact-name: macOS-14-intel-universal
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-15-intel
+            artifact-name: macOS-15-intel-universal
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-26
+            artifact-name: macOS-26-universal
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-14
+            artifact-name: macOS-14-arm64
+            cmake-preset: macos_arm64
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-15
+            artifact-name: macOS-15-arm64
+            cmake-preset: macos_arm64
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-14-intel
+            artifact-name: macOS-14-intel
+            cmake-preset: macos_intel
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-15-intel
+            artifact-name: macOS-15-intel
+            cmake-preset: macos_intel
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-26
+            artifact-name: macOS-26-arm64
+            cmake-preset: macos_arm64
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-26
+            artifact-name: macOS-universal
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-15
+            artifact-name: macOS-intel
+            cmake-preset: macos_intel
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-26
+            artifact-name: macOS-arm64
+            cmake-preset: macos_arm64
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
 
-    runs-on: ${{ matrix.os || matrix.platform.os }}
+    runs-on: ${{ matrix.os }}
 
     env:
-      ARTIFACT_NAME: ${{ matrix.artifact-name || format('{0}{1}', matrix.platform['artifact-base'], matrix.qt.suffix) }}
+      ARTIFACT_NAME: ${{ matrix.artifact-name }}
       BUILD_PLATFORM: official
-      CMAKE_PRESET: ${{ matrix.cmake-preset || matrix.platform['cmake-preset'] }}
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target || matrix.platform['macosx-deployment-target'] }}
-      QT_MODULES_FULL: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
-      QT_MODULES_NO_WEBENGINE: qtimageformats qtnetworkauth qtpositioning qtserialport
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     defaults:
       run:
@@ -341,12 +299,15 @@ jobs:
         id: setup-dependencies
         uses: ./.github/actions/setup-dependencies
         with:
-          artifact-name: ${{ env.ARTIFACT_NAME }}
+          artifact-name: ${{ matrix.artifact-name }}
           msystem: ${{ matrix.msystem }}
-          vcvars-arch: ${{ matrix.vcvars-arch || matrix.platform['vcvars-arch'] }}
-          qt-architecture: ${{ matrix.qt-architecture || matrix.platform['qt-architecture'] }}
-          qt-modules: ${{ matrix.qt-modules || matrix.platform['qt-modules'] || '' }}
-          build-type: ${{ inputs.build-type || 'Debug' }}
+          vcvars-arch: ${{ matrix.vcvars-arch }}
+          qt-architecture: ${{ matrix.qt-architecture }}
+          qt-version: ${{ matrix.qt-version || inputs.qt-version || '6.10.0' }}
+          qt-modules: ${{ matrix.qt-modules || '' }}
+
+      - name: Set build type
+        run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
       - name: Clean build directory for builds
         run: |
@@ -362,18 +323,18 @@ jobs:
 
       - name: Run tests
         run: |
-          ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE"
+          ctest --preset "${{ matrix.cmake-preset }}" --build-config "$BUILD_TYPE"
 
       - name: Upload build
         uses: actions/upload-artifact@v6
         with:
-          name: build-${{ env.ARTIFACT_NAME }}
+          name: build-${{ matrix.artifact-name }}
           path: build/
 
       - name: Upload test results
         uses: actions/upload-artifact@v6
         with:
-          name: test-results-${{ env.ARTIFACT_NAME }}
+          name: test-results-${{ matrix.artifact-name }}
           path: build/Testing/
 
       - name: Get short version
@@ -388,7 +349,7 @@ jobs:
         with:
           version: ${{ steps.short-version.outputs.version }}
           build-type: ${{ env.BUILD_TYPE }}
-          artifact-name: ${{ env.ARTIFACT_NAME }}
+          artifact-name: ${{ matrix.artifact-name }}
           qt-version: ${{ steps.setup-dependencies.outputs.qt-version }}
           gpg-private-key: ${{ secrets.LINUX_GPG_KEY }}
           gpg-private-key-id: ${{ secrets.LINUX_GPG_ID }}
@@ -399,7 +360,7 @@ jobs:
         with:
           version: ${{ steps.short-version.outputs.version }}
           build-type: ${{ env.BUILD_TYPE }}
-          artifact-name: ${{ env.ARTIFACT_NAME }}
+          artifact-name: ${{ matrix.artifact-name }}
           windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT }}
           windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
           msystem: ${{ matrix.msystem }}
@@ -410,7 +371,7 @@ jobs:
         with:
           version: ${{ steps.short-version.outputs.version }}
           build-type: ${{ env.BUILD_TYPE }}
-          artifact-name: ${{ env.ARTIFACT_NAME }}
+          artifact-name: ${{ matrix.artifact-name }}
           apple-codesign-cert: ${{ secrets.APPLE-CODESIGN-CERT }}
           apple-codesign-password: ${{ secrets.APPLE-CODESIGN_PASSWORD }}
           apple-codesign-id: ${{ secrets.APPLE-CODESIGN_ID }}

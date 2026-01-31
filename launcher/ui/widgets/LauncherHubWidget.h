@@ -43,6 +43,8 @@ using HubView = QWebEngineView;
 #elif defined(PROJT_USE_WEBVIEW2)
 using HubView = WebView2Widget;
 #endif
+#else
+class HubView;
 #endif
 
 class LauncherHubWidget : public QWidget
