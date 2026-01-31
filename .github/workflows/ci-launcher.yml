@@ -115,6 +115,7 @@ env:
 
 jobs:
   build-launcher:
+    environment: ${{ inputs.environment || '' }}
     name: Build (${{ matrix.artifact-name || format('{0}{1}', matrix.platform['artifact-base'], matrix.qt.suffix) }})
     permissions:
       packages: write
@@ -345,6 +346,7 @@ jobs:
           vcvars-arch: ${{ matrix.vcvars-arch || matrix.platform['vcvars-arch'] }}
           qt-architecture: ${{ matrix.qt-architecture || matrix.platform['qt-architecture'] }}
           qt-modules: ${{ matrix.qt-modules || matrix.platform['qt-modules'] || '' }}
+          build-type: ${{ inputs.build-type || 'Debug' }}
 
       - name: Clean build directory for builds
         run: |
