@@ -887,9 +887,13 @@ if(NOT LAUNCHER_FUZZ_ONLY)
     projt_push_output_dirs("LocalPeer")
     add_subdirectory(./LocalPeer) # fork of a library from Qt solutions
     projt_pop_output_dirs()
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/gamemode/CMakeLists.txt")
     projt_push_output_dirs("gamemode")
     add_subdirectory(./gamemode)
     projt_pop_output_dirs()
+    else()
+        message(STATUS "gamemode/ not found; skipping bundled gamemode")
+    endif()
     projt_push_output_dirs("murmur2")
     add_subdirectory(./murmur2) # Hash for usage with the CurseForge API
     projt_pop_output_dirs()
