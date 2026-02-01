@@ -41,7 +41,10 @@ runs:
           ninja-build scdoc \
           appstream libxcb-cursor-dev \
           openjdk-21-jdk \
-          lcov
+          lcov \
+          libdbus-1-dev \
+          libinih-dev \
+          libsystemd-dev
         if apt-cache show libtiff6 >/dev/null 2>&1; then
           sudo apt-get -y install libtiff6
           archdir="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"
