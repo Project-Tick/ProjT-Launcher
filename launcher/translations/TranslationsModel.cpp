@@ -133,13 +133,57 @@ struct Language
 		}
 		else
 		{
-			result = locale.nativeLanguageName();
+			const auto base_lang = key.section('_', 0, 0);
+			const QLocale base_locale(base_lang);
+			result = QLocale::languageToString(base_locale.language());
+			if (result == "C")
+			{
+				qWarning() << "Unknown language code (Qt returned \"C\"):" << key;
+				static const QMap<QString, QString> k_languageOverrides = {
+					{ "av", "Avaric" },
+					{ "tay", "Atayal" },
+					{ "tlh", "Klingon" },
+					{ "tw", "Twi" },
+					{ "ty", "Tahitian" },
+					{ "tzl", "Talossan" },
+					{ "val", "Valencian" },
+					{ "vls", "Flemish" },
+					{ "zea", "Zeelandic" },
+				};
+				auto it = k_languageOverrides.find(base_lang);
+				if (it != k_languageOverrides.end())
+				{
+					result = it.value();
+				}
+			}
+			if (result.isEmpty() || result == "C")
+			{
+				result = base_lang.isEmpty() ? key : base_lang;
+			}
 		}
 
-		if (result.isEmpty())
+		if (key.contains('_') && !key.contains('@'))
+		{
+			auto region = key.section('_', 1);
+			if (!region.isEmpty())
+			{
+				QLocale::Territory territory = QLocale::codeToTerritory(QStringView{region});
+				auto territory_name = QLocale::territoryToString(territory);
+				if (!territory_name.isEmpty() && territory != QLocale::AnyTerritory)
+				{
+					result += " (" + territory_name + ")";
+				}
+				else
+				{
+					result += " (" + region + ")";
+				}
+			}
+		}
+		else if (result.isEmpty())
 		{
 			result = key;
 		}
+
 		return result;
 	}
 
