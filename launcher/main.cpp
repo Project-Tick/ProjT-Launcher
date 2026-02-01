@@ -55,8 +55,24 @@
 
 #include "Application.h"
 
+#if defined(Q_OS_LINUX)
+#include <QByteArray>
+#endif
+
 int main(int argc, char* argv[])
 {
+#if defined(Q_OS_LINUX)
+	// Prefer GTK-themed integration on GNOME if user hasn't set a platform theme.
+	if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORMTHEME"))
+	{
+		const auto desktop = qgetenv("XDG_CURRENT_DESKTOP").toLower();
+		if (desktop.contains("gnome"))
+		{
+			qputenv("QT_QPA_PLATFORMTHEME", "gnome");
+		}
+	}
+#endif
+
 	// initialize Qt
 	Application app(argc, argv);
 

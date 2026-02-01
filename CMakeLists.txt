@@ -802,7 +802,7 @@ elseif(NOT LAUNCHER_FUZZ_ONLY AND UNIX)
     set(JARS_DEST_DIR "share/${Launcher_Name}")
 
     # Set RPATH
-    SET(Launcher_BINARY_RPATH "$ORIGIN/")
+    SET(Launcher_BINARY_RPATH "$ORIGIN/../lib64:$ORIGIN/")
 
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${Launcher_Desktop} DESTINATION ${KDE_INSTALL_APPDIR})
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${Launcher_MetaInfo} DESTINATION ${KDE_INSTALL_METAINFODIR})

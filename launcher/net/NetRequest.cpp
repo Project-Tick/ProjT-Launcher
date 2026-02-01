@@ -124,6 +124,8 @@ namespace Net
 #endif
 
 		request.setHeader(QNetworkRequest::UserAgentHeader, user_agent.toUtf8());
+		// Force identity encoding to avoid Qt decompression issues on some platforms.
+		request.setRawHeader("Accept-Encoding", "identity");
 		for (auto& header_proxy : m_headerProxies)
 		{
 			header_proxy->writeHeaders(request);

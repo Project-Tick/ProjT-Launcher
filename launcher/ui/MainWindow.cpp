@@ -172,8 +172,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 	ui->setupUi(this);
 
 #if defined(PROJT_DISABLE_LAUNCHER_HUB)
-	ui->actionLauncherHub->setEnabled(false);
-	ui->actionLauncherHub->setToolTip(tr("Launcher Hub is not available in this build."));
+	ui->actionLauncherHub->setVisible(false);
 #endif
 
 	setWindowIcon(APPLICATION->logo());
