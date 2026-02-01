@@ -1384,6 +1384,12 @@ if(LAUNCHER_USE_WEBENGINE AND UNIX AND NOT APPLE AND TARGET MINIZIP::minizip)
     target_link_libraries(Launcher_logic MINIZIP::minizip)
 endif()
 
+if(TARGET png_shared)
+    target_link_libraries(Launcher_logic png_shared)
+elseif(TARGET png_static)
+    target_link_libraries(Launcher_logic png_static)
+endif()
+
 if(LAUNCHER_USE_WEBVIEW2 AND WIN32)
     target_compile_definitions(Launcher_logic PUBLIC PROJT_USE_WEBVIEW2)
 
