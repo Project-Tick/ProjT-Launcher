@@ -490,6 +490,12 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
         
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+        if(UNIX AND NOT APPLE)
+            # Avoid overriding system zlib for Qt at runtime.
+            set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+            set(ZLIB_BUILD_STATIC ON CACHE BOOL "" FORCE)
+        endif()
         
         # For OSS-Fuzz: Strip sanitizer flags from zlib build to avoid symbol conflicts
         if(DEFINED ENV{LIB_FUZZING_ENGINE})
@@ -906,9 +912,9 @@ if(NOT LAUNCHER_FUZZ_ONLY)
     add_subdirectory(./LocalPeer) # fork of a library from Qt solutions
     projt_pop_output_dirs()
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/gamemode/CMakeLists.txt")
-    projt_push_output_dirs("gamemode")
-    add_subdirectory(./gamemode)
-    projt_pop_output_dirs()
+        projt_push_output_dirs("gamemode")
+        add_subdirectory(./gamemode)
+        projt_pop_output_dirs()
     else()
         message(STATUS "gamemode/ not found; skipping bundled gamemode")
     endif()
