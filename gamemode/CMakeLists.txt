@@ -3,10 +3,20 @@ project(gamemode VERSION 0.0.5.1 LANGUAGES C)
 
 include(GNUInstallDirs)
 include(CheckSymbolExists)
-find_package(Threads REQUIRED)
-find_package(PkgConfig REQUIRED)
 
-# Build options
+# Platform gating
+set(GAMEMODE_IS_LINUX OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(GAMEMODE_IS_LINUX ON)
+endif()
+
+# Non-Linux: only install headers
+if(NOT GAMEMODE_IS_LINUX)
+    install(FILES lib/gamemode_client.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    return()
+endif()
+
+# Linux build options
 set(GAMEMODE_SD_BUS_PROVIDER "systemd" CACHE STRING "sd-bus provider: systemd, elogind, no-daemon")
 set_property(CACHE GAMEMODE_SD_BUS_PROVIDER PROPERTY STRINGS systemd elogind no-daemon)
 option(GAMEMODE_WITH_SYSTEMD_USER_UNIT "Install systemd user unit" ON)
@@ -19,6 +29,9 @@ option(GAMEMODE_WITH_PAM_RENICING "Install limits.d config" ON)
 set(GAMEMODE_WITH_PAM_LIMITS_DIR "/etc/security/limits.d" CACHE STRING "PAM limits.d directory")
 option(GAMEMODE_WITH_EXAMPLES "Build examples" ON)
 option(GAMEMODE_WITH_UTIL "Build utilities" ON)
+
+find_package(Threads REQUIRED)
+find_package(PkgConfig REQUIRED)
 
 # Dependencies
 pkg_check_modules(DBUS REQUIRED dbus-1)
