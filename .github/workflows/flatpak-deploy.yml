@@ -1,0 +1,92 @@
+name: Deploy to repository
+
+on:
+  schedule:
+    # Run daily
+    - cron: "0 0 * * *"
+  push:
+    branches:
+      - main
+    paths:
+      # Flatpak files
+      - "flatpak/**.yml"
+      - "flatpak/**.json"
+      - "flatpak/scripts/**"
+      - "flatpak/shared-modules/**"
+
+      # Site files
+      - "flatpak/static/projtlauncher.flatpakrepo"
+      - "flatpak/static/projtlauncher-nightly.flatpakref"
+      - "flatpak/static/index.html"
+
+      # Workflows
+      - ".github/workflows/flatpak-build.yml"
+      - ".github/workflows/flatpak-deploy.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build Flatpaks
+    permissions:
+      contents: read
+    uses: ./.github/workflows/flatpak-build.yml
+    with:
+      cache-repository: true
+    secrets: inherit
+
+  deploy:
+    name: Push repository to pt-flatpak-website
+
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.QT_BOT_APP_ID }}
+          installation-id: ${{ secrets.QT_BOT_APP_INSTALLATION_ID }}
+          private-key: ${{ secrets.QT_BOT_APP_PRIVATE_KEY }}
+
+      - name: Restore local repository
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ needs.build.outputs.repository-directory }}
+          key: ${{ needs.build.outputs.repository-cache-key }}
+          fail-on-cache-miss: true
+
+      - name: Checkout source repository
+        uses: actions/checkout@v6
+        with:
+          path: source
+
+      - name: Checkout target repository
+        uses: actions/checkout@v6
+        with:
+          repository: Project-Tick/pt-flatpak-website
+          token: ${{ steps.app-token.outputs.token }}
+          path: pt-flatpak-website
+
+      - name: Sync Flatpak repository content
+        shell: bash
+        run: |
+          rsync -a --delete --exclude '.git' "${{ needs.build.outputs.repository-directory }}/" pt-flatpak-website/
+          cp -r source/flatpak/static/. pt-flatpak-website/
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          cd pt-flatpak-website
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to push."
+            exit 0
+          fi
+          git config --global user.name "Project Tick Bot"
+          git config --global user.email "github@bot.yongdohyun.org.tr"
+          git commit -m "chore: update flatpak repository"
+          git push

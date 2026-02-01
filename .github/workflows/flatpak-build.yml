@@ -1,0 +1,158 @@
+name: Build
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      # Flatpak files
+      - "flatpak/**.yml"
+      - "flatpak/**.json"
+      - "flatpak/scripts/**"
+      - "flatpak/shared-modules/**"
+
+      # Site files
+      - "flatpak/static/projtlauncher.flatpakrepo"
+      - "flatpak/static/projtlauncher-nightly.flatpakref"
+      - "flatpak/static/index.html"
+
+      # Workflows
+      - ".github/workflows/flatpak-build.yml"
+  workflow_call:
+    inputs:
+      # NOTE: This is a workaround for https://github.com/actions/runner/issues/3146
+      cache-repository:
+        type: boolean
+        description: Whether to cache the repository created by Flatpak builds
+        default: false
+    outputs:
+      repository-cache-key:
+        description: Cache key used to save the contents of the repository
+        value: ${{ jobs.build.outputs.repository-cache-key }}
+      repository-directory:
+        description: Directory name of the cached repository
+        value: ${{ jobs.build.outputs.repository-directory }}
+    secrets:
+      LINUX_GPG_KEY:
+        description: GPG key used for signing the ostree repository
+        required: false
+  workflow_dispatch:
+    inputs:
+      cache-repository:
+        type: boolean
+        description: Whether to cache the repository created by Flatpak builds
+        default: false
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build (${{ matrix.arch }})
+
+    outputs:
+      repository-cache-key: ${{ steps.restore-repository.outputs.cache-primary-key }}
+      repository-directory: ${{ env.REPOSITORY_DIR }}
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      # WARN(@getchoo): DON'T REMOVE THIS!
+      # We share and incrementally update a repository with each subsequent build
+      # Having builds run in parallel would overwrite the repository with only one build
+      max-parallel: ${{ (inputs.cache-repository || false) && 1 || 99 }}
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+
+    runs-on: ${{ matrix.os }}
+
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+      volumes:
+        - /opt/hostedtoolcache:/hostedtoolcache
+
+    env:
+      GPG_KEY_ID: ${{ secrets.GPG_PRIVATE_KEY != '' && vars.GPG_KEY_ID || '' }}
+      REPOSITORY_DIR: repo
+
+    steps:
+      - name: Free up disk space
+        shell: bash
+        run: |
+          rm -rf /hostedtoolcache/*
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Set short version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          UPSTREAM_SHA="$(gh api /repos/Project-Tick/ProjT-Launcher/branches/main --jq '.commit.sha')"
+          echo "VERSION=${UPSTREAM_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Restore local repository
+        id: restore-repository
+        if: ${{ inputs.cache-repository }}
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.REPOSITORY_DIR }}
+          key: repository-${{ github.run_id }}-${{ runner.arch }}
+          restore-keys: repository-
+
+      - name: Setup signing
+        shell: bash
+        env:
+          LINUX_GPG_KEY: ${{ secrets.LINUX_GPG_KEY || '' }}
+        run: |
+          if [[ -z "$LINUX_GPG_KEY" ]]; then
+            echo ":warning: Not signing Flatpaks or ostree repositories, as the signing key was not present" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo -n "$LINUX_GPG_KEY" | base64 -d | gpg --import
+            gpg --list-keys --keyid-format=long "$GPG_KEY_ID"
+          fi
+
+      - name: Build Flatpak
+        # TODO(@getchoo): Pin this to a tag when https://github.com/flatpak/flatpak-github-actions/pull/237 is included in a release!
+        uses: flatpak/flatpak-github-actions/flatpak-builder@0a631396999e4243489a8a6ecf54fcb9f0575078
+        with:
+          manifest-path: flatpak/org.projecttick.ProjTLauncher.yml
+          arch: ${{ matrix.arch }}
+          branch: nightly
+          bundle: ProjTLauncher-${{ env.VERSION }}-${{ matrix.arch }}.flatpak
+          repo-dir: ${{ env.REPOSITORY_DIR }}
+          gpg-sign: ${{ env.GPG_KEY_ID }}
+
+      - name: Update and prune repository
+        if: ${{ inputs.cache-repository }}
+        shell: bash
+        run: |
+          flatpak build-update-repo \
+            "${GPG_KEY_ID:+--gpg-sign="$GPG_KEY_ID"}" \
+            --generate-static-deltas \
+            --prune \
+            "$REPOSITORY_DIR"
+
+      - name: Copy static assets to repository
+        if: ${{ inputs.cache-repository }}
+        shell: bash
+        run: |
+          cp -r flatpak/static/. "$REPOSITORY_DIR"/
+
+      - name: Cache local repository
+        if: ${{ inputs.cache-repository }}
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.REPOSITORY_DIR }}
+          key: ${{ steps.restore-repository.outputs.cache-primary-key }}

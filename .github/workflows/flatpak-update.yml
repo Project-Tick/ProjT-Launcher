@@ -1,0 +1,50 @@
+name: Update modules
+
+on:
+  schedule:
+    # Run every hour
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  update:
+    name: Run update
+
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.PR_APP_ID }}
+          private-key: ${{ secrets.PR_APP_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Run update
+        uses: docker://ghcr.io/flathub/flatpak-external-data-checker:latest
+        with:
+          args: --update --edit-only flatpak/org.projecttick.ProjTLauncher.yml
+
+      - name: Create Pull request
+        id: pull-request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: update-modules
+          commit-message: "chore: update modules"
+          title: "chore: update modules"
+          token: ${{ steps.app-token.outputs.token }}
+          sign-commits: true
+
+      - name: Enable auto-merge
+        if: ${{ env.PR_ID != '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_ID: ${{ steps.pull-request.outputs.pull-request-number }}
+        run: gh pr merge --auto --squash "$PR_ID"
