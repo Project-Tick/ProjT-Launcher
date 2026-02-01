@@ -1,6 +1,7 @@
 /*
 
 Copyright (c) 2017-2025, Feral Interactive and the GameMode contributors
+Copyright (c) 2026 Project Tick
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -47,9 +48,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #define DO_TRACE 0
 
 // D-Bus name, path, iface
-#define DAEMON_DBUS_NAME "com.feralinteractive.GameMode"
-#define DAEMON_DBUS_PATH "/com/feralinteractive/GameMode"
-#define DAEMON_DBUS_IFACE "com.feralinteractive.GameMode"
+#define DAEMON_DBUS_NAME "org.projecttick.GameMode"
+#define DAEMON_DBUS_PATH "/org/projecttick/GameMode"
+#define DAEMON_DBUS_IFACE "org.projecttick.GameMode"
 
 #define PORTAL_DBUS_NAME "org.freedesktop.portal.Desktop"
 #define PORTAL_DBUS_PATH "/org/freedesktop/portal/desktop"

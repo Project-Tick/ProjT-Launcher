@@ -1,6 +1,6 @@
 .\" Manpage for gamemode-simulate-game.
-.\" Contact linux-contact@feralinteractive.com to correct errors or typos.
-.TH gamemode-simulate-game 1 "26 May 2020" "@GAMEMODE_VERSION@" "gamemode-simulate-game man page"
+.\" Contact projecttick@projecttick.org to correct errors or typos.
+.TH gamemode-simulate-game 1 "1 February 2026" "@GAMEMODE_VERSION@" "gamemode-simulate-game man page"
 .SH NAME
 gamemode-simulate-game \- simulate a game using gamemode
 .SH SYNOPSIS
@@ -27,7 +27,8 @@ Note that this might output to stderr, even if it exits with zero.
 gamemoded(8), gamemoderun(1), dbus-run-session(1)
 
 .SH ABOUT
-GameMode source can be found at \fIhttps://github.com/FeralInteractive/gamemode.git\fR
+GameMode source can be found at \fIhttps://github.com/Project-Tick/ProjT-Launcher.git\fR
 
 .SH AUTHOR
 Feral Interactive (linux-contact@feralinteractive.com)
+YongDo-Hyun (yongdohyun@projtlauncher.yongdohyun.org.tr)

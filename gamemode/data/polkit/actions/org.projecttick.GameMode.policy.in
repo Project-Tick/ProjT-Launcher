@@ -6,13 +6,14 @@
 
   <!--
     Copyright (c) 2017-2025, Feral Interactive and the GameMode contributors
+    Copyright (c) 2026 Project Tick
     All rights reserved.
   -->
 
-  <vendor>Feral GameMode Activation</vendor>
-  <vendor_url>http://www.feralinteractive.com</vendor_url>
+  <vendor>Project Tick GameMode Activation</vendor>
+  <vendor_url>http://www.projecttick.org</vendor_url>
 
-  <action id="com.feralinteractive.GameMode.governor-helper">
+  <action id="org.projecttick.GameMode.governor-helper">
     <description>Modify the CPU governor</description>
     <message>Authentication is required to modify the CPU governor</message>
     <defaults>
@@ -23,7 +24,7 @@
     <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/cpugovctl</annotate>
   </action>
 
-  <action id="com.feralinteractive.GameMode.gpu-helper">
+  <action id="org.projecttick.GameMode.gpu-helper">
     <description>Modify the GPU clock states</description>
     <message>Authentication is required to modify the GPU clock states</message>
     <defaults>
@@ -35,7 +36,7 @@
     <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
   </action>
 
-  <action id="com.feralinteractive.GameMode.cpu-helper">
+  <action id="org.projecttick.GameMode.cpu-helper">
     <description>Modify the CPU core states</description>
     <message>Authentication is required to modify the CPU core states</message>
     <defaults>
@@ -47,7 +48,7 @@
     <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
   </action>
 
-  <action id="com.feralinteractive.GameMode.procsys-helper">
+  <action id="org.projecttick.GameMode.procsys-helper">
     <description>Modify the /proc/sys values</description>
     <message>Authentication is required to modify the /proc/sys/ values</message>
     <defaults>
@@ -59,7 +60,7 @@
     <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
   </action>
 
-  <action id="com.feralinteractive.GameMode.profile-helper">
+  <action id="org.projecttick.GameMode.profile-helper">
     <description>Modify the platform profile</description>
     <message>Authentication is required to modify platform profile</message>
     <defaults>
@@ -71,7 +72,7 @@
     <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
   </action>
 
-  <action id="com.feralinteractive.GameMode.x3dmode-helper">
+  <action id="org.projecttick.GameMode.x3dmode-helper">
     <description>Modify the AMD X3D cache mode</description>
     <message>Authentication is required to modify AMD X3D cache mode</message>
     <defaults>

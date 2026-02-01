@@ -40,7 +40,7 @@ LD_PRELOAD="$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so.0"
 ---
 ## Configuration
 
-The daemon is configured with a `gamemode.ini` file. [example/gamemode.ini](https://github.com/FeralInteractive/gamemode/blob/master/example/gamemode.ini) is an example of what this file would look like, with explanations for all the variables.
+The daemon is configured with a `gamemode.ini` file. [example/gamemode.ini](https://github.com/Project-Tick/ProjT-Launcher/blob/main/gamemode/example/gamemode.ini) is an example of what this file would look like, with explanations for all the variables.
 
 Configuration files are loaded and merged from the following directories, from highest to lowest priority:
 
@@ -59,7 +59,7 @@ You can do this by setting the environment variable `GAMEMODERUNEXEC` to your wr
 GameMode will not be injected to the wrapper.
 
 ---
-## Development [![Build and test](https://github.com/FeralInteractive/gamemode/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/FeralInteractive/gamemode/actions/workflows/build-and-test.yml)
+## Development [![Build and test](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/ci-new.yml/badge.svg)](https://github.com/Project-Tick/ProjT-Launcher/actions/workflows/build-and-test.yml)
 
 The design of GameMode has a clear-cut abstraction between the host daemon and library (`gamemoded` and `libgamemode`), and the client loaders (`libgamemodeauto` and `gamemode_client.h`) that allows for safe use without worrying about whether the daemon is installed or running. This design also means that while the host library currently relies on `systemd` for exchanging messages with the daemon, it's entirely possible to implement other internals that still work with the same clients.
 
@@ -131,12 +131,12 @@ nix-shell -p pkgs.gamemode.buildInputs pkgs.gamemode.nativeBuildInputs
 ```
 
 ### Build and Install GameMode
-Then clone, build and install a release version of GameMode at 1.8.2:
+Then clone, build and install a release version of GameMode at 0.0.5-1:
 
 ```bash
-git clone https://github.com/FeralInteractive/gamemode.git
+git clone https://github.com/Project-Tick/ProjT-Launcher.git
 cd gamemode
-git checkout 1.8.2 # omit to build the master branch
+git checkout 0.0.5-1 # omit to build the master branch
 ./bootstrap.sh
 ```
 To test GameMode installed and will run correctly:
@@ -159,12 +159,13 @@ clang-format -i $(find . -name '*.[ch]' -not -path "*subprojects/*")
 ### Maintained by
 Feral Interactive
 
-See the [contributors](https://github.com/FeralInteractive/gamemode/graphs/contributors) section for an extended list of contributors.
+See the [contributors](https://github.com/Project-Tick/ProjT-Launcher/graphs/contributors) section for an extended list of contributors.
 
 ---
 ## License
 
 Copyright © 2017-2025 Feral Interactive and the GameMode contributors
+Copyright © 2026 Project Tick
 
 GameMode is available under the terms of the BSD 3-Clause License (Revised)
 

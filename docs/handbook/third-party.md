@@ -67,14 +67,6 @@ For Project Tick–specific documentation and usage, refer to the handbook pages
 
 These are ProjT Launcher-specific libraries:
 
-### gamemode `gamemode/`
-
-Performance optimization daemon integration.
-
-- **Upstream**: [GitHub](https://github.com/FeralInteractive/gamemode)
-- **License**: BSD-3-Clause
-- **Use**: Linux gaming performance optimization
-
 ### LocalPeer `LocalPeer/`
 
 Single-instance application enforcement.

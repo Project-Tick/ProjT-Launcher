@@ -1,4 +1,4 @@
 [D-BUS Service]
-Name=com.feralinteractive.GameMode
+Name=org.projecttick.GameMode
 Exec=@BINDIR@/gamemoded -d
 SystemdService=gamemoded.service

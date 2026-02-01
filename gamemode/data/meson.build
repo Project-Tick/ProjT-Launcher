@@ -47,8 +47,8 @@ endif
 
 # Install the D-BUS service file
 configure_file(
-  input: 'dbus/com.feralinteractive.GameMode.service.in',
-  output: 'com.feralinteractive.GameMode.service',
+  input: 'dbus/org.projecttick.GameMode.service.in',
+  output: 'org.projecttick.GameMode.service',
   configuration: data_conf,
   install_dir: path_dbus_service_dir,
 )
@@ -57,8 +57,8 @@ configure_file(
 # Install the Polkit action & rule files for the privileged gamemode group
 if with_privileged_group != ''
     configure_file(
-        input: 'polkit/actions/com.feralinteractive.GameMode.policy.in',
-        output: 'com.feralinteractive.GameMode.policy',
+        input: 'polkit/actions/org.projecttick.GameMode.policy.in',
+        output: 'org.projecttick.GameMode.policy',
         configuration: data_conf,
         install_dir: path_polkit_action_dir,
     )
@@ -136,7 +136,7 @@ if with_examples
 endif
 
 # Install metainfo
-metainfo_file = files('io.github.feralinteractive.gamemode.metainfo.xml')
+metainfo_file = files('org.projecttick.gamemode.metainfo.xml')
 
 install_data(
     metainfo_file,

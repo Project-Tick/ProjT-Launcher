@@ -1,6 +1,7 @@
 /*
 
 Copyright (c) 2017-2025, Feral Interactive and the GameMode contributors
+Copyright (c) 2026 Project Tick
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -49,7 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
-#define GAME_PATH_PREFIX "/com/feralinteractive/GameMode/Games"
+#define GAME_PATH_PREFIX "/org/projecttick/GameMode/Games"
 /* maximum length of a valid game object path string:
  *   The path prefix including \0 (sizeof), another '/', and 10 digits for uint32_t ('%u')*/
 #define GAME_PATH_MAX (sizeof(GAME_PATH_PREFIX) + 11)
@@ -382,8 +383,8 @@ static void game_mode_client_send_game_signal(pid_t pid, bool new_game)
 
 	game_object_bus_path(pid, path);
 	ret = sd_bus_emit_signal(bus,
-	                         "/com/feralinteractive/GameMode",
-	                         "com.feralinteractive.GameMode",
+	                         "/org/projecttick/GameMode",
+	                         "org.projecttick.GameMode",
 	                         new_game ? "GameRegistered" : "GameUnregistered",
 	                         "io",
 	                         (int32_t)pid,
@@ -392,8 +393,8 @@ static void game_mode_client_send_game_signal(pid_t pid, bool new_game)
 		fprintf(stderr, "failed to emit signal: %s", strerror(-ret));
 
 	(void)sd_bus_emit_properties_changed(bus,
-	                                     "/com/feralinteractive/GameMode",
-	                                     "com.feralinteractive.GameMode",
+	                                     "/org/projecttick/GameMode",
+	                                     "org.projecttick.GameMode",
 	                                     "ClientCount",
 	                                     NULL);
 }
@@ -674,8 +675,8 @@ void game_mode_context_loop(GameModeContext *context)
 	/* Create the object to allow connections */
 	ret = sd_bus_add_object_vtable(bus,
 	                               &slot,
-	                               "/com/feralinteractive/GameMode",
-	                               "com.feralinteractive.GameMode",
+	                               "/org/projecttick/GameMode",
+	                               "org.projecttick.GameMode",
 	                               gamemode_vtable,
 	                               context);
 
@@ -686,7 +687,7 @@ void game_mode_context_loop(GameModeContext *context)
 	ret = sd_bus_add_fallback_vtable(bus,
 	                                 &slot,
 	                                 GAME_PATH_PREFIX,
-	                                 "com.feralinteractive.GameMode.Game",
+	                                 "org.projecttick.GameMode.Game",
 	                                 game_vtable,
 	                                 game_object_find,
 	                                 context);
@@ -701,12 +702,12 @@ void game_mode_context_loop(GameModeContext *context)
 	}
 
 	/* Request our name */
-	ret = sd_bus_request_name(bus, "com.feralinteractive.GameMode", 0);
+	ret = sd_bus_request_name(bus, "org.projecttick.GameMode", 0);
 	if (ret < 0) {
 		FATAL_ERROR("Failed to acquire service name: %s\n", strerror(-ret));
 	}
 
-	LOG_MSG("Successfully initialised bus with name [%s]...\n", "com.feralinteractive.GameMode");
+	LOG_MSG("Successfully initialised bus with name [%s]...\n", "org.projecttick.GameMode");
 	sd_notifyf(0, "STATUS=%sGameMode is ready to be activated.%s\n", "\x1B[1;36m", "\x1B[0m");
 
 	/* Now loop, waiting for callbacks */
@@ -759,7 +760,7 @@ GameModeIdleInhibitor *game_mode_create_idle_inhibitor(void)
 	                         &err,
 	                         &msg,
 	                         "ss",
-	                         "com.feralinteractive.GameMode",
+	                         "org.projecttick.GameMode",
 	                         "GameMode Activated");
 
 	if (ret < 0) {
