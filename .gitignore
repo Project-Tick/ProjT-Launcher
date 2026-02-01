@@ -177,11 +177,6 @@ zlib/MODULE.bazel.lock
 .github/workflows/old/
 dependencies/
 
-*.patch
-*.diff
-*.mbox
-*.mbox.gz
-
 emojis.json
 UnicodeData.txt
 meson-info/
