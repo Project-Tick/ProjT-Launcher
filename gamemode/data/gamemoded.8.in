@@ -1,0 +1,103 @@
+.\" Manpage for gamemoded.
+.\" Contact linux-contact@feralinteractive.com to correct errors or typos.
+.TH gamemoded 8 "4 May 2020" "@GAMEMODE_VERSION@" "gamemoded man page"
+.SH NAME
+gamemoded \- daemon that optimises system performance on demand
+.SH SYNOPSIS
+\fBgamemoded\fR [OPTIONS...]
+.SH DESCRIPTION
+\fBGameMode\fR is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS.
+
+The design has a clear cut abstraction between the host daemon and library (\fBgamemoded\fR and \fBlibgamemode\fR), and the client loaders (\fBlibgamemodeauto\fR and \fBgamemode_client.h\fR) that allows for safe usage without worrying about whether the daemon is installed or running. This design also means that while the host library currently relies on systemd for exchanging messages with the daemon, it's entirely possible to implement other internals that still work with the same clients.
+
+\fBGameMode\fR was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is intended to be expanded beyond just CPU governor states, as there are a wealth of automation tasks one might want to apply.
+.SH OPTIONS
+
+.TP 8
+.B \-r[PID], \-\-request=[PID]
+Toggle gamemode for process.
+When no PID given, requests gamemode and pauses
+.TP 8
+.B \-s[PID], \-\-status=[PID]
+Query the status of gamemode for process
+When no PID given, queries the status globally
+.TP 8
+.B \-d, \-\-daemonize
+Run the daemon as a separate process (daemonize it)
+.TP 8
+.B \-l, \-\-log-to-syslog
+Log to syslog
+.TP 8 
+.B \-h, \-\-help
+Print help text
+.TP 8
+.B \-t, \-\-test
+Run diagnostic tests on the current installation
+.TP 8
+.B \-v, \-\-version
+Print the version
+
+.SH USAGE
+\fBlibgamemodeauto.so.0\fR can be pre-loaded into any program to request \fBgamemoded\fR begin or end the mode. See gamemoderun(1) for details.
+
+The \fBgamemode_client.h\fR header can be used by developers to build the requests into a program:
+
+.RS 4
+.nf
+#include "gamemode_client.h"
+
+    if( gamemode_request_start() < 0 ) {
+        fprintf( stderr, "gamemode request failed: %s\\n", gamemode_error_string() )
+    }
+
+    /* run the process */
+
+    /* Not required, gamemoded can clean up after game exits */
+    gamemode_request_end();
+.fi
+.RE
+
+Atlernatively developers can define \fBGAMEMODE_AUTO\fR to mimic the behaviour of \fBlibgamemodeauto.so.0\fR:
+
+.RS 4
+.nf
+#define GAMEMODE_AUTO
+#include "gamemode_client.h"
+.fi
+.RE
+
+Or, distribute \fBlibgamemodeauto.so.0\fR and either link with \fB\-lgamemodeauto\fR or inject it as above with \fBLD\_PRELOAD\fR.
+
+.SH CONFIG
+
+\fBgamemoded\fR will load and merge \fBgamemode.ini\fR config files from these directories in the following order:
+
+.RS 4
+@SYSCONFDIR@/
+.RE
+.RS 4
+/etc/
+.RE
+.RS 4
+$XDG_CONFIG_HOME or $HOME/.config/
+.RE
+.RS 4
+$PWD
+.RE
+
+Behaviour of the config file can be explained by presenting a commented example:
+
+.RS 4
+.nf
+@GAMEMODE_EXAMPLE_CONFIG@
+.fi
+.RE
+
+.SH SEE ALSO
+gamemoderun(1), systemd(1)
+
+.SH ABOUT
+GameMode source can be found at \fIhttps://github.com/FeralInteractive/gamemode.git\fR
+
+.SH AUTHOR
+Feral Interactive (linux-contact@feralinteractive.com)

@@ -729,7 +729,7 @@ See:
 
 ## Gamemode
 
-    Copyright (c) 2017-2022, Feral Interactive
+    Copyright (c) 2017-2025, Feral Interactive and the GameMode contributors
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
