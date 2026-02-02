@@ -79,7 +79,7 @@ jobs:
       - name: Create GitHub App token
         id: app-token
         if: steps.update.outputs.qt_version_changed == 'true'
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.QT_BOT_APP_ID }}
           installation-id: ${{ secrets.QT_BOT_APP_INSTALLATION_ID }}
