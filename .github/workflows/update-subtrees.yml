@@ -1,0 +1,65 @@
+name: Update subtrees
+
+on:
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Push changes back to the repo"
+        required: false
+        default: "true"
+  schedule:
+    - cron: "0 3 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SUBTREE_PAT }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "YongDo-Hyun"
+          git config user.email "froster12@naver.com"
+
+      - name: Update subtrees
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -f ".github/subtrees.txt" ]; then
+            echo "Missing .github/subtrees.txt"
+            exit 1
+          fi
+
+          while read -r name path repo branch; do
+            [ -z "${name:-}" ] && continue
+            case "$name" in
+              \#*) continue ;;
+            esac
+            if [ -z "${branch:-}" ]; then
+              branch="main"
+            fi
+
+            echo "Updating $name ($path) from $repo ($branch)"
+            if [ -d "$path" ]; then
+              git subtree pull --prefix="$path" "$repo" "$branch" -m "chore(subtrees): update $name"
+            else
+              git subtree add --prefix="$path" "$repo" "$branch" -m "chore(subtrees): add $name"
+            fi
+          done < .github/subtrees.txt
+
+      - name: Push changes
+        if: ${{ inputs.push != 'false' }}
+        run: |
+          if git diff --quiet HEAD~1..HEAD; then
+            echo "No subtree changes to push."
+            exit 0
+          fi
+          git push

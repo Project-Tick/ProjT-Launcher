@@ -1,0 +1,4 @@
+# name  path        repo_url                                   branch
+zlib    zlib        https://github.com/Project-Tick/zlib        develop
+tomlplusplus tomlplusplus https://github.com/Project-Tick/tomlplusplus master
+json    json        https://github.com/Project-Tick/json        develop
