@@ -55,11 +55,14 @@ jobs:
             fi
           done < .github/subtrees.txt
 
-      - name: Push changes
+      - name: Create pull request
         if: ${{ inputs.push != 'false' }}
-        run: |
-          if git diff --quiet HEAD~1..HEAD; then
-            echo "No subtree changes to push."
-            exit 0
-          fi
-          git push
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.SUBTREE_PAT }}
+          commit-message: "chore(subtrees): update subtrees"
+          title: "chore(subtrees): update subtrees"
+          branch: "chore/update-subtrees"
+          delete-branch: true
+          body: |
+            Automated subtree update.
