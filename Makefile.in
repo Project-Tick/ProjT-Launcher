@@ -335,9 +335,9 @@ install-libs: $(LIBS)
 	  ln -s $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBM); \
 	  ($(LDCONFIG) || true)  >/dev/null 2>&1; \
 	fi
-	rm -f $(DESTDIR)$(man3dir)/zlib.3
-	cp $(SRCDIR)zlib.3 $(DESTDIR)$(man3dir)
-	chmod 644 $(DESTDIR)$(man3dir)/zlib.3
+	rm -f $(DESTDIR)$(man3dir)/zlib.5
+	cp $(SRCDIR)zlib.5 $(DESTDIR)$(man5dir)
+	chmod 644 $(DESTDIR)$(man3dir)/zlib.5
 	rm -f $(DESTDIR)$(pkgconfigdir)/zlib.pc
 	cp zlib.pc $(DESTDIR)$(pkgconfigdir)
 	chmod 644 $(DESTDIR)$(pkgconfigdir)/zlib.pc
@@ -356,7 +356,7 @@ uninstall:
 	if test -n "$(SHAREDLIBV)" -a -f $(SHAREDLIBV); then \
 	  rm -f $(SHAREDLIBV) $(SHAREDLIB) $(SHAREDLIBM); \
 	fi
-	cd $(DESTDIR)$(man3dir) && rm -f zlib.3
+	cd $(DESTDIR)$(man3dir) && rm -f zlib.5
 	cd $(DESTDIR)$(pkgconfigdir) && rm -f zlib.pc
 
 docs: zlib.5.pdf
