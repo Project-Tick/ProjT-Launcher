@@ -244,7 +244,7 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   unlock:
     if: (needs.prepare.outputs.is-merge-group == 'true' || needs.prepare.outputs.is-pr == 'true') && always()
-    needs: [prepare, lint, check, build-projt-launcher-debug, quazip, bzip2, zlib, cmark, tomlplusplus, libqrencode]
+    needs: [prepare, lint, check, build-projt-launcher-debug, quazip, bzip2, cmark, libqrencode]
     runs-on: ubuntu-latest
     permissions:
       statuses: write
