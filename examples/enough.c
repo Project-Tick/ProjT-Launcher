@@ -1,6 +1,7 @@
 /* enough.c -- determine the maximum size of inflate's Huffman code tables over
  * all possible valid and complete prefix codes, subject to a length limit.
  * Copyright (C) 2007, 2008, 2012, 2018, 2024 Mark Adler
+ * Copyright (C) 2026 Project Tick
  * Version 1.6  29 July 2024  Mark Adler
  */
 

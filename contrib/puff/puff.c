@@ -1,6 +1,7 @@
 /*
  * puff.c
  * Copyright (C) 2002-2013 Mark Adler
+ * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in puff.h
  * version 2.3, 21 Jan 2013
  *

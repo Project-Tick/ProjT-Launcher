@@ -31,8 +31,8 @@ VGFMAFLAG=
 
 STATICLIB=libz.a
 SHAREDLIB=libz.so
-SHAREDLIBV=libz.so.1.3.1.2
-SHAREDLIBM=libz.so.1
+SHAREDLIBV=libz.so.0.0.5.1
+SHAREDLIBM=libz.so.0
 LIBS=$(STATICLIB) $(SHAREDLIBV)
 
 AR=ar
@@ -359,10 +359,10 @@ uninstall:
 	cd $(DESTDIR)$(man3dir) && rm -f zlib.3
 	cd $(DESTDIR)$(pkgconfigdir) && rm -f zlib.pc
 
-docs: zlib.3.pdf
+docs: zlib.5.pdf
 
-zlib.3.pdf: $(SRCDIR)zlib.3
-	groff -mandoc -f H -T ps $(SRCDIR)zlib.3 | ps2pdf - $@
+zlib.5.pdf: $(SRCDIR)zlib.5
+	groff -mandoc -f H -T ps $(SRCDIR)zlib.5 | ps2pdf - $@
 
 # zconf.h.cmakein: $(SRCDIR)zconf.h.in
 # 	-@ TEMPFILE=zconfh_$$; \

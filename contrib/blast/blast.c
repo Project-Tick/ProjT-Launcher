@@ -1,5 +1,6 @@
 /* blast.c
  * Copyright (C) 2003, 2012, 2013 Mark Adler
+ * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in blast.h
  * version 1.3, 24 Aug 2013
  *

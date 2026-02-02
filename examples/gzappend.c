@@ -1,6 +1,7 @@
 /* gzappend -- command to append to a gzip file
 
   Copyright (C) 2003, 2012 Mark Adler, all rights reserved
+  Copyright (C) 2026 Project Tick
   version 1.2, 11 Oct 2012
 
   This software is provided 'as-is', without any express or implied

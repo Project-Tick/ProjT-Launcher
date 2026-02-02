@@ -1,5 +1,6 @@
 /* gzlog.h
   Copyright (C) 2004, 2008, 2012 Mark Adler, all rights reserved
+  Copyright (C) 2026 Project Tick
   version 2.2, 14 Aug 2012
 
   This software is provided 'as-is', without any express or implied

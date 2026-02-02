@@ -1,5 +1,6 @@
 /* infcover.c -- test zlib's inflate routines with full code coverage
  * Copyright (C) 2011, 2016, 2024 Mark Adler
+ * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 

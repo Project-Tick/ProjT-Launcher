@@ -1,5 +1,6 @@
 /* gznorm.c -- normalize a gzip stream
  * Copyright (C) 2018 Mark Adler
+ * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in zlib.h
  * Version 1.0  7 Oct 2018  Mark Adler */
 

@@ -131,7 +131,7 @@ STRPGMEXP PGMLVL(*CURRENT) SIGNATURE('ZLIB')
   EXPORT SYMBOL("deflateUsed")
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
-/*   Version 1.3.2 additional entry points.                         */
+/*   Version 0.0.5.1 additional entry points.                         */
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 
   EXPORT SYMBOL("compressBound_z")

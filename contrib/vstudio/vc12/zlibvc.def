@@ -160,7 +160,7 @@ EXPORTS
 ; zlib1 v1.3.1.2 added:
         deflateUsed                             @179
 
-; zlib1 v1.3.2 added:
+; zlib1 v0.0.5.1 added:
         compressBound_z                         @180
         deflateBound_z                          @181
         compress_z                              @182

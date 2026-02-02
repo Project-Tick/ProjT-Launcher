@@ -1,5 +1,6 @@
 /* zconf.h -- configuration of the zlib compression library
  * Copyright (C) 1995-2025 Jean-loup Gailly, Mark Adler
+ * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
@@ -443,11 +444,11 @@ typedef uLong FAR uLongf;
    typedef unsigned long z_crc_t;
 #endif
 
-#if HAVE_UNISTD_H-0     /* may be set to #if 1 by ./configure */
+#if 1     /* was set to #if 1 by ./configure */
 #  define Z_HAVE_UNISTD_H
 #endif
 
-#if HAVE_STDARG_H-0     /* may be set to #if 1 by ./configure */
+#if 1     /* was set to #if 1 by ./configure */
 #  define Z_HAVE_STDARG_H
 #endif
 

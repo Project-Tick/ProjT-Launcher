@@ -283,9 +283,9 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
         *sparc*)
             LDFLAGS="${LDFLAGS} -Wl,--no-warn-rwx-segments" ;;
         esac
-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,${SRCDIR}zlib.map"} ;;
+        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.0,--version-script,${SRCDIR}zlib.map"} ;;
   *BSD | *bsd* | DragonFly)
-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,${SRCDIR}zlib.map"}
+        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.0,--version-script,${SRCDIR}zlib.map"}
         LDCONFIG="ldconfig -m" ;;
   CYGWIN* | Cygwin* | cygwin* | *-cygwin* | OS/2*)
         EXE='.exe' ;;
@@ -297,7 +297,7 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
         EXE='.exe' ;;
   QNX*) # This is for QNX6. I suppose that the QNX rule below is for QNX2,QNX4
         # (alain.bonnefoy@icbt.com)
-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-hlibz.so.1"} ;;
+        LDSHARED=${LDSHARED-"$cc -shared -Wl,-hlibz.so.0"} ;;
   HP-UX*)
         LDSHARED=${LDSHARED-"$cc -shared $SFLAGS"}
         case `(uname -m || echo unknown) 2>/dev/null` in
@@ -351,14 +351,14 @@ else
          esac ;;
   IRIX*)     SFLAGS=${CFLAGS-"-ansi -O2 -rpath ."}
              CFLAGS=${CFLAGS-"-ansi -O2"}
-             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,libz.so.1"} ;;
+             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,libz.so.0"} ;;
   OSF1\ V4*) SFLAGS=${CFLAGS-"-O -std1"}
              CFLAGS=${CFLAGS-"-O -std1"}
              LDFLAGS="${LDFLAGS} -Wl,-rpath,."
              LDSHARED=${LDSHARED-"cc -shared  -Wl,-soname,libz.so -Wl,-msym -Wl,-rpath,$(libdir) -Wl,-set_version,${VER}:1.0"} ;;
   OSF1*)     SFLAGS=${CFLAGS-"-O -std1"}
              CFLAGS=${CFLAGS-"-O -std1"}
-             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,libz.so.1"} ;;
+             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,libz.so.0"} ;;
   QNX*)      SFLAGS=${CFLAGS-"-4 -O"}
              CFLAGS=${CFLAGS-"-4 -O"}
              LDSHARED=${LDSHARED-"cc"}

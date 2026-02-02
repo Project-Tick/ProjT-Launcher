@@ -1,5 +1,6 @@
 /* inflate.c -- zlib decompression
  * Copyright (C) 1995-2025 Mark Adler
+ * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 

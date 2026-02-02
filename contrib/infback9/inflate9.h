@@ -1,5 +1,6 @@
 /* inflate9.h -- internal inflate state definition
  * Copyright (C) 1995-2003 Mark Adler
+ * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 

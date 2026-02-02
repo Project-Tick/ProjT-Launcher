@@ -1,5 +1,6 @@
 /* puff.h
   Copyright (C) 2002-2013 Mark Adler, all rights reserved
+  Copyright (C) 2026 Project Tick
   version 2.3, 21 Jan 2013
 
   This software is provided 'as-is', without any express or implied

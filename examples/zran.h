@@ -1,5 +1,6 @@
 /* zran.h -- example of deflate stream indexing and random access
  * Copyright (C) 2005, 2012, 2018, 2023, 2024, 2025 Mark Adler
+ * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in zlib.h
  * Version 1.7  16 May 2025  Mark Adler */
 

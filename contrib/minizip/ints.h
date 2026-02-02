@@ -1,5 +1,6 @@
 /* ints.h -- create integer types for 8, 16, 32, and 64 bits
  * Copyright (C) 2024 Mark Adler
+ * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see the copyright notice in zlib.h
  *
  * There exist compilers with limits.h, but not stdint.h or inttypes.h.

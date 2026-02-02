@@ -1,5 +1,6 @@
 /* gzread.c -- zlib functions for reading gzip files
  * Copyright (C) 2004-2025 Mark Adler
+ * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 

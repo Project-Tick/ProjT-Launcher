@@ -1,5 +1,6 @@
 # Makefile for zlib.  Modified for emx 0.9c by Chr. Spieler, 6/17/98.
 # Copyright (C) 1995-1998 Jean-loup Gailly.
+# Copyright (C) 2026 Project Tick
 # For conditions of distribution and use, see copyright notice in zlib.h
 
 # To compile, or to compile and test, type:

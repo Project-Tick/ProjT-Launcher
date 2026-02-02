@@ -103,7 +103,7 @@ ZLIB_1.3.1.2 {
 	deflateUsed;
 } ZLIB_1.2.12;
 
-ZLIB_1.3.2 {
+ZLIB_0.0.5.1 {
   global:
     compressBound_z;
 	deflateBound_z;

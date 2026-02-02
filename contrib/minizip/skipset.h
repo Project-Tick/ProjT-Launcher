@@ -1,5 +1,6 @@
 /* skipset.h -- set operations using a skiplist
 // Copyright (C) 2024 Mark Adler
+// Copyright (C) 2026 Project Tick
 // See MiniZip_info.txt for the license.
 
 // This implements a skiplist set, i.e. just keys, no data, with ~O(log n) time
