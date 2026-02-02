@@ -136,7 +136,7 @@ violations will result in a failed build.
     The public API is extensively documented.
 
 - [x] Every public API function has a dedicated page in the
-  [API reference documentation](https://json.nlohmann.me/api/basic_json/) with a self-contained code example.
+  [API reference documentation](https://projecttick.org/api/basic_json/) with a self-contained code example.
 - [x] All examples in the documentation are tested, and changes in their output are treated as an error.
 
 ## Robust input processing
@@ -176,7 +176,7 @@ violations will result in a failed build.
 
     The library is checked for memory correctness and absence of undefined behavior.
 
-- [x] The test suite is executed with enabled [runtime assertions](https://json.nlohmann.me/features/assertions/) to
+- [x] The test suite is executed with enabled [runtime assertions](https://projecttick.org/features/assertions/) to
   check invariants and preconditions of functions to detect undefined behavior.
 - [x] The test suite is executed with [Valgrind](https://valgrind.org) (Memcheck) to detect memory leaks.
 - [x] The test suite is executed with [Sanitizers](https://github.com/google/sanitizers) (address sanitizer, undefined
@@ -212,7 +212,7 @@ violations will result in a failed build.
 
     All library functions are exposed and usable by CMake.
 
-- [x] All library options are exposed as [CMake options](https://json.nlohmann.me/integration/cmake/) and tested.
+- [x] All library options are exposed as [CMake options](https://projecttick.org/integration/cmake/) and tested.
 - [x] The library is tested against relevant CMake versions:
   - CMake 3.5 (the earliest supported)
   - CMake 3.31.6 (the latest 3.x release)

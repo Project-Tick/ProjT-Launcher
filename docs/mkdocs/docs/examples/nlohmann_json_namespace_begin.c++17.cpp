@@ -2,7 +2,7 @@
 #include <optional>
 #include <nlohmann/json.hpp>
 
-// partial specialization (see https://json.nlohmann.me/features/arbitrary_types/)
+// partial specialization (see https://projecttick.org/features/arbitrary_types/)
 NLOHMANN_JSON_NAMESPACE_BEGIN
 template <typename T>
 struct adl_serializer<std::optional<T>>

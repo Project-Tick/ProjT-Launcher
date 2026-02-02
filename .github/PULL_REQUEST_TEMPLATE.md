@@ -3,7 +3,7 @@
 - [ ] The changes are described in detail, both the what and why.
 - [ ] If applicable, an [existing issue](https://github.com/Project-Tick/json/issues) is referenced.
 - [ ] The [Code coverage](https://coveralls.io/github/nlohmann/json) remained at 100%. A test case for every new line of code.
-- [ ] If applicable, the [documentation](https://json.nlohmann.me) is updated.
+- [ ] If applicable, the [documentation](https://projecttick.org) is updated.
 - [ ] The source code is amalgamated by running `make amalgamate`.
 
 Read the [Contribution Guidelines](https://github.com/Project-Tick/json/blob/develop/.github/CONTRIBUTING.md) for detailed information.
