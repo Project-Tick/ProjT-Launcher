@@ -1,9 +1,10 @@
 //     __ _____ _____ _____
 //  __|  |   __|     |   | |  JSON for Modern C++
-// |  |  |__   |  |  | | | |  version 3.12.0
-// |_____|_____|_____|_|___|  https://github.com/nlohmann/json
+// |  |  |__   |  |  | | | |  version 0.0.5-1
+// |_____|_____|_____|_|___|  https://github.com/Project-Tick/json
 //
 // SPDX-FileCopyrightText: 2013-2026 Niels Lohmann <https://nlohmann.me>
+// SPDX-FileCopyrightText: 2026 Project Tick <https://projecttick.org>
 // SPDX-License-Identifier: MIT
 
 #ifndef INCLUDE_NLOHMANN_JSON_FWD_HPP_
@@ -18,10 +19,11 @@
 // #include <nlohmann/detail/abi_macros.hpp>
 //     __ _____ _____ _____
 //  __|  |   __|     |   | |  JSON for Modern C++
-// |  |  |__   |  |  | | | |  version 3.12.0
-// |_____|_____|_____|_|___|  https://github.com/nlohmann/json
+// |  |  |__   |  |  | | | |  version 0.0.5-1
+// |_____|_____|_____|_|___|  https://github.com/Project-Tick/json
 //
 // SPDX-FileCopyrightText: 2013-2026 Niels Lohmann <https://nlohmann.me>
+// SPDX-FileCopyrightText: 2026 Project Tick <https://projecttick.org>
 // SPDX-License-Identifier: MIT
 
 
@@ -29,16 +31,17 @@
 // This file contains all macro definitions affecting or depending on the ABI
 
 #ifndef JSON_SKIP_LIBRARY_VERSION_CHECK
-    #if defined(NLOHMANN_JSON_VERSION_MAJOR) && defined(NLOHMANN_JSON_VERSION_MINOR) && defined(NLOHMANN_JSON_VERSION_PATCH)
-        #if NLOHMANN_JSON_VERSION_MAJOR != 3 || NLOHMANN_JSON_VERSION_MINOR != 12 || NLOHMANN_JSON_VERSION_PATCH != 0
+    #if defined(NLOHMANN_JSON_VERSION_MAJOR) && defined(NLOHMANN_JSON_VERSION_MINOR) && defined(NLOHMANN_JSON_VERSION_PATCH) && defined(NLOHMANN_JSON_VERSION_TWEAK)
+        #if NLOHMANN_JSON_VERSION_MAJOR != 0 || NLOHMANN_JSON_VERSION_MINOR != 0 || NLOHMANN_JSON_VERSION_PATCH != 5 || NLOHMANN_JSON_VERSION_TWEAK != 1
             #warning "Already included a different version of the library!"
         #endif
     #endif
 #endif
 
-#define NLOHMANN_JSON_VERSION_MAJOR 3   // NOLINT(modernize-macro-to-enum)
-#define NLOHMANN_JSON_VERSION_MINOR 12  // NOLINT(modernize-macro-to-enum)
-#define NLOHMANN_JSON_VERSION_PATCH 0   // NOLINT(modernize-macro-to-enum)
+#define NLOHMANN_JSON_VERSION_MAJOR 0   // NOLINT(modernize-macro-to-enum)
+#define NLOHMANN_JSON_VERSION_MINOR 0   // NOLINT(modernize-macro-to-enum)
+#define NLOHMANN_JSON_VERSION_PATCH 5   // NOLINT(modernize-macro-to-enum)
+#define NLOHMANN_JSON_VERSION_TWEAK 1   // NOLINT(modernize-macro-to-enum)
 
 #ifndef JSON_DIAGNOSTICS
     #define JSON_DIAGNOSTICS 0
@@ -86,10 +89,10 @@
             NLOHMANN_JSON_ABI_TAG_DIAGNOSTIC_POSITIONS)
 
 // Construct the namespace version component
-#define NLOHMANN_JSON_NAMESPACE_VERSION_CONCAT_EX(major, minor, patch) \
-    _v ## major ## _ ## minor ## _ ## patch
-#define NLOHMANN_JSON_NAMESPACE_VERSION_CONCAT(major, minor, patch) \
-    NLOHMANN_JSON_NAMESPACE_VERSION_CONCAT_EX(major, minor, patch)
+#define NLOHMANN_JSON_NAMESPACE_VERSION_CONCAT_EX(major, minor, patch, tweak) \
+    _v ## major ## _ ## minor ## _ ## patch ## _ ## tweak
+#define NLOHMANN_JSON_NAMESPACE_VERSION_CONCAT(major, minor, patch, tweak) \
+    NLOHMANN_JSON_NAMESPACE_VERSION_CONCAT_EX(major, minor, patch, tweak)
 
 #if NLOHMANN_JSON_NAMESPACE_NO_VERSION
 #define NLOHMANN_JSON_NAMESPACE_VERSION
@@ -97,7 +100,8 @@
 #define NLOHMANN_JSON_NAMESPACE_VERSION                                 \
     NLOHMANN_JSON_NAMESPACE_VERSION_CONCAT(NLOHMANN_JSON_VERSION_MAJOR, \
                                            NLOHMANN_JSON_VERSION_MINOR, \
-                                           NLOHMANN_JSON_VERSION_PATCH)
+                                           NLOHMANN_JSON_VERSION_PATCH, \
+                                           NLOHMANN_JSON_VERSION_TWEAK)
 #endif
 
 // Combine namespace components

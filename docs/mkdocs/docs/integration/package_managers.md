@@ -106,12 +106,12 @@ The header can be used directly in your code or via CMake.
     - :octicons-tag-24: Available versions: current version and select older versions (see
       [WrapDB](https://mesonbuild.com/Wrapdb-projects.html))
     - :octicons-rocket-24: The package is update automatically from file
-      [`meson.build`](https://github.com/nlohmann/json/blob/develop/meson.build).
-    - :octicons-file-24: File issues at the [library issue tracker](https://github.com/nlohmann/json/issues)
+      [`meson.build`](https://github.com/Project-Tick/json/blob/develop/meson.build).
+    - :octicons-file-24: File issues at the [library issue tracker](https://github.com/Project-Tick/json/issues)
     - :octicons-question-24: [Meson website](https://mesonbuild.com/index.html)
 
 If you are using the [Meson Build System](http://mesonbuild.com), add this source tree as a [meson subproject](https://mesonbuild.com/Subprojects.html#using-a-subproject). You may also use the
-`include.zip` published in this project's [Releases](https://github.com/nlohmann/json/releases) to reduce the size of the vendored source tree. Alternatively,
+`include.zip` published in this project's [Releases](https://github.com/Project-Tick/json/releases) to reduce the size of the vendored source tree. Alternatively,
 you can get a wrap file by downloading it from [Meson WrapDB](https://mesonbuild.com/Wrapdb-projects.html), or use
 
 ```shell
@@ -159,7 +159,7 @@ using the subproject directly.
     use `bazel_dep`, `git_override`, or `local_path_override`
 
     - :octicons-tag-24: Any version, that is available via [Bazel Central Registry](https://registry.bazel.build/modules/nlohmann_json)
-    - :octicons-file-24: File issues at the [library issue tracker](https://github.com/nlohmann/json/issues)
+    - :octicons-file-24: File issues at the [library issue tracker](https://github.com/Project-Tick/json/issues)
     - :octicons-question-24: [Bazel website](https://bazel.build)
 
 This repository provides a [Bazel](https://bazel.build/) `MODULE.bazel` and a corresponding `BUILD.bazel` file. Therefore, this
@@ -398,7 +398,7 @@ If you are using [cget](http://cget.readthedocs.io/en/latest/), you can install 
 cget install nlohmann/json
 ```
 
-A specific version can be installed with `cget install nlohmann/json@v3.12.0`. Also, the multiple header version can be
+A specific version can be installed with `cget install nlohmann/json@0.0.5-1`. Also, the multiple header version can be
 installed by adding the `-DJSON_MultipleHeaders=ON` flag (i.e., `cget install nlohmann/json -DJSON_MultipleHeaders=ON`).
 
 ??? example
@@ -440,7 +440,7 @@ installed by adding the `-DJSON_MultipleHeaders=ON` flag (i.e., `cget install nl
 
     - :octicons-tag-24: Available versions: current version and older versions
     - :octicons-rocket-24: The package is updated with every release.
-    - :octicons-file-24: File issues at the [library issue tracker](https://github.com/nlohmann/json/issues)
+    - :octicons-file-24: File issues at the [library issue tracker](https://github.com/Project-Tick/json/issues)
     - :octicons-question-24: [Xcode documentation](https://developer.apple.com/documentation/xcode/adding-package-dependencies-to-your-app)
 
 ## NuGet
@@ -727,7 +727,7 @@ If you are using [`CPM.cmake`](https://github.com/TheLartians/CPM.cmake), add th
 [CPM.cmake script](https://github.com/TheLartians/CPM.cmake#adding-cpm) and the following snippet to your CMake project:
 
 ```cmake
-CPMAddPackage("gh:nlohmann/json@3.12.0")
+CPMAddPackage("gh:nlohmann/json@0.0.5-1")
 ```
 
 ??? example

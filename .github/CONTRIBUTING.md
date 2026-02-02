@@ -6,7 +6,7 @@ the contributions from the community, whether it's proposing features, identifyi
 that our collaboration is efficient and effective, please follow these guidelines.
 
 Feel free to discuss or suggest improvements to this document
-[by submitting a pull request](https://github.com/nlohmann/json/edit/develop/.github/CONTRIBUTING.md).
+[by submitting a pull request](https://github.com/Project-Tick/json/edit/develop/.github/CONTRIBUTING.md).
 
 ## Ways to Contribute
 
@@ -14,7 +14,7 @@ There are multiple ways to contribute.
 
 ### Reporting an issue
 
-Please [create an issue](https://github.com/nlohmann/json/issues/new/choose), assuming one does not already exist, and
+Please [create an issue](https://github.com/Project-Tick/json/issues/new/choose), assuming one does not already exist, and
 describe your concern. Note you need a [GitHub account](https://github.com/signup/free) for this.
 
 Clearly describe the issue:
@@ -27,17 +27,17 @@ Clearly describe the issue:
   the (relevant part of) the error messages to the ticket.
 
 Please stick to the provided issue template
-[bug report](https://github.com/nlohmann/json/blob/develop/.github/ISSUE_TEMPLATE/bug.yaml) if possible.
+[bug report](https://github.com/Project-Tick/json/blob/develop/.github/ISSUE_TEMPLATE/bug.yaml) if possible.
 
 ### Reporting a security vulnerability
 
 You can report a security vulnerability according to our
-[security policy](https://github.com/nlohmann/json/security/policy).
+[security policy](https://github.com/Project-Tick/json/security/policy).
 
 ### Discussing a new feature
 
 For questions, feature or support requests, please
-[open a discussion](https://github.com/nlohmann/json/discussions/new). If you find a proposed answer satisfactory,
+[open a discussion](https://github.com/Project-Tick/json/discussions/new). If you find a proposed answer satisfactory,
 please use the "Mark as answer" button to make it easier for readers to see what helped and for the community to filter
 for open questions.
 
@@ -46,7 +46,7 @@ for open questions.
 Join an ongoing discussion or comment on an existing issue before starting to code. This can help to avoid duplicate
 efforts or other frustration during the later review.
 
-Create a [pull request](https://github.com/nlohmann/json/pulls?q=sort%3Aupdated-desc+is%3Apr+is%3Aopen) against the
+Create a [pull request](https://github.com/Project-Tick/json/pulls?q=sort%3Aupdated-desc+is%3Apr+is%3Aopen) against the
 `develop` branch and follow the pull request template. In particular,
 
 - describe the changes in detail, both the what and why,
@@ -103,7 +103,7 @@ The test suite should report:
 
 #### Add tests
 
-The tests are located in [`tests/src/unit-*.cpp`](https://github.com/nlohmann/json/tree/develop/tests/src) and contain
+The tests are located in [`tests/src/unit-*.cpp`](https://github.com/Project-Tick/json/tree/develop/tests/src) and contain
 [doctest assertions](https://github.com/doctest/doctest/blob/master/doc/markdown/assertions.md) like `CHECK`. The tests
 are structured along the features of the library or the nature of the tests. Usually, it should be clear from the
 context which existing file needs to be extended, and only very few cases require creating new test files.
@@ -123,10 +123,10 @@ coverage report as an artifact to the “Ubuntu” workflow.
 ### Update the documentation
 
 The [main documentation](https://json.nlohmann.me) of the library is generated from the files
-[`docs/mkdocs/docs`](https://github.com/nlohmann/json/blob/develop/docs/mkdocs/docs). This folder contains dedicated
-pages for [certain features](https://github.com/nlohmann/json/tree/develop/docs/mkdocs/docs/features), a list of
-[all exceptions](https://github.com/nlohmann/json/blob/develop/docs/mkdocs/docs/home/exceptions.md), and 
-[extensive API documentation](https://github.com/nlohmann/json/tree/develop/docs/mkdocs/docs/api) with details on every
+[`docs/mkdocs/docs`](https://github.com/Project-Tick/json/blob/develop/docs/mkdocs/docs). This folder contains dedicated
+pages for [certain features](https://github.com/Project-Tick/json/tree/develop/docs/mkdocs/docs/features), a list of
+[all exceptions](https://github.com/Project-Tick/json/blob/develop/docs/mkdocs/docs/home/exceptions.md), and 
+[extensive API documentation](https://github.com/Project-Tick/json/tree/develop/docs/mkdocs/docs/api) with details on every
 public API function.
 
 Build the documentation locally using:
@@ -143,10 +143,10 @@ information.
 ### Amalgamate the source code
 
 The single-header files
-[`single_include/nlohmann/json.hpp`](https://github.com/nlohmann/json/blob/develop/single_include/nlohmann/json.hpp) and
-[`single_include/nlohmann/json_fwd.hpp`](https://github.com/nlohmann/json/blob/develop/single_include/nlohmann/json_fwd.hpp)
+[`single_include/nlohmann/json.hpp`](https://github.com/Project-Tick/json/blob/develop/single_include/nlohmann/json.hpp) and
+[`single_include/nlohmann/json_fwd.hpp`](https://github.com/Project-Tick/json/blob/develop/single_include/nlohmann/json_fwd.hpp)
 are **generated** from the source files in the
-[`include/nlohmann` directory](https://github.com/nlohmann/json/tree/develop/include/nlohmann). **Do not** edit the
+[`include/nlohmann` directory](https://github.com/Project-Tick/json/tree/develop/include/nlohmann). **Do not** edit the
 files directly; instead, modify the include/nlohmann sources and regenerate the files by executing:
 
 ```shell
@@ -158,7 +158,7 @@ Running `make amalgamate` will also apply automatic formatting to the source fil
 
 ## Recommended documentation
 
-- The library’s [README file](https://github.com/nlohmann/json/blob/master/README.md) is an excellent starting point to
+- The library’s [README file](https://github.com/Project-Tick/json/blob/master/README.md) is an excellent starting point to
   understand its functionality.
 - The [documentation page](https://json.nlohmann.me) is the reference documentation of the library.
 - [RFC 8259](https://datatracker.ietf.org/doc/html/rfc8259) is the reference for the JavaScript Object Notation (JSON)
@@ -194,7 +194,7 @@ feature macros then allows users to test their code against the library in the n
 ### Break C++11 language conformance
 
 This library is designed to work with C++11 and later. This means that any
-[supported C++11 compiler](https://github.com/nlohmann/json/blob/master/README.md#supported-compilers) should compile
+[supported C++11 compiler](https://github.com/Project-Tick/json/blob/master/README.md#supported-compilers) should compile
 the library without problems. Some compilers like GCC 4.7 (and earlier), Clang 3.3 (and earlier), or Microsoft Visual
 Studio 13.0 and earlier are known not to work due to missing or incomplete C++11 support.
 

@@ -1,9 +1,10 @@
 //     __ _____ _____ _____
 //  __|  |   __|     |   | |  JSON for Modern C++
-// |  |  |__   |  |  | | | |  version 3.12.0
-// |_____|_____|_____|_|___|  https://github.com/nlohmann/json
+// |  |  |__   |  |  | | | |  version 0.0.5-1
+// |_____|_____|_____|_|___|  https://github.com/Project-Tick/json
 //
 // SPDX-FileCopyrightText: 2013-2026 Niels Lohmann <https://nlohmann.me>
+// SPDX-FileCopyrightText: 2026 Project Tick <https://projecttick.org>
 // SPDX-License-Identifier: MIT
 
 /****************************************************************************\
@@ -255,14 +256,16 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
 
         result["copyright"] = "(C) 2013-2026 Niels Lohmann";
         result["name"] = "JSON for Modern C++";
-        result["url"] = "https://github.com/nlohmann/json";
+        result["url"] = "https://github.com/Project-Tick/json";
         result["version"]["string"] =
             detail::concat(std::to_string(NLOHMANN_JSON_VERSION_MAJOR), '.',
                            std::to_string(NLOHMANN_JSON_VERSION_MINOR), '.',
-                           std::to_string(NLOHMANN_JSON_VERSION_PATCH));
+                           std::to_string(NLOHMANN_JSON_VERSION_PATCH), '-',
+                           std::to_string(NLOHMANN_JSON_VERSION_TWEAK));
         result["version"]["major"] = NLOHMANN_JSON_VERSION_MAJOR;
         result["version"]["minor"] = NLOHMANN_JSON_VERSION_MINOR;
         result["version"]["patch"] = NLOHMANN_JSON_VERSION_PATCH;
+        result["version"]["tweak"] = NLOHMANN_JSON_VERSION_TWEAK;
 
 #ifdef _WIN32
         result["platform"] = "win32";
@@ -518,7 +521,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
                     object = nullptr;  // silence warning, see #821
                     if (JSON_HEDLEY_UNLIKELY(t == value_t::null))
                     {
-                        JSON_THROW(other_error::create(500, "961c151d2e87f2686a955a9be24d316f1362bf21 3.12.0", nullptr)); // LCOV_EXCL_LINE
+                        JSON_THROW(other_error::create(500, "961c151d2e87f2686a955a9be24d316f1362bf21 0.0.5-1", nullptr)); // LCOV_EXCL_LINE
                     }
                     break;
                 }

@@ -239,7 +239,7 @@ namespace nlohmann {
 
 ## Can I write my own serializer? (Advanced use)
 
-Yes. You might want to take a look at [`unit-udt.cpp`](https://github.com/nlohmann/json/blob/develop/tests/src/unit-udt.cpp) in the test suite, to see a few examples.
+Yes. You might want to take a look at [`unit-udt.cpp`](https://github.com/Project-Tick/json/blob/develop/tests/src/unit-udt.cpp) in the test suite, to see a few examples.
 
 If you write your own serializer, you will need to do a few things:
 

@@ -18,7 +18,7 @@ and use the namespaced imported target from the generated package configuration:
     cmake_minimum_required(VERSION 3.5)
     project(ExampleProject LANGUAGES CXX)
     
-    find_package(nlohmann_json 3.12.0 REQUIRED)
+    find_package(nlohmann_json 0.0.5-1 REQUIRED)
     
     add_executable(example example.cpp)
     target_link_libraries(example PRIVATE nlohmann_json::nlohmann_json)
@@ -77,7 +77,7 @@ to the following.
     
     ```cmake title="thirdparty/CMakeLists.txt"
     if(EXAMPLE_USE_EXTERNAL_JSON)
-        find_package(nlohmann_json 3.12.0 REQUIRED)
+        find_package(nlohmann_json 0.0.5-1 REQUIRED)
     else()
         set(JSON_BuildTests OFF CACHE INTERNAL "")
         add_subdirectory(nlohmann_json)
@@ -100,7 +100,7 @@ automatically download a release as a dependency at configure time.
 
     include(FetchContent)
     
-    FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
+    FetchContent_Declare(json URL https://github.com/Project-Tick/json/releases/download/0.0.5-1/json.tar.xz)
     FetchContent_MakeAvailable(json)
     
     add_executable(example example.cpp)
@@ -114,12 +114,12 @@ automatically download a release as a dependency at configure time.
 
     ```cmake
     FetchContent_Declare(json
-        GIT_REPOSITORY https://github.com/nlohmann/json
-        GIT_TAG v3.12.0
+        GIT_REPOSITORY https://github.com/Project-Tick/json
+        GIT_TAG 0.0.5-1
     )
     ```
 
-    However, the repository <https://github.com/nlohmann/json> download size is quite large.
+    However, the repository <https://github.com/Project-Tick/json> download size is quite large.
 
 ## CMake Options
 

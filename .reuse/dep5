@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: json
 Upstream-Contact: Niels Lohmann <mail@nlohmann.me>
-Source: https://github.com/nlohmann/json
+Source: https://github.com/Project-Tick/json
 
 Files: *
 Copyright: 2013-2026 Niels Lohmann <https://nlohmann.me>

@@ -1,9 +1,9 @@
-[![JSON for Modern C++](docs/mkdocs/docs/images/json.gif)](https://github.com/nlohmann/json/releases)
+[![JSON for Modern C++](docs/mkdocs/docs/images/json.gif)](https://github.com/Project-Tick/json/releases)
 
 [![Build Status](https://ci.appveyor.com/api/projects/status/1acb366xfyg3qybk/branch/develop?svg=true)](https://ci.appveyor.com/project/nlohmann/json)
-[![Ubuntu](https://github.com/nlohmann/json/workflows/Ubuntu/badge.svg)](https://github.com/nlohmann/json/actions?query=workflow%3AUbuntu)
-[![macOS](https://github.com/nlohmann/json/workflows/macOS/badge.svg)](https://github.com/nlohmann/json/actions?query=workflow%3AmacOS)
-[![Windows](https://github.com/nlohmann/json/workflows/Windows/badge.svg)](https://github.com/nlohmann/json/actions?query=workflow%3AWindows)
+[![Ubuntu](https://github.com/Project-Tick/json/workflows/Ubuntu/badge.svg)](https://github.com/Project-Tick/json/actions?query=workflow%3AUbuntu)
+[![macOS](https://github.com/Project-Tick/json/workflows/macOS/badge.svg)](https://github.com/Project-Tick/json/actions?query=workflow%3AmacOS)
+[![Windows](https://github.com/Project-Tick/json/workflows/Windows/badge.svg)](https://github.com/Project-Tick/json/actions?query=workflow%3AWindows)
 [![Coverage Status](https://coveralls.io/repos/github/nlohmann/json/badge.svg?branch=develop)](https://coveralls.io/github/nlohmann/json?branch=develop)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/5550/badge.svg)](https://scan.coverity.com/projects/nlohmann-json)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/e0d1a9d5d6fd46fcb655c4cb930bb3e8)](https://app.codacy.com/gh/nlohmann/json/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
@@ -12,10 +12,10 @@
 [![Try online](https://img.shields.io/badge/try-online-blue.svg)](https://wandbox.org/permlink/1mp10JbaANo6FUc7)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://json.nlohmann.me)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/nlohmann/json/master/LICENSE.MIT)
-[![GitHub Releases](https://img.shields.io/github/release/nlohmann/json.svg)](https://github.com/nlohmann/json/releases)
+[![GitHub Releases](https://img.shields.io/github/release/nlohmann/json.svg)](https://github.com/Project-Tick/json/releases)
 [![Packaging status](https://repology.org/badge/tiny-repos/nlohmann-json.svg)](https://repology.org/project/nlohmann-json/versions)
-[![GitHub Downloads](https://img.shields.io/github/downloads/nlohmann/json/total)](https://github.com/nlohmann/json/releases)
-[![GitHub Issues](https://img.shields.io/github/issues/nlohmann/json.svg)](https://github.com/nlohmann/json/issues)
+[![GitHub Downloads](https://img.shields.io/github/downloads/nlohmann/json/total)](https://github.com/Project-Tick/json/releases)
+[![GitHub Issues](https://img.shields.io/github/issues/nlohmann/json.svg)](https://github.com/Project-Tick/json/issues)
 [![Average time to resolve an issue](https://isitmaintained.com/badge/resolution/nlohmann/json.svg)](https://isitmaintained.com/project/nlohmann/json "Average time to resolve an issue")
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/289/badge)](https://bestpractices.coreinfrastructure.org/projects/289)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/nlohmann/json/badge)](https://scorecard.dev/viewer/?uri=github.com/nlohmann/json)
@@ -26,7 +26,7 @@
 
 - [Design goals](#design-goals)
 - [Sponsors](#sponsors)
-- [Support](#support) ([documentation](https://json.nlohmann.me), [FAQ](https://json.nlohmann.me/home/faq/), [discussions](https://github.com/nlohmann/json/discussions), [API](https://json.nlohmann.me/api/basic_json/), [bug issues](https://github.com/nlohmann/json/issues))
+- [Support](#support) ([documentation](https://json.nlohmann.me), [FAQ](https://json.nlohmann.me/home/faq/), [discussions](https://github.com/Project-Tick/json/discussions), [API](https://json.nlohmann.me/api/basic_json/), [bug issues](https://github.com/Project-Tick/json/issues))
 - [Quick reference](#quick-reference)
 - [Examples](#examples)
   - [Read JSON from a file](#read-json-from-a-file)
@@ -60,9 +60,9 @@ There are myriads of [JSON](https://json.org) libraries out there, and each may 
 
 - **Intuitive syntax**. In languages such as Python, JSON feels like a first-class data type. We used all the operator magic of modern C++ to achieve the same feeling in your code. Check out the [examples below](#examples) and you'll know what I mean.
 
-- **Trivial integration**. Our whole code consists of a single header file [`json.hpp`](https://github.com/nlohmann/json/blob/develop/single_include/nlohmann/json.hpp). That's it. No library, no subproject, no dependencies, no complex build system. The class is written in vanilla C++11. All in all, everything should require no adjustment of your compiler flags or project settings. The library is also included in all popular [package managers](https://json.nlohmann.me/integration/package_managers/).
+- **Trivial integration**. Our whole code consists of a single header file [`json.hpp`](https://github.com/Project-Tick/json/blob/develop/single_include/nlohmann/json.hpp). That's it. No library, no subproject, no dependencies, no complex build system. The class is written in vanilla C++11. All in all, everything should require no adjustment of your compiler flags or project settings. The library is also included in all popular [package managers](https://json.nlohmann.me/integration/package_managers/).
 
-- **Serious testing**. Our code is heavily [unit-tested](https://github.com/nlohmann/json/tree/develop/tests/src) and covers [100%](https://coveralls.io/r/nlohmann/json) of the code, including all exceptional behavior. Furthermore, we checked with [Valgrind](https://valgrind.org) and the [Clang Sanitizers](https://clang.llvm.org/docs/index.html) that there are no memory leaks. [Google OSS-Fuzz](https://github.com/google/oss-fuzz/tree/master/projects/json) additionally runs fuzz tests against all parsers 24/7, effectively executing billions of tests so far. To maintain high quality, the project is following the [Core Infrastructure Initiative (CII) best practices](https://bestpractices.coreinfrastructure.org/projects/289). See the [quality assurance](https://json.nlohmann.me/community/quality_assurance) overview documentation.
+- **Serious testing**. Our code is heavily [unit-tested](https://github.com/Project-Tick/json/tree/develop/tests/src) and covers [100%](https://coveralls.io/r/nlohmann/json) of the code, including all exceptional behavior. Furthermore, we checked with [Valgrind](https://valgrind.org) and the [Clang Sanitizers](https://clang.llvm.org/docs/index.html) that there are no memory leaks. [Google OSS-Fuzz](https://github.com/google/oss-fuzz/tree/master/projects/json) additionally runs fuzz tests against all parsers 24/7, effectively executing billions of tests so far. To maintain high quality, the project is following the [Core Infrastructure Initiative (CII) best practices](https://bestpractices.coreinfrastructure.org/projects/289). See the [quality assurance](https://json.nlohmann.me/community/quality_assurance) overview documentation.
 
 Other aspects were not so important to us:
 
@@ -70,7 +70,7 @@ Other aspects were not so important to us:
 
 - **Speed**. There are certainly [faster JSON libraries](https://github.com/miloyip/nativejson-benchmark#parsing-time) out there. However, if your goal is to speed up your development by adding JSON support with a single header, then this library is the way to go. If you know how to use a `std::vector` or `std::map`, you are already set.
 
-See the [contribution guidelines](https://github.com/nlohmann/json/blob/master/.github/CONTRIBUTING.md#please-dont) for more information.
+See the [contribution guidelines](https://github.com/Project-Tick/json/blob/master/.github/CONTRIBUTING.md#please-dont) for more information.
 
 ## Sponsors
 
@@ -101,13 +101,13 @@ Thanks everyone!
 
 ## Support
 
-:question: If you have a **question**, please check if it is already answered in the [**FAQ**](https://json.nlohmann.me/home/faq/) or the [**Q&A**](https://github.com/nlohmann/json/discussions/categories/q-a) section. If not, please [**ask a new question**](https://github.com/nlohmann/json/discussions/new) there.
+:question: If you have a **question**, please check if it is already answered in the [**FAQ**](https://json.nlohmann.me/home/faq/) or the [**Q&A**](https://github.com/Project-Tick/json/discussions/categories/q-a) section. If not, please [**ask a new question**](https://github.com/Project-Tick/json/discussions/new) there.
 
-:books: If you want to **learn more** about how to use the library, check out the rest of the [**README**](#examples), have a look at [**code examples**](https://github.com/nlohmann/json/tree/develop/docs/mkdocs/docs/examples), or browse through the [**help pages**](https://json.nlohmann.me).
+:books: If you want to **learn more** about how to use the library, check out the rest of the [**README**](#examples), have a look at [**code examples**](https://github.com/Project-Tick/json/tree/develop/docs/mkdocs/docs/examples), or browse through the [**help pages**](https://json.nlohmann.me).
 
 :construction: If you want to understand the **API** better, check out the [**API Reference**](https://json.nlohmann.me/api/basic_json/) or have a look at the [quick reference](#quick-reference) below.
 
-:bug: If you found a **bug**, please check the [**FAQ**](https://json.nlohmann.me/home/faq/) if it is a known issue or the result of a design decision. Please also have a look at the [**issue list**](https://github.com/nlohmann/json/issues) before you [**create a new issue**](https://github.com/nlohmann/json/issues/new/choose). Please provide as much information as possible to help us understand and reproduce your issue.
+:bug: If you found a **bug**, please check the [**FAQ**](https://json.nlohmann.me/home/faq/) if it is a known issue or the result of a design decision. Please also have a look at the [**issue list**](https://github.com/Project-Tick/json/issues) before you [**create a new issue**](https://github.com/Project-Tick/json/issues/new/choose). Please provide as much information as possible to help us understand and reproduce your issue.
 
 There is also a [**docset**](https://github.com/Kapeli/Dash-User-Contributions/tree/master/docsets/JSON_for_Modern_C%2B%2B) for the documentation browsers [Dash](https://kapeli.com/dash), [Velocity](https://velocity.silverlakesoftware.com), and [Zeal](https://zealdocs.org) that contains the full [documentation](https://json.nlohmann.me) as an offline resource.
 
@@ -141,7 +141,7 @@ Here are some examples to give you an idea how to use the class.
 Besides the examples below, you may want to:
 
 → Check the [documentation](https://json.nlohmann.me/)\
-→ Browse the [standalone example files](https://github.com/nlohmann/json/tree/develop/docs/mkdocs/docs/examples)\
+→ Browse the [standalone example files](https://github.com/Project-Tick/json/tree/develop/docs/mkdocs/docs/examples)\
 → Read the full [API Documentation](https://json.nlohmann.me/api/basic_json/) with self-contained examples for every function
 
 ### Read JSON from a file
@@ -501,7 +501,7 @@ To implement your own SAX handler, proceed as follows:
 2. Create an object of your SAX interface class, e.g. `my_sax`.
 3. Call `bool json::sax_parse(input, &my_sax)`; where the first parameter can be any input like a string or an input stream and the second parameter is a pointer to your SAX interface.
 
-Note the `sax_parse` function only returns a `bool` indicating the result of the last executed SAX event. It does not return a  `json` value - it is up to you to decide what to do with the SAX events. Furthermore, no exceptions are thrown in case of a parse error -- it is up to you what to do with the exception object passed to your `parse_error` implementation. Internally, the SAX interface is used for the DOM parser (class `json_sax_dom_parser`) as well as the acceptor (`json_sax_acceptor`), see file [`json_sax.hpp`](https://github.com/nlohmann/json/blob/develop/include/nlohmann/detail/input/json_sax.hpp).
+Note the `sax_parse` function only returns a `bool` indicating the result of the last executed SAX event. It does not return a  `json` value - it is up to you to decide what to do with the SAX events. Furthermore, no exceptions are thrown in case of a parse error -- it is up to you what to do with the exception object passed to your `parse_error` implementation. Internally, the SAX interface is used for the DOM parser (class `json_sax_dom_parser`) as well as the acceptor (`json_sax_acceptor`), see file [`json_sax.hpp`](https://github.com/Project-Tick/json/blob/develop/include/nlohmann/detail/input/json_sax.hpp).
 
 ### STL-like access
 
@@ -971,7 +971,7 @@ namespace nlohmann {
 
 #### Can I write my own serializer? (Advanced use)
 
-Yes. You might want to take a look at [`unit-udt.cpp`](https://github.com/nlohmann/json/blob/develop/tests/src/unit-udt.cpp) in the test suite, to see a few examples.
+Yes. You might want to take a look at [`unit-udt.cpp`](https://github.com/Project-Tick/json/blob/develop/tests/src/unit-udt.cpp) in the test suite, to see a few examples.
 
 If you write your own serializer, you'll need to do a few things:
 
@@ -1191,7 +1191,7 @@ See the page [quality assurance](https://json.nlohmann.me/community/quality_assu
 
 ## Integration
 
-[`json.hpp`](https://github.com/nlohmann/json/blob/develop/single_include/nlohmann/json.hpp) is the single required file in `single_include/nlohmann` or [released here](https://github.com/nlohmann/json/releases). You need to add
+[`json.hpp`](https://github.com/Project-Tick/json/blob/develop/single_include/nlohmann/json.hpp) is the single required file in `single_include/nlohmann` or [released here](https://github.com/Project-Tick/json/releases). You need to add
 
 ```cpp
 #include <nlohmann/json.hpp>
@@ -1202,7 +1202,7 @@ using json = nlohmann::json;
 
 to the files you want to process JSON and set the necessary switches to enable C++11 (e.g., `-std=c++11` for GCC and Clang).
 
-You can further use file [`include/nlohmann/json_fwd.hpp`](https://github.com/nlohmann/json/blob/develop/include/nlohmann/json_fwd.hpp) for forward-declarations. The installation of `json_fwd.hpp` (as part of cmake's install step) can be achieved by setting `-DJSON_MultipleHeaders=ON`.
+You can further use file [`include/nlohmann/json_fwd.hpp`](https://github.com/Project-Tick/json/blob/develop/include/nlohmann/json_fwd.hpp) for forward-declarations. The installation of `json_fwd.hpp` (as part of cmake's install step) can be achieved by setting `-DJSON_MultipleHeaders=ON`.
 
 ### CMake
 
@@ -1214,7 +1214,7 @@ To use this library from a CMake project, you can locate it directly with `find_
 
 ```cmake
 # CMakeLists.txt
-find_package(nlohmann_json 3.12.0 REQUIRED)
+find_package(nlohmann_json 0.0.5.1 REQUIRED)
 ...
 add_library(foo ...)
 ...
@@ -1258,7 +1258,7 @@ Example:
 ```cmake
 include(FetchContent)
 
-FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
+FetchContent_Declare(json URL https://github.com/Project-Tick/json/releases/download/0.0.5-1/json.tar.xz)
 FetchContent_MakeAvailable(json)
 
 target_link_libraries(foo PRIVATE nlohmann_json::nlohmann_json)
@@ -1290,7 +1290,7 @@ target_link_libraries(foo PRIVATE nlohmann_json::nlohmann_json)
 # thirdparty/CMakeLists.txt
 ...
 if(FOO_USE_EXTERNAL_JSON)
-  find_package(nlohmann_json 3.12.0 REQUIRED)
+  find_package(nlohmann_json 0.0.5.1 REQUIRED)
 else()
   set(JSON_BuildTests OFF CACHE INTERNAL "")
   add_subdirectory(nlohmann_json)
@@ -1361,13 +1361,13 @@ The library is compliant to version 3.3 of the [**REUSE specification**](https:/
 
 ## Contact
 
-If you have questions regarding the library, I would like to invite you to [open an issue at GitHub](https://github.com/nlohmann/json/issues/new/choose). Please describe your request, problem, or question as detailed as possible, and also mention the version of the library you are using as well as the version of your compiler and operating system. Opening an issue at GitHub allows other users and contributors to this library to collaborate. For instance, I have little experience with MSVC, and most issues in this regard have been solved by a growing community. If you have a look at the [closed issues](https://github.com/nlohmann/json/issues?q=is%3Aissue+is%3Aclosed), you will see that we react quite timely in most cases.
+If you have questions regarding the library, I would like to invite you to [open an issue at GitHub](https://github.com/Project-Tick/json/issues/new/choose). Please describe your request, problem, or question as detailed as possible, and also mention the version of the library you are using as well as the version of your compiler and operating system. Opening an issue at GitHub allows other users and contributors to this library to collaborate. For instance, I have little experience with MSVC, and most issues in this regard have been solved by a growing community. If you have a look at the [closed issues](https://github.com/Project-Tick/json/issues?q=is%3Aissue+is%3Aclosed), you will see that we react quite timely in most cases.
 
 Only if your request would contain confidential information, please [send me an email](mailto:mail@nlohmann.me). For encrypted messages, please use [this key](https://keybase.io/nlohmann/pgp_keys.asc).
 
 ## Security
 
-[Commits by Niels Lohmann](https://github.com/nlohmann/json/commits) and [releases](https://github.com/nlohmann/json/releases) are signed with this [PGP Key](https://keybase.io/nlohmann/pgp_keys.asc?fingerprint=797167ae41c0a6d9232e48457f3cea63ae251b69).
+[Commits by Niels Lohmann](https://github.com/Project-Tick/json/commits) and [releases](https://github.com/Project-Tick/json/releases) are signed with this [PGP Key](https://keybase.io/nlohmann/pgp_keys.asc?fingerprint=797167ae41c0a6d9232e48457f3cea63ae251b69).
 
 ## Thanks
 
@@ -1777,7 +1777,7 @@ The library itself consists of a single header file licensed under the MIT licen
 - [**Coverity Scan**](https://scan.coverity.com) for [static analysis](https://scan.coverity.com/projects/nlohmann-json)
 - [**cppcheck**](http://cppcheck.sourceforge.net) for static analysis
 - [**doctest**](https://github.com/onqtam/doctest) for the unit tests
-- [**GitHub Changelog Generator**](https://github.com/skywinder/github-changelog-generator) to generate the [ChangeLog](https://github.com/nlohmann/json/blob/develop/ChangeLog.md)
+- [**GitHub Changelog Generator**](https://github.com/skywinder/github-changelog-generator) to generate the [ChangeLog](https://github.com/Project-Tick/json/blob/develop/ChangeLog.md)
 - [**Google Benchmark**](https://github.com/google/benchmark) to implement the benchmarks
 - [**Hedley**](https://nemequ.github.io/hedley/) to avoid re-inventing several compiler-agnostic feature macros
 - [**lcov**](https://github.com/linux-test-project/lcov) to process coverage information and create an HTML view
@@ -1864,7 +1864,7 @@ cmake --build .
 ctest --output-on-failure
 ```
 
-Note that during the `ctest` stage, several JSON test files are downloaded from an [external repository](https://github.com/nlohmann/json_test_data). If policies forbid downloading artifacts during testing, you can download the files yourself and pass the directory with the test files via `-DJSON_TestDataDirectory=path` to CMake. Then, no Internet connectivity is required. See [issue #2189](https://github.com/nlohmann/json/issues/2189) for more information.
+Note that during the `ctest` stage, several JSON test files are downloaded from an [external repository](https://github.com/Project-Tick/json_test_data). If policies forbid downloading artifacts during testing, you can download the files yourself and pass the directory with the test files via `-DJSON_TestDataDirectory=path` to CMake. Then, no Internet connectivity is required. See [issue #2189](https://github.com/nlohmann/json/issues/2189) for more information.
 
 If the testdata is not found, several test suites will fail like this:
 
@@ -1877,7 +1877,7 @@ json/tests/src/make_test_data_available.hpp:23: FATAL ERROR: REQUIRE( utils::che
   values: REQUIRE( false )
   logged: Test data not found in 'json/cmake-build-debug/json_test_data'.
           Please execute target 'download_test_data' before running this test suite.
-          See <https://github.com/nlohmann/json#execute-unit-tests> for more information.
+          See <https://github.com/Project-Tick/json#execute-unit-tests> for more information.
 
 ===============================================================================
 ```

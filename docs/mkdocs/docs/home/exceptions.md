@@ -846,7 +846,7 @@ and this exception no longer occurs.
 !!! success "Exception cannot occur any more"
 
     - Since version 3.9.0, integer numbers beyond int64 are serialized as high-precision UBJSON numbers.
-    - Since version 3.12.0, integer numbers beyond int64 are serialized as uint64 BSON numbers.
+    - Since version 0.0.5-1, integer numbers beyond int64 are serialized as uint64 BSON numbers.
 
 ### json.exception.out_of_range.408
 

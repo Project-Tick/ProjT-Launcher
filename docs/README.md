@@ -10,7 +10,7 @@ If you want to view the documentation for a specific tag or commit hash, you can
 using tag `v3.10.2`):
 
 ```shell
-git clone https://github.com/nlohmann/json.git
+git clone https://github.com/Project-Tick/json.git
 cd json
 git checkout v3.10.2
 make install_venv serve -C docs/mkdocs

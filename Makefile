@@ -185,8 +185,8 @@ BUILD.bazel: $(SRCS)
 NEXT_VERSION ?= "unreleased"
 
 ChangeLog.md:
-	github_changelog_generator -o ChangeLog.md --user nlohmann --project json --simple-list --release-url https://github.com/nlohmann/json/releases/tag/%s --future-release $(NEXT_VERSION)
-	$(SED) -i 's|https://github.com/nlohmann/json/releases/tag/HEAD|https://github.com/nlohmann/json/tree/HEAD|' ChangeLog.md
+	github_changelog_generator -o ChangeLog.md --user nlohmann --project json --simple-list --release-url https://github.com/Project-Tick/json/releases/tag/%s --future-release $(NEXT_VERSION)
+	$(SED) -i 's|https://github.com/Project-Tick/json/releases/tag/HEAD|https://github.com/Project-Tick/json/tree/HEAD|' ChangeLog.md
 	$(SED) -i '2i All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org/).' ChangeLog.md
 
 

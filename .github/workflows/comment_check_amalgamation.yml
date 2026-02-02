@@ -76,6 +76,6 @@ jobs:
               repo: context.repo.repo,
               body: '## 🔴 Amalgamation check failed! 🔴\nThe source code has not been amalgamated.'
                     + (first ? ' @' + author + ' Please read and follow the [Contribution Guidelines]'
-                               + '(https://github.com/nlohmann/json/blob/develop/.github/CONTRIBUTING.md#files-to-change).'
+                               + '(https://github.com/Project-Tick/json/blob/develop/.github/CONTRIBUTING.md#files-to-change).'
                              : '')
               })
