@@ -2,7 +2,7 @@
 
 ## Generate documentation
 
-Note on documentation: The source files contain links to the online documentation at https://projecttick.org.  
+Note on documentation: The source files contain links to the online documentation at https://json.projecttick.org.  
 This URL provides the most recent documentation and also applies to previous versions. Documentation for deprecated
 functions is not removed; instead, it is marked as deprecated.
 
@@ -17,7 +17,7 @@ make install_venv serve -C docs/mkdocs
 ```
 
 Open <http://127.0.0.1:8000/> in your browser. Replace any URL in the source code that points to
-`https://projecttick.org` with `http://127.0.0.1:8000` to view the documentation for the selected tag or commit hash.
+`https://json.projecttick.org` with `http://127.0.0.1:8000` to view the documentation for the selected tag or commit hash.
 
 
 

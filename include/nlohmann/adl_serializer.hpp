@@ -18,12 +18,12 @@
 
 NLOHMANN_JSON_NAMESPACE_BEGIN
 
-/// @sa https://projecttick.org/api/adl_serializer/
+/// @sa https://json.projecttick.org/api/adl_serializer/
 template<typename ValueType, typename>
 struct adl_serializer
 {
     /// @brief convert a JSON value to any value type
-    /// @sa https://projecttick.org/api/adl_serializer/from_json/
+    /// @sa https://json.projecttick.org/api/adl_serializer/from_json/
     template<typename BasicJsonType, typename TargetType = ValueType>
     static auto from_json(BasicJsonType && j, TargetType& val) noexcept(
         noexcept(::nlohmann::from_json(std::forward<BasicJsonType>(j), val)))
@@ -33,7 +33,7 @@ struct adl_serializer
     }
 
     /// @brief convert a JSON value to any value type
-    /// @sa https://projecttick.org/api/adl_serializer/from_json/
+    /// @sa https://json.projecttick.org/api/adl_serializer/from_json/
     template<typename BasicJsonType, typename TargetType = ValueType>
     static auto from_json(BasicJsonType && j) noexcept(
     noexcept(::nlohmann::from_json(std::forward<BasicJsonType>(j), detail::identity_tag<TargetType> {})))
@@ -43,7 +43,7 @@ struct adl_serializer
     }
 
     /// @brief convert any value type to a JSON value
-    /// @sa https://projecttick.org/api/adl_serializer/to_json/
+    /// @sa https://json.projecttick.org/api/adl_serializer/to_json/
     template<typename BasicJsonType, typename TargetType = ValueType>
     static auto to_json(BasicJsonType& j, TargetType && val) noexcept(
         noexcept(::nlohmann::to_json(j, std::forward<TargetType>(val))))

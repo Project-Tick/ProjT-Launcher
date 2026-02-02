@@ -1,7 +1,7 @@
 # Contribution Guidelines
 
 Thank you for your interest in contributing to this project! What began as an exercise to explore the exciting features
-of C++11 has evolved into a [widely used](https://projecttick.org/home/customers/) JSON library. I truly appreciate all
+of C++11 has evolved into a [widely used](https://json.projecttick.org/home/customers/) JSON library. I truly appreciate all
 the contributions from the community, whether it's proposing features, identifying bugs, or fixing mistakes! To ensure
 that our collaboration is efficient and effective, please follow these guidelines.
 
@@ -122,7 +122,7 @@ coverage report as an artifact to the “Ubuntu” workflow.
 
 ### Update the documentation
 
-The [main documentation](https://projecttick.org) of the library is generated from the files
+The [main documentation](https://json.projecttick.org) of the library is generated from the files
 [`docs/mkdocs/docs`](https://github.com/Project-Tick/json/blob/develop/docs/mkdocs/docs). This folder contains dedicated
 pages for [certain features](https://github.com/Project-Tick/json/tree/develop/docs/mkdocs/docs/features), a list of
 [all exceptions](https://github.com/Project-Tick/json/blob/develop/docs/mkdocs/docs/home/exceptions.md), and 
@@ -160,7 +160,7 @@ Running `make amalgamate` will also apply automatic formatting to the source fil
 
 - The library’s [README file](https://github.com/Project-Tick/json/blob/master/README.md) is an excellent starting point to
   understand its functionality.
-- The [documentation page](https://projecttick.org) is the reference documentation of the library.
+- The [documentation page](https://json.projecttick.org) is the reference documentation of the library.
 - [RFC 8259](https://datatracker.ietf.org/doc/html/rfc8259) is the reference for the JavaScript Object Notation (JSON)
   Data Interchange Format.
 
@@ -171,7 +171,7 @@ Certain contributions are not helpful.
 ### Break the public API
 
 We take pride in the library being used by
-[numerous customers across various industries](https://projecttick.org/home/customers/). They all rely on the
+[numerous customers across various industries](https://json.projecttick.org/home/customers/). They all rely on the
 guarantees provided by [semantic versioning](https://semver.org). Please do not change the library such that the public
 API of the 3.x.y version is broken. This includes:
 
@@ -187,7 +187,7 @@ API of the 3.x.y version is broken. This includes:
 Although these guidelines may seem restrictive, they are essential for maintaining the library’s utility.
 
 Breaking changes may be introduced when they are guarded with a feature macro such as
-[`JSON_USE_IMPLICIT_CONVERSIONS`](https://projecttick.org/api/macros/json_use_implicit_conversions/) which allows 
+[`JSON_USE_IMPLICIT_CONVERSIONS`](https://json.projecttick.org/api/macros/json_use_implicit_conversions/) which allows 
 selectively changing the behavior of the library. In next steps, the current behavior can then be deprecated. Using
 feature macros then allows users to test their code against the library in the next major release.
 
@@ -199,7 +199,7 @@ the library without problems. Some compilers like GCC 4.7 (and earlier), Clang 3
 Studio 13.0 and earlier are known not to work due to missing or incomplete C++11 support.
 
 Please do not add features that do not work with the mentioned supported compilers. Please guard features from C++14 and
-later against the respective [`JSON_HAS_CPP_14`](https://projecttick.org/api/macros/json_has_cpp_11/) macros.
+later against the respective [`JSON_HAS_CPP_14`](https://json.projecttick.org/api/macros/json_has_cpp_11/) macros.
 
 ### Break JSON conformance
 
