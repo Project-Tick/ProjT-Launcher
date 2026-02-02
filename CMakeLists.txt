@@ -293,9 +293,9 @@ if(ZLIB_INSTALL)
         COMPONENT Development
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
     install(
-        FILES zlib.3
+        FILES zlib.5
         COMPONENT Docs
-        DESTINATION "${CMAKE_INSTALL_MANDIR}/man3")
+        DESTINATION "${CMAKE_INSTALL_MANDIR}/man5")
     install(
         FILES LICENSE
               doc/algorithm.txt
