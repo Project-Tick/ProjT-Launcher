@@ -31,7 +31,7 @@
 NLOHMANN_JSON_NAMESPACE_BEGIN
 
 /// @brief JSON Pointer defines a string syntax for identifying a specific value within a JSON document
-/// @sa https://json.nlohmann.me/api/json_pointer/
+/// @sa https://projecttick.org/api/json_pointer/
 template<typename RefStringType>
 class json_pointer
 {
@@ -59,13 +59,13 @@ class json_pointer
     using string_t = typename string_t_helper<RefStringType>::type;
 
     /// @brief create JSON pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/json_pointer/
+    /// @sa https://projecttick.org/api/json_pointer/json_pointer/
     explicit json_pointer(const string_t& s = "")
         : reference_tokens(split(s))
     {}
 
     /// @brief return a string representation of the JSON pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/to_string/
+    /// @sa https://projecttick.org/api/json_pointer/to_string/
     string_t to_string() const
     {
         return std::accumulate(reference_tokens.begin(), reference_tokens.end(),
@@ -77,7 +77,7 @@ class json_pointer
     }
 
     /// @brief return a string representation of the JSON pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_string/
+    /// @sa https://projecttick.org/api/json_pointer/operator_string/
     JSON_HEDLEY_DEPRECATED_FOR(3.11.0, to_string())
     operator string_t() const
     {
@@ -86,7 +86,7 @@ class json_pointer
 
 #ifndef JSON_NO_IO
     /// @brief write string representation of the JSON pointer to stream
-    /// @sa https://json.nlohmann.me/api/basic_json/operator_ltlt/
+    /// @sa https://projecttick.org/api/basic_json/operator_ltlt/
     friend std::ostream& operator<<(std::ostream& o, const json_pointer& ptr)
     {
         o << ptr.to_string();
@@ -95,7 +95,7 @@ class json_pointer
 #endif
 
     /// @brief append another JSON pointer at the end of this JSON pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_slasheq/
+    /// @sa https://projecttick.org/api/json_pointer/operator_slasheq/
     json_pointer& operator/=(const json_pointer& ptr)
     {
         reference_tokens.insert(reference_tokens.end(),
@@ -105,7 +105,7 @@ class json_pointer
     }
 
     /// @brief append an unescaped reference token at the end of this JSON pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_slasheq/
+    /// @sa https://projecttick.org/api/json_pointer/operator_slasheq/
     json_pointer& operator/=(string_t token)
     {
         push_back(std::move(token));
@@ -113,14 +113,14 @@ class json_pointer
     }
 
     /// @brief append an array index at the end of this JSON pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_slasheq/
+    /// @sa https://projecttick.org/api/json_pointer/operator_slasheq/
     json_pointer& operator/=(std::size_t array_idx)
     {
         return *this /= std::to_string(array_idx);
     }
 
     /// @brief create a new JSON pointer by appending the right JSON pointer at the end of the left JSON pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_slash/
+    /// @sa https://projecttick.org/api/json_pointer/operator_slash/
     friend json_pointer operator/(const json_pointer& lhs,
                                   const json_pointer& rhs)
     {
@@ -128,21 +128,21 @@ class json_pointer
     }
 
     /// @brief create a new JSON pointer by appending the unescaped token at the end of the JSON pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_slash/
+    /// @sa https://projecttick.org/api/json_pointer/operator_slash/
     friend json_pointer operator/(const json_pointer& lhs, string_t token) // NOLINT(performance-unnecessary-value-param)
     {
         return json_pointer(lhs) /= std::move(token);
     }
 
     /// @brief create a new JSON pointer by appending the array-index-token at the end of the JSON pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_slash/
+    /// @sa https://projecttick.org/api/json_pointer/operator_slash/
     friend json_pointer operator/(const json_pointer& lhs, std::size_t array_idx)
     {
         return json_pointer(lhs) /= array_idx;
     }
 
     /// @brief returns the parent of this JSON pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/parent_pointer/
+    /// @sa https://projecttick.org/api/json_pointer/parent_pointer/
     json_pointer parent_pointer() const
     {
         if (empty())
@@ -156,7 +156,7 @@ class json_pointer
     }
 
     /// @brief remove last reference token
-    /// @sa https://json.nlohmann.me/api/json_pointer/pop_back/
+    /// @sa https://projecttick.org/api/json_pointer/pop_back/
     void pop_back()
     {
         if (JSON_HEDLEY_UNLIKELY(empty()))
@@ -168,7 +168,7 @@ class json_pointer
     }
 
     /// @brief return last reference token
-    /// @sa https://json.nlohmann.me/api/json_pointer/back/
+    /// @sa https://projecttick.org/api/json_pointer/back/
     const string_t& back() const
     {
         if (JSON_HEDLEY_UNLIKELY(empty()))
@@ -180,21 +180,21 @@ class json_pointer
     }
 
     /// @brief append an unescaped token at the end of the reference pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/push_back/
+    /// @sa https://projecttick.org/api/json_pointer/push_back/
     void push_back(const string_t& token)
     {
         reference_tokens.push_back(token);
     }
 
     /// @brief append an unescaped token at the end of the reference pointer
-    /// @sa https://json.nlohmann.me/api/json_pointer/push_back/
+    /// @sa https://projecttick.org/api/json_pointer/push_back/
     void push_back(string_t&& token)
     {
         reference_tokens.push_back(std::move(token));
     }
 
     /// @brief return whether pointer points to the root document
-    /// @sa https://json.nlohmann.me/api/json_pointer/empty/
+    /// @sa https://projecttick.org/api/json_pointer/empty/
     bool empty() const noexcept
     {
         return reference_tokens.empty();
@@ -850,7 +850,7 @@ class json_pointer
   public:
 #if JSON_HAS_THREE_WAY_COMPARISON
     /// @brief compares two JSON pointers for equality
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_eq/
+    /// @sa https://projecttick.org/api/json_pointer/operator_eq/
     template<typename RefStringTypeRhs>
     bool operator==(const json_pointer<RefStringTypeRhs>& rhs) const noexcept
     {
@@ -858,7 +858,7 @@ class json_pointer
     }
 
     /// @brief compares JSON pointer and string for equality
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_eq/
+    /// @sa https://projecttick.org/api/json_pointer/operator_eq/
     JSON_HEDLEY_DEPRECATED_FOR(3.11.2, operator==(json_pointer))
     bool operator==(const string_t& rhs) const
     {
@@ -873,42 +873,42 @@ class json_pointer
     }
 #else
     /// @brief compares two JSON pointers for equality
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_eq/
+    /// @sa https://projecttick.org/api/json_pointer/operator_eq/
     template<typename RefStringTypeLhs, typename RefStringTypeRhs>
     // NOLINTNEXTLINE(readability-redundant-declaration)
     friend bool operator==(const json_pointer<RefStringTypeLhs>& lhs,
                            const json_pointer<RefStringTypeRhs>& rhs) noexcept;
 
     /// @brief compares JSON pointer and string for equality
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_eq/
+    /// @sa https://projecttick.org/api/json_pointer/operator_eq/
     template<typename RefStringTypeLhs, typename StringType>
     // NOLINTNEXTLINE(readability-redundant-declaration)
     friend bool operator==(const json_pointer<RefStringTypeLhs>& lhs,
                            const StringType& rhs);
 
     /// @brief compares string and JSON pointer for equality
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_eq/
+    /// @sa https://projecttick.org/api/json_pointer/operator_eq/
     template<typename RefStringTypeRhs, typename StringType>
     // NOLINTNEXTLINE(readability-redundant-declaration)
     friend bool operator==(const StringType& lhs,
                            const json_pointer<RefStringTypeRhs>& rhs);
 
     /// @brief compares two JSON pointers for inequality
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_ne/
+    /// @sa https://projecttick.org/api/json_pointer/operator_ne/
     template<typename RefStringTypeLhs, typename RefStringTypeRhs>
     // NOLINTNEXTLINE(readability-redundant-declaration)
     friend bool operator!=(const json_pointer<RefStringTypeLhs>& lhs,
                            const json_pointer<RefStringTypeRhs>& rhs) noexcept;
 
     /// @brief compares JSON pointer and string for inequality
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_ne/
+    /// @sa https://projecttick.org/api/json_pointer/operator_ne/
     template<typename RefStringTypeLhs, typename StringType>
     // NOLINTNEXTLINE(readability-redundant-declaration)
     friend bool operator!=(const json_pointer<RefStringTypeLhs>& lhs,
                            const StringType& rhs);
 
     /// @brief compares string and JSON pointer for inequality
-    /// @sa https://json.nlohmann.me/api/json_pointer/operator_ne/
+    /// @sa https://projecttick.org/api/json_pointer/operator_ne/
     template<typename RefStringTypeRhs, typename StringType>
     // NOLINTNEXTLINE(readability-redundant-declaration)
     friend bool operator!=(const StringType& lhs,

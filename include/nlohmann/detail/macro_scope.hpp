@@ -413,7 +413,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_TYPE_INTRUSIVE
 @since version 3.9.0
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_type_intrusive/
+@sa https://projecttick.org/api/macros/nlohmann_define_type_intrusive/
 */
 #define NLOHMANN_DEFINE_TYPE_INTRUSIVE(Type, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -425,7 +425,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT
 @since version 3.11.0
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_type_intrusive/
+@sa https://projecttick.org/api/macros/nlohmann_define_type_intrusive/
 */
 #define NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Type, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -437,7 +437,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE
 @since version 3.11.3
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_type_intrusive/
+@sa https://projecttick.org/api/macros/nlohmann_define_type_intrusive/
 */
 #define NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(Type, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -447,7 +447,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE
 @since version 3.9.0
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_type_non_intrusive/
+@sa https://projecttick.org/api/macros/nlohmann_define_type_non_intrusive/
 */
 #define NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Type, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -459,7 +459,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT
 @since version 3.11.0
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_type_non_intrusive/
+@sa https://projecttick.org/api/macros/nlohmann_define_type_non_intrusive/
 */
 #define NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Type, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -471,7 +471,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE
 @since version 3.11.3
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_type_non_intrusive/
+@sa https://projecttick.org/api/macros/nlohmann_define_type_non_intrusive/
 */
 #define NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(Type, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -481,7 +481,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE
 @since version 0.0.5-1
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_derived_type/
+@sa https://projecttick.org/api/macros/nlohmann_define_derived_type/
 */
 #define NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE(Type, BaseType, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -493,7 +493,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE_WITH_DEFAULT
 @since version 0.0.5-1
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_derived_type/
+@sa https://projecttick.org/api/macros/nlohmann_define_derived_type/
 */
 #define NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE_WITH_DEFAULT(Type, BaseType, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -505,7 +505,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE_ONLY_SERIALIZE
 @since version 0.0.5-1
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_derived_type/
+@sa https://projecttick.org/api/macros/nlohmann_define_derived_type/
 */
 #define NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE_ONLY_SERIALIZE(Type, BaseType, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -515,7 +515,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_DERIVED_TYPE_NON_INTRUSIVE
 @since version 0.0.5-1
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_derived_type/
+@sa https://projecttick.org/api/macros/nlohmann_define_derived_type/
 */
 #define NLOHMANN_DEFINE_DERIVED_TYPE_NON_INTRUSIVE(Type, BaseType, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -527,7 +527,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_DERIVED_TYPE_NON_INTRUSIVE_WITH_DEFAULT
 @since version 0.0.5-1
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_derived_type/
+@sa https://projecttick.org/api/macros/nlohmann_define_derived_type/
 */
 #define NLOHMANN_DEFINE_DERIVED_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Type, BaseType, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
@@ -539,7 +539,7 @@
 @brief macro
 @def NLOHMANN_DEFINE_DERIVED_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE
 @since version 0.0.5-1
-@sa https://json.nlohmann.me/api/macros/nlohmann_define_derived_type/
+@sa https://projecttick.org/api/macros/nlohmann_define_derived_type/
 */
 #define NLOHMANN_DEFINE_DERIVED_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(Type, BaseType, ...)  \
     template<typename BasicJsonType, nlohmann::detail::enable_if_t<nlohmann::detail::is_basic_json<BasicJsonType>::value, int> = 0> \
