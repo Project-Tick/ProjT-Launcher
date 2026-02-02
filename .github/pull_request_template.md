@@ -19,10 +19,8 @@
 - [ ] Launcher Java System
 - [ ] JavaCheck
 - [ ] libnbtplusplus
-- [ ] Zlib
 - [ ] libqrencode
 - [ ] cmark
-- [ ] tomlplusplus
 - [ ] Packages
 - [ ] Other (describe):
 
