@@ -205,17 +205,6 @@ jobs:
       run-bzip2: ${{ needs.prepare.outputs.run-bzip2 }}
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # ZLIB TESTS
-  # ═══════════════════════════════════════════════════════════════════════════
-  zlib:
-    name: Zlib
-    needs: prepare
-    if: needs.prepare.outputs.run-zlib == 'true'
-    uses: ./.github/workflows/ci-zlib.yml
-    with:
-      run-zlib: ${{ needs.prepare.outputs.run-zlib }}
-
-  # ═══════════════════════════════════════════════════════════════════════════
   # LIBRARIES (cmark, toml++, libqrencode) - Each has independent CI
   # ═══════════════════════════════════════════════════════════════════════════
   cmark:
@@ -226,15 +215,6 @@ jobs:
     with:
       ref: ${{ github.sha }}
       run-cmark: ${{ needs.prepare.outputs.run-cmark }}
-
-  tomlplusplus:
-    name: toml++
-    needs: prepare
-    if: needs.prepare.outputs.run-tomlplusplus == 'true'
-    uses: ./.github/workflows/ci-tomlplusplus.yml
-    with:
-      ref: ${{ github.sha }}
-      run-tomlplusplus: ${{ needs.prepare.outputs.run-tomlplusplus }}
 
   libqrencode:
     name: libqrencode
