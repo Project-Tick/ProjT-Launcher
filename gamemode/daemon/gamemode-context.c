@@ -151,7 +151,7 @@ void game_mode_context_init(GameModeContext *self)
 		return;
 	}
 	had_context_init = true;
-	self->refcount = ATOMIC_VAR_INIT(0);
+	atomic_init(&self->refcount, 0);
 
 	/* clear the initial string */
 	memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
@@ -1103,7 +1103,7 @@ static GameModeClient *game_mode_client_new(pid_t pid, char *executable, pid_t r
 		return NULL;
 	}
 	*ret = c;
-	ret->refcount = ATOMIC_VAR_INIT(1);
+	atomic_init(&ret->refcount, 1);
 	strncpy(ret->executable, executable, PATH_MAX - 1);
 
 	return ret;
