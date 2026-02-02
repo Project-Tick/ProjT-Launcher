@@ -169,9 +169,9 @@ void to_json(BasicJsonType& j, const B& b) {
 
 ## Version history
 
-1. Added in version 3.12.0.
-2. Added in version 3.12.0.
-3. Added in version 3.12.0.
-4. Added in version 3.12.0.
-5. Added in version 3.12.0.
-6. Added in version 3.12.0.
+1. Added in version 0.0.5-1.
+2. Added in version 0.0.5-1.
+3. Added in version 0.0.5-1.
+4. Added in version 0.0.5-1.
+5. Added in version 0.0.5-1.
+6. Added in version 0.0.5-1.

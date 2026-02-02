@@ -75,4 +75,4 @@ Linear in the size of the JSON value `j`.
 ## Version history
 
 - Added in version 3.11.0.
-- BJData version parameter (for draft3 binary encoding) added in version 3.12.0.
+- BJData version parameter (for draft3 binary encoding) added in version 0.0.5-1.

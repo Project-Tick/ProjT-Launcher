@@ -2,7 +2,7 @@
     __ _____ _____ _____
  __|  |   __|     |   | |  JSON for Modern C++
 |  |  |__   |  |  | | | |  version 3.10.5
-|_____|_____|_____|_|___|  https://github.com/nlohmann/json
+|_____|_____|_____|_|___|  https://github.com/Project-Tick/json
 
 Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 SPDX-License-Identifier: MIT
@@ -39,9 +39,10 @@ SOFTWARE.
 #ifndef INCLUDE_NLOHMANN_JSON_V3_10_5_HPP_
 #define INCLUDE_NLOHMANN_JSON_V3_10_5_HPP_
 
-#define NLOHMANN_JSON_VERSION_MAJOR 3
-#define NLOHMANN_JSON_VERSION_MINOR 10
+#define NLOHMANN_JSON_VERSION_MAJOR 0
+#define NLOHMANN_JSON_VERSION_MINOR 0
 #define NLOHMANN_JSON_VERSION_PATCH 5
+#define NLOHMANN_JSON_VERSION_TWEAK 1
 
 #include <algorithm> // all_of, find, for_each
 #include <cstddef> // nullptr_t, ptrdiff_t, size_t
@@ -2308,11 +2309,11 @@ using is_detected_convertible =
 #if !defined(JSON_SKIP_UNSUPPORTED_COMPILER_CHECK)
     #if defined(__clang__)
         #if (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__) < 30400
-            #error "unsupported Clang version - see https://github.com/nlohmann/json#supported-compilers"
+            #error "unsupported Clang version - see https://github.com/Project-Tick/json#supported-compilers"
         #endif
     #elif defined(__GNUC__) && !(defined(__ICC) || defined(__INTEL_COMPILER))
         #if (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) < 40800
-            #error "unsupported GCC version - see https://github.com/nlohmann/json#supported-compilers"
+            #error "unsupported GCC version - see https://github.com/Project-Tick/json#supported-compilers"
         #endif
     #endif
 #endif
@@ -17431,14 +17432,16 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
 
         result["copyright"] = "(C) 2013-2022 Niels Lohmann";
         result["name"] = "JSON for Modern C++";
-        result["url"] = "https://github.com/nlohmann/json";
+        result["url"] = "https://github.com/Project-Tick/json";
         result["version"]["string"] =
             std::to_string(NLOHMANN_JSON_VERSION_MAJOR) + "." +
             std::to_string(NLOHMANN_JSON_VERSION_MINOR) + "." +
-            std::to_string(NLOHMANN_JSON_VERSION_PATCH);
+            std::to_string(NLOHMANN_JSON_VERSION_PATCH) + "-" +
+            std::to_string(NLOHMANN_JSON_VERSION_TWEAK);
         result["version"]["major"] = NLOHMANN_JSON_VERSION_MAJOR;
         result["version"]["minor"] = NLOHMANN_JSON_VERSION_MINOR;
         result["version"]["patch"] = NLOHMANN_JSON_VERSION_PATCH;
+        result["version"]["tweak"] = NLOHMANN_JSON_VERSION_TWEAK;
 
 #ifdef _WIN32
         result["platform"] = "win32";

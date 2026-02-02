@@ -242,3 +242,4 @@ INSERT INTO searchIndex(name, type, path) VALUES ('NLOHMANN_JSON_SERIALIZE_ENUM'
 INSERT INTO searchIndex(name, type, path) VALUES ('NLOHMANN_JSON_VERSION_MAJOR', 'Macro', 'api/macros/nlohmann_json_version_major/index.html');
 INSERT INTO searchIndex(name, type, path) VALUES ('NLOHMANN_JSON_VERSION_MINOR', 'Macro', 'api/macros/nlohmann_json_version_major/index.html');
 INSERT INTO searchIndex(name, type, path) VALUES ('NLOHMANN_JSON_VERSION_PATCH', 'Macro', 'api/macros/nlohmann_json_version_major/index.html');
+INSERT INTO searchIndex(name, type, path) VALUES ('NLOHMANN_JSON_VERSION_TWEAK', 'Macro', 'api/macros/nlohmann_json_version_major/index.html');

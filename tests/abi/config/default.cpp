@@ -1,9 +1,10 @@
 //     __ _____ _____ _____
 //  __|  |   __|     |   | |  JSON for Modern C++ (supporting code)
-// |  |  |__   |  |  | | | |  version 3.12.0
-// |_____|_____|_____|_|___|  https://github.com/nlohmann/json
+// |  |  |__   |  |  | | | |  version 0.0.5-1
+// |_____|_____|_____|_|___|  https://github.com/Project-Tick/json
 //
 // SPDX-FileCopyrightText: 2013-2026 Niels Lohmann <https://nlohmann.me>
+// SPDX-FileCopyrightText: 2026 Project Tick <https://projecttick.org>
 // SPDX-License-Identifier: MIT
 
 #include "doctest_compatibility.h"
@@ -34,7 +35,8 @@ TEST_CASE("default namespace")
 
         expected += "_v" STRINGIZE(NLOHMANN_JSON_VERSION_MAJOR);
         expected += "_" STRINGIZE(NLOHMANN_JSON_VERSION_MINOR);
-        expected += "_" STRINGIZE(NLOHMANN_JSON_VERSION_PATCH) "::basic_json";
+        expected += "_" STRINGIZE(NLOHMANN_JSON_VERSION_PATCH);
+        expected += "_" STRINGIZE(NLOHMANN_JSON_VERSION_TWEAK) "::basic_json";
 
         // fallback for Clang
         const std::string ns{STRINGIZE(NLOHMANN_JSON_NAMESPACE) "::basic_json"};

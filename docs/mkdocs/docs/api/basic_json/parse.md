@@ -233,7 +233,7 @@ A UTF-8 byte order mark is silently ignored.
 - Added in version 1.0.0.
 - Overload for contiguous containers (1) added in version 2.0.3.
 - Ignoring comments via `ignore_comments` added in version 3.9.0.
-- Changed [runtime assertion](../../features/assertions.md) in case of `FILE*` null pointers to exception in version 3.12.0.
+- Changed [runtime assertion](../../features/assertions.md) in case of `FILE*` null pointers to exception in version 0.0.5-1.
 - Added `ignore_trailing_commas` in version 3.12.1.
 
 !!! warning "Deprecation"

@@ -116,4 +116,4 @@ When the macro is not defined, the library will define it to its default value.
 
 ## Version history
 
-- Added in version 3.12.0.
+- Added in version 0.0.5-1.

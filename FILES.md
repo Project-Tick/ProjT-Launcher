@@ -46,7 +46,7 @@ Further documentation:
 
 ### `.github/CODE_OF_CONDUCT.md`
 
-The code of conduct for the project. This is the Markdown version of the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). The code of conduct is linked on the [Community Standards](https://github.com/nlohmann/json/community) page and is mentioned by the Sentiment Bot.
+The code of conduct for the project. This is the Markdown version of the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). The code of conduct is linked on the [Community Standards](https://github.com/Project-Tick/json/community) page and is mentioned by the Sentiment Bot.
 
 Further documentation:
 
@@ -78,7 +78,7 @@ Configuration file for [probot](https://probot.github.io/apps/), in particular t
 
 ### `.github/CONTRIBUTING.md`
 
-The contribution guidelines which are linked in the [Community Standards](https://github.com/nlohmann/json/community) and at <https://github.com/nlohmann/json/contribute>.
+The contribution guidelines which are linked in the [Community Standards](https://github.com/Project-Tick/json/community) and at <https://github.com/Project-Tick/json/contribute>.
 
 Further documentation:
 
@@ -158,7 +158,7 @@ Further documentation:
 
 ### `.github/SECURITY.md`
 
-The goal is to describe how to securely report security vulnerabilities for this repository. The security policy is linked at <https://github.com/nlohmann/json/security/policy>.
+The goal is to describe how to securely report security vulnerabilities for this repository. The security policy is linked at <https://github.com/Project-Tick/json/security/policy>.
 
 Further documentation:
 

@@ -8,5 +8,6 @@ int main()
     std::cout << "JSON for Modern C++ version "
               << NLOHMANN_JSON_VERSION_MAJOR << "."
               << NLOHMANN_JSON_VERSION_MINOR << "."
-              << NLOHMANN_JSON_VERSION_PATCH << std::endl;
+              << NLOHMANN_JSON_VERSION_PATCH << "-"
+              << NLOHMANN_JSON_VERSION_TWEAK << std::endl;
 }

@@ -4,7 +4,7 @@
 
 We value the security of our users and appreciate your efforts to responsibly disclose vulnerabilities. If you have
 identified a security vulnerability in this repository, please use the GitHub Security Advisory
-["Report a Vulnerability"](https://github.com/nlohmann/json/security/advisories/new) tab.
+["Report a Vulnerability"](https://github.com/Project-Tick/json/security/advisories/new) tab.
 
 Until it is published, this draft security advisory will only be visible to the maintainers of this project. Other
 users and teams may be added once the advisory is created.
