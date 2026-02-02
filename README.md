@@ -10,7 +10,7 @@
 [![Cirrus CI](https://api.cirrus-ci.com/github/nlohmann/json.svg)](https://cirrus-ci.com/github/nlohmann/json)
 [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/json.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:json)
 [![Try online](https://img.shields.io/badge/try-online-blue.svg)](https://wandbox.org/permlink/1mp10JbaANo6FUc7)
-[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://projecttick.org)
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://json.projecttick.org)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/nlohmann/json/master/LICENSE.MIT)
 [![GitHub Releases](https://img.shields.io/github/release/nlohmann/json.svg)](https://github.com/Project-Tick/json/releases)
 [![Packaging status](https://repology.org/badge/tiny-repos/nlohmann-json.svg)](https://repology.org/project/nlohmann-json/versions)
@@ -26,7 +26,7 @@
 
 - [Design goals](#design-goals)
 - [Sponsors](#sponsors)
-- [Support](#support) ([documentation](https://projecttick.org), [FAQ](https://projecttick.org/home/faq/), [discussions](https://github.com/Project-Tick/json/discussions), [API](https://projecttick.org/api/basic_json/), [bug issues](https://github.com/Project-Tick/json/issues))
+- [Support](#support) ([documentation](https://json.projecttick.org), [FAQ](https://json.projecttick.org/home/faq/), [discussions](https://github.com/Project-Tick/json/discussions), [API](https://json.projecttick.org/api/basic_json/), [bug issues](https://github.com/Project-Tick/json/issues))
 - [Quick reference](#quick-reference)
 - [Examples](#examples)
   - [Read JSON from a file](#read-json-from-a-file)
@@ -60,9 +60,9 @@ There are myriads of [JSON](https://json.org) libraries out there, and each may 
 
 - **Intuitive syntax**. In languages such as Python, JSON feels like a first-class data type. We used all the operator magic of modern C++ to achieve the same feeling in your code. Check out the [examples below](#examples) and you'll know what I mean.
 
-- **Trivial integration**. Our whole code consists of a single header file [`json.hpp`](https://github.com/Project-Tick/json/blob/develop/single_include/nlohmann/json.hpp). That's it. No library, no subproject, no dependencies, no complex build system. The class is written in vanilla C++11. All in all, everything should require no adjustment of your compiler flags or project settings. The library is also included in all popular [package managers](https://projecttick.org/integration/package_managers/).
+- **Trivial integration**. Our whole code consists of a single header file [`json.hpp`](https://github.com/Project-Tick/json/blob/develop/single_include/nlohmann/json.hpp). That's it. No library, no subproject, no dependencies, no complex build system. The class is written in vanilla C++11. All in all, everything should require no adjustment of your compiler flags or project settings. The library is also included in all popular [package managers](https://json.projecttick.org/integration/package_managers/).
 
-- **Serious testing**. Our code is heavily [unit-tested](https://github.com/Project-Tick/json/tree/develop/tests/src) and covers [100%](https://coveralls.io/r/nlohmann/json) of the code, including all exceptional behavior. Furthermore, we checked with [Valgrind](https://valgrind.org) and the [Clang Sanitizers](https://clang.llvm.org/docs/index.html) that there are no memory leaks. [Google OSS-Fuzz](https://github.com/google/oss-fuzz/tree/master/projects/json) additionally runs fuzz tests against all parsers 24/7, effectively executing billions of tests so far. To maintain high quality, the project is following the [Core Infrastructure Initiative (CII) best practices](https://bestpractices.coreinfrastructure.org/projects/289). See the [quality assurance](https://projecttick.org/community/quality_assurance) overview documentation.
+- **Serious testing**. Our code is heavily [unit-tested](https://github.com/Project-Tick/json/tree/develop/tests/src) and covers [100%](https://coveralls.io/r/nlohmann/json) of the code, including all exceptional behavior. Furthermore, we checked with [Valgrind](https://valgrind.org) and the [Clang Sanitizers](https://clang.llvm.org/docs/index.html) that there are no memory leaks. [Google OSS-Fuzz](https://github.com/google/oss-fuzz/tree/master/projects/json) additionally runs fuzz tests against all parsers 24/7, effectively executing billions of tests so far. To maintain high quality, the project is following the [Core Infrastructure Initiative (CII) best practices](https://bestpractices.coreinfrastructure.org/projects/289). See the [quality assurance](https://json.projecttick.org/community/quality_assurance) overview documentation.
 
 Other aspects were not so important to us:
 
@@ -101,38 +101,38 @@ Thanks everyone!
 
 ## Support
 
-:question: If you have a **question**, please check if it is already answered in the [**FAQ**](https://projecttick.org/home/faq/) or the [**Q&A**](https://github.com/Project-Tick/json/discussions/categories/q-a) section. If not, please [**ask a new question**](https://github.com/Project-Tick/json/discussions/new) there.
+:question: If you have a **question**, please check if it is already answered in the [**FAQ**](https://json.projecttick.org/home/faq/) or the [**Q&A**](https://github.com/Project-Tick/json/discussions/categories/q-a) section. If not, please [**ask a new question**](https://github.com/Project-Tick/json/discussions/new) there.
 
-:books: If you want to **learn more** about how to use the library, check out the rest of the [**README**](#examples), have a look at [**code examples**](https://github.com/Project-Tick/json/tree/develop/docs/mkdocs/docs/examples), or browse through the [**help pages**](https://projecttick.org).
+:books: If you want to **learn more** about how to use the library, check out the rest of the [**README**](#examples), have a look at [**code examples**](https://github.com/Project-Tick/json/tree/develop/docs/mkdocs/docs/examples), or browse through the [**help pages**](https://json.projecttick.org).
 
-:construction: If you want to understand the **API** better, check out the [**API Reference**](https://projecttick.org/api/basic_json/) or have a look at the [quick reference](#quick-reference) below.
+:construction: If you want to understand the **API** better, check out the [**API Reference**](https://json.projecttick.org/api/basic_json/) or have a look at the [quick reference](#quick-reference) below.
 
-:bug: If you found a **bug**, please check the [**FAQ**](https://projecttick.org/home/faq/) if it is a known issue or the result of a design decision. Please also have a look at the [**issue list**](https://github.com/Project-Tick/json/issues) before you [**create a new issue**](https://github.com/Project-Tick/json/issues/new/choose). Please provide as much information as possible to help us understand and reproduce your issue.
+:bug: If you found a **bug**, please check the [**FAQ**](https://json.projecttick.org/home/faq/) if it is a known issue or the result of a design decision. Please also have a look at the [**issue list**](https://github.com/Project-Tick/json/issues) before you [**create a new issue**](https://github.com/Project-Tick/json/issues/new/choose). Please provide as much information as possible to help us understand and reproduce your issue.
 
-There is also a [**docset**](https://github.com/Kapeli/Dash-User-Contributions/tree/master/docsets/JSON_for_Modern_C%2B%2B) for the documentation browsers [Dash](https://kapeli.com/dash), [Velocity](https://velocity.silverlakesoftware.com), and [Zeal](https://zealdocs.org) that contains the full [documentation](https://projecttick.org) as an offline resource.
+There is also a [**docset**](https://github.com/Kapeli/Dash-User-Contributions/tree/master/docsets/JSON_for_Modern_C%2B%2B) for the documentation browsers [Dash](https://kapeli.com/dash), [Velocity](https://velocity.silverlakesoftware.com), and [Zeal](https://zealdocs.org) that contains the full [documentation](https://json.projecttick.org) as an offline resource.
 
 ## Quick reference
 
-- **Constructors** [basic_json](https://projecttick.org/api/basic_json/basic_json), [array](https://projecttick.org/api/basic_json/array), [binary](https://projecttick.org/api/basic_json/binary), [object](https://projecttick.org/api/basic_json/object)
-- **Object inspection**: [type](https://projecttick.org/api/basic_json/type), [operator value_t](https://projecttick.org/api/basic_json/operator_value_t), [type_name](https://projecttick.org/api/basic_json/type_name), [is_primitive](https://projecttick.org/api/basic_json/is_primitive), [is_structured](https://projecttick.org/api/basic_json/is_structured), [is_null](https://projecttick.org/api/basic_json/is_null), [is_boolean](https://projecttick.org/api/basic_json/is_boolean), [is_number](https://projecttick.org/api/basic_json/is_number), [is_number_integer](https://projecttick.org/api/basic_json/is_number_integer), [is_number_unsigned](https://projecttick.org/api/basic_json/is_number_unsigned), [is_number_float](https://projecttick.org/api/basic_json/is_number_float), [is_object](https://projecttick.org/api/basic_json/is_object), [is_array](https://projecttick.org/api/basic_json/is_array), [is_string](https://projecttick.org/api/basic_json/is_string), [is_binary](https://projecttick.org/api/basic_json/is_binary), [is_discarded](https://projecttick.org/api/basic_json/is_discarded)
-- **Value access**; [get](https://projecttick.org/api/basic_json/get), [get_to](https://projecttick.org/api/basic_json/get_to), [get_ptr](https://projecttick.org/api/basic_json/get_ptr), [get_ref](https://projecttick.org/api/basic_json/get_ref), [operator ValueType](https://projecttick.org/api/basic_json/operator_ValueType), [get_binary](https://projecttick.org/api/basic_json/get_binary)
-- **Element access**: [at](https://projecttick.org/api/basic_json/at), [operator[]](https://projecttick.org/api/basic_json/operator[]), [value](https://projecttick.org/api/basic_json/value), [front](https://projecttick.org/api/basic_json/front), [back](https://projecttick.org/api/basic_json/back)
-- **Lookup**: [find](https://projecttick.org/api/basic_json/find), [count](https://projecttick.org/api/basic_json/count), [contains](https://projecttick.org/api/basic_json/contains)
-- **Iterators**: [begin](https://projecttick.org/api/basic_json/begin), [cbegin](https://projecttick.org/api/basic_json/cbegin), [end](https://projecttick.org/api/basic_json/end), [cend](https://projecttick.org/api/basic_json/cend), [rbegin](https://projecttick.org/api/basic_json/rbegin), [rend](https://projecttick.org/api/basic_json/rend), [crbegin](https://projecttick.org/api/basic_json/crbegin), [crend](https://projecttick.org/api/basic_json/crend), [items](https://projecttick.org/api/basic_json/items)
-- **Capacity**: [empty](https://projecttick.org/api/basic_json/empty), [size](https://projecttick.org/api/basic_json/size), [max_size](https://projecttick.org/api/basic_json/max_size)
-- **Modifiers**: [clear](https://projecttick.org/api/basic_json/clear), [push_back](https://projecttick.org/api/basic_json/push_back), [operator+=](https://projecttick.org/api/basic_json/operator+=), [emplace_back](https://projecttick.org/api/basic_json/emplace_back), [emplace](https://projecttick.org/api/basic_json/emplace), [erase](https://projecttick.org/api/basic_json/erase), [insert](https://projecttick.org/api/basic_json/insert), [update](https://projecttick.org/api/basic_json/update), [swap](https://projecttick.org/api/basic_json/swap)
-- **Lexicographical comparison operators**: [operator==](https://projecttick.org/api/basic_json/operator_eq), [operator!=](https://projecttick.org/api/basic_json/operator_ne), [operator<](https://projecttick.org/api/basic_json/operator_lt), [operator>](https://projecttick.org/api/basic_json/operator_gt), [operator<=](https://projecttick.org/api/basic_json/operator_le), [operator>=](https://projecttick.org/api/basic_json/operator_ge), [operator<=>](https://projecttick.org/api/basic_json/operator_spaceship)
-- **Serialization / Dumping**: [dump](https://projecttick.org/api/basic_json/dump)
-- **Deserialization / Parsing**: [parse](https://projecttick.org/api/basic_json/parse), [accept](https://projecttick.org/api/basic_json/accept), [sax_parse](https://projecttick.org/api/basic_json/sax_parse)
-- **JSON Pointer functions**: [flatten](https://projecttick.org/api/basic_json/flatten), [unflatten](https://projecttick.org/api/basic_json/unflatten)
-- **JSON Patch functions**: [patch](https://projecttick.org/api/basic_json/patch), [patch_inplace](https://projecttick.org/api/basic_json/patch_inplace), [diff](https://projecttick.org/api/basic_json/diff), [merge_patch](https://projecttick.org/api/basic_json/merge_patch)
-- **Static functions**: [meta](https://projecttick.org/api/basic_json/meta), [get_allocator](https://projecttick.org/api/basic_json/get_allocator)
-- **Binary formats**: [from_bjdata](https://projecttick.org/api/basic_json/from_bjdata), [from_bson](https://projecttick.org/api/basic_json/from_bson), [from_cbor](https://projecttick.org/api/basic_json/from_cbor), [from_msgpack](https://projecttick.org/api/basic_json/from_msgpack), [from_ubjson](https://projecttick.org/api/basic_json/from_ubjson), [to_bjdata](https://projecttick.org/api/basic_json/to_bjdata), [to_bson](https://projecttick.org/api/basic_json/to_bson), [to_cbor](https://projecttick.org/api/basic_json/to_cbor), [to_msgpack](https://projecttick.org/api/basic_json/to_msgpack), [to_ubjson](https://projecttick.org/api/basic_json/to_ubjson)
-- **Non-member functions**: [operator<<](https://projecttick.org/api/operator_ltlt/), [operator>>](https://projecttick.org/api/operator_gtgt/), [to_string](https://projecttick.org/api/basic_json/to_string)
-- **Literals**: [operator""_json](https://projecttick.org/api/operator_literal_json)
-- **Helper classes**: [std::hash&lt;basic_json&gt;](https://projecttick.org/api/basic_json/std_hash), [std::swap&lt;basic_json&gt;](https://projecttick.org/api/basic_json/std_swap)
+- **Constructors** [basic_json](https://json.projecttick.org/api/basic_json/basic_json), [array](https://json.projecttick.org/api/basic_json/array), [binary](https://json.projecttick.org/api/basic_json/binary), [object](https://json.projecttick.org/api/basic_json/object)
+- **Object inspection**: [type](https://json.projecttick.org/api/basic_json/type), [operator value_t](https://json.projecttick.org/api/basic_json/operator_value_t), [type_name](https://json.projecttick.org/api/basic_json/type_name), [is_primitive](https://json.projecttick.org/api/basic_json/is_primitive), [is_structured](https://json.projecttick.org/api/basic_json/is_structured), [is_null](https://json.projecttick.org/api/basic_json/is_null), [is_boolean](https://json.projecttick.org/api/basic_json/is_boolean), [is_number](https://json.projecttick.org/api/basic_json/is_number), [is_number_integer](https://json.projecttick.org/api/basic_json/is_number_integer), [is_number_unsigned](https://json.projecttick.org/api/basic_json/is_number_unsigned), [is_number_float](https://json.projecttick.org/api/basic_json/is_number_float), [is_object](https://json.projecttick.org/api/basic_json/is_object), [is_array](https://json.projecttick.org/api/basic_json/is_array), [is_string](https://json.projecttick.org/api/basic_json/is_string), [is_binary](https://json.projecttick.org/api/basic_json/is_binary), [is_discarded](https://json.projecttick.org/api/basic_json/is_discarded)
+- **Value access**; [get](https://json.projecttick.org/api/basic_json/get), [get_to](https://json.projecttick.org/api/basic_json/get_to), [get_ptr](https://json.projecttick.org/api/basic_json/get_ptr), [get_ref](https://json.projecttick.org/api/basic_json/get_ref), [operator ValueType](https://json.projecttick.org/api/basic_json/operator_ValueType), [get_binary](https://json.projecttick.org/api/basic_json/get_binary)
+- **Element access**: [at](https://json.projecttick.org/api/basic_json/at), [operator[]](https://json.projecttick.org/api/basic_json/operator[]), [value](https://json.projecttick.org/api/basic_json/value), [front](https://json.projecttick.org/api/basic_json/front), [back](https://json.projecttick.org/api/basic_json/back)
+- **Lookup**: [find](https://json.projecttick.org/api/basic_json/find), [count](https://json.projecttick.org/api/basic_json/count), [contains](https://json.projecttick.org/api/basic_json/contains)
+- **Iterators**: [begin](https://json.projecttick.org/api/basic_json/begin), [cbegin](https://json.projecttick.org/api/basic_json/cbegin), [end](https://json.projecttick.org/api/basic_json/end), [cend](https://json.projecttick.org/api/basic_json/cend), [rbegin](https://json.projecttick.org/api/basic_json/rbegin), [rend](https://json.projecttick.org/api/basic_json/rend), [crbegin](https://json.projecttick.org/api/basic_json/crbegin), [crend](https://json.projecttick.org/api/basic_json/crend), [items](https://json.projecttick.org/api/basic_json/items)
+- **Capacity**: [empty](https://json.projecttick.org/api/basic_json/empty), [size](https://json.projecttick.org/api/basic_json/size), [max_size](https://json.projecttick.org/api/basic_json/max_size)
+- **Modifiers**: [clear](https://json.projecttick.org/api/basic_json/clear), [push_back](https://json.projecttick.org/api/basic_json/push_back), [operator+=](https://json.projecttick.org/api/basic_json/operator+=), [emplace_back](https://json.projecttick.org/api/basic_json/emplace_back), [emplace](https://json.projecttick.org/api/basic_json/emplace), [erase](https://json.projecttick.org/api/basic_json/erase), [insert](https://json.projecttick.org/api/basic_json/insert), [update](https://json.projecttick.org/api/basic_json/update), [swap](https://json.projecttick.org/api/basic_json/swap)
+- **Lexicographical comparison operators**: [operator==](https://json.projecttick.org/api/basic_json/operator_eq), [operator!=](https://json.projecttick.org/api/basic_json/operator_ne), [operator<](https://json.projecttick.org/api/basic_json/operator_lt), [operator>](https://json.projecttick.org/api/basic_json/operator_gt), [operator<=](https://json.projecttick.org/api/basic_json/operator_le), [operator>=](https://json.projecttick.org/api/basic_json/operator_ge), [operator<=>](https://json.projecttick.org/api/basic_json/operator_spaceship)
+- **Serialization / Dumping**: [dump](https://json.projecttick.org/api/basic_json/dump)
+- **Deserialization / Parsing**: [parse](https://json.projecttick.org/api/basic_json/parse), [accept](https://json.projecttick.org/api/basic_json/accept), [sax_parse](https://json.projecttick.org/api/basic_json/sax_parse)
+- **JSON Pointer functions**: [flatten](https://json.projecttick.org/api/basic_json/flatten), [unflatten](https://json.projecttick.org/api/basic_json/unflatten)
+- **JSON Patch functions**: [patch](https://json.projecttick.org/api/basic_json/patch), [patch_inplace](https://json.projecttick.org/api/basic_json/patch_inplace), [diff](https://json.projecttick.org/api/basic_json/diff), [merge_patch](https://json.projecttick.org/api/basic_json/merge_patch)
+- **Static functions**: [meta](https://json.projecttick.org/api/basic_json/meta), [get_allocator](https://json.projecttick.org/api/basic_json/get_allocator)
+- **Binary formats**: [from_bjdata](https://json.projecttick.org/api/basic_json/from_bjdata), [from_bson](https://json.projecttick.org/api/basic_json/from_bson), [from_cbor](https://json.projecttick.org/api/basic_json/from_cbor), [from_msgpack](https://json.projecttick.org/api/basic_json/from_msgpack), [from_ubjson](https://json.projecttick.org/api/basic_json/from_ubjson), [to_bjdata](https://json.projecttick.org/api/basic_json/to_bjdata), [to_bson](https://json.projecttick.org/api/basic_json/to_bson), [to_cbor](https://json.projecttick.org/api/basic_json/to_cbor), [to_msgpack](https://json.projecttick.org/api/basic_json/to_msgpack), [to_ubjson](https://json.projecttick.org/api/basic_json/to_ubjson)
+- **Non-member functions**: [operator<<](https://json.projecttick.org/api/operator_ltlt/), [operator>>](https://json.projecttick.org/api/operator_gtgt/), [to_string](https://json.projecttick.org/api/basic_json/to_string)
+- **Literals**: [operator""_json](https://json.projecttick.org/api/operator_literal_json)
+- **Helper classes**: [std::hash&lt;basic_json&gt;](https://json.projecttick.org/api/basic_json/std_hash), [std::swap&lt;basic_json&gt;](https://json.projecttick.org/api/basic_json/std_swap)
 
-[**Full API documentation**](https://projecttick.org/api/basic_json/)
+[**Full API documentation**](https://json.projecttick.org/api/basic_json/)
 
 ## Examples
 
@@ -140,9 +140,9 @@ Here are some examples to give you an idea how to use the class.
 
 Besides the examples below, you may want to:
 
-→ Check the [documentation](https://projecttick.org/)\
+→ Check the [documentation](https://json.projecttick.org/)\
 → Browse the [standalone example files](https://github.com/Project-Tick/json/tree/develop/docs/mkdocs/docs/examples)\
-→ Read the full [API Documentation](https://projecttick.org/api/basic_json/) with self-contained examples for every function
+→ Read the full [API Documentation](https://json.projecttick.org/api/basic_json/) with self-contained examples for every function
 
 ### Read JSON from a file
 
@@ -277,7 +277,7 @@ json j2 = {
 };
 ```
 
-Note that in all these cases, you never need to "tell" the compiler which JSON value type you want to use. If you want to be explicit or express some edge cases, the functions [`json::array()`](https://projecttick.org/api/basic_json/array/) and [`json::object()`](https://projecttick.org/api/basic_json/object/) will help:
+Note that in all these cases, you never need to "tell" the compiler which JSON value type you want to use. If you want to be explicit or express some edge cases, the functions [`json::array()`](https://json.projecttick.org/api/basic_json/array/) and [`json::object()`](https://json.projecttick.org/api/basic_json/object/) will help:
 
 ```cpp
 // a way to express the empty array []
@@ -315,9 +315,9 @@ value. That is, `json j = "{ \"happy\": true, \"pi\": 3.141 }"` would just store
 `"{ "happy": true, "pi": 3.141 }"` rather than parsing the actual object.
 
 The string literal should be brought into scope with `using namespace nlohmann::literals;`
-(see [`json::parse()`](https://projecttick.org/api/operator_literal_json/)).
+(see [`json::parse()`](https://json.projecttick.org/api/operator_literal_json/)).
 
-The above example can also be expressed explicitly using [`json::parse()`](https://projecttick.org/api/basic_json/parse/):
+The above example can also be expressed explicitly using [`json::parse()`](https://json.projecttick.org/api/basic_json/parse/):
 
 ```cpp
 // parse explicitly
@@ -360,9 +360,9 @@ std::cout << cpp_string << " == " << cpp_string2 << " == " << j_string.get<std::
 std::cout << j_string << " == " << serialized_string << std::endl;
 ```
 
-[`.dump()`](https://projecttick.org/api/basic_json/dump/) returns the originally stored string value.
+[`.dump()`](https://json.projecttick.org/api/basic_json/dump/) returns the originally stored string value.
 
-Note the library only supports UTF-8. When you store strings with different encodings in the library, calling [`dump()`](https://projecttick.org/api/basic_json/dump/) may throw an exception unless `json::error_handler_t::replace` or `json::error_handler_t::ignore` are used as error handlers.
+Note the library only supports UTF-8. When you store strings with different encodings in the library, calling [`dump()`](https://json.projecttick.org/api/basic_json/dump/) may throw an exception unless `json::error_handler_t::replace` or `json::error_handler_t::ignore` are used as error handlers.
 
 #### To/from streams (e.g., files, string streams)
 
@@ -849,18 +849,18 @@ Some important things:
 - Those methods **MUST** be in your type's namespace (which can be the global namespace), or the library will not be able to locate them (in this example, they are in namespace `ns`, where `person` is defined).
 - Those methods **MUST** be available (e.g., proper headers must be included) everywhere you use these conversions. Look at [issue 1108](https://github.com/nlohmann/json/issues/1108) for errors that may occur otherwise.
 - When using `get<your_type>()`, `your_type` **MUST** be [DefaultConstructible](https://en.cppreference.com/w/cpp/named_req/DefaultConstructible). (There is a way to bypass this requirement described later.)
-- In function `from_json`, use function [`at()`](https://projecttick.org/api/basic_json/at/) to access the object values rather than `operator[]`. In case a key does not exist, `at` throws an exception that you can handle, whereas `operator[]` exhibits undefined behavior.
+- In function `from_json`, use function [`at()`](https://json.projecttick.org/api/basic_json/at/) to access the object values rather than `operator[]`. In case a key does not exist, `at` throws an exception that you can handle, whereas `operator[]` exhibits undefined behavior.
 - You do not need to add serializers or deserializers for STL types like `std::vector`: the library already implements these.
 
 #### Simplify your life with macros
 
-If you just want to serialize/deserialize some structs, the `to_json`/`from_json` functions can be a lot of boilerplate. There are [**several macros**](https://projecttick.org/features/arbitrary_types/#simplify-your-life-with-macros) to make your life easier as long as you (1) want to use a JSON object as serialization and (2) want to use the member variable names as object keys in that object.
+If you just want to serialize/deserialize some structs, the `to_json`/`from_json` functions can be a lot of boilerplate. There are [**several macros**](https://json.projecttick.org/features/arbitrary_types/#simplify-your-life-with-macros) to make your life easier as long as you (1) want to use a JSON object as serialization and (2) want to use the member variable names as object keys in that object.
 
-Which macro to choose depends on whether private member variables need to be accessed, a deserialization is needed, missing values should yield an error or should be replaced by default values, and if derived classes are used. See [this overview to choose the right one for your use case](https://projecttick.org/api/macros/#serializationdeserialization-macros).
+Which macro to choose depends on whether private member variables need to be accessed, a deserialization is needed, missing values should yield an error or should be replaced by default values, and if derived classes are used. See [this overview to choose the right one for your use case](https://json.projecttick.org/api/macros/#serializationdeserialization-macros).
 
 ##### Example usage of macros
 
-The `to_json`/`from_json` functions for the `person` struct above can be created with [`NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE`](https://projecttick.org/api/macros/nlohmann_define_type_non_intrusive/). In all macros, the first parameter is the name of the class/struct, and all remaining parameters name the members.
+The `to_json`/`from_json` functions for the `person` struct above can be created with [`NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE`](https://json.projecttick.org/api/macros/nlohmann_define_type_non_intrusive/). In all macros, the first parameter is the name of the class/struct, and all remaining parameters name the members.
 
 ```cpp
 namespace ns {
@@ -868,7 +868,7 @@ namespace ns {
 }
 ```
 
-Here is another example with private members, where [`NLOHMANN_DEFINE_TYPE_INTRUSIVE`](https://projecttick.org/api/macros/nlohmann_define_type_intrusive/) is needed:
+Here is another example with private members, where [`NLOHMANN_DEFINE_TYPE_INTRUSIVE`](https://json.projecttick.org/api/macros/nlohmann_define_type_intrusive/) is needed:
 
 ```cpp
 namespace ns {
@@ -1152,7 +1152,7 @@ auto cbor = json::to_msgpack(j); // 0xD5 (fixext2), 0x10, 0xCA, 0xFE
 
 The library is used in multiple projects, applications, operating systems, etc. The list below is not exhaustive, but the result of an internet search. If you know further customers of the library, please let me know, see [contact](#contact).
 
-[![logos of customers using the library](docs/mkdocs/docs/images/customers.png)](https://projecttick.org/home/customers/)
+[![logos of customers using the library](docs/mkdocs/docs/images/customers.png)](https://json.projecttick.org/home/customers/)
 
 ## Supported compilers
 
@@ -1187,7 +1187,7 @@ Please note:
 
 - Unsupported versions of GCC and Clang are rejected by `#error` directives. This can be switched off by defining `JSON_SKIP_UNSUPPORTED_COMPILER_CHECK`. Note that you can expect no support in this case.
 
-See the page [quality assurance](https://projecttick.org/community/quality_assurance) on the compilers used to check the library in the CI.
+See the page [quality assurance](https://json.projecttick.org/community/quality_assurance) on the compilers used to check the library in the CI.
 
 ## Integration
 
@@ -1265,7 +1265,7 @@ target_link_libraries(foo PRIVATE nlohmann_json::nlohmann_json)
 ```
 
 **Note**: It is recommended to use the URL approach described above, which is supported as of version 3.10.0. See
-<https://projecttick.org/integration/cmake/#fetchcontent> for more information.
+<https://json.projecttick.org/integration/cmake/#fetchcontent> for more information.
 
 #### Supporting Both
 
@@ -1302,24 +1302,24 @@ endif()
 
 ### Package Managers
 
-Use your favorite [**package manager**](https://projecttick.org/integration/package_managers/) to use the library.
+Use your favorite [**package manager**](https://json.projecttick.org/integration/package_managers/) to use the library.
 
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/homebrew.svg" height="20">&nbsp;[**Homebrew**](https://projecttick.org/integration/package_managers/#homebrew) `nlohmann-json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/meson.svg" height="20">&nbsp;[**Meson**](https://projecttick.org/integration/package_managers/#meson) `nlohmann_json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/bazel.svg" height="20">&nbsp;[**Bazel**](https://projecttick.org/integration/package_managers/#bazel) `nlohmann_json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/conan.svg" height="20">&nbsp;[**Conan**](https://projecttick.org/integration/package_managers/#conan) `nlohmann_json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/spack.svg" height="20">&nbsp;[**Spack**](https://projecttick.org/integration/package_managers/#spack) `nlohmann-json`
-- [**Hunter**](https://projecttick.org/integration/package_managers/#hunter) `nlohmann_json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/vcpkg.png" height="20">&nbsp;[**vcpkg**](https://projecttick.org/integration/package_managers/#vcpkg) `nlohmann-json`
-- [**cget**](https://projecttick.org/integration/package_managers/#cget) `nlohmann/json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/swift.svg" height="20">&nbsp;[**Swift Package Manager**](https://projecttick.org/integration/package_managers/#swift-package-manager) `nlohmann/json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/nuget.svg" height="20">&nbsp;[**Nuget**](https://projecttick.org/integration/package_managers/#nuget) `nlohmann.json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/conda.svg" height="20">&nbsp;[**Conda**](https://projecttick.org/integration/package_managers/#conda) `nlohmann_json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/macports.svg" height="20">&nbsp;[**MacPorts**](https://projecttick.org/integration/package_managers/#macports) `nlohmann-json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/CPM.png" height="20">&nbsp;[**cpm.cmake**](https://projecttick.org/integration/package_managers/#cpmcmake) `gh:nlohmann/json`
-- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/xmake.svg" height="20">&nbsp;[**xmake**](https://projecttick.org/integration/package_managers/#xmake) `nlohmann_json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/homebrew.svg" height="20">&nbsp;[**Homebrew**](https://json.projecttick.org/integration/package_managers/#homebrew) `nlohmann-json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/meson.svg" height="20">&nbsp;[**Meson**](https://json.projecttick.org/integration/package_managers/#meson) `nlohmann_json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/bazel.svg" height="20">&nbsp;[**Bazel**](https://json.projecttick.org/integration/package_managers/#bazel) `nlohmann_json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/conan.svg" height="20">&nbsp;[**Conan**](https://json.projecttick.org/integration/package_managers/#conan) `nlohmann_json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/spack.svg" height="20">&nbsp;[**Spack**](https://json.projecttick.org/integration/package_managers/#spack) `nlohmann-json`
+- [**Hunter**](https://json.projecttick.org/integration/package_managers/#hunter) `nlohmann_json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/vcpkg.png" height="20">&nbsp;[**vcpkg**](https://json.projecttick.org/integration/package_managers/#vcpkg) `nlohmann-json`
+- [**cget**](https://json.projecttick.org/integration/package_managers/#cget) `nlohmann/json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/swift.svg" height="20">&nbsp;[**Swift Package Manager**](https://json.projecttick.org/integration/package_managers/#swift-package-manager) `nlohmann/json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/nuget.svg" height="20">&nbsp;[**Nuget**](https://json.projecttick.org/integration/package_managers/#nuget) `nlohmann.json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/conda.svg" height="20">&nbsp;[**Conda**](https://json.projecttick.org/integration/package_managers/#conda) `nlohmann_json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/macports.svg" height="20">&nbsp;[**MacPorts**](https://json.projecttick.org/integration/package_managers/#macports) `nlohmann-json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/CPM.png" height="20">&nbsp;[**cpm.cmake**](https://json.projecttick.org/integration/package_managers/#cpmcmake) `gh:nlohmann/json`
+- <img src="https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/docs/mkdocs/docs/images/package_managers/xmake.svg" height="20">&nbsp;[**xmake**](https://json.projecttick.org/integration/package_managers/#xmake) `nlohmann_json`
 
-The library is part of many package managers. See the [**documentation**](https://projecttick.org/integration/package_managers/) for detailed descriptions and examples.
+The library is part of many package managers. See the [**documentation**](https://json.projecttick.org/integration/package_managers/) for detailed descriptions and examples.
 
 ### Pkg-config
 
@@ -1800,8 +1800,8 @@ The library supports **Unicode input** as follows:
 - [Unicode noncharacters](https://www.unicode.org/faq/private_use.html#nonchar1) will not be replaced by the library.
 - Invalid surrogates (e.g., incomplete pairs such as `\uDEAD`) will yield parse errors.
 - The strings stored in the library are UTF-8 encoded. When using the default string type (`std::string`), note that its length/size functions return the number of stored bytes rather than the number of characters or glyphs.
-- When you store strings with different encodings in the library, calling [`dump()`](https://projecttick.org/api/basic_json/dump/) may throw an exception unless `json::error_handler_t::replace` or `json::error_handler_t::ignore` are used as error handlers.
-- To store wide strings (e.g., `std::wstring`), you need to convert them to a UTF-8 encoded `std::string` before, see [an example](https://projecttick.org/home/faq/#wide-string-handling).
+- When you store strings with different encodings in the library, calling [`dump()`](https://json.projecttick.org/api/basic_json/dump/) may throw an exception unless `json::error_handler_t::replace` or `json::error_handler_t::ignore` are used as error handlers.
+- To store wide strings (e.g., `std::wstring`), you need to convert them to a UTF-8 encoded `std::string` before, see [an example](https://json.projecttick.org/home/faq/#wide-string-handling).
 
 ### Comments in JSON
 
@@ -1834,7 +1834,7 @@ By default, the library does not preserve the **insertion order of object elemen
 
 If you do want to preserve the insertion order, you can try the type [`nlohmann::ordered_json`](https://github.com/nlohmann/json/issues/2179). Alternatively, you can use a more sophisticated ordered map like [`tsl::ordered_map`](https://github.com/Tessil/ordered-map) ([integration](https://github.com/nlohmann/json/issues/546#issuecomment-304447518)) or [`nlohmann::fifo_map`](https://github.com/nlohmann/fifo_map) ([integration](https://github.com/nlohmann/json/issues/485#issuecomment-333652309)).
 
-See the [**documentation on object order**](https://projecttick.org/features/object_order/) for more information.
+See the [**documentation on object order**](https://json.projecttick.org/features/object_order/) for more information.
 
 ### Memory Release
 
@@ -1847,10 +1847,10 @@ Here is a related issue [#1924](https://github.com/nlohmann/json/issues/1924).
 
 ### Further notes
 
-- The code contains numerous debug **assertions** which can be switched off by defining the preprocessor macro `NDEBUG`, see the [documentation of `assert`](https://en.cppreference.com/w/cpp/error/assert). In particular, note [`operator[]`](https://projecttick.org/api/basic_json/operator%5B%5D/) implements **unchecked access** for const objects: If the given key is not present, the behavior is undefined (think of a dereferenced null pointer) and yields an [assertion failure](https://github.com/nlohmann/json/issues/289) if assertions are switched on. If you are not sure whether an element in an object exists, use checked access with the [`at()` function](https://projecttick.org/api/basic_json/at/). Furthermore, you can define `JSON_ASSERT(x)` to replace calls to `assert(x)`. See the [**documentation on runtime assertions**](https://projecttick.org/features/assertions/) for more information.
+- The code contains numerous debug **assertions** which can be switched off by defining the preprocessor macro `NDEBUG`, see the [documentation of `assert`](https://en.cppreference.com/w/cpp/error/assert). In particular, note [`operator[]`](https://json.projecttick.org/api/basic_json/operator%5B%5D/) implements **unchecked access** for const objects: If the given key is not present, the behavior is undefined (think of a dereferenced null pointer) and yields an [assertion failure](https://github.com/nlohmann/json/issues/289) if assertions are switched on. If you are not sure whether an element in an object exists, use checked access with the [`at()` function](https://json.projecttick.org/api/basic_json/at/). Furthermore, you can define `JSON_ASSERT(x)` to replace calls to `assert(x)`. See the [**documentation on runtime assertions**](https://json.projecttick.org/features/assertions/) for more information.
 - As the exact number type is not defined in the [JSON specification](https://tools.ietf.org/html/rfc8259.html), this library tries to choose the best fitting C++ number type automatically. As a result, the type `double` may be used to store numbers which may yield [**floating-point exceptions**](https://github.com/nlohmann/json/issues/181) in certain rare situations if floating-point exceptions have been unmasked in the calling code. These exceptions are not caused by the library and need to be fixed in the calling code, such as by re-masking the exceptions prior to calling library functions.
 - The code can be compiled without C++ **runtime type identification** features; that is, you can use the `-fno-rtti` compiler flag.
-- **Exceptions** are used widely within the library. They can, however, be switched off with either using the compiler flag `-fno-exceptions` or by defining the symbol `JSON_NOEXCEPTION`. In this case, exceptions are replaced by `abort()` calls. You can further control this behavior by defining `JSON_THROW_USER` (overriding `throw`), `JSON_TRY_USER` (overriding `try`), and `JSON_CATCH_USER` (overriding `catch`). Note that `JSON_THROW_USER` should leave the current scope (e.g., by throwing or aborting), as continuing after it may yield undefined behavior. Note the explanatory [`what()`](https://en.cppreference.com/w/cpp/error/exception/what) string of exceptions is not available for MSVC if exceptions are disabled, see [#2824](https://github.com/nlohmann/json/discussions/2824). See the [**documentation of exceptions**](https://projecttick.org/home/exceptions/) for more information.
+- **Exceptions** are used widely within the library. They can, however, be switched off with either using the compiler flag `-fno-exceptions` or by defining the symbol `JSON_NOEXCEPTION`. In this case, exceptions are replaced by `abort()` calls. You can further control this behavior by defining `JSON_THROW_USER` (overriding `throw`), `JSON_TRY_USER` (overriding `try`), and `JSON_CATCH_USER` (overriding `catch`). Note that `JSON_THROW_USER` should leave the current scope (e.g., by throwing or aborting), as continuing after it may yield undefined behavior. Note the explanatory [`what()`](https://en.cppreference.com/w/cpp/error/exception/what) string of exceptions is not available for MSVC if exceptions are disabled, see [#2824](https://github.com/nlohmann/json/discussions/2824). See the [**documentation of exceptions**](https://json.projecttick.org/home/exceptions/) for more information.
 
 ## Execute unit tests
 

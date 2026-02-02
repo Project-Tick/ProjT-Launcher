@@ -596,7 +596,7 @@ This release adds support for the [**UBJSON**](http://ubjson.org) format and [**
 
 ### :sparkles: New features
 
-- The library now supports [**UBJSON**](http://ubjson.org) (Universal Binary JSON Specification) as binary format to read and write JSON values space-efficiently. See the [documentation overview](https://projecttick.org/features/binary_formats/) for a comparison of the different formats CBOR, MessagePack, and UBJSON.
+- The library now supports [**UBJSON**](http://ubjson.org) (Universal Binary JSON Specification) as binary format to read and write JSON values space-efficiently. See the [documentation overview](https://json.projecttick.org/features/binary_formats/) for a comparison of the different formats CBOR, MessagePack, and UBJSON.
 - [**JSON Merge Patch**](https://tools.ietf.org/html/rfc7386) (RFC 7386) offers an intuitive means to describe patches between JSON values (#876, #877). See the documentation of [`merge_patch`](http://nlohmann.github.io/json/doxygen/classnlohmann_1_1basic__json_a0ec0cd19cce42ae6071f3cc6870ea295.html#a0ec0cd19cce42ae6071f3cc6870ea295) for more information.
 
 ### :zap: Improvements
