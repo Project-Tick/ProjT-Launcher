@@ -431,8 +431,13 @@ png_deflate_claim(png_structrp png_ptr, png_uint_32 owner,
 
       else
       {
-         ret = deflateInit2(&png_ptr->zstream, level, method, windowBits,
-             memLevel, strategy);
+         {
+            const char *zver = zlibVersion();
+            if (zver == NULL || zver[0] == 0)
+               zver = ZLIB_VERSION;
+            ret = deflateInit2_(&png_ptr->zstream, level, method, windowBits,
+               memLevel, strategy, zver, (int)sizeof(z_stream));
+         }
 
          if (ret == Z_OK)
             png_ptr->flags |= PNG_FLAG_ZSTREAM_INITIALIZED;

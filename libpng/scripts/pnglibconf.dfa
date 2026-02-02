@@ -437,7 +437,7 @@ option DISABLE_ADLER32_CHECK requires READ enables SET_OPTION disabled
 # ZLIB_VERNUM must be used here, not PNG_ZLIB_VERNUM, because
 # scripts/options.awk ends up putting this test adhead of the setting of
 # PNG_ZLIB_VERNUM (apparently above, but not because of the two-pass processing)
-@#if ZLIB_VERNUM < 0x1290
+@#if ZLIB_VERNUM < 0x0051
 @#   define PNG_NO_DISABLE_ADLER32_CHECK
 @#endif
 

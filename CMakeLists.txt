@@ -475,6 +475,7 @@ set(ZLIB_FOUND FALSE)
 # System Libraries - Using bundled zlib only
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
     message(STATUS "Using bundled zlib")
+        set(_projt_prev_skip_install_all "${SKIP_INSTALL_ALL}")
         set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
         # For fuzzing builds, disable shared library to avoid sanitizer symbol conflicts
         if(BUILD_FUZZERS)
@@ -492,9 +493,9 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
         if(UNIX AND NOT APPLE)
-            # Avoid overriding system zlib for Qt at runtime.
-            set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
-            set(ZLIB_BUILD_STATIC ON CACHE BOOL "" FORCE)
+        # Provide a shared zlib so libpng and the launcher can use the bundled copy at runtime.
+        set(ZLIB_BUILD_SHARED ON CACHE BOOL "" FORCE)
+        set(ZLIB_BUILD_STATIC ON CACHE BOOL "" FORCE)
         endif()
         
         # For OSS-Fuzz: Strip sanitizer flags from zlib build to avoid symbol conflicts
@@ -522,11 +523,11 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
             set_target_properties(zlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
         endif()
 
-        # Create the ZLIB::ZLIB alias target for consistency
-        if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
-            add_library(ZLIB::ZLIB ALIAS zlibstatic)
-        elseif(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
+        # Create the ZLIB::ZLIB alias target for consistency (prefer shared)
+        if(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
             add_library(ZLIB::ZLIB ALIAS zlib)
+        elseif(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
+            add_library(ZLIB::ZLIB ALIAS zlibstatic)
         endif()
         
         # Set ZLIB variables for projects that need them
@@ -538,6 +539,8 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
         set(ZLIB_FOUND TRUE)
 
         set(PROJT_ZLIB_AVAILABLE TRUE)
+        # Restore libpng install behavior (libpng uses SKIP_INSTALL_ALL)
+        set(SKIP_INSTALL_ALL "${_projt_prev_skip_install_all}" CACHE BOOL "" FORCE)
 else()
     message(FATAL_ERROR "Bundled zlib not found in ${CMAKE_CURRENT_SOURCE_DIR}/zlib/")
 endif()
@@ -545,6 +548,9 @@ endif()
 if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND NOT APPLE)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libpng/CMakeLists.txt")
         message(STATUS "Using bundled libpng")
+        # Ensure libpng install rules are enabled even if other deps toggled them.
+        set(SKIP_INSTALL_ALL OFF CACHE BOOL "" FORCE)
+        set(SKIP_INSTALL_LIBRARIES OFF CACHE BOOL "" FORCE)
         set(PNG_SHARED ON CACHE BOOL "" FORCE)
         set(PNG_STATIC OFF CACHE BOOL "" FORCE)
         # Avoid loading both libpng16d and system libpng16 in Debug builds.

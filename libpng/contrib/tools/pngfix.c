@@ -56,22 +56,15 @@
 #  undef const
 #endif
 
-/* zlib.h has mediocre z_const use before 1.2.6, this stuff is for compatibility
- * with older builds.
- */
-#if ZLIB_VERNUM < 0x1260
-#  define PNGZ_MSG_CAST(s) constcast(char*,s)
-#  define PNGZ_INPUT_CAST(b) constcast(png_bytep,b)
-#else
-#  define PNGZ_MSG_CAST(s) (s)
-#  define PNGZ_INPUT_CAST(b) (b)
-#endif
+
+#define PNGZ_MSG_CAST(s) (s)
+#define PNGZ_INPUT_CAST(b) (b)
 
 #ifndef PNG_MAXIMUM_INFLATE_WINDOW
 #  error pngfix requires libpng with PNG_MAXIMUM_INFLATE_WINDOW supported
 #endif
 
-#if ZLIB_VERNUM >= 0x1240
+#if ZLIB_VERNUM >= 0x0051
 
 /* Copied from pngpriv.h */
 #ifdef __cplusplus
@@ -4015,12 +4008,12 @@ main(int argc, const char **argv)
    return global_end(&global);
 }
 
-#else /* ZLIB_VERNUM < 0x1240 */
+#else /* ZLIB_VERNUM < 0x0051 */
 int
 main(void)
 {
    fprintf(stderr,
-      "pngfix needs libpng with a zlib >=1.2.4 (not 0x%x)\n",
+      "pngfix needs libpng with a zlib >=0.0.5.1 (not 0x%x)\n",
       ZLIB_VERNUM);
    return 77;
 }
