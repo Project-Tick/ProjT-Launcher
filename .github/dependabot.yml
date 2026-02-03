@@ -57,3 +57,17 @@ updates:
     commit-message:
       prefix: "deps"
       include: scope
+
+  # Keep git submodules in sync
+  - package-ecosystem: submodules
+    directory: "/"
+    schedule:
+      interval: cron
+      cronjob: "0 3 * * *"
+      timezone: "UTC"
+    labels: ["11.dependencies", "2.submodules"]
+    open-pull-requests-limit: 10
+    rebase-strategy: "disabled"
+    commit-message:
+      prefix: "deps"
+      include: scope
