@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   version="1.1"
+   width="200"
+   height="200"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+
+<style>
+  svg .box-style { stroke: black; fill: white }
+  svg .highlighted-style { stroke: black; fill: #c0ffc0 }
+  svg .fill-style { stroke: none; fill: black }
+  svg .line-style { stroke: black; fill: none }
+  svg .text-style { font: 20px arial; fill: black }
+  svg .high-text-style { font: 20px arial; fill: black }
+  svg .faded-text-style { font: 20px arial; fill: #808080 }
+
+  svg.dark .box-style { stroke: #f2f2f2; fill: black }
+  svg.dark .highlighted-style { stroke: #f2f2f2; fill: #c0ffc0 }
+  svg.dark .fill-style { stroke: none; fill: #f2f2f2 }
+  svg.dark .line-style { stroke: #f2f2f2; fill: none }
+  svg.dark .text-style { font: 20px arial; fill: #f2f2f2 }
+  svg.dark .high-text-style { font: 20px arial; fill: black }
+  svg.dark .faded-text-style { font: 20px arial; fill: #808080 }
+
+  [data-theme="dark"] svg .box-style { stroke: #f2f2f2; fill: black }
+  [data-theme="dark"] svg .highlighted-style { stroke: #f2f2f2; fill: #c0ffc0 }
+  [data-theme="dark"] svg .fill-style { stroke: none; fill: #f2f2f2 }
+  [data-theme="dark"] svg .line-style { stroke: #f2f2f2; fill: none }
+  [data-theme="dark"] svg .text-style { font: 20px arial; fill: #f2f2f2 }
+  [data-theme="dark"] svg .high-text-style { font: 20px arial; fill: black }
+  [data-theme="dark"] svg .faded-text-style { font: 20px arial; fill: #808080 }
+
+  [data-theme="light"] svg .box-style { stroke: black; fill: white }
+  [data-theme="light"] svg .highlighted-style { stroke: black; fill: #c0ffc0 }
+  [data-theme="light"] svg .fill-style { stroke: none; fill: black }
+  [data-theme="light"] svg .line-style { stroke: black; fill: none }
+  [data-theme="light"] svg .text-style { font: 20px arial; fill: black }
+  [data-theme="light"] svg .high-text-style { font: 20px arial; fill: black }
+  [data-theme="light"] svg .faded-text-style { font: 20px arial; fill: #808080 }
+</style>
+
+<g transform="translate(10,10)">
+<path d="m 0.5,0.5 h 30 v 30 h -30 z" stroke="black" fill="white"
+      class="box-style" />
+<text x="10" y="22" font-family="arial" font-size="20px"
+      class="text-style">0</text>
+<path d="m 0.5,30.5 h 30 v 30 h -30 z" stroke="black" fill="white"
+      class="box-style" />
+<text x="10" y="52" font-family="arial" font-size="20px"
+      class="text-style">1</text>
+<path d="m 0.5,60.5 h 30 v 30 h -30 z" stroke="black" fill="#c0ffc0"
+      class="highlighted-style" />
+<text x="10" y="82" font-family="arial" font-size="20px"
+      class="high-text-style">2</text>
+<path d="m 0.5,90.5 h 30 v 30 h -30 z" stroke="black" fill="white"
+      class="box-style" />
+<text x="10" y="112" font-family="arial" font-size="20px"
+      class="text-style">3</text>
+<path d="m 0.5,120.5 h 30 v 30 h -30 z" stroke="black" fill="white"
+      class="box-style" />
+<text x="10" y="142" font-family="arial" font-size="20px"
+      class="text-style">4</text>
+<path d="m 0.5,150.5 h 30 v 30 h -30 z" stroke="black" fill="white"
+      class="box-style" />
+<text x="10" y="172" font-family="arial" font-size="20px"
+      class="text-style">5</text>
+
+<path d="m 58.5,0.5 h 30 v 30 h -30 z" stroke="black" fill="#c0ffc0"
+      class="highlighted-style" />
+<text x="67" y="22" font-family="arial" font-size="20px"
+      class="high-text-style">2</text>
+
+<path d="m 145.5,0.5 h 30 v 30.956 h -30 z" stroke="black" fill="#c0ffc0"
+      class="highlighted-style" />
+<text x="155" y="22" font-family="arial" font-size="20px"
+      class="high-text-style">2</text>
+<path d="m 145.5,31.5 h 30 v 30 h -30 z" stroke="black" fill="white"
+      class="box-style" />
+<text x="155" y="52" font-family="arial" font-size="20px" fill="#808080"
+      class="faded-text-style">0</text>
+<path d="m 145.5,60.5 h 30 v 30 h -30 z" stroke="black" fill="white"
+      class="box-style" />
+<text x="155" y="82" font-family="arial" font-size="20px" fill="#808080"
+      class="faded-text-style">1</text>
+<path d="m 145.5,90.5 h 30 v 30 h -30 z" stroke="black" fill="white"
+      class="box-style" />
+<text x="155" y="112" font-family="arial" font-size="20px"
+      class="text-style">3</text>
+<path d="m 145.5,120.5 h 30 v 30 h -30 z" stroke="black" fill="white"
+      class="box-style" />
+<text x="155" y="142" font-family="arial" font-size="20px"
+      class="text-style">4</text>
+<path d="m 145.5,150.5 h 30 v 30 h -30 z" stroke="black" fill="white"
+      class="box-style" />
+<text x="155" y="172" font-family="arial" font-size="20px"
+      class="text-style">5</text>
+
+<path d="M 58.5,0.5 h -25" stroke="black" fill="none"
+      class="line-style" />
+<path d="M 31.5,0.5 l 10,-5 l 0,10 z" stroke="none" fill="black"
+      class="fill-style" />
+<path d="M 31.5,75.5 h 42 v -43" stroke="black" fill="none"
+      class="line-style" />
+<path d="M 73.5,31.5 l -5,10 l 10,0 z" stroke="black" fill="black"
+      class="fill-style" />
+</g>
+</svg>

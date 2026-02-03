@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="300"
+   height="160"
+   version="1.1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+
+<style>
+  svg .line-style { stroke: black; fill: none }
+  svg .fill-style { stroke: black; fill: #c0c0c0 }
+  svg .text-style { font: 12px arial; fill: black }
+  svg .italic-style { font: 12px arial; fill: black; font-style: italic }
+  svg .bold-style { font: 12px arial; fill: black; font-weight: bold }
+
+  svg.dark .line-style { stroke: #f2f2f2; fill: none }
+  svg.dark .fill-style { stroke: #f2f2f2; fill: #606060 }
+  svg.dark .text-style { font: 12px arial; fill: #f2f2f2 }
+  svg.dark .italic-style { font: 12px arial; fill: #f2f2f2; font-style: italic }
+  svg.dark .bold-style { font: 12px arial; fill: #f2f2f2; font-weight: bold }
+
+  [data-theme="dark"] svg .line-style { stroke: #f2f2f2; fill: none }
+  [data-theme="dark"] svg .fill-style { stroke: #f2f2f2; fill: #606060 }
+  [data-theme="dark"] svg .text-style { font: 12px arial; fill: #f2f2f2 }
+  [data-theme="dark"] svg .italic-style { font: 12px arial; fill: #f2f2f2; font-style: italic }
+  [data-theme="dark"] svg .bold-style { font: 12px arial; fill: #f2f2f2; font-weight: bold }
+
+  [data-theme="light"] svg .line-style { stroke: black; fill: none }
+  [data-theme="light"] svg .fill-style { stroke: black; fill: #c0c0c0 }
+  [data-theme="light"] svg .text-style { font: 12px arial; fill: black }
+  [data-theme="light"] svg .italic-style { font: 12px arial; fill: black; font-style: italic }
+  [data-theme="light"] svg .bold-style { font: 12px arial; fill: black; font-weight: bold }
+</style>
+
+<text x="25" y="49" font-family="arial" font-size="12px"
+      class="text-style">0</text>
+<text x="25" y="79" font-family="arial" font-size="12px"
+      class="text-style">1</text>
+<text x="25" y="109" font-family="arial" font-size="12px"
+      class="text-style">2</text>
+<g transform="translate(30,139)">
+<text x="0" y="0" font-family="arial" font-size="12px"
+      class="text-style" transform="rotate(270)">...</text>
+</g>
+
+<path d="m 40.5,30.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 70.5,30.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 100.5,30.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 130.5,30.5 h 30 v 30" stroke="black" fill="none"
+      class="line-style" stroke-dasharray="3, 3" />
+<path d="m 40.5,60.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 70.5,60.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 100.5,60.5 h 30 v 30 h -30 z" stroke="black" fill="#c0c0c0"
+      class="fill-style" />
+<path d="m 130.5,60.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" stroke-dasharray="3, 3" />
+<path d="m 40.5,90.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 70.5,90.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 100.5,90.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 70.5,120.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" stroke-dasharray="3, 3" />
+<path d="m 40.5,120.5 v 30 h 30" stroke="black" fill="none"
+      class="line-style" stroke-dasharray="3, 3" />
+<path d="m 100.5,150.5 h 30" stroke="black"
+      class="line-style" stroke-dasharray="3, 3" />
+<path d="m 130.5,120.5 h 30 v 30 h -30 z" stroke="black" fill="none"
+      class="line-style" stroke-dasharray="3, 3" />
+<path d="m 160.5,90.5 v 30" stroke="black"
+      class="line-style" stroke-dasharray="3, 3" />
+
+<text x="50" y="20" font-family="arial" font-size="12px"
+      class="text-style">0</text>
+<text x="80" y="20" font-family="arial" font-size="12px"
+      class="text-style">1</text>
+<text x="110" y="20" font-family="arial" font-size="12px"
+      class="text-style">2</text>
+<text x="140" y="20" font-family="arial" font-size="12px"
+      class="text-style">...</text>
+
+<text x="190" y="55" font-family="arial" font-size="12px" font-weight="bold"
+      class="bold-style">Model index</text>
+<rect x="185.5" y="60.5" width="77" height="37" stroke="black" fill="none"
+      class="line-style" />
+<text x="190" y="75" font-family="arial" font-size="12px"
+      class="text-style">row = 1</text>
+<text x="190" y="92" font-family="arial" font-size="12px"
+      class="text-style">column = 2</text>
+
+<path d="m 185.5,85.5 c -35,0 -35,-10 -70,-10" stroke="black" fill="none"
+      stroke-dasharray="2, 2" class="line-style" />
+</svg>

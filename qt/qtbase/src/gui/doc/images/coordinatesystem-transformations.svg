@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="760" height="300"
+ viewBox="0 0 760 300"
+ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.2" baseProfile="tiny">
+
+<style>
+  svg .line-style { stroke: black; fill: none; stroke-width: 2 }
+  svg .text-style { font: 14px arial; fill: black }
+  svg .mono-text-style { font: 14px monospace; fill: black }
+  svg .heading-style { font: 14px arial; fill: black; font-weight: bold }
+  svg .shape-style { stroke: none; fill: black }
+  svg .dash-style { stroke-dasharray: 4,3; stroke-dashoffset: 0; fill: none;
+                    stroke: black }
+
+  svg .window-line-style { stroke: red; fill: none; stroke-width: 2 }
+  svg .window-text-style { font: 14px arial; fill: red }
+  svg .window-shape-style { stroke: none; fill: red }
+  svg .window-dash-style { stroke-dasharray: 4,3; stroke-dashoffset: 0; fill: none;
+                           stroke: red }
+
+  svg.dark .line-style { stroke: #f2f2f2; fill: none; stroke-width: 2 }
+  svg.dark .text-style { font: 14px arial; fill: #f2f2f2 }
+  svg.dark .mono-text-style { font: 14px monospace; fill: #f2f2f2 }
+  svg.dark .heading-style { font: 14px arial; fill: #f2f2f2; font-weight: bold }
+  svg.dark .shape-style { stroke: none; fill: #f2f2f2 }
+  svg.dark .dash-style { stroke-dasharray: 4,3; stroke-dashoffset: 0; fill: none;
+                         stroke: #f2f2f2 }
+  svg.dark .window-line-style { stroke: yellow; fill: none; stroke-width: 2 }
+  svg.dark .window-text-style { font: 14px arial; fill: yellow }
+  svg.dark .window-shape-style { stroke: none; fill: yellow }
+  svg.dark .window-dash-style { stroke-dasharray: 4,3; stroke-dashoffset: 0; fill: none;
+                                stroke: yellow }
+
+  [data-theme="dark"] svg .line-style { stroke: #f2f2f2; fill: none; stroke-width: 2 }
+  [data-theme="dark"] svg .text-style { font: 14px arial; fill: #f2f2f2 }
+  [data-theme="dark"] svg .mono-text-style { font: 14px monospace; fill: #f2f2f2 }
+  [data-theme="dark"] svg .heading-style { font: 14px arial; fill: #f2f2f2; font-weight: bold }
+  [data-theme="dark"] svg .shape-style { stroke: none; fill: #f2f2f2 }
+  [data-theme="dark"] svg .dash-style { stroke-dasharray: 4,3; stroke-dashoffset: 0; fill: none;
+                                        stroke: #f2f2f2 }
+  [data-theme="dark"] svg .window-line-style { stroke: yellow; fill: none; stroke-width: 2 }
+  [data-theme="dark"] svg .window-text-style { font: 14px arial; fill: yellow }
+  [data-theme="dark"] svg .window-shape-style { stroke: none; fill: yellow }
+  [data-theme="dark"] svg .window-dash-style { stroke-dasharray: 4,3; stroke-dashoffset: 0; fill: none;
+                                               stroke: yellow }
+
+  [data-theme="light"] svg .line-style { stroke: black; fill: none; stroke-width: 2 }
+  [data-theme="light"] svg .text-style { font: 14px arial; fill: black }
+  [data-theme="light"] svg .mono-text-style { font: 14px monospace; fill: black }
+  [data-theme="light"] svg .heading-style { font: 14px arial; fill: black; font-weight: bold }
+  [data-theme="light"] svg .shape-style { stroke: none; fill: black }
+  [data-theme="light"] svg .dash-style { stroke-dasharray: 4,3; stroke-dashoffset: 0; fill: none;
+                                         stroke: black }
+  [data-theme="light"] svg .window-line-style { stroke: red; fill: none; stroke-width: 2 }
+  [data-theme="light"] svg .window-text-style { font: 14px arial; fill: red }
+  [data-theme="light"] svg .window-shape-style { stroke: none; fill: red }
+  [data-theme="light"] svg .window-dash-style { stroke-dasharray: 4,3; stroke-dashoffset: 0; fill: none;
+                                                stroke: red }
+</style>
+
+<text x="50" y="20" fill="black" font-size="14px" font-family="arial"
+      font-weight="bold"
+      class="heading-style">World coordinates</text>
+
+<g transform="translate(20, 30)">
+  <rect x="0" y="0" width="200" height="200" stroke="black" fill="none" stroke-dasharray="4,3" stroke-dashoffset="0"
+        class="dash-style" />
+
+  <path d="M5,5 L16,10 L10,16 L5,5" class="shape-style" />
+  <polyline points="5,5 20,20" stroke="black" stroke-width="2" fill="none" class="line-style" />
+  <text x="25" y="30" fill="black" font-size="14px" font-family="arial"
+        class="text-style">(0, 0)</text>
+
+  <path d="M195,195 L184,190 L190,184 L195,195" class="shape-style" />
+  <polyline points="195,195 180,180" stroke="black" stroke-width="2" fill="none" class="line-style" />
+  <text x="115" y="175" fill="black" font-size="14px" font-family="arial"
+        class="text-style">(100, 100)</text>
+
+  <polyline points="-3,-3 3,3" stroke="black" stroke-width="2" class="line-style" />
+  <polyline points="-3,3 3,-3" stroke="black" stroke-width="2" class="line-style" />
+</g>
+
+<g transform="translate(45,235)">
+  <path d="M 0,0 c 0,25 10,35 25,35" stroke="black" stroke-width="2" fill="none" class="line-style" />
+  <path d="M 25,30 l 10,5 l -10,5 z" class="shape-style" />
+  <text x="40" y="40" fill="black" font-size="14px" font-family="monospace"
+        class="mono-text-style">setWindow(-50, -50, 100, 100)</text>
+  <path d="M 290,35 c 15,0 25,-10 25,-35" stroke="black" stroke-width="2" fill="none" class="line-style" />
+  <path d="M 315,0 l 5,10 l -10,0 z" class="shape-style" />
+</g>
+
+<text x="300" y="20" fill="black" font-size="14px" font-family="arial"
+      font-weight="bold"
+      class="heading-style">"Window" coordinates</text>
+
+<g transform="translate(280, 30)">
+
+  <rect x="0" y="0" width="200" height="200" stroke="red" fill="none" stroke-dasharray="4,3" stroke-dashoffset="0"
+        class="window-dash-style" />
+
+  <path d="M5,5 L16,10 L10,16 L5,5" fill="red" class="window-shape-style" />
+  <polyline points="5,5 20,20" stroke="red" stroke-width="2" fill="none" class="window-line-style" />
+  <text x="25" y="30" fill="red" font-size="14px" font-family="arial"
+        class="window-text-style">(-50, -50)</text>
+
+  <path d="M195,195 L184,190 L190,184 L195,195" fill="red" class="window-shape-style" />
+  <polyline points="195,195 180,180" stroke="red" stroke-width="2" fill="none" class="window-line-style" />
+  <text x="130" y="175" fill="red" font-size="14px" font-family="arial"
+        class="window-text-style">(50, 50)</text>
+
+  <polyline points="97,97 103,103" stroke="red" stroke-width="2" class="window-line-style" />
+  <polyline points="97,103 103,97" stroke="red" stroke-width="2" class="window-line-style" />
+</g>
+
+<g transform="translate(395,235)">
+  <path d="M 0,0 c 0,25 10,35 25,35" stroke="black" stroke-width="2" fill="none" class="line-style" />
+  <path d="M 25,30 l 10,5 l -10,5 z" class="shape-style" />
+  <text x="40" y="40" fill="black" font-size="14px" font-family="monospace"
+        class="mono-text-style">setViewport(45, 25, 50, 50)</text>
+  <path d="M 270,35 c 15,0 25,-10 25,-35" stroke="black" stroke-width="2" fill="none" class="line-style" />
+  <path d="M 295,0 l 5,10 l -10,0 z" class="shape-style" />
+</g>
+
+<text x="570" y="20" fill="black" font-size="14px" font-family="arial"
+      font-weight="bold"
+      class="heading-style">Device coordinates</text>
+
+<g transform="translate(540, 30)">
+
+  <rect x="0" y="0" width="200" height="200" stroke="black" stroke-width="2" fill="none" class="line-style" />
+
+  <path d="M5,5 L16,10 L10,16 L5,5" class="shape-style" />
+  <polyline points="5,5 20,20" stroke="black" stroke-width="2" fill="none" class="line-style" />
+  <text x="25" y="30" fill="black" font-size="14px" font-family="arial"
+        class="text-style">(0, 0)</text>
+
+  <path d="M195,195 L184,190 L190,184 L195,195" class="shape-style" />
+  <polyline points="195,195 180,180" stroke="black" stroke-width="2" fill="none" class="line-style" />
+  <text x="115" y="175" fill="black" font-size="14px" font-family="arial"
+        class="text-style">(100, 100)</text>
+
+  <rect x="90" y="50" width="100" height="100" stroke="red" fill="none" stroke-dasharray="4,3" stroke-dashoffset="0"
+        class="window-dash-style" />
+  <polyline points="137,97 143,103" stroke="red" stroke-width="2" class="window-line-style" />
+  <polyline points="137,103 143,97" stroke="red" stroke-width="2" class="window-line-style" />
+</g>
+
+</svg>

@@ -1,0 +1,44 @@
+[optimizedResize_topLevel]
+osx
+[render_windowOpacity]
+macos arm
+[render_systemClip]
+osx
+# QTBUG-87668
+[showMinimizedKeepsFocus]
+android
+macos ci
+[normalGeometry]
+android
+[saveRestoreGeometry]
+android
+[optimizedResizeMove]
+android
+[update]
+android
+[scroll]
+android
+[moveChild]
+android
+[multipleToplevelFocusCheck]
+android
+[renderInvisible]
+android
+[updateWhileMinimized]
+android
+[doubleRepaint]
+android
+[setMaskInResizeEvent]
+android
+[activateWindow]
+android
+[optimizedResize_topLevel]
+android
+[hoverPosition]
+macos-14 x86
+macos-26 # QTBUG-142157
+# QTBUG-124291
+[setParentChangesFocus:make dialog parentless, after]
+android
+[enterLeaveOnWindowShowHide]
+macos-26 # QTBUG-142157
