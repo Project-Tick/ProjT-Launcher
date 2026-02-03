@@ -48,7 +48,6 @@ configure_file(${Launcher_SVGFileName} ${Launcher_SVGFileName} COPYONLY)
 
 set(Launcher_Project_Source_Dir "${PROJECT_SOURCE_DIR}")
 
-file(READ "${PROJECT_SOURCE_DIR}/LICENSE" MAIN_LICENSE)
 file(READ "${PROJECT_SOURCE_DIR}/zlib/LICENSE" ZLIB_LICENSE)
 file(READ "${PROJECT_SOURCE_DIR}/quazip/COPYING" QUAZIP_LICENSE)
 file(READ "${PROJECT_SOURCE_DIR}/qdcss/LICENSE" QDCSS_LICENSE)
