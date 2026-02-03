@@ -1,3 +1,8 @@
 [submodule "flatpak/shared-modules"]
 	path = flatpak/shared-modules
 	url = https://github.com/flathub/shared-modules.git
+[submodule "qt/qtwebengine/src/3rdparty"]
+    path = qt/qtwebengine/src/3rdparty
+    url = https://github.com/qt/qtwebengine-chromium.git
+    ignore = dirty
+    initrepo = true
