@@ -1,8 +1,19 @@
 # SPDX-License-Identifier: GPL-3.0
 # launcher/minecraft - Minecraft Core Module Makefile
 
+# Get absolute path before any includes modify MAKEFILE_LIST
+THIS_MAKEFILE := $(abspath $(lastword $(MAKEFILE_LIST)))
+THIS_DIR := $(dir $(THIS_MAKEFILE))
+
+# Default paths if not provided by parent make
+srctree ?= $(abspath $(THIS_DIR)/../..)
+KBUILD_OUTPUT ?= $(srctree)/build
+
 -include $(srctree)/.config
 -include $(srctree)/scripts/Kbuild.include
+
+# Use QT_MOC if MOC is not set (parent exports QT_MOC)
+MOC ?= $(QT_MOC)
 
 obj := $(KBUILD_OUTPUT)/minecraft
 
@@ -65,21 +76,44 @@ MC_MOC_SRCS := $(patsubst $(srctree)/launcher/minecraft/%.h,$(obj)/moc_%.cpp,$(f
 MC_MOC_SRCS += $(patsubst $(srctree)/launcher/minecraft/%.hpp,$(obj)/moc_%.cpp,$(filter %.hpp,$(MC_MOC_HEADERS)))
 MC_MOC_OBJS := $(MC_MOC_SRCS:.cpp=.o)
 
+# Inline MOC files (included directly in cpp files)
+MC_INLINE_MOC := $(obj)/MinecraftInstance.moc
+
 MC_CXXFLAGS := \
 	-I$(srctree)/launcher/minecraft \
 	-I$(srctree)/launcher \
 	-I$(srctree)/libnbtplusplus/include \
+	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(QT_PREFIX)/include/QtConcurrent \
+	-I$(QT_PREFIX)/include/QtNetworkAuth \
+	-I$(srctree)/quazip/quazip \
+	-I$(srctree)/quazip \
+	-I$(srctree)/gamemode/lib \
+	-I$(srctree)/qdcss/include \
+	-I$(srctree)/tomlplusplus/include \
 	-I$(obj) \
+	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \
 	$(CXXFLAGS)
 
-.PHONY: minecraft minecraft-clean
+.PHONY: all minecraft minecraft-clean
+
+all: minecraft
 
 minecraft: $(MC_LIB)
 
 $(MC_LIB): $(MC_ALL_OBJS) $(MC_MOC_OBJS)
 	@echo "  AR      $@"
 	$(Q)$(AR) rcs $@ $^
+
+# Generate inline moc files (for #include "X.moc" in cpp files)
+$(obj)/%.moc: $(srctree)/launcher/minecraft/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $< (inline)"
+	$(Q)$(MOC) $(QT_DEFINES) -I$(srctree)/launcher/minecraft -I$(srctree)/launcher -o $@ $<
+
+# MinecraftInstance.o depends on the inline moc file
+$(obj)/MinecraftInstance.o: $(obj)/MinecraftInstance.moc
 
 # Pattern rules for different subdirectories
 $(obj)/%.o: $(srctree)/launcher/minecraft/%.cpp

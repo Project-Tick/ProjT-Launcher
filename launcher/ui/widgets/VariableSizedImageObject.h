@@ -43,6 +43,7 @@
 #include <QObject>
 #include <QString>
 #include <QTextObjectInterface>
+#include <QAbstractTextDocumentLayout>
 #include <QUrl>
 #include <memory>
 

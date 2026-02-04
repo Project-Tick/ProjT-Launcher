@@ -44,3 +44,4 @@
 
 Q_DECLARE_LOGGING_CATEGORY(instanceProfileC)
 Q_DECLARE_LOGGING_CATEGORY(instanceProfileResolveC)
+Q_DECLARE_LOGGING_CATEGORY(authCredentials)

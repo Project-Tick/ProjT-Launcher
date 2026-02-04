@@ -25,7 +25,9 @@ LOGS_CXXFLAGS := \
 	$(QT_CFLAGS) \
 	$(CXXFLAGS)
 
-.PHONY: logs logs-clean
+.PHONY: all logs logs-clean
+
+all: logs
 
 logs: $(LOGS_LIB)
 

@@ -557,3 +557,6 @@ memory-bank/
 compile_commands.json
 ci-old.yml
 openssl-*
+
+bz_version.h
+nbt_export.h

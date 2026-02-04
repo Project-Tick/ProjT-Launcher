@@ -171,12 +171,12 @@ $(QTBASE_BUILDDIR)/.configured: $(QTBASE_SRC)/configure
 
 $(QTBASE_BUILDDIR)/.built: $(QTBASE_BUILDDIR)/.configured
 	@echo "  BUILD   qtbase"
-	$(Q)$(MAKE) -C $(QTBASE_BUILDDIR) -j$(PARALLEL_JOBS)
+	$(Q)cmake --build $(QTBASE_BUILDDIR) --parallel $(PARALLEL_JOBS)
 	$(Q)touch $@
 
 $(QT_PREFIX)/.qtbase-installed: $(QTBASE_BUILDDIR)/.built
 	@echo "  INSTALL qtbase"
-	$(Q)$(MAKE) -C $(QTBASE_BUILDDIR) install
+	$(Q)cmake --install $(QTBASE_BUILDDIR)
 	$(Q)touch $@
 
 .PHONY: qt-base
@@ -247,7 +247,7 @@ $(QT_BUILDDIR)/qtwebengine/.configured: $(QT_PREFIX)/.qtbase-installed $(QT_PREF
 	@echo "  CONFIGURE qtwebengine"
 	$(Q)cd $(QT_BUILDDIR)/qtwebengine && \
 		$(QT_PREFIX)/bin/qt-configure-module $(QTWEBENGINE_SRC) \
-		$(if $(CONFIG_QT_WEBENGINE_PROPRIETARY_CODECS),-DFEATURE_webengine_proprietary_codecs=ON,)
+		$(if $(CONFIG_QT_WEBENGINE_PROPRIETARY_CODECS),-webengine-proprietary-codecs,)
 	$(Q)touch $@
 
 $(QT_BUILDDIR)/qtwebengine/.built: $(QT_BUILDDIR)/qtwebengine/.configured

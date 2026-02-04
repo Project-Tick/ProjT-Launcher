@@ -5,6 +5,10 @@
 
 # This module generates platform-specific resources
 
+# Ensure required variables
+KBUILD_OUTPUT ?= $(srctree)/build
+GEN_DIR := $(KBUILD_OUTPUT)/generated
+
 # Include paths
 includes-y := program_info $(GEN_DIR)/program_info
 
@@ -78,9 +82,15 @@ endif
 
 program-info-targets += $(GEN_DIR)/program_info/projtlauncher.qrc
 
+.PHONY: all program_info program_info-clean
+
+all: program_info
+
 program_info: $(program-info-targets)
+	@echo "  Generated program_info resources"
 
-.PHONY: program_info
+program_info-clean:
+	@rm -rf $(GEN_DIR)/program_info
 
-# Include common build rules
-include $(srctree)/mk/module.mk
+# No library output - this module only generates resources
+# Don't include module.mk as it expects lib-y

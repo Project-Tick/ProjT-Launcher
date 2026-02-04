@@ -43,3 +43,4 @@
 
 Q_LOGGING_CATEGORY(instanceProfileC, "launcher.instance.profile")
 Q_LOGGING_CATEGORY(instanceProfileResolveC, "launcher.instance.profile.resolve")
+Q_LOGGING_CATEGORY(authCredentials, "launcher.auth.credentials")

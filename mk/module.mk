@@ -34,6 +34,17 @@ BASE_CXXFLAGS := $(BASE_CFLAGS) -std=c++17
 INC_FLAGS := $(foreach dir,$(includes-y),-I$(srctree)/$(dir))
 INC_FLAGS += -I$(srctree) -I$(KBUILD_OUTPUT)/include
 
+# Qt support - if module uses Qt, add Qt flags
+ifdef qt-modules-y
+QT_PREFIX ?= $(KBUILD_OUTPUT)/obj/qt/install
+QT_PKG_CONFIG_PATH := $(QT_PREFIX)/lib/pkgconfig
+QT_MODULES_PKG := $(foreach m,$(qt-modules-y),Qt6$(m))
+QT_CFLAGS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --cflags $(QT_MODULES_PKG) 2>/dev/null || \
+    echo "-I$(QT_PREFIX)/include $(foreach m,$(qt-modules-y),-I$(QT_PREFIX)/include/Qt$(m))")
+QT_LIBS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --libs $(QT_MODULES_PKG) 2>/dev/null)
+INC_FLAGS += $(QT_CFLAGS)
+endif
+
 # Final flags
 CFLAGS := $(BASE_CFLAGS) $(INC_FLAGS) $(ccflags-y)
 CXXFLAGS := $(BASE_CXXFLAGS) $(INC_FLAGS) $(cxxflags-y)

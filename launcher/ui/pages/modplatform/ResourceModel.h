@@ -30,6 +30,7 @@
 #include <optional>
 
 #include <QAbstractListModel>
+#include <QIcon>
 
 #include "QObjectPtr.h"
 

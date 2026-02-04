@@ -10,7 +10,11 @@
 # Only build on Windows
 ifndef CONFIG_TARGET_WINDOWS
 $(warning filelink is only built for Windows targets)
-endif
+# Empty targets for non-Windows
+.PHONY: all filelink filelink-clean
+all filelink filelink-clean:
+	@true
+else
 
 # Object output directory
 obj := $(KBUILD_OUTPUT)/filelink
@@ -43,7 +47,9 @@ FILELINK_LDFLAGS += -Wl,--manifest,$(srctree)/launcher/filelink/filelink.exe.man
 endif
 
 # Targets
-.PHONY: filelink filelink-clean
+.PHONY: all filelink filelink-clean
+
+all: filelink
 
 filelink: $(FILELINK_BIN)
 
@@ -65,5 +71,4 @@ filelink-clean:
 
 -include $(FILELINK_OBJS:.o=.d)
 
-# Include common build rules
-include $(srctree)/mk/module.mk
+endif # CONFIG_TARGET_WINDOWS

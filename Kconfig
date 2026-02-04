@@ -1471,82 +1471,36 @@ config MOD_JAVACHECK
 endmenu
 
 # ============================================================================
-# Build Information (for BuildConfig.cpp)
+# Build Information
+# ============================================================================
+# NOTE: Version and branding are defined at the top of the main Makefile,
+# exactly like the Linux kernel. Edit the Makefile directly to change:
+#   VERSION, PATCHLEVEL, SUBLEVEL, EXTRAVERSION
+#   LAUNCHER_NAME, LAUNCHER_DISPLAYNAME, etc.
 # ============================================================================
 
-menu "Build Information"
+menu "Build Information (Read-Only Reference)"
 
-config LAUNCHER_NAME
-	string "Launcher internal name"
-	default "projt-launcher"
+comment "Version: Edit VERSION/PATCHLEVEL/SUBLEVEL/EXTRAVERSION in Makefile"
+comment "Branding: Edit LAUNCHER_* variables in Makefile"
 
-config LAUNCHER_APP_BINARY_NAME
-	string "Launcher binary name"
-	default "ProjTLauncher"
-
-config LAUNCHER_DISPLAYNAME
-	string "Launcher display name"
-	default "ProjT Launcher"
-
-config LAUNCHER_COPYRIGHT
-	string "Copyright notice"
-	default "Copyright (C) 2024-2026 Project Tick"
-
-config LAUNCHER_DOMAIN
-	string "Domain"
-	default "projecttick.org"
-
-config LAUNCHER_CONFIGFILE
-	string "Config file name"
-	default "projt-launcher.cfg"
-
-config LAUNCHER_GIT
-	string "Git repository URL"
-	default "https://github.com/Project-Starter/ProjT-Launcher"
-
-config LAUNCHER_APPID
-	string "Application ID"
-	default "org.projecttick.ProjTLauncher"
-
-config LAUNCHER_SVGFILENAME
-	string "SVG icon filename"
-	default "org.projecttick.ProjTLauncher"
-
-config LAUNCHER_USERAGENT
-	string "User agent string"
-	default "ProjTLauncher/@VERSION@"
-
-config VERSION_MAJOR
-	int "Version major"
-	default 0
-
-config VERSION_MINOR
-	int "Version minor"
-	default 0
-
-config VERSION_PATCH
-	int "Version patch"
-	default 5
-
-config VERSION_TWEAK
-	int "Version tweak"
-	default 1
-
-config VERSION_SUFFIX
-	string "Version suffix"
-	default ""
+config SHOW_BUILD_INFO
+	bool "Show build info at startup"
+	default y
 	help
-	  Optional version suffix like "-beta", "-rc1".
+	  Display version and build information when launcher starts.
 
-config BUILD_ARTIFACT
-	string "Build artifact name"
-	default "Development"
+config INCLUDE_GIT_INFO
+	bool "Include Git commit info in build"
+	default y
 	help
-	  Release, Development, Nightly, etc.
+	  Embed Git commit hash and branch in the binary.
 
-config UPDATER_GITHUB_REPO
-	string "Updater GitHub repo"
-	default "Project-Starter/ProjT-Launcher"
+config BUILD_TIMESTAMP
+	bool "Include build timestamp"
+	default y
+	help
+	  Embed build timestamp in the binary.
 
 endmenu
 

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 
-include mk/flags.mk
+include $(srctree)/mk/flags.mk
 
 QT_PREFIX := $(call cfg-unquote,$(CONFIG_QT_PREFIX))
 QT_HOST_BINS := $(call cfg-unquote,$(CONFIG_QT_HOST_BINS))

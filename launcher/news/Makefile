@@ -1,8 +1,19 @@
 # SPDX-License-Identifier: GPL-3.0
 # launcher/news - News Module Makefile
 
+# Get absolute path before any includes modify MAKEFILE_LIST
+THIS_MAKEFILE := $(abspath $(lastword $(MAKEFILE_LIST)))
+THIS_DIR := $(dir $(THIS_MAKEFILE))
+
+# Default paths if not provided by parent make
+srctree ?= $(abspath $(THIS_DIR)/../..)
+KBUILD_OUTPUT ?= $(srctree)/build
+
 -include $(srctree)/.config
 -include $(srctree)/scripts/Kbuild.include
+
+# Use QT_MOC if MOC is not set
+MOC ?= $(QT_MOC)
 
 obj := $(KBUILD_OUTPUT)/news
 
@@ -21,11 +32,16 @@ NEWS_MOC_OBJS := $(NEWS_MOC_SRCS:.cpp=.o)
 NEWS_CXXFLAGS := \
 	-I$(srctree)/launcher/news \
 	-I$(srctree)/launcher \
+	-I$(QT_PREFIX)/include/QtXml \
+	-I$(KBUILD_OUTPUT)/generated/buildconfig \
 	-I$(obj) \
+	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \
 	$(CXXFLAGS)
 
-.PHONY: news news-clean
+.PHONY: all news news-clean
+
+all: news
 
 news: $(NEWS_LIB)
 

@@ -1,8 +1,19 @@
 # SPDX-License-Identifier: GPL-3.0
 # launcher/tasks - Task System Module Makefile
 
+# Get absolute path before any includes modify MAKEFILE_LIST
+THIS_MAKEFILE := $(abspath $(lastword $(MAKEFILE_LIST)))
+THIS_DIR := $(dir $(THIS_MAKEFILE))
+
+# Default paths if not provided by parent make
+srctree ?= $(abspath $(THIS_DIR)/../..)
+KBUILD_OUTPUT ?= $(srctree)/build
+
 -include $(srctree)/.config
 -include $(srctree)/scripts/Kbuild.include
+
+# Use QT_MOC if MOC is not set
+MOC ?= $(QT_MOC)
 
 obj := $(KBUILD_OUTPUT)/tasks
 
@@ -23,11 +34,15 @@ TASKS_MOC_OBJS := $(TASKS_MOC_SRCS:.cpp=.o)
 TASKS_CXXFLAGS := \
 	-I$(srctree)/launcher/tasks \
 	-I$(srctree)/launcher \
+	-I$(KBUILD_OUTPUT)/generated/buildconfig \
 	-I$(obj) \
+	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \
 	$(CXXFLAGS)
 
-.PHONY: tasks tasks-clean
+.PHONY: all tasks tasks-clean
+
+all: tasks
 
 tasks: $(TASKS_LIB)
 

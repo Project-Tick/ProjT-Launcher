@@ -50,13 +50,13 @@ SUBTREE_QT := qt/qtbase qt/qtnetworkauth qt/qtimageformats \
 LIBS_TIER0_LOCAL := bzip2 murmur2
 
 # Tier 1: zlib-dependent - NOT subtrees
-LIBS_TIER1 := libpng quazip
+LIBS_TIER1 := libpng
 
 # Tier 2: Other base libraries - cmark is local, toml/json are subtrees
 LIBS_TIER2_LOCAL := cmark libnbtplusplus libqrencode
 
 # Tier 3: Qt-dependent modules - NOT subtrees
-LIBS_TIER3 := rainbow qdcss LocalPeer
+LIBS_TIER3 := rainbow qdcss LocalPeer quazip
 
 # Platform-specific
 ifeq ($(CONFIG_TARGET_LINUX),y)
@@ -106,7 +106,8 @@ define build_local
 			srctree=$(srctree) \
 			KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
 			Q=$(Q) V=$(V) \
-			all 2>&1 | sed 's/^/    /' || true; \
+			all 2>&1 | sed 's/^/    /'; \
+		if [ $${PIPESTATUS[0]} -ne 0 ]; then exit 1; fi; \
 	else \
 		echo "  SKIP    $(1) (no Makefile)"; \
 	fi
@@ -134,8 +135,14 @@ endef
 # Main target
 all: build
 
-# Full build with all phases
-build: configure subtrees qt-build libs java-modules launcher-all
+# Full build with all phases (serial, not parallel at top level)
+build:
+	@$(MAKE) -f $(srctree)/Makefile configure
+	@$(MAKE) -f $(srctree)/Makefile subtrees
+	@$(MAKE) -f $(srctree)/Makefile qt-build
+	@$(MAKE) -f $(srctree)/Makefile libs
+	@$(MAKE) -f $(srctree)/Makefile java-modules
+	@$(MAKE) -f $(srctree)/Makefile launcher-all
 	@echo ""
 	@echo "Build complete!"
 	@echo "Output: $(KBUILD_OUTPUT)"
@@ -188,7 +195,6 @@ libs-tier0: configure subtrees
 libs-tier1: libs-tier0
 	@echo "=== Building Tier 1 Libraries (zlib deps) ==="
 	$(call build_local,libpng)
-	$(call build_local,quazip)
 
 libs-tier2: libs-tier0
 	@echo "=== Building Tier 2 Libraries ==="
@@ -201,6 +207,7 @@ libs-tier3: libs-tier0 libs-tier1 libs-tier2 qt-build
 	$(call build_local,rainbow)
 	$(call build_local,qdcss)
 	$(call build_local,LocalPeer)
+	$(call build_local,quazip)
 
 libs-platform:
 ifdef LIBS_PLATFORM

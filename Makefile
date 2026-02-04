@@ -21,6 +21,52 @@
 #   make O=/path/to/build defconfig
 #   make O=/path/to/build -j$(nproc)
 
+# ============================================================================
+# VERSION AND BRANDING (Edit these directly like Linux kernel)
+# ============================================================================
+# These values are extracted from CMakeLists.txt / program_info/CMakeLists.txt
+
+VERSION = 0
+PATCHLEVEL = 0
+SUBLEVEL = 5
+EXTRAVERSION = -1
+NAME = ProjT Launcher
+
+# Branding (from program_info/CMakeLists.txt)
+LAUNCHER_COMMONNAME      = ProjTLauncher
+LAUNCHER_NAME            = ProjTLauncher
+LAUNCHER_DISPLAYNAME     = ProjT Launcher
+LAUNCHER_COPYRIGHT       = © 2025-2026 Project Tick
+LAUNCHER_DOMAIN          = projecttick.org
+LAUNCHER_CONFIGFILE      = projtlauncher.cfg
+LAUNCHER_GIT             = https://github.com/Project-Tick/ProjT-Launcher
+LAUNCHER_APPID           = org.projecttick.ProjTLauncher
+LAUNCHER_SVGFILENAME     = org.projecttick.ProjTLauncher.svg
+LAUNCHER_USERAGENT       = ProjTLauncher/$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
+LAUNCHER_GITHUB_REPO     = Project-Tick/ProjT-Launcher
+LAUNCHER_BUG_TRACKER_URL = https://github.com/Project-Tick/ProjT-Launcher/issues
+
+# URLs (from CMakeLists.txt)
+LAUNCHER_NEWS_RSS_URL    = https://projecttick.org/product/projt-launcher/feed.xml
+LAUNCHER_META_URL        = https://meta.projecttick.org/
+LAUNCHER_DISCORD_URL     = https://projecttick.org/projtlauncher/discord
+
+# Build artifact identifier (for update system)
+BUILD_ARTIFACT =
+
+# Export all branding variables
+export VERSION PATCHLEVEL SUBLEVEL EXTRAVERSION NAME
+export LAUNCHER_COMMONNAME LAUNCHER_NAME LAUNCHER_DISPLAYNAME
+export LAUNCHER_COPYRIGHT LAUNCHER_DOMAIN LAUNCHER_CONFIGFILE
+export LAUNCHER_GIT LAUNCHER_APPID LAUNCHER_SVGFILENAME
+export LAUNCHER_USERAGENT LAUNCHER_GITHUB_REPO BUILD_ARTIFACT
+export LAUNCHER_BUG_TRACKER_URL LAUNCHER_NEWS_RSS_URL LAUNCHER_META_URL LAUNCHER_DISCORD_URL
+
+# Computed version strings (matches CMake Launcher_VERSION_NAME)
+PROJT_VERSION = $(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
+PROJT_VERSION_FULL = $(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
+export PROJT_VERSION PROJT_VERSION_FULL
+
 # Prevent make from trying to remake this file
 .PHONY: _all
 _all: all
@@ -43,10 +89,237 @@ SRCARCH ?= projt
 KBUILD_DEFCONFIG ?= projt_defconfig
 export SRCARCH KBUILD_DEFCONFIG
 
-# Project info
-PROJECT_NAME := ProjT-Launcher
-PROJECT_VERSION := 0.0.5.1
-export PROJECT_NAME PROJECT_VERSION
+# ============================================================================
+# TARGET PLATFORM DETECTION
+# ============================================================================
+
+# Host OS detection
+HOST_OS := $(shell uname -s 2>/dev/null || echo Windows)
+ifeq ($(HOST_OS),Linux)
+    HOST_PLATFORM := linux
+else ifeq ($(HOST_OS),Darwin)
+    HOST_PLATFORM := macos
+else ifneq (,$(findstring MINGW,$(HOST_OS)))
+    HOST_PLATFORM := windows
+else ifneq (,$(findstring MSYS,$(HOST_OS)))
+    HOST_PLATFORM := windows
+else ifneq (,$(findstring CYGWIN,$(HOST_OS)))
+    HOST_PLATFORM := windows
+else ifeq ($(OS),Windows_NT)
+    HOST_PLATFORM := windows
+else
+    HOST_PLATFORM := unknown
+endif
+
+# Target platform (can be overridden for cross-compilation)
+# Values: linux, windows, macos
+TARGET_PLATFORM ?= $(HOST_PLATFORM)
+
+# Target architecture detection
+HOST_ARCH := $(shell uname -m 2>/dev/null || echo x86_64)
+ifeq ($(HOST_ARCH),x86_64)
+    HOST_ARCH := x86_64
+else ifeq ($(HOST_ARCH),amd64)
+    HOST_ARCH := x86_64
+else ifeq ($(HOST_ARCH),aarch64)
+    HOST_ARCH := aarch64
+else ifeq ($(HOST_ARCH),arm64)
+    HOST_ARCH := aarch64
+else ifeq ($(HOST_ARCH),i686)
+    HOST_ARCH := i686
+else ifeq ($(HOST_ARCH),i386)
+    HOST_ARCH := i686
+endif
+
+TARGET_ARCH ?= $(HOST_ARCH)
+
+export HOST_OS HOST_PLATFORM HOST_ARCH
+export TARGET_PLATFORM TARGET_ARCH
+
+# ============================================================================
+# CROSS-COMPILATION SUPPORT
+# ============================================================================
+
+# Cross-compile prefix (e.g., x86_64-w64-mingw32-, aarch64-linux-gnu-)
+CROSS_COMPILE ?=
+
+# Windows toolchain selection: mingw or msvc
+# Only relevant when TARGET_PLATFORM=windows
+WINDOWS_TOOLCHAIN ?= mingw
+
+# Detect if we're cross-compiling
+ifneq ($(CROSS_COMPILE),)
+    CROSS_COMPILING := 1
+else ifeq ($(TARGET_PLATFORM),windows)
+    ifneq ($(HOST_PLATFORM),windows)
+        CROSS_COMPILING := 1
+    endif
+else ifneq ($(TARGET_PLATFORM),$(HOST_PLATFORM))
+    CROSS_COMPILING := 1
+endif
+
+export CROSS_COMPILE WINDOWS_TOOLCHAIN CROSS_COMPILING
+
+# ============================================================================
+# TOOLCHAIN SELECTION
+# ============================================================================
+
+ifeq ($(TARGET_PLATFORM),windows)
+  ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+    # Microsoft Visual C++ (Windows native or Wine)
+    CC      = cl.exe
+    CXX     = cl.exe
+    LD      = link.exe
+    AR      = lib.exe
+    AS      = ml64.exe
+    OBJCOPY = 
+    STRIP   = 
+    RC      = rc.exe
+    MT      = mt.exe
+    
+    # MSVC-specific flags
+    CFLAGS_BASE   = /nologo /W3 /EHsc /MD
+    CXXFLAGS_BASE = /nologo /W3 /EHsc /MD /std:c++17
+    LDFLAGS_BASE  = /nologo
+    
+    # Debug/Release
+    ifeq ($(CONFIG_DEBUG),y)
+        CFLAGS_BASE   += /Zi /Od /DDEBUG /D_DEBUG
+        CXXFLAGS_BASE += /Zi /Od /DDEBUG /D_DEBUG
+        LDFLAGS_BASE  += /DEBUG
+    else
+        CFLAGS_BASE   += /O2 /DNDEBUG
+        CXXFLAGS_BASE += /O2 /DNDEBUG
+        LDFLAGS_BASE  += /RELEASE
+    endif
+    
+    # Output file extensions
+    OBJ_EXT = .obj
+    LIB_EXT = .lib
+    DLL_EXT = .dll
+    EXE_EXT = .exe
+    
+  else
+    # MinGW-w64 (Cross-compile from Linux/macOS or native MSYS2)
+    CC      = $(CROSS_COMPILE)gcc
+    CXX     = $(CROSS_COMPILE)g++
+    LD      = $(CROSS_COMPILE)g++
+    AR      = $(CROSS_COMPILE)ar
+    AS      = $(CROSS_COMPILE)as
+    OBJCOPY = $(CROSS_COMPILE)objcopy
+    STRIP   = $(CROSS_COMPILE)strip
+    WINDRES = $(CROSS_COMPILE)windres
+    
+    # MinGW flags
+    CFLAGS_BASE   = -Wall -Wextra
+    CXXFLAGS_BASE = -Wall -Wextra -std=c++17
+    LDFLAGS_BASE  = -static-libgcc -static-libstdc++
+    
+    # Debug/Release
+    ifeq ($(CONFIG_DEBUG),y)
+        CFLAGS_BASE   += -g -O0 -DDEBUG -D_DEBUG
+        CXXFLAGS_BASE += -g -O0 -DDEBUG -D_DEBUG
+    else
+        CFLAGS_BASE   += -O2 -DNDEBUG
+        CXXFLAGS_BASE += -O2 -DNDEBUG
+        LDFLAGS_BASE  += -s
+    endif
+    
+    # Output file extensions
+    OBJ_EXT = .o
+    LIB_EXT = .a
+    DLL_EXT = .dll
+    EXE_EXT = .exe
+  endif
+  
+  # Windows-specific defines
+  CFLAGS_PLATFORM   = -DWIN32 -D_WIN32 -DUNICODE -D_UNICODE
+  CXXFLAGS_PLATFORM = -DWIN32 -D_WIN32 -DUNICODE -D_UNICODE
+  
+else ifeq ($(TARGET_PLATFORM),macos)
+    # macOS (Apple Clang)
+    CC      = $(CROSS_COMPILE)clang
+    CXX     = $(CROSS_COMPILE)clang++
+    LD      = $(CROSS_COMPILE)clang++
+    AR      = $(CROSS_COMPILE)ar
+    AS      = $(CROSS_COMPILE)as
+    OBJCOPY = $(CROSS_COMPILE)objcopy
+    STRIP   = $(CROSS_COMPILE)strip
+    LIPO    = lipo
+    INSTALL_NAME_TOOL = install_name_tool
+    CODESIGN = codesign
+    
+    # macOS flags
+    CFLAGS_BASE   = -Wall -Wextra
+    CXXFLAGS_BASE = -Wall -Wextra -std=c++17
+    LDFLAGS_BASE  = 
+    
+    # Debug/Release
+    ifeq ($(CONFIG_DEBUG),y)
+        CFLAGS_BASE   += -g -O0 -DDEBUG
+        CXXFLAGS_BASE += -g -O0 -DDEBUG
+    else
+        CFLAGS_BASE   += -O2 -DNDEBUG
+        CXXFLAGS_BASE += -O2 -DNDEBUG
+    endif
+    
+    # macOS deployment target
+    MACOSX_DEPLOYMENT_TARGET ?= 10.15
+    CFLAGS_PLATFORM   = -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
+    CXXFLAGS_PLATFORM = -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
+    LDFLAGS_PLATFORM  = -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
+    
+    # Output file extensions
+    OBJ_EXT = .o
+    LIB_EXT = .a
+    DLL_EXT = .dylib
+    EXE_EXT =
+    
+else
+    # Linux / Unix (GCC or Clang)
+    CC      ?= $(CROSS_COMPILE)gcc
+    CXX     ?= $(CROSS_COMPILE)g++
+    LD      = $(CROSS_COMPILE)g++
+    AR      = $(CROSS_COMPILE)ar
+    AS      = $(CROSS_COMPILE)as
+    OBJCOPY = $(CROSS_COMPILE)objcopy
+    STRIP   = $(CROSS_COMPILE)strip
+    
+    # Linux flags
+    CFLAGS_BASE   = -Wall -Wextra -fPIC
+    CXXFLAGS_BASE = -Wall -Wextra -fPIC -std=c++17
+    LDFLAGS_BASE  = 
+    
+    # Debug/Release
+    ifeq ($(CONFIG_DEBUG),y)
+        CFLAGS_BASE   += -g -O0 -DDEBUG
+        CXXFLAGS_BASE += -g -O0 -DDEBUG
+    else
+        CFLAGS_BASE   += -O2 -DNDEBUG
+        CXXFLAGS_BASE += -O2 -DNDEBUG
+        LDFLAGS_BASE  += -s
+    endif
+    
+    # Linux-specific
+    CFLAGS_PLATFORM   = -D_GNU_SOURCE
+    CXXFLAGS_PLATFORM = -D_GNU_SOURCE
+    LDFLAGS_PLATFORM  = -Wl,--as-needed
+    
+    # Output file extensions
+    OBJ_EXT = .o
+    LIB_EXT = .a
+    DLL_EXT = .so
+    EXE_EXT =
+endif
+
+# Combine flags
+CFLAGS   = $(CFLAGS_BASE) $(CFLAGS_PLATFORM)
+CXXFLAGS = $(CXXFLAGS_BASE) $(CXXFLAGS_PLATFORM)
+LDFLAGS  = $(LDFLAGS_BASE) $(LDFLAGS_PLATFORM)
+
+export CC CXX LD AR AS OBJCOPY STRIP
+export CFLAGS CXXFLAGS LDFLAGS
+export OBJ_EXT LIB_EXT DLL_EXT EXE_EXT
 
 # ============================================================================
 # Kconfig Paths
@@ -207,10 +480,49 @@ $(KCONFIG_OBJDIR)/%.o: $(KCONFIG_OBJDIR)/%.cc | $(KCONFIG_OBJDIR)
 	$(Q)$(MKDIR) $(dir $@)
 	$(Q)$(HOSTCXX) $(call host-cxxflags,$@) -c -o $@ $<
 
+# Kconfig configuration scripts (ncurses detection, Qt detection, etc.)
+$(KCONFIG_OBJDIR)/mconf-cflags $(KCONFIG_OBJDIR)/mconf-libs: $(KCONFIG_SRCDIR)/mconf-cfg.sh | $(KCONFIG_OBJDIR)
+	$(Q)cd $(KCONFIG_OBJDIR) && $(KCONFIG_SRCDIR)/mconf-cfg.sh mconf-cflags mconf-libs
+
+$(KCONFIG_OBJDIR)/nconf-cflags $(KCONFIG_OBJDIR)/nconf-libs: $(KCONFIG_SRCDIR)/nconf-cfg.sh | $(KCONFIG_OBJDIR)
+	$(Q)cd $(KCONFIG_OBJDIR) && $(KCONFIG_SRCDIR)/nconf-cfg.sh nconf-cflags nconf-libs
+
+$(KCONFIG_OBJDIR)/qconf-cflags $(KCONFIG_OBJDIR)/qconf-libs $(KCONFIG_OBJDIR)/qconf-bin: $(KCONFIG_SRCDIR)/qconf-cfg.sh | $(KCONFIG_OBJDIR)
+	$(Q)cd $(KCONFIG_OBJDIR) && $(KCONFIG_SRCDIR)/qconf-cfg.sh qconf-cflags qconf-libs qconf-bin
+
+$(KCONFIG_OBJDIR)/gconf-cflags $(KCONFIG_OBJDIR)/gconf-libs: $(KCONFIG_SRCDIR)/gconf-cfg.sh | $(KCONFIG_OBJDIR)
+	$(Q)cd $(KCONFIG_OBJDIR) && $(KCONFIG_SRCDIR)/gconf-cfg.sh gconf-cflags gconf-libs
+
+# Helper function to read config files
+read-file = $(shell cat $(1) 2>/dev/null)
+
+# Ncurses flags for menuconfig
+HOSTLDLIBS_mconf = $(call read-file,$(KCONFIG_OBJDIR)/mconf-libs)
+HOSTCFLAGS_mconf.o = $(call read-file,$(KCONFIG_OBJDIR)/mconf-cflags)
+HOSTCFLAGS_lxdialog/checklist.o = $(call read-file,$(KCONFIG_OBJDIR)/mconf-cflags)
+HOSTCFLAGS_lxdialog/inputbox.o = $(call read-file,$(KCONFIG_OBJDIR)/mconf-cflags)
+HOSTCFLAGS_lxdialog/menubox.o = $(call read-file,$(KCONFIG_OBJDIR)/mconf-cflags)
+HOSTCFLAGS_lxdialog/textbox.o = $(call read-file,$(KCONFIG_OBJDIR)/mconf-cflags)
+HOSTCFLAGS_lxdialog/util.o = $(call read-file,$(KCONFIG_OBJDIR)/mconf-cflags)
+HOSTCFLAGS_lxdialog/yesno.o = $(call read-file,$(KCONFIG_OBJDIR)/mconf-cflags)
+
+# Ncurses flags for nconfig
+HOSTLDLIBS_nconf = $(call read-file,$(KCONFIG_OBJDIR)/nconf-libs)
+HOSTCFLAGS_nconf.o = $(call read-file,$(KCONFIG_OBJDIR)/nconf-cflags)
+HOSTCFLAGS_nconf.gui.o = $(call read-file,$(KCONFIG_OBJDIR)/nconf-cflags)
+
 # Link Kconfig tools
 KCONFIG_PROGS := $(addprefix $(KCONFIG_OBJDIR)/,$(hostprogs))
 
 $(KCONFIG_PROGS): | $(KCONFIG_OBJDIR)
+
+# mconf depends on ncurses config
+$(KCONFIG_OBJDIR)/mconf: | $(KCONFIG_OBJDIR)/mconf-libs
+$(addprefix $(KCONFIG_OBJDIR)/,mconf.o $(lxdialog)): | $(KCONFIG_OBJDIR)/mconf-cflags
+
+# nconf depends on ncurses config
+$(KCONFIG_OBJDIR)/nconf: | $(KCONFIG_OBJDIR)/nconf-libs
+$(addprefix $(KCONFIG_OBJDIR)/,nconf.o nconf.gui.o): | $(KCONFIG_OBJDIR)/nconf-cflags
 
 define hostprog_link
 $(KCONFIG_OBJDIR)/$(1): $$($(1)-objs:%=$(KCONFIG_OBJDIR)/%) $$($(1)-cxxobjs:%=$(KCONFIG_OBJDIR)/%)
@@ -247,7 +559,7 @@ build: prepare
 	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk build
 
 # Individual module builds
-libs launcher java tests:
+libs launcher java tests configure qt-build java-modules launcher-all:
 	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk $@
 
 # Module-specific targets (e.g., make zlib, make launcher/ui)
@@ -255,11 +567,11 @@ libs launcher java tests:
 	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk $(patsubst %/,%,$@)
 
 # ============================================================================
-# Subtrees Target
+# Subtrees Target (delegated to targets.mk for proper sequencing)
 # ============================================================================
 
 subtrees: prepare
-	$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk subtrees
+	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk subtrees
 
 # ============================================================================
 # Toolchain Targets (Wrapper files in mk/)
@@ -395,14 +707,36 @@ listconfig: prepare
 	@echo "  WITH_WEBENGINE:      $(CONFIG_LAUNCHER_WITH_WEBENGINE)"
 
 info:
-	@echo "Project: $(PROJECT_NAME) $(PROJECT_VERSION)"
-	@echo "Source:  $(srctree)"
-	@echo "Build:   $(KBUILD_OUTPUT)"
+	@echo "=== $(NAME) ===" 
+	@echo "Version:     $(PROJT_VERSION_FULL)"
+	@echo "CommonName:  $(LAUNCHER_COMMONNAME)"
+	@echo "DisplayName: $(LAUNCHER_DISPLAYNAME)"
+	@echo "AppID:       $(LAUNCHER_APPID)"
+	@echo "Domain:      $(LAUNCHER_DOMAIN)"
+	@echo "Copyright:   $(LAUNCHER_COPYRIGHT)"
 	@echo ""
-	@$(MAKE) -f $(srctree)/Makefile listconfig
+	@echo "Build Information:"
+	@echo "  Source:    $(srctree)"
+	@echo "  Output:    $(KBUILD_OUTPUT)"
+	@echo "  Platform:  $(TARGET_PLATFORM)"
+	@echo "  Arch:      $(TARGET_ARCH)"
+	@echo ""
+	@echo "Toolchain:"
+	@echo "  CC:        $(CC)"
+	@echo "  CXX:       $(CXX)"
+ifeq ($(TARGET_PLATFORM),windows)
+	@echo "  Toolchain: $(WINDOWS_TOOLCHAIN)"
+endif
+ifdef CROSS_COMPILING
+	@echo "  Cross:     yes ($(CROSS_COMPILE))"
+endif
+
+# Print version like Linux kernel: "make kernelversion"
+kernelversion projt-version:
+	@echo "$(PROJT_VERSION)"
 
 version:
-	@echo "$(PROJECT_VERSION)"
+	@echo "$(PROJT_VERSION_FULL)"
 
 # ============================================================================
 # Clean Targets
@@ -427,8 +761,8 @@ mrproper: distclean
 # ============================================================================
 
 help:
-	@echo "ProjT Launcher Build System"
-	@echo "==========================="
+	@echo "$(NAME) Build System (v$(PROJT_VERSION_FULL))"
+	@echo "==========================================="
 	@echo ""
 	@echo "Configuration targets:"
 	@echo "  defconfig      - Load default configuration"
@@ -443,13 +777,14 @@ help:
 	@echo ""
 	@echo "Build targets:"
 	@echo "  all            - Build everything (default)"
-	@echo "  build          - Build the project (monolithic)"
-	@echo "  build-recursive - Build using per-directory Makefiles (Kbuild-style)"
+	@echo "  build          - Build the project"
+	@echo "  configure      - Generate headers from .in files"
 	@echo "  subtrees       - Build subtree dependencies"
+	@echo "  qt-build       - Build Qt (if bundled)"
+	@echo "  libs           - Build all libraries"
+	@echo "  launcher-all   - Build launcher and submodules"
 	@echo "  install        - Install to PREFIX (default: /usr/local)"
 	@echo "  uninstall      - Remove installed files"
-	@echo ""
-	@echo "Module targets (recursive):"
 	@echo ""
 	@echo "Testing targets:"
 	@echo "  test / check   - Run tests"
@@ -470,28 +805,48 @@ help:
 	@echo "  toolchain-help - Show toolchain options"
 	@echo ""
 	@echo "Utility targets:"
-	@echo "  list-modules   - List all available modules"
+	@echo "  info           - Show project and build information"
+	@echo "  version        - Show version ($(PROJT_VERSION_FULL))"
 	@echo "  listconfig     - Show configuration summary"
-	@echo "  info           - Show project information"
-	@echo "  version        - Show version"
+	@echo "  list-modules   - List all available modules"
 	@echo "  clean          - Remove build artifacts"
 	@echo "  distclean      - Remove everything including config"
 	@echo "  help           - Show this help"
 	@echo ""
-	@echo "Common variables:"
-	@echo "  V=1            - Verbose build output"
-	@echo "  O=<dir>        - Out-of-tree build directory"
-	@echo "  CROSS_COMPILE= - Cross-compilation prefix"
-	@echo "  PREFIX=        - Installation prefix"
-	@echo "  DESTDIR=       - Staging directory for packages"
-	@echo "  JOBS=          - Parallel jobs (default: $(NPROC))"
+	@echo "Build Variables:"
+	@echo "  V=1                  - Verbose build output"
+	@echo "  O=<dir>              - Out-of-tree build directory"
+	@echo "  PREFIX=<path>        - Installation prefix (default: /usr/local)"
+	@echo "  DESTDIR=<path>       - Staging directory for packages"
+	@echo "  JOBS=<n>             - Parallel jobs (default: $(NPROC))"
+	@echo ""
+	@echo "Cross-Compilation:"
+	@echo "  TARGET_PLATFORM=<os> - Target: linux, windows, macos"
+	@echo "  TARGET_ARCH=<arch>   - Target: x86_64, aarch64, i686"
+	@echo "  CROSS_COMPILE=<pfx>  - Toolchain prefix (e.g., x86_64-w64-mingw32-)"
+	@echo ""
+	@echo "Windows-specific:"
+	@echo "  WINDOWS_TOOLCHAIN=mingw  - Use MinGW-w64 (default, cross-compile friendly)"
+	@echo "  WINDOWS_TOOLCHAIN=msvc   - Use MSVC (Windows native only)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make defconfig && make -j$(NPROC)"
-	@echo "  make zlib                         # Build single module"
-	@echo "  make launcher/ui                  # Build launcher submodule"
-	@echo "  make CROSS_COMPILE=x86_64-w64-mingw32- defconfig && make"
-	@echo "  make O=../build-release menuconfig && make O=../build-release"
+	@echo "  # Native Linux build"
+	@echo "  make defconfig && make -j\$$(nproc)"
+	@echo ""
+	@echo "  # Cross-compile for Windows (MinGW)"
+	@echo "  make TARGET_PLATFORM=windows CROSS_COMPILE=x86_64-w64-mingw32- defconfig"
+	@echo "  make -j\$$(nproc)"
+	@echo ""
+	@echo "  # Windows native build (MSVC, from VS Developer Command Prompt)"
+	@echo "  make TARGET_PLATFORM=windows WINDOWS_TOOLCHAIN=msvc defconfig"
+	@echo "  make -j\$$(nproc)"
+	@echo ""
+	@echo "  # macOS cross-compile (requires osxcross)"
+	@echo "  make TARGET_PLATFORM=macos CROSS_COMPILE=x86_64-apple-darwin- defconfig"
+	@echo "  make -j\$$(nproc)"
+	@echo ""
+	@echo "  # Out-of-tree build"
+	@echo "  make O=../build-release menuconfig && make O=../build-release -j\$$(nproc)"
 
 # ============================================================================
 # Module List

@@ -58,6 +58,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QModelIndex>
 
 #include "ui/pages/BasePage.h"
 

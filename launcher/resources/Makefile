@@ -3,8 +3,19 @@
 #
 # This generates Qt resource files (QRC -> CPP)
 
+# Get absolute path before any includes modify MAKEFILE_LIST
+THIS_MAKEFILE := $(abspath $(lastword $(MAKEFILE_LIST)))
+THIS_DIR := $(dir $(THIS_MAKEFILE))
+
+# Default paths if not provided by parent make
+srctree ?= $(abspath $(THIS_DIR)/../..)
+KBUILD_OUTPUT ?= $(srctree)/build
+
 -include $(srctree)/.config
 -include $(srctree)/scripts/Kbuild.include
+
+# Use QT_RCC if RCC is not set
+RCC ?= $(QT_RCC)
 
 obj := $(KBUILD_OUTPUT)/resources
 
@@ -21,7 +32,9 @@ RESOURCES_CXXFLAGS := \
 	$(QT_CFLAGS) \
 	$(CXXFLAGS)
 
-.PHONY: resources resources-clean
+.PHONY: all resources resources-clean
+
+all: resources
 
 resources: $(RESOURCES_LIB)
 

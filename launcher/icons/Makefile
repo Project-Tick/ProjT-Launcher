@@ -4,6 +4,10 @@
 -include $(srctree)/.config
 -include $(srctree)/scripts/Kbuild.include
 
+# Qt tools
+QT_PREFIX ?= $(KBUILD_OUTPUT)/obj/qt/install
+MOC := $(QT_PREFIX)/libexec/moc
+
 # Object output directory
 obj := $(KBUILD_OUTPUT)/icons
 
@@ -33,7 +37,9 @@ ICONS_CXXFLAGS := \
 	$(CXXFLAGS)
 
 # Targets
-.PHONY: icons icons-clean
+.PHONY: all icons icons-clean
+
+all: icons
 
 icons: $(ICONS_LIB)
 

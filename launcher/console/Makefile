@@ -29,7 +29,9 @@ CONSOLE_CXXFLAGS := \
 	$(CXXFLAGS)
 
 # Targets
-.PHONY: console console-clean
+.PHONY: all console console-clean
+
+all: console
 
 console: $(CONSOLE_LIB)
 

@@ -1,10 +1,26 @@
 # SPDX-License-Identifier: GPL-3.0
 # launcher/updater - Updater Module Makefile
 
+# Get absolute path before any includes modify MAKEFILE_LIST
+THIS_MAKEFILE := $(abspath $(lastword $(MAKEFILE_LIST)))
+THIS_DIR := $(dir $(THIS_MAKEFILE))
+
+# Default paths if not provided by parent make
+srctree ?= $(abspath $(THIS_DIR)/../..)
+KBUILD_OUTPUT ?= $(srctree)/build
+
 -include $(srctree)/.config
 -include $(srctree)/scripts/Kbuild.include
 
+# Use QT_MOC if MOC is not set
+MOC ?= $(QT_MOC)
+UIC ?= $(QT_UIC)
+
 obj := $(KBUILD_OUTPUT)/updater
+
+# UI files
+UI_FILES := $(wildcard $(srctree)/launcher/updater/projtupdater/*.ui)
+UIC_HEADERS := $(patsubst $(srctree)/launcher/updater/projtupdater/%.ui,$(obj)/ui_%.h,$(UI_FILES))
 
 # Core updater sources
 UPDATER_SRCS := ProjTExternalUpdater.cpp
@@ -29,7 +45,14 @@ UPDATER_MOC_OBJS := $(UPDATER_MOC_SRCS:.cpp=.o)
 UPDATER_CXXFLAGS := \
 	-I$(srctree)/launcher/updater \
 	-I$(srctree)/launcher \
+	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/systeminfo/include \
+	-I$(srctree)/quazip/quazip \
+	-I$(srctree)/quazip \
+	-I$(srctree)/cmark/src \
+	-I$(srctree)/cmark/build/src \
 	-I$(obj) \
+	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \
 	$(CXXFLAGS)
 
@@ -39,20 +62,28 @@ UPDATER_CXXFLAGS += -fobjc-arc
 UPDATER_LDFLAGS += -framework Sparkle -framework AppKit
 endif
 
-.PHONY: updater updater-clean
+.PHONY: all updater updater-clean
 
-updater: $(UPDATER_LIB)
+all: updater
+
+updater: $(UIC_HEADERS) $(UPDATER_LIB)
 
 $(UPDATER_LIB): $(UPDATER_OBJS) $(UPDATER_OBJCXX_OBJS) $(UPDATER_MOC_OBJS)
 	@echo "  AR      $@"
 	$(Q)$(AR) rcs $@ $^
+
+# UIC rules
+$(obj)/ui_%.h: $(srctree)/launcher/updater/projtupdater/%.ui
+	@mkdir -p $(dir $@)
+	@echo "  UIC     $<"
+	$(Q)$(UIC) -o $@ $<
 
 $(obj)/%.o: $(srctree)/launcher/updater/%.cpp
 	@mkdir -p $(dir $@)
 	@echo "  CXX     $<"
 	$(Q)$(CXX) $(UPDATER_CXXFLAGS) -c -o $@ $<
 
-$(obj)/%.o: $(srctree)/launcher/updater/projtupdater/%.cpp
+$(obj)/%.o: $(srctree)/launcher/updater/projtupdater/%.cpp | $(UIC_HEADERS)
 	@mkdir -p $(dir $@)
 	@echo "  CXX     $<"
 	$(Q)$(CXX) $(UPDATER_CXXFLAGS) -c -o $@ $<
