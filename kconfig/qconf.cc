@@ -35,7 +35,7 @@ static ConfigSettings *configSettings;
 QAction *ConfigMainWindow::saveAction;
 
 ConfigSettings::ConfigSettings()
-	: QSettings("kernel.org", "qconf")
+	: QSettings("projecttick.org", "projt-qconf")
 {
 	beginGroup("/kconfig/qconf");
 }
@@ -1753,7 +1753,7 @@ void ConfigMainWindow::showAbout(void)
 	static const QString str = "qconf is Copyright (C) 2002 Roman Zippel <zippel@linux-m68k.org>.\n"
 		"Copyright (C) 2015 Boris Barbulovski <bbarbulovski@gmail.com>.\n"
 		"\n"
-		"Bug reports and feature request can also be entered at http://bugzilla.kernel.org/\n"
+		"Bug reports and feature requests can also be entered at https://projecttick.org/\n"
 		"\n"
 		"Qt Version: ";
 

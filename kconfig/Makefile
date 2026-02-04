@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 # ===========================================================================
-# Kernel configuration targets
+# ProjT Launcher configuration targets
 # These targets are used from top-level makefile
 
 ifdef KBUILD_KCONFIG
@@ -17,6 +17,7 @@ ifeq ($(quiet),silent_)
 silent := -s
 endif
 
+ifndef KCONFIG_EMBEDDED
 export KCONFIG_DEFCONFIG_LIST :=
 ifndef cross_compiling
 kernel-release := $(shell uname -r)
@@ -26,6 +27,9 @@ KCONFIG_DEFCONFIG_LIST += \
 	/boot/config-$(kernel-release)
 endif
 KCONFIG_DEFCONFIG_LIST += arch/$(SRCARCH)/configs/$(KBUILD_DEFCONFIG)
+else
+export KCONFIG_DEFCONFIG_LIST :=
+endif
 
 ifneq ($(findstring c, $(KBUILD_EXTRA_WARN)),)
 export KCONFIG_WARN_UNKNOWN_SYMBOLS=1
@@ -126,6 +130,7 @@ testconfig: $(obj)/conf
 clean-files += tests/.cache
 
 # Help text used by make help
+ifndef KCONFIG_EMBEDDED
 help:
 	@echo  'Configuration targets:'
 	@echo  '  config	  - Update current config utilising a line-oriented program'
@@ -152,7 +157,7 @@ help:
 	@echo  '  helpnewconfig   - List new options and help text'
 	@echo  '  olddefconfig	  - Same as oldconfig but sets new symbols to their'
 	@echo  '                    default value without prompting'
-	@echo  '  tinyconfig	  - Configure the tiniest possible kernel'
+	@echo  '  tinyconfig	  - Configure the smallest possible build'
 	@echo  '  testconfig	  - Run Kconfig unit tests (requires python3 and pytest)'
 	@echo  ''
 	@echo  'Configuration topic targets:'
@@ -160,6 +165,7 @@ help:
 		if help=$$(grep -m1 '^# Help: ' $(f)); then \
 			printf '  %-25s - %s\n' '$(notdir $(f))' "$${help#*: }"; \
 		fi;)
+endif
 
 # ===========================================================================
 # object files used by all kconfig flavours
