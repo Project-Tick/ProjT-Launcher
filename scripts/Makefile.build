@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: GPL-2.0
+# ProjT Launcher - Kbuild Build Script
+#
+# This script is invoked for each subdirectory to build its objects.
+# Usage: make -f scripts/Makefile.build obj=<dir>
+
+src := $(obj)
+
+# Include Kbuild infrastructure
+include $(srctree)/scripts/Kbuild.include
+
+# Default target
+PHONY := __build
+__build:
+
+# Read the Makefile for this directory
+include $(srctree)/$(obj)/Makefile
+
+# Prefix all objects
+__obj-y := $(addprefix $(OBJDIR)/$(obj)/,$(obj-y))
+__lib-y := $(addprefix $(OBJDIR)/$(obj)/,$(lib-y))
+__subdir-y := $(addprefix $(obj)/,$(subdir-y))
+
+# Apply local flags
+$(__obj-y) $(__lib-y): CPPFLAGS += $(addprefix -I$(srctree)/,$(includes-y))
+$(__obj-y) $(__lib-y): CFLAGS += $(ccflags-y)
+$(__obj-y) $(__lib-y): CXXFLAGS += $(cxxflags-y)
+
+# Process subdirectories
+ifneq ($(strip $(__subdir-y)),)
+PHONY += $(addprefix __build-,$(subdir-y))
+__build: $(addprefix __build-,$(subdir-y))
+
+$(addprefix __build-,$(subdir-y)):
+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.build obj=$(obj)/$(patsubst __build-%,%,$@)
+endif
+
+# Build objects
+__build: $(__obj-y) $(__lib-y)
+
+# Export for parent
+$(obj)-objs := $(__obj-y)
+$(obj)-libs := $(__lib-y)
+
+.PHONY: $(PHONY)

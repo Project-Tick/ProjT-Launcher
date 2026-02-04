@@ -1,0 +1,192 @@
+# SPDX-License-Identifier: GPL-2.0
+# ProjT Launcher - Kbuild Core System
+#
+# This file provides Linux kernel-style Kbuild infrastructure.
+# Each subdirectory has its own Makefile with obj-y, lib-y etc.
+
+# ============================================================================
+# Kbuild Variables
+# ============================================================================
+
+# Object types
+obj-y :=
+obj-m :=
+lib-y :=
+lib-a :=
+always-y :=
+targets :=
+clean-files :=
+subdir-y :=
+
+# Qt specific
+moc-y :=
+uic-y :=
+qrc-y :=
+
+# ============================================================================
+# Build Functions
+# ============================================================================
+
+# Get the relative path from srctree
+# $(call relative-path,/full/path) -> relative/path
+relative-path = $(patsubst $(srctree)/%,%,$(1))
+
+# Build object file from source
+# $(call build-obj,source.cpp) -> $(OBJDIR)/path/source.o
+build-obj = $(OBJDIR)/$(call relative-path,$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$(patsubst %.cc,%.o,$(patsubst %.cxx,%.o,$(patsubst %.mm,%.o,$(1)))))))
+
+# Get all objects from sources
+# $(call src-to-objs,source1.cpp source2.c) -> obj1.o obj2.o
+src-to-objs = $(foreach src,$(1),$(call build-obj,$(src)))
+
+# Descend into subdirectory
+# $(call descend,subdir)
+define descend
+$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.build obj=$(1)
+endef
+
+# ============================================================================
+# Pattern for processing Kbuild files
+# ============================================================================
+
+# Process a Kbuild/Makefile in a directory
+# Inputs:
+#   obj - the directory to process (relative to srctree)
+#   src - same as obj usually
+#
+# Each Kbuild can define:
+#   obj-y     - objects to build into the final binary
+#   lib-y     - objects to build into a library
+#   subdir-y  - subdirectories to descend into
+#   moc-y     - headers needing Qt moc
+#   uic-y     - .ui files needing Qt uic
+#   qrc-y     - .qrc files needing Qt rcc
+#   CFLAGS_file.o    - extra CFLAGS for file.o
+#   CXXFLAGS_file.o  - extra CXXFLAGS for file.o
+#   ccflags-y        - extra flags for all files in this dir
+#   cxxflags-y       - extra flags for all C++ files
+
+# ============================================================================
+# Kbuild Target Templates
+# ============================================================================
+
+# Template for building objects in a directory
+define kbuild-objects
+# Include the Makefile for this directory
+include $(srctree)/$(1)/Makefile
+
+# Prefix objects with directory
+$(1)-objs := $$(addprefix $(OBJDIR)/$(1)/,$$(obj-y))
+$(1)-lib := $$(addprefix $(OBJDIR)/$(1)/,$$(lib-y))
+
+# Qt generated sources
+$(1)-moc-src := $$(patsubst %.h,$(GEN_DIR)/$(1)/moc_%.cpp,$$(notdir $$(moc-y)))
+$(1)-uic-hdr := $$(patsubst %.ui,$(GEN_DIR)/$(1)/ui_%.h,$$(notdir $$(uic-y)))
+$(1)-qrc-src := $$(patsubst %.qrc,$(GEN_DIR)/$(1)/qrc_%.cpp,$$(notdir $$(qrc-y)))
+
+# Generated object files
+$(1)-moc-objs := $$(patsubst %.cpp,$(OBJDIR)/generated/$(1)/%.o,$$(notdir $$($(1)-moc-src)))
+$(1)-qrc-objs := $$(patsubst %.cpp,$(OBJDIR)/generated/$(1)/%.o,$$(notdir $$($(1)-qrc-src)))
+
+# All objects for this directory
+$(1)-all-objs := $$($(1)-objs) $$($(1)-lib) $$($(1)-moc-objs) $$($(1)-qrc-objs)
+
+# Apply directory-specific flags
+$$($(1)-all-objs): CFLAGS += $$(ccflags-y)
+$$($(1)-all-objs): CXXFLAGS += $$(cxxflags-y)
+
+endef
+
+# ============================================================================
+# Recursive Build System
+# ============================================================================
+
+# List of all directories with Makefiles
+KBUILD_DIRS :=
+
+# Function to collect all Kbuild directories
+define collect-dirs
+KBUILD_DIRS += $(1)
+$$(foreach d,$$(subdir-y),\
+    $$(eval $$(call collect-dirs,$(1)/$$(d))))
+endef
+
+# ============================================================================
+# Build Rules
+# ============================================================================
+
+# Compile C file
+$(OBJDIR)/%.o: $(srctree)/%.c
+	@mkdir -p $(@D)
+	@echo "  CC      $<"
+	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) $(CFLAGS_$(@F)) -MMD -MP -c -o $@ $<
+
+# Compile C++ file  
+$(OBJDIR)/%.o: $(srctree)/%.cpp
+	@mkdir -p $(@D)
+	@echo "  CXX     $<"
+	$(Q)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXFLAGS_$(@F)) -MMD -MP -c -o $@ $<
+
+$(OBJDIR)/%.o: $(srctree)/%.cc
+	@mkdir -p $(@D)
+	@echo "  CXX     $<"
+	$(Q)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXFLAGS_$(@F)) -MMD -MP -c -o $@ $<
+
+$(OBJDIR)/%.o: $(srctree)/%.cxx
+	@mkdir -p $(@D)
+	@echo "  CXX     $<"
+	$(Q)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXFLAGS_$(@F)) -MMD -MP -c -o $@ $<
+
+# Compile Objective-C++ (macOS)
+$(OBJDIR)/%.o: $(srctree)/%.mm
+	@mkdir -p $(@D)
+	@echo "  OBJCXX  $<"
+	$(Q)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(OBJCXXFLAGS) -MMD -MP -c -o $@ $<
+
+# Compile generated sources
+$(OBJDIR)/generated/%.o: $(GEN_DIR)/%.cpp
+	@mkdir -p $(@D)
+	@echo "  CXX     $< (generated)"
+	$(Q)$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP -c -o $@ $<
+
+# ============================================================================
+# Qt Rules
+# ============================================================================
+
+# MOC rule
+$(GEN_DIR)/%/moc_%.cpp: $(srctree)/%/%.h
+	@mkdir -p $(@D)
+	@echo "  MOC     $<"
+	$(Q)$(QT_MOC) $(QT_MOC_FLAGS) -o $@ $<
+
+# UIC rule
+$(GEN_DIR)/%/ui_%.h: $(srctree)/%/%.ui
+	@mkdir -p $(@D)
+	@echo "  UIC     $<"
+	$(Q)$(QT_UIC) -o $@ $<
+
+# RCC rule
+$(GEN_DIR)/%/qrc_%.cpp: $(srctree)/%/%.qrc
+	@mkdir -p $(@D)
+	@echo "  RCC     $<"
+	$(Q)$(QT_RCC) --name $(basename $(@F:qrc_%.cpp=%)) -o $@ $<
+
+# ============================================================================
+# Library Rules
+# ============================================================================
+
+# Build static library
+define build-lib
+$(LIBDIR)/lib$(1).a: $$($(1)-all-objs)
+	@mkdir -p $$(@D)
+	@echo "  AR      $$@"
+	$(Q)$(AR) rcs $$@ $$^
+	$(Q)$(RANLIB) $$@ 2>/dev/null || true
+endef
+
+# ============================================================================
+# Dependency Handling
+# ============================================================================
+
+# Include all dependency files
+-include $(shell find $(OBJDIR) -name '*.d' 2>/dev/null)
