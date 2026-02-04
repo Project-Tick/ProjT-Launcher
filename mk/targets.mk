@@ -234,7 +234,7 @@ java-modules:
 # PHASE 6: LAUNCHER TARGETS
 # ============================================================================
 
-launcher-all: libs projt-modules launcher-submodules launcher-main
+launcher-all: libs projt-modules launcher-submodules launcher-main launcher-link
 
 launcher-submodules:
 	@echo "=== Building Launcher Submodules ==="
@@ -261,6 +261,49 @@ launcher-submodules:
 launcher-main: launcher-submodules
 	@echo "=== Building Launcher Main ==="
 	$(call build_local,launcher)
+
+# Final link step - create the executable
+launcher-link: launcher-main
+	@echo "=== Linking Final Executable ==="
+	$(Q)mkdir -p $(KBUILD_OUTPUT)/bin
+	$(Q)$(CXX) -o $(KBUILD_OUTPUT)/bin/projt-launcher \
+		-Wl,--whole-archive \
+		$(KBUILD_OUTPUT)/launcher/liblauncher.a \
+		$(KBUILD_OUTPUT)/ui/libui.a \
+		$(KBUILD_OUTPUT)/minecraft/libminecraft.a \
+		$(KBUILD_OUTPUT)/modplatform/libmodplatform.a \
+		$(KBUILD_OUTPUT)/net/libnet.a \
+		$(KBUILD_OUTPUT)/meta/libmeta.a \
+		$(KBUILD_OUTPUT)/java/libjava.a \
+		$(KBUILD_OUTPUT)/launch/liblaunch.a \
+		$(KBUILD_OUTPUT)/settings/libsettings.a \
+		$(KBUILD_OUTPUT)/tasks/libtasks.a \
+		$(KBUILD_OUTPUT)/tools/libtools.a \
+		$(KBUILD_OUTPUT)/translations/libtranslations.a \
+		$(KBUILD_OUTPUT)/logs/liblogs.a \
+		$(KBUILD_OUTPUT)/news/libnews.a \
+		$(KBUILD_OUTPUT)/screenshots/libscreenshots.a \
+		$(KBUILD_OUTPUT)/icons/libicons.a \
+		$(KBUILD_OUTPUT)/console/libconsole.a \
+		$(KBUILD_OUTPUT)/resources/libresources.a \
+		-Wl,--no-whole-archive \
+		$(KBUILD_OUTPUT)/lib/libbuildconfig.a \
+		$(KBUILD_OUTPUT)/lib/libsysteminfo.a \
+		$(KBUILD_OUTPUT)/lib/libquazip.a \
+		$(KBUILD_OUTPUT)/lib/liblocalpeer.a \
+		$(KBUILD_OUTPUT)/lib/libqdcss.a \
+		$(KBUILD_OUTPUT)/lib/librainbow.a \
+		$(KBUILD_OUTPUT)/lib/libqrencode.a \
+		$(KBUILD_OUTPUT)/lib/libnbt++.a \
+		$(KBUILD_OUTPUT)/lib/libpng.a \
+		$(KBUILD_OUTPUT)/lib/libmurmur2.a \
+		$(KBUILD_OUTPUT)/lib/libbz2.a \
+		-L$(srctree)/cmark/build/src -lcmark \
+		$(QT_LIBS) \
+		-L$(QT_INSTALL_PREFIX)/lib -lQt6OpenGLWidgets -lQt6OpenGL -lQt6NetworkAuth -lQt6Xml \
+		-lz -lpthread -ldl \
+		-Wl,-rpath,'$$ORIGIN/../lib'
+	@echo "  LINK    $(KBUILD_OUTPUT)/bin/projt-launcher"
 
 # ============================================================================
 # TEST TARGETS

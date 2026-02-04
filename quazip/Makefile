@@ -22,7 +22,10 @@ lib-y := \
 	quazip/quazipfileinfo.o \
 	quazip/quazipnewinfo.o \
 	quazip/unzip.o \
-	quazip/zip.o
+	quazip/zip.o \
+	moc_quagzipfile.o \
+	moc_quaziodevice.o \
+	moc_quazipfile.o
 
 # Include paths
 includes-y := quazip zlib bzip2
@@ -42,6 +45,38 @@ qt-modules-y := Core
 
 # Dependencies
 deps-y := zlib bzip2
+
+# Qt tools
+QT_PREFIX ?= $(KBUILD_OUTPUT)/obj/qt/install
+MOC := $(QT_PREFIX)/libexec/moc
+
+# MOC rules
+$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quagzipfile.cpp: quazip/quagzipfile.h
+	@echo "  MOC     $<"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(MOC) $(QT_CFLAGS) $< -o $@
+
+$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quaziodevice.cpp: quazip/quaziodevice.h
+	@echo "  MOC     $<"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(MOC) $(QT_CFLAGS) $< -o $@
+
+$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quazipfile.cpp: quazip/quazipfile.h
+	@echo "  MOC     $<"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(MOC) $(QT_CFLAGS) $< -o $@
+
+$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quagzipfile.o: $(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quagzipfile.cpp
+	@echo "  CXX     $<"
+	$(Q)$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -c -o $@ $<
+
+$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quaziodevice.o: $(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quaziodevice.cpp
+	@echo "  CXX     $<"
+	$(Q)$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -c -o $@ $<
+
+$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quazipfile.o: $(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quazipfile.cpp
+	@echo "  CXX     $<"
+	$(Q)$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -c -o $@ $<
 
 # Include common build rules
 include $(srctree)/mk/module.mk

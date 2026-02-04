@@ -261,6 +261,36 @@ $(obj)/moc_%.cpp: $(srctree)/launcher/ui/pages/%.h
 	@echo "  MOC     $<"
 	$(Q)$(MOC) $(QT_DEFINES) $(MOC_INCLUDES) -o $@ $<
 
+$(obj)/moc_%.cpp: $(srctree)/launcher/ui/pages/global/%.h
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) $(MOC_INCLUDES) -o $@ $<
+
+$(obj)/moc_%.cpp: $(srctree)/launcher/ui/pages/instance/%.h
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) $(MOC_INCLUDES) -o $@ $<
+
+$(obj)/moc_%.cpp: $(srctree)/launcher/ui/pages/modplatform/%.h
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) $(MOC_INCLUDES) -o $@ $<
+
+$(obj)/moc_%.cpp: $(srctree)/launcher/ui/dialogs/skins/%.h
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) $(MOC_INCLUDES) -o $@ $<
+
+$(obj)/moc_%.cpp: $(srctree)/launcher/ui/java/%.h
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) $(MOC_INCLUDES) -o $@ $<
+
+$(obj)/moc_%.cpp: $(srctree)/launcher/ui/tasks/%.h
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) $(MOC_INCLUDES) -o $@ $<
+
 $(obj)/moc_%.cpp: $(srctree)/launcher/ui/setupwizard/%.h
 	@mkdir -p $(dir $@)
 	@echo "  MOC     $<"

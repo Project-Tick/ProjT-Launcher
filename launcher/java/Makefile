@@ -37,9 +37,15 @@ JAVA_SRCS := $(JAVA_CORE_SRCS) $(JAVA_DOWNLOAD_SRCS) $(JAVA_SERVICES_SRCS)
 JAVA_OBJS := $(addprefix $(obj)/, $(JAVA_SRCS:.cpp=.o))
 JAVA_LIB := $(obj)/libjava.a
 
-# Find MOC headers
-JAVA_MOC_HEADERS := $(shell find $(srctree)/launcher/java -name '*.h' -exec grep -l Q_OBJECT {} \; 2>/dev/null)
-JAVA_MOC_SRCS := $(patsubst $(srctree)/launcher/java/%.h,$(obj)/moc_%.cpp,$(JAVA_MOC_HEADERS))
+# MOC headers (Qt Q_OBJECT classes)
+JAVA_MOC_HEADERS := \
+	services/RuntimeCatalog.hpp \
+	services/RuntimeProbeTask.hpp \
+	download/RuntimeArchiveTask.hpp \
+	download/RuntimeLinkTask.hpp \
+	download/RuntimeManifestTask.hpp
+
+JAVA_MOC_SRCS := $(patsubst %.hpp,$(obj)/moc_%.cpp,$(notdir $(JAVA_MOC_HEADERS)))
 JAVA_MOC_OBJS := $(JAVA_MOC_SRCS:.cpp=.o)
 
 JAVA_CXXFLAGS := \
@@ -85,11 +91,34 @@ $(obj)/%.o: $(srctree)/launcher/java/%.cpp
 	@echo "  CXX     $<"
 	$(Q)$(CXX) $(JAVA_CXXFLAGS) -c -o $@ $<
 
-$(obj)/moc_%.cpp: $(srctree)/launcher/java/%.h
+# MOC rules for services/*.hpp
+$(obj)/moc_RuntimeCatalog.cpp: $(srctree)/launcher/java/services/RuntimeCatalog.hpp
 	@mkdir -p $(dir $@)
 	@echo "  MOC     $<"
-	$(Q)$(MOC) $(QT_DEFINES) -o $@ $<
+	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/launcher -o $@ $<
 
+$(obj)/moc_RuntimeProbeTask.cpp: $(srctree)/launcher/java/services/RuntimeProbeTask.hpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/launcher -o $@ $<
+
+# MOC rules for download/*.hpp
+$(obj)/moc_RuntimeArchiveTask.cpp: $(srctree)/launcher/java/download/RuntimeArchiveTask.hpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/launcher -o $@ $<
+
+$(obj)/moc_RuntimeLinkTask.cpp: $(srctree)/launcher/java/download/RuntimeLinkTask.hpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/launcher -o $@ $<
+
+$(obj)/moc_RuntimeManifestTask.cpp: $(srctree)/launcher/java/download/RuntimeManifestTask.hpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/launcher -o $@ $<
+
+# Compile MOC outputs
 $(obj)/moc_%.o: $(obj)/moc_%.cpp
 	@echo "  CXX     $<"
 	$(Q)$(CXX) $(JAVA_CXXFLAGS) -c -o $@ $<

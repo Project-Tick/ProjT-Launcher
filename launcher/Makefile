@@ -12,6 +12,23 @@
 -include $(srctree)/.config
 -include $(srctree)/scripts/Kbuild.include
 
+# Qt tools
+MOC ?= $(QT_MOC)
+UIC ?= $(QT_UIC)
+RCC ?= $(QT_RCC)
+
+# Qt MOC include paths (for resolving dependencies in headers)
+MOC_INCLUDES := \
+	-I$(QT_PREFIX)/include \
+	-I$(QT_PREFIX)/include/QtCore \
+	-I$(QT_PREFIX)/include/QtWidgets \
+	-I$(QT_PREFIX)/include/QtGui \
+	-I$(QT_PREFIX)/include/QtNetwork \
+	-I$(srctree)/launcher/tasks \
+	-I$(srctree)/quazip \
+	-I$(srctree)/quazip/quazip \
+	-I$(srctree)/include
+
 # Object output directory
 obj := $(KBUILD_OUTPUT)/launcher
 
@@ -681,22 +698,16 @@ LAUNCHER_SRCS := \
 	$(ui-themes-y) \
 	$(ui-widgets-y)
 
-# Generate object file list
-LAUNCHER_OBJS := $(addprefix $(obj)/, $(LAUNCHER_SRCS:.cpp=.o))
-LAUNCHER_OBJS := $(LAUNCHER_OBJS:.mm=.o)
+# Generate object file list (only core files - subdirs have their own Makefiles)
+LAUNCHER_OBJS := $(addprefix $(obj)/, $(core-y:.cpp=.o))
 
-# MOC headers (classes with Q_OBJECT macro)
+# MOC headers (only root launcher/ headers)
 MOC_HEADERS := $(shell grep -l Q_OBJECT $(srctree)/launcher/*.h 2>/dev/null)
-MOC_HEADERS += $(shell find $(srctree)/launcher -name '*.h' -exec grep -l Q_OBJECT {} \; 2>/dev/null)
 MOC_SRCS := $(patsubst $(srctree)/launcher/%.h,$(obj)/moc_%.cpp,$(MOC_HEADERS))
 MOC_OBJS := $(MOC_SRCS:.cpp=.o)
 
-# UIC generated headers
-UIC_HEADERS := $(patsubst %.ui,$(obj)/ui_%.h,$(notdir $(UI_FILES)))
-
-# RCC generated sources  
-RCC_SRCS := $(patsubst %.qrc,$(obj)/qrc_%.cpp,$(notdir $(QRC_FILES)))
-RCC_OBJS := $(RCC_SRCS:.cpp=.o)
+# UIC and RCC are handled by subdirectory Makefiles (launcher/ui, launcher/resources)
+# Core launcher files don't need them directly
 
 # ============================================================================
 # COMPILER FLAGS
@@ -704,7 +715,26 @@ RCC_OBJS := $(RCC_SRCS:.cpp=.o)
 LAUNCHER_CXXFLAGS := \
 	-I$(srctree)/launcher \
 	-I$(srctree)/include \
+	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/libnbtplusplus/include \
+	-I$(srctree)/quazip/quazip \
+	-I$(srctree)/quazip \
+	-I$(srctree)/qdcss/include \
+	-I$(srctree)/tomlplusplus/include \
+	-I$(srctree)/LocalPeer/include \
+	-I$(srctree)/rainbow/include \
+	-I$(srctree)/cmark/src \
+	-I$(srctree)/cmark/build/src \
+	-I$(srctree)/murmur2/src \
+	-I$(srctree)/gamemode/lib \
+	-I$(srctree)/systeminfo/include \
+	-I$(srctree)/libqrencode \
+	-I$(KBUILD_OUTPUT)/ui \
+	-I$(QT_PREFIX)/include/QtConcurrent \
+	-I$(QT_PREFIX)/include/QtNetworkAuth \
+	-I$(QT_PREFIX)/include/QtXml \
 	-I$(obj) \
+	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \
 	$(CXXFLAGS)
 
@@ -715,21 +745,24 @@ LAUNCHER_LDFLAGS := \
 # ============================================================================
 # BUILD TARGETS
 # ============================================================================
-.PHONY: launcher launcher-clean launcher-install
+.PHONY: all launcher launcher-clean launcher-install
+
+all: launcher
 
 # Main target
 launcher: $(obj)/liblauncher.a
 
-# Static library for linking
-$(obj)/liblauncher.a: $(LAUNCHER_OBJS) $(MOC_OBJS) $(RCC_OBJS)
+# Static library for linking (core files only)
+$(obj)/liblauncher.a: $(LAUNCHER_OBJS) $(MOC_OBJS)
 	@echo "  AR      $@"
 	$(Q)$(AR) rcs $@ $^
 
 # Pattern rule for C++ compilation
-$(obj)/%.o: $(srctree)/launcher/%.cpp | $(UIC_HEADERS)
+# -I$(obj) ensures inline moc files can be found
+$(obj)/%.o: $(srctree)/launcher/%.cpp
 	@mkdir -p $(dir $@)
 	@echo "  CXX     $<"
-	$(Q)$(CXX) $(LAUNCHER_CXXFLAGS) -c -o $@ $<
+	$(Q)$(CXX) $(LAUNCHER_CXXFLAGS) -I$(obj) -c -o $@ $<
 
 # Pattern rule for Objective-C++ (macOS)
 $(obj)/%.o: $(srctree)/launcher/%.mm
@@ -737,16 +770,26 @@ $(obj)/%.o: $(srctree)/launcher/%.mm
 	@echo "  OBJCXX  $<"
 	$(Q)$(CXX) $(LAUNCHER_CXXFLAGS) -ObjC++ -c -o $@ $<
 
-# MOC processing
+# MOC processing for headers
 $(obj)/moc_%.cpp: $(srctree)/launcher/%.h
 	@mkdir -p $(dir $@)
 	@echo "  MOC     $<"
-	$(Q)$(MOC) $(QT_DEFINES) -I$(srctree)/launcher -o $@ $<
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher -I$(srctree) $(MOC_INCLUDES) -o $@ $<
 
 $(obj)/moc_%.o: $(obj)/moc_%.cpp
 	@mkdir -p $(dir $@)
 	@echo "  CXX     $<"
 	$(Q)$(CXX) $(LAUNCHER_CXXFLAGS) -c -o $@ $<
+
+# Inline MOC processing for cpp files (generates .moc from .cpp)
+$(obj)/%.moc: $(srctree)/launcher/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $< (inline)"
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher -I$(srctree) $(MOC_INCLUDES) -o $@ $<
+
+# Inline MOC dependencies
+$(obj)/InstanceList.o: $(obj)/InstanceList.moc
+$(obj)/VersionProxyModel.o: $(obj)/VersionProxyModel.moc
 
 # UIC processing
 $(obj)/ui_%.h: $(srctree)/launcher/ui/%.ui

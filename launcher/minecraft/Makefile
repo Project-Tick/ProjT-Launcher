@@ -72,8 +72,9 @@ MC_LIB := $(obj)/libminecraft.a
 
 # MOC processing
 MC_MOC_HEADERS := $(shell find $(srctree)/launcher/minecraft -name '*.h' -o -name '*.hpp' | xargs grep -l Q_OBJECT 2>/dev/null)
-MC_MOC_SRCS := $(patsubst $(srctree)/launcher/minecraft/%.h,$(obj)/moc_%.cpp,$(filter %.h,$(MC_MOC_HEADERS)))
-MC_MOC_SRCS += $(patsubst $(srctree)/launcher/minecraft/%.hpp,$(obj)/moc_%.cpp,$(filter %.hpp,$(MC_MOC_HEADERS)))
+
+# Generate MOC source file names - extract just the base filename
+MC_MOC_SRCS := $(foreach h,$(MC_MOC_HEADERS),$(obj)/moc_$(notdir $(basename $(h))).cpp)
 MC_MOC_OBJS := $(MC_MOC_SRCS:.cpp=.o)
 
 # Inline MOC files (included directly in cpp files)
@@ -121,16 +122,40 @@ $(obj)/%.o: $(srctree)/launcher/minecraft/%.cpp
 	@echo "  CXX     $<"
 	$(Q)$(CXX) $(MC_CXXFLAGS) -c -o $@ $<
 
-# MOC rules
+# MOC rules - root level .h files
 $(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/%.h
 	@mkdir -p $(dir $@)
 	@echo "  MOC     $<"
-	$(Q)$(MOC) $(QT_DEFINES) -I$(srctree)/launcher/minecraft -o $@ $<
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
 
 $(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/%.hpp
 	@mkdir -p $(dir $@)
 	@echo "  MOC     $<"
-	$(Q)$(MOC) $(QT_DEFINES) -I$(srctree)/launcher/minecraft -o $@ $<
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
+
+# MOC rules for auth/*.hpp
+$(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/auth/%.hpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
+
+# MOC rules for auth/steps/*.hpp
+$(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/auth/steps/%.hpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
+
+# MOC rules for skins/*.h
+$(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/skins/%.h
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
+
+# MOC rules for update/*.h
+$(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/update/%.h
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
 
 $(obj)/moc_%.o: $(obj)/moc_%.cpp
 	@echo "  CXX     $<"
