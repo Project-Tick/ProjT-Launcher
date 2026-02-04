@@ -275,16 +275,14 @@ void tst_Android::safeAreaWithWindowFlagsAndStates()
     using namespace QtJniTypes;
     const int sdkVersion = QNativeInterface::QAndroidApplication::sdkVersion();
     auto activity = QNativeInterface::QAndroidApplication::context();
-
-    // Android 15 enables edge-to-edge by default.
-    bool edgeToEdge = sdkVersion >= __ANDROID_API_V__;
+    Window window = activity.callMethod<Window>("getWindow");
+    View decorView = window.callMethod<View>("getDecorView");
+    WindowInsets insets = decorView.callMethod<WindowInsets>("getRootWindowInsets");
+    QVERIFY(insets.isValid());
 
     // Detect camera cutout
     bool cameraCutout = false;
     if (sdkVersion >= __ANDROID_API_R__) {
-        Window window = activity.callMethod<Window>("getWindow");
-        View decorView = window.callMethod<View>("getDecorView");
-        WindowInsets insets = decorView.callMethod<WindowInsets>("getRootWindowInsets");
         if (insets.isValid()) {
             DisplayCutout cutout = insets.callMethod<DisplayCutout>("getDisplayCutout");
             if (cutout.isValid()) {
@@ -300,14 +298,27 @@ void tst_Android::safeAreaWithWindowFlagsAndStates()
         cameraCutout = true;
     }
 
-    const bool runsOnCI = qgetenv("QTEST_ENVIRONMENT").split(' ').contains("ci");
-    if (sdkVersion >= __ANDROID_API_V__ && runsOnCI) {
-        // However on CI, Android 15 and later doesn't enable edge-to-edge.
-        edgeToEdge = false;
+    int topStableInset = 0;
+    if (sdkVersion >= __ANDROID_API_R__) {
+        jint systemBarsType = WindowInsetsType::callStaticMethod<jint>("systemBars");
+        jint displayCutoutType = WindowInsetsType::callStaticMethod<jint>("displayCutout");
+        jint combinedType = systemBarsType | displayCutoutType;
+
+        GraphicsInsets insetsIgnoreVisibility = insets.callMethod<GraphicsInsets>(
+            "getInsetsIgnoringVisibility", combinedType);
+        QVERIFY(insetsIgnoreVisibility.isValid());
+        topStableInset = insetsIgnoreVisibility.getField<jint>("top");
+    } else {
+        topStableInset = insets.callMethod<jint>("getStableInsetTop");
     }
+
+    // Android 15 enables edge-to-edge by default, however not on Qt CI, so let's rely on
+    // the reported top stable inset of decor view to judge whether edge-to-edge is enabled.
+    bool edgeToEdge = sdkVersion >= __ANDROID_API_V__ && topStableInset != 0;
 
     const bool expandedClientArea = windowFlags & Qt::ExpandedClientAreaHint;
     const bool normalMode = !expandedClientArea && !fullscreen;
+
     if ((normalMode && !edgeToEdge) || (fullscreen && !cameraCutout)) {
         QTRY_COMPARE(widget.windowHandle()->safeAreaMargins(), QMargins());
     } else {
@@ -316,28 +327,10 @@ void tst_Android::safeAreaWithWindowFlagsAndStates()
         // Make sure the margins we get are the same as the system bars sizes,
         // that way we make sure we don't end up with margins bigger than expected.
         // So, retrieve the static system bars height.
-        Window window = activity.callMethod<Window>("getWindow");
-        View decorView = window.callMethod<View>("getDecorView");
-        WindowInsets insets = decorView.callMethod<WindowInsets>("getRootWindowInsets");
-        QVERIFY(insets.isValid());
 
         // Other margins can vary between Android versions, so let's only check for top
-        int top = 0;
-        if (sdkVersion >= __ANDROID_API_R__) {
-            jint systemBarsType = WindowInsetsType::callStaticMethod<jint>("systemBars");
-            jint displayCutoutType = WindowInsetsType::callStaticMethod<jint>("displayCutout");
-            jint combinedType = systemBarsType | displayCutoutType;
-
-            GraphicsInsets insetsIgnoreVisibility = insets.callMethod<GraphicsInsets>(
-                "getInsetsIgnoringVisibility", combinedType);
-            QVERIFY(insetsIgnoreVisibility.isValid());
-            top = insetsIgnoreVisibility.getField<jint>("top");
-        } else {
-            top    = insets.callMethod<jint>("getStableInsetTop");
-        }
-
         qreal dpr = widget.devicePixelRatio();
-        QCOMPARE_LE(widget.windowHandle()->safeAreaMargins().top(), qRound(top / dpr));
+        QCOMPARE_LE(widget.windowHandle()->safeAreaMargins().top(), qRound(topStableInset / dpr));
     }
 }
 
@@ -353,28 +346,54 @@ void tst_Android::testFullScreenDimensions()
 
     QJniObject windowManager = activity.callMethod<QtJniTypes::WindowManager>("getWindowManager");
     QVERIFY(windowManager.isValid());
-
-    QJniObject display = windowManager.callMethod<QtJniTypes::Display>("getDefaultDisplay");
+    auto display = windowManager.callMethod<QtJniTypes::Display>("getDefaultDisplay");
     QVERIFY(display.isValid());
 
-    QSize appSize;
     const int sdkVersion = QNativeInterface::QAndroidApplication::sdkVersion();
-    if (sdkVersion >= __ANDROID_API_R__) {
-        using namespace QtJniTypes;
-        auto windowMetrics = windowManager.callMethod<WindowMetrics>("getCurrentWindowMetrics");
-        auto bounds = windowMetrics.callMethod<Rect>("getBounds");
-        appSize.setWidth(bounds.callMethod<int>("width"));
-        appSize.setHeight(bounds.callMethod<int>("height"));
-    } else {
-        QtJniTypes::Point jappSize{};
-        display.callMethod<void>("getSize", jappSize);
-        appSize.setWidth(jappSize.getField<jint>("x"));
-        appSize.setHeight(jappSize.getField<jint>("y"));
-    }
 
-    QtJniTypes::Point realSize{};
-    QVERIFY(realSize.isValid());
-    display.callMethod<void>("getRealSize", realSize);
+    auto appSize = [=]() {
+        if (sdkVersion >= __ANDROID_API_R__) {
+            using namespace QtJniTypes;
+            auto windowMetrics = windowManager.callMethod<WindowMetrics>("getCurrentWindowMetrics");
+            auto bounds = windowMetrics.callMethod<Rect>("getBounds");
+            return QSize(bounds.callMethod<int>("width"), bounds.callMethod<int>("height"));
+        } else {
+            QtJniTypes::Point jappSize{};
+            display.callMethod<void>("getSize", jappSize);
+            return QSize(jappSize.getField<jint>("x"), jappSize.getField<jint>("y"));
+        }
+    }();
+
+    auto realSize = [=]() {
+        QtJniTypes::Point jrealSize{};
+        display.callMethod<void>("getRealSize", jrealSize);
+        return QSize(jrealSize.getField<jint>("x"), jrealSize.getField<jint>("y"));
+    }();
+
+    auto targetSdkVersion = [=]() {
+        const auto appContext = activity.callMethod<QtJniTypes::Context>("getApplicationContext");
+        const auto appInfo = appContext.callMethod<QtJniTypes::ApplicationInfo>("getApplicationInfo");
+        return appInfo.getField<jint>("targetSdkVersion");
+    }();
+
+    auto insetsSize = [=]() {
+        auto window = activity.callMethod<QtJniTypes::Window>("getWindow");
+        auto decorView = window.callMethod<QtJniTypes::View>("getDecorView");
+        auto insets = decorView.callMethod<QtJniTypes::WindowInsets>("getRootWindowInsets");
+
+        if (sdkVersion >= __ANDROID_API_V__  && targetSdkVersion >= __ANDROID_API_V__) {
+            // Android 15 apps take all screen geomtry with edge-to-edge
+            return QSize(0, 0);
+        } else {
+            // pre-Android 15 app size is screen size minus the system bars
+            int insetRight = insets.callMethod<jint>("getSystemWindowInsetRight");
+            int insetLeft = insets.callMethod<jint>("getSystemWindowInsetLeft");
+            int insetTop = insets.callMethod<jint>("getSystemWindowInsetTop");
+            int insetBottom = insets.callMethod<jint>("getSystemWindowInsetBottom");
+
+            return QSize(insetRight + insetLeft, insetTop + insetBottom);
+        }
+    }();
 
     QWidget widget;
     QPalette palette = widget.palette();
@@ -383,93 +402,38 @@ void tst_Android::testFullScreenDimensions()
     widget.setPalette(palette);
     QPlatformScreen *screen = QGuiApplication::primaryScreen()->handle();
     {
-        // Normal -
-        // available geometry == app size (system bars visible and removed from available geometry)
+        // Normal Window
+        // available geometry == app size (depending on the Android version)
         widget.showNormal();
-        QCoreApplication::processEvents();
-
-        int expectedWidth;
-        int expectedHeight;
-
-        const auto appContext = activity.callMethod<QtJniTypes::Context>("getApplicationContext");
-        const auto appInfo = appContext.callMethod<QtJniTypes::ApplicationInfo>("getApplicationInfo");
-        const int targetSdkVersion = appInfo.getField<jint>("targetSdkVersion");
-
-        if (sdkVersion >= __ANDROID_API_V__  && targetSdkVersion >= __ANDROID_API_V__) {
-            expectedWidth = appSize.width();
-            expectedHeight = appSize.height();
-        } else {
-            QJniObject window = activity.callMethod<QtJniTypes::Window>("getWindow");
-            QVERIFY(window.isValid());
-
-            QJniObject decorView = window.callMethod<QtJniTypes::View>("getDecorView");
-            QVERIFY(decorView.isValid());
-
-            auto insets = decorView.callMethod<QtJniTypes::WindowInsets>("getRootWindowInsets");
-            QVERIFY(insets.isValid());
-
-            int insetRight = insets.callMethod<jint>("getSystemWindowInsetRight");
-            int insetLeft = insets.callMethod<jint>("getSystemWindowInsetLeft");
-            int insetsWidth = insetRight + insetLeft;
-
-            int insetTop = insets.callMethod<jint>("getSystemWindowInsetTop");
-            int insetBottom = insets.callMethod<jint>("getSystemWindowInsetBottom");
-            int insetsHeight = insetTop + insetBottom;
-
-            expectedWidth = appSize.width() - insetsWidth;
-            expectedHeight = appSize.height() - insetsHeight;
-        }
-
-        QTRY_COMPARE(screen->availableGeometry().width(), expectedWidth);
-        QTRY_COMPARE(screen->availableGeometry().height(), expectedHeight);
-
-        QTRY_COMPARE(screen->geometry().width(), realSize.getField<jint>("x"));
-        QTRY_COMPARE(screen->geometry().height(), realSize.getField<jint>("y"));
+        QTRY_COMPARE(screen->availableGeometry().size(), appSize - insetsSize);
+        QTRY_COMPARE(screen->geometry().size(), realSize);
     }
 
     {
-        // Fullscreen
+        // Fullscreen Window
         // available geometry == full display size (system bars hidden)
         widget.showFullScreen();
-        QCoreApplication::processEvents();
-        QTRY_COMPARE(screen->availableGeometry().width(), realSize.getField<jint>("x"));
-        QTRY_COMPARE(screen->availableGeometry().height(), realSize.getField<jint>("y"));
-
-        QTRY_COMPARE(screen->geometry().width(), realSize.getField<jint>("x"));
-        QTRY_COMPARE(screen->geometry().height(), realSize.getField<jint>("y"));
+        QTRY_COMPARE(screen->availableGeometry().size(), realSize);
+        QTRY_COMPARE(screen->geometry().size(), realSize);
         widget.showNormal();
     }
 
-    // TODO needs fix to work in local and CI on same fashion
-    const bool runsOnCI = qgetenv("QTEST_ENVIRONMENT").split(' ').contains("ci");
     {
-        // Translucent
+        // Window with Qt::ExpandedClientAreaHint
         // available geometry == full display size (system bars visible but drawable under)
         widget.setWindowFlags(widget.windowFlags() | Qt::ExpandedClientAreaHint);
         widget.show();
-        QCoreApplication::processEvents();
-        QTRY_COMPARE(screen->availableGeometry().width(), realSize.getField<jint>("x"));
-        if ((sdkVersion > __ANDROID_API_V__) && runsOnCI)
-            QEXPECT_FAIL("", "Fails on Android 16 (QTBUG-141712).", Continue);
-        QTRY_COMPARE(screen->availableGeometry().height(), realSize.getField<jint>("y"));
-
-        QTRY_COMPARE(screen->geometry().width(), realSize.getField<jint>("x"));
-        QTRY_COMPARE(screen->geometry().height(), realSize.getField<jint>("y"));
+        QTRY_COMPARE(screen->availableGeometry().size(), realSize);
+        QTRY_COMPARE(screen->geometry().size(), realSize);
         widget.showNormal();
     }
 
     {
-        // Translucent
+        // Maximized Window
         // available geometry == full display size (system bars visible but drawable under)
         widget.showMaximized();
-        QCoreApplication::processEvents();
-        QTRY_COMPARE(screen->availableGeometry().width(), realSize.getField<jint>("x"));
-        if ((sdkVersion > __ANDROID_API_V__) && runsOnCI)
-            QEXPECT_FAIL("", "Fails on Android 16 (QTBUG-141712).", Continue);
-        QTRY_COMPARE(screen->availableGeometry().height(), realSize.getField<jint>("y"));
-
-        QTRY_COMPARE(screen->geometry().width(), realSize.getField<jint>("x"));
-        QTRY_COMPARE(screen->geometry().height(), realSize.getField<jint>("y"));
+        QTRY_COMPARE(screen->availableGeometry().size(), realSize);
+        QTRY_COMPARE(screen->geometry().size(), realSize);
     }
 }
 

@@ -956,8 +956,8 @@ QByteArray QJniObject::className() const
     jint size = myJavaString.callMethod<jint>("length");
     \endcode
 
-    The method signature is deduced at compile time from Ret and the types
-    of \a args. Ret can be a \c{std::expected}-compatible type that returns
+    The method signature is deduced at compile time from \c Ret and the types
+    of \a args. \c Ret can be a \c{std::expected}-compatible type that returns
     a value, or \l{Handling Java Exceptions}{any Java exception thrown} by the
     called method.
 */
@@ -990,8 +990,8 @@ QByteArray QJniObject::className() const
     jint value = QJniObject::callStaticMethod<jint>("MyClass", "staticMethod");
     \endcode
 
-    The method signature is deduced at compile time from Ret and the types
-    of \a args. Ret can be a \c{std::expected}-compatible type that returns
+    The method signature is deduced at compile time from \c Ret and the types
+    of \a args. \c Ret can be a \c{std::expected}-compatible type that returns
     a value, or \l{Handling Java Exceptions}{any Java exception thrown} by the
     called method.
 */
@@ -1050,8 +1050,8 @@ QByteArray QJniObject::className() const
     jdouble randNr = QJniObject::callStaticMethod<jdouble>(javaMathClass, "random");
     \endcode
 
-    The method signature is deduced at compile time from Ret and the types
-    of \a args. Ret can be a \c{std::expected}-compatible type that returns
+    The method signature is deduced at compile time from \c Ret and the types
+    of \a args. \c Ret can be a \c{std::expected}-compatible type that returns
     a value, or \l{Handling Java Exceptions}{any Java exception thrown} by the
     called method.
 */
@@ -1064,9 +1064,9 @@ QByteArray QJniObject::className() const
     Ret (unless Ret is \c void).  If Ret is a jobject type, then the returned value will
     be a QJniObject.
 
-    The method signature is deduced at compile time from Ret and the types
+    The method signature is deduced at compile time from \c Ret and the types
     of \a args. \c Klass needs to be a C++ type with a registered type mapping
-    to a Java type. Ret can be a \c{std::expected}-compatible type that
+    to a Java type. \c Ret can be a \c{std::expected}-compatible type that
     returns a value, or \l{Handling Java Exceptions}{any Java exception thrown}
     by the called method.
 
@@ -1198,8 +1198,8 @@ QJniObject QJniObject::callStaticObjectMethod(jclass clazz, jmethodID methodId, 
     QJniObject myJavaString2 = myJavaString1.callObjectMethod<jstring>("toString");
     \endcode
 
-    The method signature is deduced at compile time from Ret and the types
-    of \a args. Ret can be a \c{std::expected}-compatible type that returns
+    The method signature is deduced at compile time from \c Ret and the types
+    of \a args. \c Ret can be a \c{std::expected}-compatible type that returns
     a value, or \l{Handling Java Exceptions}{any Java exception thrown} by the
     called method.
 */
@@ -1215,8 +1215,8 @@ QJniObject QJniObject::callStaticObjectMethod(jclass clazz, jmethodID methodId, 
     QJniObject string = QJniObject::callStaticObjectMethod<jstring>("CustomClass", "getClassName");
     \endcode
 
-    The method signature is deduced at compile time from Ret and the types
-    of \a args. Ret can be a \c{std::expected}-compatible type that returns
+    The method signature is deduced at compile time from \c Ret and the types
+    of \a args. \c Ret can be a \c{std::expected}-compatible type that returns
     a value, or \l{Handling Java Exceptions}{any Java exception thrown} by the
     called method.
 */

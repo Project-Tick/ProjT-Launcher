@@ -759,11 +759,10 @@ void printLogcatCrash(const QByteArray &logcat)
                       "using the ANDROID_NDK_ROOT environment variable.";
     }
 
-    if (!crashLogcat.startsWith("********** Crash dump")) {
+    if (!crashLogcat.startsWith("********** Crash dump"))
         qDebug() << "[androidtestrunner] ********** BEGIN crash dump **********";
-        qDebug().noquote() << crashLogcat.trimmed();
-        qDebug() << "[androidtestrunner] ********** END crash dump **********";
-    }
+    qDebug().noquote() << crashLogcat.trimmed();
+    qDebug() << "[androidtestrunner] ********** END crash dump **********";
 }
 
 void analyseLogcat(const QString &timeStamp, int *exitCode)

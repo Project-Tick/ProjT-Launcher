@@ -191,16 +191,6 @@ public:
     constexpr Q_IMPLICIT partial_ordering(std::partial_ordering stdorder) noexcept
         : m_order{} // == equivalent
     {
-#ifdef __cpp_lib_bit_cast
-        if constexpr (QtOrderingPrivate::OrderingValuesAreEqual) {
-            m_order = std::bit_cast<QtPrivate::CompareUnderlyingType>(stdorder);
-            if constexpr (!QtOrderingPrivate::UnorderedValueIsEqual) {
-                if (stdorder == std::partial_ordering::unordered)
-                    m_order = qToUnderlying(QtPrivate::Uncomparable::Unordered);
-            }
-            return;
-        }
-#endif // __cpp_lib_bit_cast
         if (stdorder < 0)
             m_order = static_cast<QtPrivate::CompareUnderlyingType>(QtPrivate::Ordering::Less);
         else if (stdorder > 0)
@@ -395,12 +385,6 @@ public:
     constexpr Q_IMPLICIT weak_ordering(std::weak_ordering stdorder) noexcept
         : m_order{} // == equivalent
     {
-#ifdef __cpp_lib_bit_cast
-        if constexpr (QtOrderingPrivate::OrderingValuesAreEqual) {
-            m_order = std::bit_cast<QtPrivate::CompareUnderlyingType>(stdorder);
-            return;
-        }
-#endif // __cpp_lib_bit_cast
         if (stdorder < 0)
             m_order = static_cast<QtPrivate::CompareUnderlyingType>(QtPrivate::Ordering::Less);
         else if (stdorder > 0)
@@ -592,12 +576,6 @@ public:
     constexpr Q_IMPLICIT strong_ordering(std::strong_ordering stdorder) noexcept
         : m_order{} // == equivalent
     {
-#ifdef __cpp_lib_bit_cast
-        if constexpr (QtOrderingPrivate::OrderingValuesAreEqual) {
-            m_order = std::bit_cast<QtPrivate::CompareUnderlyingType>(stdorder);
-            return;
-        }
-#endif // __cpp_lib_bit_cast
         if (stdorder < 0)
             m_order = static_cast<QtPrivate::CompareUnderlyingType>(QtPrivate::Ordering::Less);
         else if (stdorder > 0)
@@ -683,17 +661,6 @@ inline constexpr strong_ordering strong_ordering::greater(QtPrivate::Ordering::G
 } // namespace Qt
 
 QT_WARNING_POP
-
-namespace QtOrderingPrivate {
-template<> constexpr auto toUnderlying<Qt::partial_ordering>(Qt::partial_ordering o) noexcept
-{ return o.m_order; }
-
-template<> constexpr auto toUnderlying<Qt::weak_ordering>(Qt::weak_ordering o) noexcept
-{ return o.m_order; }
-
-template<> constexpr auto toUnderlying<Qt::strong_ordering>(Qt::strong_ordering o) noexcept
-{ return o.m_order; }
-}
 
 QT_BEGIN_INCLUDE_NAMESPACE
 

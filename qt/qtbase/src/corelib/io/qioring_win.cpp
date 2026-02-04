@@ -40,15 +40,9 @@ namespace QtPrivate {
     /**/
 struct IORingApiTable
 {
-#if QT_CONFIG(windows_ioring_runtime)
-#  define DefineIORingFunction(Name)      \
-      using Name##Fn = decltype(&::Name); \
-      Name##Fn Name = nullptr;
-#else // !windows_ioring_runtime:
-#  define DefineIORingFunction(Name)      \
-      using Name##Fn = decltype(&::Name); \
-      Name##Fn Name = &::Name;
-#endif // windows_ioring_runtime
+#define DefineIORingFunction(Name) \
+    using Name##Fn = decltype(&::Name); \
+    Name##Fn Name = nullptr;
 
     FOREACH_WIN_IORING_FUNCTION(DefineIORingFunction)
 
@@ -57,33 +51,28 @@ struct IORingApiTable
 
 static const IORingApiTable *getApiTable()
 {
-#if !QT_CONFIG(windows_ioring_runtime)
-    Q_CONSTINIT static const IORingApiTable apiTable;
-    // The table is directly initialized, so we always succeed:
-    constexpr bool success = true;
-#else // windows_ioring_runtime
     static const IORingApiTable apiTable = []() {
         IORingApiTable apiTable;
         const HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
         if (Q_UNLIKELY(!kernel32)) // how would this happen
             return apiTable;
 
-#  define ResolveFunction(Name) \
-      apiTable.Name = IORingApiTable::Name##Fn(QFunctionPointer(GetProcAddress(kernel32, #Name)));
+#define ResolveFunction(Name) \
+    apiTable.Name = IORingApiTable::Name##Fn(QFunctionPointer(GetProcAddress(kernel32, #Name)));
 
         FOREACH_WIN_IORING_FUNCTION(ResolveFunction)
 
-#  undef ResolveFunction
+#undef ResolveFunction
         return apiTable;
     }();
 
-#  define TEST_TABLE_OK(X) apiTable.X && /* chain */
-#  define BOOL_CHAIN(...) (__VA_ARGS__ true)
-    static const bool success = BOOL_CHAIN(FOREACH_WIN_IORING_FUNCTION(TEST_TABLE_OK));
+#define TEST_TABLE_OK(X) \
+    apiTable.X && /* chain */
+#define BOOL_CHAIN(...) (__VA_ARGS__ true)
+    const bool success = BOOL_CHAIN(FOREACH_WIN_IORING_FUNCTION(TEST_TABLE_OK));
+#undef BOOL_CHAIN
+#undef TEST_TABLE_OK
 
-#  undef BOOL_CHAIN
-#  undef TEST_TABLE_OK
-#endif // windows_ioring_runtime
     return success ? std::addressof(apiTable) : nullptr;
 }
 } // namespace QtPrivate
