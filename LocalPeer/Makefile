@@ -29,3 +29,6 @@ qt-modules-y := Core Network
 
 # Compiler flags
 cxxflags-y := $(QT_CFLAGS)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

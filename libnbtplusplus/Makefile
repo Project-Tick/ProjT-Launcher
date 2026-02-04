@@ -29,3 +29,6 @@ cxxflags-y := -std=c++17
 
 # Dependencies
 deps-y := zlib
+
+# Include common build rules
+include $(srctree)/mk/module.mk

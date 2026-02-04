@@ -51,3 +51,6 @@ news-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(NEWS_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

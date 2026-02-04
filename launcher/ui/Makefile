@@ -198,3 +198,6 @@ ui-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(UI_ALL_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

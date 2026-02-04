@@ -65,3 +65,6 @@ launch-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(LAUNCH_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

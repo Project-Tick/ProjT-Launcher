@@ -60,3 +60,6 @@ net-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(NET_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

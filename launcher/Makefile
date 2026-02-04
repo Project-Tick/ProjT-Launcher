@@ -844,3 +844,6 @@ launcher-recursive: subdirs $(CORE_OBJS)
 -include $(MOC_OBJS:.o=.d)
 -include $(RCC_OBJS:.o=.d)
 -include $(CORE_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

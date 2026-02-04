@@ -20,3 +20,6 @@ includes-y := gamemode/lib
 ccflags-y := -DGAMEMODE_AUTO
 
 endif # TARGET_OS == linux
+
+# Include common build rules
+include $(srctree)/mk/module.mk

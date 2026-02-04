@@ -3,8 +3,23 @@
 #
 # This file provides build rules for git subtrees without modifying them.
 # Each subtree is built using our Makefile rules while keeping source intact.
+#
+# SUBTREES (from .github/subtrees.txt):
+#   zlib, tomlplusplus, json, qt/*
+# DO NOT modify files in these directories!
 
-include mk/config.mk
+include $(srctree)/mk/config.mk
+
+# Quiet/Verbose
+ifeq ($(V),1)
+Q :=
+else
+Q := @
+endif
+
+# Base compiler flags
+CFLAGS ?= -O2 -g -fPIC -Wall
+CXXFLAGS ?= $(CFLAGS) -std=c++17
 
 # ============================================================================
 # Zlib Subtree Wrapper

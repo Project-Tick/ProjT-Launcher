@@ -1,10 +1,13 @@
-# SPDX-License-Identifier: GPL-2.0
+# ============================================================================
+# ProjT-Launcher Kernel-style Configuration
+# ============================================================================
 #
-# ProjT Launcher Configuration
+# This is the main configuration file for the ProjT-Launcher build system.
+# Use 'make menuconfig' to configure, 'make' to build.
 #
-# Kernel-style Kconfig for comprehensive build configuration
+# ============================================================================
 
-mainmenu "ProjT Launcher Configuration"
+mainmenu "ProjT-Launcher Configuration"
 
 # ============================================================================
 # Build Settings
@@ -12,113 +15,293 @@ mainmenu "ProjT Launcher Configuration"
 
 menu "Build Settings"
 
-config BUILD_TYPE
-	string "Build type (Debug/Release/RelWithDebInfo/MinSizeRel)"
-	default "Debug"
-	help
-	  Select the build type:
-	  - Debug: Full debug symbols, no optimization
-	  - Release: Full optimization, no debug
-	  - RelWithDebInfo: Optimization with debug symbols
-	  - MinSizeRel: Optimize for size
-
 choice
-	prompt "Optimization Level"
-	default OPT_DEFAULT
+	prompt "Build Type"
+	default BUILD_RELEASE
 
-config OPT_DEFAULT
-	bool "Use build type default"
+config BUILD_DEBUG
+	bool "Debug"
+	help
+	  Debug build with full symbols and no optimization.
+	  Enables assertions and extra runtime checks.
 
-config OPT_O0
-	bool "No optimization (-O0)"
+config BUILD_RELEASE
+	bool "Release"
+	help
+	  Optimized release build with minimal debug info.
 
-config OPT_O1
-	bool "Basic optimization (-O1)"
+config BUILD_RELWITHDEBINFO
+	bool "Release with Debug Info"
+	help
+	  Optimized build that retains debug information.
 
-config OPT_O2
-	bool "Standard optimization (-O2)"
-
-config OPT_O3
-	bool "Aggressive optimization (-O3)"
-
-config OPT_OS
-	bool "Size optimization (-Os)"
-
-config OPT_OZ
-	bool "Minimal size optimization (-Oz)"
-
-config OPT_OFAST
-	bool "Fast math optimization (-Ofast)"
+config BUILD_MINSIZEREL
+	bool "Minimum Size Release"
+	help
+	  Optimized for smallest binary size.
 
 endchoice
 
-config ENABLE_LTO
-	bool "Enable Link Time Optimization (LTO)"
-	default n
-	help
-	  Enable LTO for smaller binaries and potentially better performance.
-	  Increases build time significantly.
+menu "Optimization"
 
-config ENABLE_PGO
-	bool "Enable Profile Guided Optimization"
+choice
+	prompt "Optimization Level"
+	default OPT_O2
+
+config OPT_O0
+	bool "-O0 (No optimization)"
+
+config OPT_O1
+	bool "-O1 (Basic optimization)"
+
+config OPT_O2
+	bool "-O2 (Standard optimization)"
+
+config OPT_O3
+	bool "-O3 (Aggressive optimization)"
+
+config OPT_Os
+	bool "-Os (Optimize for size)"
+
+config OPT_Oz
+	bool "-Oz (Aggressive size optimization)"
+
+config OPT_Ofast
+	bool "-Ofast (Fast math, may break IEEE compliance)"
+
+endchoice
+
+config OPTLEVEL
+	string
+	default "-O0" if OPT_O0
+	default "-O1" if OPT_O1
+	default "-O2" if OPT_O2
+	default "-O3" if OPT_O3
+	default "-Os" if OPT_Os
+	default "-Oz" if OPT_Oz
+	default "-Ofast" if OPT_Ofast
+
+config LTO
+	bool "Enable Link Time Optimization (LTO)"
+	default y
+	help
+	  Enable LTO for better optimization across translation units.
+	  Significantly increases link time but produces smaller/faster code.
+
+config LTO_THIN
+	bool "Use ThinLTO (Clang only)"
+	depends on LTO && TOOLCHAIN_CLANG
+	default y
+	help
+	  Use ThinLTO instead of full LTO. Faster linking with most
+	  of the optimization benefits.
+
+config PGO
+	bool "Enable Profile-Guided Optimization"
 	default n
 	help
-	  Build with profiling instrumentation. Run the program to generate
-	  profile data, then rebuild with profile feedback.
+	  Build with PGO support. Requires two-phase build:
+	  1. Build instrumented binary
+	  2. Run workload to collect profile data
+	  3. Rebuild with profile data
+
+choice
+	prompt "PGO Phase"
+	depends on PGO
+	default PGO_GENERATE
+
+config PGO_GENERATE
+	bool "Generate profile"
+
+config PGO_USE
+	bool "Use profile"
+
+endchoice
+
+config PGO_DATA_DIR
+	string "PGO data directory"
+	depends on PGO
+	default "$(OBJDIR)/pgo"
+
+endmenu
+
+menu "Debug Options"
 
 config DEBUG_SYMBOLS
 	bool "Include debug symbols"
-	default y
+	default y if BUILD_DEBUG || BUILD_RELWITHDEBINFO
 	help
-	  Include debug symbols in the build. Required for debugging.
+	  Include debug symbols in the binary.
 
-config STRIP_BINARY
-	bool "Strip final binary"
-	default n
-	depends on !DEBUG_SYMBOLS
-	help
-	  Remove symbols from the final binary to reduce size.
+choice
+	prompt "Debug symbol format"
+	depends on DEBUG_SYMBOLS
+	default DEBUG_DWARF5
 
-config STATIC_LINK
-	bool "Static linking"
-	default n
+config DEBUG_DWARF4
+	bool "DWARF 4"
+
+config DEBUG_DWARF5
+	bool "DWARF 5"
+
+config DEBUG_SPLIT
+	bool "Split DWARF (separate .dwo files)"
+
+endchoice
+
+config DEBUG_SPLIT_DIR
+	string "Split debug directory"
+	depends on DEBUG_SPLIT
+	default "$(OBJDIR)/debug"
+
+config ASSERTIONS
+	bool "Enable assertions"
+	default y if BUILD_DEBUG
+	default n if !BUILD_DEBUG
 	help
-	  Link all libraries statically. Produces larger binaries but
-	  removes runtime dependencies.
+	  Enable assert() and Q_ASSERT() macros.
+
+config QT_DEBUG
+	bool "Qt debug messages"
+	default y if BUILD_DEBUG
+	help
+	  Enable Qt debug/warning/info messages.
+
+endmenu
+
+menu "Sanitizers"
+	depends on BUILD_DEBUG || BUILD_RELWITHDEBINFO
 
 config SANITIZERS
 	bool "Enable sanitizers"
 	default n
+	help
+	  Enable address/memory/thread sanitizers for debugging.
 
 if SANITIZERS
 
 config ASAN
-	bool "Address Sanitizer"
+	bool "Address Sanitizer (ASan)"
 	default y
 	help
-	  Enable AddressSanitizer for memory error detection.
+	  Detect memory errors: buffer overflow, use-after-free, etc.
+
+config ASAN_RECOVER
+	bool "ASan recoverable mode"
+	depends on ASAN
+	default n
+	help
+	  Continue execution after ASan detects an error.
 
 config UBSAN
-	bool "Undefined Behavior Sanitizer"
+	bool "Undefined Behavior Sanitizer (UBSan)"
 	default y
 	help
-	  Enable UBSan for undefined behavior detection.
+	  Detect undefined behavior: integer overflow, null deref, etc.
 
 config TSAN
-	bool "Thread Sanitizer"
+	bool "Thread Sanitizer (TSan)"
 	default n
 	help
-	  Enable ThreadSanitizer for race condition detection.
-	  Cannot be used with ASAN.
+	  Detect data races. Cannot be used with ASan.
 
 config MSAN
-	bool "Memory Sanitizer"
+	bool "Memory Sanitizer (MSan)"
+	default n
+	depends on TOOLCHAIN_CLANG
+	help
+	  Detect use of uninitialized memory. Clang only.
+	  Cannot be used with ASan.
+
+config LSAN
+	bool "Leak Sanitizer (LSan)"
 	default n
 	help
-	  Enable MemorySanitizer for uninitialized memory detection.
-	  Cannot be used with ASAN.
+	  Detect memory leaks. Included with ASan by default.
+
+config CFISAN
+	bool "Control Flow Integrity (CFI)"
+	default n
+	depends on TOOLCHAIN_CLANG && LTO
+	help
+	  Detect control flow hijacking. Requires Clang and LTO.
 
 endif # SANITIZERS
+
+endmenu
+
+menu "Security Hardening"
+
+config STACK_PROTECTOR
+	bool "Stack protector"
+	default y
+	help
+	  Enable stack canaries to detect buffer overflows.
+
+choice
+	prompt "Stack protector level"
+	depends on STACK_PROTECTOR
+	default STACK_PROTECTOR_STRONG
+
+config STACK_PROTECTOR_BASIC
+	bool "-fstack-protector"
+
+config STACK_PROTECTOR_STRONG
+	bool "-fstack-protector-strong"
+
+config STACK_PROTECTOR_ALL
+	bool "-fstack-protector-all"
+
+endchoice
+
+config FORTIFY_SOURCE
+	bool "FORTIFY_SOURCE"
+	default y
+	help
+	  Enable compile-time and runtime buffer overflow checks.
+
+choice
+	prompt "FORTIFY level"
+	depends on FORTIFY_SOURCE
+	default FORTIFY_2
+
+config FORTIFY_1
+	bool "_FORTIFY_SOURCE=1"
+
+config FORTIFY_2
+	bool "_FORTIFY_SOURCE=2"
+
+config FORTIFY_3
+	bool "_FORTIFY_SOURCE=3"
+
+endchoice
+
+config PIE
+	bool "Position Independent Executable"
+	default y
+	help
+	  Build position-independent code for ASLR support.
+
+config RELRO
+	bool "RELRO (Relocation Read-Only)"
+	default y
+	help
+	  Mark relocation sections read-only after relocation.
+
+config RELRO_FULL
+	bool "Full RELRO"
+	depends on RELRO
+	default y
+	help
+	  Resolve all symbols at load time (slower startup).
+
+config BIND_NOW
+	bool "Bind now (immediate binding)"
+	default y
+	help
+	  Resolve all symbols at load time.
+
+endmenu
 
 endmenu
 
@@ -238,38 +421,208 @@ config TARGET_ARCH
 	default "mips64" if ARCH_MIPS64
 	default "wasm32" if ARCH_WASM32
 
-if TARGET_MACOS || TARGET_IOS
+menu "Linux Options"
+	depends on TARGET_LINUX || TARGET_AUTO
+
+config LINUX_APPIMAGE
+	bool "AppImage portable format support"
+	default y
+	help
+	  Support running as AppImage with portable detection.
+
+config LINUX_FLATPAK
+	bool "Flatpak sandbox support"
+	default y
+	help
+	  Support running in Flatpak sandbox.
+
+config LINUX_SNAP
+	bool "Snap confinement support"
+	default n
+	help
+	  Support running in Snap confinement.
+
+config LINUX_WAYLAND
+	bool "Native Wayland support"
+	default y
+	help
+	  Enable native Wayland rendering.
+
+config LINUX_X11
+	bool "X11 support"
+	default y
+	help
+	  Enable X11 support (XWayland or native X11).
+
+config LINUX_DBUS
+	bool "D-Bus integration"
+	default y
+	help
+	  Enable D-Bus for desktop integration.
+
+config LINUX_SYSTEMD
+	bool "systemd integration"
+	default y
+	help
+	  Enable systemd service management.
+
+endmenu
+
+menu "Windows Options"
+	depends on TARGET_WINDOWS
+
+config WIN_UNICODE
+	bool "Unicode support"
+	default y
+	help
+	  Build with UNICODE and _UNICODE defined.
+
+config WIN_STATIC_CRT
+	bool "Static CRT linking"
+	default n
+	help
+	  Link C runtime statically. Larger binary but no dependencies.
+
+config WIN_MANIFEST
+	bool "Include manifest"
+	default y
+	help
+	  Embed application manifest for DPI awareness, UAC, etc.
+
+config WIN_DPI_AWARENESS
+	bool "DPI awareness"
+	default y
+	help
+	  Build with per-monitor DPI awareness.
+
+config WIN_CONSOLE
+	bool "Console subsystem"
+	default n
+	help
+	  Build as console application (shows console window).
+
+config WIN_ICON
+	string "Application icon (.ico)"
+	default "launcher/resources/icon.ico"
+
+endmenu
+
+menu "macOS Options"
+	depends on TARGET_MACOS || TARGET_IOS
 
 config MACOS_DEPLOYMENT_TARGET
-	string "macOS/iOS deployment target"
+	string "macOS deployment target"
 	default "11.0"
 	help
-	  Minimum macOS/iOS version to support.
+	  Minimum macOS version to support.
 
 config MACOS_UNIVERSAL
-	bool "Build universal binary (x86_64 + arm64)"
+	bool "Universal binary (x86_64 + arm64)"
 	default y
 	depends on TARGET_MACOS
 	help
-	  Build a fat binary that runs on both Intel and Apple Silicon.
+	  Build a fat binary for both Intel and Apple Silicon.
 
-endif
+config MACOS_HARDENED_RUNTIME
+	bool "Hardened runtime"
+	default y
+	help
+	  Enable hardened runtime for notarization.
 
-if TARGET_ANDROID
+config MACOS_SANDBOX
+	bool "App Sandbox"
+	default n
+	help
+	  Enable App Sandbox for Mac App Store.
+
+config MACOS_BUNDLE_ID
+	string "Bundle identifier"
+	default "org.projecttick.ProjTLauncher"
+
+config MACOS_TEAM_ID
+	string "Developer Team ID"
+	default ""
+
+config MACOS_CODESIGN
+	bool "Code signing"
+	default y
+
+config MACOS_NOTARIZE
+	bool "Notarization"
+	default n
+	depends on MACOS_CODESIGN
+
+endmenu
+
+menu "Android Options"
+	depends on TARGET_ANDROID
 
 config ANDROID_API
-	int "Android API level"
+	int "Minimum API level"
 	default 24
 	help
 	  Minimum Android API level to support.
+
+config ANDROID_TARGET_API
+	int "Target API level"
+	default 34
 
 config ANDROID_NDK
 	string "Android NDK path"
 	default ""
 	help
-	  Path to the Android NDK. Can also be set via ANDROID_NDK_HOME.
+	  Path to Android NDK. Set via ANDROID_NDK_HOME if empty.
 
-endif
+config ANDROID_SDK
+	string "Android SDK path"
+	default ""
+	help
+	  Path to Android SDK. Set via ANDROID_HOME if empty.
+
+config ANDROID_ABI
+	string "Target ABI(s)"
+	default "arm64-v8a,armeabi-v7a,x86_64"
+	help
+	  Comma-separated list of target ABIs.
+
+config ANDROID_STL
+	string "C++ STL"
+	default "c++_shared"
+	help
+	  C++ STL to use: c++_shared, c++_static, or none.
+
+endmenu
+
+menu "WebAssembly Options"
+	depends on TARGET_WASM
+
+config WASM_THREADS
+	bool "Enable threading (SharedArrayBuffer)"
+	default n
+	help
+	  Enable POSIX threads via SharedArrayBuffer.
+
+config WASM_SIMD
+	bool "Enable SIMD"
+	default y
+	help
+	  Enable WebAssembly SIMD instructions.
+
+config WASM_EXCEPTIONS
+	bool "Enable exceptions"
+	default y
+	help
+	  Enable C++ exception handling.
+
+config WASM_MEMORY
+	int "Initial memory (MB)"
+	default 64
+
+config WASM_STACK
+	int "Stack size (KB)"
+	default 1024
+
+endmenu
 
 endmenu
 
@@ -305,7 +658,7 @@ config TOOLCHAIN_APPLE_CLANG
 	depends on TARGET_MACOS || TARGET_IOS
 
 config TOOLCHAIN_ANDROID_NDK
-	bool "Android NDK"
+	bool "Android NDK Clang"
 	depends on TARGET_ANDROID
 
 config TOOLCHAIN_EMSCRIPTEN
@@ -315,75 +668,192 @@ config TOOLCHAIN_EMSCRIPTEN
 config TOOLCHAIN_ZIG
 	bool "Zig CC"
 	help
-	  Use Zig as a C/C++ compiler. Excellent cross-compilation support.
+	  Use Zig as a C/C++ compiler for cross-compilation.
 
 endchoice
 
+menu "Toolchain Paths"
+
 config CROSS_COMPILE
-	string "Cross-compile prefix (e.g. x86_64-w64-mingw32-)"
+	string "Cross-compile prefix"
 	default ""
 	help
-	  Prefix for cross-compilation tools. For example:
+	  Prefix for cross-compilation tools, e.g.:
 	  - x86_64-w64-mingw32- for Windows
 	  - aarch64-linux-gnu- for ARM64 Linux
-	  - x86_64-apple-darwin- for macOS (via osxcross)
+	  - x86_64-apple-darwin- for macOS
 
 config SYSROOT
 	string "Sysroot path"
 	default ""
 	help
-	  Path to the target system root. Used for cross-compilation.
+	  Path to target system root for cross-compilation.
 
 config CC
-	string "C compiler override"
+	string "C compiler"
 	default ""
 	help
 	  Override the C compiler. Leave empty to auto-detect.
 
 config CXX
-	string "C++ compiler override"
+	string "C++ compiler"
 	default ""
 	help
 	  Override the C++ compiler. Leave empty to auto-detect.
 
+config LD
+	string "Linker"
+	default ""
+	help
+	  Override the linker. Leave empty to auto-detect.
+
 config AR
-	string "Archiver override"
+	string "Archiver"
 	default ""
 
-config LD
-	string "Linker override"
+config NM
+	string "Symbol lister"
+	default ""
+
+config RANLIB
+	string "Archive indexer"
 	default ""
 
 config STRIP
-	string "Strip command override"
+	string "Strip command"
 	default ""
+
+config OBJCOPY
+	string "Object copy"
+	default ""
+
+config OBJDUMP
+	string "Object dump"
+	default ""
+
+endmenu
+
+menu "Language Standards"
+
+choice
+	prompt "C++ Standard"
+	default CPP_STD_23
+
+config CPP_STD_17
+	bool "C++17"
+
+config CPP_STD_20
+	bool "C++20"
+
+config CPP_STD_23
+	bool "C++23"
+
+config CPP_STD_26
+	bool "C++26 (experimental)"
+
+endchoice
+
+config CPP_STANDARD
+	string
+	default "-std=c++17" if CPP_STD_17
+	default "-std=c++20" if CPP_STD_20
+	default "-std=c++23" if CPP_STD_23
+	default "-std=c++2c" if CPP_STD_26
+
+choice
+	prompt "C Standard"
+	default C_STD_23
+
+config C_STD_11
+	bool "C11"
+
+config C_STD_17
+	bool "C17"
+
+config C_STD_23
+	bool "C23"
+
+endchoice
+
+config C_STANDARD
+	string
+	default "-std=c11" if C_STD_11
+	default "-std=c17" if C_STD_17
+	default "-std=c23" if C_STD_23
+
+endmenu
+
+menu "Extra Compiler Flags"
 
 config CFLAGS_EXTRA
 	string "Extra C flags"
 	default ""
-	help
-	  Additional flags to pass to the C compiler.
 
 config CXXFLAGS_EXTRA
 	string "Extra C++ flags"
 	default ""
-	help
-	  Additional flags to pass to the C++ compiler.
 
 config LDFLAGS_EXTRA
 	string "Extra linker flags"
 	default ""
-	help
-	  Additional flags to pass to the linker.
+
+config ASFLAGS_EXTRA
+	string "Extra assembler flags"
+	default ""
+
+endmenu
+
+menu "Warnings"
+
+config WALL
+	bool "-Wall (all common warnings)"
+	default y
+
+config WEXTRA
+	bool "-Wextra (extra warnings)"
+	default y
+
+config WPEDANTIC
+	bool "-Wpedantic (strict ISO compliance)"
+	default n
+
+config WERROR
+	bool "-Werror (warnings as errors)"
+	default n
+
+config WFATAL_ERRORS
+	bool "-Wfatal-errors (stop on first error)"
+	default n
+
+config WUNUSED
+	bool "Warn about unused entities"
+	default y
+
+config WCONVERSION
+	bool "Warn about implicit conversions"
+	default n
+
+config WSHADOW
+	bool "Warn about shadowed variables"
+	default y
+
+config WNULL_DEREFERENCE
+	bool "Warn about null dereference"
+	default y
+
+config WFORMAT_SECURITY
+	bool "Format string security warnings"
+	default y
+
+endmenu
 
 menu "Toolchain Bootstrap"
 
 config BOOTSTRAP_TOOLCHAIN
-	bool "Enable toolchain bootstrap (build GCC/LLVM from source)"
+	bool "Bootstrap toolchain from source"
 	default n
 	help
-	  Download and build a compiler toolchain from source.
-	  Useful for reproducible builds or exotic platforms.
+	  Build GCC/LLVM from source for reproducible builds.
 
 if BOOTSTRAP_TOOLCHAIN
 
@@ -398,7 +868,7 @@ config BOOTSTRAP_LLVM
 	bool "Bootstrap LLVM/Clang"
 
 config BOOTSTRAP_BOTH
-	bool "Bootstrap both GCC and LLVM"
+	bool "Bootstrap both"
 
 endchoice
 
@@ -414,8 +884,13 @@ config LLVM_VERSION
 
 config BINUTILS_VERSION
 	string "Binutils version"
-	default "2.42"
+	default "2.43"
 	depends on BOOTSTRAP_GCC || BOOTSTRAP_BOTH
+
+config NEWLIB_VERSION
+	string "Newlib version (embedded)"
+	default "4.4.0"
+	depends on BOOTSTRAP_GCC && TARGET_EMBEDDED
 
 endif # BOOTSTRAP_TOOLCHAIN
 
@@ -423,74 +898,50 @@ menu "Bundled Toolchain (Subtree)"
 	depends on !BOOTSTRAP_TOOLCHAIN
 
 config TOOLCHAIN_BUNDLED_GCC
-	bool "Use bundled GCC (toolchain/gcc subtree)"
+	bool "Bundled GCC (toolchain/gcc subtree)"
 	default n
 	help
-	  Use a GCC source tree bundled as git subtree.
-	  
-	  To add GCC subtree:
+	  Use GCC source bundled as git subtree:
 	    git subtree add --prefix=toolchain/gcc \
 	      https://gcc.gnu.org/git/gcc.git releases/gcc-14 --squash
-	  
-	  This enables fully reproducible builds without external
-	  compiler dependencies.
 
 config TOOLCHAIN_GCC_VERSION
-	string "Bundled GCC version/branch"
+	string "Bundled GCC version"
 	default "releases/gcc-14"
 	depends on TOOLCHAIN_BUNDLED_GCC
-	help
-	  The GCC branch or tag used in the subtree.
 
 config TOOLCHAIN_BUNDLED_LLVM
-	bool "Use bundled LLVM/Clang (toolchain/llvm subtree)"
+	bool "Bundled LLVM (toolchain/llvm subtree)"
 	default n
 	help
-	  Use an LLVM source tree bundled as git subtree.
-	  
-	  To add LLVM subtree:
+	  Use LLVM source bundled as git subtree:
 	    git subtree add --prefix=toolchain/llvm \
 	      https://github.com/llvm/llvm-project.git llvmorg-18.1.0 --squash
-	  
-	  LLVM provides Clang, LLD, libc++, compiler-rt, and more.
 
 config TOOLCHAIN_LLVM_VERSION
-	string "Bundled LLVM version/tag"
+	string "Bundled LLVM version"
 	default "llvmorg-18.1.0"
 	depends on TOOLCHAIN_BUNDLED_LLVM
-	help
-	  The LLVM tag used in the subtree.
 
 config TOOLCHAIN_BUILD_LIBCXX
-	bool "Build libc++ (LLVM C++ standard library)"
+	bool "Build libc++"
 	default y
 	depends on TOOLCHAIN_BUNDLED_LLVM
-	help
-	  Build LLVM's libc++ instead of using libstdc++.
-	  Recommended for fully self-contained builds.
 
 config TOOLCHAIN_BUILD_COMPILER_RT
-	bool "Build compiler-rt (sanitizers, builtins)"
+	bool "Build compiler-rt"
 	default y
 	depends on TOOLCHAIN_BUNDLED_LLVM
-	help
-	  Build compiler-rt for sanitizer support and
-	  architecture-specific builtins.
 
 config TOOLCHAIN_BUILD_LLD
-	bool "Build LLD (LLVM linker)"
+	bool "Build LLD linker"
 	default y
 	depends on TOOLCHAIN_BUNDLED_LLVM
-	help
-	  Build LLD, LLVM's linker. Faster than GNU ld.
 
 config TOOLCHAIN_PREFER_BUNDLED
-	bool "Prefer bundled toolchain over system"
+	bool "Prefer bundled over system"
 	default y
 	depends on TOOLCHAIN_BUNDLED_GCC || TOOLCHAIN_BUNDLED_LLVM
-	help
-	  Use the bundled toolchain even if a system compiler
-	  is available. Ensures reproducible builds.
 
 endmenu
 
@@ -502,210 +953,600 @@ endmenu
 # Qt Configuration
 # ============================================================================
 
-menu "Qt Settings"
+menu "Qt Framework"
 
-config QT_VERSION_MAJOR
-	string "Qt major version"
-	default "6"
+choice
+	prompt "Qt Source"
+	default QT_BUNDLED
+
+config QT_SYSTEM
+	bool "System Qt"
 	help
-	  Major Qt version to use. Only Qt 6 is supported.
+	  Use Qt installed on the system.
+
+config QT_BUNDLED
+	bool "Bundled Qt (qt/ subtree)"
+	help
+	  Build Qt from bundled qt/ subtree sources.
+
+config QT_DOWNLOAD
+	bool "Download Qt"
+	help
+	  Download and build Qt from official sources.
+
+endchoice
 
 config QT_PREFIX
-	string "Qt prefix (root of Qt install)"
+	string "Qt prefix (for system Qt)"
 	default ""
+	depends on QT_SYSTEM
 	help
 	  Path to Qt installation. Leave empty to auto-detect.
 
 config QT_HOST_BINS
-	string "Qt host tools directory (moc/uic/rcc)"
+	string "Qt host tools directory"
 	default ""
 	help
-	  Path to Qt host tools. Useful for cross-compilation.
+	  Path to Qt host tools (moc/uic/rcc) for cross-compilation.
 
-config USE_BUNDLED_QT
-	bool "Build Qt from bundled sources"
-	default n
-	help
-	  Build Qt 6 from the bundled qt/ subtree instead of using
-	  a system or pre-built Qt.
-
-if USE_BUNDLED_QT
+menu "Qt Build Options"
+	depends on QT_BUNDLED || QT_DOWNLOAD
 
 config QT_STATIC
-	bool "Build Qt as static libraries"
+	bool "Static Qt libraries"
 	default y
 	help
-	  Build Qt statically for a single binary distribution.
+	  Build Qt as static libraries for single-binary distribution.
+
+config QT_SHARED
+	bool "Shared Qt libraries"
+	default n
+	help
+	  Build Qt as shared libraries.
 
 config QT_MINIMAL
 	bool "Minimal Qt build"
 	default y
 	help
-	  Build only the Qt components needed for this project.
+	  Build only Qt modules needed for this project.
 
-endif
+config QT_OPTIMIZE_SIZE
+	bool "Optimize Qt for size"
+	default n
+	help
+	  Use size-optimized Qt build.
 
-config LAUNCHER_WITH_WEBENGINE
-	bool "Enable Qt WebEngine integration"
+config QT_DEBUG_BUILD
+	bool "Qt debug build"
+	default n
+	depends on BUILD_DEBUG
+
+config QT_PARALLEL_JOBS
+	int "Qt build parallel jobs"
+	default 0
+	help
+	  Parallel jobs for Qt build. 0 = auto-detect.
+
+endmenu
+
+menu "Qt Modules (Bundled)"
+	depends on QT_BUNDLED
+
+comment "Core Modules"
+
+config QT_MODULE_QTBASE
+	bool "QtBase (Core, Gui, Widgets, Network)"
 	default y
 	help
-	  Build with Qt WebEngine for in-app browser functionality.
-	  Significantly increases build time and binary size.
+	  Qt Base module - required for all Qt applications.
+	  Provides: QtCore, QtGui, QtWidgets, QtNetwork, QtSql, etc.
+
+config QT_MODULE_QTNETWORKAUTH
+	bool "QtNetworkAuth"
+	default y
+	depends on QT_MODULE_QTBASE
+	help
+	  OAuth and network authentication support.
+
+config QT_MODULE_QTIMAGEFORMATS
+	bool "QtImageFormats"
+	default y
+	depends on QT_MODULE_QTBASE
+	help
+	  Additional image format plugins (WebP, TIFF, etc.)
+
+config QT_MODULE_QTPOSITIONING
+	bool "QtPositioning"
+	default n
+	depends on QT_MODULE_QTBASE
+	help
+	  Location and positioning support.
+
+config QT_MODULE_QTSERIALPORT
+	bool "QtSerialPort"
+	default n
+	depends on QT_MODULE_QTBASE
+	help
+	  Serial port communication.
+
+config QT_MODULE_QTWEBCHANNEL
+	bool "QtWebChannel"
+	default y
+	depends on QT_MODULE_QTBASE
+	help
+	  Web channel for Qt/JavaScript communication.
+
+config QT_MODULE_QTWEBENGINE
+	bool "QtWebEngine (Chromium-based)"
+	default y
+	depends on QT_MODULE_QTBASE && QT_MODULE_QTWEBCHANNEL
+	help
+	  Chromium-based web browser engine.
+	  WARNING: Large build, requires significant time and disk space.
+
+config QT_WEBENGINE_PROPRIETARY_CODECS
+	bool "Enable proprietary codecs in WebEngine"
+	default n
+	depends on QT_MODULE_QTWEBENGINE
+	help
+	  Enable H.264, AAC, and other proprietary codecs.
+	  May have licensing implications.
+
+endmenu
+
+menu "Qt Features"
+
+config QT_FEATURE_CONCURRENT
+	bool "QtConcurrent"
+	default y
+	help
+	  Qt Concurrent module for threading.
+
+config QT_FEATURE_XML
+	bool "QtXml"
+	default y
+	help
+	  XML processing support.
+
+config QT_FEATURE_SQL
+	bool "QtSql"
+	default n
+	help
+	  SQL database support.
+
+config QT_FEATURE_DBUS
+	bool "QtDBus"
+	default y
+	depends on TARGET_LINUX || TARGET_AUTO
+	help
+	  D-Bus IPC support (Linux).
+
+config QT_FEATURE_OPENGL
+	bool "OpenGL support"
+	default y
+	help
+	  OpenGL rendering support.
+
+config QT_FEATURE_OPENSSL
+	bool "OpenSSL support"
+	default y
+	help
+	  SSL/TLS via OpenSSL.
+
+config QT_FEATURE_ICU
+	bool "ICU support"
+	default n
+	help
+	  International Components for Unicode.
+
+config QT_FEATURE_ZSTD
+	bool "Zstd compression"
+	default y
+	help
+	  Zstandard compression support.
+
+config QT_FEATURE_ACCESSIBILITY
+	bool "Accessibility support"
+	default y
+	help
+	  Screen reader and accessibility support.
+
+config QT_FEATURE_WIDGETS
+	bool "Qt Widgets"
+	default y
+	help
+	  Classic Qt Widgets UI framework.
+
+config QT_FEATURE_QUICK
+	bool "Qt Quick/QML"
+	default n
+	help
+	  Qt Quick/QML UI framework.
+
+endmenu
 
 endmenu
 
 # ============================================================================
-# Feature Configuration
+# Application Features
 # ============================================================================
 
-menu "Features"
+menu "Application Features"
 
-config ENABLE_JAVA_DOWNLOADER
-	bool "Enable Java downloader feature"
+menu "Core Features"
+
+config FEATURE_JAVA_DOWNLOADER
+	bool "Java auto-downloader"
 	default y
 	help
-	  Allow the launcher to download and manage Java installations.
+	  Download and manage Java installations automatically.
 
-config ENABLE_UPDATER
-	bool "Enable auto-updater"
+config FEATURE_JAVA_CHECKER
+	bool "Java checker"
 	default y
 	help
-	  Include the self-update functionality.
+	  Detect and validate Java installations.
 
-config ENABLE_NEWS
-	bool "Enable news feed"
+config FEATURE_UPDATER
+	bool "Auto-updater"
 	default y
 	help
-	  Show news from the project website.
+	  In-app self-update functionality.
 
-config ENABLE_DISCORD_RPC
-	bool "Enable Discord Rich Presence"
+config FEATURE_NEWS
+	bool "News feed"
+	default y
+	help
+	  Show news from project website.
+
+config FEATURE_ANALYTICS
+	bool "Analytics (optional, privacy-respecting)"
+	default n
+	help
+	  Optional anonymous usage analytics.
+
+endmenu
+
+menu "Integration Features"
+
+config FEATURE_DISCORD_RPC
+	bool "Discord Rich Presence"
 	default y
 	help
 	  Show game status in Discord.
 
-config ENABLE_GAMEMODE
-	bool "Enable GameMode integration (Linux)"
+config FEATURE_GAMEMODE
+	bool "GameMode integration (Linux)"
 	default y
 	depends on TARGET_LINUX || TARGET_AUTO
 	help
-	  Integrate with Feral's GameMode for performance optimization.
+	  Feral GameMode performance optimization.
 
-config ENABLE_MANGOHUD
-	bool "Enable MangoHud integration (Linux)"
+config FEATURE_MANGOHUD
+	bool "MangoHud overlay (Linux)"
 	default y
 	depends on TARGET_LINUX || TARGET_AUTO
 	help
-	  Support for MangoHud overlay.
+	  MangoHud performance overlay support.
+
+config FEATURE_MSA
+	bool "Microsoft Account login"
+	default y
+	help
+	  Microsoft/Xbox Live authentication.
+
+config FEATURE_FLAME
+	bool "CurseForge/Flame support"
+	default y
+	help
+	  CurseForge modpack support.
+
+config FEATURE_MODRINTH
+	bool "Modrinth support"
+	default y
+	help
+	  Modrinth modpack/mod support.
+
+config FEATURE_TECHNIC
+	bool "Technic support"
+	default y
+	help
+	  Technic modpack support.
+
+config FEATURE_ATL
+	bool "ATLauncher support"
+	default y
+	help
+	  ATLauncher modpack support.
+
+config FEATURE_FTB
+	bool "FTB support"
+	default y
+	help
+	  Feed The Beast modpack support.
+
+endmenu
+
+menu "UI Features"
+
+config FEATURE_THEMES
+	bool "Custom themes"
+	default y
+	help
+	  User-customizable themes.
+
+config FEATURE_ICONS
+	bool "Custom icon packs"
+	default y
+	help
+	  User-customizable instance icons.
+
+config FEATURE_CATS
+	bool "Cat mode"
+	default y
+	help
+	  Essential cat-related functionality.
+
+config FEATURE_SCREENSHOTS
+	bool "Screenshot management"
+	default y
+	help
+	  In-app screenshot viewer and management.
+
+config FEATURE_LOGS
+	bool "Log viewer"
+	default y
+	help
+	  In-app log viewer and upload.
+
+endmenu
+
+menu "Advanced Features"
+
+config FEATURE_IMPORT_EXPORT
+	bool "Instance import/export"
+	default y
+	help
+	  Import/export instances as archives.
+
+config FEATURE_COPY
+	bool "Instance copy"
+	default y
+	help
+	  Copy instances within launcher.
+
+config FEATURE_SYMLINKS
+	bool "Instance symlinks"
+	default y
+	help
+	  Support for linked instances (shared files).
+
+config FEATURE_PORTABLE
+	bool "Portable mode"
+	default y
+	help
+	  Support for portable/USB installation.
+
+endmenu
 
 endmenu
 
 # ============================================================================
-# Modules
+# Libraries Configuration
 # ============================================================================
 
-menu "Modules"
+menu "Libraries"
 
-config MOD_LAUNCHER
-	bool "Launcher (GUI)"
+comment "Bundled Subtrees (read-only)"
+comment "These libraries are git subtrees - do not modify sources"
+
+config LIB_ZLIB
+	bool "zlib (compression)"
 	default y
 	help
-	  The main launcher application.
+	  Bundled zlib library (subtree: zlib/).
 
-config MOD_BUILD_CONFIG
-	bool "BuildConfig library"
+config LIB_ZLIB_VERSION
+	string
+	default "1.3.1"
+	depends on LIB_ZLIB
+
+config LIB_TOMLPLUSPLUS
+	bool "tomlplusplus (TOML parser, header-only)"
 	default y
+	help
+	  Bundled toml++ library (subtree: tomlplusplus/).
+
+config LIB_JSON
+	bool "nlohmann/json (JSON parser, header-only)"
+	default y
+	help
+	  Bundled nlohmann/json library (subtree: json/).
+
+comment "-----"
+comment "Local Libraries (can be configured)"
+
+# Include per-module Kconfig files for detailed configuration
+source "libpng/Kconfig"
+source "bzip2/Kconfig"
+source "quazip/Kconfig"
+source "cmark/Kconfig"
+source "libqrencode/Kconfig"
+source "libnbtplusplus/Kconfig"
+source "gamemode/Kconfig"
+
+menu "murmur2 (hashing)"
+
+config LIB_MURMUR2
+	bool "Enable murmur2 hash"
+	default y
+	help
+	  MurmurHash2 implementation for mod fingerprinting.
+
+endmenu
+
+menu "LocalPeer (single instance)"
+
+config LIB_LOCALPEER
+	bool "Enable LocalPeer"
+	default y
+	help
+	  Qt-based single instance enforcement.
+
+if LIB_LOCALPEER
+
+config LOCALPEER_USE_NETWORK
+	bool "Use QLocalServer (network IPC)"
+	default y
+
+config LOCALPEER_USE_LOCKFILE
+	bool "Use lock file"
+	default y
+
+endif # LIB_LOCALPEER
+
+endmenu
+
+menu "rainbow (Qt theming)"
+
+config LIB_RAINBOW
+	bool "Enable rainbow"
+	default y
+	help
+	  Qt color/theme manipulation library.
+
+endmenu
+
+menu "qdcss (Qt CSS)"
+
+config LIB_QDCSS
+	bool "Enable qdcss"
+	default y
+	help
+	  Qt stylesheet parsing and manipulation.
+
+endmenu
+
+endmenu
+
+# ============================================================================
+# Launcher Modules
+# ============================================================================
+
+menu "Launcher Modules"
+
+# Include detailed launcher configuration
+source "launcher/Kconfig"
+
+config MOD_BUILDCONFIG
+	bool "BuildConfig (build info)"
+	default y
+	help
+	  Build configuration and version information.
 
 config MOD_PROGRAM_INFO
 	bool "program_info"
 	default y
+	help
+	  Program metadata and branding.
 
 config MOD_SYSTEMINFO
 	bool "systeminfo"
 	default y
+	help
+	  System information gathering.
 
 config MOD_LAUNCHERJAVA
 	bool "launcherjava"
 	default y
+	help
+	  Java-related launcher functionality.
 
 config MOD_JAVACHECK
 	bool "javacheck"
 	default y
-
-config MOD_RAINBOW
-	bool "rainbow (Qt theming)"
-	default y
-
-config MOD_LOCALPEER
-	bool "LocalPeer (single instance)"
-	default y
-
-config MOD_GAMEMODE
-	bool "gamemode"
-	default y
-	depends on TARGET_LINUX || TARGET_AUTO
-
-config MOD_MURMUR2
-	bool "murmur2 (hashing)"
-	default y
-
-config MOD_QDCSS
-	bool "qdcss (Qt styling)"
-	default y
-
-menu "Bundled Libraries"
-
-config MOD_ZLIB
-	bool "zlib (bundled)"
-	default y
 	help
-	  Use bundled zlib instead of system library.
-
-config MOD_LIBPNG
-	bool "libpng (bundled)"
-	default y
-	depends on MOD_ZLIB
-	help
-	  Use bundled libpng instead of system library.
-
-config MOD_BZIP2
-	bool "bzip2 (bundled)"
-	default y
-	help
-	  Use bundled bzip2 instead of system library.
-
-config MOD_MINIZIP
-	bool "minizip (bundled)"
-	default y
-	depends on MOD_ZLIB
-
-config MOD_QUAZIP
-	bool "quazip (bundled)"
-	default y
-	depends on MOD_ZLIB
-	depends on MOD_BZIP2
-
-config MOD_TOMLPLUSPLUS
-	bool "tomlplusplus (bundled, header-only)"
-	default y
-
-config MOD_JSON
-	bool "nlohmann/json (bundled, header-only)"
-	default y
-
-config MOD_CMARK
-	bool "cmark (bundled)"
-	default y
-
-config MOD_LIBQRENCODE
-	bool "libqrencode (bundled)"
-	default y
-
-config MOD_LIBNBTPLUSPLUS
-	bool "libnbtplusplus (bundled)"
-	default y
+	  Java installation validation tool.
 
 endmenu
+
+# ============================================================================
+# Build Information (for BuildConfig.cpp)
+# ============================================================================
+
+menu "Build Information"
+
+config LAUNCHER_NAME
+	string "Launcher internal name"
+	default "projt-launcher"
+
+config LAUNCHER_APP_BINARY_NAME
+	string "Launcher binary name"
+	default "ProjTLauncher"
+
+config LAUNCHER_DISPLAYNAME
+	string "Launcher display name"
+	default "ProjT Launcher"
+
+config LAUNCHER_COPYRIGHT
+	string "Copyright notice"
+	default "Copyright (C) 2024-2026 Project Tick"
+
+config LAUNCHER_DOMAIN
+	string "Domain"
+	default "projecttick.org"
+
+config LAUNCHER_CONFIGFILE
+	string "Config file name"
+	default "projt-launcher.cfg"
+
+config LAUNCHER_GIT
+	string "Git repository URL"
+	default "https://github.com/Project-Starter/ProjT-Launcher"
+
+config LAUNCHER_APPID
+	string "Application ID"
+	default "org.projecttick.ProjTLauncher"
+
+config LAUNCHER_SVGFILENAME
+	string "SVG icon filename"
+	default "org.projecttick.ProjTLauncher"
+
+config LAUNCHER_USERAGENT
+	string "User agent string"
+	default "ProjTLauncher/@VERSION@"
+
+config VERSION_MAJOR
+	int "Version major"
+	default 0
+
+config VERSION_MINOR
+	int "Version minor"
+	default 0
+
+config VERSION_PATCH
+	int "Version patch"
+	default 5
+
+config VERSION_TWEAK
+	int "Version tweak"
+	default 1
+
+config VERSION_SUFFIX
+	string "Version suffix"
+	default ""
+	help
+	  Optional version suffix like "-beta", "-rc1".
+
+config BUILD_ARTIFACT
+	string "Build artifact name"
+	default "Development"
+	help
+	  Release, Development, Nightly, etc.
+
+config UPDATER_GITHUB_REPO
+	string "Updater GitHub repo"
+	default "Project-Starter/ProjT-Launcher"
 
 endmenu
 
@@ -718,33 +1559,50 @@ menu "Testing and Quality"
 config BUILD_TESTS
 	bool "Build tests"
 	default n
-	help
-	  Build unit and integration tests.
 
-config BUILD_FUZZERS
-	bool "Build fuzzers"
+config BUILD_FUZZ
+	bool "Build fuzz tests"
 	default n
-	help
-	  Build fuzzing targets for security testing.
 
-config ENABLE_COVERAGE
-	bool "Enable code coverage"
-	default n
+config TEST_FRAMEWORK
+	string "Test framework"
+	default "catch2"
 	depends on BUILD_TESTS
 	help
-	  Instrument code for coverage analysis.
+	  Test framework to use: catch2, gtest, doctest.
+
+config ENABLE_COVERAGE
+	bool "Code coverage"
+	default n
+	depends on BUILD_TESTS
+
+config COVERAGE_FORMAT
+	string "Coverage format"
+	default "lcov"
+	depends on ENABLE_COVERAGE
+	help
+	  Coverage report format: lcov, gcov, html.
 
 config ENABLE_CLANG_TIDY
-	bool "Enable clang-tidy checks"
+	bool "clang-tidy static analysis"
 	default n
-	help
-	  Run clang-tidy static analysis during build.
+
+config CLANG_TIDY_CHECKS
+	string "clang-tidy checks"
+	default "modernize-*,readability-*,performance-*"
+	depends on ENABLE_CLANG_TIDY
 
 config ENABLE_IWYU
-	bool "Enable include-what-you-use"
+	bool "include-what-you-use"
 	default n
-	help
-	  Check for unnecessary includes.
+
+config ENABLE_CPPCHECK
+	bool "cppcheck static analysis"
+	default n
+
+config ENABLE_PVSSTUDIO
+	bool "PVS-Studio analysis"
+	default n
 
 endmenu
 
@@ -763,64 +1621,99 @@ config PACKAGE_VERSION
 	default "0.0.5.1"
 
 config PACKAGE_MAINTAINER
-	string "Package maintainer"
+	string "Maintainer"
 	default "Project Tick <contact@projecttick.org>"
 
-if TARGET_LINUX || TARGET_AUTO
+config PACKAGE_DESCRIPTION
+	string "Package description"
+	default "A Minecraft launcher with mod support"
 
-config PACKAGE_DEB
-	bool "Build .deb package"
-	default n
+config PACKAGE_LICENSE
+	string "License"
+	default "GPL-3.0-only"
 
-config PACKAGE_RPM
-	bool "Build .rpm package"
-	default n
+config PACKAGE_URL
+	string "Homepage URL"
+	default "https://projecttick.org"
+
+menu "Linux Packages"
+	depends on TARGET_LINUX || TARGET_AUTO
 
 config PACKAGE_APPIMAGE
-	bool "Build AppImage"
+	bool "AppImage"
 	default y
 
 config PACKAGE_FLATPAK
-	bool "Build Flatpak"
+	bool "Flatpak"
 	default n
 
 config PACKAGE_SNAP
-	bool "Build Snap package"
+	bool "Snap"
 	default n
 
-endif
+config PACKAGE_DEB
+	bool "Debian package (.deb)"
+	default n
 
-if TARGET_WINDOWS
+config PACKAGE_RPM
+	bool "RPM package"
+	default n
+
+config PACKAGE_ARCH
+	bool "Arch package (PKGBUILD)"
+	default n
+
+config PACKAGE_NIX
+	bool "Nix derivation"
+	default y
+
+config PACKAGE_TARBALL
+	bool "Tarball (.tar.gz)"
+	default y
+
+endmenu
+
+menu "Windows Packages"
+	depends on TARGET_WINDOWS
 
 config PACKAGE_ZIP
-	bool "Build ZIP archive"
+	bool "ZIP archive"
 	default y
 
 config PACKAGE_NSIS
-	bool "Build NSIS installer"
+	bool "NSIS installer"
 	default y
 
 config PACKAGE_MSI
-	bool "Build MSI installer"
+	bool "MSI installer"
 	default n
 
 config PACKAGE_MSIX
-	bool "Build MSIX package"
+	bool "MSIX package"
 	default n
 
-endif
+config PACKAGE_PORTABLE
+	bool "Portable archive"
+	default y
 
-if TARGET_MACOS
+endmenu
+
+menu "macOS Packages"
+	depends on TARGET_MACOS
 
 config PACKAGE_DMG
-	bool "Build DMG image"
+	bool "DMG image"
 	default y
 
 config PACKAGE_PKG
-	bool "Build PKG installer"
+	bool "PKG installer"
 	default n
 
-endif
+config PACKAGE_HOMEBREW
+	bool "Homebrew formula"
+	default n
+
+endmenu
 
 endmenu
 
@@ -833,32 +1726,50 @@ menu "Developer Options"
 config VERBOSE_BUILD
 	bool "Verbose build output"
 	default n
-	help
-	  Show full compiler commands instead of abbreviated output.
 
 config CCACHE
 	bool "Use ccache"
 	default y
-	help
-	  Use ccache to speed up rebuilds.
 
-config DISTCC
-	bool "Use distcc for distributed compilation"
+config CCACHE_DIR
+	string "ccache directory"
+	default ""
+	depends on CCACHE
+
+config SCCACHE
+	bool "Use sccache"
 	default n
 	help
-	  Distribute compilation across multiple machines.
+	  Use sccache instead of ccache. Supports cloud caching.
+
+config DISTCC
+	bool "Use distcc"
+	default n
 
 config COMPILE_COMMANDS
 	bool "Generate compile_commands.json"
 	default y
-	help
-	  Generate compilation database for IDE integration.
 
 config PARALLEL_JOBS
-	int "Default parallel jobs (0 = auto)"
+	int "Parallel jobs (0 = auto)"
 	default 0
-	help
-	  Number of parallel compilation jobs. 0 means auto-detect
-	  based on CPU cores.
+
+config INCREMENTAL_LINK
+	bool "Incremental linking"
+	default y
+	depends on BUILD_DEBUG
+
+config COLOR_DIAGNOSTICS
+	bool "Colored compiler output"
+	default y
+
+config PRINT_STATS
+	bool "Print build statistics"
+	default n
+
+config TIME_TRACE
+	bool "Clang time trace"
+	default n
+	depends on TOOLCHAIN_CLANG
 
 endmenu

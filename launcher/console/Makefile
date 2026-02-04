@@ -53,3 +53,6 @@ console-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(CONSOLE_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

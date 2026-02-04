@@ -45,3 +45,6 @@ launcherjava-clean:
 	$(Q)rm -rf $(JAVA_BUILD) $(JAR_OUTPUT)
 
 .PHONY: launcherjava launcherjava-clean
+
+# Include common build rules
+include $(srctree)/mk/module.mk

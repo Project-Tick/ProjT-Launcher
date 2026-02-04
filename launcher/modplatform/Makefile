@@ -90,3 +90,6 @@ modplatform-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(MP_ALL_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

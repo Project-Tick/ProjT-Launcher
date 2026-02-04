@@ -11,3 +11,6 @@ lib-y := src/MurmurHash2.o
 
 # Include paths
 includes-y := murmur2/src
+
+# Include common build rules
+include $(srctree)/mk/module.mk

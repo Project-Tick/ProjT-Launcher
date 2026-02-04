@@ -42,3 +42,6 @@ qt-modules-y := Core
 
 # Dependencies
 deps-y := zlib bzip2
+
+# Include common build rules
+include $(srctree)/mk/module.mk

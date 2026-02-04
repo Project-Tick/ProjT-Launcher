@@ -1,0 +1,142 @@
+# libpng Kconfig - PNG library configuration
+# Included from main Kconfig
+
+menuconfig LIBPNG
+	bool "libpng - PNG image support"
+	default y
+	depends on LIB_ZLIB
+	help
+	  PNG (Portable Network Graphics) image reading/writing library.
+	  Required for icon and image handling.
+
+if LIBPNG
+
+config LIBPNG_VERSION
+	string "libpng version"
+	default "1.6.43"
+
+menu "Hardware Optimizations"
+
+config LIBPNG_ARM_NEON
+	bool "ARM NEON intrinsics"
+	default y
+	depends on ARCH_AARCH64 || ARCH_ARM
+	help
+	  Enable ARM NEON SIMD optimizations for PNG decompression.
+
+config LIBPNG_INTEL_SSE
+	bool "Intel SSE intrinsics"
+	default y
+	depends on ARCH_X86_64 || ARCH_X86
+	help
+	  Enable Intel SSE2 SIMD optimizations.
+
+config LIBPNG_MIPS_MSA
+	bool "MIPS MSA intrinsics"
+	default y
+	depends on ARCH_MIPS64
+	help
+	  Enable MIPS MSA SIMD optimizations.
+
+config LIBPNG_POWERPC_VSX
+	bool "PowerPC VSX intrinsics"
+	default y
+	depends on ARCH_PPC64LE
+	help
+	  Enable PowerPC VSX vector optimizations.
+
+config LIBPNG_LOONGARCH_LSX
+	bool "LoongArch LSX intrinsics"
+	default y
+	depends on ARCH_LOONGARCH64
+	help
+	  Enable LoongArch LSX SIMD optimizations.
+
+endmenu
+
+menu "Features"
+
+config LIBPNG_READ
+	bool "PNG reading support"
+	default y
+	help
+	  Enable PNG image reading/decoding.
+
+config LIBPNG_WRITE
+	bool "PNG writing support"
+	default y
+	help
+	  Enable PNG image writing/encoding.
+
+config LIBPNG_SIMPLIFIED_API
+	bool "Simplified API"
+	default y
+	help
+	  Enable the simplified read/write API (png_image_*).
+
+config LIBPNG_APNG
+	bool "APNG support (animated PNG)"
+	default y
+	help
+	  Enable animated PNG (APNG) support.
+
+config LIBPNG_READ_USER_TRANSFORM
+	bool "User transform callback (read)"
+	default y
+	depends on LIBPNG_READ
+	help
+	  Allow user-defined pixel transformation during read.
+
+config LIBPNG_WRITE_USER_TRANSFORM
+	bool "User transform callback (write)"
+	default y
+	depends on LIBPNG_WRITE
+	help
+	  Allow user-defined pixel transformation during write.
+
+config LIBPNG_PROGRESSIVE_READ
+	bool "Progressive reading"
+	default y
+	depends on LIBPNG_READ
+	help
+	  Enable progressive/incremental PNG reading.
+
+config LIBPNG_CHECK_FOR_INVALID_INDEX
+	bool "Check for invalid palette index"
+	default y
+	help
+	  Check for and warn about invalid palette indices.
+
+config LIBPNG_BENIGN_ERRORS
+	bool "Benign error handling"
+	default y
+	help
+	  Allow app to override handling of benign errors.
+
+endmenu
+
+menu "Optional Chunks"
+
+config LIBPNG_READ_ANCILLARY_CHUNKS
+	bool "Read ancillary chunks"
+	default y
+	depends on LIBPNG_READ
+
+config LIBPNG_READ_TEXT
+	bool "Read text chunks (tEXt, iTXt, zTXt)"
+	default y
+	depends on LIBPNG_READ_ANCILLARY_CHUNKS
+
+config LIBPNG_READ_GAMMA
+	bool "Read gamma correction (gAMA)"
+	default y
+	depends on LIBPNG_READ_ANCILLARY_CHUNKS
+
+config LIBPNG_READ_ICC_PROFILE
+	bool "Read ICC profiles (iCCP)"
+	default y
+	depends on LIBPNG_READ_ANCILLARY_CHUNKS
+
+endmenu
+
+endif # LIBPNG

@@ -29,3 +29,6 @@ cxxflags-y := $(QT_CFLAGS)
 ifeq ($(TARGET_OS),macos)
     LDFLAGS += -framework CoreServices -framework IOKit
 endif
+
+# Include common build rules
+include $(srctree)/mk/module.mk

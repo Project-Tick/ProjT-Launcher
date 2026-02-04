@@ -64,3 +64,6 @@ filelink-clean:
 	$(Q)rm -rf $(obj) $(FILELINK_BIN)
 
 -include $(FILELINK_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

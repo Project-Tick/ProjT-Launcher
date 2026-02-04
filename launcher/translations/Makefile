@@ -51,3 +51,6 @@ translations-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(TRANS_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

@@ -231,35 +231,11 @@ prepare: $(KCONFIG_OBJDIR)/conf | $(KBUILD_OUTPUT)/include/config $(KBUILD_OUTPU
 	fi
 	$(Q)$(MAKE) -f $(srctree)/Makefile syncconfig
 
+# Override defconfig to use our custom defconfig file
 projt_defconfig: $(KCONFIG_OBJDIR)/conf
 	$(Q)$(KCONFIG_OBJDIR)/conf --defconfig=$(srctree)/$(DEFCONFIG) Kconfig
 
-defconfig: projt_defconfig
-
-oldconfig: $(KCONFIG_OBJDIR)/conf
-	$(Q)$(KCONFIG_OBJDIR)/conf --oldconfig Kconfig
-
-olddefconfig: $(KCONFIG_OBJDIR)/conf
-	$(Q)$(KCONFIG_OBJDIR)/conf --olddefconfig Kconfig
-
-menuconfig: $(KCONFIG_OBJDIR)/mconf
-	$(Q)$(KCONFIG_OBJDIR)/mconf Kconfig
-
-nconfig: $(KCONFIG_OBJDIR)/nconf
-	$(Q)$(KCONFIG_OBJDIR)/nconf Kconfig
-
-xconfig: $(KCONFIG_OBJDIR)/qconf
-	$(Q)$(KCONFIG_OBJDIR)/qconf Kconfig
-
-gconfig: $(KCONFIG_OBJDIR)/gconf
-	$(Q)$(KCONFIG_OBJDIR)/gconf Kconfig
-
-savedefconfig: $(KCONFIG_OBJDIR)/conf
-	$(Q)$(KCONFIG_OBJDIR)/conf --savedefconfig=$(KBUILD_OUTPUT)/defconfig Kconfig
-	@echo "Saved minimal config to $(KBUILD_OUTPUT)/defconfig"
-
-listnewconfig: $(KCONFIG_OBJDIR)/conf
-	$(Q)$(KCONFIG_OBJDIR)/conf --listnewconfig Kconfig
+# Note: menuconfig, oldconfig, savedefconfig, etc. are provided by kconfig/Makefile
 
 # ============================================================================
 # Main Build Target (Recursive Only)

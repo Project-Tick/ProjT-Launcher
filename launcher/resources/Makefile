@@ -59,3 +59,6 @@ $(obj)/%.o: $(obj)/%.cpp
 resources-clean:
 	@echo "  CLEAN   resources"
 	$(Q)rm -rf $(obj)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

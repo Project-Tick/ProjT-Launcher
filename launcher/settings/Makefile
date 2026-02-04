@@ -55,3 +55,6 @@ settings-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(SETTINGS_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

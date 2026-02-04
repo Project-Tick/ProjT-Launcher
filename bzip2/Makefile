@@ -24,3 +24,6 @@ ccflags-y := -DBZ_NO_STDIO
 
 # For large file support
 ccflags-y += -D_FILE_OFFSET_BITS=64
+
+# Include common build rules
+include $(srctree)/mk/module.mk

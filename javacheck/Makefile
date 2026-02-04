@@ -40,3 +40,6 @@ javacheck-clean:
 	$(Q)rm -rf $(JAVA_BUILD) $(JAR_OUTPUT)
 
 .PHONY: javacheck javacheck-clean
+
+# Include common build rules
+include $(srctree)/mk/module.mk

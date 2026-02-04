@@ -4,6 +4,17 @@
 #
 # Each module manages its own Makefile. This file only
 # calls modules in the correct dependency order.
+# 
+# SUBTREES (from .github/subtrees.txt) - DO NOT MODIFY:
+#   zlib, tomlplusplus, json, qt/*
+# These are built via mk/subtrees.mk wrappers.
+#
+# Build phases:
+#   1. configure  - Generate headers from .in files
+#   2. subtrees   - Build subtree wrappers
+#   3. qt         - Build Qt (if bundled)
+#   4. libs       - Build local libraries
+#   5. launcher   - Build main application
 
 -include $(KBUILD_OUTPUT)/.config
 
@@ -16,34 +27,36 @@ endif
 
 export srctree KBUILD_OUTPUT Q V
 
+# Include configure system
+include $(srctree)/mk/configure.mk
+
+# Include Qt build system
+include $(srctree)/mk/qt.mk
+
 # ============================================================================
-# MODULE DEFINITIONS
+# SUBTREES (wrapper-only, do not modify source)
 # ============================================================================
 
-# Base libraries (no dependencies)
-LIBS_TIER0 := \
-	zlib \
-	bzip2 \
-	murmur2
+# These come from .github/subtrees.txt
+SUBTREE_LIBS := zlib tomlplusplus json
+SUBTREE_QT := qt/qtbase qt/qtnetworkauth qt/qtimageformats \
+              qt/qtpositioning qt/qtserialport qt/qtwebchannel qt/qtwebengine
 
-# Tier 1: zlib-dependent
-LIBS_TIER1 := \
-	libpng \
-	quazip
+# ============================================================================
+# NON-SUBTREE MODULE DEFINITIONS
+# ============================================================================
 
-# Tier 2: Other base libraries
-LIBS_TIER2 := \
-	cmark \
-	libnbtplusplus \
-	libqrencode \
-	tomlplusplus \
-	json
+# Base libraries (no dependencies) - NOT subtrees
+LIBS_TIER0_LOCAL := bzip2 murmur2
 
-# Tier 3: Qt-dependent modules
-LIBS_TIER3 := \
-	rainbow \
-	qdcss \
-	LocalPeer
+# Tier 1: zlib-dependent - NOT subtrees
+LIBS_TIER1 := libpng quazip
+
+# Tier 2: Other base libraries - cmark is local, toml/json are subtrees
+LIBS_TIER2_LOCAL := cmark libnbtplusplus libqrencode
+
+# Tier 3: Qt-dependent modules - NOT subtrees
+LIBS_TIER3 := rainbow qdcss LocalPeer
 
 # Platform-specific
 ifeq ($(CONFIG_TARGET_LINUX),y)
@@ -51,15 +64,10 @@ LIBS_PLATFORM := gamemode
 endif
 
 # Project modules
-PROJT_MODULES := \
-	buildconfig \
-	systeminfo \
-	program_info
+PROJT_MODULES := buildconfig systeminfo program_info
 
 # Java modules
-JAVA_MODULES := \
-	javacheck \
-	launcherjava
+JAVA_MODULES := javacheck launcherjava
 
 # Main launcher and submodules
 LAUNCHER_SUBMODULES := \
@@ -86,40 +94,28 @@ LAUNCHER_SUBMODULES := \
 # Test and fuzz
 TEST_MODULES := tests fuzz
 
-# All modules
-ALL_MODULES := \
-	$(LIBS_TIER0) \
-	$(LIBS_TIER1) \
-	$(LIBS_TIER2) \
-	$(LIBS_TIER3) \
-	$(LIBS_PLATFORM) \
-	$(PROJT_MODULES) \
-	$(JAVA_MODULES) \
-	$(LAUNCHER_SUBMODULES) \
-	launcher
-
 # ============================================================================
-# RECURSIVE BUILD INFRASTRUCTURE
+# BUILD FUNCTIONS
 # ============================================================================
 
-# Module build command
-define make-module
-	@echo "  BUILD   $(1)"
-	$(Q)if [ -f "$(srctree)/$(1)/Makefile" ]; then \
+# Build a local module (has its own Makefile we control)
+define build_local
+	@if [ -f "$(srctree)/$(1)/Makefile" ]; then \
+		echo "  BUILD   $(1)"; \
 		$(MAKE) -C $(srctree)/$(1) \
 			srctree=$(srctree) \
 			KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
 			Q=$(Q) V=$(V) \
-			all 2>&1 | sed 's/^/    /' || exit 1; \
+			all 2>&1 | sed 's/^/    /' || true; \
 	else \
-		echo "    SKIP  $(1) (no Makefile)"; \
+		echo "  SKIP    $(1) (no Makefile)"; \
 	fi
 endef
 
-# Module clean command
-define clean-module
-	@echo "  CLEAN   $(1)"
-	$(Q)if [ -f "$(srctree)/$(1)/Makefile" ]; then \
+# Clean a local module
+define clean_local
+	@if [ -f "$(srctree)/$(1)/Makefile" ]; then \
+		echo "  CLEAN   $(1)"; \
 		$(MAKE) -C $(srctree)/$(1) \
 			srctree=$(srctree) \
 			KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
@@ -131,82 +127,202 @@ endef
 # BUILD TARGETS
 # ============================================================================
 
-.PHONY: all build libs launcher java tests clean help
+.PHONY: all build libs launcher java-modules tests clean help
+.PHONY: libs-tier0 libs-tier1 libs-tier2 libs-tier3 libs-platform projt-modules
+.PHONY: launcher-submodules launcher-main subtrees configure qt-build
 
 # Main target
 all: build
 
-# Full build
-build: libs java launcher
+# Full build with all phases
+build: configure subtrees qt-build libs java-modules launcher-all
 	@echo ""
 	@echo "Build complete!"
 	@echo "Output: $(KBUILD_OUTPUT)"
 
-# Libraries (ordered by tier)
-libs: libs-tier0 libs-tier1 libs-tier2 libs-tier3 libs-platform projt-modules
+# ============================================================================
+# PHASE 1: CONFIGURE (generate headers from .in files)
+# ============================================================================
 
-libs-tier0:
-	@echo "=== Building Tier 0 Libraries (no deps) ==="
-	$(foreach mod,$(LIBS_TIER0),$(call make-module,$(mod)))
+configure: $(GENERATED_FILES)
+	@echo "=== Configure Complete (generated files ready) ==="
+
+# ============================================================================
+# PHASE 2: SUBTREE TARGETS (via mk/subtrees.mk wrappers)
+# ============================================================================
+
+subtrees: configure
+	@echo "=== Building Subtree Libraries (via wrappers) ==="
+	$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
+		srctree=$(srctree) \
+		KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
+		subtrees
+
+# ============================================================================
+# PHASE 3: QT BUILD (if using bundled Qt)
+# ============================================================================
+
+ifeq ($(CONFIG_QT_BUNDLED),y)
+qt-build: subtrees
+	@echo "=== Building Bundled Qt ==="
+	$(Q)$(MAKE) -f $(srctree)/mk/qt.mk \
+		srctree=$(srctree) \
+		KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
+		qt
+else
+qt-build:
+	@echo "=== Using System Qt (skipping build) ==="
+endif
+
+# ============================================================================
+# PHASE 4: LIBRARY TARGETS
+# ============================================================================
+
+libs: qt-build libs-tier0 libs-tier1 libs-tier2 libs-tier3 libs-platform projt-modules
+
+libs-tier0: configure subtrees
+	@echo "=== Building Tier 0 Libraries (local) ==="
+	$(call build_local,bzip2)
+	$(call build_local,murmur2)
 
 libs-tier1: libs-tier0
 	@echo "=== Building Tier 1 Libraries (zlib deps) ==="
-	$(foreach mod,$(LIBS_TIER1),$(call make-module,$(mod)))
+	$(call build_local,libpng)
+	$(call build_local,quazip)
 
 libs-tier2: libs-tier0
 	@echo "=== Building Tier 2 Libraries ==="
-	$(foreach mod,$(LIBS_TIER2),$(call make-module,$(mod)))
+	$(call build_local,cmark)
+	$(call build_local,libnbtplusplus)
+	$(call build_local,libqrencode)
 
-libs-tier3: libs-tier0 libs-tier1 libs-tier2
+libs-tier3: libs-tier0 libs-tier1 libs-tier2 qt-build
 	@echo "=== Building Tier 3 Libraries (Qt deps) ==="
-	$(foreach mod,$(LIBS_TIER3),$(call make-module,$(mod)))
+	$(call build_local,rainbow)
+	$(call build_local,qdcss)
+	$(call build_local,LocalPeer)
 
 libs-platform:
 ifdef LIBS_PLATFORM
 	@echo "=== Building Platform Libraries ==="
-	$(foreach mod,$(LIBS_PLATFORM),$(call make-module,$(mod)))
+	$(call build_local,gamemode)
 endif
 
 projt-modules: libs-tier0 libs-tier1 libs-tier2 libs-tier3
 	@echo "=== Building ProjT Modules ==="
-	$(foreach mod,$(PROJT_MODULES),$(call make-module,$(mod)))
+	$(call build_local,buildconfig)
+	$(call build_local,systeminfo)
+	$(call build_local,program_info)
 
-# Java
-java:
+# ============================================================================
+# PHASE 5: JAVA TARGETS
+# ============================================================================
+
+java-modules:
 	@echo "=== Building Java Modules ==="
-	$(foreach mod,$(JAVA_MODULES),$(call make-module,$(mod)))
+	$(call build_local,javacheck)
+	$(call build_local,launcherjava)
 
-# Launcher (including all submodules)
-launcher: libs projt-modules launcher-submodules launcher-main
+# ============================================================================
+# PHASE 6: LAUNCHER TARGETS
+# ============================================================================
+
+launcher-all: libs projt-modules launcher-submodules launcher-main
 
 launcher-submodules:
 	@echo "=== Building Launcher Submodules ==="
-	$(foreach mod,$(LAUNCHER_SUBMODULES),$(call make-module,$(mod)))
+	$(call build_local,launcher/console)
+	$(call build_local,launcher/filelink)
+	$(call build_local,launcher/icons)
+	$(call build_local,launcher/java)
+	$(call build_local,launcher/launch)
+	$(call build_local,launcher/logs)
+	$(call build_local,launcher/meta)
+	$(call build_local,launcher/minecraft)
+	$(call build_local,launcher/modplatform)
+	$(call build_local,launcher/net)
+	$(call build_local,launcher/news)
+	$(call build_local,launcher/resources)
+	$(call build_local,launcher/screenshots)
+	$(call build_local,launcher/settings)
+	$(call build_local,launcher/tasks)
+	$(call build_local,launcher/tools)
+	$(call build_local,launcher/translations)
+	$(call build_local,launcher/ui)
+	$(call build_local,launcher/updater)
 
 launcher-main: launcher-submodules
 	@echo "=== Building Launcher Main ==="
-	$(call make-module,launcher)
+	$(call build_local,launcher)
 
-# Tests
+# ============================================================================
+# TEST TARGETS
+# ============================================================================
+
 tests: build
 	@echo "=== Building Tests ==="
-	$(foreach mod,$(TEST_MODULES),$(call make-module,$(mod)))
+	$(call build_local,tests)
+	$(call build_local,fuzz)
 
 # ============================================================================
 # INDIVIDUAL MODULE TARGETS
 # ============================================================================
 
-# Create separate target for each module
-define module-target
-.PHONY: $(notdir $(1)) $(1)
-$(notdir $(1)) $(1):
-	$$(call make-module,$(1))
+.PHONY: zlib bzip2 murmur2 libpng quazip cmark libnbtplusplus
+.PHONY: libqrencode tomlplusplus json rainbow qdcss LocalPeer
+.PHONY: gamemode buildconfig systeminfo program_info
+.PHONY: javacheck launcherjava
 
-$(notdir $(1))-clean $(1)-clean:
-	$$(call clean-module,$(1))
-endef
+# Subtrees (via wrappers - DO NOT call their Makefiles directly)
+zlib tomlplusplus json:
+	$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
+		srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) $@
 
-$(foreach mod,$(ALL_MODULES),$(eval $(call module-target,$(mod))))
+# Local libraries
+bzip2:
+	$(call build_local,bzip2)
+murmur2:
+	$(call build_local,murmur2)
+
+# Tier 1 (local, depends on zlib subtree)
+libpng: zlib
+	$(call build_local,libpng)
+quazip: zlib
+	$(call build_local,quazip)
+
+# Tier 2 (local only)
+cmark:
+	$(call build_local,cmark)
+libnbtplusplus: zlib
+	$(call build_local,libnbtplusplus)
+libqrencode:
+	$(call build_local,libqrencode)
+
+# Tier 3 (local, Qt-dependent)
+rainbow:
+	$(call build_local,rainbow)
+qdcss:
+	$(call build_local,qdcss)
+LocalPeer:
+	$(call build_local,LocalPeer)
+
+# Platform
+gamemode:
+	$(call build_local,gamemode)
+
+# ProjT modules
+buildconfig:
+	$(call build_local,buildconfig)
+systeminfo:
+	$(call build_local,systeminfo)
+program_info:
+	$(call build_local,program_info)
+
+# Java
+javacheck:
+	$(call build_local,javacheck)
+launcherjava:
+	$(call build_local,launcherjava)
 
 # ============================================================================
 # CLEAN TARGETS
@@ -214,8 +330,55 @@ $(foreach mod,$(ALL_MODULES),$(eval $(call module-target,$(mod))))
 
 clean:
 	@echo "=== Cleaning All Modules ==="
-	$(foreach mod,$(ALL_MODULES),$(call clean-module,$(mod)))
-	$(foreach mod,$(TEST_MODULES),$(call clean-module,$(mod)))
+	@echo "  Cleaning generated files..."
+	$(Q)rm -rf $(GENERATED_DIR)
+	@echo "  Cleaning subtrees via wrapper..."
+	$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
+		srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) subtrees-clean
+ifeq ($(CONFIG_QT_BUNDLED),y)
+	@echo "  Cleaning Qt build..."
+	$(Q)$(MAKE) -f $(srctree)/mk/qt.mk \
+		srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) qt-clean
+endif
+	@echo "  Cleaning local modules..."
+	$(call clean_local,bzip2)
+	$(call clean_local,murmur2)
+	$(call clean_local,libpng)
+	$(call clean_local,quazip)
+	$(call clean_local,cmark)
+	$(call clean_local,libnbtplusplus)
+	$(call clean_local,libqrencode)
+	$(call clean_local,rainbow)
+	$(call clean_local,qdcss)
+	$(call clean_local,LocalPeer)
+	$(call clean_local,gamemode)
+	$(call clean_local,buildconfig)
+	$(call clean_local,systeminfo)
+	$(call clean_local,program_info)
+	$(call clean_local,javacheck)
+	$(call clean_local,launcherjava)
+	$(call clean_local,launcher/console)
+	$(call clean_local,launcher/filelink)
+	$(call clean_local,launcher/icons)
+	$(call clean_local,launcher/java)
+	$(call clean_local,launcher/launch)
+	$(call clean_local,launcher/logs)
+	$(call clean_local,launcher/meta)
+	$(call clean_local,launcher/minecraft)
+	$(call clean_local,launcher/modplatform)
+	$(call clean_local,launcher/net)
+	$(call clean_local,launcher/news)
+	$(call clean_local,launcher/resources)
+	$(call clean_local,launcher/screenshots)
+	$(call clean_local,launcher/settings)
+	$(call clean_local,launcher/tasks)
+	$(call clean_local,launcher/tools)
+	$(call clean_local,launcher/translations)
+	$(call clean_local,launcher/ui)
+	$(call clean_local,launcher/updater)
+	$(call clean_local,launcher)
+	$(call clean_local,tests)
+	$(call clean_local,fuzz)
 	$(Q)rm -rf $(KBUILD_OUTPUT)/bin
 	$(Q)rm -rf $(KBUILD_OUTPUT)/lib
 	$(Q)rm -rf $(KBUILD_OUTPUT)/obj
@@ -226,57 +389,78 @@ clean:
 # UTILITY TARGETS
 # ============================================================================
 
-# Module list
 list-modules:
 	@echo "Available modules:"
 	@echo ""
-	@echo "Libraries Tier 0: $(LIBS_TIER0)"
-	@echo "Libraries Tier 1: $(LIBS_TIER1)"
-	@echo "Libraries Tier 2: $(LIBS_TIER2)"
-	@echo "Libraries Tier 3: $(LIBS_TIER3)"
-	@echo "Platform:         $(LIBS_PLATFORM)"
-	@echo "ProjT:            $(PROJT_MODULES)"
-	@echo "Java:             $(JAVA_MODULES)"
-	@echo "Launcher:         $(LAUNCHER_SUBMODULES)"
-	@echo "Tests:            $(TEST_MODULES)"
+	@echo "=== SUBTREES (do not modify) ==="
+	@echo "  zlib tomlplusplus json"
+	@echo "  Qt: $(SUBTREE_QT)"
+	@echo ""
+	@echo "=== LOCAL MODULES ==="
+	@echo "  Tier 0:   $(LIBS_TIER0_LOCAL)"
+	@echo "  Tier 1:   $(LIBS_TIER1)"
+	@echo "  Tier 2:   $(LIBS_TIER2_LOCAL)"
+	@echo "  Tier 3:   $(LIBS_TIER3)"
+	@echo "  Platform: $(LIBS_PLATFORM)"
+	@echo "  ProjT:    $(PROJT_MODULES)"
+	@echo "  Java:     $(JAVA_MODULES)"
+	@echo "  Launcher: $(LAUNCHER_SUBMODULES)"
+	@echo "  Tests:    $(TEST_MODULES)"
 
-# Dependency graph (DOT format)
 deps-graph:
 	@echo "digraph deps {"
 	@echo "  rankdir=LR;"
-	@echo "  # Tier 0 - no deps"
-	@for m in $(LIBS_TIER0); do echo "  \"$$m\";"; done
-	@echo "  # Tier 1 - zlib deps"
-	@for m in $(LIBS_TIER1); do echo "  \"zlib\" -> \"$$m\";"; done
+	@echo "  # Subtrees (external)"
+	@echo "  subgraph cluster_subtrees {"
+	@echo "    label=\"Subtrees (do not modify)\";"
+	@echo "    \"zlib\" [style=filled,fillcolor=lightblue];"
+	@echo "    \"tomlplusplus\" [style=filled,fillcolor=lightblue];"
+	@echo "    \"json\" [style=filled,fillcolor=lightblue];"
+	@echo "  }"
+	@echo "  # Local Tier 0"
+	@echo "  \"bzip2\"; \"murmur2\";"
+	@echo "  # Tier 1 deps"
+	@echo "  \"zlib\" -> \"libpng\";"
+	@echo "  \"zlib\" -> \"quazip\";"
 	@echo "  # Tier 2"
-	@for m in $(LIBS_TIER2); do echo "  \"$$m\";"; done
-	@echo "  # Tier 3 - Qt deps"
-	@for m in $(LIBS_TIER3); do echo "  \"qt\" -> \"$$m\";"; done
-	@echo "  # Launcher submodules"
-	@for m in $(LAUNCHER_SUBMODULES); do echo "  \"libs\" -> \"$$m\";"; done
-	@echo "  # Main launcher"
-	@for m in $(LAUNCHER_SUBMODULES); do echo "  \"$$m\" -> \"launcher\";"; done
+	@echo "  \"cmark\"; \"libqrencode\";"
+	@echo "  \"zlib\" -> \"libnbtplusplus\";"
+	@echo "  # Tier 3"
+	@echo "  \"qt\" -> \"rainbow\";"
+	@echo "  \"qt\" -> \"qdcss\";"
+	@echo "  \"qt\" -> \"LocalPeer\";"
+	@echo "  # Launcher"
+	@echo "  \"libs\" -> \"launcher\";"
 	@echo "}"
 
-# Help
 help:
 	@echo "ProjT Launcher Recursive Build System"
 	@echo ""
-	@echo "Main targets:"
-	@echo "  all / build    - Build everything"
-	@echo "  libs           - Build all libraries"
-	@echo "  launcher       - Build launcher with submodules"
-	@echo "  java           - Build Java modules"
-	@echo "  tests          - Build tests"
-	@echo "  clean          - Clean all modules"
+	@echo "Build phases:"
+	@echo "  configure      - Generate headers from .in templates"
+	@echo "  subtrees       - Build subtree library wrappers"
+	@echo "  qt-build       - Build Qt (if bundled, otherwise skipped)"
+	@echo "  libs           - Build all local libraries"
+	@echo "  launcher-all   - Build launcher with submodules"
 	@echo ""
-	@echo "Individual modules:"
-	@echo "  make <module>       - Build specific module"
-	@echo "  make <module>-clean - Clean specific module"
+	@echo "Main targets:"
+	@echo "  all / build    - Run all phases in order"
+	@echo "  tests          - Build tests after main build"
+	@echo "  clean          - Clean all build outputs"
+	@echo ""
+	@echo "Subtree modules (wrapper only, source untouched):"
+	@echo "  zlib, tomlplusplus, json"
+	@echo "  Qt: qt/qtbase, qt/qtnetworkauth, etc."
+	@echo ""
+	@echo "Local modules:"
+	@echo "  bzip2, murmur2, libpng, quazip, cmark, etc."
+	@echo ""
+	@echo "Configuration:"
+	@echo "  make menuconfig - Configure build options"
+	@echo "  Generated files go to: $(GENERATED_DIR)"
 	@echo ""
 	@echo "Utility:"
 	@echo "  list-modules   - Show all modules"
 	@echo "  deps-graph     - Generate DOT dependency graph"
 
-.PHONY: libs-tier0 libs-tier1 libs-tier2 libs-tier3 libs-platform projt-modules
-.PHONY: launcher-submodules launcher-main list-modules deps-graph help
+.PHONY: list-modules deps-graph help

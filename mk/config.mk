@@ -6,6 +6,13 @@ srctree ?= $(CURDIR)
 O ?= build
 KBUILD_OUTPUT ?= $(abspath $(O))
 
+# Build output directories
+OBJDIR := $(KBUILD_OUTPUT)/obj
+LIBDIR := $(KBUILD_OUTPUT)/lib
+BINDIR := $(KBUILD_OUTPUT)/bin
+
+export OBJDIR LIBDIR BINDIR
+
 KCONFIG_CONFIG ?= $(KBUILD_OUTPUT)/.config
 KCONFIG_AUTOCONFIG ?= $(KBUILD_OUTPUT)/include/config/auto.conf
 
@@ -23,3 +30,11 @@ CONFIG_QT_VERSION_MAJOR ?= "6"
 CONFIG_QT_PREFIX ?= ""
 CONFIG_QT_HOST_BINS ?= ""
 CONFIG_USE_BUNDLED_QT ?= n
+
+# Default tools
+CC ?= gcc
+CXX ?= g++
+AR ?= ar
+RANLIB ?= ranlib
+
+export CC CXX AR RANLIB

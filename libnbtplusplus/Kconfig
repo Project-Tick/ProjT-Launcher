@@ -1,0 +1,108 @@
+# libnbtplusplus Kconfig - Minecraft NBT parser
+# Included from main Kconfig
+
+menuconfig LIBNBTPLUSPLUS
+	bool "libnbtplusplus - NBT parser"
+	default y
+	depends on LIB_ZLIB
+	help
+	  C++ library for reading and writing Minecraft NBT
+	  (Named Binary Tag) format files.
+
+if LIBNBTPLUSPLUS
+
+config LIBNBTPLUSPLUS_STATIC
+	bool "Build as static library"
+	default y
+
+config LIBNBTPLUSPLUS_SHARED
+	bool "Build as shared library"
+	default n
+
+menu "Compression Support"
+
+config LIBNBTPLUSPLUS_GZIP
+	bool "Gzip compression"
+	default y
+	depends on LIB_ZLIB
+	help
+	  Support reading/writing gzip-compressed NBT files.
+	  Most Minecraft NBT files use gzip compression.
+
+config LIBNBTPLUSPLUS_ZLIB
+	bool "Zlib compression (deflate)"
+	default y
+	depends on LIB_ZLIB
+	help
+	  Support raw zlib (deflate) compression.
+
+config LIBNBTPLUSPLUS_UNCOMPRESSED
+	bool "Uncompressed NBT"
+	default y
+	help
+	  Support reading/writing uncompressed NBT files.
+
+endmenu
+
+menu "Tag Types"
+
+comment "All standard NBT tag types are always enabled"
+
+config LIBNBTPLUSPLUS_TAG_LONG_ARRAY
+	bool "Long array support (TAG_Long_Array)"
+	default y
+	help
+	  Support for TAG_Long_Array (added in Minecraft 1.12).
+
+endmenu
+
+menu "Features"
+
+config LIBNBTPLUSPLUS_PRETTY_PRINT
+	bool "Pretty-print support"
+	default y
+	help
+	  Enable human-readable NBT output.
+
+config LIBNBTPLUSPLUS_STRICT_PARSING
+	bool "Strict parsing mode"
+	default n
+	help
+	  Enable strict NBT parsing (reject malformed data).
+
+config LIBNBTPLUSPLUS_MEMORY_MAPPING
+	bool "Memory-mapped file I/O"
+	default n
+	help
+	  Use memory-mapped files for faster reading.
+
+endmenu
+
+menu "Limits"
+
+config LIBNBTPLUSPLUS_MAX_DEPTH
+	int "Maximum nesting depth"
+	default 512
+	help
+	  Maximum allowed nesting depth for compound/list tags.
+
+config LIBNBTPLUSPLUS_MAX_STRING_SIZE
+	int "Maximum string size (bytes)"
+	default 65535
+	help
+	  Maximum allowed string length in bytes.
+
+config LIBNBTPLUSPLUS_MAX_ARRAY_SIZE
+	int "Maximum array size (elements)"
+	default 16777216
+	help
+	  Maximum allowed byte/int/long array size.
+
+endmenu
+
+config LIBNBTPLUSPLUS_TESTS
+	bool "Build tests"
+	default n
+	depends on BUILD_TESTS
+
+endif # LIBNBTPLUSPLUS

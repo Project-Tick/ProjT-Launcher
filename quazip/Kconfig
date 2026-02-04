@@ -1,0 +1,113 @@
+# quazip Kconfig - Qt ZIP archive library
+# Included from main Kconfig
+
+menuconfig QUAZIP
+	bool "quazip - Qt ZIP library"
+	default y
+	depends on LIB_ZLIB && LIB_BZIP2
+	help
+	  Qt wrapper for zlib/minizip providing ZIP archive
+	  reading and writing functionality.
+
+if QUAZIP
+
+config QUAZIP_VERSION
+	string "quazip version"
+	default "1.4"
+
+config QUAZIP_STATIC
+	bool "Build as static library"
+	default y
+
+config QUAZIP_SHARED
+	bool "Build as shared library"
+	default n
+
+menu "Compression Support"
+
+config QUAZIP_DEFLATE
+	bool "Deflate compression (zlib)"
+	default y
+	help
+	  Standard ZIP deflate compression via zlib.
+
+config QUAZIP_BZIP2
+	bool "Bzip2 compression"
+	default y
+	depends on LIB_BZIP2
+	help
+	  Bzip2 compression support in ZIP archives.
+
+config QUAZIP_ZSTD
+	bool "Zstd compression"
+	default y
+	help
+	  Zstandard compression support (ZIP extension).
+
+config QUAZIP_LZMA
+	bool "LZMA/XZ compression"
+	default n
+	help
+	  LZMA compression support (requires liblzma).
+
+endmenu
+
+menu "Features"
+
+config QUAZIP_ZIP64
+	bool "ZIP64 support"
+	default y
+	help
+	  Support for ZIP64 extensions (files > 4GB).
+
+config QUAZIP_ENCRYPTION
+	bool "ZIP encryption"
+	default y
+	help
+	  Support for traditional ZIP encryption.
+	  Note: ZIP encryption is weak, use encrypted containers instead.
+
+config QUAZIP_AES_ENCRYPTION
+	bool "AES encryption (WinZip)"
+	default n
+	depends on QUAZIP_ENCRYPTION
+	help
+	  Support for AES-256 encryption (WinZip extension).
+
+config QUAZIP_UNICODE
+	bool "Unicode filename support"
+	default y
+	help
+	  Support for UTF-8 filenames in ZIP archives.
+
+config QUAZIP_STREAMING
+	bool "Streaming API"
+	default y
+	help
+	  Enable QIODevice-based streaming read/write.
+
+endmenu
+
+menu "Memory"
+
+config QUAZIP_BUFFER_SIZE
+	int "I/O buffer size (bytes)"
+	default 65536
+	help
+	  Size of internal read/write buffers.
+
+config QUAZIP_MEMORY_LIMIT
+	int "Memory limit for extraction (MB, 0=unlimited)"
+	default 0
+	help
+	  Limit memory usage during extraction.
+	  Prevents zip bomb attacks. 0 = no limit.
+
+endmenu
+
+config QUAZIP_TESTS
+	bool "Build tests"
+	default n
+	depends on BUILD_TESTS
+
+endif # QUAZIP

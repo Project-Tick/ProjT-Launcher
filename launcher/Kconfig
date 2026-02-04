@@ -1,0 +1,287 @@
+# launcher Kconfig - Main launcher application
+# Included from main Kconfig
+
+menuconfig LAUNCHER
+	bool "Main launcher application"
+	default y
+	help
+	  The ProjT Launcher main application.
+
+if LAUNCHER
+
+menu "Core Components"
+
+config LAUNCHER_CORE
+	bool "Core functionality"
+	default y
+	help
+	  Core launcher functionality (required).
+
+config LAUNCHER_GUI
+	bool "GUI (Qt Widgets)"
+	default y
+	help
+	  Qt-based graphical user interface.
+
+config LAUNCHER_CLI
+	bool "Command-line interface"
+	default n
+	help
+	  Command-line interface for headless operation.
+
+endmenu
+
+menu "Instance Management"
+
+config LAUNCHER_INSTANCES
+	bool "Instance management"
+	default y
+	help
+	  Minecraft instance creation and management.
+
+config LAUNCHER_INSTANCE_COPY
+	bool "Instance copy/clone"
+	default y
+	depends on LAUNCHER_INSTANCES
+
+config LAUNCHER_INSTANCE_EXPORT
+	bool "Instance export"
+	default y
+	depends on LAUNCHER_INSTANCES
+	help
+	  Export instances as archives.
+
+config LAUNCHER_INSTANCE_IMPORT
+	bool "Instance import"
+	default y
+	depends on LAUNCHER_INSTANCES
+	help
+	  Import instances from archives.
+
+config LAUNCHER_INSTANCE_SYMLINKS
+	bool "Linked instances"
+	default y
+	depends on LAUNCHER_INSTANCES
+	help
+	  Support for linked instances (shared files).
+
+endmenu
+
+menu "Minecraft Support"
+
+config LAUNCHER_MINECRAFT_VANILLA
+	bool "Vanilla Minecraft"
+	default y
+	help
+	  Support for vanilla Minecraft versions.
+
+config LAUNCHER_MINECRAFT_FORGE
+	bool "Forge support"
+	default y
+	help
+	  Support for Minecraft Forge modloader.
+
+config LAUNCHER_MINECRAFT_FABRIC
+	bool "Fabric support"
+	default y
+	help
+	  Support for Fabric modloader.
+
+config LAUNCHER_MINECRAFT_QUILT
+	bool "Quilt support"
+	default y
+	help
+	  Support for Quilt modloader.
+
+config LAUNCHER_MINECRAFT_NEOFORGE
+	bool "NeoForge support"
+	default y
+	help
+	  Support for NeoForge modloader.
+
+config LAUNCHER_MINECRAFT_LITELOADER
+	bool "LiteLoader support"
+	default y
+	help
+	  Support for LiteLoader (legacy).
+
+endmenu
+
+menu "Mod Platforms"
+
+config LAUNCHER_MODRINTH
+	bool "Modrinth integration"
+	default y
+	help
+	  Modrinth mod/modpack platform support.
+
+config LAUNCHER_CURSEFORGE
+	bool "CurseForge/Flame integration"
+	default y
+	help
+	  CurseForge mod/modpack platform support.
+
+config LAUNCHER_TECHNIC
+	bool "Technic integration"
+	default y
+	help
+	  Technic platform modpack support.
+
+config LAUNCHER_ATLAUNCHER
+	bool "ATLauncher integration"
+	default y
+	help
+	  ATLauncher modpack support.
+
+config LAUNCHER_FTB
+	bool "Feed The Beast integration"
+	default y
+	help
+	  FTB modpack support.
+
+endmenu
+
+menu "Authentication"
+
+config LAUNCHER_AUTH_MSA
+	bool "Microsoft Account login"
+	default y
+	help
+	  Microsoft/Xbox Live authentication.
+
+config LAUNCHER_AUTH_OFFLINE
+	bool "Offline mode"
+	default y
+	help
+	  Allow offline play without authentication.
+
+config LAUNCHER_AUTH_ELY_BY
+	bool "Ely.by authentication"
+	default n
+	help
+	  Ely.by authentication service support.
+
+endmenu
+
+menu "UI Features"
+
+config LAUNCHER_THEMES
+	bool "Custom themes"
+	default y
+	help
+	  User-customizable themes.
+
+config LAUNCHER_ICONS
+	bool "Custom icon packs"
+	default y
+	help
+	  Custom instance icon support.
+
+config LAUNCHER_SCREENSHOTS
+	bool "Screenshot viewer"
+	default y
+	help
+	  In-app screenshot viewing and management.
+
+config LAUNCHER_LOGS
+	bool "Log viewer"
+	default y
+	help
+	  In-app log viewing and upload.
+
+config LAUNCHER_CONSOLE
+	bool "Console output"
+	default y
+	help
+	  Game console output display.
+
+config LAUNCHER_NEWS
+	bool "News feed"
+	default y
+	help
+	  News feed from project website.
+
+config LAUNCHER_CATS
+	bool "Cat mode"
+	default y
+	help
+	  Essential cat-related functionality.
+
+endmenu
+
+menu "Java Management"
+
+config LAUNCHER_JAVA_DETECT
+	bool "Java detection"
+	default y
+	help
+	  Automatic Java installation detection.
+
+config LAUNCHER_JAVA_DOWNLOAD
+	bool "Java auto-download"
+	default y
+	help
+	  Automatic Java download and installation.
+
+config LAUNCHER_JAVA_ADOPTIUM
+	bool "Adoptium Temurin"
+	default y
+	depends on LAUNCHER_JAVA_DOWNLOAD
+
+config LAUNCHER_JAVA_AZUL
+	bool "Azul Zulu"
+	default y
+	depends on LAUNCHER_JAVA_DOWNLOAD
+
+config LAUNCHER_JAVA_MICROSOFT
+	bool "Microsoft OpenJDK"
+	default y
+	depends on LAUNCHER_JAVA_DOWNLOAD
+
+endmenu
+
+menu "Updates"
+
+config LAUNCHER_UPDATER
+	bool "Auto-updater"
+	default y
+	help
+	  In-app self-update functionality.
+
+config LAUNCHER_UPDATER_GITHUB
+	bool "GitHub releases"
+	default y
+	depends on LAUNCHER_UPDATER
+
+config LAUNCHER_UPDATER_SPARKLE
+	bool "Sparkle (macOS)"
+	default y
+	depends on LAUNCHER_UPDATER && TARGET_MACOS
+
+endmenu
+
+menu "Integrations"
+
+config LAUNCHER_DISCORD_RPC
+	bool "Discord Rich Presence"
+	default y
+	help
+	  Show game status in Discord.
+
+config LAUNCHER_GAMEMODE
+	bool "GameMode integration"
+	default y
+	depends on TARGET_LINUX || TARGET_AUTO
+	help
+	  Feral GameMode performance optimization.
+
+config LAUNCHER_MANGOHUD
+	bool "MangoHud integration"
+	default y
+	depends on TARGET_LINUX || TARGET_AUTO
+	help
+	  MangoHud performance overlay support.
+
+endmenu
+
+endif # LAUNCHER

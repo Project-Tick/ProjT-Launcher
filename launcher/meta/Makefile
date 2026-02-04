@@ -54,3 +54,6 @@ meta-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(META_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

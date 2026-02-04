@@ -81,3 +81,6 @@ program-info-targets += $(GEN_DIR)/program_info/projtlauncher.qrc
 program_info: $(program-info-targets)
 
 .PHONY: program_info
+
+# Include common build rules
+include $(srctree)/mk/module.mk

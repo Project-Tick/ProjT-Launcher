@@ -75,3 +75,6 @@ updater-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(UPDATER_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk

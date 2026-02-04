@@ -106,3 +106,6 @@ minecraft-clean:
 	$(Q)rm -rf $(obj)
 
 -include $(MC_ALL_OBJS:.o=.d)
+
+# Include common build rules
+include $(srctree)/mk/module.mk
