@@ -1125,8 +1125,8 @@ QString MinecraftInstance::getStatusbarDescription()
 	QString mcVersion = m_components->getComponentVersion("net.minecraft");
 	if (mcVersion.isEmpty())
 	{
-		// Load component info if needed
-		m_components->reload(Net::Mode::Offline);
+		// Load component info if needed - use Online mode to fetch metadata if not cached
+		m_components->reload(Net::Mode::Online);
 		mcVersion = m_components->getComponentVersion("net.minecraft");
 	}
 
@@ -1226,7 +1226,9 @@ shared_qobject_ptr<projt::launch::LaunchPipeline> MinecraftInstance::createLaunc
 
 	// load meta
 	{
-		auto mode = session->status != AuthSession::PlayableOffline ? Net::Mode::Online : Net::Mode::Offline;
+		// Always try online mode for metadata downloads - only use offline if we truly have no network
+		// PlayableOffline means the player CAN play offline, not that they MUST be offline
+		auto mode = Net::Mode::Online;
 		process->appendStage(
 			makeShared<projt::launch::TaskBridgeStage>(pptr, makeShared<MinecraftLoadAndCheck>(this, mode)));
 	}

@@ -438,7 +438,8 @@ Task::Ptr PackProfile::getCurrentTask()
 
 void PackProfile::resolve(Net::Mode netmode)
 {
-	auto updateTask = new ComponentUpdateTask(ComponentUpdateTask::Mode::Resolution, netmode, this);
+	// Use Mode::Launch to ensure version details are downloaded, not just version lists
+	auto updateTask = new ComponentUpdateTask(ComponentUpdateTask::Mode::Launch, netmode, this);
 	d->m_updateTask.reset(updateTask);
 	connect(updateTask, &ComponentUpdateTask::succeeded, this, &PackProfile::updateSucceeded);
 	connect(updateTask, &ComponentUpdateTask::failed, this, &PackProfile::updateFailed);
