@@ -1094,6 +1094,59 @@ config QT_WEBENGINE_PROPRIETARY_CODECS
 
 endmenu
 
+menu "Qt Platform Plugins"
+	depends on QT_BUNDLED
+
+comment "Display Server Backends"
+
+config QT_PLATFORM_XCB
+	bool "X11/XCB support"
+	default y
+	depends on TARGET_LINUX || TARGET_AUTO
+	help
+	  X Window System support via XCB library.
+	  Required for X11-based Linux desktops.
+
+config QT_PLATFORM_WAYLAND
+	bool "Wayland support"
+	default y
+	depends on TARGET_LINUX || TARGET_AUTO
+	help
+	  Wayland display server support.
+	  Required for modern Wayland-based Linux desktops.
+
+config QT_PLATFORM_EGLFS
+	bool "EGL fullscreen (embedded)"
+	default n
+	help
+	  Direct EGL rendering without window system.
+	  For embedded/kiosk systems.
+
+config QT_PLATFORM_LINUXFB
+	bool "Linux Framebuffer"
+	default n
+	depends on TARGET_LINUX || TARGET_AUTO
+	help
+	  Direct framebuffer rendering.
+	  For systems without X11/Wayland.
+
+config QT_PLATFORM_VNC
+	bool "VNC server"
+	default n
+	help
+	  Built-in VNC server for remote display.
+
+config QT_PLATFORM_OFFSCREEN
+	bool "Offscreen rendering"
+	default y
+	help
+	  Offscreen rendering for headless/testing.
+
+comment "Windows/macOS (auto-enabled)"
+	depends on TARGET_WINDOWS || TARGET_MACOS
+
+endmenu
+
 menu "Qt Features"
 
 config QT_FEATURE_CONCURRENT

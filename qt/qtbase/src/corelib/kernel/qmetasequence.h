@@ -250,9 +250,6 @@ public:
     void set(qsizetype idx, const QVariant &value)
             Q_DECL_EQ_DELETE_X("Use setAt() instead.");
 
-    void set(qsizetype idx, const QVariant &value)
-            Q_DECL_EQ_DELETE_X("Use setAt() instead.");
-
     QT_WARNING_POP
 #endif // QT_DEPRECATED_SINCE(6, 11)
 };

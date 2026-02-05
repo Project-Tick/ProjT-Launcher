@@ -125,26 +125,108 @@ USE_BUNDLED_QT := $(call cfg-yes,$(CONFIG_USE_BUNDLED_QT))
 
 ifeq ($(USE_BUNDLED_QT),y)
 
-# Qt modules we need
+# Qt modules we need (from Kconfig)
 QT_MODULES := qtbase
 
-ifeq ($(call cfg-yes,$(CONFIG_LAUNCHER_WITH_WEBENGINE)),y)
-    QT_MODULES += qtwebengine qtwebchannel qtpositioning
+ifeq ($(call cfg-yes,$(CONFIG_QT_MODULE_QTNETWORKAUTH)),y)
+    QT_MODULES += qtnetworkauth
+endif
+ifeq ($(call cfg-yes,$(CONFIG_QT_MODULE_QTIMAGEFORMATS)),y)
+    QT_MODULES += qtimageformats
+endif
+ifeq ($(call cfg-yes,$(CONFIG_QT_MODULE_QTPOSITIONING)),y)
+    QT_MODULES += qtpositioning
+endif
+ifeq ($(call cfg-yes,$(CONFIG_QT_MODULE_QTSERIALPORT)),y)
+    QT_MODULES += qtserialport
+endif
+ifeq ($(call cfg-yes,$(CONFIG_QT_MODULE_QTWEBCHANNEL)),y)
+    QT_MODULES += qtwebchannel
+endif
+ifeq ($(call cfg-yes,$(CONFIG_QT_MODULE_QTWEBENGINE)),y)
+    QT_MODULES += qtwebengine
+endif
+ifeq ($(call cfg-yes,$(CONFIG_QT_PLATFORM_WAYLAND)),y)
+    QT_MODULES += qtwayland
 endif
 
-# Qt configuration
+# Qt base configuration
 QT_CONFIGURE_FLAGS := \
     -prefix $(QT_PREFIX) \
-    -release \
     -opensource \
     -confirm-license \
     -nomake examples \
-    -nomake tests \
-    -no-feature-sql \
-    -static
+    -nomake tests
 
+# Build type
+ifeq ($(call cfg-yes,$(CONFIG_QT_DEBUG_BUILD)),y)
+    QT_CONFIGURE_FLAGS += -debug
+else
+    QT_CONFIGURE_FLAGS += -release
+endif
+
+# Static/Shared
+ifeq ($(call cfg-yes,$(CONFIG_QT_STATIC)),y)
+    QT_CONFIGURE_FLAGS += -static
+else
+    QT_CONFIGURE_FLAGS += -shared
+endif
+
+# Features from Kconfig
+ifneq ($(call cfg-yes,$(CONFIG_QT_FEATURE_SQL)),y)
+    QT_CONFIGURE_FLAGS += -no-feature-sql
+endif
+
+ifeq ($(call cfg-yes,$(CONFIG_QT_FEATURE_OPENGL)),y)
+    QT_CONFIGURE_FLAGS += -opengl desktop
+endif
+
+ifeq ($(call cfg-yes,$(CONFIG_QT_FEATURE_OPENSSL)),y)
+    QT_CONFIGURE_FLAGS += -openssl-linked
+endif
+
+ifeq ($(call cfg-yes,$(CONFIG_QT_FEATURE_ICU)),y)
+    QT_CONFIGURE_FLAGS += -icu
+else
+    QT_CONFIGURE_FLAGS += -no-icu
+endif
+
+ifeq ($(call cfg-yes,$(CONFIG_QT_FEATURE_ZSTD)),y)
+    QT_CONFIGURE_FLAGS += -zstd
+endif
+
+ifneq ($(call cfg-yes,$(CONFIG_QT_FEATURE_DBUS)),y)
+    QT_CONFIGURE_FLAGS += -no-dbus
+endif
+
+# Platform-specific configuration
 ifeq ($(TARGET_OS),linux)
-    QT_CONFIGURE_FLAGS += -xcb -opengl desktop
+    # X11/XCB support
+    ifeq ($(call cfg-yes,$(CONFIG_QT_PLATFORM_XCB)),y)
+        QT_CONFIGURE_FLAGS += -xcb -xcb-xlib -bundled-xcb-xinput
+    else
+        QT_CONFIGURE_FLAGS += -no-xcb
+    endif
+    
+    # Wayland support
+    ifeq ($(call cfg-yes,$(CONFIG_QT_PLATFORM_WAYLAND)),y)
+        QT_CONFIGURE_FLAGS += -feature-wayland-client
+    endif
+    
+    # EGLFS support
+    ifeq ($(call cfg-yes,$(CONFIG_QT_PLATFORM_EGLFS)),y)
+        QT_CONFIGURE_FLAGS += -eglfs
+    else
+        QT_CONFIGURE_FLAGS += -no-eglfs
+    endif
+    
+    # Linux Framebuffer
+    ifeq ($(call cfg-yes,$(CONFIG_QT_PLATFORM_LINUXFB)),y)
+        QT_CONFIGURE_FLAGS += -linuxfb
+    else
+        QT_CONFIGURE_FLAGS += -no-linuxfb
+    endif
+    
 else ifeq ($(TARGET_OS),windows)
     QT_CONFIGURE_FLAGS += -platform win32-g++
 else ifeq ($(TARGET_OS),macos)

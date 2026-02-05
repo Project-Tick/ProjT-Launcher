@@ -83,13 +83,40 @@ endif
 
 # Platform-specific options
 ifeq ($(CONFIG_TARGET_LINUX),y)
-QT_CONFIGURE_PLATFORM := \
-	-platform linux-g++ \
-	-xcb \
-	-bundled-xcb-xinput
-ifeq ($(CONFIG_LINUX_WAYLAND),y)
-QT_CONFIGURE_PLATFORM += -feature-wayland
+QT_CONFIGURE_PLATFORM := -platform linux-g++
+
+# XCB (X11) support from Kconfig
+ifeq ($(CONFIG_QT_PLATFORM_XCB),y)
+QT_CONFIGURE_PLATFORM += -xcb -xcb-xlib -bundled-xcb-xinput
+else
+QT_CONFIGURE_PLATFORM += -no-xcb
 endif
+
+# Wayland support from Kconfig
+ifeq ($(CONFIG_QT_PLATFORM_WAYLAND),y)
+QT_CONFIGURE_PLATFORM += -feature-wayland-client
+endif
+
+# EGLFS support from Kconfig
+ifeq ($(CONFIG_QT_PLATFORM_EGLFS),y)
+QT_CONFIGURE_PLATFORM += -eglfs
+else
+QT_CONFIGURE_PLATFORM += -no-eglfs
+endif
+
+# Linux Framebuffer from Kconfig
+ifeq ($(CONFIG_QT_PLATFORM_LINUXFB),y)
+QT_CONFIGURE_PLATFORM += -linuxfb
+else
+QT_CONFIGURE_PLATFORM += -no-linuxfb
+endif
+
+# VNC support from Kconfig
+ifeq ($(CONFIG_QT_PLATFORM_VNC),y)
+QT_CONFIGURE_PLATFORM += -vnc
+endif
+
+# DBus
 ifeq ($(CONFIG_QT_FEATURE_DBUS),y)
 QT_CONFIGURE_PLATFORM += -dbus-linked
 else
