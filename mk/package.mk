@@ -49,6 +49,15 @@ $(PKG_OUTPUT) $(PKG_STAGING):
 DEB_ARCH := $(shell dpkg --print-architecture 2>/dev/null || echo amd64)
 DEB_FILE := $(PKG_OUTPUT)/$(PKG_NAME)_$(PKG_VERSION)_$(DEB_ARCH).deb
 
+# Application ID for desktop files
+APP_ID := org.projecttick.ProjTLauncher
+APP_BINARY := projtlauncher
+APP_DISPLAY_NAME := ProjT Launcher
+APP_COMMON_NAME := ProjT Launcher
+
+# Source directories
+PROGRAM_INFO := $(srctree)/program_info
+
 package-deb: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	@echo "Building DEB package..."
 	$(Q)rm -rf $(PKG_STAGING)/deb
@@ -56,12 +65,61 @@ package-deb: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/bin
 	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/applications
 	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/icons/hicolor/scalable/apps
+	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/icons/hicolor/16x16/apps
+	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/icons/hicolor/24x24/apps
+	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/icons/hicolor/32x32/apps
+	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/icons/hicolor/48x48/apps
+	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/icons/hicolor/64x64/apps
+	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/icons/hicolor/128x128/apps
+	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/icons/hicolor/256x256/apps
 	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/doc/$(PKG_NAME)
 	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/metainfo
+	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/mime/packages
+	$(Q)mkdir -p $(PKG_STAGING)/deb/usr/share/man/man6
 	
 	# Copy binary
-	$(Q)cp $(BINDIR)/projt-launcher$(EXE_SUFFIX) $(PKG_STAGING)/deb/usr/bin/
-	$(Q)chmod 755 $(PKG_STAGING)/deb/usr/bin/projt-launcher$(EXE_SUFFIX)
+	$(Q)cp $(BINDIR)/projtlauncher$(EXE_SUFFIX) $(PKG_STAGING)/deb/usr/bin/
+	$(Q)chmod 755 $(PKG_STAGING)/deb/usr/bin/projtlauncher$(EXE_SUFFIX)
+	
+	# Generate and copy desktop file
+	$(Q)sed -e 's|@Launcher_DisplayName@|$(APP_DISPLAY_NAME)|g' \
+	        -e 's|@Launcher_APP_BINARY_NAME@|$(APP_BINARY)|g' \
+	        -e 's|@Launcher_AppID@|$(APP_ID)|g' \
+	        -e 's|@Launcher_CommonName@|$(APP_COMMON_NAME)|g' \
+	        $(PROGRAM_INFO)/$(APP_ID).desktop.in > $(PKG_STAGING)/deb/usr/share/applications/$(APP_ID).desktop
+	
+	# Copy SVG icon
+	$(Q)cp $(PROGRAM_INFO)/$(APP_ID).svg $(PKG_STAGING)/deb/usr/share/icons/hicolor/scalable/apps/
+	
+	# Generate PNG icons if rsvg-convert available
+	$(Q)if command -v rsvg-convert >/dev/null 2>&1; then \
+	    for size in 16 24 32 48 64 128 256; do \
+	        rsvg-convert -w $$size -h $$size $(PROGRAM_INFO)/$(APP_ID).svg \
+	            -o $(PKG_STAGING)/deb/usr/share/icons/hicolor/$${size}x$${size}/apps/$(APP_ID).png; \
+	    done; \
+	else \
+	    echo "  NOTE: rsvg-convert not found, skipping PNG icon generation"; \
+	fi
+	
+	# Generate and copy metainfo
+	$(Q)sed -e 's|@Launcher_DisplayName@|$(APP_DISPLAY_NAME)|g' \
+	        -e 's|@Launcher_APP_BINARY_NAME@|$(APP_BINARY)|g' \
+	        -e 's|@Launcher_AppID@|$(APP_ID)|g' \
+	        -e 's|@Launcher_CommonName@|$(APP_COMMON_NAME)|g' \
+	        $(PROGRAM_INFO)/$(APP_ID).metainfo.xml.in > $(PKG_STAGING)/deb/usr/share/metainfo/$(APP_ID).metainfo.xml 2>/dev/null || true
+	
+	# Copy MIME type definition
+	$(Q)cp $(PROGRAM_INFO)/modrinth-mrpack-mime.xml $(PKG_STAGING)/deb/usr/share/mime/packages/ 2>/dev/null || true
+	
+	# Generate man page if scdoc available
+	$(Q)if command -v scdoc >/dev/null 2>&1; then \
+	    scdoc < $(PROGRAM_INFO)/projtlauncher.6.scd > $(PKG_STAGING)/deb/usr/share/man/man6/projtlauncher.6 2>/dev/null || true; \
+	    gzip -9 $(PKG_STAGING)/deb/usr/share/man/man6/projtlauncher.6 2>/dev/null || true; \
+	fi
+	
+	# Copy license and docs
+	$(Q)cp $(srctree)/COPYING.md $(PKG_STAGING)/deb/usr/share/doc/$(PKG_NAME)/copyright 2>/dev/null || true
+	$(Q)cp $(srctree)/README.md $(PKG_STAGING)/deb/usr/share/doc/$(PKG_NAME)/ 2>/dev/null || true
 	
 	# Create control file
 	@echo "Package: $(PKG_NAME)" > $(PKG_STAGING)/deb/DEBIAN/control
@@ -72,7 +130,15 @@ package-deb: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	@echo "Maintainer: $(PKG_MAINTAINER)" >> $(PKG_STAGING)/deb/DEBIAN/control
 	@echo "Description: $(PKG_DESCRIPTION)" >> $(PKG_STAGING)/deb/DEBIAN/control
 	@echo "Homepage: $(PKG_HOMEPAGE)" >> $(PKG_STAGING)/deb/DEBIAN/control
-	@echo "Depends: libqt6widgets6, libqt6network6, libqt6core6" >> $(PKG_STAGING)/deb/DEBIAN/control
+	@echo "Depends: libqt6widgets6, libqt6network6, libqt6core6, libqt6networkauth6, libcmark0.30.3, zlib1g" >> $(PKG_STAGING)/deb/DEBIAN/control
+	
+	# Create postinst for MIME database update
+	@echo '#!/bin/sh' > $(PKG_STAGING)/deb/DEBIAN/postinst
+	@echo 'set -e' >> $(PKG_STAGING)/deb/DEBIAN/postinst
+	@echo 'if [ -x /usr/bin/update-mime-database ]; then update-mime-database /usr/share/mime || true; fi' >> $(PKG_STAGING)/deb/DEBIAN/postinst
+	@echo 'if [ -x /usr/bin/update-desktop-database ]; then update-desktop-database || true; fi' >> $(PKG_STAGING)/deb/DEBIAN/postinst
+	@echo 'if [ -x /usr/bin/gtk-update-icon-cache ]; then gtk-update-icon-cache /usr/share/icons/hicolor || true; fi' >> $(PKG_STAGING)/deb/DEBIAN/postinst
+	$(Q)chmod 755 $(PKG_STAGING)/deb/DEBIAN/postinst
 	
 	# Build package
 	$(Q)dpkg-deb --build $(PKG_STAGING)/deb $(DEB_FILE)
@@ -90,9 +156,74 @@ package-rpm: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	$(Q)rm -rf $(PKG_STAGING)/rpm
 	$(Q)mkdir -p $(PKG_STAGING)/rpm/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/bin
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/lib/projt-launcher
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/applications
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/scalable/apps
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/16x16/apps
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/24x24/apps
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/32x32/apps
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/48x48/apps
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/64x64/apps
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/128x128/apps
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/256x256/apps
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/metainfo
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/mime/packages
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/man/man6
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/doc/$(PKG_NAME)
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/etc/ld.so.conf.d
 	
 	# Copy binary
 	$(Q)cp $(BINDIR)/projt-launcher$(EXE_SUFFIX) $(PKG_STAGING)/rpm/BUILDROOT/usr/bin/
+	$(Q)chmod 755 $(PKG_STAGING)/rpm/BUILDROOT/usr/bin/projt-launcher
+	
+	# Copy shared libraries from build
+	$(Q)cp -P $(LIBDIR)/libcmark.so* $(PKG_STAGING)/rpm/BUILDROOT/usr/lib/projt-launcher/ 2>/dev/null || true
+	$(Q)for lib in $(LIBDIR)/*.so*; do \
+		if [ -f "$$lib" ]; then \
+			cp -P "$$lib" $(PKG_STAGING)/rpm/BUILDROOT/usr/lib/projt-launcher/; \
+		fi; \
+	done 2>/dev/null || true
+	
+	# Create ldconfig file so system can find our bundled libraries
+	@echo '/usr/lib/projt-launcher' > $(PKG_STAGING)/rpm/BUILDROOT/etc/ld.so.conf.d/projt-launcher.conf
+	
+	# Generate and copy desktop file
+	$(Q)sed -e 's|@Launcher_DisplayName@|$(APP_DISPLAY_NAME)|g' \
+	        -e 's|@Launcher_APP_BINARY_NAME@|$(APP_BINARY)|g' \
+	        -e 's|@Launcher_AppID@|$(APP_ID)|g' \
+	        -e 's|@Launcher_CommonName@|$(APP_COMMON_NAME)|g' \
+	        $(PROGRAM_INFO)/$(APP_ID).desktop.in > $(PKG_STAGING)/rpm/BUILDROOT/usr/share/applications/$(APP_ID).desktop
+	
+	# Copy SVG icon
+	$(Q)cp $(PROGRAM_INFO)/$(APP_ID).svg $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/scalable/apps/
+	
+	# Generate PNG icons if rsvg-convert available
+	$(Q)if command -v rsvg-convert >/dev/null 2>&1; then \
+	    for size in 16 24 32 48 64 128 256; do \
+	        rsvg-convert -w $$size -h $$size $(PROGRAM_INFO)/$(APP_ID).svg \
+	            -o $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/$${size}x$${size}/apps/$(APP_ID).png; \
+	    done; \
+	fi
+	
+	# Generate and copy metainfo
+	$(Q)sed -e 's|@Launcher_DisplayName@|$(APP_DISPLAY_NAME)|g' \
+	        -e 's|@Launcher_APP_BINARY_NAME@|$(APP_BINARY)|g' \
+	        -e 's|@Launcher_AppID@|$(APP_ID)|g' \
+	        -e 's|@Launcher_CommonName@|$(APP_COMMON_NAME)|g' \
+	        $(PROGRAM_INFO)/$(APP_ID).metainfo.xml.in > $(PKG_STAGING)/rpm/BUILDROOT/usr/share/metainfo/$(APP_ID).metainfo.xml 2>/dev/null || true
+	
+	# Copy MIME type definition
+	$(Q)cp $(PROGRAM_INFO)/modrinth-mrpack-mime.xml $(PKG_STAGING)/rpm/BUILDROOT/usr/share/mime/packages/ 2>/dev/null || true
+	
+	# Generate man page if scdoc available
+	$(Q)if command -v scdoc >/dev/null 2>&1; then \
+	    scdoc < $(PROGRAM_INFO)/projtlauncher.6.scd > $(PKG_STAGING)/rpm/BUILDROOT/usr/share/man/man6/projt-launcher.6 2>/dev/null || true; \
+	    gzip -9 $(PKG_STAGING)/rpm/BUILDROOT/usr/share/man/man6/projt-launcher.6 2>/dev/null || true; \
+	fi
+	
+	# Copy license and docs
+	$(Q)cp $(srctree)/COPYING.md $(PKG_STAGING)/rpm/BUILDROOT/usr/share/doc/$(PKG_NAME)/ 2>/dev/null || true
+	$(Q)cp $(srctree)/README.md $(PKG_STAGING)/rpm/BUILDROOT/usr/share/doc/$(PKG_NAME)/ 2>/dev/null || true
 	
 	# Create spec file
 	@echo "Name: $(PKG_NAME)" > $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
@@ -101,12 +232,39 @@ package-rpm: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	@echo "Summary: $(PKG_DESCRIPTION)" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "License: $(PKG_LICENSE)" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "URL: $(PKG_HOMEPAGE)" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "Requires: qt6-qtbase qt6-qtnetworkauth" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "AutoReqProv: no" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "%description" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "$(PKG_DESCRIPTION)" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "Discover, manage, and play Minecraft instances with mods, modpacks," >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "resource packs, and more. Supports CurseForge, Modrinth, and others." >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "%files" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "/usr/bin/projt-launcher" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%dir /usr/lib/projt-launcher" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/lib/projt-launcher/*" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%config /etc/ld.so.conf.d/projt-launcher.conf" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/share/applications/$(APP_ID).desktop" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/share/icons/hicolor/scalable/apps/$(APP_ID).svg" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/share/icons/hicolor/*/apps/$(APP_ID).png" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%dir /usr/share/doc/$(PKG_NAME)" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/share/doc/$(PKG_NAME)/*" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%ghost /usr/share/metainfo/$(APP_ID).metainfo.xml" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%ghost /usr/share/mime/packages/modrinth-mrpack-mime.xml" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%ghost /usr/share/man/man6/projt-launcher.6.gz" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%post" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/sbin/ldconfig" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/bin/update-mime-database /usr/share/mime &>/dev/null || :" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/bin/update-desktop-database &>/dev/null || :" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/bin/gtk-update-icon-cache /usr/share/icons/hicolor &>/dev/null || :" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%postun" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/sbin/ldconfig" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/bin/update-mime-database /usr/share/mime &>/dev/null || :" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/bin/update-desktop-database &>/dev/null || :" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/bin/gtk-update-icon-cache /usr/share/icons/hicolor &>/dev/null || :" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	
 	# Build package
 	$(Q)rpmbuild --define "_topdir $(PKG_STAGING)/rpm" \

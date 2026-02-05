@@ -2,9 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# In the OSS-Fuzz builder, the repo lives at /src/projt-launcher; locally this script sits in .clusterfuzzlite/
-if [ -d "${SCRIPT_DIR}/projt-launcher" ]; then
-  REPO_ROOT="$(cd "${SCRIPT_DIR}/projt-launcher" && pwd)"
+# In the OSS-Fuzz builder, the repo lives at /src/projtlauncher; locally this script sits in .clusterfuzzlite/
+if [ -d "${SCRIPT_DIR}/projtlauncher" ]; then
+  REPO_ROOT="$(cd "${SCRIPT_DIR}/projtlauncher" && pwd)"
 elif [ -f "${SCRIPT_DIR}/CMakeLists.txt" ]; then
   REPO_ROOT="${SCRIPT_DIR}"
 else

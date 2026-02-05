@@ -65,25 +65,23 @@ endif
 LAUNCHER_VERSION        := $(PROJT_VERSION)
 LAUNCHER_VERSION_FULL   := $(PROJT_VERSION_FULL)
 
-# Branding comes from main Makefile (matches CMake variable names)
-Launcher_CommonName     := $(LAUNCHER_COMMONNAME)
-Launcher_Name           := $(LAUNCHER_NAME)
-Launcher_DisplayName    := $(LAUNCHER_DISPLAYNAME)
-Launcher_Copyright      := $(LAUNCHER_COPYRIGHT)
-Launcher_Domain         := $(LAUNCHER_DOMAIN)
-Launcher_ConfigFile     := $(LAUNCHER_CONFIGFILE)
-Launcher_Git            := $(LAUNCHER_GIT)
-Launcher_AppID          := $(LAUNCHER_APPID)
-Launcher_SVGFileName    := $(LAUNCHER_SVGFILENAME)
-Launcher_UserAgent      := $(LAUNCHER_USERAGENT)
-Launcher_BUILD_ARTIFACT := $(BUILD_ARTIFACT)
-Launcher_UPDATER_GITHUB_REPO := $(LAUNCHER_GITHUB_REPO)
-Launcher_BUG_TRACKER_URL := $(LAUNCHER_BUG_TRACKER_URL)
+# Branding - use values directly or fallback defaults
+Launcher_CommonName     ?= $(if $(LAUNCHER_COMMONNAME),$(LAUNCHER_COMMONNAME),ProjTLauncher)
+Launcher_Name           ?= $(if $(LAUNCHER_NAME),$(LAUNCHER_NAME),ProjTLauncher)
+Launcher_DisplayName    ?= $(if $(LAUNCHER_DISPLAYNAME),$(LAUNCHER_DISPLAYNAME),ProjT Launcher)
+Launcher_Copyright      ?= $(if $(LAUNCHER_COPYRIGHT),$(LAUNCHER_COPYRIGHT),© 2025-2026 Project Tick)
+Launcher_Domain         ?= $(if $(LAUNCHER_DOMAIN),$(LAUNCHER_DOMAIN),projecttick.org)
+Launcher_ConfigFile     ?= $(if $(LAUNCHER_CONFIGFILE),$(LAUNCHER_CONFIGFILE),projtlauncher.cfg)
+Launcher_Git            ?= $(if $(LAUNCHER_GIT),$(LAUNCHER_GIT),https://github.com/Project-Tick/ProjT-Launcher)
+Launcher_AppID          ?= $(if $(LAUNCHER_APPID),$(LAUNCHER_APPID),org.projecttick.ProjTLauncher)
+Launcher_SVGFileName    ?= $(if $(LAUNCHER_SVGFILENAME),$(LAUNCHER_SVGFILENAME),org.projecttick.ProjTLauncher.svg)
+Launcher_UserAgent      ?= $(if $(LAUNCHER_USERAGENT),$(LAUNCHER_USERAGENT),ProjTLauncher/$(VERSION).$(PATCHLEVEL).$(SUBLEVEL))
+Launcher_BUILD_ARTIFACT ?= $(BUILD_ARTIFACT)
+Launcher_UPDATER_GITHUB_REPO ?= $(if $(LAUNCHER_GITHUB_REPO),$(LAUNCHER_GITHUB_REPO),Project-Tick/ProjT-Launcher)
+Launcher_APP_BINARY_NAME ?= projt-launcher
 
-# URLs
-Launcher_NEWS_RSS_URL   := $(LAUNCHER_NEWS_RSS_URL)
-Launcher_META_URL       := $(LAUNCHER_META_URL)
-Launcher_DISCORD_URL    := $(LAUNCHER_DISCORD_URL)
+# Note: These URLs are already defined at top of file with ?= defaults
+# Only override if main Makefile exports different values
 
 # Build timestamp (generated at configure time)
 Launcher_BUILD_TIMESTAMP := $(shell date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "unknown")

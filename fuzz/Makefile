@@ -62,7 +62,11 @@ CORPUS_DIR := $(obj)/corpus
 CRASH_DIR := $(obj)/crashes
 
 # Build all fuzzers
-.PHONY: fuzz fuzz-clean fuzz-run
+.PHONY: all fuzz fuzz-clean fuzz-run
+
+all:
+	@echo "  Fuzz tests require clang++ with libfuzzer"
+	@echo "  Run 'make FUZZER=libfuzzer fuzz' to build fuzzers"
 
 fuzz: $(FUZZ_TARGETS) | $(CORPUS_DIR) $(CRASH_DIR)
 

@@ -1644,7 +1644,7 @@ menu "Packaging"
 
 config PACKAGE_NAME
 	string "Package name"
-	default "projt-launcher"
+	default "projtlauncher"
 
 config PACKAGE_VERSION
 	string "Package version"

@@ -666,7 +666,7 @@ install: install-bin install-data
 
 install-bin: build
 	$(Q)$(INSTALL) -d $(DESTDIR)$(BINDIR)
-	$(Q)$(INSTALL) -m 755 $(KBUILD_OUTPUT)/bin/projt-launcher$(EXE_SUFFIX) $(DESTDIR)$(BINDIR)/
+	$(Q)$(INSTALL) -m 755 $(KBUILD_OUTPUT)/bin/projtlauncher$(EXE_SUFFIX) $(DESTDIR)$(BINDIR)/
 
 install-data:
 	$(Q)$(INSTALL) -d $(DESTDIR)$(DATADIR)/applications
@@ -674,7 +674,7 @@ install-data:
 	$(Q)$(INSTALL) -d $(DESTDIR)$(DOCDIR)
 
 uninstall:
-	$(Q)$(RM) $(DESTDIR)$(BINDIR)/projt-launcher$(EXE_SUFFIX)
+	$(Q)$(RM) $(DESTDIR)$(BINDIR)/projtlauncher$(EXE_SUFFIX)
 	$(Q)$(RMDIR) $(DESTDIR)$(DOCDIR)
 
 # ============================================================================
