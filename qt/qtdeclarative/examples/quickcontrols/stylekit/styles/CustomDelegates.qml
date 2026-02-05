@@ -1,0 +1,240 @@
+// Copyright (C) 2025 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
+
+import QtQuick
+import QtQuick.Templates as T
+import Qt.labs.StyleKit
+
+Style {
+
+    // Define some custom delegates:
+
+    component OverlayDelegate : StyleKitDelegate {
+        // Using StyleKitDelegate as the base type is the easiest approach when creating
+        // a custom delegate. A StyleKitDelegate will draw the delegate as configured by
+        // the style, and give up the opportunity to place your own items on top.
+        // Note that all delegates used in StyleKit, custom or not, are laid out by
+        // StyleKit, so you only need to focus on the appearance.
+        Rectangle {
+            width: 20
+            height: 15
+            scale: 2.5
+            radius: 255
+            opacity: 0.5
+            color: "transparent"
+            border.width: 4
+            border.color: palette.accent
+        }
+    }
+
+    component UnderlayDelegate : Item {
+        // If the base type is not a StyleKitDelegate, the delegate must implement two required
+        // properties: 'control' and 'delegateProperties'. The former points to the Qt Quick Control
+        // that uses the delegate, and the latter points to the StyleKitDelegateProperties that
+        // describes how it should be styled.
+        required property QtObject control
+        required property StyleKitDelegateProperties delegateProperties
+
+        width: parent.width
+        height: parent.height
+        implicitWidth: delegateProperties.implicitWidth
+        implicitHeight: delegateProperties.implicitHeight
+
+        Rectangle {
+            id: underlay
+            anchors.centerIn: parent
+            width: 10 + (parent.width / 2)
+            height: 10 + (parent.height / 2)
+            radius: delegateProperties.radius
+            scale: delegateProperties.data.underlayScale
+            opacity: 0.5
+            border.width: 8
+            border.color: palette.accent
+            Behavior on scale {
+                NumberAnimation {
+                    duration: 100
+                }
+            }
+            NumberAnimation on rotation {
+                loops: Animation.Infinite
+                from: 0
+                to: 359
+                duration: 5000
+            }
+        }
+
+        StyleKitDelegate {
+            control: parent.control
+            delegateProperties: parent.delegateProperties
+        }
+    }
+
+    component SliderHandle : StyleKitDelegate {
+        // You can pass your own properties from the style as well, like
+        // here, where we use 'isFirst' to tell whether the delegate instance
+        // represents the first or the second handle, in case of a RangeSlider.
+        property bool isFirstHandle: false
+
+        Text {
+            rotation: control.vertical ? -90 : 0
+            anchors.centerIn: parent
+            font.pixelSize: 9
+            text: {
+                if (control instanceof T.RangeSlider) {
+                    if (isFirstHandle)
+                        return control.first.value.toFixed(0)
+                    else
+                        return control.second.value.toFixed(0)
+                }
+
+                return control.value.toFixed(0)
+            }
+        }
+    }
+
+    component NoiseDelegate : ShaderEffect {
+        // Its also possible to use more advanced delegates with graphical effects.
+        implicitWidth: unifiedSourceItem.implicitWidth
+        implicitHeight: unifiedSourceItem.implicitHeight
+        width: parent.width
+        height: parent.height
+
+        required property QtObject control
+        required property StyleKitDelegateProperties delegateProperties
+
+        // The following properties are used by the shader (noise.frag)
+        property size sourceItemSize: Qt.size(unifiedSourceItem.width, unifiedSourceItem.height)
+        property color borderColor: delegateProperties.border.color
+        property real borderMaskEnabled: 1
+        property real borderMaskThreshold: 0.001
+        property real particleDensity: 0.1
+        property real particleSize: 1
+        property color particleColor: "black"
+        property Item source: ShaderEffectSource { live: true; sourceItem: unifiedSourceItem }
+        property real particleOpacity: 0.4
+        property real time
+
+        // Note: noise.frag is compiled to noise.qsb from CMakeLists.txt
+        fragmentShader: "qrc:/effects/noise.qsb"
+
+        NumberAnimation on time {
+            loops: Animation.Infinite
+            from: 0
+            to: Math.PI * 2
+            duration: 1000
+        }
+
+        StyleKitDelegate {
+            id: unifiedSourceItem
+            control: parent.control
+            delegateProperties: parent.delegateProperties
+            visible: false
+        }
+    }
+
+    component WavingQt : ShaderEffect {
+        implicitWidth: delegateProperties.implicitWidth
+        implicitHeight: delegateProperties.implicitHeight
+
+        required property QtObject control
+        required property StyleKitDelegateProperties delegateProperties
+
+        // The following properties are used by the shader (wave.frag)
+        property real amplitude: 0.04 * 0.5
+        property real frequency: 20
+        property real time
+
+        NumberAnimation on time {
+            loops: Animation.Infinite
+            from: 0
+            to: Math.PI * 2
+            duration: 600
+        }
+
+        // Note: wave.frag is compiled to wave.qsb from CMakeLists.txt
+        fragmentShader: "qrc:/effects/wave.qsb"
+
+        property Item sourceItem: ShaderEffectSource {
+            sourceItem: Image {
+                width: 40
+                height: 40
+                source: "qrc:/images/qt.png"
+                visible: false
+            }
+        }
+    }
+
+    component CustomShadowDelegate : Item {
+        required property QtObject control
+        required property StyleKitDelegateProperties delegateProperties
+
+        x: delegateProperties.shadow.verticalOffset
+        y: delegateProperties.shadow.horizontalOffset
+        width: parent.width
+        height: parent.height
+
+        Rectangle {
+            width: parent.width
+            height: parent.height
+            radius: parent.delegateProperties.radius
+            color: parent.delegateProperties.shadow.color
+            opacity: parent.delegateProperties.shadow.opacity
+        }
+
+        Text {
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.rightMargin: 10
+            color: "white"
+            text: "Custom shadow"
+        }
+    }
+
+    // Define the style itself, and tell it to use the custom delegates to render
+    // the controls (instead of the otherwise default StyleKitDelegate):
+
+    checkBox.checked.indicator.delegate: OverlayDelegate {}
+    radioButton.checked.indicator.foreground.delegate: OverlayDelegate {}
+    switchControl.handle.delegate: WavingQt {}
+
+    abstractButton {
+        background {
+            delegate: UnderlayDelegate {}
+            shadow.opacity: 0
+            data: QtObject {
+                // When using custom delegates, you might need pass properties to it that
+                // should change per state. The 'data' property can be used for this purpose.
+                property real underlayScale: 1.1
+            }
+        }
+        hovered.background.data: QtObject {
+            property real underlayScale: 1.4
+        }
+    }
+
+    slider {
+        background.visible: true
+        background.delegate: NoiseDelegate {}
+        indicator.delegate: NoiseDelegate {}
+        indicator.foreground.delegate: NoiseDelegate {}
+        handle.delegate: SliderHandle { isFirstHandle: true }
+        handle.second.delegate: SliderHandle { isFirstHandle: false }
+    }
+
+    textField {
+        background.shadow.verticalOffset: 14
+        background.shadow.horizontalOffset: 14
+        background.shadow.delegate: CustomShadowDelegate {}
+        // verify that the delegate is allowed to change per state
+        pressed.background.shadow.delegate: CustomShadowDelegate {}
+        variations: Variation {
+            button.background {
+                delegate: null
+                implicitWidth: 30
+                implicitHeight: 20
+                margins: 10
+                shadow.color: "transparent"
+            }
+        }
+    }
+}

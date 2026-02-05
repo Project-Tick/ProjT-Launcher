@@ -1,0 +1,94 @@
+// Copyright (C) 2025 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
+
+import QtQuick
+import QtQuick.Templates as T
+import Qt.labs.StyleKit
+import Qt.labs.StyleKit.impl
+
+/*
+    This delegate is a composition of the background and the indicator into
+    a single delegate. This is needed by some controls, since they only have
+    a background delegate, which is responsible for also drawing the "indicator".
+    An example is a Slider, which draws both the background, groove and track in
+    the background delegate.
+*/
+Item {
+    id: root
+    implicitWidth: !vertical
+                   ? Math.max(background.implicitWidth,
+                              indicatorLayout.implicitWidth)
+                   : Math.max(background.implicitHeight,
+                              indicatorLayout.implicitHeight)
+    implicitHeight: !vertical
+                    ? Math.max(background.implicitHeight,
+                               indicatorLayout.implicitHeight)
+                    : Math.max(background.implicitWidth,
+                               indicatorLayout.implicitWidth)
+
+    required property StyleKitDelegateProperties indicatorProperties
+    required property StyleKitDelegateProperties backgroundProperties
+    required property T.Control parentControl
+    property alias indicator: indicator
+    property bool vertical: false
+
+    StyleKitLayout {
+        id: indicatorLayout
+        container: root
+        contentMargins {
+            left: parentControl.leftPadding
+            right: parentControl.rightPadding
+            top: parentControl.topPadding
+            bottom: parentControl.bottomPadding
+        }
+        layoutItems: [
+            StyleKitLayoutItem {
+                id: indicatorItem
+                item: root.indicator
+                alignment: indicatorProperties.alignment
+                margins.left: indicatorProperties.leftMargin
+                margins.right: indicatorProperties.rightMargin
+                margins.top: indicatorProperties.topMargin
+                margins.bottom: indicatorProperties.bottomMargin
+                fillWidth: indicatorProperties.implicitWidth === Style.Stretch
+                fillHeight: indicatorProperties.implicitHeight === Style.Stretch
+            }
+        ]
+        mirrored: parentControl.mirrored
+    }
+
+    states: State {
+        /* The delegate logic is moved out of the delegate, to relieve the style
+         * developer from having to re-invent it if he changes the delegate. To
+         * disable it, 'states' can be set to an empty array from the outside. */
+        when: true
+        PropertyChanges {
+            background.parent: root
+            background.x: parentControl.leftInset
+            background.y: parentControl.topInset
+            background.width: root.width - parentControl.leftInset - parentControl.rightInset
+            background.height: root.height - parentControl.topInset - parentControl.bottomInset
+        }
+    }
+
+    BackgroundDelegate {
+        id: background
+        parentControl: root.parentControl
+        delegateProperties: root.backgroundProperties
+    }
+
+    IndicatorDelegate {
+        id: indicator
+        parentControl: root.parentControl
+        indicatorProperties: root.indicatorProperties
+        vertical: root.vertical
+        z: 1
+        x: !vertical ? indicatorItem.x : parentControl.leftPadding + (parentControl.availableWidth - height) / 2
+        y: !vertical ? indicatorItem.y : parentControl.topPadding + width
+        width: !vertical ? indicatorItem.width : __stretchBgWidth ? parentControl.availableHeight : implicitWidth//indicatorItem.height
+        height: !vertical ? indicatorItem.height : __stretchBgHeight ? parentControl.availableWidth : implicitHeight//indicatorItem.width
+        readonly property bool __stretchBgWidth: root.indicatorProperties.implicitWidth === Style.Stretch
+        readonly property bool __stretchBgHeight: root.indicatorProperties.implicitHeight === Style.Stretch
+    }
+}

@@ -1,0 +1,39 @@
+// Copyright (C) 2025 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
+
+import QtQuick
+import QtQuick.Controls.impl
+import QtQuick.Templates as T
+import Qt.labs.StyleKit
+import Qt.labs.StyleKit.impl
+
+T.ToolBar {
+    id: control
+
+    implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
+                            implicitContentWidth + leftPadding + rightPadding)
+    implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
+                             implicitContentHeight + topPadding + bottomPadding)
+
+    leftPadding: SafeArea.margins.left + styleReader.leftPadding
+    rightPadding: SafeArea.margins.right + styleReader.rightPadding
+    topPadding: SafeArea.margins.top + styleReader.topPadding
+    bottomPadding: SafeArea.margins.bottom + styleReader.bottomPadding
+    spacing: styleReader.spacing
+
+    StyleKitControl.controlType: styleReader.type
+    StyleKitReader {
+        id: styleReader
+        type: StyleKitReader.ToolBar
+        enabled: control.enabled
+        focused: control.activeFocus
+        palette: control.palette
+        hovered: control.hovered
+    }
+
+    background: BackgroundDelegate {
+        parentControl: control
+        backgroundProperties: styleReader.background
+    }
+}
