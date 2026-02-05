@@ -601,6 +601,33 @@ See:
       3. This Copyright notice may not be removed or altered from any
          source or altered source distribution.
 
+## Qt `qt/`
+
+     License Selection Notice
+
+     This repository includes the Qt framework, which is originally distributed
+     by The Qt Company Ltd. under a multi-license model.
+
+     Upstream licensing options include:
+     - GNU General Public License version 3 only (GPL-3.0-only)
+     - GNU Lesser General Public License version 3 only (LGPL-3.0-only)
+     - Qt Commercial License
+
+     For this project, Qt is used and redistributed exclusively under the terms
+     of the GNU General Public License version 3 (GPL-3.0-only).
+
+     This selection applies only to the usage of Qt within this repository and
+     does not alter or override the original licensing options provided by
+     The Qt Company Ltd.
+
+     Qt is distributed WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+     Public License for more details.
+
+     A copy of the GNU General Public License version 3 should have been provided
+     along with this repository. If not, see <https://www.gnu.org/licenses/>.
+
+
 ## MinGW-w64 runtime (Windows)
 
     Copyright (c) 2009, 2010, 2011, 2012, 2013 by the mingw-w64 project
