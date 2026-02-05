@@ -6,3 +6,7 @@
     url = https://github.com/qt/qtwebengine-chromium.git
     ignore = dirty
     initrepo = true
+[submodule "qt/qtdeclarative/tests/auto/qml/ecmascripttests/test262"]
+	path = qt/qtdeclarative/tests/auto/qml/ecmascripttests/test262
+	url = https://github.com/qt/qtdeclarative-testsuites.git
+	branch = snapshot-20180312-3c69133-based

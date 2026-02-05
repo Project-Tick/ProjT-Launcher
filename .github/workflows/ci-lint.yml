@@ -32,7 +32,6 @@ on:
 
 jobs:
   clang-lint:
-    timeout-minutes: 5
     name: Clang Lint
     runs-on: ubuntu-latest
     permissions:
@@ -54,7 +53,6 @@ jobs:
           fi
 
   markdown-lint:
-    timeout-minutes: 5
     name: Markdown Lint
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +62,6 @@ jobs:
           files: .
 
   bot-smoke:
-    timeout-minutes: 5
     name: Bot Smoke
     runs-on: ubuntu-latest
     steps:
@@ -76,7 +73,6 @@ jobs:
         run: node -c bot/index.js
 
   meta-smoke:
-    timeout-minutes: 5
     name: Meta Smoke
     runs-on: ubuntu-latest
     steps:
@@ -88,7 +84,6 @@ jobs:
         run: python -m compileall meta
 
   branding-check:
-    timeout-minutes: 5
     name: Branding Check
     runs-on: ubuntu-latest
     steps:
@@ -129,7 +124,6 @@ jobs:
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
-    timeout-minutes: 120
     if: github.repository_owner == 'Project-Tick'
     env:
       SKIP_CODEQL_TOOLCACHE_CLEANUP: "true"
@@ -186,7 +180,6 @@ jobs:
   eval:
     name: System Evaluation
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98

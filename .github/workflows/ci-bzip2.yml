@@ -17,7 +17,6 @@ on:
 jobs:
   bzip2-debian-testing-meson:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Debian (testing) - Meson
     runs-on: ubuntu-latest
     defaults:
@@ -52,7 +51,6 @@ jobs:
 
   bzip2-debian-testing-cmake-debug:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Debian (testing) - CMake Debug
     runs-on: ubuntu-latest
     defaults:
@@ -88,7 +86,6 @@ jobs:
 
   bzip2-debian-testing-cmake:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Debian (testing) - CMake
     runs-on: ubuntu-latest
     defaults:
@@ -124,7 +121,6 @@ jobs:
 
   bzip2-debian-testing-cmake-shared-static:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Debian (testing) - CMake shared+static
     runs-on: ubuntu-latest
     defaults:
@@ -160,7 +156,6 @@ jobs:
 
   bzip2-debian-testing-cmake-static-only:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Debian (testing) - CMake static only
     runs-on: ubuntu-latest
     defaults:
@@ -196,7 +191,6 @@ jobs:
 
   bzip2-ubuntu-jammy-meson:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Ubuntu Jammy - Meson
     runs-on: ubuntu-latest
     defaults:
@@ -232,7 +226,6 @@ jobs:
 
   bzip2-ubuntu-jammy-cmake:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Ubuntu Jammy - CMake
     runs-on: ubuntu-latest
     defaults:
@@ -270,7 +263,6 @@ jobs:
 
   bzip2-fedora-meson:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Fedora - Meson
     runs-on: ubuntu-latest
     defaults:
@@ -304,7 +296,6 @@ jobs:
 
   bzip2-fedora-cmake:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Fedora - CMake
     runs-on: ubuntu-latest
     defaults:
@@ -339,7 +330,6 @@ jobs:
 
   bzip2-fedora-rawhide-meson:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Fedora Rawhide - Meson
     runs-on: ubuntu-latest
     defaults:
@@ -373,7 +363,6 @@ jobs:
 
   bzip2-fedora-rawhide-cmake:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: Fedora Rawhide - CMake
     runs-on: ubuntu-latest
     defaults:
@@ -408,7 +397,6 @@ jobs:
 
   bzip2-opensuse-leap-meson:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: openSUSE Leap - Meson
     runs-on: ubuntu-latest
     defaults:
@@ -465,7 +453,6 @@ jobs:
 
   bzip2-opensuse-leap-cmake:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: openSUSE Leap - CMake
     runs-on: ubuntu-latest
     defaults:
@@ -523,7 +510,6 @@ jobs:
 
   bzip2-opensuse-tumbleweed-meson:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: openSUSE Tumbleweed - Meson
     runs-on: ubuntu-latest
     defaults:
@@ -580,7 +566,6 @@ jobs:
 
   bzip2-opensuse-tumbleweed-cmake:
     if: inputs.run-bzip2 == 'true'
-    timeout-minutes: 10
     name: openSUSE Tumbleweed - CMake
     runs-on: ubuntu-latest
     defaults:

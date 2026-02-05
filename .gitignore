@@ -560,3 +560,8 @@ openssl-*
 
 bz_version.h
 nbt_export.h
+
+# buildconfig is source, not build output
+!buildconfig/
+!buildconfig/**
+!buildconfig/Makefile

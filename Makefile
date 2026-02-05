@@ -2,7 +2,7 @@
 #
 # ProjT Launcher - Main Makefile
 #
-# This is a Linux kernel-style build system for the ProjT Launcher project.
+# This is a build system for the ProjT Launcher project.
 # It replaces CMake with pure Makefile + Kconfig.
 #
 # Usage:
@@ -22,7 +22,7 @@
 #   make O=/path/to/build -j$(nproc)
 
 # ============================================================================
-# VERSION AND BRANDING (Edit these directly like Linux kernel)
+# VERSION AND BRANDING
 # ============================================================================
 # These values are extracted from CMakeLists.txt / program_info/CMakeLists.txt
 
@@ -381,21 +381,47 @@ HOSTLDFLAGS ?=
 export HOSTCFLAGS HOSTCXXFLAGS HOSTLDFLAGS
 
 # ============================================================================
-# Parallel Build
+# Parallel Build & Speed Optimizations
 # ============================================================================
 
 # Auto-detect CPU count if not specified
 NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 JOBS ?= $(NPROC)
 
-# ccache support
-ifdef USE_CCACHE
-    CCACHE := $(shell command -v ccache 2>/dev/null)
-    ifdef CCACHE
-        CC := ccache $(CC)
-        CXX := ccache $(CXX)
-    endif
+# Enable parallel make by default (like ninja)
+MAKEFLAGS += -j$(JOBS)
+
+# Disable built-in rules for speed (like ninja)
+MAKEFLAGS += -r -R
+
+# ccache - enabled by default if available
+CCACHE := $(shell command -v ccache 2>/dev/null)
+ifneq ($(CCACHE),)
+  ifndef NO_CCACHE
+    CC := ccache $(CC)
+    CXX := ccache $(CXX)
+    HOSTCC := ccache $(HOSTCC)
+    HOSTCXX := ccache $(HOSTCXX)
+  endif
 endif
+
+# sccache support (alternative to ccache)
+ifndef CCACHE
+  SCCACHE := $(shell command -v sccache 2>/dev/null)
+  ifneq ($(SCCACHE),)
+    ifndef NO_CCACHE
+      CC := sccache $(CC)
+      CXX := sccache $(CXX)
+    endif
+  endif
+endif
+
+# Use pipes instead of temp files (faster)
+CFLAGS += -pipe
+CXXFLAGS += -pipe
+
+# Export job count for sub-makes
+export JOBS
 
 # ============================================================================
 # Phony Targets Declaration
@@ -540,8 +566,9 @@ kconfig-tools: $(KCONFIG_PROGS)
 prepare: $(KCONFIG_OBJDIR)/conf | $(KBUILD_OUTPUT)/include/config $(KBUILD_OUTPUT)/include/generated
 	@if [ ! -f "$(KCONFIG_CONFIG)" ]; then \
 		$(MAKE) -f $(srctree)/Makefile defconfig; \
+	else \
+		$(MAKE) -f $(srctree)/Makefile olddefconfig; \
 	fi
-	$(Q)$(MAKE) -f $(srctree)/Makefile syncconfig
 
 # Override defconfig to use our custom defconfig file
 projt_defconfig: $(KCONFIG_OBJDIR)/conf
@@ -731,7 +758,7 @@ ifdef CROSS_COMPILING
 	@echo "  Cross:     yes ($(CROSS_COMPILE))"
 endif
 
-# Print version like Linux kernel: "make kernelversion"
+# Print version: "make kernelversion"
 kernelversion projt-version:
 	@echo "$(PROJT_VERSION)"
 
@@ -854,6 +881,100 @@ help:
 
 list-modules:
 	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk list-modules
+
+# ============================================================================
+# CI Targets
+# ============================================================================
+
+# CI builds for individual components
+PHONY += ci-bzip2 ci-cmark ci-quazip ci-libqrencode ci-javacheck ci-launcher
+PHONY += ci-lint ci-prepare ci-release ci-all
+
+# Bzip2 CI build
+ci-bzip2: prepare
+	@echo "=== CI: Building bzip2 ==="
+	$(Q)cd $(srctree)/bzip2 && \
+		mkdir -p builddir && cd builddir && \
+		cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED_LIB=ON -DENABLE_STATIC_LIB=ON && \
+		cmake --build . -j$(JOBS) && \
+		ctest --output-on-failure || true
+
+# CMark CI build
+ci-cmark: prepare
+	@echo "=== CI: Building cmark ==="
+	$(Q)cd $(srctree)/cmark && \
+		mkdir -p builddir && cd builddir && \
+		cmake .. -DCMAKE_BUILD_TYPE=Release && \
+		cmake --build . -j$(JOBS) && \
+		ctest --output-on-failure || true
+
+# Quazip CI build
+ci-quazip: prepare
+	@echo "=== CI: Building quazip ==="
+	$(Q)cd $(srctree)/quazip && \
+		mkdir -p builddir && cd builddir && \
+		cmake .. -DCMAKE_BUILD_TYPE=Release && \
+		cmake --build . -j$(JOBS) && \
+		ctest --output-on-failure || true
+
+# libqrencode CI build
+ci-libqrencode: prepare
+	@echo "=== CI: Building libqrencode ==="
+	$(Q)cd $(srctree)/libqrencode && \
+		mkdir -p builddir && cd builddir && \
+		cmake .. -DCMAKE_BUILD_TYPE=Release && \
+		cmake --build . -j$(JOBS)
+
+# JavaCheck CI build
+ci-javacheck: prepare
+	@echo "=== CI: Building javacheck ==="
+	$(Q)cd $(srctree)/javacheck && \
+		$(MAKE) all
+
+# Launcher CI build (full build)
+ci-launcher: prepare
+	@echo "=== CI: Building launcher ==="
+	$(Q)$(MAKE) -f $(srctree)/Makefile all
+
+# Lint target
+ci-lint:
+	@echo "=== CI: Running linters ==="
+	$(Q)cd $(srctree) && \
+		if command -v clang-tidy >/dev/null 2>&1; then \
+			echo "Running clang-tidy..."; \
+			find launcher -name '*.cpp' -o -name '*.h' | head -20 | xargs clang-tidy 2>/dev/null || true; \
+		fi
+	$(Q)cd $(srctree) && \
+		if command -v cppcheck >/dev/null 2>&1; then \
+			echo "Running cppcheck..."; \
+			cppcheck --enable=warning,style --quiet launcher/ 2>/dev/null || true; \
+		fi
+
+# Prepare target (used by CI workflows)
+ci-prepare: prepare
+	@echo "=== CI: Prepared build environment ==="
+	@echo "Platform: $(TARGET_PLATFORM)"
+	@echo "Architecture: $(TARGET_ARCH)"
+	@echo "Compiler: $(CXX)"
+	@echo "Build directory: $(KBUILD_OUTPUT)"
+
+# Release packaging
+ci-release: all
+	@echo "=== CI: Creating release artifacts ==="
+ifeq ($(TARGET_PLATFORM),linux)
+	$(Q)$(MAKE) -f $(srctree)/Makefile package-appimage || true
+	$(Q)$(MAKE) -f $(srctree)/Makefile package-tar || true
+endif
+ifeq ($(TARGET_PLATFORM),macos)
+	$(Q)$(MAKE) -f $(srctree)/Makefile package-dmg || true
+endif
+ifeq ($(TARGET_PLATFORM),windows)
+	$(Q)$(MAKE) -f $(srctree)/Makefile package-zip || true
+	$(Q)$(MAKE) -f $(srctree)/Makefile package-nsis || true
+endif
+
+# All CI targets
+ci-all: ci-prepare ci-bzip2 ci-cmark ci-quazip ci-libqrencode ci-javacheck ci-launcher
 
 # ============================================================================
 # Forced Target

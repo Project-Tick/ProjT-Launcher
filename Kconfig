@@ -1,5 +1,5 @@
 # ============================================================================
-# ProjT-Launcher Kernel-style Configuration
+# ProjT-Launcher Configuration
 # ============================================================================
 #
 # This is the main configuration file for the ProjT-Launcher build system.
@@ -1549,8 +1549,8 @@ endmenu
 # ============================================================================
 # Build Information
 # ============================================================================
-# NOTE: Version and branding are defined at the top of the main Makefile,
-# exactly like the Linux kernel. Edit the Makefile directly to change:
+# NOTE: Version and branding are defined at the top of the main Makefile.
+# Edit the Makefile directly to change:
 #   VERSION, PATCHLEVEL, SUBLEVEL, EXTRAVERSION
 #   LAUNCHER_NAME, LAUNCHER_DISPLAYNAME, etc.
 # ============================================================================

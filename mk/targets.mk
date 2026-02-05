@@ -95,14 +95,15 @@ LAUNCHER_SUBMODULES := \
 TEST_MODULES := tests fuzz
 
 # ============================================================================
-# BUILD FUNCTIONS
+# BUILD FUNCTIONS (Optimized for speed)
 # ============================================================================
 
 # Build a local module (has its own Makefile we control)
+# Uses --output-sync for clean parallel output (like ninja)
 define build_local
 	@if [ -f "$(srctree)/$(1)/Makefile" ]; then \
 		echo "  BUILD   $(1)"; \
-		$(MAKE) -C $(srctree)/$(1) \
+		$(MAKE) --no-print-directory -C $(srctree)/$(1) \
 			srctree=$(srctree) \
 			KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
 			Q=$(Q) V=$(V) \
@@ -117,7 +118,7 @@ endef
 define clean_local
 	@if [ -f "$(srctree)/$(1)/Makefile" ]; then \
 		echo "  CLEAN   $(1)"; \
-		$(MAKE) -C $(srctree)/$(1) \
+		$(MAKE) --no-print-directory -C $(srctree)/$(1) \
 			srctree=$(srctree) \
 			KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
 			clean 2>/dev/null || true; \
@@ -130,19 +131,13 @@ endef
 
 .PHONY: all build libs launcher java-modules tests clean help
 .PHONY: libs-tier0 libs-tier1 libs-tier2 libs-tier3 libs-platform projt-modules
-.PHONY: launcher-submodules launcher-main subtrees configure qt-build
+.PHONY: launcher-submodules launcher-main subtrees configure qt-build libs-all launcher-all
 
 # Main target
 all: build
 
-# Full build with all phases (serial, not parallel at top level)
-build:
-	@$(MAKE) -f $(srctree)/Makefile configure
-	@$(MAKE) -f $(srctree)/Makefile subtrees
-	@$(MAKE) -f $(srctree)/Makefile qt-build
-	@$(MAKE) -f $(srctree)/Makefile libs
-	@$(MAKE) -f $(srctree)/Makefile java-modules
-	@$(MAKE) -f $(srctree)/Makefile launcher-all
+# Full build - depends on launcher-all which chains all phases
+build: launcher-all
 	@echo ""
 	@echo "Build complete!"
 	@echo "Output: $(KBUILD_OUTPUT)"
@@ -177,7 +172,7 @@ qt-build: subtrees
 		KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
 		qt
 else
-qt-build:
+qt-build: subtrees
 	@echo "=== Using System Qt (skipping build) ==="
 endif
 
@@ -185,7 +180,7 @@ endif
 # PHASE 4: LIBRARY TARGETS
 # ============================================================================
 
-libs: qt-build libs-tier0 libs-tier1 libs-tier2 libs-tier3 libs-platform projt-modules
+libs-all: qt-build libs-tier0 libs-tier1 libs-tier2 libs-tier3 libs-platform projt-modules
 
 libs-tier0: configure subtrees
 	@echo "=== Building Tier 0 Libraries (local) ==="
@@ -225,7 +220,7 @@ projt-modules: libs-tier0 libs-tier1 libs-tier2 libs-tier3
 # PHASE 5: JAVA TARGETS
 # ============================================================================
 
-java-modules:
+java-modules: libs-all
 	@echo "=== Building Java Modules ==="
 	$(call build_local,javacheck)
 	$(call build_local,launcherjava)
@@ -234,9 +229,10 @@ java-modules:
 # PHASE 6: LAUNCHER TARGETS
 # ============================================================================
 
-launcher-all: libs projt-modules launcher-submodules launcher-main launcher-link
+# launcher-all is the final build phase - chains everything
+launcher-all: java-modules launcher-link
 
-launcher-submodules:
+launcher-submodules: libs-all projt-modules
 	@echo "=== Building Launcher Submodules ==="
 	$(call build_local,launcher/console)
 	$(call build_local,launcher/filelink)

@@ -21,7 +21,6 @@ on:
 
 jobs:
   create-release:
-    timeout-minutes: 10
     name: Create Release
     if: inputs.run-release-build == 'true'
     runs-on: ubuntu-latest

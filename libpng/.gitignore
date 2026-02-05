@@ -124,7 +124,6 @@ CMakeUserPresets.json
 [._]deps/
 [._]libs/
 .dirstamp
-/Makefile
 /autom4te.cache/
 /config*~
 /config.h

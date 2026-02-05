@@ -17,8 +17,11 @@ else
 Q := @
 endif
 
-# Base compiler flags
-CFLAGS ?= -O2 -g -fPIC -Wall
+# Speed optimizations
+MAKEFLAGS += -r -R
+
+# Base compiler flags (with -pipe for speed)
+CFLAGS ?= -O2 -g -fPIC -Wall -pipe
 CXXFLAGS ?= $(CFLAGS) -std=c++17
 
 # ============================================================================

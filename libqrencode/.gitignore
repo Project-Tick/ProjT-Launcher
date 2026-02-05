@@ -13,8 +13,6 @@ CMakeCache.txt
 CTestTestfile.cmake
 CMakeFiles/
 cmake_install.cmake
-Makefile
-Makefile.in
 README
 build
 config.log

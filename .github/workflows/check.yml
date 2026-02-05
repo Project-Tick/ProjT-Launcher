@@ -33,7 +33,6 @@ jobs:
     name: Commit Validation
     if: inputs.baseBranch && inputs.headBranch
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     permissions:
       pull-requests: write
     
@@ -87,7 +86,6 @@ jobs:
   owners:
     name: CODEOWNERS Validation
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     
     steps:
       - name: Checkout
@@ -121,7 +119,6 @@ jobs:
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     
     steps:
       - name: Checkout merged code

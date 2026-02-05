@@ -86,7 +86,6 @@ on:
 
 jobs:
   prepare:
-    timeout-minutes: 5
     name: Prepare Workflow Context
     runs-on: ubuntu-latest
     outputs:

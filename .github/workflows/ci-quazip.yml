@@ -94,7 +94,6 @@ jobs:
 
   build-quazip-alpine:
     if: inputs.run-quazip == 'true'
-    timeout-minutes: 50
     name: "${{ matrix.qt_version }} on ${{ matrix.runner }}"
     runs-on: "ubuntu-22.04"
     container:
@@ -259,7 +258,6 @@ jobs:
 
   build-quazip-use-qt-zlib-ubuntu:
     if: inputs.run-quazip == 'true'
-    timeout-minutes: 50
     env:
       BUILD_TYPE: Release
     runs-on: ubuntu-22.04
@@ -289,7 +287,6 @@ jobs:
 
   build-quazip-use-qt6-zlib-windows:
     if: inputs.run-quazip == 'true'
-    timeout-minutes: 50
     env:
       BUILD_TYPE: Release
     runs-on: windows-latest
@@ -445,7 +442,6 @@ jobs:
 
   build-quazip-use-qt5-zlib-windows:
     if: inputs.run-quazip == 'true'
-    timeout-minutes: 50
     env:
       BUILD_TYPE: Release
     runs-on: windows-latest

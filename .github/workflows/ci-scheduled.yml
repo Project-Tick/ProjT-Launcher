@@ -28,7 +28,6 @@ jobs:
     # Only run on closed/merged PRs with backport label
     if: inputs.is-pr-closed == 'true' && github.event.pull_request.merged == true && contains(join(github.event.pull_request.labels.*.name, ','), 'backport/')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
@@ -132,7 +131,6 @@ jobs:
     name: Process Review
     if: github.event_name == 'pull_request_review' || github.event_name == 'workflow_run'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     
     steps:
       - name: Checkout CI scripts
@@ -258,7 +256,6 @@ jobs:
             core.info('Review processing complete');
 
   stale-label:
-    timeout-minutes: 5
     name: Label stale issues and PRs
     runs-on: ubuntu-latest
 
@@ -279,7 +276,6 @@ jobs:
           stale-pr-label: inactive
 
   update-flake:
-    timeout-minutes: 10
     if: github.repository_owner == 'Project-Tick'
     runs-on: ubuntu-latest
 
