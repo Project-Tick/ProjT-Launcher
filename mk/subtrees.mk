@@ -143,8 +143,12 @@ endif
 ifeq ($(call cfg-yes,$(CONFIG_QT_MODULE_QTWEBCHANNEL)),y)
     QT_MODULES += qtwebchannel
 endif
+ifeq ($(call cfg-yes,$(CONFIG_QT_MODULE_QTDECLARATIVE)),y)
+    QT_MODULES += qtdeclarative
+endif
 ifeq ($(call cfg-yes,$(CONFIG_QT_MODULE_QTWEBENGINE)),y)
-    QT_MODULES += qtwebengine
+    # QtWebEngine requires qtdeclarative (Qt Quick/QML)
+    QT_MODULES += qtdeclarative qtwebengine
 endif
 ifeq ($(call cfg-yes,$(CONFIG_QT_PLATFORM_WAYLAND)),y)
     QT_MODULES += qtwayland

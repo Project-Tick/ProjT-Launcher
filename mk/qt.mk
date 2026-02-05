@@ -27,6 +27,7 @@ QT_HOSTDIR := $(QT_BUILDDIR)/host
 
 # Qt module source directories (subtrees)
 QTBASE_SRC := $(QT_SRCDIR)/qtbase
+QTDECLARATIVE_SRC := $(QT_SRCDIR)/qtdeclarative
 QTNETWORKAUTH_SRC := $(QT_SRCDIR)/qtnetworkauth
 QTIMAGEFORMATS_SRC := $(QT_SRCDIR)/qtimageformats
 QTPOSITIONING_SRC := $(QT_SRCDIR)/qtpositioning
@@ -266,10 +267,16 @@ $(eval $(call QT_MODULE_template,qtwebchannel,$(QTWEBCHANNEL_SRC)))
 QT_MODULES += qt-qtwebchannel
 endif
 
-# QtWebEngine is special - needs WebChannel first
+# QtDeclarative (Qt Quick/QML) - required by QtWebEngine
+ifeq ($(CONFIG_QT_MODULE_QTWEBENGINE),y)
+$(eval $(call QT_MODULE_template,qtdeclarative,$(QTDECLARATIVE_SRC)))
+QT_MODULES += qt-qtdeclarative
+endif
+
+# QtWebEngine is special - needs WebChannel and Declarative first
 ifeq ($(CONFIG_QT_MODULE_QTWEBENGINE),y)
 
-$(QT_BUILDDIR)/qtwebengine/.configured: $(QT_PREFIX)/.qtbase-installed $(QT_PREFIX)/.qtwebchannel-installed $(QTWEBENGINE_SRC)/CMakeLists.txt
+$(QT_BUILDDIR)/qtwebengine/.configured: $(QT_PREFIX)/.qtbase-installed $(QT_PREFIX)/.qtwebchannel-installed $(QT_PREFIX)/.qtdeclarative-installed $(QTWEBENGINE_SRC)/CMakeLists.txt
 	@mkdir -p $(QT_BUILDDIR)/qtwebengine
 	@echo "  CONFIGURE qtwebengine"
 	$(Q)cd $(QT_BUILDDIR)/qtwebengine && \

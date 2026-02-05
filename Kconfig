@@ -1076,13 +1076,22 @@ config QT_MODULE_QTWEBCHANNEL
 	help
 	  Web channel for Qt/JavaScript communication.
 
+config QT_MODULE_QTDECLARATIVE
+	bool "QtDeclarative (Qt Quick/QML)"
+	default y
+	depends on QT_MODULE_QTBASE
+	help
+	  Qt Quick and QML declarative UI framework.
+	  Required by QtWebEngine.
+
 config QT_MODULE_QTWEBENGINE
 	bool "QtWebEngine (Chromium-based)"
 	default y
-	depends on QT_MODULE_QTBASE && QT_MODULE_QTWEBCHANNEL
+	depends on QT_MODULE_QTBASE && QT_MODULE_QTWEBCHANNEL && QT_MODULE_QTDECLARATIVE
 	help
 	  Chromium-based web browser engine.
 	  WARNING: Large build, requires significant time and disk space.
+	  Requires: qtdeclarative (Qt Quick/QML), nss, fontconfig, gperf, Node.js 20+
 
 config QT_WEBENGINE_PROPRIETARY_CODECS
 	bool "Enable proprietary codecs in WebEngine"
