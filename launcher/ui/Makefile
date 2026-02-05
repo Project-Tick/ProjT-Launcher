@@ -14,6 +14,14 @@ KBUILD_OUTPUT ?= $(srctree)/build
 -include $(srctree)/.config
 -include $(srctree)/scripts/Kbuild.include
 
+# Launcher Hub feature - controlled by Kconfig
+# If CONFIG_FEATURE_LAUNCHER_HUB is not set (not 'y'), disable launcher hub
+ifneq ($(CONFIG_FEATURE_LAUNCHER_HUB),y)
+  LAUNCHER_HUB_DEFINES := -DPROJT_DISABLE_LAUNCHER_HUB
+else
+  LAUNCHER_HUB_DEFINES :=
+endif
+
 # Use Qt tools if not set
 MOC ?= $(QT_MOC)
 UIC ?= $(QT_UIC)
@@ -35,6 +43,7 @@ UI_CORE_SRCS := \
 # Dialogs
 UI_DIALOGS_SRCS := $(wildcard $(srctree)/launcher/ui/dialogs/*.cpp)
 UI_DIALOGS_SRCS += $(wildcard $(srctree)/launcher/ui/dialogs/skins/*.cpp)
+UI_DIALOGS_SRCS += $(wildcard $(srctree)/launcher/ui/dialogs/skins/draw/*.cpp)
 UI_DIALOGS_OBJS := $(patsubst $(srctree)/launcher/ui/%.cpp,$(obj)/%.o,$(UI_DIALOGS_SRCS))
 
 # Instance View
@@ -127,7 +136,7 @@ UI_CXXFLAGS := \
 	-I$(QT_PREFIX)/include/QtOpenGLWidgets \
 	-I$(obj) \
 	-DLAUNCHER_APPLICATION \
-	-DPROJT_DISABLE_LAUNCHER_HUB \
+	$(LAUNCHER_HUB_DEFINES) \
 	$(QT_CFLAGS) \
 	$(CXXFLAGS)
 

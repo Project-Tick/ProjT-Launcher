@@ -1287,6 +1287,20 @@ config FEATURE_CATS
 	help
 	  Essential cat-related functionality.
 
+config FEATURE_LAUNCHER_HUB
+	bool "Launcher Hub (web-based dashboard)"
+	default y
+	depends on QT_MODULE_QTWEBENGINE
+	help
+	  Enable Launcher Hub - a modern web-based dashboard interface
+	  for news, updates, and launcher management.
+	  
+	  This feature requires Qt WebEngine (Chromium-based browser).
+	  If disabled, a fallback simple news dialog will be used.
+	  
+	  WARNING: Enabling this significantly increases build time
+	  and binary size due to WebEngine dependency.
+
 config FEATURE_SCREENSHOTS
 	bool "Screenshot management"
 	default y

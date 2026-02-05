@@ -12,6 +12,12 @@ KBUILD_OUTPUT ?= $(srctree)/build
 -include $(srctree)/.config
 -include $(srctree)/scripts/Kbuild.include
 
+# Qt paths
+QT_PREFIX ?= $(KBUILD_OUTPUT)/obj/qt/install
+QT_PKG_CONFIG_PATH := $(QT_PREFIX)/lib/pkgconfig
+QT_CFLAGS ?= $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --cflags Qt6Core Qt6Gui Qt6Widgets Qt6Network 2>/dev/null)
+MOC ?= $(QT_PREFIX)/libexec/moc
+
 obj := $(KBUILD_OUTPUT)/java
 
 # Core sources

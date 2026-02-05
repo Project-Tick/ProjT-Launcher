@@ -22,11 +22,9 @@ obj := $(KBUILD_OUTPUT)/updater
 UI_FILES := $(wildcard $(srctree)/launcher/updater/projtupdater/*.ui)
 UIC_HEADERS := $(patsubst $(srctree)/launcher/updater/projtupdater/%.ui,$(obj)/ui_%.h,$(UI_FILES))
 
-# Core updater sources
+# Core updater sources - only ProjTExternalUpdater for the main launcher
+# The projtupdater/ directory contains the standalone updater application
 UPDATER_SRCS := ProjTExternalUpdater.cpp
-
-# ProjT updater submodule
-UPDATER_SRCS += $(wildcard $(srctree)/launcher/updater/projtupdater/*.cpp)
 
 # macOS Sparkle (Objective-C++)
 ifeq ($(CONFIG_TARGET_MACOS),y)
@@ -37,8 +35,16 @@ endif
 UPDATER_OBJS := $(addprefix $(obj)/, $(notdir $(UPDATER_SRCS:.cpp=.o)))
 UPDATER_LIB := $(obj)/libupdater.a
 
-# MOC
-UPDATER_MOC_HEADERS := $(shell find $(srctree)/launcher/updater -name '*.h' | xargs grep -l Q_OBJECT 2>/dev/null)
+# MOC - only ExternalUpdater.h and ProjTExternalUpdater.h for the library
+# MacSparkleUpdater.h is macOS only
+ifeq ($(CONFIG_TARGET_MACOS),y)
+UPDATER_MOC_HEADERS := $(srctree)/launcher/updater/ExternalUpdater.h \
+                       $(srctree)/launcher/updater/ProjTExternalUpdater.h \
+                       $(srctree)/launcher/updater/MacSparkleUpdater.h
+else
+UPDATER_MOC_HEADERS := $(srctree)/launcher/updater/ExternalUpdater.h \
+                       $(srctree)/launcher/updater/ProjTExternalUpdater.h
+endif
 UPDATER_MOC_SRCS := $(patsubst $(srctree)/launcher/updater/%.h,$(obj)/moc_%.cpp,$(UPDATER_MOC_HEADERS))
 UPDATER_MOC_OBJS := $(UPDATER_MOC_SRCS:.cpp=.o)
 

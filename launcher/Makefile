@@ -477,7 +477,6 @@ ui-pages-global-y := \
 ui-pages-instance-y := \
 	ui/pages/instance/DataPackPage.cpp \
 	ui/pages/instance/ExternalResourcesPage.cpp \
-	ui/pages/instance/GameOptionsPage.cpp \
 	ui/pages/instance/InstanceSettingsPage.cpp \
 	ui/pages/instance/LogPage.cpp \
 	ui/pages/instance/McRecoverPage.cpp \
@@ -621,7 +620,6 @@ UI_FILES := \
 	ui/pages/global/LauncherPage.ui \
 	ui/pages/global/MinecraftPage.ui \
 	ui/pages/global/ProxyPage.ui \
-	ui/pages/instance/GameOptionsPage.ui \
 	ui/pages/instance/InstanceSettingsPage.ui \
 	ui/pages/instance/LogPage.ui \
 	ui/pages/instance/NotesPage.ui \
@@ -706,6 +704,26 @@ MOC_HEADERS := $(shell grep -l Q_OBJECT $(srctree)/launcher/*.h 2>/dev/null)
 MOC_SRCS := $(patsubst $(srctree)/launcher/%.h,$(obj)/moc_%.cpp,$(MOC_HEADERS))
 MOC_OBJS := $(MOC_SRCS:.cpp=.o)
 
+# Qt Resource files
+QRC_SRCS := \
+	$(obj)/qrc_projtlauncher.cpp \
+	$(obj)/qrc_multimc.cpp \
+	$(obj)/qrc_backgrounds.cpp \
+	$(obj)/qrc_documents.cpp \
+	$(obj)/qrc_pe_dark.cpp \
+	$(obj)/qrc_pe_light.cpp \
+	$(obj)/qrc_pe_blue.cpp \
+	$(obj)/qrc_pe_colored.cpp \
+	$(obj)/qrc_breeze_dark.cpp \
+	$(obj)/qrc_breeze_light.cpp \
+	$(obj)/qrc_OSX.cpp \
+	$(obj)/qrc_iOS.cpp \
+	$(obj)/qrc_flat.cpp \
+	$(obj)/qrc_flat_white.cpp \
+	$(obj)/qrc_shaders.cpp
+
+QRC_OBJS := $(QRC_SRCS:.cpp=.o)
+
 # UIC and RCC are handled by subdirectory Makefiles (launcher/ui, launcher/resources)
 # Core launcher files don't need them directly
 
@@ -752,8 +770,8 @@ all: launcher
 # Main target
 launcher: $(obj)/liblauncher.a
 
-# Static library for linking (core files only)
-$(obj)/liblauncher.a: $(LAUNCHER_OBJS) $(MOC_OBJS)
+# Static library for linking (core files + MOC + RCC resources)
+$(obj)/liblauncher.a: $(LAUNCHER_OBJS) $(MOC_OBJS) $(QRC_OBJS)
 	@echo "  AR      $@"
 	$(Q)$(AR) rcs $@ $^
 
@@ -817,11 +835,88 @@ $(obj)/ui_%.h: $(srctree)/launcher/ui/widgets/%.ui
 	@echo "  UIC     $<"
 	$(Q)$(UIC) -o $@ $<
 
-# RCC processing
+# RCC processing - resources directory
 $(obj)/qrc_%.cpp: $(srctree)/launcher/resources/%.qrc
 	@mkdir -p $(dir $@)
 	@echo "  RCC     $<"
 	$(Q)$(RCC) --name $(basename $(notdir $<)) -o $@ $<
+
+# RCC processing - resources subdirectories
+$(obj)/qrc_multimc.cpp: $(srctree)/launcher/resources/multimc/multimc.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name multimc -o $@ $<
+
+$(obj)/qrc_backgrounds.cpp: $(srctree)/launcher/resources/backgrounds/backgrounds.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name backgrounds -o $@ $<
+
+$(obj)/qrc_documents.cpp: $(srctree)/launcher/resources/documents/documents.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name documents -o $@ $<
+
+$(obj)/qrc_pe_dark.cpp: $(srctree)/launcher/resources/pe_dark/pe_dark.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name pe_dark -o $@ $<
+
+$(obj)/qrc_pe_light.cpp: $(srctree)/launcher/resources/pe_light/pe_light.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name pe_light -o $@ $<
+
+$(obj)/qrc_pe_blue.cpp: $(srctree)/launcher/resources/pe_blue/pe_blue.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name pe_blue -o $@ $<
+
+$(obj)/qrc_pe_colored.cpp: $(srctree)/launcher/resources/pe_colored/pe_colored.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name pe_colored -o $@ $<
+
+$(obj)/qrc_breeze_dark.cpp: $(srctree)/launcher/resources/breeze_dark/breeze_dark.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name breeze_dark -o $@ $<
+
+$(obj)/qrc_breeze_light.cpp: $(srctree)/launcher/resources/breeze_light/breeze_light.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name breeze_light -o $@ $<
+
+$(obj)/qrc_OSX.cpp: $(srctree)/launcher/resources/OSX/OSX.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name OSX -o $@ $<
+
+$(obj)/qrc_iOS.cpp: $(srctree)/launcher/resources/iOS/iOS.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name iOS -o $@ $<
+
+$(obj)/qrc_flat.cpp: $(srctree)/launcher/resources/flat/flat.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name flat -o $@ $<
+
+$(obj)/qrc_flat_white.cpp: $(srctree)/launcher/resources/flat_white/flat_white.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name flat_white -o $@ $<
+
+$(obj)/qrc_shaders.cpp: $(srctree)/launcher/resources/shaders/shaders.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name shaders -o $@ $<
+
+# Generated QRC files (from program_info)
+$(obj)/qrc_projtlauncher.cpp: $(KBUILD_OUTPUT)/generated/program_info/projtlauncher.qrc
+	@mkdir -p $(dir $@)
+	@echo "  RCC     $<"
+	$(Q)$(RCC) --name projtlauncher -o $@ $<
 
 $(obj)/qrc_%.o: $(obj)/qrc_%.cpp
 	@mkdir -p $(dir $@)

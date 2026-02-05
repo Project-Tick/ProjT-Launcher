@@ -6,6 +6,9 @@
 # Library name
 lib := quazip
 
+# Define OBJDIR early for moc rules
+OBJDIR := $(KBUILD_OUTPUT)/obj/quazip
+
 # Source files
 lib-y := \
 	quazip/JlCompress.o \
@@ -22,10 +25,7 @@ lib-y := \
 	quazip/quazipfileinfo.o \
 	quazip/quazipnewinfo.o \
 	quazip/unzip.o \
-	quazip/zip.o \
-	moc_quagzipfile.o \
-	moc_quaziodevice.o \
-	moc_quazipfile.o
+	quazip/zip.o
 
 # Include paths
 includes-y := quazip zlib bzip2
@@ -50,33 +50,37 @@ deps-y := zlib bzip2
 QT_PREFIX ?= $(KBUILD_OUTPUT)/obj/qt/install
 MOC := $(QT_PREFIX)/libexec/moc
 
+# Add moc objects to library
+EXTRA_OBJS := \
+	$(OBJDIR)/moc_quagzipfile.o \
+	$(OBJDIR)/moc_quaziodevice.o \
+	$(OBJDIR)/moc_quazipfile.o
+
 # MOC rules
-$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quagzipfile.cpp: quazip/quagzipfile.h
+$(OBJDIR)/moc_quagzipfile.cpp: $(CURDIR)/quazip/quagzipfile.h
 	@echo "  MOC     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(MOC) $(QT_CFLAGS) $< -o $@
+	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/quazip $< -o $@
 
-$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quaziodevice.cpp: quazip/quaziodevice.h
+$(OBJDIR)/moc_quaziodevice.cpp: $(CURDIR)/quazip/quaziodevice.h
 	@echo "  MOC     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(MOC) $(QT_CFLAGS) $< -o $@
+	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/quazip $< -o $@
 
-$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quazipfile.cpp: quazip/quazipfile.h
+$(OBJDIR)/moc_quazipfile.cpp: $(CURDIR)/quazip/quazipfile.h
 	@echo "  MOC     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(MOC) $(QT_CFLAGS) $< -o $@
+	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/quazip $< -o $@
 
-$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quagzipfile.o: $(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quagzipfile.cpp
+$(OBJDIR)/moc_%.o: $(OBJDIR)/moc_%.cpp
 	@echo "  CXX     $<"
-	$(Q)$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -c -o $@ $<
-
-$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quaziodevice.o: $(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quaziodevice.cpp
-	@echo "  CXX     $<"
-	$(Q)$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -c -o $@ $<
-
-$(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quazipfile.o: $(KBUILD_OUTPUT)/obj/$(MODULE_PATH)/moc_quazipfile.cpp
-	@echo "  CXX     $<"
-	$(Q)$(CXX) $(CXXFLAGS) $(QT_CFLAGS) -c -o $@ $<
+	$(Q)$(CXX) $(BASE_CXXFLAGS) $(QT_CFLAGS) -DQUAZIP_STATIC -I$(srctree)/quazip -I$(srctree)/zlib -c -o $@ $<
 
 # Include common build rules
 include $(srctree)/mk/module.mk
+
+# Override library to include MOC objects
+$(STATIC_LIB): $(OBJS) $(EXTRA_OBJS) | $(LIBDIR)
+	@echo "  AR      $@"
+	$(Q)$(AR) rcs $@ $^
+	$(Q)$(RANLIB) $@

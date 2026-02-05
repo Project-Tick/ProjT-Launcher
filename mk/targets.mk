@@ -249,7 +249,6 @@ launcher-submodules:
 	$(call build_local,launcher/modplatform)
 	$(call build_local,launcher/net)
 	$(call build_local,launcher/news)
-	$(call build_local,launcher/resources)
 	$(call build_local,launcher/screenshots)
 	$(call build_local,launcher/settings)
 	$(call build_local,launcher/tasks)
@@ -265,7 +264,11 @@ launcher-main: launcher-submodules
 # Final link step - create the executable
 launcher-link: launcher-main
 	@echo "=== Linking Final Executable ==="
-	$(Q)mkdir -p $(KBUILD_OUTPUT)/bin
+	$(Q)mkdir -p $(KBUILD_OUTPUT)/bin $(KBUILD_OUTPUT)/lib
+	@# Copy Qt libraries to output lib directory
+	$(Q)cp -a $(QT_INSTALL_PREFIX)/lib/libQt6*.so* $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
+	@# Copy cmark library
+	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.so* $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
 	$(Q)$(CXX) -o $(KBUILD_OUTPUT)/bin/projt-launcher \
 		-Wl,--whole-archive \
 		$(KBUILD_OUTPUT)/launcher/liblauncher.a \
@@ -285,7 +288,7 @@ launcher-link: launcher-main
 		$(KBUILD_OUTPUT)/screenshots/libscreenshots.a \
 		$(KBUILD_OUTPUT)/icons/libicons.a \
 		$(KBUILD_OUTPUT)/console/libconsole.a \
-		$(KBUILD_OUTPUT)/resources/libresources.a \
+		$(KBUILD_OUTPUT)/updater/libupdater.a \
 		-Wl,--no-whole-archive \
 		$(KBUILD_OUTPUT)/lib/libbuildconfig.a \
 		$(KBUILD_OUTPUT)/lib/libsysteminfo.a \
@@ -298,11 +301,11 @@ launcher-link: launcher-main
 		$(KBUILD_OUTPUT)/lib/libpng.a \
 		$(KBUILD_OUTPUT)/lib/libmurmur2.a \
 		$(KBUILD_OUTPUT)/lib/libbz2.a \
-		-L$(srctree)/cmark/build/src -lcmark \
+		-L$(KBUILD_OUTPUT)/lib -lcmark \
 		$(QT_LIBS) \
 		-L$(QT_INSTALL_PREFIX)/lib -lQt6OpenGLWidgets -lQt6OpenGL -lQt6NetworkAuth -lQt6Xml \
 		-lz -lpthread -ldl \
-		-Wl,-rpath,'$$ORIGIN/../lib'
+		-Wl,-rpath,'$$ORIGIN/../lib:$(QT_INSTALL_PREFIX)/lib'
 	@echo "  LINK    $(KBUILD_OUTPUT)/bin/projt-launcher"
 
 # ============================================================================

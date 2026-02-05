@@ -64,9 +64,17 @@ $(GEN_DIR)/program_info/projtlauncher.manifest: $(srctree)/program_info/projtlau
 		$< > $@
 
 # Qt resource file
-$(GEN_DIR)/program_info/projtlauncher.qrc: $(srctree)/program_info/projtlauncher.qrc.in
+$(GEN_DIR)/program_info/projtlauncher.qrc: $(srctree)/program_info/projtlauncher.qrc.in $(GEN_DIR)/program_info/org.projecttick.ProjTLauncher.svg
 	@mkdir -p $(@D)
 	@echo "  GEN     $@"
+	$(Q)sed \
+		-e 's|@Launcher_AppID@|org.projecttick.ProjTLauncher|g' \
+		$< > $@
+
+# Copy SVG icon for Qt resources
+$(GEN_DIR)/program_info/org.projecttick.ProjTLauncher.svg: $(srctree)/program_info/org.projecttick.ProjTLauncher.svg
+	@mkdir -p $(@D)
+	@echo "  COPY    $@"
 	$(Q)cp $< $@
 
 # Targets based on platform

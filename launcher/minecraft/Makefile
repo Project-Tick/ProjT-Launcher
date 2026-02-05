@@ -45,6 +45,7 @@ MC_CORE_SRCS := \
 # Auth submodule
 MC_AUTH_SRCS := $(wildcard $(srctree)/launcher/minecraft/auth/*.cpp)
 MC_AUTH_SRCS += $(wildcard $(srctree)/launcher/minecraft/auth/flows/*.cpp)
+MC_AUTH_SRCS += $(wildcard $(srctree)/launcher/minecraft/auth/steps/*.cpp)
 MC_AUTH_OBJS := $(patsubst $(srctree)/launcher/minecraft/%.cpp,$(obj)/%.o,$(MC_AUTH_SRCS))
 
 # Launch submodule
@@ -111,16 +112,25 @@ $(MC_LIB): $(MC_ALL_OBJS) $(MC_MOC_OBJS)
 $(obj)/%.moc: $(srctree)/launcher/minecraft/%.cpp
 	@mkdir -p $(dir $@)
 	@echo "  MOC     $< (inline)"
-	$(Q)$(MOC) $(QT_DEFINES) -I$(srctree)/launcher/minecraft -I$(srctree)/launcher -o $@ $<
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
+
+# Inline moc for auth/steps/*.cpp
+$(obj)/auth/steps/%.moc: $(srctree)/launcher/minecraft/auth/steps/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $< (inline)"
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
 
 # MinecraftInstance.o depends on the inline moc file
 $(obj)/MinecraftInstance.o: $(obj)/MinecraftInstance.moc
+
+# MicrosoftOAuthStep.o depends on inline moc file
+$(obj)/auth/steps/MicrosoftOAuthStep.o: $(obj)/auth/steps/MicrosoftOAuthStep.moc
 
 # Pattern rules for different subdirectories
 $(obj)/%.o: $(srctree)/launcher/minecraft/%.cpp
 	@mkdir -p $(dir $@)
 	@echo "  CXX     $<"
-	$(Q)$(CXX) $(MC_CXXFLAGS) -c -o $@ $<
+	$(Q)$(CXX) $(MC_CXXFLAGS) -I$(dir $@) -c -o $@ $<
 
 # MOC rules - root level .h files
 $(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/%.h
@@ -141,6 +151,24 @@ $(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/auth/%.hpp
 
 # MOC rules for auth/steps/*.hpp
 $(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/auth/steps/%.hpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
+
+# MOC rules for launch/*.hpp
+$(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/launch/%.hpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
+
+# MOC rules for mod/*.hpp
+$(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/mod/%.hpp
+	@mkdir -p $(dir $@)
+	@echo "  MOC     $<"
+	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
+
+# MOC rules for mod/tasks/*.hpp
+$(obj)/moc_%.cpp: $(srctree)/launcher/minecraft/mod/tasks/%.hpp
 	@mkdir -p $(dir $@)
 	@echo "  MOC     $<"
 	$(Q)$(MOC) $(QT_DEFINES) -DLAUNCHER_APPLICATION -I$(srctree)/launcher/minecraft -I$(srctree)/launcher $(QT_CFLAGS) -o $@ $<
