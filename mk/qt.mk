@@ -27,6 +27,7 @@ QT_HOSTDIR := $(QT_BUILDDIR)/host
 
 # Qt module source directories (subtrees)
 QTBASE_SRC := $(QT_SRCDIR)/qtbase
+QTSHADERTOOLS_SRC := $(QT_SRCDIR)/qtshadertools
 QTDECLARATIVE_SRC := $(QT_SRCDIR)/qtdeclarative
 QTNETWORKAUTH_SRC := $(QT_SRCDIR)/qtnetworkauth
 QTIMAGEFORMATS_SRC := $(QT_SRCDIR)/qtimageformats
@@ -267,9 +268,36 @@ $(eval $(call QT_MODULE_template,qtwebchannel,$(QTWEBCHANNEL_SRC)))
 QT_MODULES += qt-qtwebchannel
 endif
 
-# QtDeclarative (Qt Quick/QML) - required by QtWebEngine
+# QtShaderTools - required by Qt Quick (provides qsb tool)
 ifeq ($(CONFIG_QT_MODULE_QTWEBENGINE),y)
-$(eval $(call QT_MODULE_template,qtdeclarative,$(QTDECLARATIVE_SRC)))
+$(eval $(call QT_MODULE_template,qtshadertools,$(QTSHADERTOOLS_SRC)))
+QT_MODULES += qt-qtshadertools
+endif
+
+# QtDeclarative (Qt Quick/QML) - required by QtWebEngine, depends on qtshadertools
+ifeq ($(CONFIG_QT_MODULE_QTWEBENGINE),y)
+
+# Override qtdeclarative to depend on qtshadertools
+$(QT_BUILDDIR)/qtdeclarative/.configured: $(QT_PREFIX)/.qtbase-installed $(QT_PREFIX)/.qtshadertools-installed $(QTDECLARATIVE_SRC)/CMakeLists.txt
+	@mkdir -p $(QT_BUILDDIR)/qtdeclarative
+	@echo "  CONFIGURE qtdeclarative"
+	$(Q)cd $(QT_BUILDDIR)/qtdeclarative && \
+		$(QT_PREFIX)/bin/qt-configure-module $(QTDECLARATIVE_SRC)
+	$(Q)touch $@
+
+$(QT_BUILDDIR)/qtdeclarative/.built: $(QT_BUILDDIR)/qtdeclarative/.configured
+	@echo "  BUILD   qtdeclarative"
+	$(Q)cmake --build $(QT_BUILDDIR)/qtdeclarative --parallel $(PARALLEL_JOBS)
+	$(Q)touch $@
+
+$(QT_PREFIX)/.qtdeclarative-installed: $(QT_BUILDDIR)/qtdeclarative/.built
+	@echo "  INSTALL qtdeclarative"
+	$(Q)cmake --install $(QT_BUILDDIR)/qtdeclarative
+	$(Q)touch $@
+
+.PHONY: qt-qtdeclarative
+qt-qtdeclarative: $(QT_PREFIX)/.qtdeclarative-installed
+
 QT_MODULES += qt-qtdeclarative
 endif
 
