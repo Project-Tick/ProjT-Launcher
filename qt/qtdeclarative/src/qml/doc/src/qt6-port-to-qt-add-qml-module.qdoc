@@ -184,5 +184,5 @@ SomeType {
 Note that files inside a QML module automatically import their own QML module. You can remove the
 self-imports.
 
-\sa {Changes to Qt QML}, {Modernizing QML Modules}
+\sa {Changes to Qt Qml}, {Modernizing QML Modules}
 */

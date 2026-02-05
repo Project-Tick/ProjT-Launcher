@@ -836,7 +836,7 @@ public:
     static FileToLoad fromFileSystem(const std::weak_ptr<DomEnvironment> &environment,
                                      const QString &canonicalPath);
 
-    std::weak_ptr<DomEnvironment> environment() const { return m_environment; }
+    std::shared_ptr<DomEnvironment> environment() const { return m_environment.lock(); }
     QString canonicalPath() const { return m_canonicalPath; }
     QString logicalPath() const { return m_logicalPath; }
     void setCanonicalPath(const QString &canonicalPath) { m_canonicalPath = canonicalPath; }

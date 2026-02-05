@@ -161,6 +161,8 @@ protected:
     virtual bool checkCustomParser(const QQmlJSScope::ConstPtr &scope);
 
     void setScopeName(QQmlJSScope::Ptr &scope, QQmlJSScope::ScopeType type, const QString &name);
+    virtual bool safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QString &name,
+                                const QQmlJSScope::JavaScriptIdentifier &identifier);
 
     QString m_implicitImportDirectory;
     QStringList m_qmldirFiles;
@@ -196,7 +198,6 @@ protected:
     QSet<QString> m_usedTypes;
 
     QList<UnfinishedBinding> m_bindings;
-    QSet<std::pair<const QQmlJSScope *, QString>> misplacedJSIdentifiers;
 
     // stores JS functions and Script bindings per scope (only the name). mimics
     // the content of QmlIR::Object::functionsAndExpressions
@@ -410,9 +411,6 @@ private:
                               const QQmlJS::SourceLocation &location);
     void enterRootScope(QQmlJSScope::ScopeType type, const QString &name,
                            const QQmlJS::SourceLocation &location);
-
-    bool safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QString &name,
-                                const QQmlJSScope::JavaScriptIdentifier &identifier);
 
     QList<QQmlJS::DiagnosticMessage> importFromHost(
             const QString &path, const QString &prefix, const QQmlJS::SourceLocation &location);

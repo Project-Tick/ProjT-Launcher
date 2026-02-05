@@ -418,22 +418,26 @@ bool QQmlTypeData::checkDependencies()
                  || type.typeData->isCompleteOrError()
                  || type.type.isInlineComponentType());
 
-        if (type.type.isInlineComponentType()) {
-            const QUrl url = type.type.sourceUrl();
-            if (!QQmlMetaType::equalBaseUrls(url, finalUrl())
-                    && !QQmlMetaType::obtainCompilationUnit(type.type.typeId())) {
-                const QString &typeName = stringAt(it.key());
-                int lastDot = typeName.lastIndexOf(u'.');
-                createError(
-                        type,
-                        QQmlTypeLoader::tr("Type %1 has no inline component type called %2")
-                                .arg(QStringView{typeName}.left(lastDot), type.type.elementName()));
-                return false;
-            }
-        }
         if (type.typeData && type.typeData->isError()) {
             const QString &typeName = stringAt(it.key());
             createError(type, QQmlTypeLoader::tr("Type %1 unavailable").arg(typeName));
+            return false;
+        }
+
+        if (!type.selfReference && type.type.isInlineComponentType()) {
+            const QString icName = type.type.elementName();
+            Q_ASSERT(!icName.isEmpty());
+
+            // We have a CU here. Check if the inline component exists.
+            if (type.typeData && type.typeData->compilationUnit()->inlineComponentId(icName) >= 0)
+                return true;
+
+            const QString typeName = stringAt(it.key());
+            const qsizetype lastDot = typeName.lastIndexOf(u'.');
+            createError(
+                    type,
+                    QQmlTypeLoader::tr("Type %1 has no inline component type called %2")
+                            .arg(QStringView{typeName}.left(lastDot), icName));
             return false;
         }
     }
@@ -808,7 +812,7 @@ void QQmlTypeData::continueLoadFromIR()
 {
     assertTypeLoaderThread();
 
-    for (auto const& object: m_document->objects) {
+    for (auto const& object: std::as_const(m_document->objects)) {
         for (auto it = object->inlineComponentsBegin(); it != object->inlineComponentsEnd(); ++it) {
             QString const nameString = m_document->stringAt(it->nameIndex);
             auto importUrl = finalUrl();
@@ -1034,20 +1038,22 @@ bool QQmlTypeData::resolveTypes()
                          QQmlType::AnyRegistrationType, selfReferenceDetection) && reportErrors)
             return false;
 
-        if (ref.type.isComposite() && !ref.selfReference) {
+        if (ref.selfReference) {
+            // nothing to do
+        } else if (ref.type.isComposite()) {
             ref.typeData = typeLoader()->getType(ref.type.sourceUrl());
             addDependency(ref.typeData.data());
-        }
-        if (ref.type.isInlineComponentType()) {
+        } else if (ref.type.isInlineComponentType()) {
             QUrl containingTypeUrl = ref.type.sourceUrl();
-            if (!containingTypeUrl.isEmpty()
-                    && !QQmlMetaType::equalBaseUrls(finalUrl(), containingTypeUrl)) {
+            Q_ASSERT(!containingTypeUrl.isEmpty());
+            if (QQmlMetaType::equalBaseUrls(finalUrl(), containingTypeUrl)) {
+                ref.selfReference = true;
+            } else {
                 containingTypeUrl.setFragment(QString());
                 auto typeData = typeLoader()->getType(containingTypeUrl);
-                if (typeData.data() != this) {
-                    ref.typeData = typeData;
-                    addDependency(typeData.data());
-                }
+                Q_ASSERT(typeData.data() != this);
+                ref.typeData = typeData;
+                addDependency(typeData.data());
             }
         }
 
@@ -1102,23 +1108,12 @@ QQmlError QQmlTypeData::buildTypeResolutionCaches(
             if (!resolvedType->selfReference && resolvedType->needsCreation)
                 ref->setCompilationUnit(compilationUnit);
         } else if (qmlType.isInlineComponentType()) {
-            // Inline component
+            // Inline component.
+            // If it's from a different file we have a typeData and can't get here.
             // If it's defined in the same file we're currently compiling, we don't want to use it.
             // We're going to fill in the property caches later after all.
-            if (QQmlMetaType::equalBaseUrls(finalUrl(), qmlType.sourceUrl())) {
-                ref->setIsSelfReference(true);
-            } else {
-                // this is required for inline components in singletons
-                const QMetaType type = qmlType.typeId();
-                ref->setTypePropertyCache(QQmlMetaType::propertyCacheForType(type));
-                if (resolvedType->needsCreation) {
-                    // TODO: Obtaining a compilation unit from the type registry is OK-ish
-                    //       here because the type is unique to the engine. What we actually
-                    //       want is to have a nullptr CU if the respective inline component
-                    //       doesn't exist. There should be a simpler way to do this.
-                    ref->setCompilationUnit(QQmlMetaType::obtainCompilationUnit(type));
-                }
-            }
+            Q_ASSERT(resolvedType->selfReference);
+            Q_ASSERT(ref->isSelfReference());
         } else if (qmlType.isValid() && !resolvedType->selfReference) {
             Q_ASSERT(ref->type().isValid());
 
@@ -1186,7 +1181,7 @@ bool QQmlTypeData::resolveType(const QString &typeName, QTypeRevision &version,
                 error.setDescription(QQmlTypeLoader::tr("Unreported error adding script import to import database"));
             }
             error.setUrl(m_importCache->baseUrl());
-            error.setDescription(QQmlTypeLoader::tr("%1 %2").arg(typeName).arg(error.description()));
+            error.setDescription(QQmlTypeLoader::tr("%1 %2").arg(typeName, error.description()));
         }
 
         if (lineNumber != -1)

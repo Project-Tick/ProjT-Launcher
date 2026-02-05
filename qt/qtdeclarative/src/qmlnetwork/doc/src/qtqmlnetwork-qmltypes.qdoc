@@ -8,7 +8,7 @@
     \ingroup qmlmodules
     \brief Provides core network functionality in QML.
 
-    The Qt QML Network module provides core network functionality in QML.
+    The Qt Qml Network module provides core network functionality in QML.
 
     The QML types can be imported into your application using the
     following import statement in your .qml file:

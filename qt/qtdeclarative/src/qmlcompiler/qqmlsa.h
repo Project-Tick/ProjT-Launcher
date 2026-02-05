@@ -373,32 +373,12 @@ public:
     virtual void run(const Element &element) = 0;
 };
 
-class Q_QMLCOMPILER_EXPORT DebugElementPass : public ElementPass
-{
-    void run(const Element &element) override;
-};
-
-class Q_QMLCOMPILER_EXPORT DebugPropertyPass : public QQmlSA::PropertyPass
-{
-public:
-    DebugPropertyPass(QQmlSA::PassManager *manager);
-
-    void onRead(const QQmlSA::Element &element, const QString &propertyName,
-                const QQmlSA::Element &readScope, QQmlSA::SourceLocation location) override;
-    void onBinding(const QQmlSA::Element &element, const QString &propertyName,
-                   const QQmlSA::Binding &binding, const QQmlSA::Element &bindingScope,
-                   const QQmlSA::Element &value) override;
-    void onWrite(const QQmlSA::Element &element, const QString &propertyName,
-                 const QQmlSA::Element &value, const QQmlSA::Element &writeScope,
-                 QQmlSA::SourceLocation location) override;
-};
-
 class Q_QMLCOMPILER_EXPORT FixSuggestion
 {
     Q_DECLARE_PRIVATE(FixSuggestion)
 
 public:
-    FixSuggestion(const QString &fixDescription, const QQmlSA::SourceLocation &location,
+    FixSuggestion(const QString &description, const QQmlSA::SourceLocation &location,
                   const QString &replacement = QString());
     FixSuggestion(const FixSuggestion &);
     FixSuggestion(FixSuggestion &&) noexcept;
@@ -406,15 +386,12 @@ public:
     FixSuggestion &operator=(FixSuggestion &&) noexcept;
     ~FixSuggestion();
 
-    QString fixDescription() const;
+    QString description() const;
     QQmlSA::SourceLocation location() const;
     QString replacement() const;
 
     void setFileName(const QString &);
     QString fileName() const;
-
-    void setHint(const QString &);
-    QString hint() const;
 
     void setAutoApplicable(bool autoApplicable = true);
     bool isAutoApplicable() const;

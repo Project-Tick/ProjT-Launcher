@@ -55,6 +55,33 @@ QQmlCodeModelManager::QQmlCodeModelManager(QObject *parent, QQmlToolingSharedSet
 {
     const QByteArray defaultCodeModel;
     appendWorkspace(defaultCodeModel, ManagedByServer);
+    connect(&m_processScheduler, &QProcessScheduler::done, this,
+            &QQmlCodeModelManager::onBuildFinished);
+
+    connect(&m_processScheduler, &QProcessScheduler::done, this,
+            &QQmlCodeModelManager::backgroundBuildFinished);
+    connect(&m_processScheduler, &QProcessScheduler::started, this,
+            &QQmlCodeModelManager::backgroundBuildStarted);
+    connect(&m_processScheduler, &QProcessScheduler::cancelled, this,
+            &QQmlCodeModelManager::backgroundBuildCancelled);
+}
+
+void QQmlCodeModelManager::onBuildFinished(const QByteArray &url)
+{
+    auto it = findWorkspace(url);
+    if (it == m_workspaces.end())
+        return;
+
+    // refresh information obtained from build folder, like .qmlls.build.ini or resource files
+    const QStringList buildPaths = it->codeModel->buildPaths();
+    m_buildInformation.loadSettingsFrom(buildPaths, ForceUpdate);
+    setBuildPathsOn(&*it, buildPaths, DontAppendPathsFromFallback);
+}
+
+void QQmlCodeModelManager::prepareForShutdown()
+{
+    for (auto it = m_workspaces.begin(), end = m_workspaces.end(); it != end; ++it)
+        it->codeModel->prepareForShutdown();
 }
 
 void QQmlCodeModelManager::prepareForShutdown()
@@ -126,24 +153,29 @@ QQmlCodeModelManager::findWorkspace(const QByteArray &url)
                         [&url](const QQmlWorkspace &ws) { return ws.url == url; });
 }
 
-void QQmlCodeModelManager::setBuildPathsOn(const QQmlWorkspace *ws, const QStringList &buildFolder)
+void QQmlCodeModelManager::setBuildPathsOn(const QQmlWorkspace *ws, const QStringList &buildFolder,
+                                           SetBuildPathOption option)
 {
-    const bool isFallback = ws->url.isEmpty();
-    ws->codeModel->setBuildPaths(buildFolder + (isFallback ? QStringList{} : defaultBuildPaths()));
+    ws->codeModel->setBuildPaths(
+            buildFolder
+            + (option == DontAppendPathsFromFallback ? QStringList{} : defaultBuildPaths()));
 
     const QString file = QUrl::fromEncoded(ws->url).toLocalFile();
-    ws->codeModel->setImportPaths(m_buildInformation.importPathsFor(file)
-                                  + (isFallback ? QStringList{} : defaultImportPaths()));
+    ws->codeModel->setImportPaths(
+            m_buildInformation.importPathsFor(file)
+            + (option == DontAppendPathsFromFallback ? QStringList{} : defaultImportPaths()));
 
     if (const QStringList resourceFiles = m_buildInformation.resourceFilesFor(file);
             !resourceFiles.isEmpty()) {
         ws->codeModel->setResourceFiles(resourceFiles);
         return;
     }
-    // fallback for qt projects < 6.11 without resource files in  their .qmlls.build.ini
+    // fallback for qt projects < 6.11 without resource files in their .qmlls.build.ini
+    const QStringList resourceFiles =
+            QQmlJSUtils::resourceFilesFromBuildFolders(ws->codeModel->buildPaths());
     ws->codeModel->setResourceFiles(
-                isFallback ? QQmlJSUtils::resourceFilesFromBuildFolders(ws->codeModel->buildPaths())
-                           : defaultResourceFiles());
+            resourceFiles
+            + (option == DontAppendPathsFromFallback ? QStringList{} : defaultResourceFiles()));
 }
 
 void QQmlCodeModelManager::appendWorkspace(const QByteArray &url, ManagedBy managedBy)
@@ -157,7 +189,7 @@ void QQmlCodeModelManager::appendWorkspace(const QByteArray &url, ManagedBy mana
         ws.codeModel->setCMakeJobs(defaultCMakeJobs());
         ws.codeModel->setDocumentationRootPath(defaultDocumentationRootPath());
 
-        setBuildPathsOn(&ws, {});
+        setBuildPathsOn(&ws, {}, AppendPathsFromFallback);
     }
 
     QObject::connect(ws.codeModel.get(), &QQmlCodeModel::updatedSnapshot, this,
@@ -196,6 +228,11 @@ void QQmlCodeModelManager::disableCMakeCalls()
     m_cmakeStatus = DoesNotHaveCMake;
     for (const auto &ws : m_workspaces)
         ws.codeModel->disableCMakeCalls();
+}
+
+void QQmlCodeModelManager::cancelBackgroundBuild(const QByteArray &uri)
+{
+    m_processScheduler.cancel(uri);
 }
 
 OpenDocumentSnapshot QQmlCodeModelManager::snapshotByUrl(const QByteArray &url)
@@ -291,7 +328,7 @@ QStringList QQmlCodeModelManager::resourceFilesForFileUrl(const QByteArray &url)
     }
 
     // fallback, for standalone qmlls on projects targeting qt < 6.11
-    return QQmlJSUtils::resourceFilesFromBuildFolders(buildPathsForFileUrl(url));
+    return findCodeModelForFile(url)->resourceFiles();
 }
 
 QByteArray QQmlCodeModelManager::shortestRootUrlForFile(const QByteArray &fileUrl) const
@@ -345,17 +382,17 @@ void QQmlCodeModelManager::setBuildPathsForRootUrl(const QByteArray &url, const 
 
     // build paths passed by -b have an empty url and apply to all workspaces
     if (url.isEmpty()) {
-        setBuildPathsOn(&*fallbackWorkspace(), paths);
+        setBuildPathsOn(&*fallbackWorkspace(), paths, DontAppendPathsFromFallback);
         // make non-fallback workspaces get the fallback build path
         for (auto it = beginNonFallbackWorkspace(), end = endNonFallbackWorkspace(); it != end;
              ++it) {
-            setBuildPathsOn(&*it, {});
+            setBuildPathsOn(&*it, {}, AppendPathsFromFallback);
         }
         return;
     }
 
     auto ws = findWorkspaceForFile(url);
-    setBuildPathsOn(&*ws, paths);
+    setBuildPathsOn(&*ws, paths, AppendPathsFromFallback);
 }
 
 void QQmlCodeModelManager::addOpenToUpdate(const QByteArray &url)

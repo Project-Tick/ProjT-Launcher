@@ -60,8 +60,7 @@ import "testlogger.js" as TestLogger
     This can help when there are two tests that must be run in order.
 
     Multiple TestCase types can be supplied.  The test program will exit
-    once they have all completed.  If a test case doesn't need to run
-    (because a precondition has failed), then \l optional can be set to true.
+    once they have all completed.
 
     \section1 Data-driven Tests
 
@@ -400,10 +399,9 @@ Item {
         \endcode
 
         The test application will exit once all \l TestCase types
-        have been triggered and have run.  The \l optional property can
-        be used to exclude a \l TestCase type.
+        have been triggered and have run.
 
-        \sa optional, completed
+        \sa completed
     */
     property bool when: true
 
@@ -431,6 +429,7 @@ Item {
 
     /*!
         \qmlproperty bool TestCase::optional
+        \deprecated [6.12] Use \l skip() instead.
 
         Multiple \l TestCase types can be supplied in a test application.
         The application will exit once they have all completed.  If a test case
@@ -449,6 +448,9 @@ Item {
 
         \sa when, completed
     */
+    @Deprecated {
+        reason: "use skip() instead"
+    }
     property bool optional: false
 
     /*!

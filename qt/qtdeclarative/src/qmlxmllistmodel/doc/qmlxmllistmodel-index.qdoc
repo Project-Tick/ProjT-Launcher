@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GFDL-1.3-no-invariants-only
 
 /*!
-    \title Qt XmlListModel
+    \title Qt Qml XmlListModel
     \page qml-xmllistmodel.html
 
     Use the XmlListModel type to create a read-only model from XML data. It can be
@@ -22,6 +22,6 @@
     \section1 API Reference
 
     \list
-        \li \l{Qt XmlListModel QML Types}
+        \li \l{Qt Qml XmlListModel QML Types}
     \endlist
 */

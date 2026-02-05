@@ -41,3 +41,10 @@ qt_internal_extend_target(QmlCore CONDITION QT_FEATURE_permissions
 qt_internal_add_docs(QmlCore
     doc/qtqmlcore.qdocconf
 )
+
+target_sources(QmlCore
+    PRIVATE
+        doc/src/qmlpermissions.qdoc
+        doc/src/qtqmlcore-qmltypes.qdoc
+        doc/src/qtqmlcore.qdoc
+)

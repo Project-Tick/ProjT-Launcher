@@ -48,8 +48,8 @@ public:
     void syncLabel();
     void updateOrSyncLabel();
 
-    void updateImplicitSize();
-    void layout();
+    virtual void updateImplicitSize();
+    virtual void layout();
 
     void watchChanges(QQuickItem *item);
     void unwatchChanges(QQuickItem *item);
@@ -60,6 +60,14 @@ public:
     void itemImplicitWidthChanged(QQuickItem *) override;
     void itemImplicitHeightChanged(QQuickItem *) override;
     void itemDestroyed(QQuickItem *item) override;
+
+    virtual void textChange();
+    virtual void displayChange();
+
+    static void beginClass(QQuickItem *item);
+    static void completeComponent(QQuickItem *item);
+    static QRectF alignedRect(bool mirrored, Qt::Alignment alignment, const QSizeF &size,
+        const QRectF &rectangle);
 
     bool mirrored = false;
     QQuickIconLabel::Display display = QQuickIconLabel::TextBesideIcon;

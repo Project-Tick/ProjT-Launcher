@@ -652,7 +652,7 @@ QQmlJS::DiagnosticMessage QQmlJSAotCompiler::diagnose(
 {
     if (isStrict(m_document)
             && (type == QtWarningMsg || type == QtCriticalMsg || type == QtFatalMsg)
-            && m_logger->isCategoryFatal(qmlCompiler)) {
+            && m_logger->categorySeverity(qmlCompiler) == QQmlSA::WarningSeverity::Error) {
         qFatal("%s:%d: (strict mode) %s",
                qPrintable(QFileInfo(m_resourcePath).fileName()),
                location.startLine, qPrintable(message));
@@ -731,7 +731,7 @@ QQmlJSAotFunction QQmlJSAotCompiler::globalCode() const
 
 std::optional<QList<QQmlJS::DiagnosticMessage>> QQmlJSAotCompiler::finalizeBindingOrFunction()
 {
-    const auto archiveMessages = qScopeGuard([this]() { m_logger->finalizeFuction(); });
+    const auto archiveMessages = qScopeGuard([this]() { m_logger->finalizeFunction(); });
 
     if (!m_logger->currentFunctionHasCompileError())
         return {};
@@ -745,7 +745,7 @@ std::optional<QList<QQmlJS::DiagnosticMessage>> QQmlJSAotCompiler::finalizeBindi
 }
 
 QQmlJSAotFunction QQmlJSAotCompiler::doCompile(
-        const QV4::Compiler::Context *context, QQmlJSCompilePass::Function *function)
+        const QV4::Compiler::Context *context, const QQmlJSCompilePass::Function *function)
 {
     if (m_logger->currentFunctionHasErrorOrSkip())
         return QQmlJSAotFunction();
@@ -795,7 +795,7 @@ QQmlJSAotFunction QQmlJSAotCompiler::doCompile(
 }
 
 QQmlJSAotFunction QQmlJSAotCompiler::doCompileAndRecordAotStats(
-        const QV4::Compiler::Context *context, QQmlJSCompilePass::Function *function,
+        const QV4::Compiler::Context *context, const QQmlJSCompilePass::Function *function,
         const QString &name, QQmlJS::SourceLocation location)
 {
     QElapsedTimer timer {};

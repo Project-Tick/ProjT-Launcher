@@ -31,7 +31,7 @@ class SourceLocation
         return sizeof(qsizetype) > sizeof(quint32);
     }
 public:
-    explicit SourceLocation(quint32 offset = 0, quint32 length = 0, quint32 line = 0, quint32 column = 0)
+    explicit constexpr SourceLocation(quint32 offset = 0, quint32 length = 0, quint32 line = 0, quint32 column = 0)
         : offset(offset), length(length),
           startLine(line), startColumn(column)
     {
@@ -209,6 +209,8 @@ public:
         return res;
     }
 };
+
+inline static constexpr SourceLocation s_documentOrigin(0, 0, 1, 1);
 
 } // namespace QQmlJS
 

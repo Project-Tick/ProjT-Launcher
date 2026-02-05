@@ -391,16 +391,15 @@ void QQmlJSTypePropagator::handleUnqualifiedAccess(const QString &name, bool isM
 
                 QQmlJS::SourceLocation fixLocation = location;
                 fixLocation.length = 0;
+                QString m = "%1 is a member of a parent element.\n      You can qualify the "
+                            "access with its id to avoid this warning%2.\n"_L1.arg(name);
+                m = m.arg(id.result.isEmpty() ? " (You first have to give the element an id)"_L1 : ""_L1);
+
                 suggestion = QQmlJSFixSuggestion{
-                    name
-                            + " is a member of a parent element.\n      You can qualify the access "
-                              "with its id to avoid this warning.\n"_L1,
-                    fixLocation, (id.result.isEmpty() ? u"<id>."_s : (id.result + u'.'))
+                    m, fixLocation, (id.result.isEmpty() ? u"<id>."_s : (id.result + u'.'))
                 };
 
-                if (id.result.isEmpty())
-                    suggestion->setHint("You first have to give the element an id"_L1);
-                else
+                if (!id.result.isEmpty())
                     suggestion->setAutoApplicable();
             }
         }
@@ -412,7 +411,7 @@ void QQmlJSTypePropagator::handleUnqualifiedAccess(const QString &name, bool isM
         QQmlJSFixSuggestion bindComponents {
             "Set \"%1\" in order to use IDs from outer components in nested components."_L1
                 .arg(replacement),
-            QQmlJS::SourceLocation(0, 0, 1, 1),
+            QQmlJS::s_documentOrigin,
             replacement + '\n'_L1
         };
         bindComponents.setAutoApplicable();

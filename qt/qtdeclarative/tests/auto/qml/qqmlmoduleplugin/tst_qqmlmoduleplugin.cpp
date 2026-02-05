@@ -720,7 +720,7 @@ void tst_qqmlmoduleplugin::parallelPluginImport()
     QMutexLocker locker(&PluginThatWaits::initializeEngineEntered);
 
     QThread worker;
-    QObject::connect(&worker, &QThread::started, [&worker](){
+    QObject::connect(&worker, &QThread::started, &worker, [&worker]() {
         // Engines in separate threads are tricky, but as long as we do not create a graphical
         // object and move objects created by the engines across thread boundaries, this is safe.
         // At the same time this allows us to place the engine's loader thread into the position
@@ -735,7 +735,7 @@ void tst_qqmlmoduleplugin::parallelPluginImport()
         QVERIFY(!obj.isNull());
 
         worker.quit();
-    });
+    }, Qt::DirectConnection);
     worker.start();
 
     PluginThatWaits::waitingForInitializeEngineEntry.wait(&PluginThatWaits::initializeEngineEntered);

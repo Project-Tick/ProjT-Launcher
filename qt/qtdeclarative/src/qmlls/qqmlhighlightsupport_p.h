@@ -16,9 +16,9 @@
 // We mean it.
 //
 
-#include "qlanguageserver_p.h"
-#include "qqmlbasemodule_p.h"
-#include "qqmlsemantictokens_p.h"
+#include <private/qlanguageserver_p.h>
+#include <private/qqmlbasemodule_p.h>
+#include <private/qqmlsemantictokens_p.h>
 
 QT_BEGIN_NAMESPACE
 

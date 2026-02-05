@@ -19,7 +19,7 @@
 
 /*!
 
-    \title Qt QML WorkerScript
+    \title Qt Qml WorkerScript
     \page qmlworkerscript-index.html
 
     The Qml WorkerScript module enables the use of threads in a Qt Quick
@@ -41,7 +41,7 @@
     \section1 API Reference
 
     \list
-        \li \l {Qt QML WorkerScript QML Types}
+        \li \l {Qt Qml WorkerScript QML Types}
     \endlist
 
 */

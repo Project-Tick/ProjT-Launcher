@@ -5,6 +5,7 @@
 #include "QtQmlLS/private/qqmllsutils_p.h"
 #include "QtQmlLS/private/qqmlsemantictokens_p.h"
 #include "QtQmlLS/private/documentsymbolutils_p.h"
+#include "QtQmlLS/private/qqmlcodemodel_p.h"
 #include <algorithm>
 #include <memory>
 #include <optional>
@@ -26,32 +27,20 @@ do { \
 QT_USE_NAMESPACE
 using namespace Qt::StringLiterals;
 using namespace QLspSpecification;
+using namespace QmlLsp;
 
 static constexpr bool enable_debug_output = false;
 
-static QString qmllsBuildIniContent(const QString &qmlFileName,
-                                    const QMap<QString, QStringList> &importPathsPerWorkspace)
-{
-    QString result = "[General]\n"_L1;
-    for (const auto &[workspace, importPaths] : importPathsPerWorkspace.asKeyValueRange()) {
-        const QString groupName =
-                QDir::cleanPath(workspace.isEmpty() ? (qmlFileName + "/.."_L1) : workspace)
-                        .replace("/"_L1, "<SLASH>"_L1);
-        result += "[%1]\nimportPaths=\"%2\"\n"_L1.arg(groupName,
-                                                      importPaths.join(QDir::listSeparator()));
-    }
-    return result;
-}
-
-static void createQmllsBuildIni(const QString &buildFolder, const QString &qmlFileName,
-                                const QMap<QString, QStringList> &importPathsPerWorkspace)
+static void createQmllsBuildIni(const QString &buildFolder,
+                                const QmlLsp::ModuleSettings &moduleSettings)
 {
     QDir dir(buildFolder);
     QVERIFY(dir.mkdir(".qt"_L1));
-    const QString qmllsBuildIniPath = dir.absoluteFilePath(".qt/.qmlls.build.ini"_L1);
-    QFile qmllsBuildIni(qmllsBuildIniPath);
-    QVERIFY(qmllsBuildIni.open(QFile::WriteOnly));
-    qmllsBuildIni.write(qmllsBuildIniContent(qmlFileName, importPathsPerWorkspace).toUtf8());
+    QmlLsp::QQmllsBuildInformation buildIni;
+    for (QmlLsp::ModuleSetting moduleSetting : moduleSettings) {
+        buildIni.addModuleSetting(moduleSetting);
+    }
+    buildIni.writeQmllsBuildIniContent(dir.absoluteFilePath(".qt/.qmlls.build.ini"_L1));
 }
 
 static Notifications::AddBuildDirsParams
@@ -438,7 +427,11 @@ void tst_qmlls_modules::buildDir()
 
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
-    createQmllsBuildIni(tempDir.path(), testFile(filePath), importPathsPerWorkspace);
+    createQmllsBuildIni(tempDir.path(),
+                        { ModuleSetting{ testFile("completions"),
+                                         { testFile("buildDir"_L1),
+                                           QLibraryInfo::path(QLibraryInfo::QmlImportsPath) },
+                                         {} } });
 
     m_protocol->typedRpc()->sendNotification(
             QByteArray(Notifications::AddBuildDirsMethod),
@@ -1501,8 +1494,17 @@ void tst_qmlls_modules::warnings()
     if (!expectedWarnings.extraImportPathsPerWorkspace.isEmpty()) {
         tempDir.emplace();
         QVERIFY(tempDir->isValid());
-        createQmllsBuildIni(tempDir->path(), testFile(filePath),
-                            expectedWarnings.extraImportPathsPerWorkspace);
+
+        ModuleSettings moduleSettings;
+        for (const auto &[workspace, importPaths] :
+             expectedWarnings.extraImportPathsPerWorkspace.asKeyValueRange()) {
+            moduleSettings.append(ModuleSetting{
+                    workspace.isEmpty() ? QDir::cleanPath(testFile(filePath) + "/.."_L1)
+                                        : workspace,
+                    importPaths,
+                    {} });
+        }
+        createQmllsBuildIni(tempDir->path(), moduleSettings);
 
         m_protocol->notifyDidChangeWorkspaceFolders(
                 addDidChangeWorkspaceFoldersFromMap(expectedWarnings.extraImportPathsPerWorkspace));
@@ -1761,10 +1763,11 @@ void tst_qmlls_modules::qmldirImports()
     if (addBuildDirectory == AddBuildDir) {
         tempDir.emplace();
         QVERIFY(tempDir->isValid());
-        createQmllsBuildIni(tempDir->path(), testFile(filePath),
-                            { { ""_L1,
-                                { testFile("buildDir"_L1),
-                                  QLibraryInfo::path(QLibraryInfo::QmlImportsPath) } } });
+        createQmllsBuildIni(tempDir->path(),
+                            { ModuleSetting{ QDir::cleanPath(testFile(filePath) + "/.."_L1),
+                                             { testFile("buildDir"_L1),
+                                               QLibraryInfo::path(QLibraryInfo::QmlImportsPath) },
+                                             {} } });
 
         Notifications::AddBuildDirsParams bDirs;
         UriToBuildDirs ub;

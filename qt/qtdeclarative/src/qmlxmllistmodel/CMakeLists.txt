@@ -26,3 +26,8 @@ qt_internal_add_qml_module(QmlXmlListModel
 qt_internal_add_docs(QmlXmlListModel
     doc/qtqmlxmllistmodel.qdocconf
 )
+
+target_sources(QmlXmlListModel
+    PRIVATE
+        doc/qmlxmllistmodel-index.qdoc
+)

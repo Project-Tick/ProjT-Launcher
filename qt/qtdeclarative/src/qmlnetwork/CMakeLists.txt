@@ -26,3 +26,11 @@ qt_internal_extend_target(QmlNetwork CONDITION QT_FEATURE_qml_ssl
 qt_internal_add_docs(QmlNetwork
     doc/qtqmlnetwork.qdocconf
 )
+
+target_sources(QmlNetwork
+    PRIVATE
+        qqmlnetworkinformation.qdoc
+        ssl/qqmlssl.qdoc
+        doc/src/qtqmlnetwork.qdoc
+        doc/src/qtqmlnetwork-qmltypes.qdoc
+)

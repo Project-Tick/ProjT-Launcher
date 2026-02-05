@@ -7,7 +7,7 @@ qt_internal_add_module(QmlLSPrivate
     PLUGIN_TYPES qmlls
     SOURCES
         qlspcustomtypes_p.h
-        qlanguageserver_p.h qlanguageserver_p.h qlanguageserver.cpp
+        qlanguageserver_p.h qlanguageserver_p_p.h qlanguageserver.cpp
         qqmllanguageserver_p.h qqmllanguageserver.cpp
         qworkspace.cpp qworkspace_p.h
         qtextblock_p.h qtextblock.cpp
@@ -40,10 +40,12 @@ qt_internal_add_module(QmlLSPrivate
         qqmldiffer_p.h qqmldiffer.cpp
         qprocessscheduler_p.h qprocessscheduler.cpp
 
-        documentSymbolSupport/qqmldocumentsymbolsupport_p.h
-        documentSymbolSupport/qqmldocumentsymbolsupport.cpp
-        documentSymbolSupport/documentsymbolutils_p.h
-        documentSymbolSupport/documentsymbolutils.cpp
+        qqmldocumentsymbolsupport_p.h
+        qqmldocumentsymbolsupport.cpp
+        documentsymbolutils_p.h
+        documentsymbolutils.cpp
+
+        qqmlprogresssupport_p.h qqmlprogresssupport.cpp
 
     PUBLIC_LIBRARIES
         Qt::LanguageServerPrivate

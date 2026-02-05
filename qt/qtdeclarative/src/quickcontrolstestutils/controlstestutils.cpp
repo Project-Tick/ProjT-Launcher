@@ -10,6 +10,10 @@
 #include <QtQuickTemplates2/private/qquickapplicationwindow_p.h>
 #include <QtQuickTemplates2/private/qquickcontrol_p_p.h>
 #include <QtQuickTemplates2/private/qquickpopup_p.h>
+#include <QtQuickTemplates2/private/qquickpopupitem_p_p.h>
+#include <QtQuickTemplates2/private/qquickmenu_p_p.h>
+#include <QtQuickTemplates2/private/qquickmenuitem_p.h>
+#include <QtQuickTemplates2/private/qquickmenuitem_p_p.h>
 
 QQuickControlsTestUtils::QQuickControlsApplicationHelper::QQuickControlsApplicationHelper(QQmlDataTest *testCase,
     const QString &testFilePath, const QVariantMap &initialProperties, const QStringList &qmlImportPaths)
@@ -133,18 +137,61 @@ bool QQuickControlsTestUtils::clickButton(QQuickAbstractButton *button)
 
     QSignalSpy spy(button, &QQuickAbstractButton::clicked);
     if (!spy.isValid()) {
-        qWarning() << "button" << button << "must have a valid clicked signal";
+        qWarning() << "Button" << button << "must have a valid clicked signal";
         return false;
     }
 
     const QPoint buttonCenter = button->mapToScene(QPointF(button->width() / 2, button->height() / 2)).toPoint();
     QTest::mouseClick(button->window(), Qt::LeftButton, Qt::NoModifier, buttonCenter);
     if (spy.size() != 1) {
-        qWarning() << "clicked signal of button" << button << "was not emitted after clicking";
+        QDebug warning(QtWarningMsg);
+        warning.nospace() << "The clicked signal of button " << button << " was not emitted after "
+            << "clicking at " << buttonCenter << ".";
+        const QQuickPopup *popup = popupParent(button);
+        if (popup && !popup->isOpened()) {
+            warning << " The popup it's in (" << popup << ") is no longer opened; "
+                << "the click may have missed the button and gone outside of the popup, "
+                << "causing it to close.";
+        }
         return false;
     }
 
     return true;
+}
+
+/*!
+    \internal
+
+    If \a menuItem is not in a menu, use \l clickButton.
+*/
+bool QQuickControlsTestUtils::clickMenuItem(QQuickMenuItem *menuItem)
+{
+    auto *menuItemPrivate = QQuickMenuItemPrivate::get(menuItem);
+    if (!menuItemPrivate->menu) {
+        qWarning() << "MenuItem" << menuItem << "must be in a menu in order to be clicked";
+        return false;
+    }
+
+    if (menuItemPrivate->menu->enter()) {
+        /*
+            FluentWinUI3 animates its height in its enter transition. This causes issues in
+            context menu tests (tst_QQuickContextMenu) on Ubuntu (X11), because the native resize
+            events caused by the menu's height changes arrive too late, causing clicks to miss the
+            menu item and instead close the menu (which clickButton now warns about).
+
+            There doesn't appear to be a way to reliably detect and hence wait for these events.
+            We also can't disable the enter transition because the menu doesn't exist until the
+            right click event, by which point the transition has also already started.
+
+            We tried an environment variable to allow the test to disable them before they start,
+            but it was still flaky. So we now simply click the menu item programmatically for menus
+            with enter transitions.
+        */
+        menuItem->click();
+        return true;
+    }
+
+    return clickButton(menuItem);
 }
 
 bool QQuickControlsTestUtils::doubleClickButton(QQuickAbstractButton *button)
@@ -215,6 +262,16 @@ QString QQuickControlsTestUtils::visualFocusFailureMessage(QQuickControl *contro
     return message;
 }
 
+bool QQuickControlsTestUtils::ApplicationAttributes::test(Qt::ApplicationAttribute attribute) const
+{
+    return QCoreApplication::testAttribute(attribute);
+}
+
+void QQuickControlsTestUtils::ApplicationAttributes::set(Qt::ApplicationAttribute attribute, bool on)
+{
+    QCoreApplication::setAttribute(attribute, on);
+}
+
 bool QQuickControlsTestUtils::arePopupWindowsSupported()
 {
 #if defined(Q_OS_WINDOWS) || defined(Q_OS_MACOS)
@@ -222,6 +279,25 @@ bool QQuickControlsTestUtils::arePopupWindowsSupported()
 #else
     return false;
 #endif
+}
+
+/*!
+    \internal
+
+    Finds the popup that \a item is in, or returns \c nullptr.
+*/
+QQuickPopup *QQuickControlsTestUtils::popupParent(QQuickItem *item)
+{
+    QQuickItem *parentItem = item;
+    while (parentItem) {
+        auto *parentAsPopupItem = qobject_cast<QQuickPopupItem *>(parentItem);
+        if (parentAsPopupItem)
+            return QQuickPopupItemPrivate::get(parentAsPopupItem)->popup;
+
+        parentItem = parentItem->parentItem();
+    }
+
+    return nullptr;
 }
 
 QByteArray QQuickTest::Private::qActiveFocusFailureMessage(QQuickPopup *popup)

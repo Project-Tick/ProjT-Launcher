@@ -756,17 +756,104 @@ struct ResolveToDo {
     int pathIndex;
 };
 
-static QMap<LookupType, QString> lookupTypeToStringMap()
+static QMap<QString, LookupType> stringToLookupTypeMap()
 {
-    static QMap<LookupType, QString> map = []() {
+    static auto map = []() {
         QMetaEnum metaEnum = QMetaEnum::fromType<LookupType>();
-        QMap<LookupType, QString> res;
+        QMap<QString, LookupType> res;
         for (int i = 0; i < metaEnum.keyCount(); ++i) {
-            res[LookupType(metaEnum.value(i))] = QString::fromUtf8(metaEnum.key(i));
+            res[QString::fromUtf8(metaEnum.key(i)).toLower()] = LookupType(metaEnum.value(i));
         }
         return res;
     }();
     return map;
+}
+
+static DomItem rootFromContext(const DomItem &root, PathRoot contextId)
+{
+    switch (contextId) {
+    case PathRoot::Modules:
+        return root.environment().field(Fields::moduleIndexWithUri);
+    case PathRoot::Cpp:
+        return root.environment()[Fields::qmltypesFileWithPath];
+    case PathRoot::Libs:
+        return root.environment()[Fields::plugins];
+    case PathRoot::Top:
+        return root.top();
+    case PathRoot::Env:
+        return root.environment();
+    case PathRoot::Universe:
+        return root.environment()[u"universe"];
+    default:
+        return DomItem{};
+    }
+}
+
+/*!
+   \internal
+ Is used to resolve the "get" field of QQmlJS::Dom::Reference. Reference contains a link to a type,
+ and its "get" field does return the DomItem for the linked type. For example, a type has a link to
+ its base type.
+*/
+static DomItem resolveReference(const DomItem &it, const Path &refRef, QList<Path> *visitedRefs,
+                                const ErrorHandler &errorHandler, const ErrorGroups &errorGroup)
+{
+    if (visitedRefs->contains(refRef)) {
+        errorGroup
+                .error([visitedRefs, refRef](const Sink &sink) {
+                    const QString msg = DomItem::tr("Circular reference:") + QLatin1Char('\n');
+                    sink(QStringView{ msg });
+                    for (const Path &vPath : *visitedRefs) {
+                        sink(u"  ");
+                        vPath.dump(sink);
+                        sink(u" >\n");
+                    }
+                    refRef.dump(sink);
+                })
+                .handle(errorHandler);
+        return {};
+    }
+
+    const Reference *ref = it.as<Reference>();
+    Q_ASSERT(ref);
+    visitedRefs->append(refRef);
+    DomItem resolveRes;
+    it.resolve(
+            ref->referredObjectPath,
+            [&resolveRes](Path, const DomItem &r) {
+                resolveRes = r;
+                return false;
+            },
+            errorHandler, ResolveOption::None, ref->referredObjectPath, visitedRefs);
+    return resolveRes;
+}
+
+static LookupOptions resolveLookupOptions(const PathCurrent &current, const DomItem &it)
+{
+    LookupOptions opt = LookupOption::Normal;
+    if (current == PathCurrent::LookupStrict)
+        return opt | LookupOption::Strict;
+
+    if (current == PathCurrent::Lookup) {
+        DomItem comp = it.component();
+        DomItem strict = comp.field(u"~strictLookup~");
+        if (!strict) {
+            DomItem env = it.environment();
+            strict = env.field(u"defaultStrictLookup");
+        }
+        if (strict && strict.value().toBool())
+            opt = opt | LookupOption::Strict;
+    }
+    return opt;
+}
+
+static std::optional<LookupType> lookupTypeFromString(const QString &expectedType)
+{
+    const auto &map = stringToLookupTypeMap();
+    auto it = map.find(expectedType.toLower());
+    if (it == map.end())
+        return {};
+    return *it;
 }
 
 bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHandler &errorHandler,
@@ -782,29 +869,11 @@ bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHan
     Path myPath = path;
     QList<ResolveToDo> toDos(1); // invariant: always increase pathIndex to guarantee end even with only partial visited match
     if (path.headKind() == Path::Kind::Root) {
-        DomItem root = *this;
-        PathRoot contextId = path.headRoot();
-        switch (contextId) {
-        case PathRoot::Modules:
-            root = root.environment().field(Fields::moduleIndexWithUri);
-            break;
-        case PathRoot::Cpp:
-                root = root.environment()[Fields::qmltypesFileWithPath];
-            break;
-        case PathRoot::Libs:
-            root = root.environment()[Fields::plugins];
-            break;
-        case PathRoot::Top:
-            root = root.top();
-            break;
-        case PathRoot::Env:
-            root = root.environment();
-            break;
-        case PathRoot::Universe:
-            root = root.environment()[u"universe"];
-            break;
-        case PathRoot::Other:
-            myResolveErrors().error(tr("Root context %1 is not known").arg(path.headName())).handle(errorHandler);
+        DomItem root = rootFromContext(*this, path.headRoot());
+        if (!root) {
+            myResolveErrors()
+                    .error(tr("Root context %1 is not known").arg(path.headName()))
+                    .handle(errorHandler);
             return false;
         }
         toDos[0] = {std::move(root), 1};
@@ -842,37 +911,9 @@ bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHan
                 break;
             case Path::Kind::Field:
                 if (cNow.checkHeadName(Fields::get) && it.internalKind() == DomType::Reference) {
-                    Path toResolve = it.as<Reference>()->referredObjectPath;
-                    Path refRef = it.canonicalPath();
-                    if (visitedRefs == nullptr) {
-                        visitedRefs = &vRefs;
-                    }
-                    if (visitedRefs->contains(refRef)) {
-                        myResolveErrors()
-                                .error([visitedRefs, refRef](const Sink &sink) {
-                                    const QString msg = tr("Circular reference:") + QLatin1Char('\n');
-                                    sink(QStringView{msg});
-                                    for (const Path &vPath : *visitedRefs) {
-                                        sink(u"  ");
-                                        vPath.dump(sink);
-                                        sink(u" >\n");
-                                    }
-                                    refRef.dump(sink);
-                                })
-                                .handle(errorHandler);
-                        it = DomItem();
-                    } else {
-                        visitedRefs->append(refRef);
-                        DomItem resolveRes;
-                        it.resolve(
-                                toResolve,
-                                [&resolveRes](Path, const DomItem &r) {
-                                    resolveRes = r;
-                                    return false;
-                                },
-                                errorHandler, ResolveOption::None, toResolve, visitedRefs);
-                        it = resolveRes;
-                    }
+                    it = resolveReference(it, it.canonicalPath(),
+                                          visitedRefs == nullptr ? &vRefs : visitedRefs,
+                                          errorHandler, myResolveErrors());
                 } else {
                     it = it.field(cNow.headName()); // avoid instantiation of QString?
                 }
@@ -967,19 +1008,7 @@ bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHan
                 case PathCurrent::LookupStrict:
                 case PathCurrent::LookupDynamic:
                 case PathCurrent::Lookup: {
-                    LookupOptions opt = LookupOption::Normal;
-                    if (current == PathCurrent::Lookup) {
-                        DomItem comp = it.component();
-                        DomItem strict = comp.field(u"~strictLookup~");
-                        if (!strict) {
-                            DomItem env = it.environment();
-                            strict = env.field(u"defaultStrictLookup");
-                        }
-                        if (strict && strict.value().toBool())
-                            opt = opt | LookupOption::Strict;
-                    } else if (current == PathCurrent::LookupStrict) {
-                        opt = opt | LookupOption::Strict;
-                    }
+                    const LookupOptions opt = resolveLookupOptions(current, it);
                     if (it.internalKind() == DomType::ScriptExpression) {
                         myResolveErrors()
                                 .error(tr("Javascript lookups not yet implemented"))
@@ -1019,35 +1048,15 @@ bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHan
                         return false;
                     }
                     QString expectedType = cNow.headName();
-                    LookupType lookupType = LookupType::Symbol;
-                    {
-                        bool found = false;
-                        auto m = lookupTypeToStringMap();
-                        auto it = m.begin();
-                        auto end = m.end();
-                        while (it != end) {
-                            if (it.value().compare(expectedType, Qt::CaseInsensitive) == 0) {
-                                lookupType = it.key();
-                                found = true;
-                            }
-                            ++it;
-                        }
-                        if (!found) {
-                            QString types;
-                            it = lookupTypeToStringMap().begin();
-                            while (it != end) {
-                                if (!types.isEmpty())
-                                    types += QLatin1String("', '");
-                                types += it.value();
-                                ++it;
-                            }
-                            myResolveErrors()
-                                    .error(tr("Type for lookup was expected to be one of '%1', not "
-                                              "%2")
-                                                   .arg(types, expectedType))
-                                    .handle(errorHandler);
-                            return false;
-                        }
+                    auto lookupType = lookupTypeFromString(expectedType);
+                    if (!lookupType) {
+                        myResolveErrors()
+                                .error(tr("Type for lookup was expected to be one of '%1', not "
+                                          "%2")
+                                               .arg(stringToLookupTypeMap().keys().join(", "_L1),
+                                                    expectedType))
+                                .handle(errorHandler);
+                        return false;
                     }
                     cNow = path[iPath++];
                     if (cNow.headKind() != Path::Kind::Key) {
@@ -1078,7 +1087,8 @@ bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHan
                                 toDos.append({ subEl, iPath });
                                 return true;
                             },
-                            lookupType, opt, errorHandler, &(visited[iPath]), visitedRefs);
+                            *(std::move(lookupType)), opt, errorHandler, &(visited[iPath]),
+                            visitedRefs);
                     branchExhausted = true;
                     break;
                 }

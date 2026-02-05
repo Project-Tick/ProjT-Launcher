@@ -3,7 +3,7 @@
 
 /*!
     \qmlmodule Qt.labs.qmlmodels
-    \title Qt QML Models experimental QML Types
+    \title Qt Qml Models experimental QML Types
     \ingroup qmlmodules
     \brief Provides QML experimental types for data models.
     \since 5.12

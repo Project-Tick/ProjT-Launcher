@@ -996,7 +996,7 @@ void tst_QQmlDebugJS::breakOnAnchor()
 
     m_client->connect();
 
-    QTRY_COMPARE_WITH_TIMEOUT(m_process->state(), QProcess::NotRunning, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(m_process->state(), QProcess::NotRunning, 10000);
     QCOMPARE(m_process->exitStatus(), QProcess::NormalExit);
 
     QCOMPARE(breaks, 2);

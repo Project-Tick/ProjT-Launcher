@@ -15,7 +15,38 @@ class QQmlJSScope;
 
 namespace QQmlSA {
 class SourceLocation;
+
+enum class WarningSeverity
+{
+    Disable = 100, // Some number different from the other QtMsgType levels
+    Info = QtMsgType::QtInfoMsg,
+    Warning = QtMsgType::QtWarningMsg,
+    Error = QtMsgType::QtCriticalMsg,
+};
+static_assert(int(WarningSeverity::Disable) != int(QtMsgType::QtInfoMsg));
+static_assert(int(WarningSeverity::Disable) != int(QtMsgType::QtWarningMsg));
+static_assert(int(WarningSeverity::Disable) != int(QtMsgType::QtCriticalMsg));
+
+inline bool operator<(WarningSeverity lhs, WarningSeverity rhs)
+{
+    const auto orderedValue = [](WarningSeverity s) {
+        switch (s) {
+        case WarningSeverity::Error:
+            return 3;
+        case WarningSeverity::Warning:
+            return 2;
+        case WarningSeverity::Info:
+            return 1;
+        case WarningSeverity::Disable:
+            return 0;
+        default:
+            Q_UNREACHABLE();
+        }
+    };
+    return orderedValue(lhs) < orderedValue(rhs);
 }
+} // namespace QQmlSA
+
 
 namespace QQmlSA {
 
@@ -45,6 +76,7 @@ extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlAccessSingleton;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlAliasCycle;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlAssignmentInCondition;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlAttachedPropertyReuse;
+extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlBlockScopeVarDeclaration;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlComma;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlCompiler;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlComponentChildrenCount;
@@ -60,14 +92,17 @@ extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlDuplicateInlineComp
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlDuplicatePropertyBinding;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlDuplicatedName;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEnumEntryMatchesEnum;
+extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEnumKeyCase;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEnumsAreNotTypes;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEqualityTypeCoercion;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEval;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlFunctionUsedBeforeDeclaration;
+extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlIdShadowsMember;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlImport;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlImportFileSelector;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlIncompatibleType;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlInheritanceCycle;
+extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlInlineComponentEnums;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlInvalidLintDirective;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlLiteralConstructor;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlMissingEnumEntry;
@@ -76,7 +111,6 @@ extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlMissingType;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlMultilineStrings;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlNonListProperty;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlNonRootEnums;
-extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlPlugin;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlPreferNonVarProperties;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlPrefixedImportType;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlReadOnlyProperty;
@@ -84,13 +118,13 @@ extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlRecursionDepthError
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlRedundantOptionalChaining;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlRequired;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlShadow;
+extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlShadowMethod;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlSignalParameters;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlStalePropertyRead;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlSyntax;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlSyntaxDuplicateIds;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlSyntaxIdQuotation;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlTopLevelComponent;
-extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlTranslationFunctionMismatch;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlUncreatableType;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlUnintentionalEmptyBlock;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlUnqualified;

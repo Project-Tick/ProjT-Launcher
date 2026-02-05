@@ -3584,7 +3584,7 @@ void QQuickTableViewPrivate::processRebuildTable()
     if (rebuildState == RebuildState::Begin) {
         qCDebug(lcTableViewDelegateLifecycle()) << "begin rebuild:" << q << "options:" << rebuildOptions;
         tableSizeBeforeRebuild = tableSize;
-        edgesBeforeRebuild = loadedItems.isEmpty() ? QMargins()
+        edgesBeforeRebuild = loadedItems.isEmpty() ? QMargins(-1,-1,-1,-1)
             : QMargins(q->leftColumn(), q->topRow(), q->rightColumn(), q->bottomRow());
     }
 

@@ -53,6 +53,7 @@ set(qml_resource_files
     "designhelpers_rectangleshape.qml"
     "ellipticalArcs.qml"
     "fillRules.qml"
+    "fillUnderLines.qml"
     "gradientSpreadModes.qml"
     "joinStyles.qml"
     "largeOrSmallArc.qml"

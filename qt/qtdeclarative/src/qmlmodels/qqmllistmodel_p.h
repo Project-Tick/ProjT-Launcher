@@ -179,7 +179,7 @@ private:
             const QV4::CompiledData::Binding *binding, ListModel *model, QQmlListModel *owner,
             int outterElementIndex);
 
-    static bool definesEmptyList(const QString &);
+    static bool definesEmptyList(QStringView s);
 
     QString listElementTypeName;
 };

@@ -48,6 +48,8 @@ void tst_QQuickTextField::initTestCase()
     qputenv("QML_NO_TOUCH_COMPRESSION", "1");
     // Showing a native menu is a blocking call, so the test will timeout.
     QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuWindows);
+
+    setFastAnimations(true);
 }
 
 void tst_QQuickTextField::touchscreenDoesNotSelect_data()

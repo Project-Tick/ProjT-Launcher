@@ -15,13 +15,13 @@
 
 QT_BEGIN_NAMESPACE
 
-static void beginClass(QQuickItem *item)
+void QQuickIconLabelPrivate::beginClass(QQuickItem *item)
 {
     if (QQmlParserStatus *parserStatus = qobject_cast<QQmlParserStatus *>(item))
         parserStatus->classBegin();
 }
 
-static void completeComponent(QQuickItem *item)
+void QQuickIconLabelPrivate::completeComponent(QQuickItem *item)
 {
     if (QQmlParserStatus *parserStatus = qobject_cast<QQmlParserStatus *>(item))
         parserStatus->componentComplete();
@@ -189,7 +189,8 @@ void QQuickIconLabelPrivate::updateImplicitSize()
 }
 
 // adapted from QStyle::alignedRect()
-static QRectF alignedRect(bool mirrored, Qt::Alignment alignment, const QSizeF &size, const QRectF &rectangle)
+QRectF QQuickIconLabelPrivate::alignedRect(bool mirrored, Qt::Alignment alignment,
+    const QSizeF &size, const QRectF &rectangle)
 {
     alignment = QGuiApplicationPrivate::visualAlignment(mirrored ? Qt::RightToLeft : Qt::LeftToRight, alignment);
     qreal x = rectangle.x();
@@ -346,8 +347,21 @@ void QQuickIconLabelPrivate::itemDestroyed(QQuickItem *item)
         label = nullptr;
 }
 
+void QQuickIconLabelPrivate::textChange()
+{
+}
+
+void QQuickIconLabelPrivate::displayChange()
+{
+}
+
 QQuickIconLabel::QQuickIconLabel(QQuickItem *parent)
     : QQuickItem(*(new QQuickIconLabelPrivate), parent)
+{
+}
+
+QQuickIconLabel::QQuickIconLabel(QQuickIconLabelPrivate &dd, QQuickItem *parent)
+    : QQuickItem(dd, parent)
 {
 }
 
@@ -423,6 +437,7 @@ void QQuickIconLabel::setText(const QString &text)
         return;
 
     d->text = text;
+    d->textChange();
     d->updateOrSyncLabel();
 }
 
@@ -473,6 +488,7 @@ void QQuickIconLabel::setDisplay(Display display)
         return;
 
     d->display = display;
+    d->displayChange();
     d->updateImage();
     d->updateLabel();
     d->updateImplicitSize();
@@ -633,9 +649,9 @@ void QQuickIconLabel::componentComplete()
 {
     Q_D(QQuickIconLabel);
     if (d->image)
-        completeComponent(d->image);
+        QQuickIconLabelPrivate::completeComponent(d->image);
     if (d->label)
-        completeComponent(d->label);
+        QQuickIconLabelPrivate::completeComponent(d->label);
     QQuickItem::componentComplete();
     d->layout();
 

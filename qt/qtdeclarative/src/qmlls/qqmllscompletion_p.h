@@ -16,9 +16,9 @@
 // We mean it.
 //
 
-#include "qqmlcompletioncontextstrings_p.h"
-#include "qqmllsutils_p.h"
-#include "qqmllsplugin_p.h"
+#include <private/qqmlcompletioncontextstrings_p.h>
+#include <private/qqmllsutils_p.h>
+#include <private/qqmllsplugin_p.h>
 
 #include <QtLanguageServer/private/qlanguageserverspectypes_p.h>
 #include <QtQmlDom/private/qqmldomexternalitems_p.h>

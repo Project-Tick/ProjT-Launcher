@@ -19,7 +19,9 @@ QQmlTypeLoaderThread::QQmlTypeLoaderThread(QQmlTypeLoader *loader)
 QQmlTypeLoaderThread::~QQmlTypeLoaderThread()
 {
     // The thread has to be shutdown() first.
+#if QT_CONFIG(qml_type_loader_thread)
     Q_ASSERT(!thread()->isRunning());
+#endif
 
     // Discard all remaining messages.
     // We don't need the lock anymore because the thread is dead.

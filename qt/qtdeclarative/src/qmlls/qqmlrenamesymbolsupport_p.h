@@ -16,8 +16,8 @@
 // We mean it.
 //
 
-#include "qlanguageserver_p.h"
-#include "qqmlbasemodule_p.h"
+#include <private/qlanguageserver_p.h>
+#include <private/qqmlbasemodule_p.h>
 
 QT_BEGIN_NAMESPACE
 struct RenameRequest : public BaseRequest<QLspSpecification::RenameParams,

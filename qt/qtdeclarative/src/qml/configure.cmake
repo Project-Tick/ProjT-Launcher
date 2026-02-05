@@ -193,14 +193,14 @@ qt_feature("qmlcontextpropertydump" PRIVATE
     CONDITION QT_FEATURE_settings
 )
 
-qt_configure_add_summary_section(NAME "Qt QML")
+qt_configure_add_summary_section(NAME "Qt Qml")
 qt_configure_add_summary_entry(ARGS "qml-network")
 qt_configure_add_summary_entry(ARGS "qml-debug")
 qt_configure_add_summary_entry(ARGS "qml-jit")
 qt_configure_add_summary_entry(ARGS "qml-xml-http-request")
 qt_configure_add_summary_entry(ARGS "qml-locale")
 qt_configure_add_summary_entry(ARGS "qml-ssl")
-qt_configure_end_summary_section() # end of "Qt QML" section
+qt_configure_end_summary_section() # end of "Qt Qml" section
 qt_configure_add_report_entry(
     TYPE ERROR
     MESSAGE "Python is required to build QtQml."

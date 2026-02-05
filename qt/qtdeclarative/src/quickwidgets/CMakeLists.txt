@@ -40,3 +40,8 @@ qt_internal_extend_target(QuickWidgets CONDITION QT_FEATURE_accessibility
         qaccessiblequickwidget.cpp qaccessiblequickwidget_p.h
         qaccessiblequickwidgetfactory.cpp qaccessiblequickwidgetfactory_p.h
 )
+
+target_sources(QuickWidgets
+    PRIVATE
+        doc/src/qtquickwidgets-index.qdoc
+)

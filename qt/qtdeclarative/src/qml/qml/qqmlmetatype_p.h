@@ -121,7 +121,7 @@ public:
 
     static void unregisterType(int type);
 
-    static void registerMetaObjectForType(const QMetaObject *metaobject, QQmlTypePrivate *type);
+    static void registerMetaObjectForType(const QMetaObject *metaobject, const QQmlTypePrivate *type);
 
     static void registerModule(const char *uri, QTypeRevision version);
     static bool protectModule(const QString &uri, QTypeRevision version,

@@ -248,21 +248,18 @@ class FixSuggestionPrivate
 
 public:
     explicit FixSuggestionPrivate(FixSuggestion *);
-    FixSuggestionPrivate(FixSuggestion *, const QString &fixDescription,
+    FixSuggestionPrivate(FixSuggestion *, const QString &description,
                          const QQmlSA::SourceLocation &location, const QString &replacement);
     FixSuggestionPrivate(FixSuggestion *, const FixSuggestionPrivate &);
     FixSuggestionPrivate(FixSuggestion *, FixSuggestionPrivate &&);
     ~FixSuggestionPrivate() = default;
 
-    QString fixDescription() const;
+    QString description() const;
     QQmlSA::SourceLocation location() const;
     QString replacement() const;
 
     void setFileName(const QString &);
     QString fileName() const;
-
-    void setHint(const QString &);
-    QString hint() const;
 
     void setAutoApplicable(bool autoApplicable = true);
     bool isAutoApplicable() const;

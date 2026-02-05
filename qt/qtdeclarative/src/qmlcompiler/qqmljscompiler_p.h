@@ -106,9 +106,9 @@ protected:
 
 private:
     QQmlJSAotFunction doCompile(
-            const QV4::Compiler::Context *context, QQmlJSCompilePass::Function *function);
+            const QV4::Compiler::Context *context, const QQmlJSCompilePass::Function *function);
     QQmlJSAotFunction doCompileAndRecordAotStats(
-            const QV4::Compiler::Context *context, QQmlJSCompilePass::Function *function,
+            const QV4::Compiler::Context *context, const QQmlJSCompilePass::Function *function,
             const QString &name, QQmlJS::SourceLocation location);
 };
 

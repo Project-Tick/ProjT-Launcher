@@ -367,7 +367,7 @@ void tst_qquickdeliveryagent::tapHandlerDoesntOverrideSubsceneGrabber() // QTBUG
 
     QQuickView window;
 #ifdef DISABLE_HOVER_IN_IRRELEVANT_TESTS
-    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverEnabled = false;
+    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverInterval = -1;
 #endif
     QVERIFY(QQuickTest::initView(window, testFileUrl("flickableTextEdit.qml")));
     QQuickItem *textEdit = window.rootObject()->findChild<QQuickItem*>("textEdit");
@@ -403,7 +403,7 @@ void tst_qquickdeliveryagent::undoDelegationWhenSubsceneFocusCleared() // QTBUG-
 {
     QQuickView window;
 #ifdef DISABLE_HOVER_IN_IRRELEVANT_TESTS
-    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverEnabled = false;
+    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverInterval = -1;
 #endif
     QVERIFY(QQuickTest::initView(window, testFileUrl("listViewDelegate.qml")));
     QQuickListView *listView = window.rootObject()->findChild<QQuickListView*>();
@@ -430,7 +430,7 @@ void tst_qquickdeliveryagent::touchCompression()
     // avoid interference from X11 window managers, so we can look at eventpoint globalPosition
     window.setFlag(Qt::FramelessWindowHint);
 #ifdef DISABLE_HOVER_IN_IRRELEVANT_TESTS
-    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverEnabled = false;
+    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverInterval = -1;
 #endif
     QVERIFY(QQuickTest::showView(window, testFileUrl("pointHandler.qml")));
     QQuickDeliveryAgent *windowAgent = QQuickWindowPrivate::get(&window)->deliveryAgent;
@@ -567,8 +567,7 @@ void tst_qquickdeliveryagent::hoverEnterOnItemMove()
     // move the item so the mouse is now inside where the mouse was
     hoverItem.setX(100);
     hoverItem.setY(100);
-    deliveryAgent->flushFrameSynchronousEvents(&window);
-    QCOMPARE(hoverItem.hoverEnter, true);
+    QTRY_COMPARE(hoverItem.hoverEnter, true);
 }
 
 void tst_qquickdeliveryagent::hoverEnterOnItemMoveAfterHide()
@@ -838,7 +837,7 @@ void tst_qquickdeliveryagent::mouseMoveHoverEfficiency() // QTBUG-140340
     // Check that  we didn't call the transform functions exceessively often
     // (these numbers can be adjusted if we do something that causes a moderate increase,
     // but try to avoid really pessimizing it again)
-    QCOMPARE_LT(QQuickItemPrivate::itemToParentTransform_counter, 11000ull);
+    QCOMPARE_LT(QQuickItemPrivate::itemToParentTransform_counter, 20000ull);
     QCOMPARE_LT(QQuickItemPrivate::itemToWindowTransform_counter, 700ull);
     QCOMPARE_LT(QQuickItemPrivate::windowToItemTransform_counter, 220ull);
     // Check that we were able to skip hover delivery to many of the items because

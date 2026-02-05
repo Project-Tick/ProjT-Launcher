@@ -467,8 +467,9 @@ declarative will look like this:
 Q_PROPERTY(QQmlListProperty<Fruit> fruit READ fruit)
 \endcode
 
-QML list properties are type-safe - in this case \c {Fruit} is a QObject type that
-\c {Apple}, \c {Orange} and \c {Banana} all derive from.
+QML list properties are type-safe. The template parameter \a T specifies the
+QObject-derived type that can be stored in the list. In this case \c {Fruit}
+is a QObject type that \c {Apple}, \c {Orange} and \c {Banana} all derive from.
 
 You can use \l{QQmlListReference} to manipulate a QQmlListProperty from C++ using
 a slightly more ergonomic API, at the cost of some overhead.

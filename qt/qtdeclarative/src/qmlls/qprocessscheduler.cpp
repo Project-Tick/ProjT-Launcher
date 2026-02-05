@@ -38,14 +38,69 @@ QProcessScheduler::~QProcessScheduler()
 
 void QProcessScheduler::schedule(const QList<Command> &list, const Id &id)
 {
+    m_queue.enqueue(StartMarker{ id });
     for (const auto &x : list) {
         const QueueElement queueElement{ x };
         if (!m_queue.contains(queueElement))
             m_queue.enqueue(queueElement);
     }
-    m_queue.enqueue(id);
+    m_queue.enqueue(EndMarker{ id });
     if (!m_isRunning)
         processNext();
+}
+
+static bool isStartMarkerOf(const QProcessScheduler::QueueElement &e,
+                            const QProcessScheduler::Id &id)
+{
+    const auto startMarker = std::get_if<QProcessScheduler::StartMarker>(&e);
+    if (!startMarker)
+        return false;
+    return startMarker->id == id;
+}
+
+static bool isEndMarkerOf(const QProcessScheduler::QueueElement &e, const QProcessScheduler::Id &id)
+{
+    const auto endMarker = std::get_if<QProcessScheduler::EndMarker>(&e);
+    if (!endMarker)
+        return false;
+    return endMarker->id == id;
+}
+
+void QProcessScheduler::cancel(const Id &id)
+{
+    auto removeQueueElementsForStartMarkerIt = [this, &id](auto begin) {
+        auto end = std::find_if(begin, m_queue.cend(),
+                                std::bind(isEndMarkerOf, std::placeholders::_1, id));
+
+        // also include the marker during erase
+        if (end != m_queue.cend())
+            std::advance(end, 1);
+        m_queue.erase(begin, end);
+    };
+
+    if (m_current != id) {
+        const auto begin = std::find_if(m_queue.cbegin(), m_queue.cend(),
+                                        std::bind(isStartMarkerOf, std::placeholders::_1, id));
+        removeQueueElementsForStartMarkerIt(begin);
+        emit cancelled(id);
+        return;
+    }
+
+    {
+        QObject::disconnect(&m_process, &QProcess::finished, this, &QProcessScheduler::processNext);
+        QObject::disconnect(&m_process, &QProcess::errorOccurred, this,
+                            &QProcessScheduler::onErrorOccurred);
+        // note: kill and waitForFinished triggers the finished signal, which we don't want to trigger
+        m_process.kill();
+        m_process.waitForFinished();
+        removeQueueElementsForStartMarkerIt(m_queue.cbegin());
+        QObject::connect(&m_process, &QProcess::finished, this, &QProcessScheduler::processNext);
+        QObject::connect(&m_process, &QProcess::errorOccurred, this,
+                         &QProcessScheduler::onErrorOccurred);
+    }
+
+    emit cancelled(id);
+    processNext();
 }
 
 void QProcessScheduler::processNext()
@@ -54,17 +109,23 @@ void QProcessScheduler::processNext()
     if (!m_isRunning)
         return;
 
-    std::visit(qOverloadedVisitor{ [this](const Id &id) {
-                                      emit done(id);
-                                      processNext();
-                                  },
-                                   [this](const Command &command) {
-                                       m_process.setProgram(command.program);
-                                       m_process.setArguments(command.arguments);
-                                       m_process.setProcessEnvironment(command.customEnvironment);
-                                       m_process.start();
-                                   }
-
+    std::visit(qOverloadedVisitor{
+                       [this](const StartMarker &start) {
+                           emit started(start.id);
+                           m_current = start.id;
+                           processNext();
+                       },
+                       [this](const EndMarker &end) {
+                           m_current.reset();
+                           emit done(end.id);
+                           processNext();
+                       },
+                       [this](const Command &command) {
+                           m_process.setProgram(command.program);
+                           m_process.setArguments(command.arguments);
+                           m_process.setProcessEnvironment(command.customEnvironment);
+                           m_process.start();
+                       },
                },
                m_queue.dequeue());
 }

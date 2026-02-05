@@ -69,6 +69,8 @@ public:
         return !(lhs == rhs);
     }
 
+    static SourceLocation documentOrigin();
+
 private:
     static qsizetype qHashImpl(const SourceLocation &location, qsizetype seed);
     static bool operatorEqualsImpl(const SourceLocation &, const SourceLocation &);

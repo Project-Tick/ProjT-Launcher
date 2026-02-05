@@ -5,6 +5,8 @@
 #include "qqmlsasourcelocation.h"
 #include "qqmlsasourcelocation_p.h"
 
+#include <private/qqmljssourcelocation_p.h>
+
 QT_BEGIN_NAMESPACE
 
 using namespace Qt::StringLiterals;
@@ -165,6 +167,14 @@ bool QQmlSA::SourceLocation::operatorEqualsImpl(const SourceLocation &lhs,
 {
     return QQmlSA::SourceLocationPrivate::sourceLocation(lhs)
             == QQmlSA::SourceLocationPrivate::sourceLocation(rhs);
+}
+
+/*!
+    Returns the source location of the origin of any QML document.
+ */
+SourceLocation SourceLocation::documentOrigin()
+{
+    return QQmlSA::SourceLocationPrivate::createQQmlSASourceLocation(QQmlJS::s_documentOrigin);
 }
 
 } // namespace QQmlSA

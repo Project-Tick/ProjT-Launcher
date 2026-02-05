@@ -5,6 +5,7 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/qloggingcategory.h>
+#include <QtCore/private/qabstractanimation_p.h>
 #include <QtCore/private/qvariantanimation_p.h>
 #include <QtCore/QDebug>
 #include <QtQuick/QQuickItem>
@@ -318,6 +319,11 @@ QPoint QQuickVisualTestUtils::mapToWindow(const QQuickItem *item, qreal relative
 QPoint QQuickVisualTestUtils::mapToWindow(const QQuickItem *item, const QPointF &relativePos)
 {
     return mapToWindow(item, relativePos.x(), relativePos.y());
+}
+
+void QQuickVisualTestUtils::setFastAnimations(bool fastAnimations)
+{
+    QUnifiedTimer::instance()->setSpeedModifier(fastAnimations ? 5 : 1);
 }
 
 QT_END_NAMESPACE

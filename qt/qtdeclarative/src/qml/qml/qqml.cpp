@@ -826,7 +826,7 @@ static void doRegisterTypeAndRevisions(
     uniqueRevisions(&revisions, type.version, added);
 
     AliasRegistrar aliasRegistrar(&elementNames);
-    for (QTypeRevision revision : revisions) {
+    for (QTypeRevision revision : std::as_const(revisions)) {
         if (revision.hasMajorVersion() && revision.majorVersion() > type.version.majorVersion())
             break;
 
@@ -1496,9 +1496,9 @@ static PropertyResult changeObjectProperty(QV4::Lookup *lookup, QObject *object,
 
 template<bool StrictType = false>
 static PropertyResult resetObjectProperty(
-        QV4::Lookup *l, QObject *object, QV4::ExecutionEngine *v4)
+        QV4::Lookup *lookup, QObject *object, QV4::ExecutionEngine *v4)
 {
-    return changeObjectProperty<StrictType>(l, object, [&](const QQmlPropertyData *property) {
+    return changeObjectProperty<StrictType>(lookup, object, [&](const QQmlPropertyData *property) {
         if (property->isResettable()) {
             property->resetProperty(object, {});
         } else {
@@ -1510,9 +1510,9 @@ static PropertyResult resetObjectProperty(
 }
 
 template<bool StrictType = false>
-static PropertyResult storeObjectProperty(QV4::Lookup *l, QObject *object, void *value)
+static PropertyResult storeObjectProperty(QV4::Lookup *lookup, QObject *object, void *value)
 {
-    return changeObjectProperty<StrictType>(l, object, [&](const QQmlPropertyData *property) {
+    return changeObjectProperty<StrictType>(lookup, object, [&](const QQmlPropertyData *property) {
         property->writeProperty(object, value, {});
     });
 }
@@ -1532,24 +1532,26 @@ static PropertyResult changeFallbackProperty(QV4::Lookup *lookup, QObject *objec
     return PropertyResult::OK;
 }
 
-static PropertyResult storeFallbackProperty(QV4::Lookup *l, QObject *object, void *value)
+static PropertyResult storeFallbackProperty(QV4::Lookup *lookup, QObject *object, void *value)
 {
-    return changeFallbackProperty(l, object, [&](const QMetaObject *metaObject, int coreIndex) {
+    return changeFallbackProperty(
+            lookup, object, [&](const QMetaObject *metaObject, int coreIndex) {
         void *args[] = { value, nullptr };
         metaObject->metacall(object, QMetaObject::WriteProperty, coreIndex, args);
     });
 }
 
 static PropertyResult resetFallbackProperty(
-        QV4::Lookup *l, QObject *object, QV4::ExecutionEngine *v4)
+        QV4::Lookup *lookup, QObject *object, QV4::ExecutionEngine *v4)
 {
-    return changeFallbackProperty(l, object, [&](const QMetaObject *metaObject, int coreIndex) {
-        if (l->qobjectFallbackLookup.isConstantOrResettable) {
+    return changeFallbackProperty(
+            lookup, object, [&](const QMetaObject *metaObject, int coreIndex) {
+        if (lookup->qobjectFallbackLookup.isConstantOrResettable) {
             void *args[] = { nullptr };
             metaObject->metacall(object, QMetaObject::ResetProperty, coreIndex, args);
         } else {
             const QMetaType propType(reinterpret_cast<const QtPrivate::QMetaTypeInterface *>(
-                    l->qobjectFallbackLookup.metaType - 1));
+                    lookup->qobjectFallbackLookup.metaType - 1));
             v4->throwError(
                     QLatin1String("Cannot assign [undefined] to ") +
                     QLatin1String(propType.name()));
@@ -3270,9 +3272,9 @@ void AOTCompiledContext::setObjectImplicitDestructible(QObject *object) const
   \fn template<typename T, int metaObjectRevision> int qmlRegisterRevision(const char *uri, int versionMajor, int versionMinor)
   \relates <qqml.h>
 
-  This template function registers the specified revision of a C++ type in the QML system with
-  the library imported from \a uri having the version number composed
-  from \a versionMajor and \a versionMinor.
+  This template function registers the C++ type \a T at the specified revision
+  \a metaObjectRevision in the QML system with the library imported from \a uri
+  having the version number composed from \a versionMajor and \a versionMinor.
 
   Returns the QML type id.
 

@@ -91,5 +91,5 @@ CMakeLists.txt for \c {DEPENDENCIES TARGET} to find the target.
 
 For more information on how to declare module dependencies, see \l{Declaring module dependencies}.
 
-\sa {Changes to Qt QML}, {Port QML modules to CMake}
+\sa {Changes to Qt Qml}, {Port QML modules to CMake}
 */

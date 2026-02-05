@@ -3,6 +3,8 @@
 // Qt-Security score:significant
 
 #include "qqmljslintervisitor_p.h"
+#include "qqmljsutils_p.h"
+#include <stack>
 
 QT_BEGIN_NAMESPACE
 
@@ -242,7 +244,7 @@ bool LinterVisitor::visit(QQmlJS::AST::UiImport *import)
         m_logger->log("Duplicate import '%1'"_L1.arg(locAndNameImport.second),
                       qmlDuplicateImport, locAndNameImport.first);
         m_logger->log("Note: previous import '%1' here"_L1.arg(locAndNameSeen.second),
-                      qmlDuplicateImport, locAndNameSeen.first, true, true, {}, {},
+                      qmlDuplicateImport, locAndNameSeen.first, true, true, {},
                       locAndName(import).first.startLine);
     }
 
@@ -269,8 +271,8 @@ bool LinterVisitor::visit(QQmlJS::AST::UiEnumDeclaration *uied)
     QQmlJSImportVisitor::visit(uied);
 
     if (m_currentScope->isInlineComponent()) {
-        m_logger->log(u"Enums declared inside of inline component are ignored."_s, qmlSyntax,
-                      uied->firstSourceLocation());
+        m_logger->log(u"Enums declared inside of inline component are ignored."_s,
+                      qmlInlineComponentEnums, uied->firstSourceLocation());
     } else if (m_currentScope->componentRootStatus() == QQmlJSScope::IsComponentRoot::No
                && !m_currentScope->isFileRootComponent()) {
         m_logger->log(u"Enum declared outside the root element. It won't be accessible."_s,
@@ -281,7 +283,7 @@ bool LinterVisitor::visit(QQmlJS::AST::UiEnumDeclaration *uied)
     for (const auto *member = uied->members; member; member = member->next) {
         QStringView key = member->member;
         if (!key.front().isUpper()) {
-            m_logger->log(u"Enum keys should start with an uppercase."_s, qmlSyntax,
+            m_logger->log(u"Enum keys should start with an uppercase."_s, qmlEnumKeyCase,
                           member->memberToken);
         }
 
@@ -398,7 +400,10 @@ void LinterVisitor::checkCaseFallthrough(StatementList *statements, SourceLocati
         }
     }
 
-    m_logger->log("Unterminated non-empty case block"_L1, qmlUnterminatedCase, errorLoc);
+    m_logger->log(
+            "Non-empty case block potentially falls through to the next case or default statement. "
+            "Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+            qmlUnterminatedCase, errorLoc);
 }
 
 bool LinterVisitor::visit(QQmlJS::AST::CaseBlock *block)
@@ -486,6 +491,34 @@ bool LinterVisitor::visit(ExpressionStatement *ast)
     return true;
 }
 
+bool LinterVisitor::safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QString &name, const QQmlJSScope::JavaScriptIdentifier &identifier)
+{
+    if (scope->scopeType() == QQmlSA::ScopeType::JSLexicalScope &&
+        identifier.kind == QQmlJSScope::JavaScriptIdentifier::FunctionScoped) {
+        // var is generally not great, but we don't want to emit this warning if you
+        // are in the single, toplevel block of a binding
+        Q_ASSERT(!scope->parentScope().isNull()); // lexical scope should always have a parent
+        auto parentScopeType = scope->parentScope()->scopeType();
+        bool inTopLevelBindingBlockScope = parentScopeType == QQmlSA::ScopeType::BindingFunctionScope
+                || parentScopeType == QQmlSA::ScopeType::SignalHandlerFunctionScope;
+        if (!inTopLevelBindingBlockScope) {
+            m_logger->log(u"var declaration in block scope is hoisted to function scope\n"_s
+                          u"Replace it with const or let to silence the warning\n"_s,
+                          qmlBlockScopeVarDeclaration, identifier.location);
+        }
+    } else if (scope->scopeType() == QQmlSA::ScopeType::QMLScope) {
+        const QQmlJSScope *scopePtr = scope.get();
+        std::pair<const QQmlJSScope*, QString> misplaced { scopePtr, name };
+        if (misplacedJSIdentifiers.contains(misplaced))
+            return false; // we only want to warn once
+        misplacedJSIdentifiers.insert(misplaced);
+        m_logger->log(u"JavaScript declarations are not allowed in QML elements"_s, qmlSyntax,
+                      identifier.location);
+        return false;
+    }
+    return QQmlJSImportVisitor::safeInsertJSIdentifier(scope, name, identifier);
+}
+
 QQmlJSImportVisitor::BindingExpressionParseResult LinterVisitor::parseBindingExpression(
         const QString &name, const QQmlJS::AST::Statement *statement,
         const QQmlJS::AST::UiPublicMember *associatedPropertyDefinition)
@@ -542,6 +575,200 @@ void LinterVisitor::handleLiteralBinding(const QQmlJSMetaPropertyBinding &bindin
     default: {
         break;
     }
+    }
+}
+
+void LinterVisitor::endVisit(UiProgram *ast)
+{
+    QQmlJSImportVisitor::endVisit(ast);
+    checkIdShadows();
+}
+
+static constexpr QLatin1String s_method = "method"_L1;
+static constexpr QLatin1String s_signal = "signal"_L1;
+static constexpr QLatin1String s_property = "property"_L1;
+
+static void warnForDuplicates(const QQmlJSScope::ConstPtr &scope, const QString &name,
+                              QLatin1String type, const QQmlJS::SourceLocation &location,
+                              QQmlJSLogger *logger)
+{
+    static constexpr QLatin1String duplicateMessage =
+            "Duplicated %1 name \"%2\", \"%2\" is already a %3."_L1;
+    if (const auto methods = scope->ownMethods(name); !methods.isEmpty()) {
+        logger->log(duplicateMessage.arg(type, name,
+                                         methods.front().methodType() == QQmlSA::MethodType::Signal
+                                                 ? s_signal
+                                                 : s_method),
+                    qmlDuplicatedName, location);
+    }
+    if (scope->hasOwnProperty(name))
+        logger->log(duplicateMessage.arg(type, name, s_property), qmlDuplicatedName, location);
+
+    static constexpr QLatin1String warningMessage =
+            "%1 \"%2\" already exists in base type \"%3\", use a different name."_L1;
+
+    if (scope->hasMethod(name)) {
+        const auto owner = QQmlJSScope::ownerOfMethod(scope, name).scope;
+        const bool isSignal =
+                owner->methods(name).front().methodType() == QQmlJSMetaMethodType::Signal;
+        logger->log(
+                warningMessage.arg(isSignal ? "Signal"_L1 : "Method"_L1, name,
+                                   QQmlJSUtils::getScopeName(owner, QQmlSA::ScopeType::QMLScope)),
+                qmlShadow, location);
+    }
+    if (scope->hasProperty(name)) {
+        const auto owner = QQmlJSScope::ownerOfProperty(scope, name).scope;
+        logger->log(
+                warningMessage.arg("Property"_L1, name,
+                                   QQmlJSUtils::getScopeName(owner, QQmlSA::ScopeType::QMLScope)),
+                qmlShadow, location);
+    }
+}
+
+bool LinterVisitor::visit(UiPublicMember *publicMember)
+{
+    switch (publicMember->type) {
+    case UiPublicMember::Signal: {
+        const QString signalName = publicMember->name.toString();
+        warnForDuplicates(m_currentScope, signalName, s_signal, publicMember->identifierToken,
+                          m_logger);
+        break;
+    }
+    case QQmlJS::AST::UiPublicMember::Property: {
+        const QString propertyName = publicMember->name.toString();
+        warnForDuplicates(m_currentScope, propertyName, s_property, publicMember->identifierToken,
+                          m_logger);
+        break;
+    }
+    }
+    return QQmlJSImportVisitor::visit(publicMember);
+}
+
+bool LinterVisitor::visit(FunctionExpression *fexpr)
+{
+    if (m_currentScope->scopeType() == QQmlSA::ScopeType::QMLScope) {
+        warnForDuplicates(m_currentScope, fexpr->name.toString(), s_method, fexpr->identifierToken,
+                          m_logger);
+    }
+    return QQmlJSImportVisitor::visit(fexpr);
+}
+
+bool LinterVisitor::visit(FunctionDeclaration *fdecl)
+{
+    if (m_currentScope->scopeType() == QQmlSA::ScopeType::QMLScope) {
+        warnForDuplicates(m_currentScope, fdecl->name.toString(), s_method, fdecl->identifierToken,
+                          m_logger);
+    }
+    return QQmlJSImportVisitor::visit(fdecl);
+}
+
+enum MethodOrProperty { Method, Property };
+void warnForShadowsInCurrentScope(const QQmlJSScope::ConstPtr &scopeWithId, const QString &name,
+                                  const QQmlJSScope::ConstPtr &currentScope,
+                                  const QQmlJS::SourceLocation &location, MethodOrProperty mode,
+                                  QQmlJSLogger *logger)
+{
+    static constexpr QLatin1String warningMessage =
+            "Id \"%1\" shadows %2 \"%1\"%3. Rename the id or the %2."_L1;
+
+    if (mode == Property ? !currentScope->hasProperty(name) : !currentScope->hasMethod(name))
+        return;
+
+    const auto owner = mode == Property ? QQmlJSScope::ownerOfProperty(currentScope, name).scope
+                                        : QQmlJSScope::ownerOfMethod(currentScope, name).scope;
+    const QString currentScopeName =
+            QQmlJSUtils::getScopeName(currentScope, QQmlSA::ScopeType::QMLScope);
+
+    const QLatin1String memberType = mode == Property
+            ? "property"_L1
+            : (owner->methods(name).front().methodType() == QQmlJSMetaMethodType::Signal
+                       ? "signal"_L1
+                       : "method"_L1);
+
+    const QQmlJS::SourceLocation definitionLocation = mode == Property
+            ? currentScope->property(name).sourceLocation()
+            : currentScope->methods(name).front().sourceLocation();
+    auto log = [&](const QString &asdf) {
+        logger->log(warningMessage.arg(name, memberType, asdf), qmlIdShadowsMember, location);
+
+        // add hint if the member clashing with the id is defined in the current file
+        if (owner->filePath() == scopeWithId->filePath()) {
+            logger->log("Note: %1 \"%2\" defined here is shadowed by id \"%2\""_L1.arg(memberType,
+                                                                                       name),
+                        qmlIdShadowsMember, definitionLocation, true, true, {}, location.startLine);
+        } else {
+            logger->log(
+                    "Note: type \"%1\" defined here has a %2 \"%3\" shadowed by id \"%3\""_L1.arg(
+                            currentScopeName, memberType, name),
+                    qmlIdShadowsMember, currentScope->sourceLocation(), true, true, {},
+                    location.startLine);
+        }
+    };
+
+    if (currentScope != scopeWithId) {
+        log(" from \"%1\" defined at %2:%3:%4"_L1.arg(
+                currentScopeName, currentScope->filePath(),
+                QString::number(currentScope->sourceLocation().startLine),
+                QString::number(currentScope->sourceLocation().startColumn)));
+        return;
+    }
+    log(" from current type"_L1);
+}
+
+/*!
+\internal
+
+Searches for ids shadowing properties, methods and signals.
+
+An id shadows all properties, methods and signals inside the context the id is defined when
+ComponentBehavior is not set to Bound.
+The id shadows also properties, methods and signals in the child contexts of the context the id
+was defined when ComponentBehavior is set to Bound. Assume here that components are bound for
+clarity.
+
+Compute all possible scopes where an id can shadow properties, methods and signals. All of these
+scopes are inside the component boundary, so represent this set of scopes with the root scope inside
+the component boundary. All descendants of the root scope, that are in the same component
+boundary as the root scope, can have properties, methods and signals shadowed by its id.
+
+Once all roots are computed in "componentRootsToIds", iterate over their descendents to find
+potential clashes of properties and methods with the ids that can be referred from inside that
+component boundary.
+*/
+void LinterVisitor::checkIdShadows()
+{
+    const auto componentRootsToIds = m_scopesById.computeComponentRootsToIds();
+    if (componentRootsToIds.empty())
+        return;
+
+    using It = decltype(componentRootsToIds.begin());
+    auto begin = componentRootsToIds.begin();
+    auto end = componentRootsToIds.end();
+    auto nextKey = [&](It it) -> It {
+        return it == end ? it : componentRootsToIds.upper_bound(it->first);
+    };
+
+    for (auto it = begin, it2 = nextKey(begin); it != end; it = std::exchange(it2, nextKey(it2))) {
+        std::stack<QQmlJSScope::ConstPtr> stack{ { it->first } };
+        while (!stack.empty()) {
+            QQmlJSScope::ConstPtr current = stack.top();
+            stack.pop();
+
+            for (auto scopeWithIdIt = it, scopeWithIdEnd = it2; scopeWithIdIt != scopeWithIdEnd;
+                 ++scopeWithIdIt) {
+                warnForShadowsInCurrentScope(scopeWithIdIt->second.scope, scopeWithIdIt->second.id,
+                                             current,
+                                             scopeWithIdIt->second.scope->idSourceLocation(),
+                                             MethodOrProperty::Property, m_logger);
+                warnForShadowsInCurrentScope(scopeWithIdIt->second.scope, scopeWithIdIt->second.id,
+                                             current,
+                                             scopeWithIdIt->second.scope->idSourceLocation(),
+                                             MethodOrProperty::Method, m_logger);
+            }
+            const auto children = current->childScopes();
+            for (const QQmlJSScope::ConstPtr &child : children)
+                stack.push(child);
+        }
     }
 }
 

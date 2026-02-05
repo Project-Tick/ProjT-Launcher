@@ -505,12 +505,13 @@ namespace QQuickTest {
         }
         if (view.flags().testFlag(Qt::FramelessWindowHint))
             return true;
-        if (!QGuiApplication::platformName().compare(QLatin1String("wayland"), Qt::CaseInsensitive)) {
-            qDebug() << "Setting position is not supported on Wayland";
-            return true;
-        }
         const bool positionOk = QTest::qWaitFor([&]{ return framePos != view.position(); });
         if (!positionOk) {
+            if (!QGuiApplication::platformName().compare(QLatin1String("wayland"), Qt::CaseInsensitive)) {
+                // Setting position is not supported on Wayland; message intentionaly not printed to
+                // avoid clutter in tests.
+                return true;
+            }
             qCritical() << "Position failed to update";
             return false;
         }

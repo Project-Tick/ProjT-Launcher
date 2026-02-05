@@ -64,6 +64,7 @@ public:
     virtual void setViewport(const QRectF &viewport) = 0;
     virtual QRectF viewport() const = 0;
 
+    // ### Qt 7: add color as an optional argument; think about what else might be missing
     void addTextLayout(QPointF position,
                        QTextLayout *layout,
                        int selectionStart = -1,

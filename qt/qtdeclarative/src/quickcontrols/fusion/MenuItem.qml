@@ -23,7 +23,7 @@ T.MenuItem {
     icon.width: 16
     icon.height: 16
 
-    contentItem: IconLabel {
+    contentItem: MenuItemIconLabel {
         readonly property real arrowPadding: control.subMenu && control.arrow ? control.arrow.width + control.spacing : 0
         readonly property real indicatorPadding: control.checkable && control.indicator ? control.indicator.width + control.spacing : 0
         leftPadding: !control.mirrored ? indicatorPadding : arrowPadding
@@ -38,6 +38,7 @@ T.MenuItem {
         text: control.text
         font: control.font
         color: control.down || control.highlighted ? Fusion.highlightedText(control.palette) : control.palette.text
+        menuItem: control
     }
 
     arrow: ColorImage {

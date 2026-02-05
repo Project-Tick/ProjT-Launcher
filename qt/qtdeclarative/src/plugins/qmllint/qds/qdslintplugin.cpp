@@ -34,6 +34,9 @@ constexpr LoggerWarningId ErrInvalidIdeInVisualDesigner{
 constexpr LoggerWarningId ErrUnsupportedRootTypeInQmlUi{
     "QtDesignStudio.UnsupportedRootTypeInQmlUi"
 };
+constexpr LoggerWarningId qmlTranslationFunctionMismatch{
+    "QtDesignStudio.TranslationFunctionMismatch"
+};
 
 class FunctionCallValidator : public PropertyPass
 {

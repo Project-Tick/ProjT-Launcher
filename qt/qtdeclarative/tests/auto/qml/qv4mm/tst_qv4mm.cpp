@@ -26,6 +26,7 @@
 #include <memory>
 
 #include <private/qqmlobjectcreator_p.h>
+#include <private/qqmldata_p.h>
 
 class tst_qv4mm : public QQmlDataTest
 {
@@ -71,6 +72,8 @@ private slots:
     void sweepTriggeringChunkAllocation();
 
     void partitionGrowingContainer();
+    void findObjectsForCompilationUnit_data();
+    void findObjectsForCompilationUnit();
 };
 
 tst_qv4mm::tst_qv4mm()
@@ -1030,6 +1033,9 @@ void tst_qv4mm::validateIncrementalMarkPhase() {
     engine.collectGarbage();
 
     auto state_machine = handle->memoryManager->gcStateMachine.get();
+    std::vector<QV4::GCStateMachine::BitmapError> bitmapErrors;
+    state_machine->bitmapErrors = &bitmapErrors;
+
     QCOMPARE(handle->memoryManager->gcBlocked, QV4::MemoryManager::Unblocked);
     state_machine->reset();
     handle->memoryManager->gcBlocked = QV4::MemoryManager::NormalBlocked;
@@ -1083,10 +1089,10 @@ void tst_qv4mm::validateIncrementalMarkPhase() {
     QV4::GCStateInfo& stateInfo = state_machine->stateInfoMap[int(state_machine->state)];
     state_machine->state = stateInfo.execute(state_machine, state_machine->stateData);
 
-    QCOMPARE(state_machine->bitmapErrors.size(), block_mutations.size());
+    QCOMPARE(bitmapErrors.size(), block_mutations.size());
 
     for (std::size_t i = 0; i < block_mutations.size(); ++i)
-        QCOMPARE(state_machine->bitmapErrors[i], block_mutations[i]);
+        QCOMPARE(bitmapErrors[i], block_mutations[i]);
 }
 #endif
 
@@ -1389,6 +1395,121 @@ void tst_qv4mm::partitionGrowingContainer()
     for (std::size_t index = j; index < growing.size(); ++index) {
         QVERIFY(growing[index] >= 256);
         QVERIFY(prePopulated[index] >= 256);
+    }
+}
+
+void tst_qv4mm::findObjectsForCompilationUnit_data()
+{
+    QTest::addColumn<QString>("component1File");
+    QTest::addColumn<QString>("component2File");
+    QTest::addColumn<int>("component1InstanceCount");
+    QTest::addColumn<int>("component2InstanceCount");
+    QTest::addColumn<int>("expectedUnit1ObjectCount");
+    QTest::addColumn<int>("expectedUnit2ObjectCount");
+    QTest::addColumn<bool>("component2HasChildObject");
+    QTest::addColumn<bool>("component2InheritsComponent1");
+
+    QTest::newRow("single_instance_each")
+            << "recordTest1.qml"
+            << "recordTest2.qml"
+            << 1      // component1InstanceCount
+            << 1      // component2InstanceCount
+            << 1      // expectedUnit1ObjectCount
+            << 2      // expectedUnit2ObjectCount (includes child)
+            << true   // component2HasChildObject
+            << false; // component2InheritsComponent1
+
+    QTest::newRow("multiple_instances")
+            << "recordTest1.qml"
+            << "recordTest2.qml"
+            << 3      // component1InstanceCount
+            << 2      // component2InstanceCount
+            << 3      // expectedUnit1ObjectCount
+            << 4      // expectedUnit2ObjectCount (includes children)
+            << true   // component2HasChildObject
+            << false; // component2InheritsComponent1
+
+    QTest::newRow("derived_type_found_via_base_compilation_unit")
+            << "RecordTestBase.qml" // base type
+            << "recordTest3.qml"    // derived type
+            << 1     // component1InstanceCount (base type)
+            << 2     // component2InstanceCount (derived type)
+            << 3     // expectedUnit1ObjectCount (1 base + 2 derived, all have base's compilation unit)
+            << 2     // expectedUnit2ObjectCount (only the 2 derived instances)
+            << false // component2HasChildObject
+            << true; // component2InheritsComponent1
+}
+
+void tst_qv4mm::findObjectsForCompilationUnit()
+{
+    QFETCH(QString, component1File);
+    QFETCH(QString, component2File);
+    QFETCH(int, component1InstanceCount);
+    QFETCH(int, component2InstanceCount);
+    QFETCH(int, expectedUnit1ObjectCount);
+    QFETCH(int, expectedUnit2ObjectCount);
+    QFETCH(bool, component2HasChildObject);
+    QFETCH(bool, component2InheritsComponent1);
+
+    QQmlEngine engine;
+    QQmlComponent component1(&engine, testFileUrl(component1File));
+    QQmlComponent component2(&engine, testFileUrl(component2File));
+
+    std::vector<std::unique_ptr<QObject>> component1Objects;
+    for (int i = 0; i < component1InstanceCount; ++i) {
+        std::unique_ptr<QObject> obj(component1.create());
+        QVERIFY(obj);
+        component1Objects.push_back(std::move(obj));
+    }
+
+    std::vector<std::unique_ptr<QObject>> component2Objects;
+    for (int i = 0; i < component2InstanceCount; ++i) {
+        std::unique_ptr<QObject> obj(component2.create());
+        QVERIFY(obj);
+        component2Objects.push_back(std::move(obj));
+    }
+
+    QQmlData *ddata1 = QQmlData::get(component1Objects.front().get());
+    QVERIFY(ddata1);
+    QVERIFY(ddata1->compilationUnit);
+    const QQmlRefPointer<QV4::CompiledData::CompilationUnit> unit1
+            = ddata1->compilationUnit->baseCompilationUnit();
+
+    QQmlData *ddata2 = QQmlData::get(component2Objects.front().get());
+    QVERIFY(ddata2);
+    QVERIFY(ddata2->compilationUnit);
+    const QQmlRefPointer<QV4::CompiledData::CompilationUnit> unit2
+            = ddata2->compilationUnit->baseCompilationUnit();
+
+    QCOMPARE_NE(unit1, unit2);
+
+    const auto contains = [](const std::vector<QObject *> &container, QObject *o) {
+        return std::find(container.begin(), container.end(), o) != container.end();
+    };
+
+    QV4::ExecutionEngine *v4 = engine.handle();
+    const std::vector<QObject *> recorded1
+            = v4->memoryManager->findObjectsForCompilationUnits({unit1});
+
+    QCOMPARE(recorded1.size(), expectedUnit1ObjectCount);
+    for (const auto &obj : component1Objects)
+        QVERIFY(contains(recorded1, obj.get()));
+    for (const auto &obj : component2Objects)
+        QCOMPARE(contains(recorded1, obj.get()), component2InheritsComponent1);
+
+    const std::vector<QObject *> recorded2
+            = v4->memoryManager->findObjectsForCompilationUnits({unit2});
+
+    QCOMPARE(recorded2.size(), expectedUnit2ObjectCount);
+    for (const auto &obj : component2Objects)
+        QVERIFY(contains(recorded2, obj.get()));
+    for (const auto &obj : component1Objects)
+        QVERIFY(!contains(recorded2, obj.get()));
+
+    if (component2HasChildObject) {
+        QObject *child = component2Objects.front()->property("child").value<QObject *>();
+        QVERIFY(child);
+        QVERIFY(contains(recorded2, child));
     }
 }
 

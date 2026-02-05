@@ -803,11 +803,25 @@ QDebug OpenDocumentSnapshot::dump(QDebug dbg, DumpOptions options)
     return dbg;
 }
 
-void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths)
+static ModuleSetting *moduleSettingFor(const QString &sourceFolder, ModuleSettings *moduleSettings,
+                                       UpdatePolicy policy)
+{
+    if (policy != ForceUpdate)
+        return &moduleSettings->emplaceBack();
+
+    auto it = std::find_if(
+            moduleSettings->begin(), moduleSettings->end(),
+            [&sourceFolder](const ModuleSetting s) { return s.sourceFolder == sourceFolder; });
+    if (it == moduleSettings->end())
+        return &moduleSettings->emplaceBack();
+    return &*it;
+}
+
+void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths, UpdatePolicy policy)
 {
 #if QT_CONFIG(settings)
     for (const QString &path : buildPaths) {
-        if (m_seenSettings.contains(path))
+        if (policy != ForceUpdate && m_seenSettings.contains(path))
             continue;
         m_seenSettings.insert(path);
 
@@ -817,20 +831,50 @@ void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths)
 
         QSettings settings(iniPath, QSettings::IniFormat);
         m_docDir = settings.value("docDir"_L1).toString();
-        for (const QString &group : settings.childGroups()) {
-            settings.beginGroup(group);
+        const qsizetype version = settings.value("version"_L1, "1"_L1).toString().toInt();
+        switch (version) {
+        case 2: {
+            const int entries = settings.beginReadArray("workspaces"_L1);
+            for (int i = 0; i < entries; ++i) {
+                settings.setArrayIndex(i);
 
-            ModuleSetting moduleSetting;
-            moduleSetting.sourceFolder = group;
-            moduleSetting.sourceFolder.replace("<SLASH>"_L1, "/"_L1);
-            moduleSetting.importPaths = settings.value("importPaths"_L1)
-                                                .toString()
-                                                .split(QDir::listSeparator(), Qt::SkipEmptyParts);
-            moduleSetting.resourceFiles = settings.value("resourceFiles"_L1)
-                                                  .toString()
-                                                  .split(QDir::listSeparator(), Qt::SkipEmptyParts);
-            m_moduleSettings.append(moduleSetting);
-            settings.endGroup();
+                const QString sourceFolder = settings.value("sourcePath").toString();
+                ModuleSetting *moduleSetting =
+                        moduleSettingFor(sourceFolder, &m_moduleSettings, policy);
+                moduleSetting->sourceFolder = sourceFolder;
+                moduleSetting->importPaths =
+                        settings.value("importPaths"_L1)
+                                .toString()
+                                .split(QDir::listSeparator(), Qt::SkipEmptyParts);
+                moduleSetting->resourceFiles =
+                        settings.value("resourceFiles"_L1)
+                                .toString()
+                                .split(QDir::listSeparator(), Qt::SkipEmptyParts);
+            }
+            settings.endArray();
+            break;
+        }
+        case 1:
+        default: {
+            for (const QString &group : settings.childGroups()) {
+                settings.beginGroup(group);
+
+                const QString sourceFolder = QString(group).replace("<SLASH>"_L1, "/"_L1);
+                ModuleSetting *moduleSetting =
+                        moduleSettingFor(sourceFolder, &m_moduleSettings, policy);
+                moduleSetting->sourceFolder = sourceFolder;
+                moduleSetting->importPaths =
+                        settings.value("importPaths"_L1)
+                                .toString()
+                                .split(QDir::listSeparator(), Qt::SkipEmptyParts);
+                moduleSetting->resourceFiles =
+                        settings.value("resourceFiles"_L1)
+                                .toString()
+                                .split(QDir::listSeparator(), Qt::SkipEmptyParts);
+                settings.endGroup();
+            }
+            break;
+        }
         }
     }
 #else
@@ -861,6 +905,33 @@ ModuleSetting QQmllsBuildInformation::settingFor(const QString &filePath)
     }
     QQmlToolingSettings::resolveRelativeImportPaths(filePath, &result.importPaths);
     return result;
+}
+
+void QQmllsBuildInformation::addModuleSetting(const ModuleSetting &moduleSetting)
+{
+    m_moduleSettings.append(moduleSetting);
+}
+
+void QQmllsBuildInformation::writeQmllsBuildIniContent(const QString &file) const
+{
+#if QT_CONFIG(settings)
+    QSettings settings(file, QSettings::IniFormat);
+    settings.setValue("docDir"_L1, m_docDir);
+    settings.setValue("version"_L1, "2"_L1);
+    settings.beginWriteArray("workspaces"_L1, m_moduleSettings.size());
+    for (int i = 0; i < m_moduleSettings.size(); ++i) {
+        settings.setArrayIndex(i);
+        settings.setValue("sourcePath"_L1, m_moduleSettings[i].sourceFolder);
+        settings.setValue("importPaths"_L1,
+                          m_moduleSettings[i].importPaths.join(QDir::listSeparator()));
+        settings.setValue("resourceFiles"_L1,
+                          m_moduleSettings[i].resourceFiles.join(QDir::listSeparator()));
+    }
+    settings.endArray();
+
+#else
+    Q_UNUSED(file);
+#endif
 }
 
 QQmllsBuildInformation::QQmllsBuildInformation() { }

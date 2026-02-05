@@ -729,7 +729,7 @@ public:
         Binding
     };
     Pattern *patternCast() override;
-    virtual bool convertLiteralToAssignmentPattern(MemoryPool *pool, SourceLocation *errorLocation, QString *errorMessage) = 0;
+    virtual bool convertLiteralToAssignmentPattern(SourceLocation *errorLocation, QString *errorMessage) = 0;
     ParseMode parseMode = Literal;
 };
 
@@ -752,7 +752,7 @@ public:
 
     bool isValidArrayLiteral(SourceLocation *errorLocation = nullptr) const;
 
-    bool convertLiteralToAssignmentPattern(MemoryPool *pool, SourceLocation *errorLocation, QString *errorMessage) override;
+    bool convertLiteralToAssignmentPattern(SourceLocation *errorLocation, QString *errorMessage) override;
 
 // attributes
     PatternElementList *elements = nullptr;
@@ -781,7 +781,7 @@ public:
     SourceLocation lastSourceLocation() const override
     { return rbraceToken; }
 
-    bool convertLiteralToAssignmentPattern(MemoryPool *pool, SourceLocation *errorLocation, QString *errorMessage) override;
+    bool convertLiteralToAssignmentPattern(SourceLocation *errorLocation, QString *errorMessage) override;
 
 // attributes
     PatternPropertyList *properties = nullptr;
@@ -973,7 +973,7 @@ public:
     }
 
     void accept0(BaseVisitor *visitor) override;
-    virtual bool convertLiteralToAssignmentPattern(MemoryPool *pool, SourceLocation *errorLocation, QString *errorMessage);
+    virtual bool convertLiteralToAssignmentPattern(SourceLocation *errorLocation, QString *errorMessage);
 
     SourceLocation firstSourceLocation() const override
     { return identifierToken.isValid() ? identifierToken : (bindingTarget ? bindingTarget->firstSourceLocation() : initializer->firstSourceLocation()); }
@@ -1075,7 +1075,7 @@ public:
     }
 
     void boundNames(BoundNames *names) override;
-    bool convertLiteralToAssignmentPattern(MemoryPool *pool, SourceLocation *errorLocation, QString *errorMessage) override;
+    bool convertLiteralToAssignmentPattern(SourceLocation *errorLocation, QString *errorMessage) override;
 
 // attributes
     PropertyName *name;

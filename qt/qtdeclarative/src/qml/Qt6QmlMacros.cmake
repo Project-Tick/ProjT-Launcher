@@ -1406,6 +1406,7 @@ endfunction()
 
 function(_qt_internal_collect_qmlls_build_ini_part out_var qmlls_build_ini_targets)
     set(content_to_append "")
+    set(index 0)
     foreach(current_target IN LISTS qmlls_build_ini_targets)
         # prepare import paths
         _qt_internal_collect_qml_import_paths(_import_paths ${current_target})
@@ -1414,15 +1415,17 @@ function(_qt_internal_collect_qmlls_build_ini_part out_var qmlls_build_ini_targe
         # _qt_internal_list_to_ini takes care of removing these duplicates.
         _qt_internal_list_to_ini(_import_paths)
 
-        # prepare source paths: replace / with <SLASH> as .ini files do not support / in group names
         get_target_property(source_path "${current_target}" SOURCE_DIR)
-        string(REPLACE "/" "<SLASH>" source_path "${source_path}")
-
         get_target_property(_qrc_files ${current_target} _qt_generated_qrc_files)
         _qt_internal_list_to_ini(_qrc_files)
 
-        set(content_to_append "${content_to_append}[${source_path}]\nimportPaths=\"${_import_paths}\"\nresourceFiles=\"${_qrc_files}\"\n")
+        set(prefix "${index}\\")
+        set(content_to_append "${content_to_append}${prefix}sourcePath=\"${source_path}\"\n")
+        set(content_to_append "${content_to_append}${prefix}importPaths=\"${_import_paths}\"\n")
+        set(content_to_append "${content_to_append}${prefix}resourceFiles=\"${_qrc_files}\"\n")
+        MATH(EXPR index "${index}+1")
     endforeach()
+    set(content_to_append "${content_to_append}size=${index}\n")
     set(${out_var} "${content_to_append}" PARENT_SCOPE)
 endfunction()
 
@@ -1442,7 +1445,8 @@ function(_qt_internal_write_deferred_qmlls_build_ini_file qt_cmake_export_namesp
         OUTPUT
             ${qmlls_build_ini_file}
         COMMAND ${CMAKE_COMMAND} -E echo "[General]" > ${qmlls_build_ini_file}
-        COMMENT "Populating .qmlls.ini file at ${qmlls_build_ini_file}"
+        COMMAND ${CMAKE_COMMAND} -E echo "version=2" >> ${qmlls_build_ini_file}
+        COMMENT "Populating .qmlls.build.ini file at ${qmlls_build_ini_file}"
         VERBATIM
     )
     # qtpaths only supports --query when the settings config is enabled
@@ -1464,6 +1468,7 @@ function(_qt_internal_write_deferred_qmlls_build_ini_file qt_cmake_export_namesp
     add_custom_command(
         OUTPUT
             "${qmlls_build_ini_file}"
+        COMMAND ${CMAKE_COMMAND} -E echo "[workspaces]" >> ${qmlls_build_ini_file}
         COMMAND ${CMAKE_COMMAND}
             -E cat "${qmlls_build_ini_file}.part" >> "${qmlls_build_ini_file}"
         APPEND
@@ -1484,22 +1489,10 @@ function(_qt_internal_write_deferred_qmlls_ini_file target)
     get_directory_property(_qmlls_ini_build_folders _qmlls_ini_build_folders)
     _qt_internal_list_to_ini(_qmlls_ini_build_folders)
 
-    get_directory_property(_qmlls_ini_import_path_targets _qmlls_ini_import_path_targets)
-    set(_import_paths "")
-    foreach(import_path_target IN LISTS _qmlls_ini_import_path_targets)
-        get_target_property(import_path ${import_path_target} QT_QML_IMPORT_PATH)
-        list(APPEND _import_paths "${import_path}")
-    endforeach()
-
-    _qt_internal_get_main_qt_qml_import_paths(installation_paths)
-    list(APPEND _import_paths ${installation_paths})
-    _qt_internal_list_to_ini(_import_paths)
-
     _populate_qmlls_ini_file(
         ${target}
         "${qmlls_ini_file}"
-        "${_qmlls_ini_build_folders}"
-        "${_import_paths}")
+        "${_qmlls_ini_build_folders}")
 endfunction()
 
 if(NOT QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
@@ -1512,12 +1505,8 @@ if(NOT QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
     endfunction()
 endif()
 
-function(_populate_qmlls_ini_file target qmlls_ini_file concatenated_build_dirs import_paths)
-    set(qtpaths $<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::qtpaths>)
-    _qt_internal_get_tool_wrapper_script_path(tool_wrapper)
-
+function(_populate_qmlls_ini_file target qmlls_ini_file concatenated_build_dirs)
     string(REPLACE "\"" "\\\"" concatenated_build_dirs "${concatenated_build_dirs}")
-    string(REPLACE "\"" "\\\"" import_paths "${import_paths}")
 
     if(QT_QML_GENERATE_QMLLS_INI_NO_CMAKE_CALLS)
         set(no_cmake_calls "true")
@@ -1532,24 +1521,9 @@ function(_populate_qmlls_ini_file target qmlls_ini_file concatenated_build_dirs 
         "${CMAKE_CURRENT_BINARY_DIR}/.qt/qmlls.ini.timestamp")
 
     # generate the .qmlls.ini file content in the build folder
-    add_custom_command(
-        OUTPUT
-            ${qmlls_ini_build_file}
-        COMMAND ${CMAKE_COMMAND} -E echo "[General]" > ${qmlls_ini_build_file}
-        COMMAND ${CMAKE_COMMAND} -E echo "buildDir=\"${concatenated_build_dirs}\""
-                    >> ${qmlls_ini_build_file}
-        COMMAND ${CMAKE_COMMAND} -E echo "no-cmake-calls=${no_cmake_calls}"
-                    >> ${qmlls_ini_build_file}
-        COMMAND ${CMAKE_COMMAND} -E echo_append "docDir=" >> ${qmlls_ini_build_file}
-        COMMAND
-            ${tool_wrapper}
-            ${qtpaths}
-            --query QT_INSTALL_DOCS >> ${qmlls_ini_build_file}
-        COMMAND ${CMAKE_COMMAND} -E echo "importPaths=\"${import_paths}\""
-                >> ${qmlls_ini_build_file}
-        COMMENT "Populating .qmlls.ini file at ${qmlls_ini_build_file}"
-        VERBATIM
-    )
+    file(CONFIGURE OUTPUT ${qmlls_ini_build_file} CONTENT
+        "[General]\nbuildDir=\"@concatenated_build_dirs@\"\nno-cmake-calls=@no_cmake_calls@\n")
+
     # delete timestamps from previous configuration, if available, then copy qmlls to source folder and create timestamp
     add_custom_command(
         OUTPUT

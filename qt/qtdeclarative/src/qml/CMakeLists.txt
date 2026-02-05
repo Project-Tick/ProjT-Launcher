@@ -31,6 +31,7 @@ qt_internal_add_qml_module(Qml
     NO_PLUGIN
     SOURCES
         ../3rdparty/masm/assembler/ARM64Assembler.h
+        ../3rdparty/masm/assembler/ARMv7Assembler.cpp
         ../3rdparty/masm/assembler/ARMv7Assembler.cpp ../3rdparty/masm/assembler/ARMv7Assembler.h
         ../3rdparty/masm/assembler/AbstractMacroAssembler.h
         ../3rdparty/masm/assembler/AssemblerBuffer.h
@@ -47,7 +48,6 @@ qt_internal_add_qml_module(Qml
         ../3rdparty/masm/assembler/MacroAssemblerX86Common.h
         ../3rdparty/masm/assembler/MacroAssemblerX86_64.h
         ../3rdparty/masm/assembler/X86Assembler.h
-        ../3rdparty/masm/assembler/ARMv7Assembler.cpp
         ../3rdparty/masm/disassembler/ARM64/A64DOpcode.cpp ../3rdparty/masm/disassembler/ARM64/A64DOpcode.h
         ../3rdparty/masm/disassembler/ARM64Disassembler.cpp
         ../3rdparty/masm/disassembler/ARMv7/ARMv7DOpcode.cpp ../3rdparty/masm/disassembler/ARMv7/ARMv7DOpcode.h
@@ -265,7 +265,7 @@ qt_internal_add_qml_module(Qml
         qml/qqmlcontext.cpp qml/qqmlcontext.h qml/qqmlcontext_p.h
         qml/qqmlcontextdata.cpp qml/qqmlcontextdata_p.h
         qml/qqmlcustomparser.cpp qml/qqmlcustomparser_p.h
-        qml/qqmldata_p.h
+        qml/qqmldata.cpp qml/qqmldata_p.h
         qml/qqmldatablob.cpp qml/qqmldatablob_p.h
         qml/qqmldelayedcallqueue.cpp qml/qqmldelayedcallqueue_p.h
         qml/qqmldirdata.cpp qml/qqmldirdata_p.h
@@ -295,8 +295,8 @@ qt_internal_add_qml_module(Qml
         qml/qqmlmetatypedata.cpp qml/qqmlmetatypedata_p.h
         qml/qqmlmoduleregistration.cpp qml/qqmlmoduleregistration.h
         qml/qqmlnetworkaccessmanagerfactory.cpp qml/qqmlnetworkaccessmanagerfactory.h
-        qml/qqmlnotifyingblob.cpp qml/qqmlnotifyingblob_p.h
         qml/qqmlnotifier.cpp qml/qqmlnotifier_p.h
+        qml/qqmlnotifyingblob.cpp qml/qqmlnotifyingblob_p.h
         qml/qqmlobjectcreator.cpp qml/qqmlobjectcreator_p.h
         qml/qqmlobjectorgadget.cpp qml/qqmlobjectorgadget_p.h
         qml/qqmlopenmetaobject.cpp qml/qqmlopenmetaobject_p.h
@@ -782,6 +782,167 @@ qt_internal_generate_tracepoints(Qml qml
 
 qt_internal_add_docs(Qml
     doc/qtqml.qdocconf
+)
+
+target_sources(Qml
+    PRIVATE
+        doc/src/advanced-topics.qdoc
+        doc/src/qtqml.qdoc
+        doc/src/qmldiskcache.qdoc
+        doc/src/includes/qqmlcomponent.qdoc
+        doc/src/qmltypereference.qdoc
+        doc/src/qtqml-qtquick-compiler-tech.qdoc
+        doc/src/cppintegration/integrating-with-js-values-from-cpp.qdoc
+        doc/src/cppintegration/extending-tutorial.qdoc
+        doc/src/cppintegration/exposecppstate.qdoc
+        doc/src/cppintegration/interactqmlfromcpp.qdoc
+        doc/src/cppintegration/extending-tutorial-advanced.qdoc
+        doc/src/cppintegration/topic.qdoc
+        doc/src/cppintegration/definetypes.qdoc
+        doc/src/cppintegration/contextproperties.qdoc
+        doc/src/cppintegration/exposecppattributes.qdoc
+        doc/src/cppintegration/data.qdoc
+        doc/src/cppintegration/macros.qdoc
+        doc/src/debugging.qdoc
+        doc/src/profiling.qdoc
+        doc/src/prototyping-debugging-profiling.qdoc
+        doc/src/qmllint/import.qdoc
+        doc/src/qmllint/enum-key-case.qdoc
+        doc/src/qmllint/warn-assignment-in-condition.qdoc
+        doc/src/qmllint/duplicate-enum-entries.qdoc
+        doc/src/qmllint/unresolved-alias.qdoc
+        doc/src/qmllint/missing-property.qdoc
+        doc/src/qmllint/unused-imports.qdoc
+        doc/src/qmllint/alias-cycle.qdoc
+        doc/src/qmllint/unterminated-case.qdoc
+        doc/src/qmllint/syntax.duplicate-ids.qdoc
+        doc/src/qmllint/uncreatable-type.qdoc
+        doc/src/qmllint/confusing-pluses.qdoc
+        doc/src/qmllint/recursion-depth-errors.qdoc
+        doc/src/qmllint/quick/attached-property-type.qdoc
+        doc/src/qmllint/access-singleton-via-object.qdoc
+        doc/src/qmllint/comma.qdoc
+        doc/src/qmllint/non-list-property.qdoc
+        doc/src/qmllint/syntax.qdoc
+        doc/src/qmllint/qtqml-qmllint-warnings-and-errors.qdoc
+        doc/src/qmllint/read-only-property.qdoc
+        doc/src/qmllint/duplicate-property-binding.qdoc
+        doc/src/qmllint/syntax.id-quotation.qdoc
+        doc/src/qmllint/enum-entry-matches-enum.qdoc
+        doc/src/qmllint/missing-type.qdoc
+        doc/src/qmllint/use-proper-function.qdoc
+        doc/src/qmllint/duplicated-name.qdoc
+        doc/src/qmllint/literal-constructor.qdoc
+        doc/src/qmllint/top-level-component.qdoc
+        doc/src/qmllint/confusing-minuses.qdoc
+        doc/src/qmllint/missing-enum-entry.qdoc
+        doc/src/qmllint/with.qdoc
+        doc/src/qmllint/non-root-enum.qdoc
+        doc/src/qmllint/prefixed-import-type.qdoc
+        doc/src/qmllint/incompatible-type.qdoc
+        doc/src/qmllint/unqualified.qdoc
+        doc/src/qmllint/signal-handler-parameters.qdoc
+        doc/src/qmllint/void.qdoc
+        doc/src/qmllint/duplicate-inline-components.qdoc
+        doc/src/qmllint/inline-component-enums.qdoc
+        doc/src/qmllint/required.qdoc
+        doc/src/qmllint/var-used-before-declaration.qdoc
+        doc/src/qmllint/inheritance-cycle.qdoc
+        doc/src/qmllint/deprecated.qdoc
+        doc/src/qmllint/multiline-strings.qdoc
+        doc/src/qmllint/unresolved-type.qdoc
+        doc/src/qmllint/duplicate-import.qdoc
+        doc/src/qmllint/redundantOptionalChaining.qdoc
+        doc/src/qmllint/invalid-lint-directive.qdoc
+        doc/src/qmllint/restricted-type.qdoc
+        doc/src/qmllint/attached-property-reuse.qdoc
+        doc/src/qmllint/compiler.qdoc
+        doc/src/qmllint/deferred-property-id.qdoc
+        doc/src/external-resources.qdoc
+        doc/src/qmllanguageref/modules/cmake-module-integration.qdoc
+        doc/src/qmllanguageref/modules/cppplugins.qdoc
+        doc/src/qmllanguageref/modules/identifiedmodules.qdoc
+        doc/src/qmllanguageref/modules/legacymodules.qdoc
+        doc/src/qmllanguageref/modules/qmldir.qdoc
+        doc/src/qmllanguageref/modules/topic.qdoc
+        doc/src/qmllanguageref/documents/scope.qdoc
+        doc/src/qmllanguageref/documents/structure.qdoc
+        doc/src/qmllanguageref/documents/topic.qdoc
+        doc/src/qmllanguageref/documents/definetypes.qdoc
+        doc/src/qmllanguageref/documents/networktransparency.qdoc
+        doc/src/qmllanguageref/syntax/directoryimports.qdoc
+        doc/src/qmllanguageref/syntax/overridesemantics.qdoc
+        doc/src/qmllanguageref/syntax/signals.qdoc
+        doc/src/qmllanguageref/syntax/basics.qdoc
+        doc/src/qmllanguageref/syntax/propertybinding.qdoc
+        doc/src/qmllanguageref/syntax/imports.qdoc
+        doc/src/qmllanguageref/syntax/objectattributes.qdoc
+        doc/src/qmllanguageref/typesystem/attachedtypes.qdoc
+        doc/src/qmllanguageref/typesystem/basictypes.qdoc
+        doc/src/qmllanguageref/typesystem/enumerations.qdoc
+        doc/src/qmllanguageref/typesystem/namespaces.qdoc
+        doc/src/qmllanguageref/typesystem/objecttypes.qdoc
+        doc/src/qmllanguageref/typesystem/references.qdoc
+        doc/src/qmllanguageref/typesystem/sequencetypes.qdoc
+        doc/src/qmllanguageref/typesystem/topic.qdoc
+        doc/src/qmllanguageref/typesystem/valuetypes.qdoc
+        doc/src/qmllanguageref/qml-language.qdoc
+        doc/src/qmllanguageref/qmlreference.qdoc
+        doc/src/cmake/cmake-integration.qdoc
+        doc/src/cmake/cmake-policies.qdoc
+        doc/src/cmake/cmake-properties.qdoc
+        doc/src/cmake/cmake-variables.qdoc
+        doc/src/cmake/policy/qtp0001.qdoc
+        doc/src/cmake/policy/qtp0004.qdoc
+        doc/src/cmake/policy/qtp0005.qdoc
+        doc/src/cmake/qt_add_qml_module.qdoc
+        doc/src/cmake/qt_add_qml_plugin.qdoc
+        doc/src/cmake/qt_deploy_qml_imports.qdoc
+        doc/src/cmake/qt_generate_deploy_qml_app_script.qdoc
+        doc/src/cmake/qt_generate_foreign_qml_types.qdoc
+        doc/src/cmake/qt_import_qml_plugins.qdoc
+        doc/src/cmake/qt_query_qml_module.qdoc
+        doc/src/cmake/qt_target_compile_qml_to_cpp.qdoc
+        doc/src/cmake/qt_target_qml_sources.qdoc
+        doc/src/qt6-changes.qdoc
+        doc/src/qtqml-writing-a-module.qdoc
+        doc/src/qtqml-tooling.qdoc
+        doc/src/javascript/functionlist.qdoc
+        doc/src/javascript/resources.qdoc
+        doc/src/javascript/dynamicobjectcreation.qdoc
+        doc/src/javascript/finetuning.qdoc
+        doc/src/javascript/imports.qdoc
+        doc/src/javascript/number.qdoc
+        doc/src/javascript/hostenvironment.qdoc
+        doc/src/javascript/xmlhttprequest.qdoc
+        doc/src/javascript/topic.qdoc
+        doc/src/javascript/memory.qdoc
+        doc/src/javascript/date.qdoc
+        doc/src/javascript/qmlglobalobject.qdoc
+        doc/src/javascript/expressions.qdoc
+        doc/src/javascript/qtjavascript.qdoc
+        doc/src/qmlsingletons.qdoc
+        doc/src/qt6-modernize-qml-modules.qdoc
+        doc/src/cppclasses/topic.qdoc
+        doc/src/qtqml-cpp.qdoc
+        doc/src/qt6-port-to-qt-add-qml-module.qdoc
+        doc/src/qtqml-toc.qdoc
+        doc/src/deployment.qdoc
+        doc/src/qml.qdoc
+        doc/src/tools/qtqml-tooling-qmlls.qdoc
+        doc/src/tools/qtqml-tooling-qmlpreview.qdoc
+        doc/src/tools/qtqml-tooling-qmlcontextpropertydump.qdoc
+        doc/src/tools/qtquickcompiler/qtqml-qml-type-compiler.qdoc
+        doc/src/tools/qtquickcompiler/qtqml-qml-script-compiler.qdoc
+        doc/src/tools/qtquickcompiler/qtqml-tool-qmlcachegen.qdoc
+        doc/src/tools/qtqml-tooling-qmlimportscanner.qdoc
+        doc/src/tools/qtqml-tooling-svgtoqml.qdoc
+        doc/src/tools/qtqml-tooling-qmlprofiler.qdoc
+        doc/src/tools/qtqml-tooling-qml.qdoc
+        doc/src/tools/qtqml-tooling-qmltyperegistrar.qdoc
+        doc/src/tools/qtqml-tooling-qmlformat.qdoc
+        doc/src/tools/qtqml-tooling-qmllint.qdoc
+        doc/snippets/qml/qtbinding/resources/example.qdoc
 )
 
 if(QT_FEATURE_doc_snippets)

@@ -3221,14 +3221,14 @@ void tst_qqmlecmascript::callQtInvokables()
     QCOMPARE(o->error(), false);
     QCOMPARE(o->invoked(), 11);
     QCOMPARE(o->actuals().size(), 1);
-    QCOMPARE(o->actuals().at(0), QVariant(QString()));
+    QCOMPARE(o->actuals().at(0), QVariant(QStringLiteral("null")));
 
     o->reset();
     QVERIFY(EVALUATE_VALUE("object.method_QString(undefined)", QV4::Primitive::undefinedValue()));
     QCOMPARE(o->error(), false);
     QCOMPARE(o->invoked(), 11);
     QCOMPARE(o->actuals().size(), 1);
-    QCOMPARE(o->actuals().at(0), QVariant(QString()));
+    QCOMPARE(o->actuals().at(0), QVariant(QStringLiteral("undefined")));
 
     o->reset();
     QVERIFY(EVALUATE_ERROR("object.method_QPointF(0)"));

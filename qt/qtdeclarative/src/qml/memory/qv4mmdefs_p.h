@@ -28,8 +28,6 @@ namespace QV4 {
 
 struct MarkStack;
 
-typedef void(*ClassDestroyStatsCallback)(const char *);
-
 /*
  * Chunks are the basic structure containing GC managed objects.
  *
@@ -77,7 +75,7 @@ struct Chunk {
     quintptr blackBitmap[BitmapSize/sizeof(quintptr)];
     quintptr objectBitmap[BitmapSize/sizeof(quintptr)];
     quintptr extendsBitmap[BitmapSize/sizeof(quintptr)];
-    char data[ChunkSize - HeaderSize];
+    char data[DataSize];
 
     HeapItem *realBase();
     HeapItem *first();
@@ -152,7 +150,6 @@ struct Chunk {
         return usedSlots;
     }
 
-    bool sweep(ClassDestroyStatsCallback classCountPtr);
     void resetBlackBits();
     bool sweep(ExecutionEngine *engine);
     void freeAll(ExecutionEngine *engine);

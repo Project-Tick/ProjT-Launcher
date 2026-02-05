@@ -24,13 +24,13 @@ interfaces. See \l{Qt Quick Controls} for more information.
 If you're new to QML and Qt Quick, please see \l{QML Applications} for an
 introduction to writing QML applications.
 
-\section1 Using the Module
+\section1 Using the Module in your Project
 
-\section2 QML API
+\section2 Accessing the QML API
 
 \include {module-use.qdocinc} {using the qml api} {QtQuick}
 
-\section2 C++ API
+\section2 In your C++ Project
 
 \include {module-use.qdocinc} {using the c++ api}
 

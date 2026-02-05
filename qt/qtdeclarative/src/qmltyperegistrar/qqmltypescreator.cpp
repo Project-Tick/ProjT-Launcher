@@ -103,6 +103,8 @@ void QmlTypesCreator::writeClassProperties(const QmlTypesClassDescription &colle
     if (!collector.immediateNames.isEmpty())
         m_qml.writeStringListBinding(S_IMMEDIATE_NAMES, collector.immediateNames);
 
+    m_qml.writeStringBinding(S_META_OBJECT_HASH, collector.metaObjectHash);
+
     if (collector.elementNames.isEmpty()) // e.g. if QML_ANONYMOUS
         return;
 
@@ -169,8 +171,6 @@ void QmlTypesCreator::writeClassProperties(const QmlTypesClassDescription &colle
 
     if (!collector.attachedType.isEmpty())
         m_qml.writeStringBinding(S_ATTACHED_TYPE, collector.attachedType);
-
-    m_qml.writeStringBinding(S_META_OBJECT_HASH, collector.metaObjectHash);
 }
 
 void QmlTypesCreator::writeType(QAnyStringView type)
@@ -384,6 +384,10 @@ void QmlTypesCreator::writeComponents()
         QmlTypesClassDescription collector;
         collector.collect(component, m_ownTypes, m_foreignTypes,
                           QmlTypesClassDescription::TopLevel, m_version);
+
+        const auto it = m_foreignTypeMetaObjectHashes.find(component.qualifiedClassName());
+        if (it != m_foreignTypeMetaObjectHashes.constEnd())
+            collector.metaObjectHash = *it;
 
         writeComponent(collector);
 

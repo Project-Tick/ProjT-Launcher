@@ -191,6 +191,7 @@ qt_internal_add_qml_module(Quick
         util/qquickanimatorcontroller.cpp util/qquickanimatorcontroller_p.h
         util/qquickanimatorjob.cpp util/qquickanimatorjob_p.h
         util/qquickapplication.cpp util/qquickapplication_p.h
+        util/qquickcolor.cpp util/qquickcolor_p.h
         util/qquickbehavior.cpp util/qquickbehavior_p.h
         util/qquickdeliveryagent.cpp util/qquickdeliveryagent_p.h util/qquickdeliveryagent_p_p.h
         util/qquickfontinfo.cpp util/qquickfontinfo_p.h
@@ -772,6 +773,72 @@ qt_internal_generate_tracepoints(Quick quick
 )
 qt_internal_add_docs(Quick
     doc/qtquick.qdocconf
+)
+
+target_sources(Quick
+    PRIVATE
+        doc/src/advtutorial.qdoc
+        doc/src/android/qtquick-for-android-fragments.qdoc
+        doc/src/android/qtquick-for-android.qdoc
+        doc/src/cmake/qt_target_qml_from_svg.qdoc
+        doc/src/concepts/convenience/topic.qdoc
+        doc/src/concepts/effects/particles.qdoc
+        doc/src/concepts/effects/sprites.qdoc
+        doc/src/concepts/effects/topic.qdoc
+        doc/src/concepts/effects/transformations.qdoc
+        doc/src/concepts/input/focus.qdoc
+        doc/src/concepts/input/mouse.qdoc
+        doc/src/concepts/input/textinput.qdoc
+        doc/src/concepts/input/topic.qdoc
+        doc/src/concepts/inputhandlers/qtquickhandlers-index.qdoc
+        doc/src/concepts/layouts/qtquicklayouts-index.qdoc
+        doc/src/concepts/layouts/qtquicklayouts-overview.qdoc
+        doc/src/concepts/layouts/qtquicklayouts-qmltypes.qdoc
+        doc/src/concepts/layouts/qtquicklayouts-responsive.qdoc
+        doc/src/concepts/modelviewsdata/cppmodels.qdoc
+        doc/src/concepts/modelviewsdata/modelview.qdoc
+        doc/src/concepts/modelviewsdata/sqlmodels.qdoc
+        doc/src/concepts/modelviewsdata/topic.qdoc
+        doc/src/concepts/performance/performance.qdoc
+        doc/src/concepts/positioning/anchors.qdoc
+        doc/src/concepts/positioning/layouts.qdoc
+        doc/src/concepts/positioning/righttoleft.qdoc
+        doc/src/concepts/positioning/topic.qdoc
+        doc/src/concepts/statesanimations/animations.qdoc
+        doc/src/concepts/statesanimations/behaviors.qdoc
+        doc/src/concepts/statesanimations/states.qdoc
+        doc/src/concepts/statesanimations/topic.qdoc
+        doc/src/concepts/visualcanvas/adaptations.qdoc
+        doc/src/concepts/visualcanvas/coordinates.qdoc
+        doc/src/concepts/visualcanvas/scenegraph.qdoc
+        doc/src/concepts/visualcanvas/topic.qdoc
+        doc/src/concepts/visualcanvas/visualparent.qdoc
+        doc/src/concepts/visualtypes/topic.qdoc
+        doc/src/cppextensionpoints.qdoc
+        doc/src/dynamicview-tutorial.qdoc
+        doc/src/examples.qdoc
+        doc/src/getting-started/animations.qdoc
+        doc/src/getting-started/firststepsqml.qdoc
+        doc/src/getting-started/getting-started.qdoc
+        doc/src/getting-started/glossary.qdoc
+        doc/src/getting-started/integratingjs.qdoc
+        doc/src/getting-started/layouts.qdoc
+        doc/src/getting-started/text.qdoc
+        doc/src/getting-started/userinput.qdoc
+        doc/src/getting-started/visual.qdoc
+        doc/src/guidelines/codingconventions.qdoc
+        doc/src/guidelines/qtquick-bestpractices.qdoc
+        doc/src/guidelines/qtquick-toolsnutilities.qdoc
+        doc/src/guidelines/scalabilityintro.qdoc
+        doc/src/qmltypereference.qdoc
+        doc/src/qt6-changes.qdoc
+        doc/src/qtquick-android.qdoc
+        doc/src/qtquick-cpp.qdoc
+        doc/src/qtquick-external-resources.qdoc
+        doc/src/qtquick-how-tos.qdoc
+        doc/src/qtquick-toc.qdoc
+        doc/src/qtquick.qdoc
+        doc/src/tutorial.qdoc
 )
 
 add_subdirectory(window)

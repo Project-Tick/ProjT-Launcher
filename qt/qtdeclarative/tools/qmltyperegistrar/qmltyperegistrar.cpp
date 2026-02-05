@@ -213,6 +213,7 @@ int main(int argc, char **argv)
 
     typeRegistrar.setReferencedTypes(processor.referencedTypes());
     typeRegistrar.setUsingDeclarations(processor.usingDeclarations());
+    typeRegistrar.setForeignTypeMetaObjectHashes(processor.foreignTypeMetaObjectHashses());
     const QString qmltypes = parser.value(pluginTypesOption);
     if (!typeRegistrar.generatePluginTypes(qmltypes, parser.isSet(jsroot))) {
         error(qmltypes) << "Cannot generate qmltypes file";

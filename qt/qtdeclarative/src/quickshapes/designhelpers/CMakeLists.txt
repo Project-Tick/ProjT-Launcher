@@ -32,3 +32,8 @@ qt_internal_add_qml_module(QuickShapesDesignHelpersPrivate
         Qt::QuickPrivate
         Qt::QuickShapesPrivate
 )
+
+target_sources(QuickShapesDesignHelpersPrivate
+    PRIVATE
+        doc/src/qtquickshapesdesignhelpers.qdoc
+)

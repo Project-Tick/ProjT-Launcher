@@ -43,16 +43,37 @@ public:
         Q_DECLARE_EQUALITY_COMPARABLE(Command)
     };
 
-    using QueueElement = std::variant<Command, Id>;
+    struct StartMarker
+    {
+        Id id;
+        friend bool comparesEqual(const StartMarker &a, const StartMarker &b) noexcept
+        {
+            return a.id == b.id;
+        }
+        Q_DECLARE_EQUALITY_COMPARABLE(StartMarker)
+    };
+    struct EndMarker
+    {
+        Id id;
+        friend bool comparesEqual(const EndMarker &a, const EndMarker &b) noexcept
+        {
+            return a.id == b.id;
+        }
+        Q_DECLARE_EQUALITY_COMPARABLE(EndMarker)
+    };
+    using QueueElement = std::variant<Command, StartMarker, EndMarker>;
 
     QProcessScheduler();
     ~QProcessScheduler();
 
 Q_SIGNALS:
     void done(const Id &id);
+    void started(const Id &id);
+    void cancelled(const Id &id);
 
 public Q_SLOTS:
     void schedule(const QList<Command> &commands, const Id &id);
+    void cancel(const Id &id);
 
 private Q_SLOTS:
     void processNext();
@@ -60,6 +81,7 @@ private Q_SLOTS:
 
 private:
     QQueue<QueueElement> m_queue;
+    std::optional<Id> m_current;
     QProcess m_process;
     bool m_isRunning = false;
 };

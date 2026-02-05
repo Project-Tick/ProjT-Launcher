@@ -40,8 +40,7 @@ void setupLogger(QQmlJSLogger &logger) // prepare logger to work with compiler
         // shadowing is fine for qmltc
         if (category.id() == qmlShadow)
             continue;
-        logger.setCategoryLevel(category.id(), QtCriticalMsg);
-        logger.setCategoryIgnored(category.id(), false);
+        logger.setCategorySeverity(category.id(), QQmlSA::WarningSeverity::Error);
     }
 }
 

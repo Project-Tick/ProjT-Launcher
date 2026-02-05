@@ -3,11 +3,11 @@ qtdeclarative
 
 The qtdeclarative repository is home to QML, Qt Quick and several related modules:
 
-- [Qt QML](https://doc.qt.io/qt-6/qtqml-index.html)
-- [Qt QML Core](https://doc.qt.io/qt-6/qtqmlcore-index.html)
-- [Qt QML Models](https://doc.qt.io/qt-6/qtqml-models-qmlmodule.html)
-- [Qt QML WorkerScript](https://doc.qt.io/qt-6/qml-qtqml-workerscript-workerscript.html)
-- [Qt QML XmlListModel](https://doc.qt.io/qt-6/qml-qtqml-xmllistmodel-xmllistmodel.html)
+- [Qt Qml](https://doc.qt.io/qt-6/qtqml-index.html)
+- [Qt Qml Core](https://doc.qt.io/qt-6/qtqmlcore-index.html)
+- [Qt Qml Models](https://doc.qt.io/qt-6/qtqml-models-qmlmodule.html)
+- [Qt Qml WorkerScript](https://doc.qt.io/qt-6/qml-qtqml-workerscript-workerscript.html)
+- [Qt Qml XmlListModel](https://doc.qt.io/qt-6/qml-qtqml-xmllistmodel-xmllistmodel.html)
 - [Qt Quick](https://doc.qt.io/qt-6/qtquick-index.html)
 - [Qt Quick Controls 2](https://doc.qt.io/qt-6/qtquickcontrols-index.html)
 - [Qt Quick Layouts](https://doc.qt.io/qt-6/qtquicklayouts-index.html)

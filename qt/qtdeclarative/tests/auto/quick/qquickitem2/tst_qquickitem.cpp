@@ -3839,7 +3839,7 @@ void tst_QQuickItem::contains()
     QVERIFY(root);
 
     // Ensure that we don't get extra hover events delivered on the side.
-    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverEnabled = false;
+    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverInterval = -1;
     // Flush out any mouse events that might be queued up
     qGuiApp->processEvents();
 

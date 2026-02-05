@@ -52,7 +52,8 @@ public:
 
     inline const QMetaObject *metaObject() const;
 
-    QMetaType methodReturnType(const QQmlPropertyData &data, QByteArray *unknownTypeError) const;
+    QMetaType methodReturnType(
+            const QQmlPropertyData &data, QString *unknownTypeError = nullptr) const;
 
     /*!
       \internal
@@ -61,11 +62,12 @@ public:
     */
     template<typename ArgTypeStorage>
     bool methodParameterTypes(
-            int index, ArgTypeStorage *argStorage, QByteArray *unknownTypeError) const
+            const QQmlPropertyData &data, ArgTypeStorage *argStorage,
+            QString *unknownTypeError = nullptr) const
     {
-        Q_ASSERT(_m && index >= 0);
+        Q_ASSERT(_m && data.coreIndex() >= 0);
 
-        QMetaMethod m = _m->method(index);
+        QMetaMethod m = _m->method(data.coreIndex());
         return methodParameterTypes(m, argStorage, unknownTypeError);
     }
 
@@ -75,13 +77,47 @@ public:
       metatypes of the function.
     */
     template<typename ArgTypeStorage>
-    bool constructorParameterTypes(
-            int index, ArgTypeStorage *dummy, QByteArray *unknownTypeError) const
+    bool methodReturnAndParameterTypes(
+            const QQmlPropertyData &data, ArgTypeStorage *argStorage,
+            QString *unknownTypeError = nullptr) const
     {
-        QMetaMethod m = _m->constructor(index);
-        return methodParameterTypes(m, dummy, unknownTypeError);
+        Q_ASSERT(_m && data.coreIndex() >= 0);
+
+        QMetaMethod m = _m->method(data.coreIndex());
+        return methodReturnAndParameterTypes(data, m, argStorage, unknownTypeError);
     }
 
+    /*!
+      \internal
+      Returns false if one of the types is unknown. Otherwise, fills \a argstorage with the
+      metatypes of the function.
+    */
+    template<typename ArgTypeStorage>
+    bool constructorParameterTypes(
+            const QQmlPropertyData &data, ArgTypeStorage *argStorarge,
+            QString *unknownTypeError = nullptr) const
+    {
+        Q_ASSERT(_m && data.coreIndex() >= 0);
+
+        QMetaMethod m = _m->constructor(data.coreIndex());
+        return methodParameterTypes(m, argStorarge, unknownTypeError);
+    }
+
+    /*!
+      \internal
+      Returns false if one of the types is unknown. Otherwise, fills \a argstorage with the
+      metatypes of the function.
+    */
+    template<typename ArgTypeStorage>
+    bool constructorReturnAndParameterTypes(
+            const QQmlPropertyData &data, ArgTypeStorage *storage,
+            QString *unknownTypeError = nullptr) const
+    {
+        Q_ASSERT(_m && data.coreIndex() >= 0);
+
+        QMetaMethod m = _m->constructor(data.coreIndex());
+        return methodReturnAndParameterTypes(data, m, storage, unknownTypeError);
+    }
 
     static bool canConvert(const QQmlMetaObject &from, const QQmlMetaObject &to)
     {
@@ -96,14 +132,16 @@ public:
 
     template<typename ArgTypeStorage>
     static bool methodParameterTypes(
-            const QMetaMethod &method, ArgTypeStorage *argStorage, QByteArray *unknownTypeError)
+            const QMetaMethod &method, ArgTypeStorage *argStorage,
+            QString *unknownTypeError = nullptr)
     {
         Q_ASSERT(argStorage);
 
         const int argc = method.parameterCount();
         argStorage->resize(argc);
         for (int ii = 0; ii < argc; ++ii) {
-            if (!parameterType(method, ii, unknownTypeError, [argStorage](int ii, QMetaType &&type) {
+            if (!parameterType(method, ii, unknownTypeError,
+                               [argStorage](int ii, QMetaType &&type) {
                     argStorage->operator[](ii) = std::forward<QMetaType>(type);
                 })) {
                 return false;
@@ -113,23 +151,18 @@ public:
     }
 
     template<typename ArgTypeStorage>
-    static bool methodReturnAndParameterTypes(
-            const QMetaMethod &method, ArgTypeStorage *argStorage, QByteArray *unknownTypeError)
+    bool methodReturnAndParameterTypes(
+            const QQmlPropertyData &data, const QMetaMethod &method, ArgTypeStorage *argStorage,
+            QString *unknownTypeError = nullptr) const
     {
         Q_ASSERT(argStorage);
 
         const int argc = method.parameterCount();
         argStorage->resize(argc + 1);
 
-        QMetaType type = method.returnMetaType();
-        if (type.flags().testFlag(QMetaType::IsEnumeration))
-            type = type.underlyingType();
-
-        if (!type.isValid()) {
-            if (unknownTypeError)
-                *unknownTypeError = "return type";
+        QMetaType type = methodReturnType(data, unknownTypeError);
+        if (!type.isValid())
             return false;
-        }
 
         argStorage->operator[](0) = type;
 
@@ -148,17 +181,18 @@ public:
 protected:
     template<typename Store>
     static bool parameterType(
-            const QMetaMethod &method, int ii, QByteArray *unknownTypeError, const Store &store)
+            const QMetaMethod &method, int ii, QString *unknownTypeError, const Store &store)
     {
         QMetaType type = method.parameterMetaType(ii);
 
-               // we treat enumerations as their underlying type
+        // we treat enumerations as their underlying type
         if (type.flags().testFlag(QMetaType::IsEnumeration))
             type = type.underlyingType();
 
         if (!type.isValid()) {
             if (unknownTypeError)
-                *unknownTypeError =  method.parameterTypeName(ii);
+                *unknownTypeError = QLatin1String("Unknown method parameter type: ")
+                        + QString::fromUtf8(method.parameterTypeName(ii));
             return false;
         }
 

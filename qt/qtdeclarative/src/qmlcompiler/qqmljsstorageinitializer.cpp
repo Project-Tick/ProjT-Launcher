@@ -17,11 +17,11 @@ QT_BEGIN_NAMESPACE
  * operates only on the annotations and the function description.
  */
 
-QQmlJSCompilePass::BlocksAndAnnotations QQmlJSStorageInitializer::run(Function *function)
+QQmlJSCompilePass::BlocksAndAnnotations QQmlJSStorageInitializer::run(const Function *function)
 {
     m_function = function;
 
-    if (QQmlJSRegisterContent &returnType = function->returnType; returnType.isValid()) {
+    if (const QQmlJSRegisterContent &returnType = function->returnType; returnType.isValid()) {
         if (const QQmlJSScope::ConstPtr stored
                 = m_typeResolver->storedType(returnType.containedType())) {
             m_pool->storeType(returnType, stored);
@@ -32,7 +32,7 @@ QQmlJSCompilePass::BlocksAndAnnotations QQmlJSStorageInitializer::run(Function *
         }
     }
 
-    const auto storeRegister = [&](QQmlJSRegisterContent &content) {
+    const auto storeRegister = [&](const QQmlJSRegisterContent &content) {
         if (!content.isValid() || !content.storage().isNull())
             return;
 
@@ -65,12 +65,12 @@ QQmlJSCompilePass::BlocksAndAnnotations QQmlJSStorageInitializer::run(Function *
 
     storeRegister(function->qmlScope);
 
-    for (QQmlJSRegisterContent &argument : function->argumentTypes) {
+    for (const QQmlJSRegisterContent &argument : function->argumentTypes) {
         Q_ASSERT(argument.isValid());
         storeRegister(argument);
     }
 
-    for (QQmlJSRegisterContent &argument : function->registerTypes) {
+    for (const QQmlJSRegisterContent &argument : function->registerTypes) {
         Q_ASSERT(argument.isValid());
         storeRegister(argument);
     }

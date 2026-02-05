@@ -25,6 +25,8 @@ class QQmlEngine;
 class QQuickApplicationWindow;
 class QQuickAbstractButton;
 class QQuickControl;
+class QQuickMenuItem;
+class QQuickPopup;
 
 namespace QQuickControlsTestUtils
 {
@@ -55,6 +57,7 @@ namespace QQuickControlsTestUtils
 
     [[nodiscard]] bool verifyButtonClickable(QQuickAbstractButton *button);
     [[nodiscard]] bool clickButton(QQuickAbstractButton *button);
+    [[nodiscard]] bool clickMenuItem(QQuickMenuItem *menuItem);
     [[nodiscard]] bool doubleClickButton(QQuickAbstractButton *button);
     [[nodiscard]] QString visualFocusFailureMessage(QQuickControl *control);
 
@@ -107,7 +110,31 @@ namespace QQuickControlsTestUtils
         Q_INVOKABLE bool setValue(const QString &name, const QString &value);
     };
 
+    class ApplicationAttributes : public QObject
+    {
+        Q_OBJECT
+        QML_ELEMENT
+        QML_SINGLETON
+
+    public:
+        Q_INVOKABLE bool test(Qt::ApplicationAttribute attribute) const;
+        Q_INVOKABLE void set(Qt::ApplicationAttribute attribute, bool on = true);
+    };
+
     [[nodiscard]] bool arePopupWindowsSupported();
+    [[nodiscard]] QQuickPopup *popupParent(QQuickItem *item);
+
+    // Helper that allows us to call setFastAnimations, which requires a QCoreApplication instance.
+    class QmlTestHelper : public QObject
+    {
+        Q_OBJECT
+
+    public slots:
+        void applicationAvailable()
+        {
+            QQuickVisualTestUtils::setFastAnimations(true);
+        }
+    };
 }
 
 namespace QQuickTest

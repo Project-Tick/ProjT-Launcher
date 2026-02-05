@@ -1728,7 +1728,7 @@ void tst_qquickitem::hoverEvent()
 
     // Ensure that we don't get extra hover events delivered on the
     // side, since it can affect the number of hover move events we receive below.
-    QQuickWindowPrivate::get(window)->deliveryAgentPrivate()->frameSynchronousHoverEnabled = false;
+    QQuickWindowPrivate::get(window)->deliveryAgentPrivate()->frameSynchronousHoverInterval = -1;
     // And flush out any mouse events that might be queued up
     // in QPA, since QTest::mouseMove() calls processEvents.
     qGuiApp->processEvents();

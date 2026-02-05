@@ -16,21 +16,22 @@
 // We mean it.
 //
 
-#include "documentSymbolSupport/qqmldocumentsymbolsupport_p.h"
-#include "qlanguageserver_p.h"
-#include "qqmlcodemodelmanager_p.h"
-#include "qqmlfindusagessupport_p.h"
-#include "qtextsynchronization_p.h"
-#include "qqmllintsuggestions_p.h"
-#include "qworkspace_p.h"
-#include "qqmlcompletionsupport_p.h"
-#include "qqmlgototypedefinitionsupport_p.h"
-#include "qqmlformatting_p.h"
-#include "qqmlrangeformatting_p.h"
-#include "qqmlgotodefinitionsupport_p.h"
-#include "qqmlrenamesymbolsupport_p.h"
-#include "qqmlhover_p.h"
-#include "qqmlhighlightsupport_p.h"
+#include <private/qqmldocumentsymbolsupport_p.h>
+#include <private/qlanguageserver_p.h>
+#include <private/qqmlcodemodelmanager_p.h>
+#include <private/qqmlfindusagessupport_p.h>
+#include <private/qtextsynchronization_p.h>
+#include <private/qqmllintsuggestions_p.h>
+#include <private/qworkspace_p.h>
+#include <private/qqmlcompletionsupport_p.h>
+#include <private/qqmlgototypedefinitionsupport_p.h>
+#include <private/qqmlformatting_p.h>
+#include <private/qqmlrangeformatting_p.h>
+#include <private/qqmlgotodefinitionsupport_p.h>
+#include <private/qqmlrenamesymbolsupport_p.h>
+#include <private/qqmlhover_p.h>
+#include <private/qqmlhighlightsupport_p.h>
+#include <private/qqmlprogresssupport_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -88,6 +89,7 @@ private:
 
     // ==== modules that are not triggered by the user ====
     QQmlDocumentSymbolSupport m_documentSymbolSupport;
+    QQmlProgressSupport m_progressSupport;
 
     // ==== Linting should happen at the end as it potentially can take a longer time ====
     QmlLintSuggestions m_lint;

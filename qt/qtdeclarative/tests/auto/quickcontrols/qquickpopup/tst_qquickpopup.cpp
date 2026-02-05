@@ -54,6 +54,7 @@ public:
 private slots:
     void cleanup();
     void initTestCase() override;
+    void init() override;
     void visible_data();
     void visible();
     void state();
@@ -170,6 +171,11 @@ void tst_QQuickPopup::initTestCase()
     QQmlDataTest::initTestCase();
     QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuWindows);
     qputenv("QML_NO_TOUCH_COMPRESSION", "1");
+}
+
+void tst_QQuickPopup::init()
+{
+    setFastAnimations(true);
 }
 
 void tst_QQuickPopup::visible_data()
@@ -893,6 +899,9 @@ void tst_QQuickPopup::activeFocusOnClose3()
 void tst_QQuickPopup::activeFocusOnClosingSeveralPopups()
 {
     SKIP_IF_NO_WINDOW_ACTIVATION;
+
+    // This test is flaky (only on macOS 14 in CI) when sped up.
+    setFastAnimations(false);
 
     // Test that active focus isn't lost when multiple popup closing simultaneously
     QQuickControlsApplicationHelper helper(this, QStringLiteral("activeFocusOnClosingSeveralPopups.qml"));
@@ -2604,6 +2613,9 @@ void tst_QQuickPopup::fadeDimmer()
     QQuickWindow *window = helper.window;
     window->show();
     QVERIFY(QTest::qWaitForWindowExposed(window));
+
+    // This test is too timing-sensitive to speed up.
+    setFastAnimations(false);
 
     auto *popup = window->contentItem()->findChild<QQuickPopup *>();
     QVERIFY(popup);

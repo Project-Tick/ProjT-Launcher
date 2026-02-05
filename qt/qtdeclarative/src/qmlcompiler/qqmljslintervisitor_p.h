@@ -55,6 +55,14 @@ protected:
     bool visit(QQmlJS::AST::UiEnumDeclaration *uied) override;
     bool visit(QQmlJS::AST::CaseBlock *) override;
     bool visit(QQmlJS::AST::ExpressionStatement *ast) override;
+    bool visit(QQmlJS::AST::FunctionDeclaration *fdecl) override;
+    bool visit(QQmlJS::AST::FunctionExpression *fexpr) override;
+    bool visit(QQmlJS::AST::UiPublicMember *publicMember) override;
+
+    void endVisit(QQmlJS::AST::UiProgram *ast) override;
+
+    bool safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QString &name,
+                                const QQmlJSScope::JavaScriptIdentifier &identifier) override;
 
 private:
     struct SeenImport
@@ -86,6 +94,7 @@ private:
     };
     QQmlJS::Engine *m_engine = nullptr;
     QSet<SeenImport> m_seenImports;
+    QSet<std::pair<const QQmlJSScope *, QString>> misplacedJSIdentifiers;
     std::vector<QQmlJS::AST::Node *> m_ancestryIncludingCurrentNode;
 
     void handleDuplicateEnums(QQmlJS::AST::UiEnumMemberList *members, QStringView key,
@@ -98,6 +107,8 @@ private:
             const QQmlJS::AST::UiPublicMember *associatedPropertyDefinition = nullptr) override;
     void handleLiteralBinding(const QQmlJSMetaPropertyBinding &binding,
                               const AST::UiPublicMember *associatedPropertyDefinition) override;
+
+    void checkIdShadows();
 };
 
 } // namespace QQmlJS

@@ -136,6 +136,14 @@ class Q_QML_EXPORT QQmlObjectCreator
 {
     Q_DECLARE_TR_FUNCTIONS(QQmlObjectCreator)
 public:
+    enum class InitFlag: quint8
+    {
+        None            = 0x0,
+        IsDocumentRoot  = 0x1,
+        IsContextObject = 0x2,
+    };
+    Q_DECLARE_FLAGS(InitFlags, InitFlag);
+
     QQmlObjectCreator(const QQmlRefPointer<QQmlContextData> &parentContext,
                       const QQmlRefPointer<QV4::ExecutableCompilationUnit> &compilationUnit,
                       const QQmlRefPointer<QQmlContextData> &creationContext,
@@ -196,7 +204,26 @@ private:
 
     void init(const QQmlRefPointer<QQmlContextData> &parentContext);
 
+    void initializeDData(
+            const QV4::CompiledData::Object *obj, QObject *instance, QQmlData *ddata,
+            InitFlags flags);
+    void initializePropertyCache(
+            int index, QQmlData *ddata, const QV4::ResolvedTypeReference *typeRef);
+    void initializeParent(QObject *instance, QObject *parent);
+    QObject *populateInstanceAndAliasBindings(int index, QObject *instance, InitFlags flags);
+
     QObject *createInstance(int index, QObject *parent = nullptr, bool isContextObject = false);
+
+    QObject *initializeComponent(
+            const QV4::CompiledData::Object *obj, QObject *instance, InitFlags flags);
+    QObject *initializeComposite(
+            int index, const QV4::CompiledData::Object *obj,
+            const QV4::ResolvedTypeReference *typeRef,  QObject *instance, QObject *parent,
+            InitFlags flags);
+    QObject *initializeNonComposite(
+            int index, const QV4::CompiledData::Object *obj,
+            const QV4::ResolvedTypeReference *typeRef,  QObject *instance, QObject *parent,
+            InitFlags flags);
 
     bool populateInstance(int index, QObject *instance, QObject *bindingTarget,
                           const QQmlPropertyData *valueTypeProperty,
@@ -264,7 +291,7 @@ private:
     QQmlData *_ddata;
     QQmlPropertyCache::ConstPtr _propertyCache;
     QQmlVMEMetaObject *_vmeMetaObject;
-    QQmlListProperty<void> _currentList;
+    QQmlListProperty<QObject> _currentList;
     QV4::QmlContext *_qmlContext;
 
     friend struct QQmlObjectCreatorRecursionWatcher;
@@ -343,6 +370,8 @@ QV4::QmlContext *QQmlObjectCreator::currentQmlContext()
 
     return _qmlContext;
 }
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(QQmlObjectCreator::InitFlags);
 
 QT_END_NAMESPACE
 

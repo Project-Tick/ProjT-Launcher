@@ -1988,7 +1988,7 @@ findPropertyDefinitionOf(const DomItem &file, QQmlJS::SourceLocation propertyDef
 
 static QQmlJS::SourceLocation sourceLocationOrDefault(const QQmlJS::SourceLocation &location)
 {
-    return location.startLine == 0 ? QQmlJS::SourceLocation{ 0, 0, 1, 1 } : location;
+    return location.startLine == 0 ? QQmlJS::s_documentOrigin : location;
 }
 
 static std::optional<Location> createCppTypeLocation(const QQmlJSScope::ConstPtr &type,

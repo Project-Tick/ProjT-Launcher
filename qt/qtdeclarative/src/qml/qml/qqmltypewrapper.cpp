@@ -185,6 +185,11 @@ QVariant QQmlTypeWrapper::toVariant() const
 {
     const QQmlType type = d()->type();
 
+    // A QQmlTypeWrapper can represent a type namespace.
+    // In that case there is no sensible C++ representation. Wrap a QJSValue.
+    if (!type.isValid())
+        return QVariant::fromValue(QJSValuePrivate::fromReturnedValue(asReturnedValue()));
+
     if (!isSingleton()) {
         return QVariant::fromValue(qmlAttachedPropertiesObject(
                 d()->object, type.attachedPropertiesFunction(engine()->typeLoader())));

@@ -95,3 +95,8 @@ qt_internal_extend_target(QmlWorkerScript CONDITION GCC AND QT_COMPILER_VERSION_
 qt_internal_add_docs(QmlWorkerScript
     doc/qtqmlworkerscript.qdocconf
 )
+
+target_sources(QmlWorkerScript
+    PRIVATE
+        doc/src/qmlworkerscript.qdoc
+)

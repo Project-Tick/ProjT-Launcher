@@ -103,6 +103,8 @@ signals:
     void defaultIconColorChanged();
 
 protected:
+    QQuickIconLabel(QQuickIconLabelPrivate &dd, QQuickItem *parent);
+
     void componentComplete() override;
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 

@@ -78,3 +78,11 @@ qt_internal_add_resource(QmlCompiler "builtins"
 qt_internal_add_docs(QmlCompiler
     doc/qtqmlcompiler.qdocconf
 )
+
+target_sources(QmlCompiler
+    PRIVATE
+        doc/src/tutorial.qdoc
+        doc/src/qtqmlcompiler-module.qdoc
+        doc/qtqmlcompiler-index.qdoc
+        doc/qtqmlcompiler-toc.qdoc
+)

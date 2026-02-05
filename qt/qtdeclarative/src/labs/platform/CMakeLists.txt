@@ -107,3 +107,10 @@ endif()
 qt_internal_add_docs(LabsPlatform
     doc/qtlabsplatform.qdocconf
 )
+
+target_sources(LabsPlatform
+    PRIVATE
+        doc/src/qt6-changes.qdoc
+        doc/src/qtlabsplatform-index.qdoc
+        doc/src/qtlabsplatform-qmltypes.qdoc
+)

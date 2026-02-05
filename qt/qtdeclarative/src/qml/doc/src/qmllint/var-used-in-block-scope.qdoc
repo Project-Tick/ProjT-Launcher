@@ -1,0 +1,62 @@
+// Copyright (C) 2023 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GFDL-1.3-no-invariants-only
+
+/*!
+\page qmllint-warnings-and-errors-block-scope-var-declaration.html
+\ingroup qmllint-warnings-and-errors
+
+\title Block scope var declaration
+\brief [var-used-in-block-scope] A variable has been declared with var inside a block scope
+
+\qmllintwarningcategory block-scope-var-declaration
+
+\section1 A variable has been declared with var inside a block scope
+
+\section2 What happened?
+A JavaScript variable has been declared with var inside of a block scope, for
+example in the body of a while loop.
+While it might look like the variable is only usable inside that scope, it
+can actually be accessed outside of it, as it is hoisted to the scope of the
+innermost function or QML binding.
+
+\section2 Why is this bad?
+It can be confusing to track the scope of such a variable, and they might
+accidentally shadow other variables.
+
+\section2 Example
+\qml
+import QtQuick
+
+Item {
+    id: root
+    property int count: 0
+    function countItems() {
+        let sum = 0
+        {
+            var count = root.children.length
+            sum += count
+        }
+        // ... more additions to sum
+        count = sum // modifies the function local variable, not root.count
+    }
+}
+\endqml
+To fix this warning, use let or const instead, or declare the variable directly in the function scope.
+\qml
+import QtQuick
+
+Item {
+    id: root
+    property int count: 0
+    function countItems() {
+        let sum = 0
+        {
+            let count = root.children.length
+            sum += count
+        }
+        // ... more additions to sum
+        count = sum // modifies the function local variable, not root.count
+    }
+}
+\endqml
+*/

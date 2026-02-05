@@ -1,0 +1,46 @@
+// Copyright (C) 2026 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GFDL-1.3-no-invariants-only
+
+/*!
+\page qmllint-warnings-and-errors-id-shadows-member.html
+\ingroup qmllint-warnings-and-errors
+
+\title Id shadows member
+\brief [id-shadows-member] An id shadows a member.
+
+\qmllintwarningcategory id-shadows-member
+
+\section1 Id shadows property, method or signal
+
+\section2 What happened?
+An id is potentially shadowing a property, method, or signal in the same context.
+
+\section2 Why is that bad?
+You can't access the property, method, or signal by its unqualified name anymore. Code that
+used to do so will silently access the id instead, potentially leading
+to hard-to-spot bugs.
+
+\section2 Example
+\qml
+import QtQuick
+
+Item {
+    Item { id: helloWorld }
+    property int helloWorld: 42
+    Component.onCompleted: console.log(helloWorld) // not 42
+}
+
+\endqml
+To fix this warning, rename the id or the shadowed member.
+
+\qml
+import QtQuick
+
+Item {
+    Item { id: helloWorldId }
+    property int helloWorld: 42
+    Component.onCompleted: console.log(helloWorld) // now 42
+}
+\endqml
+
+*/

@@ -34,3 +34,8 @@ qt_internal_extend_target(LabsQmlModels CONDITION QT_FEATURE_qml_tree_model
         qqmltreemodel.cpp qqmltreemodel_p.h
         qqmltreerow.cpp qqmltreerow_p.h
 )
+
+target_sources(LabsQmlModels
+    PRIVATE
+        doc/src/qmllabsmodels.qdoc
+)

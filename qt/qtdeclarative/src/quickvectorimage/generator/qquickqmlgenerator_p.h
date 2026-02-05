@@ -23,6 +23,7 @@
 #include <QtCore/qbuffer.h>
 #include <QtCore/qmap.h>
 #include <QtCore/qset.h>
+#include <QtCore/qstack.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -96,9 +97,9 @@ public:
     }
 
 protected:
-    QString generateNodeBase(const NodeInfo &info) override;
+    QString generateNodeBase(const NodeInfo &info, const QString &idSuffix = QString{}) override;
     void generateNodeEnd(const NodeInfo &info);
-    bool generateDefsNode(const NodeInfo &info) override;
+    bool generateDefsNode(const StructureNodeInfo &info) override;
     void generateImageNode(const ImageNodeInfo &info) override;
     void generatePath(const PathNodeInfo &info, const QRectF &overrideBoundingRect) override;
     void generateNode(const NodeInfo &info) override;
@@ -108,6 +109,8 @@ protected:
     bool generateStructureNode(const StructureNodeInfo &info) override;
     bool generateRootNode(const StructureNodeInfo &info) override;
     bool generateMaskNode(const MaskNodeInfo &info) override;
+    bool generateMarkerNode(const MarkerNodeInfo &info) override;
+    bool generatePatternNode(const PatternNodeInfo &info) override;
     void outputShapePath(const PathNodeInfo &info, const QPainterPath *path, const QQuadPath *quadPath, QQuickVectorImageGenerator::PathSelector pathSelector, const QRectF &boundingRect) override;
 
 private:
@@ -116,6 +119,7 @@ private:
         ColorOpacity = 1
     };
 
+    QString generateNodeId(const NodeInfo &info);
     void generateGradient(const QGradient *grad);
     void generateTransform(const QTransform &xf);
     void generatePathContainer(const StructureNodeInfo &info);
@@ -137,6 +141,7 @@ private:
                                    const QString &propertyName,
                                    AnimationType animationType = AnimationType::Auto);
     void generateShaderUse(const NodeInfo &info);
+    void generateMarkers(const PathNodeInfo &info);
     qsizetype generateFilterStep(const FilterNodeInfo &info, qsizetype stepIndex);
 
     QStringView indent();
@@ -147,8 +152,12 @@ private:
 protected:
     QBuffer m_result;
 
+    void startDefsSuffixBlock();
+    void endDefsSuffixBlock();
+
 private:
     int m_indentLevel = 0;
+    int m_oldIndentLevel = 0;
     QTextStream m_stream;
     QString outputFileName;
     int m_inShapeItemLevel = 0;
@@ -161,7 +170,8 @@ private:
     QString m_topLevelIdString;
     QStringList m_extraImports;
     QMap<std::array<qreal, 4>, QString> m_easings;
-    QSet<QString> m_generatedIds;
+
+    QString m_defsSuffix;
 };
 
 QT_END_NAMESPACE

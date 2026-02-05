@@ -2322,10 +2322,14 @@ QHash<int, QByteArray> QQmlListModel::roleNames() const
     QHash<int, QByteArray> roleNames;
 
     if (m_dynamicRoles) {
-        for (int i = 0 ; i < m_roles.size() ; ++i)
+        const auto size = m_roles.size();
+        roleNames.reserve(size);
+        for (int i = 0 ; i < size ; ++i)
             roleNames.insert(i, m_roles.at(i).toUtf8());
     } else {
-        for (int i = 0 ; i < m_listModel->roleCount() ; ++i) {
+        const auto size = m_listModel->roleCount();
+        roleNames.reserve(size);
+        for (int i = 0 ; i < size; ++i) {
             const ListLayout::Role &r = m_listModel->getExistingRole(i);
             roleNames.insert(i, r.name.toUtf8());
         }
@@ -2456,7 +2460,7 @@ void QQmlListModel::removeElements(int index, int removeCount)
         endRemoveRows();
         emit countChanged();
     }
-    for (const auto &destroyer : toDestroy)
+    for (const auto &destroyer : std::as_const(toDestroy))
         destroyer();
 }
 
@@ -3013,11 +3017,11 @@ void QQmlListModelParser::applyBindings(
         qmlWarning(obj) << "All ListElement declarations are empty, no roles can be created unless dynamicRoles is set.";
 }
 
-bool QQmlListModelParser::definesEmptyList(const QString &s)
+bool QQmlListModelParser::definesEmptyList(QStringView s)
 {
     if (s.startsWith(QLatin1Char('[')) && s.endsWith(QLatin1Char(']'))) {
-        for (int i=1; i<s.size()-1; i++) {
-            if (!s[i].isSpace())
+        for (auto c : s.sliced(1).chopped(1)) {
+            if (!c.isSpace())
                 return false;
         }
         return true;

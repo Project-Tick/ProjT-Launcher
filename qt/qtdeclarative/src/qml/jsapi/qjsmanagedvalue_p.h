@@ -27,11 +27,17 @@ class QJSManagedValuePrivate
 {
 public:
     static QV4::Value *member(const QJSManagedValue *jsmv) { return jsmv->d; }
+
     static QJSManagedValue create(QV4::ExecutionEngine *engine, const QV4::Value &value)
     {
         QJSManagedValue result(engine);
         *result.d = value;
         return result;
+    }
+
+    static QJSManagedValue create(const QV4::Managed &managed)
+    {
+        return create(managed.engine(), managed);
     }
 };
 

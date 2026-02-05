@@ -10,6 +10,7 @@ Item{
 
     property QtObject badRequired: null
     property QtObject goodRequired: null
+    property QtObject goodRequired2: null
 
     property QtObject bindingAsInitial: null
     property bool bindingUsed: false
@@ -60,6 +61,7 @@ Item{
 
         root.badRequired = d.createObject(root, { "not_i": 42 });
         root.goodRequired = d.createObject(root, { "i": 42 });
+        root.goodRequired2 = d.createObject(root, { "i": 43, "not_i" : 44 });
 
         root.bindingAsInitial = e.createObject(root, {color: Qt.binding(() => {
             root.bindingUsed = true; return '#ff0000'

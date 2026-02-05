@@ -24,7 +24,7 @@ T.MenuItem {
     icon.width: 20
     icon.height: 20
 
-    contentItem: IconLabel {
+    contentItem: MenuItemIconLabel {
         readonly property real arrowPadding: control.subMenu && control.arrow ? control.arrow.width + control.spacing : 0
         readonly property real indicatorPadding: control.checkable && control.indicator ? control.indicator.width + control.spacing : 0
         leftPadding: !control.mirrored ? indicatorPadding : arrowPadding
@@ -40,6 +40,7 @@ T.MenuItem {
         text: control.text
         font: control.font
         color: defaultIconColor
+        menuItem: control
     }
 
     arrow: ColorImage {

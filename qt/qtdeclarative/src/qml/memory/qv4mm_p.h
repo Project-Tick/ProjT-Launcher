@@ -138,7 +138,7 @@ public:
     #ifdef QT_BUILD_INTERNAL
     // This is used only to simplify testing.
     using BitmapError = std::tuple<std::size_t, std::size_t, quintptr>;
-    std::vector<BitmapError> bitmapErrors;
+    std::vector<BitmapError> *bitmapErrors = nullptr;
     #endif
 
     GCStateMachine();
@@ -221,7 +221,7 @@ struct HugeItemAllocator {
     {}
 
     HeapItem *allocate(size_t size);
-    void sweep(ClassDestroyStatsCallback classCountPtr);
+    void sweep();
     void freeAll();
     void resetBlackBits();
 
@@ -391,7 +391,7 @@ public:
 
     void dumpStats() const;
 
-    size_t getUsedMem() const;
+    size_t getRegularItemsMem() const;
     size_t getAllocatedMem() const;
     size_t getLargeItemsMem() const;
 
@@ -418,6 +418,9 @@ public:
     void setGCTimeLimit(int timeMs);
     MarkStack* markStack() { return m_markStack.get(); }
 
+    std::vector<QObject *> findObjectsForCompilationUnits(
+            std::vector<QQmlRefPointer<CompiledData::CompilationUnit>> &&units);
+
 protected:
     /// expects size to be aligned
     Heap::Base *allocString(std::size_t unmanagedSize);
@@ -431,7 +434,7 @@ private:
 
 public:
     void collectFromJSStack(MarkStack *markStack) const;
-    void sweep(bool lastSweep = false, ClassDestroyStatsCallback classCountPtr = nullptr);
+    void sweep(bool lastSweep = false);
     void cleanupDeletedQObjectWrappersInSweep();
     bool isAboveUnmanagedHeapLimit()
     {
@@ -473,6 +476,11 @@ private:
     }
 
 public:
+    struct ObjectsForCompilationUnit {
+        const std::vector<QQmlRefPointer<QV4::CompiledData::CompilationUnit>> compilationUnits;
+        std::vector<QObject *> objects;
+    };
+
     QV4::ExecutionEngine *engine;
     ChunkAllocator *chunkAllocator;
     BlockAllocator blockAllocator;
@@ -487,6 +495,9 @@ public:
     std::unique_ptr<GCStateMachine> gcStateMachine{nullptr};
     std::unique_ptr<MarkStack> m_markStack{nullptr};
 
+    // For recording objects from compilation units during GC
+    ObjectsForCompilationUnit *m_recordedObjects = nullptr;
+
     std::size_t unmanagedHeapSize = 0; // the amount of bytes of heap that is not managed by the memory manager, but which is held onto by managed items.
     std::size_t unmanagedHeapSizeGCLimit;
     std::size_t usedSlotsAfterLastFullSweep = 0;
@@ -498,13 +509,15 @@ public:
     bool gcStats = false;
     bool gcCollectorStats = false;
 
+#if defined(MM_STATS) || !defined(QT_NO_DEBUG)
     int allocationCount = 0;
     size_t lastAllocRequestedSlots = 0;
+#endif
 
     struct {
-        size_t maxReservedMem = 0;
         size_t maxAllocatedMem = 0;
-        size_t maxUsedMem = 0;
+        size_t maxUsedBeforeGC = 0;
+        size_t maxUsedAfterGC = 0;
         uint allocations[BlockAllocator::NumBins];
     } statistics;
 };

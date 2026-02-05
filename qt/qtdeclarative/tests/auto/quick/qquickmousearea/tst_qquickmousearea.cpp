@@ -1955,7 +1955,7 @@ void tst_QQuickMouseArea::cursorUpdating()
                            Qt::NoButton, Qt::ControlModifier, Qt::NoScrollPhase, false);
     QGuiApplication::sendEvent(&window, &wheelEvent);
     QTRY_VERIFY(flickable->contentY() > 250);
-    QCOMPARE(window.cursor().shape(), Qt::IBeamCursor);
+    QTRY_COMPARE(window.cursor().shape(), Qt::IBeamCursor);
 }
 #endif
 

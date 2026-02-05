@@ -1,0 +1,256 @@
+// Copyright (C) 2026 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GFDL-1.3-no-invariants-only
+
+/*!
+\page qmllint-warnings-and-errors-property-override.html
+\ingroup qmllint-warnings-and-errors
+
+\title Property override
+\brief [property-override] Wrong usage of override, final, and virtual keywords.
+
+\qmllintwarningcategory property-override
+
+\section1 Member does not override anything
+
+\section2 What happened?
+You marked a property as \c{override} without overriding anything. The base type of
+the current component has no property of the same name marked as \c{virtual}.
+
+\section2 Why is that bad?
+The QML engine throws a runtime error when it encounters such a property.
+
+\section2 Example
+\qml
+import QtQuick
+
+Item {
+    component Base: Item { virtual property int myProperty; }
+    Base {
+        override property int myP: 42
+    }
+}
+\endqml
+
+To fix this warning, you can:
+\list
+\li Remove the \c{override}-marker.
+\li Double-check that the property name matches the name of a \c{virtual} or \c{override}
+property in the base type of the current component.
+\endlist
+
+\qml
+import QtQuick
+
+Item {
+    component Base: Item { virtual property int myProperty; }
+    Base {
+        property int myP: 42 // solution 1: remove override
+        override property int myProperty: 42 // solution 2: fix spelling
+    }
+}
+\endqml
+
+\section1 Member shadows final member
+
+\section2 What happened?
+You shadowed a property which is marked as final.
+
+\section2 Why is that bad?
+Properties are marked as final to prevent overriding and shadowing.
+The QML engine throws a runtime error when it encounters the shadowing property.
+
+\section2 Example
+\qml
+import QtQuick
+
+Item {
+    component Base: Item { final property int myFinal; }
+    Base {
+        property int myFinal: 42
+    }
+}
+\endqml
+
+To fix this warning, you can:
+\list
+\li Rename the shadowing or shadowed property.
+\li Replace the \c{final} marker with \c{virtual} or \c{override} and add missing \c{override}
+to the overriding property.
+\endlist
+
+\qml
+import QtQuick
+
+Item {
+    // solution 1: rename the property
+    component Base: Item { final property int myFinal; }
+    Base {
+        property int myFinal2: 42
+    }
+
+    // solution 2: replace the final marker and add override
+    component Base2: Item { virtual property int myFinal; }
+    Base2 {
+        override property int myFinal: 42
+    }
+}
+\endqml
+
+\section1 Member overrides final member
+
+\section2 What happened?
+You overrode a property which is marked as final.
+
+\section2 Why is that bad?
+Properties marked as \c{final} prevent overriding and shadowing.
+The QML engine throws a runtime error when it encounters the overriding property.
+
+\section2 Example
+\qml
+import QtQuick
+
+Item {
+    component Base: Item { final property int myFinal; }
+    Base {
+        override property int myFinal: 42
+    }
+}
+\endqml
+
+To fix this warning, you can:
+\list
+\li Rename the shadowing or shadowed property, and remove the \c{override} marker.
+\li Replace the \c{final} marker with \c{virtual} from the overridden property.
+\endlist
+
+\qml
+import QtQuick
+
+Item {
+    // solution 1: remove override and rename
+    component Base: Item { final property int myFinal; }
+    Base {
+        property int myFinal2: 42
+    }
+
+    // solution 2: replace final marker with virtual
+    component Base2: Item { virtual property int myFinal; }
+    Base2 {
+        override property int myFinal: 42
+    }
+}
+\endqml
+
+\section1 Member shadows member
+
+\section2 What happened?
+You shadowed a \c{virtual} or \c{override} property without using \c{final}
+or \c{override}.
+
+\section2 Why is that bad?
+Properties that shadow \c{virtual} properties need a \c{override} or \c{final} marker.
+The QML engine throws a runtime warning when it encounters such a property.
+
+\section2 Example
+\qml
+import QtQuick
+
+Item {
+    component Base: Item { virtual property int myProperty; }
+    Base {
+        property int myProperty: 42
+    }
+}
+\endqml
+
+To fix this warning, make the shadowing property \c{override} or \c{final}.
+
+\qml
+import QtQuick
+
+Item {
+    component Base: Item { virtual property int myProperty; }
+    Base {
+        override property int myProperty: 42 // could also be final
+    }
+}
+\endqml
+
+\section1 Member overrides a non-virtual member
+
+\section2 What happened?
+You overrode a property that was not marked as \c{virtual} or \c{override}.
+
+\section2 Why is that bad?
+Properties that can be overridden need to declare it via \c{virtual} or \c{override}.
+The QML engine throws a runtime error when it encounters the overridden property missing
+a \c{virtual} or \c{override} marker.
+
+\section2 Example
+\qml
+import QtQuick
+
+Item {
+    component Base: Item { property int myProperty; }
+    Base {
+        override property int myProperty: 42
+    }
+}
+\endqml
+
+To fix this warning, rename the overriding property or mark the overridden property
+as \c{virtual} or \c{override}.
+
+\qml
+import QtQuick
+
+Item {
+    component Base: Item { virtual property int myProperty; }
+    Base {
+        override property int myProperty: 42
+    }
+}
+\endqml
+
+\section1 Property already exists in base type
+
+\section2 What happened?
+You shadowed a property without using as \c{virtual}, \c{override}, or \c{final}.
+
+\section2 Why is that bad?
+Properties that can be overridden need to declare it via \c{virtual} or \c{override}.
+The QML engine warns at runtime when it encounters the shadowing property.
+
+\section2 Example
+\qml
+import QtQuick
+
+Item {
+    component Base: Item { property int myProperty; }
+    Base {
+        property int myProperty: 42
+    }
+}
+\endqml
+
+To fix this warning, rename the shadowing or shadowed property, or add the missing
+\c{virtual}, \c{override}, or \c{final} markers.
+
+\qml
+import QtQuick
+
+Item {
+    // solution 1: rename one of the properties
+    component Base: Item { property int myProperty; }
+    Base {
+        property int myProperty2: 42
+    }
+
+    // solution 2: add missing markers
+    component Base2: Item { virtual property int myProperty; }
+    Base2 {
+        final property int myProperty: 42 // could also be override
+    }
+}
+\endqml
+*/

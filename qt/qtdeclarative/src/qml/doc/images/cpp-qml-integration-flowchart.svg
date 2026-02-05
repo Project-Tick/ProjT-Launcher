@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" width="1000" height="480"
+     xmlns="http://www.w3.org/2000/svg"
+     xmlns:svg="http://www.w3.org/2000/svg">
+
+<style>
+  svg .line-style { stroke: black; fill: none; stroke-width: 1 }
+  svg .fill-style { stroke: none; fill: black }
+  svg .box-style { stroke: black; fill: #c0e0ff; stroke-width: 1 }
+  svg .text-style { font: 12px arial; fill: black }
+  svg .yes-no-style { font: 15px arial; fill: black }
+  svg .code-style { font: 12px monospace; fill: black }
+
+  svg.dark .line-style { stroke: #f2f2f2; fill: none; stroke-width: 1 }
+  svg.dark .fill-style { stroke: none; fill: #f2f2f2 }
+  svg.dark .box-style { stroke: #f2f2f2; fill: #004070; stroke-width: 1 }
+  svg.dark .text-style { font: 12px arial; fill: #f2f2f2 }
+  svg.dark .yes-no-style { font: 15px arial; fill: #f2f2f2 }
+  svg.dark .code-style { font: 12px monospace; fill: #f2f2f2 }
+
+  [data-theme="dark"] svg .line-style { stroke: #f2f2f2; fill: none; stroke-width: 1 }
+  [data-theme="dark"] svg .fill-style { stroke: none; fill: #f2f2f2 }
+  [data-theme="dark"] svg .box-style { stroke: #f2f2f2; fill: #004070; stroke-width: 1 }
+  [data-theme="dark"] svg .text-style { font: 12px arial; fill: #f2f2f2 }
+  [data-theme="dark"] svg .yes-no-style { font: 15px arial; fill: #f2f2f2 }
+  [data-theme="dark"] svg .code-style { font: 12px monospace; fill: #f2f2f2 }
+
+  [data-theme="light"] svg .line-style { stroke: black; fill: none; stroke-width: 1 }
+  [data-theme="light"] svg .fill-style { stroke: none; fill: black }
+  [data-theme="light"] svg .box-style { stroke: black; fill: #c0e0ff; stroke-width: 1 }
+  [data-theme="light"] svg .text-style { font: 12px arial; fill: black }
+  [data-theme="light"] svg .yes-no-style { font: 15px arial; fill: black }
+  [data-theme="light"] svg .code-style { font: 12px monospace; fill: black }
+</style>
+
+<g transform="translate(-5,0)">
+<g transform="translate(580.5,10.5)">
+<path d="m 0,0 l 80,55 l -80,55 l -80,-55 z" stroke="black" fill="#c0e0ff"
+      class="box-style" />
+<text x="-40" y="50" font-family="arial" font-size="12px"
+      class="text-style">Should the type</text>
+<text x="-40" y="65" font-family="arial" font-size="12px"
+      class="text-style">be a singleton?</text>
+</g>
+
+<g transform="translate(580.5,10.5)">
+<path d="m -80,55 h -130 v 40" stroke="black" fill="none"
+      class="line-style" />
+<path d="m -210,95 l -5,-10 h 10 z" stroke="none" fill="black"
+      class="fill-style" />
+<text x="-160" y="75" font-family="arial" font-size="15px"
+      class="yes-no-style">No</text>
+</g>
+
+<g transform="translate(370.5,105.5)">
+<path d="m 0,0 l 80,55 l -80,55 l -80,-55 z" stroke="black" fill="#c0e0ff"
+      class="box-style" />
+<text x="-43" y="48" font-family="arial" font-size="12px"
+      class="text-style">Will the type be</text>
+<text x="-53" y="63" font-family="arial" font-size="12px"
+      class="text-style">instantiated in QML?</text>
+</g>
+
+<g transform="translate(370.5,105.5)">
+<path d="m -80,55 h -90 v 40" stroke="black" fill="none"
+      class="line-style" />
+<path d="m -170,95 l -5,-10 h 10 z" stroke="none" fill="black"
+      class="fill-style" />
+<text x="-130" y="75" font-family="arial" font-size="15px"
+      class="yes-no-style">No</text>
+</g>
+
+<g transform="translate(200.5,200.5)">
+<path d="m 0,0 l 80,55 l -80,55 l -80,-55 z" stroke="black" fill="#c0e0ff"
+      class="box-style" />
+<text x="-43" y="48" font-family="arial" font-size="12px"
+      class="text-style">Will the type be</text>
+<text x="-53" y="63" font-family="arial" font-size="12px"
+      class="text-style">referred to by name?</text>
+<text x="-5" y="78" font-family="arial" font-size="12px"
+      class="text-style">[1]</text>
+</g>
+
+<g transform="translate(20.5,420.5)">
+<text x="0" y="1" font-family="arial" font-size="12px"
+      class="text-style">[1]</text>
+<text x="20" y="1" font-family="arial" font-size="12px"
+      class="text-style">In a property declaration:</text>
+<text x="20" y="19" font-family="arial" font-size="12px"
+      class="text-style">To access enum values:</text>
+<text x="160" y="1" font-family="monospace" font-size="12px"
+      class="code-style">property Type foo</text>
+<text x="160" y="19" font-family="monospace" font-size="12px"
+      class="code-style">Type.Foo</text>
+</g>
+
+<g transform="translate(450.5,105.5)">
+<path d="m 0,55 h 40 v 180" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 40,235 l -5,-10 h 10 z" stroke="none" fill="black"
+      class="fill-style" />
+<text x="0" y="150" font-family="arial" font-size="15px"
+      class="yes-no-style">Yes</text>
+</g>
+
+<g transform="translate(490.5,340.5)">
+<path d="m -30,0 l 60,0 q 25,0 25,25 q 0,25 -25,25 l -60,0 q -25,0 -25,-25 q 0,-25 25,-25 z" stroke="black" fill="#c0e0ff"
+      class="box-style" />
+<text x="-43" y="29" font-family="monospace" font-size="12px"
+      class="code-style">QML_ELEMENT</text>
+</g>
+
+<g transform="translate(280.5,200.5)">
+<path d="m 0,55 h 40 v 85" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 40,140 l -5,-10 h 10 z" stroke="none" fill="black"
+      class="fill-style" />
+<text x="5" y="100" font-family="arial" font-size="15px"
+      class="yes-no-style">Yes</text>
+</g>
+
+<g transform="translate(320.5,340.5)">
+<path d="m -55,0 l 110,0 q 25,0 25,25 q 0,25 -25,25 l -110,0 q -25,0 -25,-25 q 0,-25 25,-25 z" stroke="black" fill="#c0e0ff"
+      class="box-style" />
+<text x="-43" y="20" font-family="monospace" font-size="12px"
+      class="code-style">QML_ELEMENT</text>
+<text x="-66" y="38" font-family="monospace" font-size="12px"
+      class="code-style">QML_UNCREATABLE("")</text>
+</g>
+
+<g transform="translate(200.5,200.5)">
+<path d="m -80,55 h -40 v 85" stroke="black" fill="none"
+      class="line-style" />
+<path d="m -120,140 l -5,-10 h 10 z" stroke="none" fill="black"
+      class="fill-style" />
+<text x="-105" y="100" font-family="arial" font-size="15px"
+      class="yes-no-style">No</text>
+</g>
+
+<g transform="translate(80.5,340.5)">
+<path d="m -40,0 l 80,0 q 25,0 25,25 q 0,25 -25,25 l -80,0 q -25,0 -25,-25 q 0,-25 25,-25 z" stroke="black" fill="#c0e0ff"
+      class="box-style" />
+<text x="-48" y="29" font-family="monospace" font-size="12px"
+      class="code-style">QML_ANONYMOUS</text>
+</g>
+
+<g transform="translate(660.5,10.5)">
+<path d="m 0,55 h 120 v 40" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 120,95 l -5,-10 h 10 z" stroke="none" fill="black"
+      class="fill-style" />
+<text x="60" y="75" font-family="arial" font-size="15px"
+      class="yes-no-style">Yes</text>
+</g>
+
+<g transform="translate(780.5,105.5)">
+<path d="m 0,0 l 90,55 l -90,55 l -90,-55 z" stroke="black" fill="#c0e0ff"
+      class="box-style" />
+<text x="-43" y="42" font-family="arial" font-size="12px"
+      class="text-style">Should the type</text>
+<text x="-38" y="57" font-family="arial" font-size="12px"
+      class="text-style">be available in</text>
+<text x="-47" y="72" font-family="arial" font-size="12px"
+      class="text-style">multiple engines?</text>
+</g>
+
+<g transform="translate(780.5,105.5)">
+<path d="m -90,55 h -40 v 180" stroke="black" fill="none"
+      class="line-style" />
+<path d="m -130,235 l -5,-10 h 10 z" stroke="none" fill="black"
+      class="fill-style" />
+<text x="-115" y="150" font-family="arial" font-size="15px"
+      class="yes-no-style">No</text>
+</g>
+
+<g transform="translate(640.5,340.5)">
+<path d="m -55,0 h 210 q 25,0 25,25 v 85 q 0,25 -25,25 h -210 q -25,0 -25,-25 v -85 q 0,-25 25,-25 z" stroke="black" fill="#c0e0ff"
+      class="box-style" />
+<text x="8" y="20" font-family="monospace" font-size="12px"
+      class="code-style">QML_ELEMENT</text>
+<text x="4" y="38" font-family="monospace" font-size="12px"
+      class="code-style">QML_SINGLETON</text>
+<text x="-70" y="56" font-family="monospace" font-size="12px"
+      class="code-style">static Foo *create(QQmlEngine *,</text>
+<text x="70" y="72" font-family="monospace" font-size="12px"
+      class="code-style">QJSEngine *)</text>
+<text x="-65" y="88" font-family="monospace" font-size="12px"
+      class="code-style">{</text>
+<text x="-30" y="104" font-family="monospace" font-size="12px"
+      class="code-style">return s_instance;</text>
+<text x="-65" y="120" font-family="monospace" font-size="12px"
+      class="code-style">}</text>
+</g>
+
+<g transform="translate(870.5,105.5)">
+<path d="m 0,55 h 40 v 180" stroke="black" fill="none"
+      class="line-style" />
+<path d="m 40,235 l -5,-10 h 10 z" stroke="none" fill="black"
+      class="fill-style" />
+<text x="0" y="150" font-family="arial" font-size="15px"
+      class="yes-no-style">Yes</text>
+</g>
+
+<g transform="translate(910.5,340.5)">
+<path d="m -55,0 h 110 q 25,0 25,25 v 20 q 0,25 -25,25 h -110 q -25,0 -25,-25 v -20 q 0,-25 25,-25 z" stroke="black" fill="#c0e0ff"
+      class="box-style" />
+<text x="-43" y="20" font-family="monospace" font-size="12px"
+      class="code-style">QML_ELEMENT</text>
+<text x="-50" y="38" font-family="monospace" font-size="12px"
+      class="code-style">QML_SINGLETON</text>
+<text x="-60" y="56" font-family="monospace" font-size="12px"
+      class="code-style">Foo() = default;</text>
+</g>
+</g>
+</svg>

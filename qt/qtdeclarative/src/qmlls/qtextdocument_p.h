@@ -16,7 +16,7 @@
 // We mean it.
 //
 
-#include "qtextblock_p.h"
+#include <private/qtextblock_p.h>
 
 #include <QtCore/qchar.h>
 #include <QtCore/qvector.h>

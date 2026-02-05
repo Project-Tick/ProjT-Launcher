@@ -8,7 +8,7 @@ QtObject {
 
     Component.onCompleted: {
         items.length = 3
-        for (var i = 0; i < 3; ++i)
+        for (let i = 0; i < 3; ++i)
             items[i] = self
     }
 }

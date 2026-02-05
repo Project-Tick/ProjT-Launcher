@@ -172,6 +172,8 @@ QQmlJSAotFunction QQmlJSCodeGenerator::run(const Function *function, bool basicB
             e.variableName = registerName(registerIndex, offset);
             e.storedType = seenType;
             e.initialRegisterIndex = std::abs(registerIndex);
+        } else {
+            e.variableName += u'_' + registerName(registerIndex, offset).mid(2); // skip "s."
         }
         ++e.numTracked;
     };

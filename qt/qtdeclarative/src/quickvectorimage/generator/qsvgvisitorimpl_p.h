@@ -72,6 +72,12 @@ protected:
     bool visitFeFilterPrimitiveNodeStart(const QSvgFeFilterPrimitive *node) override;
     void visitFeFilterPrimitiveNodeEnd(const QSvgFeFilterPrimitive *node) override;
 
+    bool visitMarkerNodeStart(const QSvgMarker *node) override;
+    void visitMarkerNodeEnd(const QSvgMarker *node) override;
+
+    bool visitPatternNodeStart(const QSvgPattern *) override;
+    void visitPatternNodeEnd(const QSvgPattern *) override;
+
 private:
     typedef std::pair<const QSvgAbstractAnimation *, const QSvgAbstractAnimatedProperty *> AnimationPair;
     QList<AnimationPair> collectAnimations(const QSvgNode *node, const QString &propertyName);
@@ -88,14 +94,22 @@ private:
     void fillFilterPrimitiveInfo(const QSvgFilterContainer *node,
                                  const QSvgFeFilterPrimitive *filterPrimitive,
                                  FilterNodeInfo &info);
+    void fillMarkerInfo(const QSvgMarker *node, MarkerNodeInfo &info);
     void handleBaseNodeSetup(const QSvgNode *node);
     void handleBaseNode(const QSvgNode *node);
     void handleBaseNodeEnd(const QSvgNode *node);
     void handlePathNode(const QSvgNode *node, const QPainterPath &path);
     void outputShapePath(QPainterPath pathCopy, const PathNodeInfo &info);
     QString nextNodeId() const;
+    QString findOrCreateId(const QString &id);
+    QString findOrCreateId(const QSvgNode *node, const QString &nodeId);
     static QString gradientCssDescription(const QGradient *gradient);
     static QString colorCssDescription(QColor color);
+
+    bool startDefsBlock(const QSvgNode *node);
+    void endDefsBlock(const QSvgNode *node);
+
+    void pregenerateReferencedNodes(const QSvgNode *doc);
 
 private:
     QString m_svgFileName;
@@ -103,14 +117,13 @@ private:
     bool m_assumeTrustedSource;
     mutable int m_nodeIdCounter = 0;
     QHash<QString, QString> m_idForNodeId;
-    QSet<QString> m_generatedNodes;
     QList<const QSvgFeFilterPrimitive *> m_filterPrimitives;
-
     int m_useLevel = 0;
-    int m_defsLevel = 0;
+    bool m_pregeneratingReferencedNodes = false;
 
     QString m_linkSuffix;
     std::unique_ptr<QSvgStyleResolver> m_styleResolver;
+    QHash<const QString, const QSvgNode *> m_nodesForKeys;
 };
 
 QT_END_NAMESPACE

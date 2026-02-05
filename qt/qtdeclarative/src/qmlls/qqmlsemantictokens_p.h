@@ -16,7 +16,7 @@
 // We mean it.
 //
 
-#include "qqmldiffer_p.h"
+#include <private/qqmldiffer_p.h>
 #include <QtLanguageServer/private/qlanguageserverspec_p.h>
 #include <QtQmlDom/private/qqmldomitem_p.h>
 

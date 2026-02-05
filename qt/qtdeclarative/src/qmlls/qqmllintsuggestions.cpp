@@ -171,8 +171,8 @@ static Diagnostic messageToDiagnostic_helper(AdvanceFunc advancePositionPastLoca
         advancePositionPastLocation(message.loc, range.end);
     }
 
-    if (message.fixSuggestion && !message.fixSuggestion->fixDescription().isEmpty()) {
-        diagnostic.message = u"%1: %2 [%3]"_s.arg(message.message, message.fixSuggestion->fixDescription(), message.id.toString())
+    if (message.fixSuggestion && !message.fixSuggestion->description().isEmpty()) {
+        diagnostic.message = u"%1: %2 [%3]"_s.arg(message.message, message.fixSuggestion->description(), message.id.toString())
                                      .simplified()
                                      .toUtf8();
     } else {
@@ -203,7 +203,7 @@ static Diagnostic messageToDiagnostic_helper(AdvanceFunc advancePositionPastLoca
     object.insert("lspEndLine"_L1, end.line);
     object.insert("lspEndCharacter"_L1, end.character);
 
-    object.insert("message"_L1, suggestion->fixDescription());
+    object.insert("message"_L1, suggestion->description());
     object.insert("replacement"_L1, suggestion->replacement());
 
     QJsonArray fixedSuggestions;
@@ -335,7 +335,7 @@ void QmlLintSuggestions::diagnoseHelper(const QByteArray &url,
 
     QQmlToolingSettings settings(QLatin1String("qmllint"));
     if (settings.search(filename).isValid()) {
-        QQmlJS::LoggingUtils::updateLogLevels(categories, settings, nullptr);
+        QQmlJS::LoggingUtils::updateLogSeverities(categories, settings, nullptr);
     }
 
     // TODO: pass the workspace folders to QQmlJSLinter

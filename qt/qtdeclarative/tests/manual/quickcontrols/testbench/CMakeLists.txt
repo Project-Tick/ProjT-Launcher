@@ -72,6 +72,7 @@ qt_add_qml_module(testbench
         "controls/ItemDelegate.qml"
         "controls/Label.qml"
         "controls/Menu.qml"
+        "controls/MenuItem.qml"
         "controls/MenuBar.qml"
         "controls/Page.qml"
         "controls/PageIndicator.qml"

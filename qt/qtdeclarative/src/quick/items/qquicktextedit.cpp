@@ -11,6 +11,7 @@
 #include "qquicktextnodeengine_p.h"
 
 #include <QtCore/qmath.h>
+#include <QtCore/qvarlengtharray.h>
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qpainter.h>
@@ -2598,7 +2599,7 @@ QSGNode *QQuickTextEdit::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *
                 nodeStart = pos;
             } else {
                 // Having nodes spanning across frame boundaries will break the current bookkeeping mechanism. We need to prevent that.
-                QList<int> frameBoundaries;
+                QVarLengthArray<int, 8> frameBoundaries;
                 frameBoundaries.reserve(frames.size());
                 for (QTextFrame *frame : std::as_const(frames))
                     frameBoundaries.append(frame->firstPosition());
@@ -2687,7 +2688,9 @@ QSGNode *QQuickTextEdit::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *
 
                     if ((it.atEnd()) || block.next().position() >= firstCleanNode.startPos())
                         break; // last node that needed replacing or last block of the frame
-                    QList<int>::const_iterator lowerBound = std::lower_bound(frameBoundaries.constBegin(), frameBoundaries.constEnd(), block.next().position());
+                    const auto lowerBound =
+                            std::lower_bound(frameBoundaries.constBegin(),
+                                             frameBoundaries.constEnd(), block.next().position());
                     if (node && (currentNodeSize > nodeBreakingSize || lowerBound == frameBoundaries.constEnd() || *lowerBound > nodeStart)) {
                         currentNodeSize = 0;
                         d->containsUnscalableGlyphs = d->containsUnscalableGlyphs

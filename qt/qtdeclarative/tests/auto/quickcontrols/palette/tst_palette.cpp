@@ -57,10 +57,10 @@ private slots:
     void resetColor();
     void updateBindingPalette();
 
-    void comboBoxPopup_data();
-    void comboBoxPopup();
     void comboBoxPopupWithThemeDefault_data();
     void comboBoxPopupWithThemeDefault();
+    void comboBoxPopup_data();
+    void comboBoxPopup();
 
     void toolTipPaletteUpdate();
     void inheritPaletteForPopupWithinItemView();

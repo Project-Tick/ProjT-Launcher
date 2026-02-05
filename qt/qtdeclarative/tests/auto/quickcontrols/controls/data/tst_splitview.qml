@@ -2348,7 +2348,7 @@ TestCase {
         verify(!control.containsMouse)
         verify(!firstItem.containsMouse)
         verify(!secondItem.containsMouse)
-        verify(!handle.containsMouse)
+        tryCompare(handle, "containsMouse", false)
     }
 
     function test_hoveredPressed() {

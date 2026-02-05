@@ -1,0 +1,61 @@
+// Copyright (C) 2026 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GFDL-1.3-no-invariants-only
+
+/*!
+\page qmllint-warnings-and-errors-enum-key-case.html
+\ingroup qmllint-warnings-and-errors
+
+\title Enum key case
+\brief [enum-key-case] Enum key starts with a lowercase letter
+
+\qmllintwarningcategory enum-key-case
+
+\section1 Enum key starts with a lowercase letter
+
+\section2 What happened?
+An enum contains a key starting with a lowercase letter.
+
+\section2 Why is that bad?
+It can create ambiguity when performing lookups. Enum keys should start with an uppercase letter
+to distinguish them from properties of singletons and attached objects. Not following this
+convention can lead to unexpected results.
+
+\section2 Example
+\qml
+// Properties.qml
+import QtQuick
+
+Item {
+    enum Color { red, green, blue }
+}
+\endqml
+\qml
+// Main.qml
+import QtQuick
+
+Item {
+    // This lookup could be interpreted as a property lookup on a Singleton or attached object.
+    property int i: Properties.green
+}
+\endqml
+
+To fix this warning, rename the key so it starts with an uppercase letter.
+
+\qml
+// Properties.qml
+import QtQuick
+
+Item {
+    enum Color { Red, Green, Blue }
+}
+\endqml
+\qml
+// Main.qml
+import QtQuick
+
+Item {
+    // No ambiguity for the user or the QML engine, this is an enum lookup.
+    property int i: Properties.Green
+}
+\endqml
+*/

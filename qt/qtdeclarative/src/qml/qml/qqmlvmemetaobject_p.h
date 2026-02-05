@@ -179,10 +179,10 @@ class QQmlVMEMetaObjectEndpoint;
 class Q_QML_EXPORT QQmlVMEMetaObject : public QQmlInterceptorMetaObject
 {
 public:
-    QQmlVMEMetaObject(QV4::ExecutionEngine *engine, QObject *obj,
-                      const QQmlPropertyCache::ConstPtr &cache,
-                      const QQmlRefPointer<QV4::ExecutableCompilationUnit> &qmlCompilationUnit,
-                      int qmlObjectId);
+    QQmlVMEMetaObject(
+            QV4::ExecutionEngine *engine, QObject *obj, const QQmlPropertyCache::ConstPtr &cache,
+            const QQmlRefPointer<QV4::ExecutableCompilationUnit> &qmlCompilationUnit,
+            int qmlObjectId);
     ~QQmlVMEMetaObject() override;
 
     bool aliasTarget(int index, QObject **target, int *coreIndex, int *valueTypeIndex) const;
@@ -203,14 +203,6 @@ public:
     static void list_append_nosignal(QQmlListProperty<QObject> *prop, QObject *o);
     static void list_clear_nosignal(QQmlListProperty<QObject> *prop);
 
-protected:
-    int metaCall(QObject *o, QMetaObject::Call _c, int _id, void **_a) override;
-    bool getListProperty(int id, QQmlListProperty<QObject> *target);
-
-public:
-    QV4::ExecutionEngine *engine;
-    QQmlGuardedContextData ctxt;
-
     inline int propOffset() const;
     inline int propCount() const;
     inline int aliasOffset() const;
@@ -220,9 +212,6 @@ public:
     inline int methodOffset() const;
     inline int methodCount() const;
 
-    QQmlVMEMetaObjectEndpoint *aliasEndpoints;
-
-    QV4::WeakValue propertyAndMethodStorage;
     QV4::MemberData *propertyAndMethodStorageAsMemberData() const;
 
     int readPropertyAsInt(int id) const;
@@ -254,9 +243,9 @@ public:
     {
         QV4::MemberData *md = propertyAndMethodStorageAsMemberData();
         if (md) {
-            QV4::Scope scope(engine);
+            QV4::Scope scope(m_engine);
             QV4::Scoped<QV4::MemberData>(scope, md)->set(
-                        engine, id, engine->newVariantObject(
+                        m_engine, id, m_engine->newVariantObject(
                             QMetaType::fromType<VariantCompatible>(), &v));
         }
     }
@@ -279,29 +268,48 @@ public:
 
     void activate(QObject *, int, void **);
 
-    QList<QQmlVMEVariantQObjectPtr *> varObjectGuards;
-
     QQmlVMEVariantQObjectPtr *getQObjectGuardForProperty(int) const;
+
+    QQmlRefPointer<QQmlContextData> contextData() const { return m_ctxt.contextData(); }
+    QV4::ExecutionEngine *engine() const { return m_engine; }
+    QQmlRefPointer<QV4::ExecutableCompilationUnit> compilationUnit() const
+    {
+        return m_compilationUnit;
+    }
+
+protected:
+    int metaCall(QObject *o, QMetaObject::Call _c, int _id, void **_a) override;
+    bool getListProperty(int id, QQmlListProperty<QObject> *target);
 
 private:
     friend class QQmlVMEMetaObjectEndpoint;
-
-    // keep a reference to the compilation unit in order to still
-    // do property access when the context has been invalidated.
-    QQmlRefPointer<QV4::ExecutableCompilationUnit> compilationUnit;
-    int qmlObjectId = -1;
-    int numAliases = 0;
+    friend class QQmlVMEResolvedList;
+    friend class QQmlVMEVariantQObjectPtr;
 
     const QV4::CompiledData::Object *findCompiledObject() const {
         // If the executable CU has been stripped of its engine, it has an empty base CU
-        if (!compilationUnit || !compilationUnit->engine)
+        if (!m_compilationUnit || !m_compilationUnit->engine)
             return nullptr;
 
-        Q_ASSERT(qmlObjectId >= 0 && qmlObjectId < compilationUnit->objectCount());
-        return compilationUnit->objectAt(qmlObjectId);
+        Q_ASSERT(m_qmlObjectId >= 0 && m_qmlObjectId < m_compilationUnit->objectCount());
+        return m_compilationUnit->objectAt(m_qmlObjectId);
     }
 
     void writeKnownVarProperty(int id, const QVariant &value);
+
+    QV4::ExecutionEngine *m_engine;
+    QQmlGuardedContextData m_ctxt;
+
+    QQmlVMEMetaObjectEndpoint *m_aliasEndpoints;
+    QV4::WeakValue m_propertyAndMethodStorage;
+
+    QList<QQmlVMEVariantQObjectPtr *> m_varObjectGuards;
+
+    // keep a reference to the compilation unit in order to still
+    // do property access when the context has been invalidated.
+    QQmlRefPointer<QV4::ExecutableCompilationUnit> m_compilationUnit;
+    int m_qmlObjectId = -1;
+    int m_numAliases = 0;
 };
 
 QQmlVMEMetaObject *QQmlVMEMetaObject::get(QObject *obj)
@@ -325,7 +333,7 @@ int QQmlVMEMetaObject::propOffset() const
 int QQmlVMEMetaObject::propCount() const
 {
     // Properties excluding aliases
-    return cache->ownPropertyCount() - numAliases;
+    return cache->ownPropertyCount() - m_numAliases;
 }
 
 int QQmlVMEMetaObject::aliasOffset() const
@@ -337,7 +345,7 @@ int QQmlVMEMetaObject::aliasOffset() const
 int QQmlVMEMetaObject::aliasCount() const
 {
     // We need to cache this since we don't want to count over and over.
-    return numAliases;
+    return m_numAliases;
 }
 
 int QQmlVMEMetaObject::signalOffset() const

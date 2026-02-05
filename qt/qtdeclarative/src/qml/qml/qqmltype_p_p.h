@@ -39,7 +39,7 @@ public:
     {
         ~ProxyMetaObjects()
         {
-            for (const QQmlProxyMetaObject::ProxyData &metaObject : data)
+            for (const QQmlProxyMetaObject::ProxyData &metaObject : std::as_const(data))
                 free(metaObject.metaObject);
         }
 

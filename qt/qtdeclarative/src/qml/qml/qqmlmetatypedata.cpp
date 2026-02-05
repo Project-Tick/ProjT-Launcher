@@ -28,14 +28,15 @@ QQmlMetaTypeData::~QQmlMetaTypeData()
 void QQmlMetaTypeData::registerType(QQmlTypePrivate *priv)
 {
     for (int i = 0; i < types.size(); ++i) {
-        if (!types.at(i).isValid()) {
-            types[i] = QQmlType(priv);
+        Type &type = types[i];
+        if (!type.type.isValid()) {
+            type.type = QQmlType(priv);
             priv->index = i;
             priv->release();
             return;
         }
     }
-    types.append(QQmlType(priv));
+    types.append({QQmlType(priv), {}});
     priv->index = types.size() - 1;
     priv->release();
 }
@@ -85,23 +86,17 @@ bool QQmlMetaTypeData::registerModuleTypes(const QString &uri)
 QQmlPropertyCache::ConstPtr QQmlMetaTypeData::propertyCacheForVersion(
         int index, QTypeRevision version) const
 {
-    return (index < typePropertyCaches.size())
-            ? typePropertyCaches.at(index).value(version)
+    return (index < types.size())
+            ? types[index].propertyCaches.value(version)
             : QQmlPropertyCache::ConstPtr();
 }
 
 void QQmlMetaTypeData::setPropertyCacheForVersion(int index, QTypeRevision version,
                                                   const QQmlPropertyCache::ConstPtr &cache)
 {
-    if (index >= typePropertyCaches.size())
-        typePropertyCaches.resize(index + 1);
-    typePropertyCaches[index][version] = cache;
-}
-
-void QQmlMetaTypeData::clearPropertyCachesForVersion(int index)
-{
-    if (index < typePropertyCaches.size())
-        typePropertyCaches[index].clear();
+    if (index >= types.size())
+        types.resize(index + 1);
+    types[index].propertyCaches[version] = cache;
 }
 
 QQmlPropertyCache::ConstPtr QQmlMetaTypeData::propertyCache(

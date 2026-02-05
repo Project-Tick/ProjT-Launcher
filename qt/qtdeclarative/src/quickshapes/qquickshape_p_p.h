@@ -49,15 +49,17 @@ public:
     virtual Flags flags() const { return {}; }
     virtual void setPath(int index, const QQuickPath *path);
     virtual void setPath(int index, const QPainterPath &path, QQuickShapePath::PathHints pathHints = {}) = 0;
+
     virtual void setStrokeColor(int index, const QColor &color) = 0;
     virtual void setStrokeWidth(int index, qreal w) = 0;
     virtual void setCosmeticStroke(int index, bool c) = 0;
-    virtual void setFillColor(int index, const QColor &color) = 0;
-    virtual void setFillRule(int index, QQuickShapePath::FillRule fillRule) = 0;
     virtual void setJoinStyle(int index, QQuickShapePath::JoinStyle joinStyle, int miterLimit) = 0;
     virtual void setCapStyle(int index, QQuickShapePath::CapStyle capStyle) = 0;
     virtual void setStrokeStyle(int index, QQuickShapePath::StrokeStyle strokeStyle,
                                 qreal dashOffset, const QList<qreal> &dashPattern) = 0;
+
+    virtual void setFillColor(int index, const QColor &color) = 0;
+    virtual void setFillRule(int index, QQuickShapePath::FillRule fillRule) = 0;
     virtual void setFillGradient(int index, QQuickShapeGradient *gradient) = 0;
     virtual void setFillTextureProvider(int index, QQuickItem *textureProviderItem) = 0;
     virtual void setFillTransform(int index, const QSGTransform &transform) = 0;

@@ -63,10 +63,8 @@ tst_Sanity::tst_Sanity()
 
     m_linter.setPluginsEnabled(true);
 
-    for (auto &category : m_categories) {
-        category.setLevel(QtCriticalMsg);
-        category.setIgnored(true);
-    }
+    for (auto &category : m_categories)
+        category.setSeverity(QQmlSA::WarningSeverity::Disable);
 
     for (auto &plugin: m_linter.plugins()) {
         if (plugin.name() != u"QuickControlsSanity") {
@@ -76,9 +74,7 @@ tst_Sanity::tst_Sanity()
 
         for (const auto &category: plugin.categories()) {
             m_categories.append(category);
-            m_categories.back().setLevel(QtWarningMsg);
-            m_categories.back().setIgnored(false);
-
+            m_categories.back().setSeverity(QQmlSA::WarningSeverity::Warning);
         }
     }
 }

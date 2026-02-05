@@ -70,7 +70,7 @@ instantiation with improved performance for statically-known QML types.
 
 \section1 CMake Variables and Properties
 
-Qt QML provides several CMake variables and properties to configure QML module behavior:
+Qt Qml provides several CMake variables and properties to configure QML module behavior:
 
 \section2 Global Variables
 
@@ -92,7 +92,7 @@ system.
 
 \section1 CMake Policies
 
-Qt QML defines several CMake policies to control backward compatibility and behavior.
+Qt Qml defines several CMake policies to control backward compatibility and behavior.
 
 \section2 CMake Policies for QML
 

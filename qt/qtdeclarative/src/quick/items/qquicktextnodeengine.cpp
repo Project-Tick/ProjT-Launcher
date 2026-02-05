@@ -172,14 +172,10 @@ int QQuickTextNodeEngine::addText(const QTextBlock &block,
 void QQuickTextNodeEngine::addTextDecorations(const QVarLengthArray<TextDecoration> &textDecorations,
                                               qreal offset, qreal thickness)
 {
-    for (int i=0; i<textDecorations.size(); ++i) {
-        TextDecoration textDecoration = textDecorations.at(i);
-
-        {
-            QRectF &rect = textDecoration.rect;
-            rect.setY(qRound(rect.y() + m_currentLine.ascent() + offset));
-            rect.setHeight(thickness);
-        }
+    for (auto textDecoration : textDecorations) {
+        QRectF &rect = textDecoration.rect;
+        rect.setY(qRound(rect.y() + m_currentLine.ascent() + offset));
+        rect.setHeight(thickness);
 
         m_lines.append(textDecoration);
     }
@@ -506,8 +502,7 @@ void QQuickTextNodeEngine::addGlyphsForRanges(const QVarLengthArray<QTextLayout:
 {
     int currentPosition = start;
     int remainingLength = end - start;
-    for (int j=0; j<ranges.size(); ++j) {
-        const QTextLayout::FormatRange &range = ranges.at(j);
+    for (const QTextLayout::FormatRange &range : ranges) {
         if (range.start + range.length > currentPosition
                 && range.start < currentPosition + remainingLength) {
 
@@ -576,40 +571,31 @@ void QQuickTextNodeEngine::addGlyphsInRange(int rangeStart, int rangeLength,
     QTextLine &line = m_currentLine;
     int rangeEnd = rangeStart + rangeLength;
     if (!hasSelection || (selectionStart > rangeEnd || selectionEnd < rangeStart)) {
-        QList<QGlyphRun> glyphRuns = line.glyphRuns(rangeStart, rangeLength);
-        for (int j=0; j<glyphRuns.size(); ++j) {
-            const QGlyphRun &glyphRun = glyphRuns.at(j);
+        const QList<QGlyphRun> glyphRuns = line.glyphRuns(rangeStart, rangeLength);
+        for (const QGlyphRun &glyphRun : glyphRuns)
             addUnselectedGlyphs(glyphRun);
-        }
     } else {
         if (rangeStart < selectionStart) {
             int length = qMin(selectionStart - rangeStart, rangeLength);
-            QList<QGlyphRun> glyphRuns = line.glyphRuns(rangeStart, length);
-            for (int j=0; j<glyphRuns.size(); ++j) {
-                const QGlyphRun &glyphRun = glyphRuns.at(j);
+            const QList<QGlyphRun> glyphRuns = line.glyphRuns(rangeStart, length);
+            for (const QGlyphRun &glyphRun : glyphRuns)
                 addUnselectedGlyphs(glyphRun);
-            }
         }
 
         if (rangeEnd > selectionStart) {
             int start = qMax(selectionStart, rangeStart);
             int length = qMin(selectionEnd - start + 1, rangeEnd - start);
-            QList<QGlyphRun> glyphRuns = line.glyphRuns(start, length);
-
-            for (int j=0; j<glyphRuns.size(); ++j) {
-                const QGlyphRun &glyphRun = glyphRuns.at(j);
+            const QList<QGlyphRun> glyphRuns = line.glyphRuns(start, length);
+            for (const QGlyphRun &glyphRun : glyphRuns)
                 addSelectedGlyphs(glyphRun);
-            }
         }
 
         if (selectionEnd >= rangeStart && selectionEnd < rangeEnd) {
             int start = selectionEnd + 1;
             int length = rangeEnd - selectionEnd - 1;
-            QList<QGlyphRun> glyphRuns = line.glyphRuns(start, length);
-            for (int j=0; j<glyphRuns.size(); ++j) {
-                const QGlyphRun &glyphRun = glyphRuns.at(j);
+            const QList<QGlyphRun> glyphRuns = line.glyphRuns(start, length);
+            for (const QGlyphRun &glyphRun : glyphRuns)
                 addUnselectedGlyphs(glyphRun);
-            }
         }
     }
 
@@ -902,9 +888,8 @@ void QQuickTextNodeEngine::mergeFormats(QTextLayout *textLayout, QVarLengthArray
     if (textLayout == nullptr)
         return;
 
-    QList<QTextLayout::FormatRange> additionalFormats = textLayout->formats();
-    for (int i=0; i<additionalFormats.size(); ++i) {
-        QTextLayout::FormatRange additionalFormat = additionalFormats.at(i);
+    const QList<QTextLayout::FormatRange> additionalFormats = textLayout->formats();
+    for (QTextLayout::FormatRange additionalFormat : additionalFormats) {
         if (additionalFormat.format.hasProperty(QTextFormat::ForegroundBrush)
          || additionalFormat.format.hasProperty(QTextFormat::BackgroundBrush)
          || additionalFormat.format.isAnchor()) {
@@ -946,7 +931,6 @@ void QQuickTextNodeEngine::mergeFormats(QTextLayout *textLayout, QVarLengthArray
                 mergedFormats->append(additionalFormat);
         }
     }
-
 }
 
 /*!
@@ -1052,9 +1036,9 @@ void QQuickTextNodeEngine::addTextBlock(QTextDocument *textDocument, const QText
             else
                 setTextColor(charFormat.foreground().color());
 
-            QList<QGlyphRun> glyphRuns = layout.glyphRuns();
-            for (int i=0; i<glyphRuns.size(); ++i)
-                addUnselectedGlyphs(glyphRuns.at(i));
+            const QList<QGlyphRun> glyphRuns = layout.glyphRuns();
+            for (const auto &e : glyphRuns)
+                addUnselectedGlyphs(e);
         }
     }
 

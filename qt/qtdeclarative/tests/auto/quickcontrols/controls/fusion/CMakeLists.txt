@@ -30,7 +30,11 @@ qt_internal_add_test(tst_fusion
         TST_CONTROLS_DATA="${controls_data}"
     LIBRARIES
         Qt::Gui
+        Qt::GuiPrivate
+        Qt::QuickPrivate
         Qt::QuickControls2
+        Qt::QuickTestUtilsPrivate
+        Qt::QuickControlsTestUtilsPrivate
     TESTDATA ${test_data}
 )
 

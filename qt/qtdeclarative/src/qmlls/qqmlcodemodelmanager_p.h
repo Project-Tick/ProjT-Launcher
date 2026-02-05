@@ -16,7 +16,7 @@
 // We mean it.
 //
 
-#include "qqmlcodemodel_p.h"
+#include <private/qqmlcodemodel_p.h>
 
 #include <QObject>
 #include <QHash>
@@ -86,11 +86,15 @@ public:
     {
         return fallbackCodeModel()->documentationRootPath();
     }
-private slots:
+    void cancelBackgroundBuild(const QByteArray &uri);
+public slots:
     void onCMakeProberFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onBuildFinished(const QByteArray &rootUrl);
 
 private:
-    void setBuildPathsOn(const QQmlWorkspace *ws, const QStringList &buildFolder);
+    enum SetBuildPathOption { AppendPathsFromFallback, DontAppendPathsFromFallback };
+    void setBuildPathsOn(const QQmlWorkspace *ws, const QStringList &buildFolder,
+                         SetBuildPathOption option);
 
 protected:
     using Workspaces = std::vector<QQmlWorkspace>;
@@ -126,6 +130,10 @@ protected:
 
 Q_SIGNALS:
     void updatedSnapshot(const QByteArray &url, UpdatePolicy policy);
+
+    void backgroundBuildStarted(const QByteArray &rootUri);
+    void backgroundBuildFinished(const QByteArray &rootUri);
+    void backgroundBuildCancelled(const QByteArray &rootUri);
 };
 
 } // namespace QmlLsp

@@ -52,6 +52,11 @@ public:
         {
         }
 
+        Element (QVector2D s, QVector2D e)
+            : sp(s), cp(s), ep(e), m_isSubpathStart(false), m_isSubpathEnd(false), m_isLine(true)
+        {
+        }
+
         bool isSubpathStart() const
         {
             return m_isSubpathStart;

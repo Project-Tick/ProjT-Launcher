@@ -108,22 +108,13 @@ QString QQuickQmlGenerator::commentString() const
     return m_commentString;
 }
 
-QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
+QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info, const QString &idSuffix)
 {
     if (!info.nodeId.isEmpty())
         stream() << "objectName: \"" << info.nodeId << "\"";
 
-    QString idString = info.id;
-    if (!idString.isEmpty()) {
-        // If input contains multiple items with the same id, then this is invalid. However we
-        // shouldn't generate invalid QML from it. So we add a suffix if this is detected.
-        if (m_generatedIds.contains(idString))
-            idString += QStringLiteral("_%1").arg(m_generatedIds.size());
-
-        m_generatedIds.insert(idString);
-
-        stream() << "id: " << idString;
-    }
+    if (!info.id.isEmpty())
+        stream() << "id: " << info.id << idSuffix;
 
     if (!info.bounds.isNull()) {
         stream() << "property var originalBounds: Qt.rect("
@@ -131,8 +122,8 @@ QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
                  << info.bounds.y() << ", "
                  << info.bounds.width() << ", "
                  << info.bounds.height() << ")";
-        stream() << "implicitWidth: originalBounds.width";
-        stream() << "implicitHeight: originalBounds.height";
+        stream() << "width: originalBounds.width";
+        stream() << "height: originalBounds.height";
     }
 
     stream() << "transformOrigin: Item.TopLeft";
@@ -140,10 +131,10 @@ QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
     if (info.filterId.isEmpty() && info.maskId.isEmpty()) {
         if (!info.isDefaultOpacity)
             stream() << "opacity: " << info.opacity.defaultValue().toReal();
-        generateItemAnimations(idString, info);
+        generateItemAnimations(info.id, info);
     }
 
-    return idString;
+    return info.id;
 }
 
 void QQuickQmlGenerator::generateNodeEnd(const NodeInfo &info)
@@ -483,11 +474,38 @@ void QQuickQmlGenerator::generateShaderUse(const NodeInfo &info)
     stream() << "}";
 }
 
-bool QQuickQmlGenerator::generateDefsNode(const NodeInfo &info)
+bool QQuickQmlGenerator::generateDefsNode(const StructureNodeInfo &info)
 {
-    Q_UNUSED(info)
+    if (info.stage == StructureNodeStage::Start) {
+        m_oldIndentLevel = m_indentLevel;
 
-    return false;
+        stream() << "Component {";
+        m_indentLevel++;
+
+        stream() << "id: " << info.id << "_container";
+
+        stream() << "Item {";
+        m_indentLevel++;
+
+        if (!info.transformReferenceChildId.isEmpty()) {
+            stream() << "property alias transformMatrix: "
+                     << info.transformReferenceChildId << ".transformMatrix";
+        }
+
+        generateNodeBase(info, QStringLiteral("_defs"));
+    } else {
+        generateNodeEnd(info);
+
+        m_indentLevel--;
+        stream() << "}"; // Component
+
+        stream() << m_defsSuffix;
+        m_defsSuffix.clear();
+
+        m_indentLevel = m_oldIndentLevel;
+    }
+
+    return true;
 }
 
 void QQuickQmlGenerator::generateImageNode(const ImageNodeInfo &info)
@@ -540,6 +558,77 @@ void QQuickQmlGenerator::generateImageNode(const ImageNodeInfo &info)
     generateNodeEnd(info);
 }
 
+void QQuickQmlGenerator::generateMarkers(const PathNodeInfo &info)
+{
+    const QPainterPath path = info.path.defaultValue().value<QPainterPath>();
+    for (int i = 0; i < path.elementCount(); ++i) {
+        const QPainterPath::Element element = path.elementAt(i);
+        QString markerId;
+        qreal angle = 0;
+
+        // Copied from Qt SVG
+        auto getMeanAngle = [](QPointF p0, QPointF p1, QPointF p2) -> qreal {
+            QPointF t1 = p1 - p0;
+            QPointF t2 = p2 - p1;
+            qreal hyp1 =  hypot(t1.x(), t1.y());
+            if (hyp1 > 0)
+                t1 /= hyp1;
+            else
+                return 0.;
+            qreal hyp2 =  hypot(t2.x(), t2.y());
+            if (hyp2 > 0)
+                t2 /= hyp2;
+            else
+                return 0.;
+            QPointF tangent = t1 + t2;
+            return -atan2(tangent.y(), tangent.x()) / M_PI * 180.;
+        };
+
+        if (i == 0) {
+            markerId = info.markerStartId;
+            angle = path.angleAtPercent(0.0);
+        } else if (i == path.elementCount() - 1) {
+            markerId = info.markerEndId;
+            angle = path.angleAtPercent(1.0);
+        } else if (path.elementAt(i + 1).type != QPainterPath::CurveToDataElement) {
+            markerId = info.markerMidId;
+
+            const QPainterPath::Element prevElement = path.elementAt(i - 1);
+            const QPainterPath::Element nextElement = path.elementAt(i + 1);
+
+            QPointF p1(prevElement.x, prevElement.y);
+            QPointF p2(element.x, element.y);
+            QPointF p3(nextElement.x, nextElement.y);
+
+            angle = getMeanAngle(p1, p2, p3);
+        }
+
+        if (!markerId.isEmpty()) {
+            stream() << "Loader {";
+            m_indentLevel++;
+
+            //stream() << "clip: true";
+            stream() << "sourceComponent: " << markerId << "_container";
+            stream() << "property real strokeWidth: " << info.strokeStyle.width;
+            stream() << "transform: [";
+            m_indentLevel++;
+            if (i == 0) {
+                stream() << "Scale { "
+                         << "xScale: " << markerId << "_markerParameters.startReversed ? -1 : 1; "
+                         << "yScale: " << markerId << "_markerParameters.startReversed ? -1 : 1 },";
+            }
+            stream() << "Rotation { angle: " << markerId << "_markerParameters.autoAngle(" << -angle << ") },";
+            stream() << "Translate { x: " << element.x << "; y: " << element.y << "}";
+
+            m_indentLevel--;
+            stream() << "]";
+
+            m_indentLevel--;
+            stream() << "}";
+        }
+    }
+}
+
 void QQuickQmlGenerator::generatePath(const PathNodeInfo &info, const QRectF &overrideBoundingRect)
 {
     if (!isNodeVisible(info))
@@ -562,6 +651,13 @@ void QQuickQmlGenerator::generatePath(const PathNodeInfo &info, const QRectF &ov
             stream() << "asynchronous: true";
         optimizePaths(info, overrideBoundingRect);
         //qCDebug(lcQuickVectorGraphics) << *node->qpath();
+
+        if (!info.markerStartId.isEmpty()
+            || !info.markerMidId.isEmpty()
+            || !info.markerEndId.isEmpty()) {
+            generateMarkers(info);
+        }
+
         generateNodeEnd(info);
         m_inShapeItemLevel--;
     }
@@ -859,7 +955,48 @@ void QQuickQmlGenerator::outputShapePath(const PathNodeInfo &info, const QPainte
         stream() << "fillColor: \"" << fillColor.name(QColor::HexArgb) << "\"";
     }
 
-    if (!fillTransform.isIdentity()) {
+    if (!info.patternId.isEmpty()) {
+        stream() << "fillItem: ShaderEffectSource {";
+        m_indentLevel++;
+
+        stream() << "parent: " << info.id;
+        stream() << "sourceItem: " << info.patternId;
+        stream() << "hideSource: true";
+        stream() << "visible: false";
+        stream() << "width: " << info.patternId << ".width";
+        stream() << "height: " << info.patternId << ".height";
+        stream() << "wrapMode: ShaderEffectSource.Repeat";
+        stream() << "textureSize: Qt.size(width * __qt_toplevel_scale_itemspy.requiredTextureSize.width, "
+                 << "height * __qt_toplevel_scale_itemspy.requiredTextureSize.height)";;
+        stream() << "sourceRect: " << info.patternId << ".sourceRect("
+                 << info.id << ".width, "
+                 << info.id << ".height)";
+
+        m_indentLevel--;
+        stream() << "}";
+
+        // Fill transform has to include the inverse of the scene scale, since the texture size
+        // is scaled by this amount
+        stream() << "function calculateFillTransform(xScale, yScale) {";
+        m_indentLevel++;
+
+        stream() << "var m = ";
+        generateTransform(fillTransform);
+
+        stream() << "m.translate(" << info.patternId << ".sourceOffset("
+                 << info.id << ".width, "
+                 << info.id << ".height))";
+
+        stream() << "m.scale(1.0 / xScale, 1.0 / yScale, 1.0)";
+        stream() << "return m";
+
+        m_indentLevel--;
+        stream() << "}";
+
+        stream() << "fillTransform: calculateFillTransform(__qt_toplevel_scale_itemspy.requiredTextureSize.width, "
+                 << "__qt_toplevel_scale_itemspy.requiredTextureSize.height)";
+
+    } else if (!fillTransform.isIdentity()) {
         const QTransform &xf = fillTransform;
         stream() << "fillTransform: ";
         if (info.fillTransform.type() == QTransform::TxTranslate)
@@ -1533,14 +1670,16 @@ bool QQuickQmlGenerator::generateStructureNode(const StructureNodeInfo &info)
 bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
 {
     // Generate an invisible item subtree which can be used in ShaderEffectSource
-    if (info.stage == StructureNodeStage::Start) {
-        stream() << "Item {";
+    if (info.stage == StructureNodeStage::End) {
+        // Generate code to add after defs block
+        startDefsSuffixBlock();
+        stream() << "Loader {";
         m_indentLevel++;
 
-        generateNodeBase(info);
-
-        stream() << "width: originalBounds.width";
-        stream() << "height: originalBounds.height";
+        stream() << "id: " << info.id; // This is in a different scope, so we can reuse the ID
+        stream() << "sourceComponent: " << info.id << "_container";
+        stream() << "width: item !== null ? item.originalBounds.width : 0";
+        stream() << "height: item !== null ? item.originalBounds.height : 0";
 
         stream() << "property real maskX: " << info.maskRect.left();
         stream() << "property real maskY: " << info.maskRect.top();
@@ -1553,25 +1692,27 @@ bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
         stream() << "return ";
         if (info.isMaskRectRelativeCoordinates) {
             stream(SameLine)
-                << "Qt.rect("
-                << info.id << ".maskX * otherWidth + otherX,"
-                << info.id << ".maskY * otherHeight + otherY,"
-                << info.id << ".maskWidth * otherWidth,"
-                << info.id << ".maskHeight * otherHeight)";
+            << "Qt.rect("
+            << info.id << ".maskX * otherWidth + otherX,"
+            << info.id << ".maskY * otherHeight + otherY,"
+            << info.id << ".maskWidth * otherWidth,"
+            << info.id << ".maskHeight * otherHeight)";
         } else {
             stream(SameLine)
-                << "Qt.rect("
-                << info.id << ".maskX, "
-                << info.id << ".maskY, "
-                << info.id << ".maskWidth, "
-                << info.id << ".maskHeight)";
+            << "Qt.rect("
+            << info.id << ".maskX, "
+            << info.id << ".maskY, "
+            << info.id << ".maskWidth, "
+            << info.id << ".maskHeight)";
         }
 
         m_indentLevel--;
         stream() << "}";
 
-    } else {
-        generateNodeEnd(info);
+        m_indentLevel--;
+        stream() << "}";
+
+        endDefsSuffixBlock();
     }
 
     return true;
@@ -1579,11 +1720,25 @@ bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
 
 void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
 {
+    stream() << "Item {";
+    m_indentLevel++;
+
+    generateNodeBase(info);
+
+    stream() << "property real originalWidth: filterSourceItem.sourceItem.originalBounds.width";
+    stream() << "property real originalHeight: filterSourceItem.sourceItem.originalBounds.height";
+    stream() << "property rect filterRect: " << info.id << "_filterParameters"
+             << ".adaptToFilterRect(0, 0, originalWidth, originalHeight)";
+
+    for (qsizetype i = 0; i < info.steps.size();)
+        i = generateFilterStep(info, i);
+
+    // Generate code to be added after defs block
+    startDefsSuffixBlock();
     stream() << "QtObject {";
     m_indentLevel++;
 
     stream() << "id: " << info.id << "_filterParameters";
-
     stream() << "property int wrapMode: ";
     if (info.wrapMode == QSGTexture::Repeat)
         stream(SameLine) << "ShaderEffectSource.Repeat";
@@ -1599,13 +1754,10 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
     stream() << "function adaptToFilterRect(sx, sy, sw, sh) {";
     m_indentLevel++;
 
-    // If the shader requires an offset to the source rect, we apply that here
     if (info.csFilterRect == FilterNodeInfo::CoordinateSystem::Absolute) {
         stream() << "return Qt.rect(filterRect.x, filterRect.y, filterRect.width, filterRect.height)";
     } else {
-        stream() << "return Qt.rect("
-                 << "sx + sw * filterRect.x, sy + sh * filterRect.y,"
-                 << "sw * filterRect.width, sh * filterRect.height)";
+        stream() <<  "return Qt.rect(sx + sw * filterRect.x, sy + sh * filterRect.y, sw * filterRect.width, sh * filterRect.height)";
     }
 
     m_indentLevel--;
@@ -1613,30 +1765,9 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
 
     m_indentLevel--;
     stream() << "}";
-
-    stream() << "Component {";
-    m_indentLevel++;
-
-    stream() << "id: " << info.id << "_container";
-
-    // Container for transform and effects
-    stream() << "Item {";
-    m_indentLevel++;
-
-    stream() << "property real originalWidth: filterSourceItem.sourceItem.originalBounds.width";
-    stream() << "property real originalHeight: filterSourceItem.sourceItem.originalBounds.height";
-    stream() << "property rect filterRect: " << info.id << "_filterParameters"
-             << ".adaptToFilterRect(0, 0, originalWidth, originalHeight)";
-
-    generateNodeBase(info);
-
-    for (qsizetype i = 0; i < info.steps.size();)
-        i = generateFilterStep(info, i);
+    endDefsSuffixBlock();
 
     generateNodeEnd(info);
-
-    m_indentLevel--;
-    stream() << "}"; // End of Component
 }
 
 qsizetype QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
@@ -1935,14 +2066,14 @@ qsizetype QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
         stream() << "property real fpx2: " << x2 << " * filterSourceItem.sourceItem.originalBounds.width";
         stream() << "property real fpy2: " << y2 << " * filterSourceItem.sourceItem.originalBounds.height";
     } else { // Just match filter rect
-        stream() << "property real fpx1: filterRect.x";
-        stream() << "property real fpy1: filterRect.y";
-        stream() << "property real fpx2: filterRect.x + filterRect.width";
-        stream() << "property real fpy2: filterRect.y + filterRect.height";
+        stream() << "property real fpx1: parent.filterRect.x";
+        stream() << "property real fpy1: parent.filterRect.y";
+        stream() << "property real fpx2: parent.filterRect.x + parent.filterRect.width";
+        stream() << "property real fpy2: parent.filterRect.y + parent.filterRect.height";
     }
 
     stream() << "sourceItem: " << primitiveId;
-    stream() << "sourceRect: Qt.rect(fpx1 - filterRect.x, fpy1 - filterRect.y, width, height)";
+    stream() << "sourceRect: Qt.rect(fpx1 - parent.filterRect.x, fpy1 - parent.filterRect.y, width, height)";
 
     stream() << "x: fpx1";
     stream() << "y: fpy1";
@@ -1962,6 +2093,201 @@ qsizetype QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
     stream() << "}";
 
     return stepIndex;
+}
+
+bool QQuickQmlGenerator::generatePatternNode(const PatternNodeInfo &info)
+{
+    if (info.stage == StructureNodeStage::Start) {
+        return true;
+    } else {
+        startDefsSuffixBlock();
+        stream() << "Loader {";
+        m_indentLevel++;
+
+        stream() << "id: " << info.id; // This is in a different scope, so we can reuse the ID
+        stream() << "sourceComponent: " << info.id << "_container";
+        stream() << "width: item !== null ? item.originalBounds.width : 0";
+        stream() << "height: item !== null ? item.originalBounds.height : 0";
+        stream() << "visible: false";
+        stream() << "function sourceRect(targetWidth, targetHeight) {";
+        m_indentLevel++;
+
+        stream() << "return Qt.rect(0, 0, ";
+        if (!info.isPatternRectRelativeCoordinates) {
+            stream(SameLine) << info.patternRect.width() << ", "
+                             << info.patternRect.height();
+        } else {
+            stream(SameLine) << info.patternRect.width() << " * targetWidth, "
+                             << info.patternRect.height() << " * targetHeight";
+        }
+        stream(SameLine) << ")";
+        m_indentLevel--;
+        stream() << "}";
+
+        stream() << "function sourceOffset(targetWidth, targetHeight) {";
+        m_indentLevel++;
+
+        stream() << "return Qt.vector3d(";
+        if (!info.isPatternRectRelativeCoordinates) {
+            stream(SameLine) << info.patternRect.x() << ", "
+                             << info.patternRect.y() << ", ";
+        } else {
+            stream(SameLine) << info.patternRect.x() << " * targetWidth, "
+                             << info.patternRect.y() << " * targetHeight, ";
+        }
+        stream(SameLine) << "0.0)";
+        m_indentLevel--;
+        stream() << "}";
+
+
+        m_indentLevel--;
+        stream() << "}";
+
+        endDefsSuffixBlock();
+
+        return true;
+    }
+}
+
+bool QQuickQmlGenerator::generateMarkerNode(const MarkerNodeInfo &info)
+{
+    if (info.stage == StructureNodeStage::Start) {
+        startDefsSuffixBlock();
+        stream() << "QtObject {";
+        m_indentLevel++;
+
+        stream() << "id: " << info.id << "_markerParameters";
+
+        stream() << "property bool startReversed: ";
+        if (info.orientation == MarkerNodeInfo::Orientation::AutoStartReverse)
+            stream(SameLine) << "true";
+        else
+            stream(SameLine) << "false";
+
+        stream() << "function autoAngle(adaptedAngle) {";
+        m_indentLevel++;
+        if (info.orientation == MarkerNodeInfo::Orientation::Value)
+            stream() << "return " << info.angle;
+        else
+            stream() << "return adaptedAngle";
+        m_indentLevel--;
+        stream() << "}";
+
+        m_indentLevel--;
+        stream() << "}";
+        endDefsSuffixBlock();
+
+        if (!info.clipBox.isEmpty()) {
+            stream() << "Item {";
+            m_indentLevel++;
+
+            stream() << "x: " << info.clipBox.x();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+            stream() << "y: " << info.clipBox.y();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+            stream() << "width: " << info.clipBox.width();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+            stream() << "height: " << info.clipBox.height();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+            stream() << "clip: true";
+        }
+
+        stream() << "Item {";
+        m_indentLevel++;
+
+        if (!info.clipBox.isEmpty()) {
+            stream() << "x: " << -info.clipBox.x();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+            stream() << "y: " << -info.clipBox.y();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+        }
+
+        stream() << "id: " << info.id;
+
+        stream() << "property real markerWidth: " << info.markerSize.width();
+        if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+            stream(SameLine) << " * strokeWidth";
+
+        stream() << "property real markerHeight: " << info.markerSize.height();
+        if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+            stream(SameLine) << " * strokeWidth";
+
+        stream() << "function calculateMarkerScale(w, h) {";
+        m_indentLevel++;
+
+        stream() << "var scaleX = 1.0";
+        stream() << "var scaleY = 1.0";
+        stream() << "var offsetX = 0.0";
+        stream() << "var offsetY = 0.0";
+        if (info.viewBox.width() > 0)
+            stream() << "if (w > 0) scaleX = w / " << info.viewBox.width();
+        if (info.viewBox.height() > 0)
+            stream() << "if (h > 0) scaleY = h / " << info.viewBox.height();
+
+        if (info.preserveAspectRatio & MarkerNodeInfo::xyMask) {
+            stream() << "if (scaleX != scaleY) {";
+            m_indentLevel++;
+
+            if (info.preserveAspectRatio & MarkerNodeInfo::meet)
+                stream() << "scaleX = scaleY = Math.min(scaleX, scaleY)";
+            else
+                stream() << "scaleX = scaleY = Math.max(scaleX, scaleY)";
+
+            QString overflowX = QStringLiteral("scaleX * %1 - w").arg(info.viewBox.width());
+            QString overflowY = QStringLiteral("scaleY * %1 - h").arg(info.viewBox.height());
+
+            const quint8 xRatio = info.preserveAspectRatio & MarkerNodeInfo::xMask;
+            if (xRatio == MarkerNodeInfo::xMid)
+                stream() << "offsetX -= " << overflowX << " / 2";
+            else if (xRatio == MarkerNodeInfo::xMax)
+                stream() << "offsetX -= " << overflowX;
+
+            const quint8 yRatio = info.preserveAspectRatio & MarkerNodeInfo::yMask;
+            if (yRatio == MarkerNodeInfo::yMid)
+                stream() << "offsetY -= " << overflowY << " / 2";
+            else if (yRatio == MarkerNodeInfo::yMax)
+                stream() << "offsetY -= " << overflowY;
+
+            m_indentLevel--;
+            stream() << "}";
+        }
+
+        stream() << "return Qt.vector4d("
+                 << "offsetX - " << info.anchorPoint.x() << " * scaleX, "
+                 << "offsetY - " << info.anchorPoint.y() << " * scaleY, "
+                 << "scaleX, "
+                 << "scaleY)";
+
+        m_indentLevel--;
+        stream() << "}";
+
+        stream() << "property vector4d markerScale: calculateMarkerScale(markerWidth, markerHeight)";
+
+        stream() << "transform: [";
+        m_indentLevel++;
+
+        stream() << "Scale { xScale: " << info.id << ".markerScale.z; yScale: " << info.id << ".markerScale.w },";
+        stream() << "Translate { x: " << info.id << ".markerScale.x; y: " << info.id << ".markerScale.y }";
+
+        m_indentLevel--;
+        stream() << "]";
+
+    } else {
+        generateNodeEnd(info);
+
+        if (!info.clipBox.isEmpty()) {
+            m_indentLevel--;
+            stream() << "}";
+        }
+    }
+
+    return true;
 }
 
 bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
@@ -2040,6 +2366,16 @@ bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
             stream() << "property AnimationsInfo animations : AnimationsInfo {}";
         }
 
+        stream() << "Item {";
+        m_indentLevel++;
+        stream() << "width: 1";
+        stream() << "height: 1";
+
+        stream() << "ItemSpy { id: __qt_toplevel_scale_itemspy; anchors.fill: parent }";
+
+        m_indentLevel--;
+        stream() << "}";
+
         if (!info.viewBox.isEmpty()) {
             stream() << "transform: [";
             m_indentLevel++;
@@ -2085,6 +2421,18 @@ bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
     return true;
 }
 
+void QQuickQmlGenerator::startDefsSuffixBlock()
+{
+    std::swap(m_indentLevel, m_oldIndentLevel);
+    m_stream.setString(&m_defsSuffix);
+}
+
+void QQuickQmlGenerator::endDefsSuffixBlock()
+{
+    std::swap(m_indentLevel, m_oldIndentLevel);
+    m_stream.setDevice(&m_result);
+}
+
 QStringView QQuickQmlGenerator::indent()
 {
     static QString indentString;
@@ -2096,7 +2444,7 @@ QStringView QQuickQmlGenerator::indent()
 
 QTextStream &QQuickQmlGenerator::stream(int flags)
 {
-    if (m_stream.device() == nullptr)
+    if (m_stream.device() == nullptr && m_stream.string() == nullptr)
         m_stream.setDevice(&m_result);
     else if (!(flags & StreamFlags::SameLine))
         m_stream << Qt::endl << indent();

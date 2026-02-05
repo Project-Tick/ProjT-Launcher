@@ -3,9 +3,9 @@
 
 /*!
     \page qtqmlnetwork-index.html
-    \title Qt QML Network
+    \title Qt Qml Network
 
-    \brief The Qt QML Network module provides core network functionality in QML.
+    \brief The Qt Qml Network module provides core network functionality in QML.
 
     The module exposes the Qt C++ \l [QtNetwork] {Qt Network} {Network}
     functionality to QML.

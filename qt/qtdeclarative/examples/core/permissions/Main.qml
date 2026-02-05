@@ -9,7 +9,7 @@ import QtQuick.Controls
 Window {
     id: window
     visible: true
-    title: qsTr("Qt QML Permissions")
+    title: qsTr("Qt Qml Permissions")
 
     readonly property int margin: 11
 

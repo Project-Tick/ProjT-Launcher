@@ -5,9 +5,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// TODO
 QtObject {
-    property string customControlName: qsTr("Menu, MenuItem & MenuSeparator")
+    property string customControlName: qsTr("Menu & MenuSeparator")
 
     property var supportedStates: [
         []
@@ -40,11 +39,17 @@ QtObject {
             MenuItem {
                 text: "Icon"
                 icon.source: Utils.iconUrl
+                action: Action {
+                    shortcut: "Ctrl+A"
+                }
             }
             MenuItem {
                 text: "Transparent Icon"
                 icon.source: Utils.iconUrl
                 icon.color: "transparent"
+                action: Action {
+                    shortcut: "Ctrl+B"
+                }
             }
 
             MenuSeparator {}
@@ -53,6 +58,9 @@ QtObject {
                 text: "Checked"
                 checkable: true
                 checked: true
+                action: Action {
+                    shortcut: "Ctrl+C"
+                }
             }
             MenuItem {
                 text: "Checked + Pressed"

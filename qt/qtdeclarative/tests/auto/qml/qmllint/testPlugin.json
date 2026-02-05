@@ -14,25 +14,25 @@
             "name": "TestDefaultValue",
             "settingsName": "TestDefaultValue",
             "description": "A warning to test defaults",
-            "defaultLevel": "disable"
+            "defaultSeverity": "disable"
         },
         {
             "name": "TestDefaultValue2",
             "settingsName": "TestDefaultValue2",
             "description": "A warning to test defaults",
-            "defaultLevel": "info"
+            "defaultSeverity": "info"
         },
         {
             "name": "TestDefaultValue3",
             "settingsName": "TestDefaultValue3",
             "description": "A warning to test defaults",
-            "defaultLevel": "warning"
+            "defaultSeverity": "warning"
         },
         {
             "name": "TestDefaultValue4",
             "settingsName": "TestDefaultValue4",
             "description": "A warning to test defaults",
-            "defaultLevel": "error"
+            "defaultSeverity": "error"
         }
     ]
 }

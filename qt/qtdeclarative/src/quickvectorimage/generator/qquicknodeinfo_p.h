@@ -38,6 +38,7 @@ struct NodeInfo
     QString maskId;
     QString filterId;
     QString transformReferenceId;
+    QString transformReferenceChildId;
     QString customItemType;
     QQuickAnimatedProperty transform = QQuickAnimatedProperty(QVariant::fromValue(QTransform{}));
     QQuickAnimatedProperty opacity = QQuickAnimatedProperty(QVariant::fromValue(1.0));
@@ -110,6 +111,11 @@ struct PathNodeInfo : NodeInfo
     QGradient grad;
     QTransform fillTransform;
     PathTrimInfo trim;
+
+    QString markerStartId;
+    QString markerMidId;
+    QString markerEndId;
+    QString patternId;
 };
 
 struct TextNodeInfo : NodeInfo
@@ -150,6 +156,54 @@ struct StructureNodeInfo : NodeInfo
     QSize size;
     QRectF clipBox;
     bool isPathContainer = false;
+};
+
+struct PatternNodeInfo : StructureNodeInfo
+{
+    bool isPatternRectRelativeCoordinates = false;
+    QRectF patternRect;
+};
+
+struct MarkerNodeInfo : StructureNodeInfo
+{
+    enum class Orientation
+    {
+        Auto,
+        AutoStartReverse,
+        Value
+    };
+
+    enum class MarkerUnits
+    {
+        UserSpace,
+        StrokeWidth
+    };
+
+    // In sync with QSvgSymbolLike's enum
+    enum PreserveAspectRatio : quint8 {
+        None =  0b000000,
+        xMin =  0b000001,
+        xMid =  0b000010,
+        xMax =  0b000011,
+        yMin =  0b000100,
+        yMid =  0b001000,
+        yMax =  0b001100,
+        meet =  0b010000,
+        slice = 0b100000,
+        xMask = xMin | xMid | xMax,
+        yMask = yMin | yMid | yMax,
+        xyMask = xMask | yMask,
+        meetSliceMask = meet | slice
+    };
+
+    MarkerUnits markerUnits = MarkerUnits::UserSpace;
+    Orientation orientation = Orientation::Auto;
+    PreserveAspectRatio preserveAspectRatio = PreserveAspectRatio::None;
+
+    qreal angle = 0.0;
+    QSizeF markerSize;
+
+    QPointF anchorPoint;
 };
 
 struct MaskNodeInfo : NodeInfo

@@ -119,7 +119,7 @@ public:
         m_logger->log("Identifier '%1' is used here before its declaration."_L1.arg(name),
                       qmlVarUsedBeforeDeclaration, accessLocation);
         m_logger->log("Note: declaration of '%1' here"_L1.arg(name), qmlVarUsedBeforeDeclaration,
-                      declarationLocation, true, true, {}, {}, accessLocation.startLine);
+                      declarationLocation, true, true, {}, accessLocation.startLine);
     }
 
     void reportFunctionUsedBeforeDeclaration(const QString &name, const QString &fileName,
@@ -237,9 +237,8 @@ bool QQmlJSLinter::Plugin::parseMetaData(const QJsonObject &metaData, QString pl
         return false;
     }
 
-    QJsonArray categories = pluginMetaData[u"loggingCategories"].toArray();
-
-    for (const QJsonValue &value : std::as_const(categories)) {
+    const QJsonArray categories = pluginMetaData[u"loggingCategories"].toArray();
+    for (const QJsonValue &value : categories) {
         if (!value.isObject()) {
             qWarning() << pluginName << "has invalid loggingCategories entries, skipping";
             return false;
@@ -255,9 +254,6 @@ bool QQmlJSLinter::Plugin::parseMetaData(const QJsonObject &metaData, QString pl
             }
         }
 
-        const auto it = object.find("enabled"_L1);
-        const bool ignored = (it != object.end() && !it->toBool());
-
         const QString prefix = (m_isInternal ? u""_s : u"Plugin."_s).append(m_name).append(u'.');
         const QString categoryId =
                 prefix + object[u"name"].toString();
@@ -266,18 +262,22 @@ bool QQmlJSLinter::Plugin::parseMetaData(const QJsonObject &metaData, QString pl
                 ? categoryId
                 : prefix + settingsNameIt->toString(categoryId);
         m_categories << QQmlJS::LoggerCategory{ categoryId, settingsName,
-                                                object["description"_L1].toString(), QtWarningMsg,
-                                                ignored };
-        const auto itLevel = object.find("defaultLevel"_L1);
-        if (itLevel == object.end())
+                                                object["description"_L1].toString(),
+                                                QQmlJS::WarningSeverity::Warning };
+        const auto itSeverity = object.find("defaultSeverity"_L1);
+        if (itSeverity == object.end())
             continue;
 
-        const QString level = itLevel->toString();
-        if (!QQmlJS::LoggingUtils::applyLevelToCategory(level, m_categories.last())) {
-            qWarning() << "Invalid logging level" << level << "provided for"
+        const QString severityName = itSeverity->toString();
+        const auto severity = QQmlJS::LoggingUtils::severityFromString(severityName);
+        if (!severity.has_value()) {
+            qWarning() << "Invalid logging severity" << severityName << "provided for"
                        << m_categories.last().id().name().toString()
                        << "(allowed are: disable, info, warning, error) found in plugin metadata.";
+            continue;
         }
+
+        m_categories.last().setSeverity(severity.value());
     }
 
     return true;
@@ -474,28 +474,24 @@ static void addJsonWarning(QJsonArray &warnings, const QQmlJS::DiagnosticMessage
     jsonMessage[u"type"_s] = type;
     jsonMessage[u"id"_s] = id.toString();
 
-    if (message.loc.isValid()) {
-        jsonMessage[u"line"_s] = static_cast<int>(message.loc.startLine);
-        jsonMessage[u"column"_s] = static_cast<int>(message.loc.startColumn);
-        jsonMessage[u"charOffset"_s] = static_cast<int>(message.loc.offset);
-        jsonMessage[u"length"_s] = static_cast<int>(message.loc.length);
-    }
-
-    jsonMessage[u"message"_s] = message.message;
-
-    QJsonArray suggestions;
     const auto convertLocation = [](const QQmlJS::SourceLocation &source, QJsonObject *target) {
         target->insert("line"_L1, int(source.startLine));
         target->insert("column"_L1, int(source.startColumn));
         target->insert("charOffset"_L1, int(source.offset));
         target->insert("length"_L1, int(source.length));
     };
+
+    if (message.loc.isValid())
+        convertLocation(message.loc, &jsonMessage);
+
+    jsonMessage[u"message"_s] = message.message;
+
+    QJsonArray suggestions;
     if (suggestion.has_value()) {
         QJsonObject jsonFix {
-            { "message"_L1, suggestion->fixDescription() },
+            { "message"_L1, suggestion->description() },
             { "replacement"_L1, suggestion->replacement() },
-            { "isAutoApplicable"_L1, suggestion->isAutoApplicable() },
-            { "hint"_L1, suggestion->hint() },
+            { "isAutoApplicable"_L1, suggestion->isAutoApplicable() }
         };
         convertLocation(suggestion->location(), &jsonFix);
         const QString filename = suggestion->filename();
@@ -582,8 +578,7 @@ void QQmlJSLinter::setupLoggingCategoriesInLogger(const QList<QQmlJS::LoggerCate
         if (auto logger = *it; !QQmlJS::LoggerCategoryPrivate::get(&logger)->hasChanged())
             continue;
 
-        m_logger->setCategoryIgnored(it->id(), it->isIgnored());
-        m_logger->setCategoryLevel(it->id(), it->level());
+        m_logger->setCategorySeverity(it->id(), it->severity());
     }
 }
 

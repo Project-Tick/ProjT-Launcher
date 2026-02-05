@@ -1490,7 +1490,7 @@ void tst_TouchMouse::hoverEnabled() // QTBUG-40856
     QTest::touchEvent(&window, touchscreen.get()).press(0, p2, &window);
     deliveryAgent->flushFrameSynchronousEvents(&window);
 
-    QVERIFY(!mouseArea1->hovered());
+    QTRY_VERIFY(!mouseArea1->hovered());
     QVERIFY(mouseArea2->hovered());
     QVERIFY(mouseArea2->isPressed());
     QCOMPARE(enterSpy1.size(), 1);

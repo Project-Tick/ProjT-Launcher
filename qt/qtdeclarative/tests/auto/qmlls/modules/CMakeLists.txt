@@ -8,6 +8,7 @@ if(NOT QT_BUILD_STANDALONE_TESTS AND NOT QT_BUILDING_QT)
 endif()
 
 add_subdirectory(documentSymbolProvider)
+add_subdirectory(progressSupport)
 
 file(GLOB_RECURSE test_data_glob
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

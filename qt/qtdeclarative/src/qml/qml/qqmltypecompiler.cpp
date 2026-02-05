@@ -387,11 +387,14 @@ bool SignalHandlerResolver::resolveSignalHandlerExpressions(
                 const QQmlType type = typeRef ? typeRef->type() : QQmlType();
                 if (type.isValid()) {
                     COMPILE_EXCEPTION(binding, tr("\"%1.%2\" is not available in %3 %4.%5.")
-                                      .arg(typeName).arg(originalPropertyName).arg(type.module())
+                                      .arg(typeName, originalPropertyName, type.module())
                                       .arg(type.version().majorVersion())
                                       .arg(type.version().minorVersion()));
                 } else {
-                    COMPILE_EXCEPTION(binding, tr("\"%1.%2\" is not available due to component versioning.").arg(typeName).arg(originalPropertyName));
+                    COMPILE_EXCEPTION(
+                            binding,
+                            tr("\"%1.%2\" is not available due to component versioning.")
+                                    .arg(typeName, originalPropertyName));
                 }
             }
 

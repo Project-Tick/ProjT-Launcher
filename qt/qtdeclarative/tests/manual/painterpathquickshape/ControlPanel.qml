@@ -40,6 +40,8 @@ Item {
 
     property real pathMargin: marginEdit.text
 
+    palette.windowText: "white"
+
     Settings {
         property alias enableFill: enableFill.checked
         property alias enableOutline: enableOutline.checked
@@ -70,17 +72,16 @@ Item {
     }
 
     ColumnLayout {
+        id: layout
         anchors.fill: parent
         anchors.margins: 10
         RowLayout {
             Label {
                 text: "Renderer:"
-                color: "white"
             }
             Label {
                 id: rendererLabel
                 property bool preferCurve: true
-                color: "white"
                 text: "Unknown"
 
                 TapHandler {
@@ -95,7 +96,6 @@ Item {
             }
             Label {
                 text: "Asynchronous"
-                color: "white"
             }
             CheckBox {
                 id: enableDebug
@@ -103,7 +103,6 @@ Item {
             }
             Label {
                 text: "Debug"
-                color: "white"
             }
             CheckBox {
                 id: enableWireframe
@@ -111,7 +110,6 @@ Item {
             }
             Label {
                 text: "Wireframe"
-                color: "white"
             }
             ComboBox {
                 id: painterComparison
@@ -143,7 +141,6 @@ Item {
             }
             Label {
                 text: "Alpha"
-                color: "white"
             }
             CheckBox {
                 text: "Pick SVG sub-shape"
@@ -194,7 +191,6 @@ Item {
         RowLayout {
             Label {
                 text: "Margin:"
-                color: "white"
             }
             TextField {
                 id: marginEdit
@@ -203,7 +199,6 @@ Item {
             }
             Label {
                 text: "Scale:"
-                color: "white"
             }
             TextField {
                 id: scaleEdit
@@ -235,7 +230,6 @@ Item {
                 opacity: enableFill.checked ? 1 : 0
             Label {
                 text: "Fill color"
-                color: "white"
             }
             Rectangle {
                 id: fillColor
@@ -256,7 +250,6 @@ Item {
             }
             Label {
                 text: "Fill rule:"
-                color: "white"
             }
             ComboBox {
                 id: fillRule
@@ -276,7 +269,6 @@ Item {
             }
             Label {
                 text: "Fill transform (scale x: " + fillTransformSlider.value.toFixed(2) + "):"
-                color: "white"
                 visible: gradientType.currentIndex != 0
             }
             Slider {
@@ -289,7 +281,6 @@ Item {
             }
             Label {
                 text: "Fill alpha(" + Math.round(alphaSlider.value*100)/100 + "):"
-                color: "white"
             }
             Slider {
                 id: alphaSlider
@@ -311,7 +302,6 @@ Item {
                 opacity: enableOutline.checked ? 1 : 0
             Label {
                 text: "Outline color:"
-                color: "white"
             }
             Rectangle {
                 id: outlineColor
@@ -384,7 +374,6 @@ Item {
             }
             Label {
                 text: "Outline width:"
-                color: "white"
             }
             TextField {
                 id: outlineWidthEdit
@@ -411,7 +400,6 @@ Item {
             }
             Label {
                 text: "Outline alpha (" + Math.round(outlineAlphaSlider.value*100)/100 + "):"
-                color: "white"
             }
             Slider {
                 id: outlineAlphaSlider

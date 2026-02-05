@@ -361,11 +361,17 @@ bool QQmlAbstractColumnModel::validateNewRow(QLatin1StringView functionName, con
     }
 
     const bool isVariantMap = (row.userType() == QMetaType::QVariantMap);
+    const bool isVariantList = (row.userType() == QMetaType::QVariantList);
 
     // Don't require each row to be a QJSValue when setting all rows,
-    // as they won't be; they'll be QVariantMap.
-    if (operation != SetRowsOperation && (!isVariantMap && !validateRowType(functionName, row)))
+    // as they won't be; they'll be QVariantMap if given as object.
+    // Passing a QVariantList counts as attempted complex row manipulation.
+    if (operation != SetRowsOperation
+            && !isVariantMap
+            && !isVariantList
+            && !validateRowType(functionName, row)) {
         return false;
+    }
 
     const QVariant rowAsVariant = operation == SetRowsOperation || isVariantMap
         ? row : row.value<QJSValue>().toVariant();

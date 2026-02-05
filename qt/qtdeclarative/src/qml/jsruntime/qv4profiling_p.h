@@ -67,7 +67,7 @@ enum Features {
 enum MemoryType {
     HeapPage,
     LargeItem,
-    SmallItem
+    RegularItem
 };
 
 struct FunctionCallProperties {

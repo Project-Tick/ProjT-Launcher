@@ -38,7 +38,8 @@ void QQmlMetaObject::resolveGadgetMethodOrPropertyIndex(QMetaObject::Call type, 
     *index -= offset;
 }
 
-QMetaType QQmlMetaObject::methodReturnType(const QQmlPropertyData &data, QByteArray *unknownTypeError) const
+QMetaType QQmlMetaObject::methodReturnType(
+        const QQmlPropertyData &data, QString *unknownTypeError) const
 {
     Q_ASSERT(_m && data.coreIndex() >= 0);
 
@@ -47,12 +48,18 @@ QMetaType QQmlMetaObject::methodReturnType(const QQmlPropertyData &data, QByteAr
         // Find the return type name from the method info
         type = _m->method(data.coreIndex()).returnMetaType();
     }
+
     if (type.flags().testFlag(QMetaType::IsEnumeration))
         type = type.underlyingType();
+
     if (type.isValid())
         return type;
-    else if (unknownTypeError)
-        *unknownTypeError = _m->method(data.coreIndex()).typeName();
+
+    if (unknownTypeError) {
+        *unknownTypeError = QLatin1String("Unknown method return type: ")
+                + QString::fromUtf8(_m->method(data.coreIndex()).typeName());
+    }
+
     return QMetaType();
 }
 

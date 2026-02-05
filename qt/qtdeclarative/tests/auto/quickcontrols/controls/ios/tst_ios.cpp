@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
 
 #include <QtQuickTest/quicktest.h>
+#include <QtQuickTestUtils/private/visualtestutils_p.h>
+#include <QtQuickControlsTestUtils/private/controlstestutils_p.h>
 #include <QtQuickControls2/qquickstyle.h>
 
 int main(int argc, char *argv[])
@@ -12,6 +14,7 @@ int main(int argc, char *argv[])
     // and some of them try to open menus, which we can't test natively.
     QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuWindows);
     QQuickStyle::setStyle("iOS");
-    return quick_test_main(argc, argv, "tst_controls::iOS", TST_CONTROLS_DATA);
+    QQuickControlsTestUtils::QmlTestHelper setup;
+    return quick_test_main_with_setup(argc, argv, "tst_controls::iOS", TST_CONTROLS_DATA, &setup);
 }
 

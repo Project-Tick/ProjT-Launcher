@@ -99,6 +99,11 @@ Window {
         }
 
         ListElement {
+            text: "Fill under lines"
+            source: "fillUnderLines.qml"
+        }
+
+        ListElement {
             text: "Gradient spread modes"
             source: "gradientSpreadModes.qml"
         }

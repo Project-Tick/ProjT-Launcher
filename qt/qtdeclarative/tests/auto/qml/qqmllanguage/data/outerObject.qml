@@ -15,4 +15,8 @@ QtObject {
     function doInstantiate() {
         innerObject = delegate.createObject(self, {objectWithProperty: objectWithProperty})
     }
+
+    function doWrong() {
+        innerObject = delegate.createObject(self, {objectWithProperty: "foo"})
+    }
 }

@@ -1632,7 +1632,7 @@ public:
     Q_QML_EXPORT static QString localCacheFilePath(const QUrl &url);
     Q_QML_EXPORT bool loadFromDisk(
             const QUrl &url, const QDateTime &sourceTimeStamp, QString *errorString);
-    Q_QML_EXPORT bool saveToDisk(const QUrl &unitUrl, QString *errorString);
+    Q_QML_EXPORT bool saveToDisk(const QUrl &unitUrl, QString *errorString) const;
 
     int importCount() const { return qmlData->nImports; }
     const CompiledData::Import *importAt(int index) const { return qmlData->importAt(index); }

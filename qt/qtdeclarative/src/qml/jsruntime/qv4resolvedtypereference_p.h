@@ -45,7 +45,7 @@ public:
     // For everything else the QQmlType and QQmlPropertyCache are enough.
     // Furthermore, if the reference points to a type from the same compilation unit, it also won't
     // hold a compilation unit since the object creator can just use the one it has already.
-    QQmlRefPointer<QV4::CompiledData::CompilationUnit> compilationUnit()
+    QQmlRefPointer<QV4::CompiledData::CompilationUnit> compilationUnit() const
     {
         Q_ASSERT(!m_isSelfReference);
         return m_compilationUnit;

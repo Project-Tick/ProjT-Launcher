@@ -320,6 +320,8 @@ bool QtObject::isQtObject(const QJSValue &value) const
 
     Returns the color corresponding to the given \a name (i.e. red or #ff0000).
     If there is no such color, \c null is returned.
+
+    \note Prefer using the typed \l{Color::fromString}
 */
 QVariant QtObject::color(const QString &name) const
 {
@@ -337,6 +339,8 @@ QVariant QtObject::color(const QString &name) const
 
     Returns a color with the specified \a red, \a green, \a blue, and \a alpha
     components. All components should be in the range 0-1 (inclusive).
+
+    \note Prefer using the typed \l{Color::rgba}
 */
 QVariant QtObject::rgba(double r, double g, double b, double a) const
 {
@@ -353,6 +357,8 @@ QVariant QtObject::rgba(double r, double g, double b, double a) const
 
     Returns a color with the specified \a hue, \a saturation, \a lightness, and \a alpha
     components. All components should be in the range 0-1 (inclusive).
+
+    \note Prefer using the typed \l{Color::hsla}
 */
 QVariant QtObject::hsla(double h, double s, double l, double a) const
 {
@@ -372,6 +378,7 @@ QVariant QtObject::hsla(double h, double s, double l, double a) const
     Returns a color with the specified \a hue, \a saturation, \a value and \a alpha
     components. All components should be in the range 0-1 (inclusive).
 
+    \note Prefer using the typed \l{Color::hsva}
 */
 QVariant QtObject::hsva(double h, double s, double v, double a) const
 {
@@ -391,6 +398,8 @@ QVariant QtObject::hsva(double h, double s, double v, double a) const
     arguments may be either color values or string values. If a string value
     is supplied it must be convertible to a color, as described for the
     \l{colorvaluetypedocs}{color} value type.
+
+    \note Prefer using the typed \l{Color::equal}
 */
 bool QtObject::colorEqual(const QVariant &lhs, const QVariant &rhs) const
 {
@@ -649,6 +658,8 @@ static QVariant colorVariantFromJSValue(const QJSValue &color, bool *ok)
     by factor and converts the color back to RGB.
 
     If \a factor is not supplied, returns a color that is 50% lighter than \a baseColor (factor 1.5).
+
+    \note Prefer using the typed \l{Color::lighter}
 */
 QVariant QtObject::lighter(const QJSValue &color, double factor) const
 {
@@ -672,6 +683,8 @@ QVariant QtObject::lighter(const QJSValue &color, double factor) const
     by factor and converts the color back to RGB.
 
     If \a factor is not supplied, returns a color that is 50% darker than \a baseColor (factor 2.0).
+
+    \note Prefer using the typed \l{Color::darker}
 */
 QVariant QtObject::darker(const QJSValue &color, double factor) const
 {
@@ -686,6 +699,8 @@ QVariant QtObject::darker(const QJSValue &color, double factor) const
     Returns \a baseColor with an alpha value of \a value.
 
     \a value is a real ranging from 0 (completely transparent) to 1 (completely opaque).
+
+    \note Prefer using the typed \l{Color::alpha}
 */
 QVariant QtObject::alpha(const QJSValue &baseColor, double value) const
 {
@@ -720,6 +735,8 @@ QVariant QtObject::alpha(const QJSValue &baseColor, double value) const
 
     Tint is most useful when a subtle change is intended to be conveyed due to some event;
     you can then use tinting to more effectively tune the visible color.
+
+    \note Prefer using the typed \l{Color::tint}
 */
 QVariant QtObject::tint(const QJSValue &baseColor, const QJSValue &tintColor) const
 {

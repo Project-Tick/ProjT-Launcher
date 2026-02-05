@@ -479,6 +479,7 @@ private slots:
     void innerFunctionWithTypeAnnotation();
 
     void engineTypeCrossTalk();
+    void failOnWrongRequiredProperty();
 
     void onlyInlineComponent();
 
@@ -9262,6 +9263,19 @@ public:
         QCOMPARE(withProperty, object->property("objectWithProperty").value<QObject *>());
     }
 
+    void wreck2(const QUrl &inner) {
+        QQmlComponent component(&engine, inner);
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        object->setProperty("delegate", QVariant::fromValue(&component));
+        QTest::ignoreMessage(
+                    QtWarningMsg,
+                    qPrintable(
+                        QLatin1String("%1: Could not set initial property objectWithProperty")
+                        .arg(inner.toString())));
+        QMetaObject::invokeMethod(object.get(), "doWrong");
+        QCOMPARE(object->property("innerObject").value<QObject *>(), nullptr);
+    }
+
     QQmlEngine engine;
     std::unique_ptr<QObject> object;
 };
@@ -9275,6 +9289,12 @@ void tst_qqmllanguage::engineTypeCrossTalk()
     const QUrl inner("qrc:/StaticTest/data/InnerObject.qml");
     first.wreck(inner);
     second.wreck(inner);
+}
+
+void tst_qqmllanguage::failOnWrongRequiredProperty()
+{
+    EngineAndObject outer(QUrl("qrc:/StaticTest/data/outerObject.qml"));
+    outer.wreck2(QUrl("qrc:/StaticTest/data/InnerObject.qml"));
 }
 
 void tst_qqmllanguage::onlyInlineComponent()

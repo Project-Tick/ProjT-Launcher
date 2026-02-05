@@ -44,8 +44,6 @@ void tst_generate_qmlls_ini::qmllsIniAreCorrect_data()
     QTest::addColumn<QString>("folder");
     QTest::addColumn<QStringList>("expectedBuildDirs");
     QTest::addColumn<QString>("expectedNoCMakeCalls");
-    QTest::addColumn<QString>("expectedDocDir");
-    QTest::addColumn<QStringList>("expectedImportPaths");
 
     QDir source(SOURCE_DIRECTORY);
     QDir build(BUILD_DIRECTORY);
@@ -55,7 +53,6 @@ void tst_generate_qmlls_ini::qmllsIniAreCorrect_data()
     }
 
     const QString &docPath = QLibraryInfo::path(QLibraryInfo::DocumentationPath);
-    const QStringList defaultImportPaths{ QLibraryInfo::path(QLibraryInfo::QmlImportsPath) };
     const QString noCMakeCalls = "false"_L1;
 
     QTest::addRow("subfolders") << source.absolutePath()
@@ -63,7 +60,7 @@ void tst_generate_qmlls_ini::qmllsIniAreCorrect_data()
                                                 QDir(build.absolutePath().append(
                                                              "/qml/hello/subfolders"_L1))
                                                         .absolutePath() }
-                                << noCMakeCalls << docPath << defaultImportPaths;
+                                << noCMakeCalls;
 
     {
         QDir sourceSubfolder = source;
@@ -71,7 +68,7 @@ void tst_generate_qmlls_ini::qmllsIniAreCorrect_data()
         QTest::addRow("subfolders2")
                 << sourceSubfolder.absolutePath()
                 << QStringList{ build.absoluteFilePath(u"SomeSubfolder/qml/Some/Sub/Folder"_s) }
-                << noCMakeCalls << docPath << defaultImportPaths;
+                << noCMakeCalls;
     }
 
     {
@@ -80,7 +77,7 @@ void tst_generate_qmlls_ini::qmllsIniAreCorrect_data()
         QVERIFY(dottedUriSubfolder.cd(u"Uri"_s));
         QTest::addRow("dotted-uri")
                 << dottedUriSubfolder.absolutePath() << QStringList{ build.absolutePath() }
-                << noCMakeCalls << docPath << defaultImportPaths;
+                << noCMakeCalls;
     }
     {
         QDir dottedUriSubfolder = source;
@@ -91,7 +88,7 @@ void tst_generate_qmlls_ini::qmllsIniAreCorrect_data()
 
         QTest::addRow("dotted-uri2")
                 << dottedUriSubfolder.absolutePath() << QStringList{ build.absolutePath() }
-                << noCMakeCalls << docPath << defaultImportPaths;
+                << noCMakeCalls;
     }
     {
         QDir dottedUriSubfolder = source;
@@ -99,28 +96,28 @@ void tst_generate_qmlls_ini::qmllsIniAreCorrect_data()
         QVERIFY(dottedUriSubfolder.cd(u"MyModule"_s));
         QTest::addRow("module-with-dependency")
                 << dottedUriSubfolder.absolutePath() << QStringList{ build.absoluteFilePath(u"ModuleWithDependency"_s), }
-                << noCMakeCalls << docPath << QStringList { build.absoluteFilePath(u"Dependency"_s) } + defaultImportPaths;
+                << noCMakeCalls;
     }
     {
         QDir quotesInPath = source;
         QVERIFY(quotesInPath.cd(u"quotesInPath"_s));
         QTest::addRow("quotes-in-path")
                 << quotesInPath.absolutePath() << QStringList{ build.absolutePath(), }
-                << noCMakeCalls << docPath << QStringList {R"(\"hello\"\"world\")"_L1 } + defaultImportPaths;
+                << noCMakeCalls;
     }
     {
         QDir withoutCMakeBuilds = source;
         QVERIFY(withoutCMakeBuilds.cd(u"WithoutCMakeBuilds"_s));
         QTest::addRow("without-cmake-calls")
                 << withoutCMakeBuilds.absolutePath() << QStringList{ build.absolutePath(), }
-                << u"true"_s << docPath << defaultImportPaths;
+                << u"true"_s;
     }
     {
         QDir wrongOutput = source;
         QVERIFY(wrongOutput.cd(u"WrongOutput"_s));
         QTest::addRow("wrong-output")
                 << wrongOutput.absolutePath() << QStringList{ build.filePath("WrongOutput"), }
-                << noCMakeCalls << docPath << defaultImportPaths;
+                << noCMakeCalls;
     }
 }
 
@@ -129,22 +126,17 @@ void tst_generate_qmlls_ini::qmllsIniAreCorrect()
     QFETCH(QString, folder);
     QFETCH(QStringList, expectedBuildDirs);
     QFETCH(QString, expectedNoCMakeCalls);
-    QFETCH(QString, expectedDocDir);
-    QFETCH(QStringList, expectedImportPaths);
 
     static constexpr QLatin1String qmllsIniName = ".qmlls.ini"_L1;
     static constexpr QLatin1String qmllsIniTemplate = R"([General]
 buildDir="%1"
 no-cmake-calls=%2
-docDir=%3
-importPaths="%4"
 )"_L1;
 
     const QString iniContent = contentOf(QString(folder).append("/"_L1).append(qmllsIniName));
     QCOMPARE(iniContent,
              qmllsIniTemplate.arg(expectedBuildDirs.join(QDir::listSeparator()),
-                                  expectedNoCMakeCalls, expectedDocDir,
-                                  expectedImportPaths.join(QDir::listSeparator())));
+                                  expectedNoCMakeCalls));
 }
 
 void tst_generate_qmlls_ini::qmllsBuildIni_data()
@@ -206,14 +198,26 @@ void tst_generate_qmlls_ini::qmllsBuildIni()
 
     const QString content = contentOf(build.filePath(qmllsBuildIniPath));
 
-    static constexpr QLatin1String expectedContent = R"([%1]
-importPaths="%2"
-resourceFiles="%3"
-)"_L1;
-    QVERIFY(content.contains(
-            expectedContent.arg(expectedSource.replace("/"_L1, "<SLASH>"_L1),
-                                expectedImportPaths.join(QDir::listSeparator()),
-                                expectedResourceFiles.join(QDir::listSeparator()))));
+    QVERIFY(content.contains("version=2"));
+
+    const qsizetype endIndex = content.indexOf("\\sourcePath=\"%1\""_L1.arg(expectedSource));
+    QCOMPARE_NE(endIndex, -1);
+    const qsizetype startIndex = QStringView(content).first(endIndex).lastIndexOf(u'\n');
+    QCOMPARE_NE(startIndex, -1);
+
+    bool ok = false;
+    const qsizetype index =
+            QStringView(content).slice(startIndex, endIndex - startIndex).toInt(&ok);
+    QVERIFY(ok);
+
+    const QString expectedContent = R"(
+%4\sourcePath="%1"
+%4\importPaths="%2"
+%4\resourceFiles="%3"
+)"_L1.arg(expectedSource, expectedImportPaths.join(QDir::listSeparator()),
+          expectedResourceFiles.join(QDir::listSeparator()), QString::number(index));
+
+    QVERIFY(content.contains(expectedContent));
 }
 
 QTEST_MAIN(tst_generate_qmlls_ini)

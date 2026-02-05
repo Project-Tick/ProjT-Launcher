@@ -2,7 +2,7 @@ include($QT_INSTALL_DOCS/global/qt-module-defaults.qdocconf)
 include($QT_INSTALL_DOCS/config/exampleurl-qtdeclarative.qdocconf)
 
 project                 = QtQmlXmlListModel
-description             = Qt QML XmlListModel Reference Documentation
+description             = Qt Qml XmlListModel Reference Documentation
 version                 = $QT_VERSION
 moduleheader            = QtQmlXmlListModel
 qhp.projects            = QtQmlXmlListModel
@@ -11,12 +11,12 @@ qhp.QtQmlXmlListModel.file                = qtqmlxmllistmodel.qhp
 qhp.QtQmlXmlListModel.namespace           = org.qt-project.qtqmlxmllistmodel.$QT_VERSION_TAG
 qhp.QtQmlXmlListModel.virtualFolder       = qtqmlxmllistmodel
 qhp.QtQmlXmlListModel.indexRoot           =
-qhp.QtQmlXmlListModel.indexTitle = Qt XmlListModel
+qhp.QtQmlXmlListModel.indexTitle = Qt Qml XmlListModel
 
 qhp.QtQmlXmlListModel.subprojects         = qmltypes
 
 qhp.QtQmlXmlListModel.subprojects.qmltypes.title = QML Types
-qhp.QtQmlXmlListModel.subprojects.qmltypes.indexTitle = Qt XmlListModel QML Types
+qhp.QtQmlXmlListModel.subprojects.qmltypes.indexTitle = Qt Qml XmlListModel QML Types
 qhp.QtQmlXmlListModel.subprojects.qmltypes.selectors = qmltype
 qhp.QtQmlXmlListModel.subprojects.qmltypes.sortPages = true
 
@@ -33,7 +33,7 @@ exampledirs += .. \
 
 imagedirs += images
 
-navigation.qmltypespage = "Qt XmlListModel QML Types"
+navigation.qmltypespage = "Qt Qml XmlListModel QML Types"
 
 # Enforce zero documentation warnings
 warninglimit = 0

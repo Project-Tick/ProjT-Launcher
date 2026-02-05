@@ -1715,7 +1715,8 @@ bool PassManager::hasImportedModule(QAnyStringView module) const
  */
 bool PassManager::isCategoryEnabled(LoggerWarningId category) const
 {
-    return !PassManagerPrivate::visitor(*this)->logger()->isCategoryIgnored(category);
+    const auto *logger = PassManagerPrivate::visitor(*this)->logger();
+    return logger->categorySeverity(category) != WarningSeverity::Disable;
 }
 
 QQmlJSImportVisitor *QQmlSA::PassManagerPrivate::visitor(const QQmlSA::PassManager &manager)
@@ -1753,18 +1754,6 @@ QSet<PropertyPass *> PassManagerPrivate::findPropertyUsePasses(const QQmlSA::Ele
         }
     }
     return passes;
-}
-
-void DebugElementPass::run(const Element &element) {
-    emitWarning(u"Type: " + element.baseTypeName(), qmlPlugin);
-    if (auto bindings = element.propertyBindings(u"objectName"_s); !bindings.isEmpty()) {
-        emitWarning(u"is named: " + bindings.first().stringValue(), qmlPlugin);
-    }
-    if (auto defPropName = element.defaultPropertyName(); !defPropName.isEmpty()) {
-        emitWarning(u"binding " + QString::number(element.propertyBindings(defPropName).size())
-                            + u" elements to property "_s + defPropName,
-                    qmlPlugin);
-    }
 }
 
 /*!
@@ -1951,58 +1940,6 @@ void PropertyPass::onWrite(const Element &element, const QString &propertyName,
     Q_UNUSED(location);
 }
 
-DebugPropertyPass::DebugPropertyPass(QQmlSA::PassManager *manager) : QQmlSA::PropertyPass(manager)
-{
-}
-
-void DebugPropertyPass::onRead(const QQmlSA::Element &element, const QString &propertyName,
-                               const QQmlSA::Element &readScope, QQmlSA::SourceLocation location)
-{
-    emitWarning(u"onRead "_s
-                        + (QQmlJSScope::scope(element)->internalName().isEmpty()
-                                   ? element.baseTypeName()
-                                   : QQmlJSScope::scope(element)->internalName())
-                        + u' ' + propertyName + u' ' + QQmlJSScope::scope(readScope)->internalName()
-                        + u' ' + QString::number(location.startLine()) + u':'
-                        + QString::number(location.startColumn()),
-                qmlPlugin, location);
-}
-
-void DebugPropertyPass::onBinding(const QQmlSA::Element &element, const QString &propertyName,
-                                  const QQmlSA::Binding &binding,
-                                  const QQmlSA::Element &bindingScope, const QQmlSA::Element &value)
-{
-    const auto location = QQmlSA::SourceLocation{ binding.sourceLocation() };
-    emitWarning(u"onBinding element: '"_s
-                        + (QQmlJSScope::scope(element)->internalName().isEmpty()
-                                   ? element.baseTypeName()
-                                   : QQmlJSScope::scope(element)->internalName())
-                        + u"' property: '"_s + propertyName + u"' value: '"_s
-                        + (value.isNull() ? u"NULL"_s
-                                          : (QQmlJSScope::scope(value)->internalName().isNull()
-                                                     ? value.baseTypeName()
-                                                     : QQmlJSScope::scope(value)->internalName()))
-                        + u"' binding_scope: '"_s
-                        + (QQmlJSScope::scope(bindingScope)->internalName().isEmpty()
-                                   ? bindingScope.baseTypeName()
-                                   : QQmlJSScope::scope(bindingScope)->internalName())
-                        + u"' "_s + QString::number(location.startLine()) + u':'
-                        + QString::number(location.startColumn()),
-                qmlPlugin, location);
-}
-
-void DebugPropertyPass::onWrite(const QQmlSA::Element &element, const QString &propertyName,
-                                const QQmlSA::Element &value, const QQmlSA::Element &writeScope,
-                                QQmlSA::SourceLocation location)
-{
-    emitWarning(u"onWrite "_s + element.baseTypeName() + u' ' + propertyName + u' '
-                        + QQmlJSScope::scope(value)->internalName() + u' '
-                        + QQmlJSScope::scope(writeScope)->internalName() + u' '
-                        + QString::number(location.startLine()) + u':'
-                        + QString::number(location.startColumn()),
-                qmlPlugin, location);
-}
-
 /*!
     Returns bindings by their source location.
  */
@@ -2014,10 +1951,10 @@ std::unordered_map<quint32, Binding> PassManager::bindingsByLocation() const
 
 FixSuggestionPrivate::FixSuggestionPrivate(FixSuggestion *iface) : q_ptr{ iface } { }
 
-FixSuggestionPrivate::FixSuggestionPrivate(FixSuggestion *iface, const QString &fixDescription,
+FixSuggestionPrivate::FixSuggestionPrivate(FixSuggestion *iface, const QString &description,
                                            const QQmlSA::SourceLocation &location,
                                            const QString &replacement)
-    : m_fixSuggestion{ fixDescription, QQmlSA::SourceLocationPrivate::sourceLocation(location),
+    : m_fixSuggestion{ description, QQmlSA::SourceLocationPrivate::sourceLocation(location),
                        replacement },
       q_ptr{ iface }
 {
@@ -2034,9 +1971,9 @@ FixSuggestionPrivate::FixSuggestionPrivate(FixSuggestion *iface, FixSuggestionPr
 {
 }
 
-QString FixSuggestionPrivate::fixDescription() const
+QString FixSuggestionPrivate::description() const
 {
-    return m_fixSuggestion.fixDescription();
+    return m_fixSuggestion.description();
 }
 
 QQmlSA::SourceLocation FixSuggestionPrivate::location() const
@@ -2057,16 +1994,6 @@ void FixSuggestionPrivate::setFileName(const QString &fileName)
 QString FixSuggestionPrivate::fileName() const
 {
     return m_fixSuggestion.filename();
-}
-
-void FixSuggestionPrivate::setHint(const QString &hint)
-{
-    m_fixSuggestion.setHint(hint);
-}
-
-QString FixSuggestionPrivate::hint() const
-{
-    return m_fixSuggestion.hint();
 }
 
 void FixSuggestionPrivate::setAutoApplicable(bool autoApplicable)
@@ -2100,9 +2027,9 @@ const QQmlJSFixSuggestion &FixSuggestionPrivate::fixSuggestion(const FixSuggesti
 /*!
     Creates a FixSuggestion object.
  */
-FixSuggestion::FixSuggestion(const QString &fixDescription, const QQmlSA::SourceLocation &location,
+FixSuggestion::FixSuggestion(const QString &description, const QQmlSA::SourceLocation &location,
                              const QString &replacement)
-    : d_ptr{ new FixSuggestionPrivate{ this, fixDescription, location, replacement } }
+    : d_ptr{ new FixSuggestionPrivate{ this, description, location, replacement } }
 {
 }
 
@@ -2154,9 +2081,10 @@ FixSuggestion::~FixSuggestion() = default;
 /*!
     Returns the description of the fix.
  */
-QString QQmlSA::FixSuggestion::fixDescription() const
+QString QQmlSA::FixSuggestion::description() const
 {
-    return FixSuggestionPrivate::fixSuggestion(*this).fixDescription();
+    Q_D(const FixSuggestion);
+    return d->description();
 }
 
 /*!
@@ -2164,8 +2092,8 @@ QString QQmlSA::FixSuggestion::fixDescription() const
  */
 QQmlSA::SourceLocation FixSuggestion::location() const
 {
-    return QQmlSA::SourceLocationPrivate::createQQmlSASourceLocation(
-            FixSuggestionPrivate::fixSuggestion(*this).location());
+    Q_D(const FixSuggestion);
+    return d->location();
 }
 
 /*!
@@ -2173,7 +2101,8 @@ QQmlSA::SourceLocation FixSuggestion::location() const
  */
 QString FixSuggestion::replacement() const
 {
-    return FixSuggestionPrivate::fixSuggestion(*this).replacement();
+    Q_D(const FixSuggestion);
+    return d->replacement();
 }
 
 /*!
@@ -2193,28 +2122,13 @@ QString FixSuggestion::fileName() const
 }
 
 /*!
-    Sets \a hint as the hint for this fix suggestion.
- */
-void FixSuggestion::setHint(const QString &hint)
-{
-    FixSuggestionPrivate::fixSuggestion(*this).setHint(hint);
-}
-
-/*!
-    Returns the hint for this fix suggestion.
- */
-QString FixSuggestion::hint() const
-{
-    return FixSuggestionPrivate::fixSuggestion(*this).hint();
-}
-
-/*!
     Sets \a autoApplicable to determine whether this suggested fix can be
     applied automatically.
  */
 void FixSuggestion::setAutoApplicable(bool autoApplicable)
 {
-    return FixSuggestionPrivate::fixSuggestion(*this).setAutoApplicable(autoApplicable);
+    Q_D(FixSuggestion);
+    d->setAutoApplicable(autoApplicable);
 }
 
 /*!
@@ -2222,7 +2136,8 @@ void FixSuggestion::setAutoApplicable(bool autoApplicable)
  */
 bool QQmlSA::FixSuggestion::isAutoApplicable() const
 {
-    return FixSuggestionPrivate::fixSuggestion(*this).isAutoApplicable();
+    Q_D(const FixSuggestion);
+    return d->isAutoApplicable();
 }
 
 /*!
@@ -2251,7 +2166,7 @@ void emitWarningWithOptionalFix(GenericPass &pass, QAnyStringView diagnostic,
 
     const QQmlSA::SourceLocation location =
             QQmlSA::SourceLocationPrivate::createQQmlSASourceLocation(fix->location());
-    const QQmlSA::FixSuggestion saFix{ fix->fixDescription(), location, fix->replacement() };
+    const QQmlSA::FixSuggestion saFix{ fix->description(), location, fix->replacement() };
     pass.emitWarning(diagnostic, id, srcLocation, saFix);
 }
 

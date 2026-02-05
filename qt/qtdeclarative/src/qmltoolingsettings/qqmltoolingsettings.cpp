@@ -207,6 +207,11 @@ QQmlToolingSettings::SearchResult QQmlToolingSettings::search(
     return SearchResult();
 }
 
+void QQmlToolingSettings::setValue(const QString &name, QVariant value)
+{
+    m_values[name] = value;
+}
+
 QVariant QQmlToolingSettings::value(const QString &name) const
 {
     return m_values.value(name);

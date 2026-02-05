@@ -29,7 +29,7 @@ public:
         : QQmlJSCompilePass(jsUnitGenerator, typeResolver, logger, basicBlocks, annotations)
     {}
 
-    BlocksAndAnnotations run(Function *function);
+    BlocksAndAnnotations run(const Function *function);
 
 protected:
     // We don't have to use the byte code here. We only transform the instruction annotations.

@@ -768,12 +768,12 @@ void AttachedPropertyReuse::onRead(const QQmlSA::Element &element, const QString
             const QQmlSA::SourceLocation idInsertLocation{ attachedLocation.offset(), 0,
                                                            attachedLocation.startLine(),
                                                            attachedLocation.startColumn() };
-            QQmlSA::FixSuggestion suggestion{ "Reference it by id instead:"_L1, idInsertLocation,
+            QString m = "Reference it by id instead%1:"_L1;
+            m = m.arg(id.isEmpty() ? " (You first have to give the element and id)"_L1 : ""_L1);
+            QQmlSA::FixSuggestion suggestion{ m, idInsertLocation,
                                               id.isEmpty() ? u"<id>."_s : (id + '.'_L1) };
 
-            if (id.isEmpty())
-                suggestion.setHint("You first have to give the element an id"_L1);
-            else
+            if (!id.isEmpty())
                 suggestion.setAutoApplicable();
 
             emitWarning("Using attached type %1 already initialized in a parent scope."_L1.arg(

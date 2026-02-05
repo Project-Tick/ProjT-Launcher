@@ -153,7 +153,7 @@ FormalParameterList *ExpressionNode::reparseAsFormalParameterList(MemoryPool *po
     } else if (AST::Pattern *p = expr->patternCast()) {
         SourceLocation loc;
         QString s;
-        if (!p->convertLiteralToAssignmentPattern(pool, &loc, &s))
+        if (!p->convertLiteralToAssignmentPattern(&loc, &s))
             return nullptr;
         binding = new (pool) AST::PatternElement(p, rhs);
         binding->identifierToken = p->firstSourceLocation();
@@ -379,7 +379,7 @@ PropertyName:
     ComputedPropertyName
 
 */
-bool ArrayPattern::convertLiteralToAssignmentPattern(MemoryPool *pool, SourceLocation *errorLocation, QString *errorMessage)
+bool ArrayPattern::convertLiteralToAssignmentPattern(SourceLocation *errorLocation, QString *errorMessage)
 {
     if (parseMode == Binding)
         return true;
@@ -391,26 +391,26 @@ bool ArrayPattern::convertLiteralToAssignmentPattern(MemoryPool *pool, SourceLoc
             *errorMessage = QString::fromLatin1("'...' can only appear as last element in a destructuring list.");
             return false;
         }
-        if (!it->element->convertLiteralToAssignmentPattern(pool, errorLocation, errorMessage))
+        if (!it->element->convertLiteralToAssignmentPattern(errorLocation, errorMessage))
             return false;
     }
     parseMode = Binding;
     return true;
 }
 
-bool ObjectPattern::convertLiteralToAssignmentPattern(MemoryPool *pool, SourceLocation *errorLocation, QString *errorMessage)
+bool ObjectPattern::convertLiteralToAssignmentPattern(SourceLocation *errorLocation, QString *errorMessage)
 {
     if (parseMode == Binding)
         return true;
     for (auto *it = properties; it; it = it->next) {
-        if (!it->property->convertLiteralToAssignmentPattern(pool, errorLocation, errorMessage))
+        if (!it->property->convertLiteralToAssignmentPattern(errorLocation, errorMessage))
             return false;
     }
     parseMode = Binding;
     return true;
 }
 
-bool PatternElement::convertLiteralToAssignmentPattern(MemoryPool *pool, SourceLocation *errorLocation, QString *errorMessage)
+bool PatternElement::convertLiteralToAssignmentPattern(SourceLocation *errorLocation, QString *errorMessage)
 {
     Q_ASSERT(type == Literal || type == SpreadElement);
     Q_ASSERT(bindingIdentifier.isNull());
@@ -457,13 +457,13 @@ bool PatternElement::convertLiteralToAssignmentPattern(MemoryPool *pool, SourceL
 
     bindingTarget = lhs;
     if (auto *p = lhs->patternCast()) {
-        if (!p->convertLiteralToAssignmentPattern(pool, errorLocation, errorMessage))
+        if (!p->convertLiteralToAssignmentPattern(errorLocation, errorMessage))
             return false;
     }
     return true;
 }
 
-bool PatternProperty::convertLiteralToAssignmentPattern(MemoryPool *pool, SourceLocation *errorLocation, QString *errorMessage)
+bool PatternProperty::convertLiteralToAssignmentPattern(SourceLocation *errorLocation, QString *errorMessage)
 {
     Q_ASSERT(type != SpreadElement);
     if (type == Binding)
@@ -476,7 +476,7 @@ bool PatternProperty::convertLiteralToAssignmentPattern(MemoryPool *pool, Source
     if (type == Method)
         type = Literal;
     Q_ASSERT(type == Literal);
-    return PatternElement::convertLiteralToAssignmentPattern(pool, errorLocation, errorMessage);
+    return PatternElement::convertLiteralToAssignmentPattern(errorLocation, errorMessage);
 }
 
 

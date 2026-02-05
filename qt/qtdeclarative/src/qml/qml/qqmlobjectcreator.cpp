@@ -248,7 +248,7 @@ void QQmlObjectCreator::populateDeferred(QObject *instance, int deferredIndex,
         Q_ASSERT(qmlProperty);
         Q_ASSERT(binding->hasFlag(QV4::CompiledData::Binding::IsDeferredBinding));
 
-        QQmlListProperty<void> savedList;
+        QQmlListProperty<QObject> savedList;
         qSwap(_currentList, savedList);
 
         const QQmlPropertyData &property = qmlProperty->core;
@@ -257,7 +257,7 @@ void QQmlObjectCreator::populateDeferred(QObject *instance, int deferredIndex,
             void *argv[1] = { (void*)&_currentList };
             QMetaObject::metacall(_qobject, QMetaObject::ReadProperty, property.coreIndex(), argv);
         } else if (_currentList.object) {
-            _currentList = QQmlListProperty<void>();
+            _currentList = QQmlListProperty<QObject>();
         }
 
         setPropertyBinding(&property, binding);
@@ -700,7 +700,7 @@ static QQmlType qmlTypeForObject(QObject *object)
 
 void QQmlObjectCreator::setupBindings(BindingSetupFlags mode)
 {
-    QQmlListProperty<void> savedList;
+    QQmlListProperty<QObject> savedList;
     qSwap(_currentList, savedList);
 
     const QV4::CompiledData::BindingPropertyData *propertyData
@@ -818,7 +818,7 @@ void QQmlObjectCreator::setupBindings(BindingSetupFlags mode)
                 }
             }
         } else if (_currentList.object) {
-            _currentList = QQmlListProperty<void>();
+            _currentList = QQmlListProperty<QObject>();
             currentListPropertyIndex = -1;
         }
 
@@ -1233,13 +1233,13 @@ bool QQmlObjectCreator::setPropertyBinding(const QQmlPropertyData *bindingProper
         } else if (bindingProperty->propType().flags().testFlag(QMetaType::IsQmlList)) {
             Q_ASSERT(_currentList.object);
 
-            void *itemToAdd = createdSubObject;
+            QObject *itemToAdd = createdSubObject;
 
             QMetaType listItemType = QQmlMetaType::listValueType(bindingProperty->propType());
             if (listItemType.isValid()) {
                 const char *iid = QQmlMetaType::interfaceIId(listItemType);
                 if (iid)
-                    itemToAdd = createdSubObject->qt_metacast(iid);
+                    itemToAdd = static_cast<QObject *>(createdSubObject->qt_metacast(iid));
             }
 
             if (_currentList.append)
@@ -1314,148 +1314,250 @@ void QQmlObjectCreator::registerObjectWithContextById(const QV4::CompiledData::O
 QObject *QQmlObjectCreator::createInstance(int index, QObject *parent, bool isContextObject)
 {
     const QV4::CompiledData::Object *obj = compilationUnit->objectAt(index);
-    QQmlObjectCreationProfiler profiler(sharedState->profiler.profiler, obj);
     Q_TRACE(QQmlObjectCreator_createInstance_entry, compilationUnit.data(), obj, context->url());
-    QString typeName;
-    Q_TRACE_EXIT(QQmlObjectCreator_createInstance_exit, typeName);
+    QQmlObjectCreationProfiler profiler(sharedState->profiler.profiler, obj);
 
-    QScopedValueRollback<QQmlObjectCreator*> ocRestore(QQmlEnginePrivate::get(engine)->activeObjectCreator, this);
 
-    bool isComponent = false;
-    QObject *instance = nullptr;
-    QQmlData *ddata = nullptr;
-    QQmlCustomParser *customParser = nullptr;
-
-    QQmlParserStatus *parserStatus = nullptr;
-    int parserStatusCast = 0;
-    size_t instanceIndex = 0;
-
-    bool installPropertyCache = true;
+    const InitFlags flags = (isContextObject ? InitFlag::IsContextObject : InitFlag::None)
+            | (index == 0 ? InitFlag::IsDocumentRoot : InitFlag::None);
 
     if (obj->hasFlag(QV4::CompiledData::Object::IsComponent)) {
-        isComponent = true;
-        instance = createComponent(engine, compilationUnit.data(), index, parent, context);
-        typeName = QStringLiteral("<component>");
-        ddata = QQmlData::get(instance);
-        Q_ASSERT(ddata); // we just created it inside createComponent
-    } else {
-        QV4::ResolvedTypeReference *typeRef = resolvedType(obj->inheritedTypeNameIndex);
-        Q_ASSERT(typeRef);
-        installPropertyCache = !typeRef->isFullyDynamicType();
-        const QQmlType type = typeRef->type();
-        Q_ASSERT(type.isValid());
-        typeName = type.qmlTypeName();
-        if (!type.isComposite() && !type.isInlineComponentType()) {
-
-            instance = type.createWithQQmlData();
-            if (!instance) {
-                recordError(obj->location, tr("Unable to create object of type %1").arg(stringAt(obj->inheritedTypeNameIndex)));
-                return nullptr;
-            }
-
-            const int finalizerCast = type.finalizerCast();
-            if (finalizerCast != -1) {
-                auto hook = reinterpret_cast<QQmlFinalizerHook *>(reinterpret_cast<char *>(instance) + finalizerCast);
-                sharedState->finalizeHooks.push_back(hook);
-            }
-
-            parserStatusCast = type.parserStatusCast();
-            if (parserStatusCast != -1)
-                parserStatus = reinterpret_cast<QQmlParserStatus*>(reinterpret_cast<char *>(instance) + parserStatusCast);
-
-            customParser = type.customParser();
-
-            if (sharedState->rootContext && sharedState->rootContext->isRootObjectInCreation()) {
-                QQmlData *ddata = QQmlData::get(instance, /*create*/true);
-                ddata->rootObjectInCreation = true;
-                sharedState->rootContext->setRootObjectInCreation(false);
-            }
-
-            instanceIndex = sharedState->allCreatedObjects.size();
-            sharedState->allCreatedObjects.push_back(instance);
-        } else {
-            if (type.isSingleton()) {
-                recordError(
-                        obj->location,
-                        tr("Composite Singleton Type %1 is not creatable")
-                                .arg(stringAt(obj->inheritedTypeNameIndex)));
-                return nullptr;
-            }
-
-            QQmlRefPointer<QV4::ExecutableCompilationUnit> executableCu = typeRef->isSelfReference()
-                    ? compilationUnit
-                    : engine->handle()->executableCompilationUnit(typeRef->compilationUnit());
-            Q_ASSERT(executableCu);
-
-            if (!type.isInlineComponentType()) {
-                QQmlObjectCreator subCreator(
-                        context, executableCu,
-                        QString(), // not an inline component
-                        sharedState.data(), isContextObject);
-                instance = subCreator.create();
-                if (!instance) {
-                    errors += subCreator.errors;
-                    return nullptr;
-                }
-            } else {
-                const QString inlineComponentName = type.elementName();
-
-                const int inlineComponentId = executableCu->inlineComponentId(inlineComponentName);
-                QQmlObjectCreator subCreator(
-                        context, executableCu, inlineComponentName, sharedState.data(),
-                        isContextObject);
-                instance = subCreator.create(
-                        inlineComponentId, nullptr, nullptr, CreationFlags::InlineComponent);
-                if (!instance) {
-                    errors += subCreator.errors;
-                    return nullptr;
-                }
-            }
-        }
-        if (instance->isWidgetType()) {
-            if (parent && parent->isWidgetType()) {
-                QAbstractDeclarativeData::setWidgetParent(instance, parent);
-            } else {
-                // No parent! Layouts need to handle this through a default property that
-                // reparents accordingly. Otherwise the garbage collector will collect.
-            }
-        } else if (parent) {
-            QQml_setParent_noEvent(instance, parent);
-        }
-
-        ddata = QQmlData::get(instance, /*create*/true);
+        Q_TRACE_EXIT(QQmlObjectCreator_createInstance_exit, QStringLiteral("<component>"));
+        Q_QML_OC_PROFILE(
+                sharedState->profiler,
+                profiler.update(
+                        compilationUnit.data(), obj, QStringLiteral("<component>"),
+                        context->url()));
+        return initializeComponent(
+                obj, createComponent(engine, compilationUnit.data(), index, parent, context),
+                flags);
     }
 
-    Q_QML_OC_PROFILE(sharedState->profiler, profiler.update(
-        compilationUnit.data(), obj, typeName, context->url()));
-    Q_UNUSED(typeName); // only relevant for tracing
+    const QV4::ResolvedTypeReference *typeRef = resolvedType(obj->inheritedTypeNameIndex);
+    Q_ASSERT(typeRef);
+    const QQmlType type = typeRef->type();
+    Q_ASSERT(type.isValid());
 
+    Q_TRACE_EXIT(QQmlObjectCreator_createInstance_exit, type.qmlTypeName());
+    Q_QML_OC_PROFILE(
+            sharedState->profiler,
+            profiler.update(compilationUnit.data(), obj, type.qmlTypeName(), context->url()));
+
+    if (type.isCompositeSingleton()) {
+        recordError(
+                obj->location,
+                tr("Composite Singleton Type %1 is not creatable")
+                        .arg(stringAt(obj->inheritedTypeNameIndex)));
+        return nullptr;
+    }
+
+    if (!type.isComposite() && !type.isInlineComponentType()) {
+        if (QObject *instance = type.createWithQQmlData())
+            return initializeNonComposite(index, obj, typeRef, instance, parent, flags);
+        recordError(
+                obj->location,
+                tr("Unable to create object of type %1").arg(
+                        stringAt(obj->inheritedTypeNameIndex)));
+        return nullptr;
+    }
+
+    QQmlRefPointer<QV4::ExecutableCompilationUnit> executableCu = typeRef->isSelfReference()
+            ? compilationUnit
+            : engine->handle()->executableCompilationUnit(typeRef->compilationUnit());
+    Q_ASSERT(executableCu);
+
+    const bool isInlineComponent = type.isInlineComponentType();
+    const QString inlineComponentName = isInlineComponent ? type.elementName() : QString();
+    QQmlObjectCreator subCreator(
+            context, executableCu, inlineComponentName, sharedState.data(),
+            isContextObject);
+
+    if (QObject *instance = isInlineComponent
+                ? subCreator.create(
+                          executableCu->inlineComponentId(inlineComponentName), nullptr, nullptr,
+                          CreationFlags::InlineComponent)
+                : subCreator.create()) {
+        return initializeComposite(index, obj, typeRef, instance, parent, flags);
+    }
+
+    errors += subCreator.errors;
+    return nullptr;
+}
+
+void QQmlObjectCreator::initializeDData(
+        const QV4::CompiledData::Object *obj, QObject *instance, QQmlData *ddata, InitFlags flags)
+{
     ddata->lineNumber = obj->location.line();
     ddata->columnNumber = obj->location.column();
-
     ddata->setImplicitDestructible();
+
     // inline components are root objects, but their index is != 0, so we need
     // an additional check
-    const bool documentRoot = static_cast<quint32>(index) == /*root object*/ 0
+    const bool documentRoot = (flags & InitFlag::IsDocumentRoot)
             || ddata->rootObjectInCreation
             || obj->hasFlag(QV4::CompiledData::Object::IsInlineComponentRoot);
+
     context->installContext(
             ddata, documentRoot ? QQmlContextData::DocumentRoot : QQmlContextData::OrdinaryObject);
 
-    if (parserStatus) {
-        parserStatus->classBegin();
-        // push() the profiler state here, together with the parserStatus, as we'll pop() them
-        // together, too.
-        Q_QML_OC_PROFILE(sharedState->profiler, sharedState->profiler.push(obj));
-        sharedState->allParserStatusCallbacks.push_back({ instanceIndex, parserStatusCast });
-    }
-
     // Register the context object in the context early on in order for pending binding
     // initialization to find it available.
-    if (isContextObject)
+    if (flags & InitFlag::IsContextObject)
         context->setContextObject(instance);
+}
 
-    if (customParser && obj->hasFlag(QV4::CompiledData::Object::HasCustomParserBindings)) {
+void QQmlObjectCreator::initializePropertyCache(
+        int index, QQmlData *ddata, const QV4::ResolvedTypeReference *typeRef)
+{
+    if (!typeRef->isFullyDynamicType()) {
+        QQmlPropertyCache::ConstPtr cache = propertyCaches->at(index);
+        Q_ASSERT(!cache.isNull());
+        ddata->propertyCache = std::move(cache);
+    }
+}
+
+void QQmlObjectCreator::initializeParent(QObject *instance, QObject *parent)
+{
+    if (instance->isWidgetType()) {
+        if (parent && parent->isWidgetType()) {
+            QAbstractDeclarativeData::setWidgetParent(instance, parent);
+        } else {
+            // No parent! Layouts need to handle this through a default property that
+            // reparents accordingly. Otherwise the garbage collector will collect.
+        }
+    } else if (parent) {
+        QQml_setParent_noEvent(instance, parent);
+    }
+}
+
+QObject *QQmlObjectCreator::populateInstanceAndAliasBindings(
+        int index, QObject *instance, InitFlags flags)
+{
+    const auto doPopulate = [&]() {
+        if (!populateInstance(
+                    index, instance, /*binding target*/instance, /*value type property*/nullptr)) {
+            // an error occurred, so we can't setup the pending alias bindings
+            pendingAliasBindings.clear();
+            return false;
+        }
+
+        if (!flags.testFlag(InitFlag::IsContextObject))
+            return true;
+
+        while (!pendingAliasBindings.empty()) {
+            for (std::vector<PendingAliasBinding>::iterator it = pendingAliasBindings.begin();
+                    it != pendingAliasBindings.end(); ) {
+                if ((*it)(sharedState.data()))
+                    it = pendingAliasBindings.erase(it);
+                else
+                    ++it;
+            }
+        }
+
+        return true;
+    };
+
+    QObject *scopeObject = instance;
+    qSwap(_scopeObject, scopeObject);
+
+    Q_ASSERT(sharedState->allJavaScriptObjects.canTrack());
+    sharedState->allJavaScriptObjects.trackObject(v4, instance);
+
+    QV4::Scope valueScope(v4);
+    QV4::QmlContext *qmlContext = static_cast<QV4::QmlContext *>(valueScope.constructUndefined(1));
+
+    qSwap(_qmlContext, qmlContext);
+
+    const bool ok = doPopulate();
+
+    qSwap(_qmlContext, qmlContext);
+    qSwap(_scopeObject, scopeObject);
+
+    return ok ? instance : nullptr;
+}
+
+QObject *QQmlObjectCreator::initializeComponent(
+        const QV4::CompiledData::Object *obj, QObject *instance, InitFlags flags)
+{
+    Q_ASSERT(instance);
+    Q_ASSERT(obj);
+    Q_ASSERT(obj->hasFlag(QV4::CompiledData::Object::IsComponent));
+
+    QScopedValueRollback<QQmlObjectCreator*> ocRestore(
+            QQmlEnginePrivate::get(engine)->activeObjectCreator, this);
+
+    // we just created it inside createComponent; so QQmlData::get() without create = true;
+    initializeDData(obj, instance, QQmlData::get(instance), flags);
+
+    registerObjectWithContextById(obj, instance);
+    return instance;
+}
+
+QObject *QQmlObjectCreator::initializeComposite(
+        int index, const QV4::CompiledData::Object *obj, const QV4::ResolvedTypeReference *typeRef,
+        QObject *instance, QObject *parent, InitFlags flags)
+{
+    Q_ASSERT(instance);
+    Q_ASSERT(typeRef);
+
+    QScopedValueRollback<QQmlObjectCreator*> ocRestore(
+            QQmlEnginePrivate::get(engine)->activeObjectCreator, this);
+
+    initializeParent(instance, parent);
+    QQmlData *ddata = QQmlData::get(instance, /*create*/true);
+    initializeDData(obj, instance, ddata, flags);
+
+    initializePropertyCache(index, ddata, typeRef);
+
+    return populateInstanceAndAliasBindings(index, instance, flags);
+}
+
+QObject *QQmlObjectCreator::initializeNonComposite(
+        int index, const QV4::CompiledData::Object *obj, const QV4::ResolvedTypeReference *typeRef,
+        QObject *instance, QObject *parent, InitFlags flags)
+{
+    Q_ASSERT(instance);
+    Q_ASSERT(obj);
+    Q_ASSERT(!obj->hasFlag(QV4::CompiledData::Object::IsComponent));
+    Q_ASSERT(typeRef);
+
+    const QQmlType type = typeRef->type();
+    Q_ASSERT(type.isValid());
+    Q_ASSERT(!type.isComposite() && !type.isInlineComponentType());
+
+    QScopedValueRollback<QQmlObjectCreator*> ocRestore(QQmlEnginePrivate::get(engine)->activeObjectCreator, this);
+
+    if (const int finalizerCast = type.finalizerCast(); finalizerCast != -1) {
+        const auto hook = reinterpret_cast<QQmlFinalizerHook *>(
+                reinterpret_cast<char *>(instance) + finalizerCast);
+        sharedState->finalizeHooks.push_back(hook);
+    }
+
+    QQmlData *ddata = QQmlData::get(instance, /*create*/true);
+    if (sharedState->rootContext && sharedState->rootContext->isRootObjectInCreation()) {
+        ddata->rootObjectInCreation = true;
+        sharedState->rootContext->setRootObjectInCreation(false);
+    }
+
+    const size_t instanceIndex = sharedState->allCreatedObjects.size();
+    sharedState->allCreatedObjects.push_back(instance);
+
+    initializeParent(instance, parent);
+    initializeDData(obj, instance, ddata, flags);
+
+    if (const int parserStatusCast = type.parserStatusCast(); parserStatusCast != -1) {
+        if (QQmlParserStatus *parserStatus = reinterpret_cast<QQmlParserStatus*>(
+                    reinterpret_cast<char *>(instance) + parserStatusCast)) {
+            parserStatus->classBegin();
+            // push() the profiler state here, together with the parserStatus, as we'll pop() them
+            // together, too.
+            Q_QML_OC_PROFILE(sharedState->profiler, sharedState->profiler.push(obj));
+            sharedState->allParserStatusCallbacks.push_back({ instanceIndex, parserStatusCast });
+        }
+    }
+
+    if (QQmlCustomParser *customParser = type.customParser();
+            customParser && obj->hasFlag(QV4::CompiledData::Object::HasCustomParserBindings)) {
         customParser->engine = QQmlEnginePrivate::get(engine);
         customParser->imports = compilationUnit->typeNameCache().data();
 
@@ -1472,48 +1574,8 @@ QObject *QQmlObjectCreator::createInstance(int index, QObject *parent, bool isCo
         customParser->imports = (QQmlTypeNameCache*)nullptr;
     }
 
-    if (isComponent) {
-        registerObjectWithContextById(obj, instance);
-        return instance;
-    }
-
-    QQmlPropertyCache::ConstPtr cache = propertyCaches->at(index);
-    Q_ASSERT(!cache.isNull());
-    if (installPropertyCache)
-        ddata->propertyCache = cache;
-
-    QObject *scopeObject = instance;
-    qSwap(_scopeObject, scopeObject);
-
-    Q_ASSERT(sharedState->allJavaScriptObjects.canTrack());
-    sharedState->allJavaScriptObjects.trackObject(v4, instance);
-
-    QV4::Scope valueScope(v4);
-    QV4::QmlContext *qmlContext = static_cast<QV4::QmlContext *>(valueScope.constructUndefined(1));
-
-    qSwap(_qmlContext, qmlContext);
-
-    const bool ok = populateInstance(
-            index, instance, /*binding target*/instance, /*value type property*/nullptr);
-    if (!ok) {
-        // an error occurred, so we can't setup the pending alias bindings
-        pendingAliasBindings.clear();
-    } else if (isContextObject) {
-        while (!pendingAliasBindings.empty()) {
-            for (std::vector<PendingAliasBinding>::iterator it = pendingAliasBindings.begin();
-                    it != pendingAliasBindings.end(); ) {
-                if ((*it)(sharedState.data()))
-                    it = pendingAliasBindings.erase(it);
-                else
-                    ++it;
-            }
-        }
-    }
-
-    qSwap(_qmlContext, qmlContext);
-    qSwap(_scopeObject, scopeObject);
-
-    return ok ? instance : nullptr;
+    initializePropertyCache(index, ddata, typeRef);
+    return populateInstanceAndAliasBindings(index, instance, flags);
 }
 
 bool QQmlObjectCreator::finalize(QQmlInstantiationInterrupt &interrupt)

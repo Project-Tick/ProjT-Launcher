@@ -4711,10 +4711,10 @@ void tst_QQuickTableView::leftRightTopBottomProperties_data()
     QTest::addColumn<QMargins>("expectedTable");
     QTest::addColumn<QMargins>("expectedSignalCount");
 
-    QTest::newRow("1") << QPointF(0, 0) << QMargins(0, 0, 5, 7) << QMargins(0, 0, 1, 1);
-    QTest::newRow("2") << QPointF(100, 50) << QMargins(1, 1, 6, 8) << QMargins(1, 1, 2, 2);
-    QTest::newRow("3") << QPointF(220, 120) << QMargins(2, 2, 8, 10) << QMargins(2, 2, 4, 4);
-    QTest::newRow("4") << QPointF(1000, 1000) << QMargins(9, 19, 15, 27) << QMargins(1, 1, 2, 2);
+    QTest::newRow("1") << QPointF(0, 0) << QMargins(0, 0, 5, 7) << QMargins(1, 1, 1, 1);
+    QTest::newRow("2") << QPointF(100, 50) << QMargins(1, 1, 6, 8) << QMargins(2, 2, 2, 2);
+    QTest::newRow("3") << QPointF(220, 120) << QMargins(2, 2, 8, 10) << QMargins(3, 3, 4, 4);
+    QTest::newRow("4") << QPointF(1000, 1000) << QMargins(9, 19, 15, 27) << QMargins(2, 2, 2, 2);
 }
 
 void tst_QQuickTableView::leftRightTopBottomProperties()

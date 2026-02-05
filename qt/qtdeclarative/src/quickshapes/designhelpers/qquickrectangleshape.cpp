@@ -466,6 +466,7 @@ QQuickRectangleShape::~QQuickRectangleShape()
 
 /*!
     \since 6.11
+    \qmlproperty bool QtQuick.Shapes.DesignHelpers::RectangleShape::drawTop
 
     This property holds whether the top border is drawn.
 
@@ -495,7 +496,8 @@ void QQuickRectangleShape::resetDrawTop()
 
 /*!
     \since 6.11
-
+    \qmlproperty bool QtQuick.Shapes.DesignHelpers::RectangleShape::drawRight
+   
     This property holds whether the right border is drawn.
 
     The default value is \c true.
@@ -524,6 +526,7 @@ void QQuickRectangleShape::resetDrawRight()
 
 /*!
     \since 6.11
+    \qmlproperty bool QtQuick.Shapes.DesignHelpers::RectangleShape::drawBottom
 
     This property holds whether the bottom border is drawn.
 
@@ -553,6 +556,7 @@ void QQuickRectangleShape::resetDrawBottom()
 
 /*!
     \since 6.11
+    \qmlproperty bool QtQuick.Shapes.DesignHelpers::RectangleShape::drawLeft
 
     This property holds whether the left border is drawn.
 

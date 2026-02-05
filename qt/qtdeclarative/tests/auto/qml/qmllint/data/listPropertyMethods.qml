@@ -25,8 +25,8 @@ QtObject {
 
     property bool entriesMatch: {
         var iterator = listProperty.entries();
-        for (var [index, element] of listProperty.entries()) {
-            var v = iterator.next().value;
+        for (let [index, element] of listProperty.entries()) {
+            let v = iterator.next().value;
             if (index !== v[0] || element !== v[1]) {
                 console.log(index, v[0], element, v[1]);
                 return false;
@@ -38,8 +38,8 @@ QtObject {
 
     property bool keysMatch: {
         var iterator = listProperty.keys();
-        for (var index of listProperty.keys()) {
-            var v = iterator.next().value;
+        for (let index of listProperty.keys()) {
+            let v = iterator.next().value;
             if (index !== v) {
                 console.log(index, v);
                 return false;
@@ -51,8 +51,8 @@ QtObject {
 
     property bool valuesMatch: {
         var iterator = listProperty.values();
-        for (var obj of listProperty.values()) {
-            var v = iterator.next().value;
+        for (let obj of listProperty.values()) {
+            let v = iterator.next().value;
             if (obj !== v) {
                 console.log(obj, v);
                 return false;

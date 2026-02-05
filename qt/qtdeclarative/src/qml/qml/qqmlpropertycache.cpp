@@ -816,7 +816,7 @@ const QQmlPropertyData *QQmlPropertyCache::findProperty(
         if (vmemo && context && !contextHasNoExtensions(context)) {
             // Find the meta-object that corresponds to the supplied context
             do {
-                if (vmemo->ctxt.contextData().data() == context.data())
+                if (vmemo->contextData() == context)
                     break;
 
                 vmemo = vmemo->parentVMEMetaObject();

@@ -70,6 +70,7 @@ QQmlLanguageServer::QQmlLanguageServer(std::function<void(const QByteArray &)> s
       m_hover(&m_codeModelManager),
       m_highlightSupport(&m_codeModelManager),
       m_documentSymbolSupport(&m_codeModelManager),
+      m_progressSupport(&m_codeModelManager),
       m_lint(&m_server, &m_codeModelManager)
 {
     m_server.addServerModule(this);
@@ -85,6 +86,7 @@ QQmlLanguageServer::QQmlLanguageServer(std::function<void(const QByteArray &)> s
     m_server.addServerModule(&m_rangeFormatting);
     m_server.addServerModule(&m_hover);
     m_server.addServerModule(&m_documentSymbolSupport);
+    m_server.addServerModule(&m_progressSupport);
     m_server.addServerModule(&m_highlightSupport);
     m_server.finishSetup();
     qCWarning(lspServerLog) << "Did Setup";

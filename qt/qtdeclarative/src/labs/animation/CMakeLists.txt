@@ -16,4 +16,9 @@ qt_internal_add_qml_module(LabsAnimation
     LIBRARIES
         Qt::QmlPrivate
         Qt::QuickPrivate
-    )
+)
+
+target_sources(LabsAnimation
+    PRIVATE
+        doc/src/qmlanimation.qdoc
+)

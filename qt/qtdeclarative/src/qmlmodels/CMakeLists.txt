@@ -93,3 +93,10 @@ qt_internal_extend_target(QmlModels CONDITION QT_FEATURE_qml_sfpm_model AND QT_F
 qt_internal_add_docs(QmlModels
     doc/qtqmlmodels.qdocconf
 )
+
+target_sources(QmlModels
+    PRIVATE
+        qqmlitemmodels.qdoc
+        qqmlitemselectionmodel.qdoc
+        doc/src/qtqmlmodel.qdoc
+)

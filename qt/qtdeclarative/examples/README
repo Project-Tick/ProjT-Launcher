@@ -1,6 +1,6 @@
 The Qt Quick module provides the basic elements to specify and implement your
 user interface declaratively, using the Qt Meta-Object Language (QML). The
-Qt QML module provides the engine and language infrastructure for QML itself.
+Qt Qml module provides the engine and language infrastructure for QML itself.
 This language is very expressive and human readable, and can be used by
 designers to actually implement their UI vision. QML UIs can integrate
 with C++ code in many ways, including being loaded as a part of a C++ UI

@@ -2738,12 +2738,8 @@ bool ExecutionEngine::metaTypeFromJS(const Value &value, QMetaType metaType, voi
         return true;
     }
     case QMetaType::QJsonArray: {
-        const QV4::ArrayObject *a = value.as<ArrayObject>();
-        if (a) {
-            *reinterpret_cast<QJsonArray *>(data) = JsonObject::toJsonArray(a);
-            return true;
-        }
-        break;
+        *reinterpret_cast<QJsonArray *>(data) = QV4::JsonObject::toJsonArray(value.as<Object>());
+        return true;
     }
     default:
         break;
@@ -2876,6 +2872,39 @@ bool ExecutionEngine::metaTypeFromJS(const Value &value, QMetaType metaType, voi
     } else if (metaType == QMetaType::fromType<QJSPrimitiveValue>()) {
         *reinterpret_cast<QJSPrimitiveValue *>(data) = createPrimitive(&value);
         return true;
+    } else if (metaType == QMetaType::fromType<QJSManagedValue>()) {
+        QJSManagedValue *managedData = reinterpret_cast<QJSManagedValue *>(data);
+
+        const Managed *managedValue = value.as<Managed>();
+        if (Value *d = QJSManagedValuePrivate::member(managedData)) {
+            // If the QJSManagedValue has an engine already,
+            // we can assign a primitive without risking crosstalk between engines.
+            if (!managedValue) {
+                *d = value;
+                return true;
+            }
+
+            // If the engines match, we don't have to allocate a new persistent value
+            if (reinterpret_cast<const Managed *>(d)->engine() == managedValue->engine()) {
+                *d = value;
+                return true;
+            }
+        }
+
+        if (managedValue) {
+            // If value is itself managed, we create a new QJSManagedValue
+            // to make sure the engine matches.
+            *managedData = QJSManagedValuePrivate::create(*managedValue);
+            return true;
+        }
+
+        // The default-constructed QJSManagedValue (without engine) equals undefined.
+        // So we can get away with doing nothing in this case.
+        if (value.isUndefined())
+            return true;
+
+        // Otherwise we can't do it. We need an engine from somewhere.
+        return false;
     } else if (!isPointer) {
         const QV4::Managed *managed = value.as<QV4::Managed>();
         if (QQmlValueTypeProvider::populateValueType(

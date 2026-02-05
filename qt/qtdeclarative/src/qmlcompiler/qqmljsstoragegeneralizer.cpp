@@ -20,11 +20,11 @@ QT_BEGIN_NAMESPACE
  * operates only on the annotations and the function description.
  */
 
-QQmlJSCompilePass::BlocksAndAnnotations QQmlJSStorageGeneralizer::run(Function *function)
+QQmlJSCompilePass::BlocksAndAnnotations QQmlJSStorageGeneralizer::run(const Function *function)
 {
     m_function = function;
 
-    if (QQmlJSRegisterContent &returnType = function->returnType; returnType.isValid()) {
+    if (const QQmlJSRegisterContent &returnType = function->returnType; returnType.isValid()) {
         if (QQmlJSScope::ConstPtr stored = m_typeResolver->genericType(
                     returnType.storedType(), QQmlJSTypeResolver::ComponentIsGeneric::Yes)) {
             m_pool->generalizeType(returnType.storage(), stored);
@@ -35,7 +35,7 @@ QQmlJSCompilePass::BlocksAndAnnotations QQmlJSStorageGeneralizer::run(Function *
         }
     }
 
-    const auto transformRegister = [&](QQmlJSRegisterContent &content) {
+    const auto transformRegister = [&](const QQmlJSRegisterContent &content) {
         QQmlJSRegisterContent specific = content.storage();
         if (specific.isValid())
             m_typeResolver->generalizeType(specific);
@@ -48,7 +48,7 @@ QQmlJSCompilePass::BlocksAndAnnotations QQmlJSStorageGeneralizer::run(Function *
         }
     };
 
-    for (QQmlJSRegisterContent &argument : function->argumentTypes) {
+    for (const QQmlJSRegisterContent &argument : function->argumentTypes) {
         Q_ASSERT(argument.isValid());
         transformRegister(argument);
     }

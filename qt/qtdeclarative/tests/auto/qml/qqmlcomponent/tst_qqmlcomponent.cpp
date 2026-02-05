@@ -292,14 +292,11 @@ void tst_qqmlcomponent::qmlCreateObjectWithProperties()
 {
     QQmlEngine engine;
 
-    QTest::ignoreMessage(
-            QtMsgType::QtWarningMsg,
-            QRegularExpression(".*createObjectWithScript.qml: Setting initial properties failed: "
-                               "Item does not have a property called not_i"));
+    QTest::failOnWarning();
     QTest::ignoreMessage(
             QtMsgType::QtWarningMsg,
             QRegularExpression(
-                    ".*createObjectWithScript.qml:45:13: Required property i was not initialized"));
+                    ".*createObjectWithScript.qml:46:13: Required property i was not initialized"));
 
     QQmlComponent component(&engine, testFileUrl("createObjectWithScript.qml"));
     QVERIFY2(component.errorString().isEmpty(), component.errorString().toUtf8());
@@ -358,6 +355,11 @@ void tst_qqmlcomponent::qmlCreateObjectWithProperties()
         QVERIFY(goodRequired);
         QCOMPARE(goodRequired->parent(), object.data());
         QCOMPARE(goodRequired->property("i").value<int>(), 42);
+
+        QScopedPointer<QObject> goodRequired2(object->property("goodRequired2").value<QObject *>());
+        QVERIFY(goodRequired2);
+        QCOMPARE(goodRequired2->parent(), object.data());
+        QCOMPARE(goodRequired2->property("i").value<int>(), 43);
     }
 
     {
@@ -1174,10 +1176,6 @@ void tst_qqmlcomponent::testSetInitialProperties()
         // createWithInitialProperties: setting a nonexistent property
         QQmlComponent comp(&eng);
         comp.loadUrl(testFileUrl("allJSONTypes.qml"));
-        const QRegularExpression errorMessage { QStringLiteral(
-                ".*allJSONTypes.qml: Setting initial properties failed: Item does not have a "
-                "property called notThePropertiesYoureLookingFor") };
-        QTest::ignoreMessage(QtMsgType::QtWarningMsg, errorMessage);
         QScopedPointer<QObject> obj {
             comp.createWithInitialProperties(QVariantMap { {"notThePropertiesYoureLookingFor", 42} })
         };
@@ -1192,10 +1190,6 @@ void tst_qqmlcomponent::testSetInitialProperties()
     {
         QQmlComponent comp(&eng);
         comp.loadUrl(testFileUrl("requiredNotSet.qml"));
-        QTest::ignoreMessage(
-                QtMsgType::QtWarningMsg,
-                QRegularExpression(".*requiredNotSet.qml: Setting initial properties failed: Item "
-                                   "does not have a property called not_i"));
         QScopedPointer<QObject> obj { comp.createWithInitialProperties(
                 QVariantMap { { QLatin1String("not_i"), QJsonValue { 42 } } }) };
         QVERIFY(!obj);

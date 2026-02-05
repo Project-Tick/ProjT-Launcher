@@ -28,8 +28,8 @@
 #include <QtQuickControlsTestUtils/private/controlstestutils_p.h>
 #include <QtQuickControlsTestUtils/private/qtest_quickcontrols_p.h>
 
-//using namespace QQuickVisualTestUtils;
 using namespace QQuickControlsTestUtils;
+using namespace QQuickVisualTestUtils;
 using namespace Qt::StringLiterals;
 
 class tst_QQuickDrawer : public QQmlDataTest
@@ -119,6 +119,8 @@ void tst_QQuickDrawer::initTestCase()
     qputenv("QML_NO_TOUCH_COMPRESSION", "1");
 
     touchDevice.reset(QTest::createTouchDevice());
+
+    setFastAnimations(true);
 }
 
 void tst_QQuickDrawer::defaults()

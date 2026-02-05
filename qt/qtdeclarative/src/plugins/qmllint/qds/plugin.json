@@ -34,6 +34,12 @@
             "name": "UnsupportedRootTypeInQmlUi",
             "settingsName": "UnsupportedRootTypeInQmlUi",
             "description": "Warn about unsupported root types in ui.qml files"
+        },
+        {
+            "name": "TranslationFunctionMismatch",
+            "settingsName": "TranslationFunctionMismatch",
+            "description":
+                    "Warn about usages of ID and non-ID translation functions in the same file."
         }
     ]
 }

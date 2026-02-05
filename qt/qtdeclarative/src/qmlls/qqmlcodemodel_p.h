@@ -16,11 +16,11 @@
 // We mean it.
 //
 
-#include "qlanguageserver_p.h"
-#include "qtextdocument_p.h"
-#include "qprocessscheduler_p.h"
-#include "qqmllshelputils_p.h"
-#include "qqmlsemantictokens_p.h"
+#include <private/qlanguageserver_p.h>
+#include <private/qtextdocument_p.h>
+#include <private/qprocessscheduler_p.h>
+#include <private/qqmllshelputils_p.h>
+#include <private/qqmlsemantictokens_p.h>
 
 #include <QObject>
 #include <QHash>
@@ -81,23 +81,26 @@ struct ModuleSetting
     QStringList resourceFiles;
 };
 
+enum UpdatePolicy { NormalUpdate, ForceUpdate };
+
 using ModuleSettings = QList<ModuleSetting>;
 class QQmllsBuildInformation
 {
 public:
     QQmllsBuildInformation();
-    void loadSettingsFrom(const QStringList &buildPaths);
+    void loadSettingsFrom(const QStringList &buildPaths, UpdatePolicy policy = NormalUpdate);
     QStringList importPathsFor(const QString &filePath);
     QStringList resourceFilesFor(const QString &filePath);
     ModuleSetting settingFor(const QString &filePath);
+
+    void addModuleSetting(const ModuleSetting &moduleSetting);
+    void writeQmllsBuildIniContent(const QString &file) const;
 
 private:
     QString m_docDir;
     ModuleSettings m_moduleSettings;
     QSet<QString> m_seenSettings;
 };
-
-enum UpdatePolicy { NormalUpdate, ForceUpdate };
 
 class QQmlCodeModel : public QObject
 {

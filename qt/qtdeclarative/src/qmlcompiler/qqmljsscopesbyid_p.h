@@ -251,6 +251,30 @@ public:
     */
     bool existsAnywhereInDocument(const QString &id) const { return m_scopesById.contains(id); }
 
+    struct IdWithScope
+    {
+        QString id;
+        QQmlJSScope::ConstPtr scope;
+    };
+
+    std::multimap<QQmlJSScope::ConstPtr, IdWithScope> computeComponentRootsToIds()
+    {
+        if (m_scopesById.size() == 0)
+            return {};
+
+        std::multimap<QQmlJSScope::ConstPtr, IdWithScope> componentRootsToIds;
+        for (auto it = m_scopesById.cbegin(), end = m_scopesById.cend(); it != end; ++it) {
+            possibleComponentRoots(
+                    *it,
+                    [&it, &componentRootsToIds](const QQmlJSScope::ConstPtr &componentRoot,
+                                                QQmlJSScope::IsComponentRoot) {
+                        componentRootsToIds.insert({ componentRoot, { it.key(), it.value() } });
+                        return CallbackResult::ContinueSearch;
+                    });
+        }
+        return componentRootsToIds;
+    }
+
 private:
     template<typename F>
     static CallbackResult possibleComponentRoots(const QQmlJSScope::ConstPtr &inner, F &&callback)

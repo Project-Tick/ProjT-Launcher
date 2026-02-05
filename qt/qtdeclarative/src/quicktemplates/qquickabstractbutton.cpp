@@ -1018,6 +1018,12 @@ void QQuickAbstractButton::setAutoRepeatInterval(int interval)
 }
 
 #if QT_CONFIG(shortcut)
+/*!
+    \internal
+
+    This is the mnemonic shortcut that is derived from the text;
+    see \c QQuickAbstractButton::buttonChange().
+*/
 QKeySequence QQuickAbstractButton::shortcut() const
 {
     Q_D(const QQuickAbstractButton);

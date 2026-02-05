@@ -1366,7 +1366,7 @@ void QQmlBindPrivate::preEvalEntry(QQmlBindEntry *entry)
                 Q_ASSERT(vmemo);
                 auto retVal = vmemo->vmeProperty(propData.coreIndex());
                 entry->previousKind = entry->previous.set(
-                        QV4::PersistentValue(vmemo->engine, retVal), entry->previousKind);
+                        QV4::PersistentValue(vmemo->engine(), retVal), entry->previousKind);
             } else if (entry->prop.propertyMetaType().flags() & QMetaType::IsQmlList) {
                 using namespace QV4;
                 ExecutionEngine *v4 = qmlEngine(q_func())->handle();

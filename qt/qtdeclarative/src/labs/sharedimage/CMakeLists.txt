@@ -29,3 +29,8 @@ qt_internal_extend_target(sharedimageplugin
         Qt::LabsSharedImagePrivate
         Qt::QuickPrivate
 )
+
+target_sources(LabsSharedImage
+    PRIVATE
+        doc/src/qsharedimage.qdoc
+)

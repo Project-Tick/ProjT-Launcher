@@ -181,7 +181,14 @@ private Q_SLOTS:
 
     void replayImportWarnings();
     void errorCategory();
+    void noSettingsPollution_data();
     void noSettingsPollution();
+    void syntaxIsEssential();
+    void essentialCantBeLowered();
+    void essentialCanBeRaised();
+
+    void onlyExplicitCategories();
+    void onlyExplicitCategoriesIni();
 
 private:
     enum DefaultImportOption { NoDefaultImports, UseDefaultImports };
@@ -232,7 +239,7 @@ private:
         QList<QQmlJS::LoggerCategory> *categories = nullptr;
         LintType type = LintFile;
         bool readSettings = false;
-        QStringList enableCategories = {};
+        QHash<QString, QQmlJS::WarningSeverity> categorySeverityOverrides = {};
         QStringList rootUrls = {};
         QHash<QString, QString> qrcToFilePaths = {};
     };
@@ -961,10 +968,12 @@ void TestQmllint::dirtyQmlCode_data()
                        { { "Did you mean \"U2\"?"_L1, 8 } } };
     QTest::newRow("enumsAreNotTypes_functionAnnotations")
             << QStringLiteral("EnumsAreNotTypes_functionAnnotations.qml")
-            << Result{ { { "QML enumerations are not types. Use underlying type "
-                           "(int or double) instead."_L1, 5, 17 },
-                         { "QML enumerations are not types. Use underlying type "
-                           "(int or double) instead."_L1, 6, 9 } } };
+            << Result{
+                   { { "QML enumerations are not types. Use int, or use double if the enum's underlying type does not fit into int."_L1,
+                       5, 17 },
+                     { "QML enumerations are not types. Use int, or use double if the enum's underlying type does not fit into int."_L1,
+                       6, 9 } }
+               };
     QTest::newRow("id_in_value_type")
             << QStringLiteral("idInValueType.qml")
             << Result{ { { "id declarations are only allowed in objects"_L1 } } };
@@ -1283,6 +1292,11 @@ void TestQmllint::dirtyQmlSnippet_data()
 
     const CallQmllintOptions defaultOptions;
 
+    QTest::newRow("assignLhsLocation")
+            << u"id: root; property int i; Item { Component.onCompleted: i = root.i + 5 }"_s
+            << Result{ { { "Unqualified access"_L1, 1, 57 } },
+                       { { "Unqualified access"_L1, 1, 66 } } }
+            << defaultOptions;
     QTest::newRow("color-hex")
             << u"property color myColor: \"#12345\""_s
             << Result{ { { "Invalid color"_L1, 1, 25 } } }
@@ -1470,6 +1484,12 @@ void TestQmllint::dirtyQmlSnippet_data()
                u"Item { component A: Item {} }\n"_s
             << Result{ { { "Duplicate inline component 'A'"_L1, 2, 8 },
                          { "Note: previous component named 'A' here"_L1, 1, 1 } } }
+            << defaultOptions;
+    QTest::newRow("enumsAreNotTypes")
+            << u"function f(a: enum) {}"_s
+            << Result{ { { "QML does not have an `enum` type. Use int, or use double if the enum's underlying type does not fit into int."_L1,
+               1, 15 } },
+    { { "QML enumerations are not types"_L1} }, }
             << defaultOptions;
     QTest::newRow("equality-with-coercion")
             << u"function f(a: int, b: string): bool { return a == b; }"_s
@@ -1891,7 +1911,8 @@ void TestQmllint::dirtyJsSnippet_data()
             << defaultOptions;
     {
         CallQmllintOptions options;
-        options.enableCategories.append("function-used-before-declaration"_L1);
+        options.categorySeverityOverrides.insert(qmlFunctionUsedBeforeDeclaration.name().toString(),
+                                                 QQmlJS::WarningSeverity::Warning);
         QTest::newRow("functionUsedBeforeDeclaration")
                 << u"fff(); function fff() {}"_s
                 << Result{ { { "Function 'fff' is used here before its declaration"_L1, 1, 1 },
@@ -1947,12 +1968,36 @@ void TestQmllint::dirtyJsSnippet_data()
                 case 4:                 // ok: nothing to fall through to ...
                     1 + 2
                 })"_s
-            << Result{ { { "Unterminated non-empty case block"_L1, 6, 17 },
-                         { "Unterminated non-empty case block"_L1, 8, 17 } },
-                       { { "Unterminated non-empty case block"_L1, 3, 17 },
-                         { "Unterminated non-empty case block"_L1, 4, 17 },
-                         { "Unterminated non-empty case block"_L1, 10, 17 },
-                         { "Unterminated non-empty case block"_L1, 13, 17 } } }
+            << Result{ {
+                               { "Non-empty case block potentially falls through to the next case "
+                                 "or default "
+                                 "statement. Add \"// fallthrough\" at the end of the block to "
+                                 "silence this "
+                                 "warning."_L1,
+                                 6, 17 },
+                               { "Non-empty case block potentially falls through to the next case "
+                                 "or default "
+                                 "statement. Add \"// fallthrough\" at the end of the block to "
+                                 "silence this "
+                                 "warning."_L1,
+                                 8, 17 },
+                       },
+                       { { "Non-empty case block potentially falls through to the next case or "
+                           "default"
+                           " statement. Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                           3, 17 },
+                         { "Non-empty case block potentially falls through to the next case or "
+                           "default statement."
+                           " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                           4, 17 },
+                         { "Non-empty case block potentially falls through to the next case or "
+                           "default statement."
+                           " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                           10, 17 },
+                         { "Non-empty case block potentially falls through to the next case or "
+                           "default statement. "
+                           "Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                           13, 17 } } }
             << defaultOptions;
     QTest::newRow("unterminatedCaseBlockNested")
             << uR"(switch (0) {
@@ -1972,30 +2017,65 @@ void TestQmllint::dirtyJsSnippet_data()
                 case -1: return // dummy
                 })"_s
             << Result{ {
-                       { "Unterminated non-empty case block"_L1, 2, 17 },
-                       { "Unterminated non-empty case block"_L1, 4, 25 },
-                       { "Unterminated non-empty case block"_L1, 5, 25 },
-                       { "Unterminated non-empty case block"_L1, 6, 25 },
-                       { "Unterminated non-empty case block"_L1, 7, 25 },
-                       { "Unterminated non-empty case block"_L1, 8, 25 },
-                       { "Unterminated non-empty case block"_L1, 9, 25 },
-                       { "Unterminated non-empty case block"_L1, 10, 25 },
-                       { "Unterminated non-empty case block"_L1, 11, 25 },
-                       { "Unterminated non-empty case block"_L1, 12, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         2, 17 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         4, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         5, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         6, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         7, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         8, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         9, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         10, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         11, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         12, 25 },
                } }
             << defaultOptions;
-    QTest::newRow("unterminatedCaseBlockNested2") << uR"(switch (0) {
+    QTest::newRow("unterminatedCaseBlockNested2")
+            << uR"(switch (0) {
                 case 0: // one case is KO, so this one too
                     switch (2) {
                         case 1: return;
                         default: f(); // not ok
                     }
                 case -1: return // dummy
-                })"_s << Result{ { { "Unterminated non-empty case block"_L1, 2, 17 } } }
-                                                  << defaultOptions;
+                })"_s
+            << Result{ { { "Non-empty case block potentially falls through to the next case or "
+                           "default "
+                           "statement. Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                           2, 17 } } }
+            << defaultOptions;
     {
         CallQmllintOptions options;
-        options.enableCategories.append(qmlVoid.name().toString());
+        options.categorySeverityOverrides.insert(qmlVoid.name().toString(), QQmlJS::WarningSeverity::Warning);
         QTest::newRow("void")
                 << u"void 1;"_s
                 << Result{ { { "Do not use void expressions"_L1, 1, 1 } } }
@@ -2012,6 +2092,14 @@ void TestQmllint::dirtyJsSnippet_data()
     QTest::newRow("uselessExpressionStatement2")
             << u"for (;;) { x + 3; return x; }"_s
             << Result{ { { "Expression statement has no obvious effect."_L1, 1, 12 } } }
+            << defaultOptions;
+    QTest::newRow("varVariableInBlockScope")
+            << uR"(let i = 0;
+        {
+            var j = 1;
+        }
+        i = j;)"_s
+            << Result { { { "var declaration in block scope is hoisted to function scope"_L1, 3, 17 } } }
             << defaultOptions;
 }
 
@@ -2588,10 +2676,8 @@ void TestQmllint::compilerWarnings()
     });
     Q_ASSERT(category != categories.end());
 
-    if (enableCompilerWarnings) {
-        category->setLevel(QtWarningMsg);
-        category->setIgnored(false);
-    }
+    if (enableCompilerWarnings)
+        category->setSeverity(QQmlJS::WarningSeverity::Warning);
 
     runTest(filename, result, {}, {}, {}, UseDefaultImports, &categories);
 }
@@ -2727,15 +2813,11 @@ QJsonArray TestQmllint::callQmllintImpl(const QString &fileToLint, const QString
         QList<QQmlJS::LoggerCategory> resolvedCategories =
                 options.categories != nullptr ? *options.categories : m_categories;
 
-        for (const QString &name : options.enableCategories) {
+        for (const auto &[cat, severity] : options.categorySeverityOverrides.asKeyValueRange()) {
             for (QQmlJS::LoggerCategory &category : resolvedCategories) {
-                if (category.name() != name)
+                if (category.name() != cat)
                     continue;
-
-                [&category]() {
-                    QVERIFY2(category.isIgnored(), "Can't enable already enabled category!");
-                }();
-                category.setIgnored(false);
+                category.setSeverity(severity);
                 break;
             }
         }
@@ -2743,7 +2825,7 @@ QJsonArray TestQmllint::callQmllintImpl(const QString &fileToLint, const QString
         if (options.readSettings) {
             QQmlToolingSettings settings(QLatin1String("qmllint"), { "General"_L1, "Warnings"_L1 });
             if (settings.search(lintedFile).isValid())
-                QQmlJS::LoggingUtils::updateLogLevels(resolvedCategories, settings, nullptr);
+                QQmlJS::LoggingUtils::updateLogSeverities(resolvedCategories, settings, nullptr);
         }
 
         QList<QString> resourceFiles = options.resources;
@@ -3123,8 +3205,7 @@ void TestQmllint::attachedPropertyReuse()
     });
     Q_ASSERT(category != categories.end());
 
-    category->setLevel(QtWarningMsg);
-    category->setIgnored(false);
+    category->setSeverity(QQmlJS::WarningSeverity::Warning);
     runTest("attachedPropNotReused.qml",
             Result { { Message { QStringLiteral("Using attached type QQuickKeyNavigationAttached "
                                                 "already initialized in a parent "
@@ -3315,20 +3396,15 @@ void TestQmllint::hasTestPlugin()
 
         for (auto &category : plugin.categories()) {
             if (category.name() == u"testPlugin.TestDefaultValue") {
-                QCOMPARE(category.level(), QtCriticalMsg);
-                QCOMPARE(category.isIgnored(), true);
+                QCOMPARE(category.severity(), QQmlJS::WarningSeverity::Disable);
             } else if (category.name() == u"testPlugin.TestDefaultValue2") {
-                QCOMPARE(category.level(), QtInfoMsg);
-                QCOMPARE(category.isIgnored(), false);
+                QCOMPARE(category.severity(), QQmlJS::WarningSeverity::Info);
             } else if (category.name() == u"testPlugin.test") {
-                QCOMPARE(category.level(), QtWarningMsg);
-                QCOMPARE(category.isIgnored(), false);
+                QCOMPARE(category.severity(), QQmlJS::WarningSeverity::Warning);
             } else if (category.name() == u"testPlugin.TestDefaultValue3"){
-                QCOMPARE(category.level(), QtWarningMsg);
-                QCOMPARE(category.isIgnored(), false);
+                QCOMPARE(category.severity(), QQmlJS::WarningSeverity::Warning);
             } else if (category.name() == u"testPlugin.TestDefaultValue4"){
-                QCOMPARE(category.level(), QtCriticalMsg);
-                QCOMPARE(category.isIgnored(), false);
+                QCOMPARE(category.severity(), QQmlJS::WarningSeverity::Error);
             } else {
                 QFAIL("This category was not tested!");
             }
@@ -3388,7 +3464,7 @@ void TestQmllint::testPlugin_data()
                      Message{ u"Saw binding on Item property onXChanged with value function (and type 8) in scope Item"_s, 18, 21 },
                      Message{ u"Saw read on ObjectPrototype property log in scope Item"_s, 21, 36 },
                      Message{ u"Saw binding on Item property onXChanged with value QVariant (and type 8) in scope Item"_s, 22, 21 },
-                     Message{ u"Saw write on Item property x with value double in scope Item"_s, 30, 17 },
+                     Message{ u"Saw write on Item property x with value double in scope Item"_s, 30, 13 },
                      Message{ u"Saw write on Item property x with value int in scope Item"_s, 35, 31 },
                      Message{ u"Saw read on Item property x in scope Item"_s, 35, 46 },
                    },
@@ -3882,7 +3958,170 @@ void TestQmllint::shadow_data()
     QTest::addColumn<CallQmllintOptions>("options");
 
     CallQmllintOptions defaultOptions;
-    defaultOptions.enableCategories.append(qmlShadow.name().toString());
+    defaultOptions.categorySeverityOverrides[qmlShadow.name().toString()] =
+            QQmlJS::WarningSeverity::Warning;
+    // filename of the snippet is empty
+    const QString fileName = testFile("");
+
+    QTest::newRow("shadowIdBeforeDeclaration")
+            << u"id: hello;\n"
+               u"property int hello;"_s
+            << Result{ {
+                       { "Id \"hello\" shadows property \"hello\" from current type. Rename the id"_L1,
+                         1, 5 },
+                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
+                         1 },
+               } }
+            << defaultOptions;
+    QTest::newRow("shadowIdAfterDeclaration")
+            << u"property int hello;\n"
+               u"id: hello"_s
+            << Result{ {
+                       { "Id \"hello\" shadows property \"hello\" from current type. Rename the id"_L1,
+                         2, 5 },
+                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 1,
+                         1 },
+               } }
+            << defaultOptions;
+    QTest::newRow("shadowIdInParent")
+            << u"id: hello;\n"
+               u"Item { property int hello; }"_s
+            << Result{ {
+                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:1. Rename the id"_L1
+                                 .arg(fileName),
+                         1, 5 },
+                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
+                         8 },
+               } }
+            << defaultOptions;
+    QTest::newRow("shadowIdInGrandparent")
+            << u"id: hello;\n"
+               u"Item { Item { Item { property int hello; }}}"_s
+            << Result{ {
+                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:15. Rename the id"_L1
+                                 .arg(fileName),
+                         1, 5 },
+                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
+                         22 },
+               } }
+            << defaultOptions;
+    QTest::newRow("shadowIdInUnrelated")
+            << u"Item { Item { Item { property int hello; }}}\n"_s
+               u"Item { Item { Item { id: hello; }}}"_s
+            << Result{ {
+                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:3:15. Rename the id"_L1
+                                 .arg(fileName),
+                         2, 26 },
+                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 1,
+                         22 },
+               } }
+            << defaultOptions;
+    QTest::newRow("shadowIdInInnerContext")
+            << u"component IC: Item { Item { Item { property int hello; }}}\n"_s
+               u"Item { Item { Item { id: hello; }}}"_s
+            << Result{ {
+                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:3:29. Rename the id or the property"_L1
+                                 .arg(fileName),
+                         2, 26 },
+                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 1,
+                         36 },
+               } }
+            << defaultOptions;
+    QTest::newRow("shadowIdInOuterContext")
+            << u"Component { Item { Item { Item { property int hello; }}}}\n"_s
+               u"Component { Item { Item { Item { id: hello; }}}}"_s
+            << Result::clean() << defaultOptions;
+    QTest::newRow("shadowIdInOtherComponentBad")
+            << u"Component { id: hello; Item {} }\n"_s
+               u"Item { Item { Item { property int hello; }}}"_s
+            << Result{ {
+                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:15. Rename the id"_L1
+                                 .arg(fileName),
+                         1, 17 },
+                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
+                         22 },
+               } }
+            << defaultOptions;
+    QTest::newRow("shadowIdInOtherComponentBound")
+            << u"pragma ComponentBehavior: Bound\n"
+               u"import QtQuick\n"
+               u"Item {\n"
+               u"    component IC: Item { Item { Item { property int hello; }}}\n"_s
+               u"    Item { Item { Item { id: hello; }}}\n"
+               u"}"_s
+            << Result{ {
+                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:33. Rename the id"_L1
+                                 .arg(fileName),
+                         5, 30 },
+                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 4,
+                         40 },
+               } }
+            << defaultOptions;
+    QTest::newRow("shadowIdInOtherComponentBound2")
+            << u"pragma ComponentBehavior: Bound\n"
+               u"import QtQuick\n"
+               u"Item {\n"
+               u"    Component { Item { Item { Item { property int hello; }}}}\n"_s
+               u"    Item { Item { Item { id: hello; }}}\n"_s
+               u"}"_s
+            << Result{ {
+                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:31. Rename the id"_L1
+                                 .arg(fileName),
+                         5, 30 },
+                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 4,
+                         38 },
+               } }
+            << defaultOptions;
+    QTest::newRow("shadowIdMethod")
+            << u"id: hello;\n"
+               u"function hello() {}"_s
+            << Result{ {
+                       { "Id \"hello\" shadows method \"hello\" from current type. Rename the id"_L1,
+                         1, 5 },
+                       { "Note: method \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
+                         1 },
+               } }
+            << defaultOptions;
+    QTest::newRow("shadowIdSignal")
+            << u"id: hello;\n"
+               u"signal hello;"_s
+            << Result{ {
+                       { "Id \"hello\" shadows signal \"hello\" from current type. Rename the id"_L1,
+                         1, 5 },
+                       { "Note: signal \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
+                         1 },
+               } }
+            << defaultOptions;
+
+    {
+        CallQmllintOptions options = defaultOptions;
+        options.importPaths.append(testFile("ImportPath"));
+        QTest::newRow("shadowIdFromAnotherFile")
+                << u"import ModuleInImportPath\n"
+                   u"A { id: myProperty }"_s
+                << Result{ {
+                           { "Id \"myProperty\" shadows property \"myProperty\" from current type. Rename the id"_L1,
+                             2, 9 },
+                           { "Note: type \"\" defined here has a property \"myProperty\" shadowed by id \"myProperty\""_L1,
+                             2, 1 },
+                   } }
+                << options;
+        QTest::newRow("shadowIdFromAnotherFile2")
+                << u"import ModuleInImportPath\n"
+                   u"import QtQuick\n"
+                   u"Item {\n"
+                   u"   A {}\n"
+                   u"   Item { Item { Item { id: myProperty } } }\n"
+                   u"}"_s
+                << Result{ {
+                           { "Id \"myProperty\" shadows property \"myProperty\" from \"A\" defined at %1:4:4. Rename the id"_L1
+                                     .arg(fileName),
+                             5, 29 },
+                           { "Note: type \"A\" defined here has a property \"myProperty\" shadowed by id \"myProperty\""_L1,
+                             4, 4 },
+                   } }
+                << options;
+    }
 
     QTest::newRow("shadowMethod")
             << u"component IC: Item { function f() {} }\n"
@@ -3972,7 +4211,8 @@ void TestQmllint::useProperFunction_data()
     QTest::addColumn<CallQmllintOptions>("options");
 
     CallQmllintOptions defaultOptions;
-    defaultOptions.enableCategories.append(qmlUseProperFunction.name().toString());
+    defaultOptions.categorySeverityOverrides[qmlUseProperFunction.name().toString()] =
+            QQmlJS::WarningSeverity::Warning;
 
     QTest::newRow("shadowedMethod")
             << u"function foo() {}\n property bool foo: false"_s
@@ -4012,26 +4252,140 @@ void TestQmllint::useProperFunction()
     dirtyQmlSnippet();
 }
 
-void TestQmllint::noSettingsPollution()
+void TestQmllint::noSettingsPollution_data()
 {
     const QString aFile = testFile(u"NoSettingsPollution/A.qml"_s);
     const QString bFile = testFile(u"NoSettingsPollution/folder/B.qml"_s);
 
-    const auto run = [&](const QStringList &args) {
-        QProcess qmllint;
-        qmllint.setProgram(m_qmllintPath);
-        qmllint.setArguments(args);
-        qmllint.setProcessChannelMode(QProcess::MergedChannels);
-        qmllint.start();
-        QVERIFY(qmllint.waitForFinished());
-        const QString output = qmllint.readAllStandardOutput();
-        QVERIFY(output.contains("[comma]"_L1));
-        QVERIFY(output.contains(aFile.toUtf8()));
-        QVERIFY(!output.contains(bFile.toUtf8()));
-    };
+    QTest::addColumn<QStringList>("args");
+    QTest::addColumn<QString>("expectedOutput");
 
-    run({ aFile, bFile });
-    run({ bFile, aFile });
+    const QString warning =
+            "Warning: %1:5:10: Do not use comma expressions. [comma]\n        1, 1\n         ^\n"_L1
+                    .arg(aFile);
+
+    QTest::addRow("a-then-b") << QStringList{ aFile, bFile } << warning;
+    QTest::addRow("b-then-a") << QStringList{ bFile, aFile } << warning;
+    QTest::addRow("same-file-twice") << QStringList{ bFile, bFile } << u""_s;
+}
+
+void TestQmllint::noSettingsPollution()
+{
+    QFETCH(QStringList, args);
+    QFETCH(QString, expectedOutput);
+
+    QProcess qmllint;
+    qmllint.setProgram(m_qmllintPath);
+    qmllint.setArguments(args);
+    qmllint.setProcessChannelMode(QProcess::MergedChannels);
+    qmllint.start(QProcess::ReadWrite | QProcess::Text);
+    QVERIFY(qmllint.waitForFinished());
+    const QString output = qmllint.readAllStandardOutput();
+    QCOMPARE(output, expectedOutput);
+}
+
+void TestQmllint::syntaxIsEssential()
+{
+    const auto &builtins = QQmlJSLogger::builtinCategories();
+    builtins.first().name();
+    const auto it = std::find_if(builtins.cbegin(), builtins.cend(), [](const auto &c) {
+        return c.name() == "syntax"_L1;
+    });
+    QVERIFY(it != builtins.cend());
+    QVERIFY(it->isEssential());
+}
+
+void TestQmllint::essentialCantBeLowered()
+{
+    const auto warning = "In order to ensure the proper function of qmllint, the severity of the "
+                         "essential category syntax cannot be lowered."_L1;
+    {
+        QProcess process;
+        process.setProcessChannelMode(QProcess::MergedChannels);
+        process.start(m_qmllintPath, { "--syntax=info"_L1, testFile("dummy.qml") });
+        QVERIFY(process.waitForFinished());
+        const QString output = process.readAllStandardOutput();
+        QVERIFY(output.contains(warning));
+    }
+    {
+        QProcess process;
+        process.setProcessChannelMode(QProcess::MergedChannels);
+        process.start(m_qmllintPath, { testFile("essentialCantBeLowered/file.qml") });
+        QVERIFY(process.waitForFinished());
+        const QString output = process.readAllStandardOutput();
+        QVERIFY(output.contains(warning));
+    }
+}
+
+void TestQmllint::essentialCanBeRaised()
+{
+    CallQmllintOptions options;
+    options.readSettings = true;
+    const QJsonArray json = callQmllint(testFile("essentialCanBeRaised/file.qml"), options,
+                                        CallQmllintCheck::ShouldFail);
+
+    const QString error = "Nested inline components are not supported"_L1;
+    bool foundSyntaxError = false;
+    for (const auto &entry : json) {
+        const QJsonObject &message = entry.toObject();
+        if (message["id"] == "syntax"_L1 && message["type"] == "critical"_L1
+                && message["message"].toString().contains(error)) {
+            foundSyntaxError = true;
+            break;
+        }
+    }
+    QVERIFY(foundSyntaxError);
+}
+
+static const auto OnlyExplicitCategories_unqualified = "7:26: Unqualified access"_L1;
+static const auto OnlyExplicitCategories_unqualifiedFix = "property bool b: root.i === 1"_L1;
+static const auto OnlyExplicitCategories_comma = "11:10: Do not use comma expressions"_L1;
+static const auto OnlyExplicitCategories_ifAssign = "12:15: Assignment in condition"_L1;
+
+void TestQmllint::onlyExplicitCategories()
+{
+    const QString qmlFilePath = testFile("OnlyExplicitCategories/file.qml"_L1);
+    bool shouldSucceed = true;
+    QStringList extraArgs;
+    bool ignoreSettings = false;
+
+    QString output = runQmllint(qmlFilePath, shouldSucceed, extraArgs, ignoreSettings);
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualified));
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualifiedFix));
+    QVERIFY(output.contains(OnlyExplicitCategories_comma));
+    QVERIFY(!output.contains(OnlyExplicitCategories_ifAssign)); // per .qmllint.ini
+
+    extraArgs << "--ignore-settings"_L1;
+    output = runQmllint(qmlFilePath, shouldSucceed, extraArgs, ignoreSettings);
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualified));
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualifiedFix));
+    QVERIFY(output.contains(OnlyExplicitCategories_comma));
+    QVERIFY(output.contains(OnlyExplicitCategories_ifAssign));
+
+    extraArgs << "--only-explicit-categories"_L1;
+    output = runQmllint(qmlFilePath, shouldSucceed, extraArgs, ignoreSettings);
+    QVERIFY(output.isEmpty());
+
+    extraArgs << QStringList{ "--unqualified=warning"_L1 };
+    output = runQmllint(qmlFilePath, shouldSucceed, extraArgs, ignoreSettings);
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualified));
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualifiedFix));
+    QVERIFY(!output.contains(OnlyExplicitCategories_comma));
+    QVERIFY(!output.contains(OnlyExplicitCategories_ifAssign));
+}
+
+void TestQmllint::onlyExplicitCategoriesIni()
+{
+    const QString qmlFilePath = testFile("OnlyExplicitCategoriesIni/file.qml"_L1);
+    bool shouldSucceed = true;
+    QStringList extraArgs;
+    bool ignoreSettings = false;
+
+    const QString output = runQmllint(qmlFilePath, shouldSucceed, extraArgs, ignoreSettings);
+    QVERIFY(!output.contains(OnlyExplicitCategories_unqualified));
+    QVERIFY(!output.contains(OnlyExplicitCategories_unqualifiedFix));
+    QVERIFY(output.contains(OnlyExplicitCategories_comma));
+    QVERIFY(!output.contains(OnlyExplicitCategories_ifAssign));
 }
 
 void TestQmllint::crashes()

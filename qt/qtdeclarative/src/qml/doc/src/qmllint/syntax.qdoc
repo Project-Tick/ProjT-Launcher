@@ -251,42 +251,6 @@ Item {
 
 \endqml
 
-\section1 Enums declared inside of inline components are ignored
-
-\section2 What happened?
-You defined an \l{qtqml-syntax-objectattributes.html#enumeration-attributes}{enum}
-inside an inline component.
-
-\section2 Why is this bad?
-The QML language only allows enum definitions inside the root
-item of the QML file. Enums declared inside an inline
-component are unusable, even inside the inline component. The same applies to
-enums declared inside non-root QML objects.
-
-\section2 Example
-\qml
-import QtQuick
-
-Item {
-    component MyInlineComponent: Item {
-        enum MyEnum { Hello, World }
-    }
-}
-
-\endqml
-To fix this warning, move the enum declaration into the root element of the
-QML file:
-\qml
-import QtQuick
-
-Item {
-    enum MyEnum { Hello, World }
-    component MyInlineComponent: Item {
-    }
-}
-
-\endqml
-
 \section1 Unknown argument to pragma
 
 \section2 What happened?

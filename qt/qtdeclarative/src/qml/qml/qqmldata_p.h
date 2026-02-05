@@ -15,16 +15,18 @@
 // We mean it.
 //
 
-#include <private/qtqmlglobal_p.h>
 #include <private/qobject_p.h>
-#include <private/qqmlpropertyindex_p.h>
-#include <private/qv4value_p.h>
-#include <private/qv4persistent_p.h>
-#include <private/qqmlrefcount_p.h>
 #include <private/qqmlpropertycache_p.h>
-#include <qqmlprivate.h>
-#include <qjsengine.h>
-#include <qvector.h>
+#include <private/qqmlpropertyindex_p.h>
+#include <private/qqmlrefcount_p.h>
+#include <private/qtqmlglobal_p.h>
+#include <private/qv4persistent_p.h>
+#include <private/qv4value_p.h>
+
+#include <QtQml/qqmlprivate.h>
+#include <QtQml/qjsengine.h>
+
+#include <QtCore/qvector.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -274,6 +276,10 @@ private:
 
     Q_NEVER_INLINE static QQmlData *createQQmlData(QObjectPrivate *priv);
     Q_NEVER_INLINE static QQmlPropertyCache::ConstPtr createPropertyCache(QObject *object);
+
+    void removeFromContext();
+    void clearBindings();
+    bool clearSignalHandlers();
 
     Q_ALWAYS_INLINE bool hasBitSet(int bit) const
     {

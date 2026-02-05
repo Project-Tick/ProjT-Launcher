@@ -16,7 +16,7 @@
 // We mean it.
 //
 
-#include "qlanguageserver_p.h"
+#include <private/qlanguageserver_p.h>
 #include <QtLanguageServer/private/qlanguageserverprotocol_p.h>
 #include <QtCore/QMutex>
 #include <QtCore/QHash>

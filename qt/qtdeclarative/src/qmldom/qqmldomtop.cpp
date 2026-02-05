@@ -407,7 +407,7 @@ std::shared_ptr<QmlFile> DomUniverse::parseQmlFile(const QString &code, const Fi
                                       creationOption == Extended ? QmlFile::EnableParserRecovery
                                                                  : QmlFile::DisableParserRecovery);
     std::shared_ptr<DomEnvironment> envPtr;
-    if (auto ptr = file.environment().lock())
+    if (auto ptr = file.environment())
         envPtr = std::move(ptr);
     else
         envPtr = std::make_shared<DomEnvironment>(QStringList(),
@@ -442,7 +442,7 @@ std::shared_ptr<JsFile> DomUniverse::parseJsFile(const QString &code, const File
     // and adding ExternalItem to the Environment will happen here
     auto jsFile = std::make_shared<JsFile>(file.canonicalPath(), code, contentDate);
     std::shared_ptr<DomEnvironment> envPtr;
-    if (auto ptr = file.environment().lock())
+    if (auto ptr = file.environment())
         envPtr = std::move(ptr);
     else
         envPtr = std::make_shared<DomEnvironment>(QStringList(),

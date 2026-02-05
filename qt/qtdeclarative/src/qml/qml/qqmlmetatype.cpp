@@ -329,7 +329,6 @@ void QQmlMetaType::clearTypeRegistrations()
     data->idToType.clear();
     data->nameToType.clear();
     data->urlToType.clear();
-    data->typePropertyCaches.clear();
     data->metaObjectToType.clear();
     data->undeletableTypes.clear();
     data->propertyCaches.clear();
@@ -350,7 +349,7 @@ void QQmlMetaType::clearTypeRegistrations()
 void QQmlMetaType::registerTypeAlias(int typeIndex, const QString &name)
 {
     QQmlMetaTypeDataPtr data;
-    const QQmlType type = data->types.value(typeIndex);
+    const QQmlType type = data->types.value(typeIndex).type;
     const QQmlTypePrivate *priv = type.priv();
     data->nameToType.insert(name, priv);
 }
@@ -385,8 +384,6 @@ QQmlType QQmlMetaType::registerInterface(const QQmlPrivate::RegisterInterface &t
 
     data->idToType.insert(priv->typeId.id(), priv);
     data->idToType.insert(priv->listId.id(), priv);
-
-    data->interfaces.insert(type.typeId.id());
 
     return QQmlType(priv);
 }
@@ -930,7 +927,8 @@ static bool namespaceContainsRegistrations(const QQmlMetaTypeData *data, const Q
 {
     // Has any type previously been installed to this namespace?
     QHashedString nameSpace(uri);
-    for (const QQmlType &type : data->types) {
+    for (const auto &typeAndCaches : std::as_const(data->types)) {
+        const QQmlType &type = typeAndCaches.type;
         if (type.module() == nameSpace && type.version().majorVersion() == version.majorVersion())
             return true;
     }
@@ -1231,10 +1229,10 @@ QMetaMethod QQmlMetaType::defaultMethod(QObject *obj)
 /*!
     See qmlRegisterInterface() for information about when this will return true.
 */
-bool QQmlMetaType::isInterface(QMetaType type)
+bool QQmlMetaType::isInterface(QMetaType metaType)
 {
     const QQmlMetaTypeDataPtr data;
-    return data->interfaces.contains(type.id());
+    return QQmlType(data->idToType.value(metaType.id())).isInterface();
 }
 
 const char *QQmlMetaType::interfaceIId(QMetaType metaType)
@@ -1330,10 +1328,7 @@ QQmlType QQmlMetaType::qmlType(const QMetaObject *metaObject, const QHashedStrin
 QQmlType QQmlMetaType::qmlTypeById(int qmlTypeId)
 {
     const QQmlMetaTypeDataPtr data;
-    QQmlType type = data->types.value(qmlTypeId);
-    if (type.isValid())
-        return type;
-    return QQmlType();
+    return data->types.value(qmlTypeId).type;
 }
 
 /*!
@@ -1557,7 +1552,7 @@ bool QQmlMetaType::canConvert(QObject *o, QMetaType metaType)
 void QQmlMetaType::unregisterType(int typeIndex)
 {
     QQmlMetaTypeDataPtr data;
-    const QQmlType type = data->types.value(typeIndex);
+    const QQmlType type = data->types.value(typeIndex).type;
     if (const QQmlTypePrivate *d = type.priv()) {
         if (d->regType == QQmlType::CompositeType || d->regType == QQmlType::CompositeSingletonType)
             removeFromInlineComponents(data->urlToType, d);
@@ -1567,13 +1562,12 @@ void QQmlMetaType::unregisterType(int typeIndex)
         removeQQmlTypePrivate(data->metaObjectToType, d);
         for (auto & module : data->uriToModule)
             module->remove(d);
-        data->clearPropertyCachesForVersion(typeIndex);
-        data->types[typeIndex] = QQmlType();
+        data->types[typeIndex] = QQmlMetaTypeData::Type();
         data->undeletableTypes.remove(type);
     }
 }
 
-void QQmlMetaType::registerMetaObjectForType(const QMetaObject *metaobject, QQmlTypePrivate *type)
+void QQmlMetaType::registerMetaObjectForType(const QMetaObject *metaobject, const QQmlTypePrivate *type)
 {
     Q_ASSERT(type);
 
@@ -1645,9 +1639,9 @@ void QQmlMetaType::freeUnusedTypesAndCaches()
     bool deletedAtLeastOneType;
     do {
         deletedAtLeastOneType = false;
-        QList<QQmlType>::Iterator it = data->types.begin();
+        auto it = data->types.begin();
         while (it != data->types.end()) {
-            const QQmlTypePrivate *d = (*it).priv();
+            const QQmlTypePrivate *d = it->type.priv();
             if (d && d->count() == 1 && !hasActiveInlineComponents(data, d)) {
                 deletedAtLeastOneType = true;
 
@@ -1663,8 +1657,7 @@ void QQmlMetaType::freeUnusedTypesAndCaches()
                 for (auto &module : data->uriToModule)
                     module->remove(d);
 
-                data->clearPropertyCachesForVersion(d->index);
-                *it = QQmlType();
+                *it = QQmlMetaTypeData::Type();
             } else {
                 ++it;
             }
@@ -1725,7 +1718,12 @@ QList<QQmlType> QQmlMetaType::qmlTypes()
 QList<QQmlType> QQmlMetaType::qmlAllTypes()
 {
     const QQmlMetaTypeDataPtr data;
-    return data->types;
+    QList<QQmlType> types;
+    types.reserve(data->types.size());
+    std::transform(
+            data->types.constBegin(), data->types.constEnd(),
+            std::back_inserter(types), [](const auto &type) { return type.type; });
+    return types;
 }
 
 /*!
@@ -1858,7 +1856,7 @@ QList<QQmlProxyMetaObject::ProxyData> QQmlMetaType::proxyData(const QMetaObject 
     if (!mo)
         return metaObjects;
 
-    auto createProxyMetaObject = [&](QQmlTypePrivate *This,
+    auto createProxyMetaObject = [&](const QQmlTypePrivate *This,
                                      const QMetaObject *superdataBaseMetaObject,
                                      const QMetaObject *extMetaObject,
                                      QObject *(*extFunc)(QObject *)) {
@@ -1886,7 +1884,7 @@ QList<QQmlProxyMetaObject::ProxyData> QQmlMetaType::proxyData(const QMetaObject 
         //       loaded before. Just adding all possible extensions would also be pretty random.
         //       The right way to do this would be to take the relations between the QML modules
         //       into account. For this we would need proper module dependency information.
-        if (QQmlTypePrivate *t = data->metaObjectToType.value(mo)) {
+        if (const QQmlTypePrivate *t = data->metaObjectToType.value(mo)) {
             if (t->regType == QQmlType::CppType) {
                 createProxyMetaObject(
                         t, t->baseMetaObject, t->extraData.cppTypeData->extMetaObject,

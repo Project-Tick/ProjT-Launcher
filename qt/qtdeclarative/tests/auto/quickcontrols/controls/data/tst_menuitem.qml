@@ -4,6 +4,7 @@
 import QtQuick
 import QtTest
 import QtQuick.Controls
+import Qt.test.controls
 
 TestCase {
     id: testCase
@@ -12,6 +13,8 @@ TestCase {
     visible: true
     when: windowShown
     name: "MenuItem"
+
+    readonly property bool platformSupportsShortcuts: StyleInfo.styleName !== "iOS"
 
     Component {
         id: menuItem
@@ -25,6 +28,10 @@ TestCase {
 
     function init() {
         failOnWarning(/.?/)
+    }
+
+    function cleanup() {
+        ApplicationAttributes.set(Qt.AA_DontShowShortcutsInContextMenus, false)
     }
 
     function test_defaults() {
@@ -64,6 +71,21 @@ TestCase {
         verify(control.highlighted)
     }
 
+    Component {
+        id: menuItemWithActionComponent
+
+        MenuItem {
+            action: Action {
+                shortcut: "Ctrl+S"
+            }
+            Rectangle {
+                anchors.fill: parent
+                color: "transparent"
+                border.color: "darkorange"
+            }
+        }
+    }
+
     function test_display_data() {
         return [
             { "tag": "IconOnly", display: MenuItem.IconOnly },
@@ -73,16 +95,36 @@ TestCase {
             { "tag": "IconOnly, mirrored", display: MenuItem.IconOnly, mirrored: true },
             { "tag": "TextOnly, mirrored", display: MenuItem.TextOnly, mirrored: true },
             { "tag": "TextUnderIcon, mirrored", display: MenuItem.TextUnderIcon, mirrored: true },
-            { "tag": "TextBesideIcon, mirrored", display: MenuItem.TextBesideIcon, mirrored: true }
+            { "tag": "TextBesideIcon, mirrored", display: MenuItem.TextBesideIcon, mirrored: true },
+            { "tag": "IconOnly, showShortcut", display: MenuItem.IconOnly, showShortcut: true },
+            { "tag": "TextOnly, showShortcut", display: MenuItem.TextOnly, showShortcut: true },
+            { "tag": "TextUnderIcon, showShortcut", display: MenuItem.TextUnderIcon,
+                showShortcut: true },
+            { "tag": "TextBesideIcon, showShortcut", display: MenuItem.TextBesideIcon,
+                showShortcut: true },
+            { "tag": "IconOnly, mirrored, showShortcut", display: MenuItem.IconOnly, mirrored: true,
+                showShortcut: true },
+            { "tag": "TextOnly, mirrored, showShortcut", display: MenuItem.TextOnly, mirrored: true,
+                showShortcut: true },
+            { "tag": "TextUnderIcon, mirrored, showShortcut", display: MenuItem.TextUnderIcon,
+                mirrored: true, showShortcut: true },
+            { "tag": "TextBesideIcon, mirrored, showShortcut", display: MenuItem.TextBesideIcon,
+                mirrored: true, showShortcut: true }
         ]
     }
 
     function test_display(data) {
-        let control = createTemporaryObject(menuItem, testCase, {
+        // This is reset to false in cleanup().
+        ApplicationAttributes.set(Qt.AA_DontShowShortcutsInContextMenus, !data.showShortcut)
+
+        // Need to use a MenuItem with an Action set so that we can test shortcuts.
+        let control = createTemporaryObject(menuItemWithActionComponent, testCase, {
             text: "MenuItem",
             display: data.display,
+            // Ensure that the menu item is wide enough for the shortcut to be shown.
+            width: 300,
             "icon.source": "qrc:/qt-project.org/imports/QtQuick/Controls/Basic/images/check.png",
-            "LayoutMirroring.enabled": !!data.mirrored
+            "LayoutMirroring.enabled": !!data.mirrored,
         })
         verify(control)
         compare(control.icon.source, "qrc:/qt-project.org/imports/QtQuick/Controls/Basic/images/check.png")
@@ -90,36 +132,70 @@ TestCase {
         let padding = data.mirrored ? control.contentItem.rightPadding : control.contentItem.leftPadding
         let iconImage = findChild(control.contentItem, "image")
         let textLabel = findChild(control.contentItem, "label")
+        let shortcutLabel = findChild(control.contentItem, "shortcutLabel")
+        const showShortcut = data.showShortcut && testCase.platformSupportsShortcuts
 
         switch (control.display) {
         case MenuItem.IconOnly:
             verify(iconImage)
             verify(!textLabel)
+            verify(!shortcutLabel)
+
             compare(iconImage.x, Math.round(control.mirrored ? control.availableWidth - iconImage.width - padding : padding))
             compare(iconImage.y, Math.round((control.availableHeight - iconImage.height) / 2))
             break;
         case MenuItem.TextOnly:
             verify(!iconImage)
             verify(textLabel)
+            if (showShortcut) {
+                verify(shortcutLabel)
+                verify(shortcutLabel.visible)
+            } else {
+                verify(!shortcutLabel)
+            }
+
             compare(textLabel.x, control.mirrored ? control.availableWidth - textLabel.width - padding : padding)
             compare(textLabel.y, (control.availableHeight - textLabel.height) / 2)
+            if (showShortcut) {
+                compare(shortcutLabel.x, control.mirrored ? padding : control.availableWidth - shortcutLabel.width - padding)
+                compare(shortcutLabel.y, (control.availableHeight - shortcutLabel.height) / 2)
+            }
             break;
         case MenuItem.TextUnderIcon:
             verify(iconImage)
             verify(textLabel)
-            compare(iconImage.x, Math.round(control.mirrored ? control.availableWidth - iconImage.width - (textLabel.width - iconImage.width) / 2 - padding : (textLabel.width - iconImage.width) / 2 + padding))
+            // See comment in layout() for why we don't support TextUnderIcon for shortcuts.
+            verify(!shortcutLabel)
+
+            compare(iconImage.x, Math.round(control.mirrored
+                ? control.availableWidth - iconImage.width - (textLabel.width - iconImage.width) / 2 - padding
+                : (textLabel.width - iconImage.width) / 2 + padding))
             compare(textLabel.x, control.mirrored ? control.availableWidth - textLabel.width - padding : padding)
             verify(iconImage.y < textLabel.y)
             break;
         case MenuItem.TextBesideIcon:
             verify(iconImage)
             verify(textLabel)
-            if (control.mirrored)
+            if (showShortcut) {
+                verify(shortcutLabel)
+                verify(shortcutLabel.visible)
+            } else {
+                verify(!shortcutLabel)
+            }
+
+            if (control.mirrored) {
                 verify(textLabel.x < iconImage.x)
-            else
+                if (showShortcut)
+                    verify(shortcutLabel.x < textLabel.x)
+            } else {
                 verify(iconImage.x < textLabel.x)
+                if (showShortcut)
+                    verify(textLabel.x < shortcutLabel.x)
+            }
             compare(iconImage.y, Math.round((control.availableHeight - iconImage.height) / 2))
             compare(textLabel.y, (control.availableHeight - textLabel.height) / 2)
+            if (showShortcut)
+                compare(shortcutLabel.y, (control.availableHeight - shortcutLabel.height) / 2)
             break;
         }
     }

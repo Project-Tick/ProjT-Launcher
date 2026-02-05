@@ -13,13 +13,13 @@ macos-26 # QTBUG-142189
 [Switch::test_touchDrag]
 macos-26 # QTBUG-142189
 
-[SwitchDelegate::test_touchDrag]
+[SwitchDelegate::test_mouseDrag]
 macos-26 # QTBUG-142189
 
 [SwitchDelegate::test_touchDrag]
 macos-26 # QTBUG-142189
 
-[Switch::test_touch]
+[Switch::test_mouse]
 macos-26 # QTBUG-142189
 
 [Switch::test_touch]

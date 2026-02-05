@@ -232,6 +232,8 @@ namespace QQuickVisualTestUtils
     QPoint mapCenterToWindow(const QQuickItem *item);
     QPoint mapToWindow(const QQuickItem *item, qreal relativeX, qreal relativeY);
     QPoint mapToWindow(const QQuickItem *item, const QPointF &relativePos);
+
+    void setFastAnimations(bool fastAnimations);
 }
 
 #define SKIP_IF_NO_WINDOW_ACTIVATION \

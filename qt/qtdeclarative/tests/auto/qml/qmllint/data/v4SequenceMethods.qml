@@ -25,8 +25,8 @@ QtObject {
 
     property bool entriesMatch: {
         var iterator = v4Sequence.entries();
-        for (var [index, element] of v4Sequence.entries()) {
-            var v = iterator.next().value;
+        for (let [index, element] of v4Sequence.entries()) {
+            let v = iterator.next().value;
             if (index !== v[0] || element !== v[1]) {
                 console.log(index, v[0], element, v[1]);
                 return false;
@@ -38,8 +38,8 @@ QtObject {
 
     property bool keysMatch: {
         var iterator = v4Sequence.keys();
-        for (var index of v4Sequence.keys()) {
-            var v = iterator.next().value;
+        for (let index of v4Sequence.keys()) {
+            let v = iterator.next().value;
             if (index !== v) {
                 console.log(index, v);
                 return false;
@@ -51,8 +51,8 @@ QtObject {
 
     property bool valuesMatch: {
         var iterator = v4Sequence.values();
-        for (var obj of v4Sequence.values()) {
-            var v = iterator.next().value;
+        for (let obj of v4Sequence.values()) {
+            let v = iterator.next().value;
             if (obj !== v) {
                 console.log(obj, v);
                 return false;

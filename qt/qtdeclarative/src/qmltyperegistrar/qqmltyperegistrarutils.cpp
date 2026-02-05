@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qqmltyperegistrarutils_p.h"
-
-#include "qanystringviewutils_p.h"
-#include "qqmltyperegistrarconstants_p.h"
-#include "qqmltyperegistrarconstants_p.h"
 #include "qmetatypesjsonprocessor_p.h"
 
 #include <QtCore/qcborarray.h>

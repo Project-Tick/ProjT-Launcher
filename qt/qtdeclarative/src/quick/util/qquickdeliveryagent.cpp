@@ -943,6 +943,11 @@ bool QQuickDeliveryAgent::event(QEvent *ev)
         d->deliverContextMenuEvent(static_cast<QContextMenuEvent *>(ev));
         break;
 #endif
+    case QEvent::Timer:
+        Q_ASSERT(static_cast<QTimerEvent *>(ev)->timerId() == d->frameSynchronousDelayTimer.timerId());
+        d->frameSynchronousDelayTimer.stop();
+        d->flushFrameSynchronousEvents(d->rootItem->window());
+        break;
     default:
         return false;
     }
@@ -993,6 +998,13 @@ QQuickDeliveryAgentPrivate::QQuickDeliveryAgentPrivate(QQuickItem *root) :
 #endif
     if (isSubsceneAgent)
         subsceneAgentsExist = true;
+    const auto interval = qEnvironmentVariableIntegerValue("QT_QUICK_FRAME_SYNCHRONOUS_HOVER_INTERVAL");
+    if (interval.has_value()) {
+        qCDebug(lcHoverTrace) << "frame-synchronous hover interval" << interval;
+        frameSynchronousHoverInterval = int(interval.value());
+    }
+    if (frameSynchronousHoverInterval > 0)
+        frameSynchronousHoverTimer.start();
 }
 
 QQuickDeliveryAgentPrivate::~QQuickDeliveryAgentPrivate()
@@ -1854,23 +1866,40 @@ void QQuickDeliveryAgentPrivate::flushFrameSynchronousEvents(QQuickWindow *win)
     // In webOS we already have the alternative to the issue that this
     // wanted to address and thus skipping this part won't break anything.
 #if !defined(Q_OS_WEBOS)
-    // Once per frame, if any items are dirty, send a synthetic hover,
+    // Periodically, if any items are dirty, send a synthetic hover,
     // in case items have changed position, visibility, etc.
     // For instance, during animation (including the case of a ListView
     // whose delegates contain MouseAreas), a MouseArea needs to know
     // whether it has moved into a position where it is now under the cursor.
+    // We do this once per frame if frameSynchronousHoverInterval == 0, or
+    // skip some frames until elapsed time > frameSynchronousHoverInterval,
+    // or skip it altogether if frameSynchronousHoverInterval < 0.
     // TODO do this for each known mouse device or come up with a different strategy
-    if (frameSynchronousHoverEnabled && !win->mouseGrabberItem() &&
-            !lastMousePosition.isNull() && QQuickWindowPrivate::get(win)->dirtyItemList) {
-        qCDebug(lcHoverTrace) << q << "delivering frame-sync hover to root @" << lastMousePosition;
-        if (deliverHoverEvent(lastMousePosition, lastMousePosition, QGuiApplication::keyboardModifiers(), 0)) {
+    if (frameSynchronousHoverInterval >= 0) {
+        const bool timerActive = frameSynchronousHoverInterval > 0;
+        const bool timerMature = frameSynchronousHoverTimer.elapsed() >= frameSynchronousHoverInterval;
+        if (timerActive && !timerMature) {
+            qCDebug(lcHoverTrace) << q << "frame-sync hover delivery delayed: elapsed"
+                                  << frameSynchronousHoverTimer.elapsed() << "<" << frameSynchronousHoverInterval;
+            if (!frameSynchronousDelayTimer.isActive())
+                frameSynchronousDelayTimer.start(frameSynchronousHoverInterval - frameSynchronousHoverTimer.elapsed(), q);
+        } else if (!win->mouseGrabberItem() && !lastMousePosition.isNull() &&
+                   (timerMature || QQuickWindowPrivate::get(win)->dirtyItemList)) {
+            frameSynchronousDelayTimer.stop();
+            qCDebug(lcHoverTrace) << q << "delivering frame-sync hover to root @" << lastMousePosition
+                                  << "after elapsed time" << frameSynchronousHoverTimer.elapsed();
+            if (deliverHoverEvent(lastMousePosition, lastMousePosition, QGuiApplication::keyboardModifiers(), 0)) {
 #if QT_CONFIG(cursor)
-            QQuickWindowPrivate::get(rootItem->window())->updateCursor(
-                    sceneTransform ? sceneTransform->map(lastMousePosition) : lastMousePosition, rootItem);
+                QQuickWindowPrivate::get(rootItem->window())->updateCursor(
+                        sceneTransform ? sceneTransform->map(lastMousePosition) : lastMousePosition, rootItem);
 #endif
-        }
+            }
 
-        qCDebug(lcHoverTrace) << q << "frame-sync hover delivery done";
+            if (timerActive)
+                frameSynchronousHoverTimer.restart();
+            ++frameSynchronousHover_counter;
+            qCDebug(lcHoverTrace) << q << "frame-sync hover delivery done: round" << frameSynchronousHover_counter;
+        }
     }
 #else
     Q_UNUSED(win);

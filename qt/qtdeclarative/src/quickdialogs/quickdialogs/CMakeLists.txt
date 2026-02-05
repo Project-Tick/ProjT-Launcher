@@ -55,3 +55,9 @@ qt_internal_add_qml_module(QuickDialogs2
 qt_internal_add_docs(QuickDialogs2
     doc/qtquickdialogs.qdocconf
 )
+
+target_sources(QuickDialogs2
+    PRIVATE
+        doc/src/qtquickdialogs-qmltypes.qdoc
+        doc/src/qtquickdialogs-index.qdoc
+)

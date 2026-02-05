@@ -109,10 +109,8 @@ void tst_qmllint_benchmark::runOnFile(const QString &fileName, PluginSelection a
     switch (allowedPlugins) {
     case CompilerWarnings:
         for (auto &category : categories) {
-            if (category.id() == qmlCompiler) {
-                category.setIgnored(false);
-                category.setLevel(QtWarningMsg);
-            }
+            if (category.id() == qmlCompiler)
+                category.setSeverity(QQmlSA::WarningSeverity::Warning);
         }
         Q_FALLTHROUGH(); // disable the plugins, concentrate on the compiler warnings
     case NoPlugins:

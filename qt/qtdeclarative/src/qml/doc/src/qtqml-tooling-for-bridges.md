@@ -116,23 +116,55 @@ The .qmlls.build.ini file starts with a `[General]` section. That section contai
 ```
 [General]
 docDir=/path/to/qt/doc
+version=2
 ```
 where `/path/to/qt/` is the path to the Qt installation.
 
-Each QML Module has its own section in the `.qmlls.build.ini` file. Each section is named after the path to the source
-folder of the QML Module, with slashes (`/`) escaped with `<SLASH>`. In C++ the source folder of a QML Module would
-be the folder where the `CMakeLists.txt` with the `qt_add_qml_module(...)` call definining the QML Module is located.
-Each section has a key `importPaths` that describes the import paths to use for QML files of the current module.
+Starting with Qt 6.12, the `[workspace]` section has a list of workspaces in QSettings's list style.
+Each entry in the list contains a source folder, the import paths and the resource files, for example:
+
+```
+[General]
+docDir=/path/to/qt/doc
+version=2
+
+[workspaces]
+size=2
+
+0\sourcePath="/path/to/folder1"
+0\importPaths="/path/to/qt/qml"
+0\resourceFiles="/path/to/resource1.qrc"
+
+1\sourcePath="/path/to/folder2"
+1\importPaths="/path/to/qt/qml"
+1\resourceFiles="/path/to/resource2.qrc"
+```
+
+where:
+* `sourcePath` is the folder where in C++ the `CMakeLists.txt` with the `qt_add_qml_module(...)` call
+definining the QML Module would be located.
+* `importPaths` describes the import paths to use for QML files of the current module.
 On windows, `;` separates the different import paths. Linux and macOS use `:` instead.
-For example, the QML Module at `/tmp/untitled` would have the section
-```
-[<SLASH>tmp<SLASH>untitled]
-importPaths="/path/to/qt/qml"
-```
+* `resourceFiles` describes all resource files of the current module.
+On windows, `;` separates the different resource files. Linux and macOS use `:` instead.
 
 Note that `importPaths` contains the import paths of:
 * the Qt kit that the project is using,
 * all QML Modules that this QML Module depends on, see also the `depends` entries of the current QML Module's [qmldir](#qmldir) file.
+
+#### .qmlls.build.ini content before 6.12
+Qmlls from Qt 6.12 and later also support the previous format where source folders have their own
+ini-section and have `/` escaped with `<SLASH>`.
+For example, the QML Module at `/tmp/untitled` would have the section name `[<SLASH>tmp<SLASH>untitled]`.
+
+```
+[General]
+docDir=/path/to/qt/doc
+version=1
+
+[<SLASH>tmp<SLASH>untitled]
+importPaths="/path/to/qt/qml"
+```
 
 ### qmllint
 
@@ -255,33 +287,41 @@ form:
     ...
 ],
 ```
-In a C++ CMake project, the classInfos are set via C++'s QML_* macros. Here is a "translation" table from
-C++ macro to class info object:
+In a C++ CMake project, the classInfos are set via C++'s QML_* and Q_CLASSINFO macros. Here is a "translation" table from
+QML_* C++ macro to class info object:
 
-| corresponding C++ macro                    | name(s) (as string)                    | value(s)                                                               |
-|--------------------------------------------|----------------------------------------|------------------------------------------------------------------------|
-| QML_ELEMENT                                | QML.Element                            | "auto"                                                                 |
-| QML_NAMED_ELEMENT("name")                  | QML.Element                            | "name"                                                                 |
-| QML_ANONYMOUS                              | QML.Element                            | "anonymous"                                                            |
-| QML_UNCREATABLE("reason...")               | QML.Creatable, QML.UncreatableReason   | "false", "reason..."                                                   |
-| QML_VALUE_TYPE("name")                     | QML.Element                            | "name"                                                                 |
-| QML_CONSTRUCTIBLE_VALUE                    | QML.Creatable, QML.CreationMethod      | "true", "construct"                                                    |
-| QML_STRUCTURED_VALUE                       | QML.Creatable, QML.CreationMethod      | "true", "structured"                                                   |
-| QML_SINGLETON                              | QML.Singleton                          | "true"                                                                 |
-| QML_ADDED_IN_VERSION(x,y)                  | QML.AddedInVersion                     | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
-| QML_EXTRA_VERSION(x,y)                     | QML.ExtraVersion                       | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
-| QML_REMOVED_IN_VERSION(X,Y)                | QML.RemovedInVersion                   | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
-| QML_ATTACHED(attachedType)                 | QML.Attached                           | attachedType's name                                                    |
-| QML_EXTENDED(extendedType)                 | QML.Extended                           | extendedType's name                                                    |
-| QML_EXTENDED_NAMESPACE(extendedNamespace)  | QML.Extended, QML.ExtensionIsNamespace | extendedNamespace's name, "true"                                       |
-| QML_NAMESPACE_EXTENDED(extendedNamespace)  | QML.Extended                           | extendedNamespace's name                                               |
-| QML_SEQUENTIAL_CONTAINER(valueType)        | QML.Sequence                           | valueType's name                                                       |
-| QML_FOREIGN(foreignType)                   | QML.Foreign                            | foreignType's name                                                     |
-| QML_UNAVAILABLE                            | QML.Foreign                            | "QQmlTypeNotAvailable"                                                 |
-| QML_FOREIGN_NAMESPACE(foreignNamespace)    | QML.Foreign, QML.ForeignIsNamespace    | foreignNamespace's name, "true"                                        |
-| QML_CUSTOMPARSER                           | QML.HasCustomParser                    | "true"                                                                 |
-| QML_USING(originalType)                    | QML.Using                              | originalType's name                                                    |
+| corresponding C++ macro                                  | name(s) (as string)                    | value(s)                                                               |
+|----------------------------------------------------------|----------------------------------------|------------------------------------------------------------------------|
+| QML_ELEMENT                                              | QML.Element                            | "auto"                                                                 |
+| QML_NAMED_ELEMENT("name")                                | QML.Element                            | "name"                                                                 |
+| QML_ANONYMOUS                                            | QML.Element                            | "anonymous"                                                            |
+| QML_UNCREATABLE("reason...")                             | QML.Creatable, QML.UncreatableReason   | "false", "reason..."                                                   |
+| QML_VALUE_TYPE("name")                                   | QML.Element                            | "name"                                                                 |
+| QML_CONSTRUCTIBLE_VALUE                                  | QML.Creatable, QML.CreationMethod      | "true", "construct"                                                    |
+| QML_STRUCTURED_VALUE                                     | QML.Creatable, QML.CreationMethod      | "true", "structured"                                                   |
+| QML_SINGLETON                                            | QML.Singleton                          | "true"                                                                 |
+| QML_ADDED_IN_VERSION(x,y)                                | QML.AddedInVersion                     | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
+| QML_EXTRA_VERSION(x,y)                                   | QML.ExtraVersion                       | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
+| QML_REMOVED_IN_VERSION(X,Y)                              | QML.RemovedInVersion                   | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
+| QML_ATTACHED(attachedType)                               | QML.Attached                           | attachedType's name                                                    |
+| QML_EXTENDED(extendedType)                               | QML.Extended                           | extendedType's name                                                    |
+| QML_EXTENDED_NAMESPACE(extendedNamespace)                | QML.Extended, QML.ExtensionIsNamespace | extendedNamespace's name, "true"                                       |
+| QML_NAMESPACE_EXTENDED(extendedNamespace)                | QML.Extended                           | extendedNamespace's name                                               |
+| QML_SEQUENTIAL_CONTAINER(valueType)                      | QML.Sequence                           | valueType's name                                                       |
+| QML_FOREIGN(foreignType)                                 | QML.Foreign                            | foreignType's name                                                     |
+| QML_UNAVAILABLE                                          | QML.Foreign                            | "QQmlTypeNotAvailable"                                                 |
+| QML_FOREIGN_NAMESPACE(foreignNamespace)                  | QML.Foreign, QML.ForeignIsNamespace    | foreignNamespace's name, "true"                                        |
+| QML_CUSTOMPARSER                                         | QML.HasCustomParser                    | "true"                                                                 |
+| QML_USING(originalType)                                  | QML.Using                              | originalType's name                                                    |
+| QML_LIST_PROPERTY_ASSIGN_BEHAVIOR_APPEND                 | QML.ListPropertyAssignBehavior         | "Append"                                                               |
+| QML_LIST_PROPERTY_ASSIGN_BEHAVIOR_REPLACE_IF_NOT_DEFAULT | QML.ListPropertyAssignBehavior         | "ReplaceIfNotDefault"                                                  |
+| QML_LIST_PROPERTY_ASSIGN_BEHAVIOR_REPLACE                | QML.ListPropertyAssignBehavior         | "Replace"                                                              |
 
+
+Direct usage of the `Q_CLASSINFO` macro in C++ is used to:
+* define default and parent properties via `DefaultProperty` and `ParentProperty`, see also [here](https://doc.qt.io/qt-6/qtqml-cppintegration-definetypes.html#specifying-default-and-parent-properties-for-qml-object-types)
+* tweak enum scope behavior via `RegisterEnumClassesUnscoped`, see also [here](https://doc.qt.io/qt-6/qtqml-cppintegration-data.html#enumeration-types)
+* define deferred or immediate properties via `DeferredPropertyNames` and `ImmediatePropertyNames`
 
 
 ### className

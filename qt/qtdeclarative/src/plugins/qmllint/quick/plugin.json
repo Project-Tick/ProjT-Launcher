@@ -39,14 +39,14 @@
             "name": "controls-attached-property-reuse",
             "settingsName": "ControlsAttachedPropertyReuse",
             "description": "Warn about failure to re-use attached objects of controls",
-            "enabled": false
+            "defaultSeverity": "disable"
         },
         {
             "name": "attached-property-reuse",
             "settingsName": "AttachedPropertyReuse",
             "description":
                     "Warn about failure to re-use any attached objects. Implies ControlsAttachedPropertyReuse.",
-            "enabled": false
+            "defaultSeverity": "disable"
         },
         {
             "name": "color",
