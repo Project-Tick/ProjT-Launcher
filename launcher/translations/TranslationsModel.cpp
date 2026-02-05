@@ -138,7 +138,6 @@ struct Language
 			result = QLocale::languageToString(base_locale.language());
 			if (result == "C")
 			{
-				qWarning() << "Unknown language code (Qt returned \"C\"):" << key;
 				static const QMap<QString, QString> k_languageOverrides = {
 					{ "av", "Avaric" },
 					{ "tay", "Atayal" },

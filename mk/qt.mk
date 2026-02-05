@@ -263,11 +263,6 @@ $(eval $(call QT_MODULE_template,qtserialport,$(QTSERIALPORT_SRC)))
 QT_MODULES += qt-qtserialport
 endif
 
-ifeq ($(CONFIG_QT_MODULE_QTWEBCHANNEL),y)
-$(eval $(call QT_MODULE_template,qtwebchannel,$(QTWEBCHANNEL_SRC)))
-QT_MODULES += qt-qtwebchannel
-endif
-
 # QtShaderTools - required by Qt Quick (provides qsb tool)
 ifeq ($(CONFIG_QT_MODULE_QTWEBENGINE),y)
 $(eval $(call QT_MODULE_template,qtshadertools,$(QTSHADERTOOLS_SRC)))
@@ -299,6 +294,29 @@ $(QT_PREFIX)/.qtdeclarative-installed: $(QT_BUILDDIR)/qtdeclarative/.built
 qt-qtdeclarative: $(QT_PREFIX)/.qtdeclarative-installed
 
 QT_MODULES += qt-qtdeclarative
+
+# QtWebChannel with Quick support - must be built AFTER qtdeclarative for WebChannelQuick
+$(QT_BUILDDIR)/qtwebchannel/.configured: $(QT_PREFIX)/.qtbase-installed $(QT_PREFIX)/.qtdeclarative-installed $(QTWEBCHANNEL_SRC)/CMakeLists.txt
+	@mkdir -p $(QT_BUILDDIR)/qtwebchannel
+	@echo "  CONFIGURE qtwebchannel (with Quick support)"
+	$(Q)cd $(QT_BUILDDIR)/qtwebchannel && \
+		$(QT_PREFIX)/bin/qt-configure-module $(QTWEBCHANNEL_SRC)
+	$(Q)touch $@
+
+$(QT_BUILDDIR)/qtwebchannel/.built: $(QT_BUILDDIR)/qtwebchannel/.configured
+	@echo "  BUILD   qtwebchannel"
+	$(Q)cmake --build $(QT_BUILDDIR)/qtwebchannel --parallel $(PARALLEL_JOBS)
+	$(Q)touch $@
+
+$(QT_PREFIX)/.qtwebchannel-installed: $(QT_BUILDDIR)/qtwebchannel/.built
+	@echo "  INSTALL qtwebchannel"
+	$(Q)cmake --install $(QT_BUILDDIR)/qtwebchannel
+	$(Q)touch $@
+
+.PHONY: qt-qtwebchannel
+qt-qtwebchannel: $(QT_PREFIX)/.qtwebchannel-installed
+
+QT_MODULES += qt-qtwebchannel
 endif
 
 # QtWebEngine is special - needs WebChannel and Declarative first
@@ -355,33 +373,58 @@ export QT_MOC
 export QT_UIC
 export QT_RCC
 
+# Qt modules list
+QT_CORE_MODULES := Qt6Core Qt6Gui Qt6Widgets Qt6Network Qt6Concurrent Qt6Xml Qt6NetworkAuth Qt6OpenGL
+
 # Qt include/lib flags for dependent modules
-QT_CFLAGS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --cflags Qt6Core Qt6Gui Qt6Widgets Qt6Network 2>/dev/null || echo "-I$(QT_PREFIX)/include -I$(QT_PREFIX)/include/QtCore -I$(QT_PREFIX)/include/QtGui -I$(QT_PREFIX)/include/QtWidgets -I$(QT_PREFIX)/include/QtNetwork")
-QT_LIBS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --libs Qt6Core Qt6Gui Qt6Widgets Qt6Network 2>/dev/null || echo "-L$(QT_PREFIX)/lib -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network")
+QT_CFLAGS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --cflags $(QT_CORE_MODULES) 2>/dev/null || echo "-I$(QT_PREFIX)/include -I$(QT_PREFIX)/include/QtCore -I$(QT_PREFIX)/include/QtGui -I$(QT_PREFIX)/include/QtWidgets -I$(QT_PREFIX)/include/QtNetwork")
+QT_LIBS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --libs $(QT_CORE_MODULES) 2>/dev/null || echo "-L$(QT_PREFIX)/lib -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network")
 
 # If system Qt is selected
 ifeq ($(CONFIG_QT_SYSTEM),y)
 ifneq ($(CONFIG_QT_PREFIX),)
 QT_PREFIX := $(CONFIG_QT_PREFIX)
 endif
-QT_CFLAGS := $(shell pkg-config --cflags Qt6Core Qt6Gui Qt6Widgets Qt6Network 2>/dev/null)
-QT_LIBS := $(shell pkg-config --libs Qt6Core Qt6Gui Qt6Widgets Qt6Network 2>/dev/null)
-QT_MOC := $(shell pkg-config --variable=libexecdir Qt6Core)/moc
-QT_UIC := $(shell pkg-config --variable=libexecdir Qt6Core)/uic
-QT_RCC := $(shell pkg-config --variable=libexecdir Qt6Core)/rcc
+QT_LIBEXECDIR := $(shell pkg-config --variable=libexecdir Qt6Core 2>/dev/null)
+ifeq ($(QT_LIBEXECDIR),)
+QT_LIBEXECDIR := /usr/lib64/qt6/libexec
+endif
+QT_CFLAGS := $(shell pkg-config --cflags $(QT_CORE_MODULES) 2>/dev/null)
+QT_LIBS := $(shell pkg-config --libs $(QT_CORE_MODULES) 2>/dev/null)
+QT_MOC := $(QT_LIBEXECDIR)/moc
+QT_UIC := $(QT_LIBEXECDIR)/uic
+QT_RCC := $(QT_LIBEXECDIR)/rcc
+QT_LRELEASE := $(QT_LIBEXECDIR)/lrelease
+QT_LUPDATE := $(QT_LIBEXECDIR)/lupdate
+# Get system Qt version
+QT_VERSION := $(shell pkg-config --modversion Qt6Core 2>/dev/null || echo "6.0.0")
+QT_VERSION_MAJOR := $(word 1,$(subst ., ,$(QT_VERSION)))
+QT_VERSION_MINOR := $(word 2,$(subst ., ,$(QT_VERSION)))
+QT_VERSION_PATCH := $(word 3,$(subst ., ,$(QT_VERSION)))
 endif
 
 export QT_CFLAGS
 export QT_LIBS
+export QT_MOC
+export QT_UIC
+export QT_RCC
+export QT_LRELEASE
 
 # ============================================================================
 # Qt Meta-Object Compiler (moc) Rules
 # ============================================================================
 
+# For system Qt, tools are not build targets
+ifeq ($(CONFIG_QT_SYSTEM),y)
+QT_TOOL_DEP :=
+else
+QT_TOOL_DEP = $(QT_MOC) $(QT_UIC) $(QT_RCC)
+endif
+
 # Rule for generating moc files
 # Usage: $(call moc_rule,source.h,moc_source.cpp)
 define moc_rule
-$(2): $(1) $(QT_MOC)
+$(2): $(1) $(if $(CONFIG_QT_SYSTEM),,$(QT_MOC))
 	@mkdir -p $$(dir $$@)
 	@echo "  MOC     $$<"
 	$(Q)$(QT_MOC) $$< -o $$@
@@ -390,7 +433,7 @@ endef
 # Rule for generating rcc files
 # Usage: $(call rcc_rule,resources.qrc,qrc_resources.cpp)
 define rcc_rule
-$(2): $(1) $(QT_RCC)
+$(2): $(1) $(if $(CONFIG_QT_SYSTEM),,$(QT_RCC))
 	@mkdir -p $$(dir $$@)
 	@echo "  RCC     $$<"
 	$(Q)$(QT_RCC) $$< -o $$@
@@ -399,7 +442,7 @@ endef
 # Rule for generating ui files
 # Usage: $(call uic_rule,widget.ui,ui_widget.h)
 define uic_rule
-$(2): $(1) $(QT_UIC)
+$(2): $(1) $(if $(CONFIG_QT_SYSTEM),,$(QT_UIC))
 	@mkdir -p $$(dir $$@)
 	@echo "  UIC     $$<"
 	$(Q)$(QT_UIC) $$< -o $$@

@@ -85,7 +85,7 @@ MC_CXXFLAGS := \
 	-I$(srctree)/launcher/minecraft \
 	-I$(srctree)/launcher \
 	-I$(srctree)/libnbtplusplus/include \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(QT_PREFIX)/include/QtConcurrent \
 	-I$(QT_PREFIX)/include/QtNetworkAuth \
 	-I$(srctree)/quazip/quazip \

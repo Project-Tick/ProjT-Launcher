@@ -72,7 +72,7 @@ MP_CXXFLAGS := \
 	-I$(srctree)/launcher/modplatform \
 	-I$(srctree)/launcher \
 	-I$(srctree)/murmur2/src \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(srctree)/tomlplusplus/include \
 	-I$(srctree)/quazip/quazip \
 	-I$(srctree)/quazip \

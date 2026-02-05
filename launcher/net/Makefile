@@ -41,7 +41,7 @@ NET_MOC_OBJS := $(NET_MOC_SRCS:.cpp=.o)
 NET_CXXFLAGS := \
 	-I$(srctree)/launcher/net \
 	-I$(srctree)/launcher \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(obj) \
 	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \

@@ -121,7 +121,7 @@ QT_BUILD_DIR := $(KBUILD_OUTPUT)/qt-build
 QT_PREFIX := $(KBUILD_OUTPUT)/qt-install
 
 # Check if we should use bundled Qt
-USE_BUNDLED_QT := $(call cfg-yes,$(CONFIG_USE_BUNDLED_QT))
+USE_BUNDLED_QT := $(call cfg-yes,$(CONFIG_QT_BUNDLED))
 
 ifeq ($(USE_BUNDLED_QT),y)
 

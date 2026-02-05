@@ -51,7 +51,7 @@ UPDATER_MOC_OBJS := $(UPDATER_MOC_SRCS:.cpp=.o)
 UPDATER_CXXFLAGS := \
 	-I$(srctree)/launcher/updater \
 	-I$(srctree)/launcher \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(srctree)/systeminfo/include \
 	-I$(srctree)/quazip/quazip \
 	-I$(srctree)/quazip \

@@ -733,7 +733,7 @@ QRC_OBJS := $(QRC_SRCS:.cpp=.o)
 LAUNCHER_CXXFLAGS := \
 	-I$(srctree)/launcher \
 	-I$(srctree)/include \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(srctree)/libnbtplusplus/include \
 	-I$(srctree)/quazip/quazip \
 	-I$(srctree)/quazip \

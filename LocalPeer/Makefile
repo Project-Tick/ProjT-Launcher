@@ -33,9 +33,12 @@ qt-modules-y := Core Network
 # Compiler flags
 cxxflags-y := $(QT_CFLAGS)
 
-# Qt tools
-QT_PREFIX ?= $(KBUILD_OUTPUT)/obj/qt/install
-MOC := $(QT_PREFIX)/libexec/moc
+# Qt tools - use exported values from mk/qt.mk
+MOC := $(QT_MOC)
+ifeq ($(MOC),)
+# Fallback for bundled Qt
+MOC := $(KBUILD_OUTPUT)/obj/qt/install/libexec/moc
+endif
 
 # Add moc object to library (will be built by rules below)
 # This must be done before include module.mk

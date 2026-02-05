@@ -36,7 +36,7 @@ TOOLS_MOC_OBJS := $(TOOLS_MOC_SRCS:.cpp=.o)
 TOOLS_CXXFLAGS := \
 	-I$(srctree)/launcher/tools \
 	-I$(srctree)/launcher \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(obj) \
 	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \

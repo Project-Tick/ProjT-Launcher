@@ -56,6 +56,20 @@ QT_MOC ?= $(QT_HOST_BINS)/moc
 QT_UIC ?= $(QT_HOST_BINS)/uic
 QT_RCC ?= $(QT_HOST_BINS)/rcc
 QT_LRELEASE ?= $(QT_HOST_BINS)/lrelease
+else ifeq ($(QT_HAVE_PKG),yes)
+# Get tool paths from pkg-config
+QT_LIBEXECDIR := $(shell $(QT_PKG_CONFIG) --variable=libexecdir Qt6Core 2>/dev/null)
+ifneq ($(QT_LIBEXECDIR),)
+QT_MOC ?= $(QT_LIBEXECDIR)/moc
+QT_UIC ?= $(QT_LIBEXECDIR)/uic
+QT_RCC ?= $(QT_LIBEXECDIR)/rcc
+QT_LRELEASE ?= $(QT_LIBEXECDIR)/lrelease
+else
+QT_MOC ?= moc
+QT_UIC ?= uic
+QT_RCC ?= rcc
+QT_LRELEASE ?= lrelease
+endif
 else
 QT_MOC ?= moc
 QT_UIC ?= uic

@@ -19,11 +19,49 @@ include $(srctree)/mk/config.mk
 # Configuration Variables (from main Makefile, kernel-style)
 # ============================================================================
 
+# Native library names (platform-specific)
+HOST_OS_LC := $(shell uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')
+ifeq ($(HOST_OS_LC),darwin)
+Launcher_GLFW_LIBRARY_NAME ?= libglfw.dylib
+Launcher_OPENAL_LIBRARY_NAME ?= libopenal.dylib
+else ifeq ($(HOST_OS_LC),windows)
+Launcher_GLFW_LIBRARY_NAME ?= glfw.dll
+Launcher_OPENAL_LIBRARY_NAME ?= OpenAL.dll
+else
+Launcher_GLFW_LIBRARY_NAME ?= libglfw.so
+Launcher_OPENAL_LIBRARY_NAME ?= libopenal.so.1
+endif
+
+# URLs and API keys
+Launcher_NEWS_RSS_URL ?= https://projecttick.org/product/projt-launcher/feed.xml
+Launcher_NEWS_OPEN_URL ?= https://projecttick.org/product/projt-launcher/news
+Launcher_TRANSLATIONS_URL ?= https://crowdin.com/project/projtlauncher
+Launcher_TRANSLATION_FILES_URL ?= https://i18n.projecttick.org/
+Launcher_MSA_CLIENT_ID ?= 3035382c-8f73-493a-b579-d182905c2864
+Launcher_HELP_URL ?= https://projecttick.org/handbook/help-pages/%1
+Launcher_HUB_HOME_URL ?= https://projecttick.org/p/projt-launcher/
+Launcher_HUB_COMMUNITY_URL ?= https://projecttick.org/projtlauncher/discord
+Launcher_HUB_SEARCH_URL ?= https://www.google.com/search?q=%1
+Launcher_LOGIN_CALLBACK_URL ?= https://projecttick.org/projtlauncher/successful-login
+Launcher_FMLLIBS_BASE_URL ?= https://files.projecttick.org/fmllibs/
+Launcher_META_URL ?= https://meta.projecttick.org/
+Launcher_IMGUR_CLIENT_ID ?= 5b97b0713fba4a3
+Launcher_CURSEFORGE_API_KEY ?= \$$2a\$$10\$$S7KcKijbCj8mCHUQcn0tgOmtHg0kA8q9FI0niNJJ7knPq0INomzrG
+Launcher_BUG_TRACKER_URL ?= https://github.com/Project-Tick/ProjT-Launcher/issues
+Launcher_MATRIX_URL ?= https://projecttick.org/projtlauncher/matrix
+Launcher_DISCORD_URL ?= https://projecttick.org/projtlauncher/discord
+Launcher_SUBREDDIT_URL ?= https://projecttick.org/projtlauncher/reddit
+
 # Version info comes from main Makefile (VERSION, PATCHLEVEL, SUBLEVEL, EXTRAVERSION)
 Launcher_VERSION_MAJOR  := $(VERSION)
 Launcher_VERSION_MINOR  := $(PATCHLEVEL)
 Launcher_VERSION_PATCH  := $(SUBLEVEL)
 Launcher_EXTRAVERSION   := $(EXTRAVERSION)
+# VERSION_TWEAK - extract number from EXTRAVERSION (e.g. -1 -> 1)
+Launcher_VERSION_TWEAK  := $(shell echo "$(EXTRAVERSION)" | sed 's/[^0-9]*//g')
+ifeq ($(Launcher_VERSION_TWEAK),)
+Launcher_VERSION_TWEAK  := 0
+endif
 LAUNCHER_VERSION        := $(PROJT_VERSION)
 LAUNCHER_VERSION_FULL   := $(PROJT_VERSION_FULL)
 
@@ -147,7 +185,31 @@ SED_SUBST = sed \
 	-e 's|@MACOSX_SPARKLE_UPDATE_FEED_URL@||g' \
 	-e 's|@LIB_SUFFIX@|$(LIB_SUFFIX)|g' \
 	-e 's|@VERSION@|$(LAUNCHER_VERSION)|g' \
-	-e 's|@PROJECT_VERSION@|$(LAUNCHER_VERSION)|g'
+	-e 's|@PROJECT_VERSION@|$(LAUNCHER_VERSION)|g' \
+	-e 's|@Launcher_GIT_COMMIT@|$(Launcher_GIT_COMMIT)|g' \
+	-e 's|@Launcher_GIT_TAG@|$(Launcher_GIT_TAG)|g' \
+	-e 's|@Launcher_GIT_REFSPEC@|$(Launcher_GIT_REFSPEC)|g' \
+	-e 's|@Launcher_NEWS_RSS_URL@|$(Launcher_NEWS_RSS_URL)|g' \
+	-e 's|@Launcher_NEWS_OPEN_URL@|$(Launcher_NEWS_OPEN_URL)|g' \
+	-e 's|@Launcher_TRANSLATIONS_URL@|$(Launcher_TRANSLATIONS_URL)|g' \
+	-e 's|@Launcher_TRANSLATION_FILES_URL@|$(Launcher_TRANSLATION_FILES_URL)|g' \
+	-e 's|@Launcher_GLFW_LIBRARY_NAME@|$(Launcher_GLFW_LIBRARY_NAME)|g' \
+	-e 's|@Launcher_OPENAL_LIBRARY_NAME@|$(Launcher_OPENAL_LIBRARY_NAME)|g' \
+	-e 's|@Launcher_MSA_CLIENT_ID@|$(Launcher_MSA_CLIENT_ID)|g' \
+	-e 's|@Launcher_HELP_URL@|$(Launcher_HELP_URL)|g' \
+	-e 's|@Launcher_HUB_HOME_URL@|$(Launcher_HUB_HOME_URL)|g' \
+	-e 's|@Launcher_HUB_COMMUNITY_URL@|$(Launcher_HUB_COMMUNITY_URL)|g' \
+	-e 's|@Launcher_HUB_SEARCH_URL@|$(Launcher_HUB_SEARCH_URL)|g' \
+	-e 's|@Launcher_LOGIN_CALLBACK_URL@|$(Launcher_LOGIN_CALLBACK_URL)|g' \
+	-e 's|@Launcher_FMLLIBS_BASE_URL@|$(Launcher_FMLLIBS_BASE_URL)|g' \
+	-e 's|@Launcher_META_URL@|$(Launcher_META_URL)|g' \
+	-e 's|@Launcher_IMGUR_CLIENT_ID@|$(Launcher_IMGUR_CLIENT_ID)|g' \
+	-e 's|@Launcher_CURSEFORGE_API_KEY@|$(Launcher_CURSEFORGE_API_KEY)|g' \
+	-e 's|@Launcher_BUG_TRACKER_URL@|$(Launcher_BUG_TRACKER_URL)|g' \
+	-e 's|@Launcher_MATRIX_URL@|$(Launcher_MATRIX_URL)|g' \
+	-e 's|@Launcher_DISCORD_URL@|$(Launcher_DISCORD_URL)|g' \
+	-e 's|@Launcher_SUBREDDIT_URL@|$(Launcher_SUBREDDIT_URL)|g' \
+	-e 's|\#cmakedefine01 Launcher_ENABLE_JAVA_DOWNLOADER|\#define Launcher_ENABLE_JAVA_DOWNLOADER 0|g'
 
 # ============================================================================
 # BuildConfig.cpp generation

@@ -35,7 +35,8 @@ META_MOC_OBJS := $(META_MOC_SRCS:.cpp=.o)
 META_CXXFLAGS := \
 	-I$(srctree)/launcher/meta \
 	-I$(srctree)/launcher \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig \
+	-I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(obj) \
 	$(QT_CFLAGS) \
 	$(CXXFLAGS)

@@ -12,11 +12,18 @@ KBUILD_OUTPUT ?= $(srctree)/build
 -include $(srctree)/.config
 -include $(srctree)/scripts/Kbuild.include
 
-# Qt paths
-QT_PREFIX ?= $(KBUILD_OUTPUT)/obj/qt/install
-QT_PKG_CONFIG_PATH := $(QT_PREFIX)/lib/pkgconfig
-QT_CFLAGS ?= $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --cflags Qt6Core Qt6Gui Qt6Widgets Qt6Network 2>/dev/null)
-MOC ?= $(QT_PREFIX)/libexec/moc
+# Qt paths - use exported values from mk/qt.mk
+# QT_CFLAGS and QT_MOC are exported by mk/qt.mk
+MOC := $(QT_MOC)
+ifeq ($(MOC),)
+MOC := $(KBUILD_OUTPUT)/obj/qt/install/libexec/moc
+endif
+
+# Get Qt XML flags
+QT_XML_CFLAGS := $(shell pkg-config --cflags Qt6Xml 2>/dev/null)
+ifeq ($(QT_XML_CFLAGS),)
+QT_XML_CFLAGS := -I$(KBUILD_OUTPUT)/obj/qt/install/include/QtXml
+endif
 
 obj := $(KBUILD_OUTPUT)/java
 
@@ -62,7 +69,7 @@ JAVA_CXXFLAGS := \
 	-I$(srctree)/quazip/quazip \
 	-I$(srctree)/include \
 	-I$(obj) \
-	-I$(QT_PREFIX)/include/QtXml \
+	$(QT_XML_CFLAGS) \
 	$(QT_CFLAGS) \
 	$(CXXFLAGS)
 

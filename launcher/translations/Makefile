@@ -32,7 +32,7 @@ TRANS_MOC_OBJS := $(TRANS_MOC_SRCS:.cpp=.o)
 TRANS_CXXFLAGS := \
 	-I$(srctree)/launcher/translations \
 	-I$(srctree)/launcher \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(obj) \
 	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \

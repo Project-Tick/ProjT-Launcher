@@ -33,7 +33,7 @@ NEWS_CXXFLAGS := \
 	-I$(srctree)/launcher/news \
 	-I$(srctree)/launcher \
 	-I$(QT_PREFIX)/include/QtXml \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(obj) \
 	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \

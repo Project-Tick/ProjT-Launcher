@@ -116,7 +116,7 @@ UI_MOC_OBJS := $(UI_MOC_SRCS:.cpp=.o)
 UI_CXXFLAGS := \
 	-I$(srctree)/launcher/ui \
 	-I$(srctree)/launcher \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(srctree)/libnbtplusplus/include \
 	-I$(srctree)/quazip/quazip \
 	-I$(srctree)/quazip \
@@ -141,11 +141,9 @@ UI_CXXFLAGS := \
 	$(CXXFLAGS)
 
 # MOC needs Qt includes to resolve Q_INTERFACES macros
+# Use QT_CFLAGS which already includes proper Qt paths for both system and bundled Qt
 MOC_INCLUDES := \
-	-I$(QT_PREFIX)/include \
-	-I$(QT_PREFIX)/include/QtCore \
-	-I$(QT_PREFIX)/include/QtGui \
-	-I$(QT_PREFIX)/include/QtWidgets \
+	$(QT_CFLAGS) \
 	-I$(srctree)/launcher/ui \
 	-I$(srctree)/launcher \
 	-I$(obj)

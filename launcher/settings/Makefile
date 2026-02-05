@@ -36,7 +36,7 @@ SETTINGS_MOC_OBJS := $(SETTINGS_MOC_SRCS:.cpp=.o)
 SETTINGS_CXXFLAGS := \
 	-I$(srctree)/launcher/settings \
 	-I$(srctree)/launcher \
-	-I$(KBUILD_OUTPUT)/generated/buildconfig \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
 	-I$(obj) \
 	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \

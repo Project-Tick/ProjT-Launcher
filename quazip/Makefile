@@ -46,9 +46,11 @@ qt-modules-y := Core
 # Dependencies
 deps-y := zlib bzip2
 
-# Qt tools
-QT_PREFIX ?= $(KBUILD_OUTPUT)/obj/qt/install
-MOC := $(QT_PREFIX)/libexec/moc
+# Qt tools - use exported QT_MOC from mk/qt.mk
+MOC := $(QT_MOC)
+ifeq ($(MOC),)
+MOC := $(KBUILD_OUTPUT)/obj/qt/install/libexec/moc
+endif
 
 # Add moc objects to library
 EXTRA_OBJS := \
