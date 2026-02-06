@@ -8,7 +8,11 @@
 // UNSUPPORTED: c++03, c++11, c++14, c++17
 // XFAIL: !has-64-bit-atomics
 
-// https://llvm.org/PR72893
+// Older versions of clang have a bug with atomic builtins affecting double and long double.
+// Fixed by 5fdd0948.
+// XFAIL: target=powerpc-ibm-{{.*}} && clang-18
+
+// https://github.com/llvm/llvm-project/issues/72893
 // XFAIL: target={{x86_64-.*}} && tsan
 
 // floating-point-type fetch_sub(floating-point-type,
@@ -113,7 +117,7 @@ void test() {
 int main(int, char**) {
   test<float>();
   test<double>();
-  // TODO https://llvm.org/PR48634
+  // TODO https://github.com/llvm/llvm-project/issues/47978
   // test<long double>();
 
   return 0;

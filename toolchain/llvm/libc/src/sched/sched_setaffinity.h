@@ -10,10 +10,7 @@
 #define LLVM_LIBC_SRC_SCHED_SCHED_SETAFFINITY_H
 
 #include "src/__support/macros/config.h"
-
-#include "hdr/types/cpu_set_t.h"
-#include "hdr/types/pid_t.h"
-#include "hdr/types/size_t.h"
+#include <sched.h>
 
 namespace LIBC_NAMESPACE_DECL {
 

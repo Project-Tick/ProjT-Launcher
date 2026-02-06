@@ -16,13 +16,11 @@
 
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCRegister.h"
-#include "llvm/Support/Compiler.h"
 #include <cstdint>
 
 namespace llvm {
 
 struct Align;
-struct MachineJumpTableEntry;
 class Constant;
 class DataLayout;
 class Function;
@@ -44,7 +42,7 @@ class StringRef;
 class TargetMachine;
 class DSOLocalEquivalent;
 
-class LLVM_ABI TargetLoweringObjectFile : public MCObjectFileInfo {
+class TargetLoweringObjectFile : public MCObjectFileInfo {
   /// Name-mangler for global names.
   Mangler *Mang = nullptr;
 
@@ -52,7 +50,7 @@ protected:
   bool SupportIndirectSymViaGOTPCRel = false;
   bool SupportGOTPCRelWithOffset = true;
   bool SupportDebugThreadLocalLocation = true;
-  uint32_t PLTPCRelativeSpecifier = 0;
+  bool SupportDSOLocalEquivalentLowering = false;
 
   /// PersonalityEncoding, LSDAEncoding, TTypeEncoding - Some encoding values
   /// for EH.
@@ -74,7 +72,7 @@ public:
   TargetLoweringObjectFile(const TargetLoweringObjectFile &) = delete;
   TargetLoweringObjectFile &
   operator=(const TargetLoweringObjectFile &) = delete;
-  ~TargetLoweringObjectFile() override;
+  virtual ~TargetLoweringObjectFile();
 
   Mangler &getMangler() const { return *Mang; }
 
@@ -93,11 +91,6 @@ public:
   /// Emit Call Graph Profile metadata.
   void emitCGProfileMetadata(MCStreamer &Streamer, Module &M) const;
 
-  /// Emit pseudo_probe_desc metadata.
-  void emitPseudoProbeDescMetadata(MCStreamer &Streamer, Module &M,
-                                   std::function<void(MCStreamer &Streamer)>
-                                       COMDATSymEmitter = nullptr) const;
-
   /// Process linker options metadata and emit platform-specific bits.
   virtual void emitLinkerDirectives(MCStreamer &Streamer, Module &M) const {}
 
@@ -109,13 +102,6 @@ public:
   virtual MCSection *getSectionForConstant(const DataLayout &DL,
                                            SectionKind Kind, const Constant *C,
                                            Align &Alignment) const;
-
-  /// Similar to the function above, but append \p SectionSuffix to the section
-  /// name.
-  virtual MCSection *getSectionForConstant(const DataLayout &DL,
-                                           SectionKind Kind, const Constant *C,
-                                           Align &Alignment,
-                                           StringRef SectionSuffix) const;
 
   virtual MCSection *
   getSectionForMachineBasicBlock(const Function &F,
@@ -149,10 +135,6 @@ public:
 
   virtual MCSection *getSectionForJumpTable(const Function &F,
                                             const TargetMachine &TM) const;
-  virtual MCSection *
-  getSectionForJumpTable(const Function &F, const TargetMachine &TM,
-                         const MachineJumpTableEntry *JTE) const;
-
   virtual MCSection *getSectionForLSDA(const Function &, const MCSymbol &,
                                        const TargetMachine &) const {
     return LSDASection;
@@ -209,19 +191,20 @@ public:
   /// emitting the address in debug info.
   virtual const MCExpr *getDebugThreadLocalSymbol(const MCSymbol *Sym) const;
 
-  virtual const MCExpr *lowerRelativeReference(
-      const GlobalValue *LHS, const GlobalValue *RHS, int64_t Addend,
-      std::optional<int64_t> PCRelativeOffset, const TargetMachine &TM) const {
+  virtual const MCExpr *lowerRelativeReference(const GlobalValue *LHS,
+                                               const GlobalValue *RHS,
+                                               const TargetMachine &TM) const {
     return nullptr;
   }
 
-  /// Target supports a PC-relative relocation that references the PLT of a
-  /// function.
-  bool hasPLTPCRelative() const { return PLTPCRelativeSpecifier; }
+  /// Target supports a native lowering of a dso_local_equivalent constant
+  /// without needing to replace it with equivalent IR.
+  bool supportDSOLocalEquivalentLowering() const {
+    return SupportDSOLocalEquivalentLowering;
+  }
 
-  virtual const MCExpr *lowerDSOLocalEquivalent(
-      const MCSymbol *LHS, const MCSymbol *RHS, int64_t Addend,
-      std::optional<int64_t> PCRelativeOffset, const TargetMachine &TM) const {
+  virtual const MCExpr *lowerDSOLocalEquivalent(const DSOLocalEquivalent *Equiv,
+                                                const TargetMachine &TM) const {
     return nullptr;
   }
 

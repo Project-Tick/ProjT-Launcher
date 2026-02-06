@@ -13,7 +13,6 @@
 #ifndef LLVM_CLANG_AST_EXPROBJC_H
 #define LLVM_CLANG_AST_EXPROBJC_H
 
-#include "clang/AST/Attr.h"
 #include "clang/AST/ComputeDependence.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclObjC.h"
@@ -218,10 +217,12 @@ public:
   SourceRange getSourceRange() const LLVM_READONLY { return Range; }
 
   /// Retrieve elements of array of literals.
-  Expr **getElements() { return getTrailingObjects(); }
+  Expr **getElements() { return getTrailingObjects<Expr *>(); }
 
   /// Retrieve elements of array of literals.
-  const Expr *const *getElements() const { return getTrailingObjects(); }
+  const Expr * const *getElements() const {
+    return getTrailingObjects<Expr *>();
+  }
 
   /// getNumElements - Return number of elements of objective-c array literal.
   unsigned getNumElements() const { return NumElements; }
@@ -247,7 +248,8 @@ public:
   }
 
   const_child_range children() const {
-    return const_cast<ObjCArrayLiteral *>(this)->children();
+    auto Children = const_cast<ObjCArrayLiteral *>(this)->children();
+    return const_child_range(Children.begin(), Children.end());
   }
 
   static bool classof(const Stmt *T) {
@@ -269,7 +271,7 @@ struct ObjCDictionaryElement {
 
   /// The number of elements this pack expansion will expand to, if
   /// this is a pack expansion and is known.
-  UnsignedOrNone NumExpansions;
+  std::optional<unsigned> NumExpansions;
 
   /// Determines whether this dictionary element is a pack expansion.
   bool isPackExpansion() const { return EllipsisLoc.isValid(); }
@@ -393,7 +395,8 @@ public:
   }
 
   const_child_range children() const {
-    return const_cast<ObjCDictionaryLiteral *>(this)->children();
+    auto Children = const_cast<ObjCDictionaryLiteral *>(this)->children();
+    return const_child_range(Children.begin(), Children.end());
   }
 
   static bool classof(const Stmt *T) {
@@ -788,7 +791,8 @@ public:
   }
 
   const_child_range children() const {
-    return const_cast<ObjCPropertyRefExpr *>(this)->children();
+    auto Children = const_cast<ObjCPropertyRefExpr *>(this)->children();
+    return const_child_range(Children.begin(), Children.end());
   }
 
   static bool classof(const Stmt *T) {
@@ -1232,19 +1236,6 @@ public:
   /// of `instancetype` (in that case it's an expression type).
   QualType getCallReturnType(ASTContext &Ctx) const;
 
-  /// Returns the WarnUnusedResultAttr that is declared on the callee
-  /// or its return type declaration, together with a NamedDecl that
-  /// refers to the declaration the attribute is attached to.
-  std::pair<const NamedDecl *, const WarnUnusedResultAttr *>
-  getUnusedResultAttr(ASTContext &Ctx) const {
-    return getUnusedResultAttrImpl(getMethodDecl(), getCallReturnType(Ctx));
-  }
-
-  /// Returns true if this message send should warn on unused results.
-  bool hasUnusedResultAttr(ASTContext &Ctx) const {
-    return getUnusedResultAttr(Ctx).second != nullptr;
-  }
-
   /// Source range of the receiver.
   SourceRange getReceiverRange() const;
 
@@ -1432,7 +1423,8 @@ public:
     if (hasStandardSelLocs())
       return getStandardSelectorLoc(
           Index, getSelector(), getSelLocsKind() == SelLoc_StandardWithSpace,
-          ArrayRef(const_cast<Expr **>(getArgs()), getNumArgs()), RBracLoc);
+          llvm::ArrayRef(const_cast<Expr **>(getArgs()), getNumArgs()),
+          RBracLoc);
     return getStoredSelLocs()[Index];
   }
 

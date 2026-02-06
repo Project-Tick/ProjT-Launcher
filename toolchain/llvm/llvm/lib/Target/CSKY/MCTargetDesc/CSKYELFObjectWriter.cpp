@@ -7,13 +7,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "CSKYFixupKinds.h"
-#include "CSKYMCAsmInfo.h"
+#include "CSKYMCExpr.h"
 #include "CSKYMCTargetDesc.h"
-#include "MCTargetDesc/CSKYMCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCELFObjectWriter.h"
 #include "llvm/MC/MCObjectWriter.h"
-#include "llvm/MC/MCSymbolELF.h"
 
 #define DEBUG_TYPE "csky-elf-object-writer"
 
@@ -27,41 +25,29 @@ public:
       : MCELFObjectTargetWriter(false, OSABI, ELF::EM_CSKY, true){};
   ~CSKYELFObjectWriter() {}
 
-  unsigned getRelocType(const MCFixup &, const MCValue &,
-                        bool IsPCRel) const override;
-  bool needsRelocateWithSymbol(const MCValue &, unsigned Type) const override;
+  unsigned getRelocType(MCContext &Ctx, const MCValue &Target,
+                        const MCFixup &Fixup, bool IsPCRel) const override;
 };
 
 } // namespace
 
-unsigned CSKYELFObjectWriter::getRelocType(const MCFixup &Fixup,
+unsigned CSKYELFObjectWriter::getRelocType(MCContext &Ctx,
                                            const MCValue &Target,
+                                           const MCFixup &Fixup,
                                            bool IsPCRel) const {
   const MCExpr *Expr = Fixup.getValue();
   // Determine the type of the relocation
-  auto Kind = Fixup.getKind();
-  uint8_t Modifier = Target.getSpecifier();
-
-  switch (Target.getSpecifier()) {
-  case CSKY::S_TLSIE:
-  case CSKY::S_TLSLE:
-  case CSKY::S_TLSGD:
-  case CSKY::S_TLSLDM:
-  case CSKY::S_TLSLDO:
-    if (auto *SA = const_cast<MCSymbol *>(Target.getAddSym()))
-      static_cast<MCSymbolELF *>(SA)->setType(ELF::STT_TLS);
-    break;
-  default:
-    break;
-  }
+  unsigned Kind = Fixup.getTargetKind();
+  MCSymbolRefExpr::VariantKind Modifier = Target.getAccessVariant();
 
   if (IsPCRel) {
     switch (Kind) {
     default:
       LLVM_DEBUG(dbgs() << "Unknown Kind1  = " << Kind);
-      reportError(Fixup.getLoc(), "Unsupported relocation type");
+      Ctx.reportError(Fixup.getLoc(), "Unsupported relocation type");
       return ELF::R_CKCORE_NONE;
     case FK_Data_4:
+    case FK_PCRel_4:
       return ELF::R_CKCORE_PCREL32;
     case CSKY::fixup_csky_pcrel_uimm16_scale4:
       return ELF::R_CKCORE_PCREL_IMM16_4;
@@ -83,66 +69,67 @@ unsigned CSKYELFObjectWriter::getRelocType(const MCFixup &Fixup,
   switch (Kind) {
   default:
     LLVM_DEBUG(dbgs() << "Unknown Kind2  = " << Kind);
-    reportError(Fixup.getLoc(), "Unsupported relocation type");
+    Ctx.reportError(Fixup.getLoc(), "Unsupported relocation type");
     return ELF::R_CKCORE_NONE;
   case FK_Data_1:
-    reportError(Fixup.getLoc(), "1-byte data relocations not supported");
+    Ctx.reportError(Fixup.getLoc(), "1-byte data relocations not supported");
     return ELF::R_CKCORE_NONE;
   case FK_Data_2:
-    reportError(Fixup.getLoc(), "2-byte data relocations not supported");
+    Ctx.reportError(Fixup.getLoc(), "2-byte data relocations not supported");
     return ELF::R_CKCORE_NONE;
   case FK_Data_4:
-    if (Expr->getKind() == MCExpr::Specifier) {
-      auto TK = cast<MCSpecifierExpr>(Expr)->getSpecifier();
-      if (TK == CSKY::S_ADDR)
+    if (Expr->getKind() == MCExpr::Target) {
+      auto TK = cast<CSKYMCExpr>(Expr)->getKind();
+      if (TK == CSKYMCExpr::VK_CSKY_ADDR)
         return ELF::R_CKCORE_ADDR32;
-      if (TK == CSKY::S_GOT)
+      if (TK == CSKYMCExpr::VK_CSKY_GOT)
         return ELF::R_CKCORE_GOT32;
-      if (TK == CSKY::S_GOTOFF)
+      if (TK == CSKYMCExpr::VK_CSKY_GOTOFF)
         return ELF::R_CKCORE_GOTOFF;
-      if (TK == CSKY::S_PLT)
+      if (TK == CSKYMCExpr::VK_CSKY_PLT)
         return ELF::R_CKCORE_PLT32;
-      if (TK == CSKY::S_TLSIE)
+      if (TK == CSKYMCExpr::VK_CSKY_TLSIE)
         return ELF::R_CKCORE_TLS_IE32;
-      if (TK == CSKY::S_TLSLE)
+      if (TK == CSKYMCExpr::VK_CSKY_TLSLE)
         return ELF::R_CKCORE_TLS_LE32;
-      if (TK == CSKY::S_TLSGD)
+      if (TK == CSKYMCExpr::VK_CSKY_TLSGD)
         return ELF::R_CKCORE_TLS_GD32;
-      if (TK == CSKY::S_TLSLDM)
+      if (TK == CSKYMCExpr::VK_CSKY_TLSLDM)
         return ELF::R_CKCORE_TLS_LDM32;
-      if (TK == CSKY::S_TLSLDO)
+      if (TK == CSKYMCExpr::VK_CSKY_TLSLDO)
         return ELF::R_CKCORE_TLS_LDO32;
-      if (TK == CSKY::S_GOTPC)
+      if (TK == CSKYMCExpr::VK_CSKY_GOTPC)
         return ELF::R_CKCORE_GOTPC;
-      if (TK == CSKY::S_None)
+      if (TK == CSKYMCExpr::VK_CSKY_None)
         return ELF::R_CKCORE_ADDR32;
 
       LLVM_DEBUG(dbgs() << "Unknown FK_Data_4 TK  = " << TK);
-      reportError(Fixup.getLoc(), "unknown target FK_Data_4");
+      Ctx.reportError(Fixup.getLoc(), "unknown target FK_Data_4");
     } else {
       switch (Modifier) {
       default:
-        reportError(Fixup.getLoc(), "invalid fixup for 4-byte data relocation");
+        Ctx.reportError(Fixup.getLoc(),
+                        "invalid fixup for 4-byte data relocation");
         return ELF::R_CKCORE_NONE;
-      case CSKY::S_GOT:
+      case MCSymbolRefExpr::VK_GOT:
         return ELF::R_CKCORE_GOT32;
-      case CSKY::S_GOTOFF:
+      case MCSymbolRefExpr::VK_GOTOFF:
         return ELF::R_CKCORE_GOTOFF;
-      case CSKY::S_PLT:
+      case MCSymbolRefExpr::VK_PLT:
         return ELF::R_CKCORE_PLT32;
-      case CSKY::S_TLSGD:
+      case MCSymbolRefExpr::VK_TLSGD:
         return ELF::R_CKCORE_TLS_GD32;
-      case CSKY::S_TLSLDM:
+      case MCSymbolRefExpr::VK_TLSLDM:
         return ELF::R_CKCORE_TLS_LDM32;
-      case CSKY::S_TPOFF:
+      case MCSymbolRefExpr::VK_TPOFF:
         return ELF::R_CKCORE_TLS_LE32;
-      case CSKY::S_None:
+      case MCSymbolRefExpr::VK_None:
         return ELF::R_CKCORE_ADDR32;
       }
     }
     return ELF::R_CKCORE_NONE;
   case FK_Data_8:
-    reportError(Fixup.getLoc(), "8-byte data relocations not supported");
+    Ctx.reportError(Fixup.getLoc(), "8-byte data relocations not supported");
     return ELF::R_CKCORE_NONE;
   case CSKY::fixup_csky_addr32:
     return ELF::R_CKCORE_ADDR32;
@@ -160,17 +147,6 @@ unsigned CSKYELFObjectWriter::getRelocType(const MCFixup &Fixup,
     return ELF::R_CKCORE_GOT_IMM18_4;
   case CSKY::fixup_csky_plt_imm18_scale4:
     return ELF::R_CKCORE_PLT_IMM18_4;
-  }
-}
-
-bool CSKYELFObjectWriter::needsRelocateWithSymbol(const MCValue &V,
-                                                  unsigned Type) const {
-  switch (V.getSpecifier()) {
-  case CSKY::S_PLT:
-  case CSKY::S_GOT:
-    return true;
-  default:
-    return false;
   }
 }
 

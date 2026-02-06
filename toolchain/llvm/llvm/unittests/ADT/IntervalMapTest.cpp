@@ -8,14 +8,15 @@
 
 #include "llvm/ADT/IntervalMap.h"
 #include "gtest/gtest.h"
+#include <type_traits>
 
 using namespace llvm;
 
 namespace {
 
-using UUMap = IntervalMap<unsigned, unsigned, 4>;
-using UUHalfOpenMap =
-    IntervalMap<unsigned, unsigned, 4, IntervalMapHalfOpenInfo<unsigned>>;
+typedef IntervalMap<unsigned, unsigned, 4> UUMap;
+typedef IntervalMap<unsigned, unsigned, 4,
+                    IntervalMapHalfOpenInfo<unsigned>> UUHalfOpenMap;
 
 // Empty map tests
 TEST(IntervalMapTest, EmptyMap) {
@@ -712,7 +713,7 @@ TEST(IntervalMapTest, OverlapsHalfOpen) {
 }
 
 TEST(IntervalMapOverlapsTest, SmallMaps) {
-  using UUOverlaps = IntervalMapOverlaps<UUMap, UUMap>;
+  typedef IntervalMapOverlaps<UUMap,UUMap> UUOverlaps;
   UUMap::Allocator allocator;
   UUMap mapA(allocator);
   UUMap mapB(allocator);
@@ -756,7 +757,7 @@ TEST(IntervalMapOverlapsTest, SmallMaps) {
 }
 
 TEST(IntervalMapOverlapsTest, BigMaps) {
-  using UUOverlaps = IntervalMapOverlaps<UUMap, UUMap>;
+  typedef IntervalMapOverlaps<UUMap,UUMap> UUOverlaps;
   UUMap::Allocator allocator;
   UUMap mapA(allocator);
   UUMap mapB(allocator);

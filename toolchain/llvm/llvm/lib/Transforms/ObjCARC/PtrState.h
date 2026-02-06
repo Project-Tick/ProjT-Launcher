@@ -47,7 +47,8 @@ enum Sequence {
   S_MovableRelease ///< objc_release(x), !clang.imprecise_release.
 };
 
-[[maybe_unused]] raw_ostream &operator<<(raw_ostream &OS, const Sequence S);
+raw_ostream &operator<<(raw_ostream &OS,
+                        const Sequence S) LLVM_ATTRIBUTE_UNUSED;
 
 /// Unidirectional information about either a
 /// retain-decrement-use-release sequence or release-use-decrement-retain

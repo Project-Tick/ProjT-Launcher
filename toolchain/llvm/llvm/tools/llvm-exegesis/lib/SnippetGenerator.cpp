@@ -21,16 +21,8 @@
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/Program.h"
 
-#define DEBUG_TYPE "snippet-generator"
-
 namespace llvm {
 namespace exegesis {
-
-static cl::opt<unsigned>
-    RandomGeneratorSeed("random-generator-seed",
-                        cl::desc("The seed value to use for the random number "
-                                 "generator when generating snippets."),
-                        cl::init(0));
 
 std::vector<CodeTemplate> getSingleton(CodeTemplate &&CT) {
   std::vector<CodeTemplate> Result;
@@ -196,11 +188,7 @@ generateUnconstrainedCodeTemplates(const InstructionTemplate &Variant,
 
 std::mt19937 &randomGenerator() {
   static std::random_device RandomDevice;
-  unsigned RandomSeed = RandomGeneratorSeed.getNumOccurrences()
-                            ? RandomGeneratorSeed
-                            : RandomDevice();
-  LLVM_DEBUG(dbgs() << "Using random seed " << RandomSeed << ".\n");
-  static std::mt19937 RandomGenerator(RandomSeed);
+  static std::mt19937 RandomGenerator(RandomDevice());
   return RandomGenerator;
 }
 
@@ -288,10 +276,6 @@ static Error randomizeMCOperand(const LLVMState &State,
     AssignedValue = MCOperand::createReg(randomBit(AllowedRegs));
     break;
   }
-  /// Omit pc-relative operands to imm value based on the instruction
-  case MCOI::OperandType::OPERAND_PCREL:
-    return State.getExegesisTarget().randomizeTargetMCOperand(
-        Instr, Var, AssignedValue, ForbiddenRegs);
   default:
     break;
   }

@@ -1,3 +1,4 @@
+! REQUIRES: shell
 ! RUN: bbc -emit-fir -hlfir=false %s -o - | FileCheck %s
 
 ! CHECK-LABEL: func.func @_QPselected_real_kind_test1(

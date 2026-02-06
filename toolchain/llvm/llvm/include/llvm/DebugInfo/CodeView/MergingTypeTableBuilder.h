@@ -17,7 +17,6 @@
 #include "llvm/DebugInfo/CodeView/TypeCollection.h"
 #include "llvm/DebugInfo/CodeView/TypeIndex.h"
 #include "llvm/Support/Allocator.h"
-#include "llvm/Support/Compiler.h"
 #include <cstdint>
 
 namespace llvm {
@@ -26,7 +25,7 @@ struct LocallyHashedType;
 
 class ContinuationRecordBuilder;
 
-class LLVM_ABI MergingTypeTableBuilder : public TypeCollection {
+class MergingTypeTableBuilder : public TypeCollection {
   /// Storage for records.  These need to outlive the TypeTableBuilder.
   BumpPtrAllocator &RecordStorage;
 
@@ -43,7 +42,7 @@ class LLVM_ABI MergingTypeTableBuilder : public TypeCollection {
 
 public:
   explicit MergingTypeTableBuilder(BumpPtrAllocator &Storage);
-  ~MergingTypeTableBuilder() override;
+  ~MergingTypeTableBuilder();
 
   // TypeCollection overrides
   std::optional<TypeIndex> getFirst() override;

@@ -225,7 +225,7 @@ std::string getPosixPath(const Twine &S) {
 } // end anonymous namespace
 
 TEST(VirtualFileSystemTest, StatusQueries) {
-  auto D = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> D(new DummyFileSystem());
   ErrorOr<vfs::Status> Status((std::error_code()));
 
   D->addRegularFile("/foo");
@@ -265,11 +265,11 @@ TEST(VirtualFileSystemTest, StatusQueries) {
 }
 
 TEST(VirtualFileSystemTest, BaseOnlyOverlay) {
-  auto D = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> D(new DummyFileSystem());
   ErrorOr<vfs::Status> Status((std::error_code()));
   EXPECT_FALSE(Status = D->status("/foo"));
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(D);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(new vfs::OverlayFileSystem(D));
   EXPECT_FALSE(Status = O->status("/foo"));
 
   D->addRegularFile("/foo");
@@ -283,12 +283,13 @@ TEST(VirtualFileSystemTest, BaseOnlyOverlay) {
 }
 
 TEST(VirtualFileSystemTest, GetRealPathInOverlay) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addRegularFile("/foo");
   Lower->addSymlink("/lower_link");
-  auto Upper = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Upper(new DummyFileSystem());
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(Upper);
 
   // Regular file.
@@ -311,10 +312,11 @@ TEST(VirtualFileSystemTest, GetRealPathInOverlay) {
 }
 
 TEST(VirtualFileSystemTest, OverlayFiles) {
-  auto Base = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Middle = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Top = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Base);
+  IntrusiveRefCntPtr<DummyFileSystem> Base(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Middle(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Top(new DummyFileSystem());
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Base));
   O->pushOverlay(Middle);
   O->pushOverlay(Top);
 
@@ -349,9 +351,10 @@ TEST(VirtualFileSystemTest, OverlayFiles) {
 }
 
 TEST(VirtualFileSystemTest, OverlayDirsNonMerged) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Upper = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Upper(new DummyFileSystem());
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(Upper);
 
   Lower->addDirectory("/lower-only");
@@ -373,9 +376,10 @@ TEST(VirtualFileSystemTest, OverlayDirsNonMerged) {
 
 TEST(VirtualFileSystemTest, MergedDirPermissions) {
   // merged directories get the permissions of the upper dir
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Upper = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Upper(new DummyFileSystem());
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(Upper);
 
   ErrorOr<vfs::Status> Status((std::error_code()));
@@ -397,11 +401,12 @@ TEST(VirtualFileSystemTest, MergedDirPermissions) {
 }
 
 TEST(VirtualFileSystemTest, OverlayIterator) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addRegularFile("/foo");
-  auto Upper = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Upper(new DummyFileSystem());
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(Upper);
 
   ErrorOr<vfs::Status> Status((std::error_code()));
@@ -545,16 +550,13 @@ TEST(VirtualFileSystemTest, PhysicalFileSystemWorkingDirFailure) {
   ASSERT_EQ(sys::fs::current_path(PrevWD), std::error_code());
   ASSERT_EQ(sys::fs::createUniqueDirectory("d1", WD), std::error_code());
   ASSERT_EQ(sys::fs::set_current_path(WD), std::error_code());
-  llvm::scope_exit Restore([&] { sys::fs::set_current_path(PrevWD); });
+  auto Restore =
+      llvm::make_scope_exit([&] { sys::fs::set_current_path(PrevWD); });
 
   // Delete the working directory to create an error.
   if (sys::fs::remove_directories(WD, /*IgnoreErrors=*/false))
     // Some platforms (e.g. Solaris) disallow removal of the working directory.
     GTEST_SKIP() << "test requires deletion of working directory";
-
-#ifdef __CYGWIN__
-  GTEST_SKIP() << "Cygwin getcwd succeeds with unlinked working directory";
-#endif
 
   // Verify that we still get two separate working directories.
   auto FS1 = vfs::createPhysicalFileSystem();
@@ -782,9 +784,10 @@ static void checkContents(DirIter I, ArrayRef<StringRef> ExpectedOut) {
 }
 
 TEST(VirtualFileSystemTest, OverlayIteration) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Upper = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Upper(new DummyFileSystem());
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(Upper);
 
   std::error_code EC;
@@ -805,10 +808,11 @@ TEST(VirtualFileSystemTest, OverlayIteration) {
 }
 
 TEST(VirtualFileSystemTest, OverlayRecursiveIteration) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Middle = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Upper = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Middle(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Upper(new DummyFileSystem());
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(Middle);
   O->pushOverlay(Upper);
 
@@ -846,10 +850,11 @@ TEST(VirtualFileSystemTest, OverlayRecursiveIteration) {
 }
 
 TEST(VirtualFileSystemTest, ThreeLevelIteration) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Middle = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Upper = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Middle(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Upper(new DummyFileSystem());
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(Middle);
   O->pushOverlay(Upper);
 
@@ -865,10 +870,11 @@ TEST(VirtualFileSystemTest, ThreeLevelIteration) {
 }
 
 TEST(VirtualFileSystemTest, HiddenInIteration) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Middle = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Upper = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Middle(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Upper(new DummyFileSystem());
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(Middle);
   O->pushOverlay(Upper);
 
@@ -907,10 +913,11 @@ TEST(VirtualFileSystemTest, HiddenInIteration) {
 }
 
 TEST(VirtualFileSystemTest, Visit) {
-  auto Base = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Middle = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto Top = makeIntrusiveRefCnt<DummyFileSystem>();
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Base);
+  IntrusiveRefCntPtr<DummyFileSystem> Base(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Middle(new DummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Top(new DummyFileSystem());
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Base));
   O->pushOverlay(Middle);
   O->pushOverlay(Top);
 
@@ -977,9 +984,10 @@ TEST(OverlayFileSystemTest, PrintOutput) {
 }
 
 TEST(OverlayFileSystemTest, Exists) {
-  auto Lower = makeIntrusiveRefCnt<NoStatusDummyFileSystem>();
-  auto Upper = makeIntrusiveRefCnt<NoStatusDummyFileSystem>();
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new NoStatusDummyFileSystem());
+  IntrusiveRefCntPtr<DummyFileSystem> Upper(new NoStatusDummyFileSystem());
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(Upper);
 
   Lower->addDirectory("/both");
@@ -1000,7 +1008,8 @@ TEST(OverlayFileSystemTest, Exists) {
 }
 
 TEST(ProxyFileSystemTest, Basic) {
-  auto Base = makeIntrusiveRefCnt<vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<vfs::InMemoryFileSystem> Base(
+      new vfs::InMemoryFileSystem());
   vfs::ProxyFileSystem PFS(Base);
 
   Base->addFile("/a", 0, MemoryBuffer::getMemBuffer("test"));
@@ -1597,7 +1606,7 @@ TEST_F(VFSFromYAMLTest, BasicVFSFromYAML) {
 }
 
 TEST_F(VFSFromYAMLTest, MappedFiles) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/foo/bar");
   Lower->addRegularFile("//root/foo/bar/a");
   IntrusiveRefCntPtr<vfs::FileSystem> FS = getFromYAMLString(
@@ -1633,7 +1642,8 @@ TEST_F(VFSFromYAMLTest, MappedFiles) {
       Lower);
   ASSERT_NE(FS.get(), nullptr);
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(FS);
 
   // file
@@ -1710,7 +1720,7 @@ TEST_F(VFSFromYAMLTest, MappedFiles) {
 }
 
 TEST_F(VFSFromYAMLTest, MappedRoot) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/foo/bar");
   Lower->addRegularFile("//root/foo/bar/a");
   IntrusiveRefCntPtr<vfs::FileSystem> FS =
@@ -1725,7 +1735,8 @@ TEST_F(VFSFromYAMLTest, MappedRoot) {
                         Lower);
   ASSERT_NE(FS.get(), nullptr);
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(FS);
 
   // file
@@ -1751,7 +1762,7 @@ TEST_F(VFSFromYAMLTest, MappedRoot) {
 }
 
 TEST_F(VFSFromYAMLTest, RemappedDirectoryOverlay) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/foo");
   Lower->addRegularFile("//root/foo/a");
   Lower->addDirectory("//root/bar");
@@ -1772,7 +1783,8 @@ TEST_F(VFSFromYAMLTest, RemappedDirectoryOverlay) {
                         Lower);
   ASSERT_NE(FS.get(), nullptr);
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(FS);
 
   ErrorOr<vfs::Status> S = O->status("//root/foo");
@@ -1794,7 +1806,7 @@ TEST_F(VFSFromYAMLTest, RemappedDirectoryOverlay) {
 }
 
 TEST_F(VFSFromYAMLTest, RemappedDirectoryOverlayNoExternalNames) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/foo");
   Lower->addRegularFile("//root/foo/a");
   Lower->addDirectory("//root/bar");
@@ -1835,7 +1847,7 @@ TEST_F(VFSFromYAMLTest, RemappedDirectoryOverlayNoExternalNames) {
 }
 
 TEST_F(VFSFromYAMLTest, RemappedDirectoryOverlayNoFallthrough) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/foo");
   Lower->addRegularFile("//root/foo/a");
   Lower->addDirectory("//root/bar");
@@ -1875,12 +1887,13 @@ TEST_F(VFSFromYAMLTest, RemappedDirectoryOverlayNoFallthrough) {
 }
 
 TEST_F(VFSFromYAMLTest, ReturnsRequestedPathVFSMiss) {
-  auto BaseFS = makeIntrusiveRefCnt<vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<vfs::InMemoryFileSystem> BaseFS(
+      new vfs::InMemoryFileSystem);
   BaseFS->addFile("//root/foo/a", 0,
                   MemoryBuffer::getMemBuffer("contents of a"));
   ASSERT_FALSE(BaseFS->setCurrentWorkingDirectory("//root/foo"));
   auto RemappedFS = vfs::RedirectingFileSystem::create(
-      {}, /*UseExternalNames=*/false, BaseFS);
+      {}, /*UseExternalNames=*/false, *BaseFS);
 
   auto OpenedF = RemappedFS->openFileForRead("a");
   ASSERT_FALSE(OpenedF.getError());
@@ -1902,7 +1915,8 @@ TEST_F(VFSFromYAMLTest, ReturnsRequestedPathVFSMiss) {
 }
 
 TEST_F(VFSFromYAMLTest, ReturnsExternalPathVFSHit) {
-  auto BaseFS = makeIntrusiveRefCnt<vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<vfs::InMemoryFileSystem> BaseFS(
+      new vfs::InMemoryFileSystem);
   BaseFS->addFile("//root/foo/realname", 0,
                   MemoryBuffer::getMemBuffer("contents of a"));
   auto FS =
@@ -1940,31 +1954,8 @@ TEST_F(VFSFromYAMLTest, ReturnsExternalPathVFSHit) {
   EXPECT_EQ(0, NumDiagnostics);
 }
 
-TEST_F(VFSFromYAMLTest, RelativeFileDirWithOverlayRelativeSetting) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
-  Lower->addDirectory("//root/foo/bar");
-  Lower->addRegularFile("//root/foo/bar/a");
-  Lower->setCurrentWorkingDirectory("//root/foo");
-  IntrusiveRefCntPtr<vfs::FileSystem> FS =
-      getFromYAMLString("{\n"
-                        "  'case-sensitive': false,\n"
-                        "  'overlay-relative': true,\n"
-                        "  'roots': [\n"
-                        "    { 'name': '//root/foo/bar/b', 'type': 'file',\n"
-                        "      'external-contents': 'a'\n"
-                        "    }\n"
-                        "  ]\n"
-                        "}",
-                        Lower, "bar/overlay");
-
-  ASSERT_NE(FS.get(), nullptr);
-  ErrorOr<vfs::Status> S = FS->status("//root/foo/bar/b");
-  ASSERT_FALSE(S.getError());
-  EXPECT_EQ("//root/foo/bar/a", S->getName());
-}
-
-TEST_F(VFSFromYAMLTest, RootRelativeToOverlayDirTest) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+TEST_F(VFSFromYAMLTest, RootRelativeTest) {
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/foo/bar");
   Lower->addRegularFile("//root/foo/bar/a");
   IntrusiveRefCntPtr<vfs::FileSystem> FS =
@@ -2005,7 +1996,7 @@ TEST_F(VFSFromYAMLTest, RootRelativeToOverlayDirTest) {
   ASSERT_FALSE(S.getError());
   EXPECT_EQ("//root/foo/bar/a", S->getName());
 #else
-  auto LowerWindows = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> LowerWindows(new DummyFileSystem());
   LowerWindows->addDirectory("\\\\root\\foo\\bar");
   LowerWindows->addRegularFile("\\\\root\\foo\\bar\\a");
   FS = getFromYAMLString("{\n"
@@ -2026,37 +2017,9 @@ TEST_F(VFSFromYAMLTest, RootRelativeToOverlayDirTest) {
 #endif
 }
 
-TEST_F(VFSFromYAMLTest, RootRelativeToCWDTest) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
-  Lower->addDirectory("//root/foo/bar");
-  Lower->addRegularFile("//root/foo/bar/a");
-  Lower->addDirectory("//root/foo/bar/cwd");
-  Lower->addRegularFile("//root/foo/bar/cwd/a");
-  Lower->setCurrentWorkingDirectory("//root/foo/bar/cwd");
-  IntrusiveRefCntPtr<vfs::FileSystem> FS =
-      getFromYAMLString("{\n"
-                        "  'case-sensitive': false,\n"
-                        "  'root-relative': 'cwd',\n"
-                        "  'roots': [\n"
-                        "    { 'name': 'b', 'type': 'file',\n"
-                        "      'external-contents': '//root/foo/bar/a'\n"
-                        "    }\n"
-                        "  ]\n"
-                        "}",
-                        Lower, "//root/foo/bar/overlay");
-
-  ASSERT_NE(FS.get(), nullptr);
-
-  ErrorOr<vfs::Status> S1 = FS->status("//root/foo/bar/b");
-  ASSERT_TRUE(S1.getError());
-
-  ErrorOr<vfs::Status> S2 = FS->status("//root/foo/bar/cwd/b");
-  ASSERT_FALSE(S2.getError());
-  EXPECT_EQ("//root/foo/bar/a", S2->getName());
-}
-
 TEST_F(VFSFromYAMLTest, ReturnsInternalPathVFSHit) {
-  auto BaseFS = makeIntrusiveRefCnt<vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<vfs::InMemoryFileSystem> BaseFS(
+      new vfs::InMemoryFileSystem);
   BaseFS->addFile("//root/foo/realname", 0,
                   MemoryBuffer::getMemBuffer("contents of a"));
   auto FS =
@@ -2095,7 +2058,7 @@ TEST_F(VFSFromYAMLTest, ReturnsInternalPathVFSHit) {
 }
 
 TEST_F(VFSFromYAMLTest, CaseInsensitive) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addRegularFile("//root/foo/bar/a");
   IntrusiveRefCntPtr<vfs::FileSystem> FS = getFromYAMLString(
       "{ 'case-sensitive': 'false',\n"
@@ -2113,7 +2076,8 @@ TEST_F(VFSFromYAMLTest, CaseInsensitive) {
       Lower);
   ASSERT_NE(FS.get(), nullptr);
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(FS);
 
   ErrorOr<vfs::Status> S = O->status("//root/XX");
@@ -2130,7 +2094,7 @@ TEST_F(VFSFromYAMLTest, CaseInsensitive) {
 }
 
 TEST_F(VFSFromYAMLTest, CaseSensitive) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addRegularFile("//root/foo/bar/a");
   IntrusiveRefCntPtr<vfs::FileSystem> FS = getFromYAMLString(
       "{ 'case-sensitive': 'true',\n"
@@ -2148,7 +2112,8 @@ TEST_F(VFSFromYAMLTest, CaseSensitive) {
       Lower);
   ASSERT_NE(FS.get(), nullptr);
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(FS);
 
   ErrorOr<vfs::Status> SS = O->status("//root/xx");
@@ -2161,7 +2126,7 @@ TEST_F(VFSFromYAMLTest, CaseSensitive) {
 }
 
 TEST_F(VFSFromYAMLTest, IllegalVFSFile) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
 
   // invalid YAML at top-level
   IntrusiveRefCntPtr<vfs::FileSystem> FS = getFromYAMLString("{]", Lower);
@@ -2287,7 +2252,7 @@ TEST_F(VFSFromYAMLTest, IllegalVFSFile) {
 }
 
 TEST_F(VFSFromYAMLTest, UseExternalName) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addRegularFile("//root/external/file");
 
   IntrusiveRefCntPtr<vfs::FileSystem> FS =
@@ -2339,7 +2304,7 @@ TEST_F(VFSFromYAMLTest, UseExternalName) {
 }
 
 TEST_F(VFSFromYAMLTest, MultiComponentPath) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addRegularFile("//root/other");
 
   // file in roots
@@ -2385,7 +2350,7 @@ TEST_F(VFSFromYAMLTest, MultiComponentPath) {
 }
 
 TEST_F(VFSFromYAMLTest, TrailingSlashes) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addRegularFile("//root/other");
 
   // file in roots
@@ -2404,7 +2369,7 @@ TEST_F(VFSFromYAMLTest, TrailingSlashes) {
 }
 
 TEST_F(VFSFromYAMLTest, DirectoryIteration) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/");
   Lower->addDirectory("//root/foo");
   Lower->addDirectory("//root/foo/bar");
@@ -2434,7 +2399,8 @@ TEST_F(VFSFromYAMLTest, DirectoryIteration) {
       Lower);
   ASSERT_NE(FS.get(), nullptr);
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(FS);
 
   std::error_code EC;
@@ -2450,7 +2416,7 @@ TEST_F(VFSFromYAMLTest, DirectoryIterationSameDirMultipleEntries) {
   if (!supportsSameDirMultipleYAMLEntries())
     GTEST_SKIP();
 
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/zab");
   Lower->addDirectory("//root/baz");
   Lower->addRegularFile("//root/zab/a");
@@ -2483,7 +2449,8 @@ TEST_F(VFSFromYAMLTest, DirectoryIterationSameDirMultipleEntries) {
       Lower);
   ASSERT_NE(FS.get(), nullptr);
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(FS);
 
   std::error_code EC;
@@ -2494,7 +2461,7 @@ TEST_F(VFSFromYAMLTest, DirectoryIterationSameDirMultipleEntries) {
 
 TEST_F(VFSFromYAMLTest, RecursiveDirectoryIterationLevel) {
 
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/a");
   Lower->addDirectory("//root/a/b");
   Lower->addDirectory("//root/a/b/c");
@@ -2517,7 +2484,8 @@ TEST_F(VFSFromYAMLTest, RecursiveDirectoryIterationLevel) {
       Lower);
   ASSERT_NE(FS.get(), nullptr);
 
-  auto O = makeIntrusiveRefCnt<vfs::OverlayFileSystem>(Lower);
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
   O->pushOverlay(FS);
 
   std::error_code EC;
@@ -2535,12 +2503,11 @@ TEST_F(VFSFromYAMLTest, RecursiveDirectoryIterationLevel) {
 }
 
 TEST_F(VFSFromYAMLTest, RelativePaths) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   std::error_code EC;
   SmallString<128> CWD;
   EC = llvm::sys::fs::current_path(CWD);
   ASSERT_FALSE(EC);
-  Lower->setCurrentWorkingDirectory(CWD);
 
   // Filename at root level without a parent directory.
   IntrusiveRefCntPtr<vfs::FileSystem> FS = getFromYAMLString(
@@ -2590,7 +2557,7 @@ TEST_F(VFSFromYAMLTest, RelativePaths) {
 }
 
 TEST_F(VFSFromYAMLTest, NonFallthroughDirectoryIteration) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/");
   Lower->addRegularFile("//root/a");
   Lower->addRegularFile("//root/b");
@@ -2619,7 +2586,7 @@ TEST_F(VFSFromYAMLTest, NonFallthroughDirectoryIteration) {
 }
 
 TEST_F(VFSFromYAMLTest, DirectoryIterationWithDuplicates) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/");
   Lower->addRegularFile("//root/a");
   Lower->addRegularFile("//root/b");
@@ -2647,7 +2614,7 @@ TEST_F(VFSFromYAMLTest, DirectoryIterationWithDuplicates) {
 }
 
 TEST_F(VFSFromYAMLTest, DirectoryIterationErrorInVFSLayer) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/");
   Lower->addDirectory("//root/foo");
   Lower->addRegularFile("//root/foo/a");
@@ -2676,7 +2643,7 @@ TEST_F(VFSFromYAMLTest, DirectoryIterationErrorInVFSLayer) {
 }
 
 TEST_F(VFSFromYAMLTest, GetRealPath) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//dir/");
   Lower->addRegularFile("/foo");
   Lower->addSymlink("/link");
@@ -2727,35 +2694,8 @@ TEST_F(VFSFromYAMLTest, GetRealPath) {
             errc::no_such_file_or_directory);
 }
 
-TEST_F(VFSFromYAMLTest, ErrorMap) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
-  Lower->addDirectory("/dir");
-  Lower->addRegularFile("/foo");
-  IntrusiveRefCntPtr<vfs::FileSystem> FS =
-      getFromYAMLString("{ 'use-external-names': false,\n"
-                        "  'case-sensitive': false,\n"
-                        "  'roots': [\n"
-                        "{\n"
-                        "  'type': 'directory',\n"
-                        "  'name': '/root',\n"
-                        "  'contents': [ {\n"
-                        "                  'type': 'file',\n"
-                        "                  'name': 'bar',\n"
-                        "                  'external-contents': '/foo'\n"
-                        "                }\n"
-                        "              ]\n"
-                        "}\n"
-                        "]\n"
-                        "}",
-                        Lower);
-  ASSERT_NE(FS.get(), nullptr);
-
-  // Lookup a file location that doesn't exist.
-  ASSERT_FALSE(FS->status("/root/bar/file"));
-}
-
 TEST_F(VFSFromYAMLTest, WorkingDirectory) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/");
   Lower->addDirectory("//root/foo");
   Lower->addRegularFile("//root/foo/a");
@@ -2813,7 +2753,7 @@ TEST_F(VFSFromYAMLTest, WorkingDirectory) {
 }
 
 TEST_F(VFSFromYAMLTest, WorkingDirectoryFallthrough) {
-  auto Lower = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/");
   Lower->addDirectory("//root/foo");
   Lower->addRegularFile("//root/foo/a");
@@ -2895,7 +2835,7 @@ TEST_F(VFSFromYAMLTest, WorkingDirectoryFallthrough) {
 }
 
 TEST_F(VFSFromYAMLTest, WorkingDirectoryFallthroughInvalid) {
-  auto Lower = makeIntrusiveRefCnt<ErrorDummyFileSystem>();
+  IntrusiveRefCntPtr<ErrorDummyFileSystem> Lower(new ErrorDummyFileSystem());
   Lower->addDirectory("//root/");
   Lower->addDirectory("//root/foo");
   Lower->addRegularFile("//root/foo/a");
@@ -2932,7 +2872,7 @@ TEST_F(VFSFromYAMLTest, WorkingDirectoryFallthroughInvalid) {
 }
 
 TEST_F(VFSFromYAMLTest, VirtualWorkingDirectory) {
-  auto Lower = makeIntrusiveRefCnt<ErrorDummyFileSystem>();
+  IntrusiveRefCntPtr<ErrorDummyFileSystem> Lower(new ErrorDummyFileSystem());
   Lower->addDirectory("//root/");
   Lower->addDirectory("//root/foo");
   Lower->addRegularFile("//root/foo/a");
@@ -2988,7 +2928,7 @@ TEST_F(VFSFromYAMLTest, YAMLVFSWriterTest) {
   raw_string_ostream OS(Buffer);
   VFSWriter.write(OS);
 
-  auto Lower = makeIntrusiveRefCnt<ErrorDummyFileSystem>();
+  IntrusiveRefCntPtr<ErrorDummyFileSystem> Lower(new ErrorDummyFileSystem());
   Lower->addDirectory("//root/");
   Lower->addDirectory("//root/a");
   Lower->addRegularFile("//root/a/b");
@@ -3038,7 +2978,7 @@ TEST_F(VFSFromYAMLTest, YAMLVFSWriterTest2) {
   raw_string_ostream OS(Buffer);
   VFSWriter.write(OS);
 
-  auto Lower = makeIntrusiveRefCnt<ErrorDummyFileSystem>();
+  IntrusiveRefCntPtr<ErrorDummyFileSystem> Lower(new ErrorDummyFileSystem());
   IntrusiveRefCntPtr<vfs::FileSystem> FS = getFromYAMLRawString(Buffer, Lower);
   EXPECT_NE(FS.get(), nullptr);
 }
@@ -3070,7 +3010,7 @@ TEST_F(VFSFromYAMLTest, YAMLVFSWriterTest3) {
   raw_string_ostream OS(Buffer);
   VFSWriter.write(OS);
 
-  auto Lower = makeIntrusiveRefCnt<ErrorDummyFileSystem>();
+  IntrusiveRefCntPtr<ErrorDummyFileSystem> Lower(new ErrorDummyFileSystem());
   IntrusiveRefCntPtr<vfs::FileSystem> FS = getFromYAMLRawString(Buffer, Lower);
   EXPECT_NE(FS.get(), nullptr);
 }
@@ -3093,7 +3033,7 @@ TEST_F(VFSFromYAMLTest, YAMLVFSWriterTestHandleDirs) {
   // We didn't add a single file - only directories.
   EXPECT_EQ(Buffer.find("'type': 'file'"), std::string::npos);
 
-  auto Lower = makeIntrusiveRefCnt<ErrorDummyFileSystem>();
+  IntrusiveRefCntPtr<ErrorDummyFileSystem> Lower(new ErrorDummyFileSystem());
   Lower->addDirectory("//root/a");
   Lower->addDirectory("//root/b");
   Lower->addDirectory("//root/c");
@@ -3111,17 +3051,17 @@ TEST_F(VFSFromYAMLTest, YAMLVFSWriterTestHandleDirs) {
 }
 
 TEST_F(VFSFromYAMLTest, RedirectingWith) {
-  auto Both = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Both(new DummyFileSystem());
   Both->addDirectory("//root/a");
   Both->addRegularFile("//root/a/f");
   Both->addDirectory("//root/b");
   Both->addRegularFile("//root/b/f");
 
-  auto AOnly = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> AOnly(new DummyFileSystem());
   AOnly->addDirectory("//root/a");
   AOnly->addRegularFile("//root/a/f");
 
-  auto BOnly = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> BOnly(new DummyFileSystem());
   BOnly->addDirectory("//root/b");
   BOnly->addRegularFile("//root/b/f");
 
@@ -3226,7 +3166,8 @@ TEST_F(VFSFromYAMLTest, RedirectingWith) {
 }
 
 TEST(VFSFromRemappedFilesTest, Basic) {
-  auto BaseFS = makeIntrusiveRefCnt<vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<vfs::InMemoryFileSystem> BaseFS =
+      new vfs::InMemoryFileSystem;
   BaseFS->addFile("//root/b", 0, MemoryBuffer::getMemBuffer("contents of b"));
   BaseFS->addFile("//root/c", 0, MemoryBuffer::getMemBuffer("contents of c"));
 
@@ -3235,7 +3176,7 @@ TEST(VFSFromRemappedFilesTest, Basic) {
       {"//root/a/b/c", "//root/c"},
   };
   auto RemappedFS = vfs::RedirectingFileSystem::create(
-      RemappedFiles, /*UseExternalNames=*/false, BaseFS);
+      RemappedFiles, /*UseExternalNames=*/false, *BaseFS);
 
   auto StatA = RemappedFS->status("//root/a/a");
   auto StatB = RemappedFS->status("//root/a/b/c");
@@ -3253,7 +3194,8 @@ TEST(VFSFromRemappedFilesTest, Basic) {
 }
 
 TEST(VFSFromRemappedFilesTest, UseExternalNames) {
-  auto BaseFS = makeIntrusiveRefCnt<vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<vfs::InMemoryFileSystem> BaseFS =
+      new vfs::InMemoryFileSystem;
   BaseFS->addFile("//root/b", 0, MemoryBuffer::getMemBuffer("contents of b"));
   BaseFS->addFile("//root/c", 0, MemoryBuffer::getMemBuffer("contents of c"));
 
@@ -3262,7 +3204,7 @@ TEST(VFSFromRemappedFilesTest, UseExternalNames) {
       {"//root/a/b/c", "//root/c"},
   };
   auto RemappedFS = vfs::RedirectingFileSystem::create(
-      RemappedFiles, /*UseExternalNames=*/true, BaseFS);
+      RemappedFiles, /*UseExternalNames=*/true, *BaseFS);
 
   auto StatA = RemappedFS->status("//root/a/a");
   auto StatB = RemappedFS->status("//root/a/b/c");
@@ -3280,7 +3222,8 @@ TEST(VFSFromRemappedFilesTest, UseExternalNames) {
 }
 
 TEST(VFSFromRemappedFilesTest, LastMappingWins) {
-  auto BaseFS = makeIntrusiveRefCnt<vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<vfs::InMemoryFileSystem> BaseFS =
+      new vfs::InMemoryFileSystem;
   BaseFS->addFile("//root/b", 0, MemoryBuffer::getMemBuffer("contents of b"));
   BaseFS->addFile("//root/c", 0, MemoryBuffer::getMemBuffer("contents of c"));
 
@@ -3289,9 +3232,9 @@ TEST(VFSFromRemappedFilesTest, LastMappingWins) {
       {"//root/a", "//root/c"},
   };
   auto RemappedFSKeepName = vfs::RedirectingFileSystem::create(
-      RemappedFiles, /*UseExternalNames=*/false, BaseFS);
+      RemappedFiles, /*UseExternalNames=*/false, *BaseFS);
   auto RemappedFSExternalName = vfs::RedirectingFileSystem::create(
-      RemappedFiles, /*UseExternalNames=*/true, BaseFS);
+      RemappedFiles, /*UseExternalNames=*/true, *BaseFS);
 
   auto StatKeepA = RemappedFSKeepName->status("//root/a");
   auto StatExternalA = RemappedFSExternalName->status("//root/a");
@@ -3473,7 +3416,7 @@ TEST(RedirectingFileSystemTest, ExternalPaths) {
   BaseFS->setCurrentWorkingDirectory("/cwd");
   auto CheckFS = makeIntrusiveRefCnt<InterceptorFS>(BaseFS);
   auto FS = vfs::RedirectingFileSystem::create({}, /*UseExternalNames=*/false,
-                                               CheckFS);
+                                               *CheckFS);
 
   FS->status("/a/../b");
   FS->openFileForRead("c");
@@ -3499,7 +3442,7 @@ TEST(RedirectingFileSystemTest, ExternalPaths) {
 }
 
 TEST(RedirectingFileSystemTest, Exists) {
-  auto Dummy = makeIntrusiveRefCnt<NoStatusDummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Dummy(new NoStatusDummyFileSystem());
   auto YAML =
     MemoryBuffer::getMemBuffer("{\n"
                                "  'version': 0,\n"
@@ -3570,7 +3513,7 @@ TEST(RedirectingFileSystemTest, Exists) {
 }
 
 TEST(RedirectingFileSystemTest, ExistsFallback) {
-  auto Dummy = makeIntrusiveRefCnt<NoStatusDummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Dummy(new NoStatusDummyFileSystem());
   auto YAML =
     MemoryBuffer::getMemBuffer("{\n"
                                "  'version': 0,\n"
@@ -3594,7 +3537,7 @@ TEST(RedirectingFileSystemTest, ExistsFallback) {
 }
 
 TEST(RedirectingFileSystemTest, ExistsRedirectOnly) {
-  auto Dummy = makeIntrusiveRefCnt<NoStatusDummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> Dummy(new NoStatusDummyFileSystem());
   auto YAML =
     MemoryBuffer::getMemBuffer("{\n"
                                "  'version': 0,\n"

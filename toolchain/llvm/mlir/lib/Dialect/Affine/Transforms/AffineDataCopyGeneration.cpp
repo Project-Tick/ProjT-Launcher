@@ -19,7 +19,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "mlir/Dialect/Affine/Transforms/Passes.h"
+#include "mlir/Dialect/Affine/Passes.h"
 
 #include "mlir/Dialect/Affine/Analysis/Utils.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
@@ -28,14 +28,16 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+#include "llvm/ADT/MapVector.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/Debug.h"
 #include <algorithm>
 #include <optional>
 
 namespace mlir {
 namespace affine {
 #define GEN_PASS_DEF_AFFINEDATACOPYGENERATION
-#include "mlir/Dialect/Affine/Transforms/Passes.h.inc"
+#include "mlir/Dialect/Affine/Passes.h.inc"
 } // namespace affine
 } // namespace mlir
 
@@ -84,7 +86,7 @@ struct AffineDataCopyGeneration
 
 /// Generates copies for memref's living in 'slowMemorySpace' into newly created
 /// buffers in 'fastMemorySpace', and replaces memory operations to the former
-/// by the latter.
+/// by the latter. Only load op's handled for now.
 std::unique_ptr<OperationPass<func::FuncOp>>
 mlir::affine::createAffineDataCopyGenerationPass(
     unsigned slowMemorySpace, unsigned fastMemorySpace, unsigned tagMemorySpace,
@@ -124,10 +126,11 @@ void AffineDataCopyGeneration::runOnBlock(Block *block,
   // moment; we do a check later and report an error with location info.
 
   // Get to the first load, store, or for op (that is not a copy nest itself).
-  auto curBegin = llvm::find_if(*block, [&](Operation &op) {
-    return isa<AffineLoadOp, AffineStoreOp, AffineForOp>(op) &&
-           copyNests.count(&op) == 0;
-  });
+  auto curBegin =
+      std::find_if(block->begin(), block->end(), [&](Operation &op) {
+        return isa<AffineLoadOp, AffineStoreOp, AffineForOp>(op) &&
+               copyNests.count(&op) == 0;
+      });
 
   // Create [begin, end) ranges.
   auto it = curBegin;
@@ -202,7 +205,7 @@ void AffineDataCopyGeneration::runOnBlock(Block *block,
 void AffineDataCopyGeneration::runOnOperation() {
   func::FuncOp f = getOperation();
   OpBuilder topBuilder(f.getBody());
-  zeroIndex = arith::ConstantIndexOp::create(topBuilder, f.getLoc(), 0);
+  zeroIndex = topBuilder.create<arith::ConstantIndexOp>(f.getLoc(), 0);
 
   // Nests that are copy-in's or copy-out's; the root AffineForOps of those
   // nests are stored herein.
@@ -234,8 +237,7 @@ void AffineDataCopyGeneration::runOnOperation() {
   AffineLoadOp::getCanonicalizationPatterns(patterns, &getContext());
   AffineStoreOp::getCanonicalizationPatterns(patterns, &getContext());
   FrozenRewritePatternSet frozenPatterns(std::move(patterns));
-  (void)applyOpPatternsGreedily(
-      copyOps, frozenPatterns,
-      GreedyRewriteConfig().setStrictness(
-          GreedyRewriteStrictness::ExistingAndNewOps));
+  GreedyRewriteConfig config;
+  config.strictMode = GreedyRewriteStrictness::ExistingAndNewOps;
+  (void)applyOpPatternsGreedily(copyOps, frozenPatterns, config);
 }

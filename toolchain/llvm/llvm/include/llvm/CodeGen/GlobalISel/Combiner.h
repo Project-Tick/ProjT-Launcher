@@ -58,9 +58,9 @@ public:
   /// If CSEInfo is not null, then the Combiner will use CSEInfo as the observer
   /// and also create a CSEMIRBuilder. Pass nullptr if CSE is not needed.
   Combiner(MachineFunction &MF, CombinerInfo &CInfo,
-           const TargetPassConfig *TPC, GISelValueTracking *VT,
+           const TargetPassConfig *TPC, GISelKnownBits *KB,
            GISelCSEInfo *CSEInfo = nullptr);
-  ~Combiner() override;
+  virtual ~Combiner();
 
   virtual bool tryCombineAll(MachineInstr &I) const = 0;
 
@@ -72,7 +72,7 @@ protected:
   MachineIRBuilder &B;
   MachineFunction &MF;
   MachineRegisterInfo &MRI;
-  GISelValueTracking *VT;
+  GISelKnownBits *KB;
 
   const TargetPassConfig *TPC;
   GISelCSEInfo *CSEInfo;

@@ -16,6 +16,7 @@
 #include "mlir/Dialect/SPIRV/IR/SPIRVOps.h"
 
 #include "mlir/Dialect/CommonFolders.h"
+#include "mlir/Dialect/SPIRV/IR/SPIRVDialect.h"
 #include "mlir/Dialect/SPIRV/IR/SPIRVTypes.h"
 #include "mlir/Dialect/UB/IR/UBOps.h"
 #include "mlir/IR/Matchers.h"
@@ -35,9 +36,9 @@ static std::optional<bool> getScalarOrSplatBoolAttr(Attribute attr) {
   if (!attr)
     return std::nullopt;
 
-  if (auto boolAttr = dyn_cast<BoolAttr>(attr))
+  if (auto boolAttr = llvm::dyn_cast<BoolAttr>(attr))
     return boolAttr.getValue();
-  if (auto splatAttr = dyn_cast<SplatElementsAttr>(attr))
+  if (auto splatAttr = llvm::dyn_cast<SplatElementsAttr>(attr))
     if (splatAttr.getElementType().isInteger(1))
       return splatAttr.getSplatValue<bool>();
   return std::nullopt;
@@ -54,12 +55,12 @@ static Attribute extractCompositeElement(Attribute composite,
   if (indices.empty())
     return composite;
 
-  if (auto vector = dyn_cast<ElementsAttr>(composite)) {
+  if (auto vector = llvm::dyn_cast<ElementsAttr>(composite)) {
     assert(indices.size() == 1 && "must have exactly one index for a vector");
     return vector.getValues<Attribute>()[indices[0]];
   }
 
-  if (auto array = dyn_cast<ArrayAttr>(composite)) {
+  if (auto array = llvm::dyn_cast<ArrayAttr>(composite)) {
     assert(!indices.empty() && "must have at least one index for an array");
     return extractCompositeElement(array.getValue()[indices[0]],
                                    indices.drop_front());
@@ -93,7 +94,7 @@ namespace {
 /// `spirv::AccessChainOp` operation.
 struct CombineChainedAccessChain final
     : OpRewritePattern<spirv::AccessChainOp> {
-  using Base::Base;
+  using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(spirv::AccessChainOp accessChainOp,
                                 PatternRewriter &rewriter) const override {
@@ -128,7 +129,7 @@ void spirv::AccessChainOp::getCanonicalizationPatterns(
 // We are required to use CompositeConstructOp to create a constant struct as
 // they are not yet implemented as constant, hence we can not do so in a fold.
 struct IAddCarryFold final : OpRewritePattern<spirv::IAddCarryOp> {
-  using Base::Base;
+  using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(spirv::IAddCarryOp op,
                                 PatternRewriter &rewriter) const override {
@@ -178,16 +179,16 @@ struct IAddCarryFold final : OpRewritePattern<spirv::IAddCarryOp> {
       return failure();
 
     Value addsVal =
-        spirv::ConstantOp::create(rewriter, loc, constituentType, adds);
+        rewriter.create<spirv::ConstantOp>(loc, constituentType, adds);
 
     Value carrysVal =
-        spirv::ConstantOp::create(rewriter, loc, constituentType, carrys);
+        rewriter.create<spirv::ConstantOp>(loc, constituentType, carrys);
 
     // Create empty struct
-    Value undef = spirv::UndefOp::create(rewriter, loc, op.getType());
+    Value undef = rewriter.create<spirv::UndefOp>(loc, op.getType());
     // Fill in adds at id 0
     Value intermediate =
-        spirv::CompositeInsertOp::create(rewriter, loc, addsVal, undef, 0);
+        rewriter.create<spirv::CompositeInsertOp>(loc, addsVal, undef, 0);
     // Fill in carrys at id 1
     rewriter.replaceOpWithNewOp<spirv::CompositeInsertOp>(op, carrysVal,
                                                           intermediate, 1);
@@ -260,16 +261,16 @@ struct MulExtendedFold final : OpRewritePattern<MulOp> {
       return failure();
 
     Value lowBitsVal =
-        spirv::ConstantOp::create(rewriter, loc, constituentType, lowBits);
+        rewriter.create<spirv::ConstantOp>(loc, constituentType, lowBits);
 
     Value highBitsVal =
-        spirv::ConstantOp::create(rewriter, loc, constituentType, highBits);
+        rewriter.create<spirv::ConstantOp>(loc, constituentType, highBits);
 
     // Create empty struct
-    Value undef = spirv::UndefOp::create(rewriter, loc, op.getType());
+    Value undef = rewriter.create<spirv::UndefOp>(loc, op.getType());
     // Fill in lowBits at id 0
     Value intermediate =
-        spirv::CompositeInsertOp::create(rewriter, loc, lowBitsVal, undef, 0);
+        rewriter.create<spirv::CompositeInsertOp>(loc, lowBitsVal, undef, 0);
     // Fill in highBits at id 1
     rewriter.replaceOpWithNewOp<spirv::CompositeInsertOp>(op, highBitsVal,
                                                           intermediate, 1);
@@ -284,7 +285,7 @@ void spirv::SMulExtendedOp::getCanonicalizationPatterns(
 }
 
 struct UMulExtendedOpXOne final : OpRewritePattern<spirv::UMulExtendedOp> {
-  using Base::Base;
+  using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(spirv::UMulExtendedOp op,
                                 PatternRewriter &rewriter) const override {
@@ -325,8 +326,9 @@ void spirv::UMulExtendedOp::getCanonicalizationPatterns(
 
 // The transformation is only applied if one divisor is a multiple of the other.
 
+// TODO(https://github.com/llvm/llvm-project/issues/63174): Add support for vector constants
 struct UModSimplification final : OpRewritePattern<spirv::UModOp> {
-  using Base::Base;
+  using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(spirv::UModOp umodOp,
                                 PatternRewriter &rewriter) const override {
@@ -334,29 +336,19 @@ struct UModSimplification final : OpRewritePattern<spirv::UModOp> {
     if (!prevUMod)
       return failure();
 
-    TypedAttr prevValue;
-    TypedAttr currValue;
+    IntegerAttr prevValue;
+    IntegerAttr currValue;
     if (!matchPattern(prevUMod.getOperand(1), m_Constant(&prevValue)) ||
         !matchPattern(umodOp.getOperand(1), m_Constant(&currValue)))
       return failure();
 
-    // Ensure that previous divisor is a multiple of the current divisor. If
-    // not, fail the transformation.
-    bool isApplicable = false;
-    if (auto prevInt = dyn_cast<IntegerAttr>(prevValue)) {
-      auto currInt = cast<IntegerAttr>(currValue);
-      isApplicable = prevInt.getValue().urem(currInt.getValue()) == 0;
-    } else if (auto prevVec = dyn_cast<DenseElementsAttr>(prevValue)) {
-      auto currVec = cast<DenseElementsAttr>(currValue);
-      isApplicable = llvm::all_of(llvm::zip_equal(prevVec.getValues<APInt>(),
-                                                  currVec.getValues<APInt>()),
-                                  [](const auto &pair) {
-                                    auto &[prev, curr] = pair;
-                                    return prev.urem(curr) == 0;
-                                  });
-    }
+    APInt prevConstValue = prevValue.getValue();
+    APInt currConstValue = currValue.getValue();
 
-    if (!isApplicable)
+    // Ensure that one divisor is a multiple of the other. If not, fail the
+    // transformation.
+    if (prevConstValue.urem(currConstValue) != 0 &&
+        currConstValue.urem(prevConstValue) != 0)
       return failure();
 
     // The transformation is safe. Replace the existing UMod operation with a
@@ -370,7 +362,7 @@ struct UModSimplification final : OpRewritePattern<spirv::UModOp> {
 
 void spirv::UModOp::getCanonicalizationPatterns(RewritePatternSet &patterns,
                                                 MLIRContext *context) {
-  patterns.add<UModSimplification>(context);
+  patterns.insert<UModSimplification>(context);
 }
 
 //===----------------------------------------------------------------------===//
@@ -412,10 +404,10 @@ OpFoldResult spirv::CompositeExtractOp::fold(FoldAdaptor adaptor) {
 
   if (auto constructOp =
           compositeOp.getDefiningOp<spirv::CompositeConstructOp>()) {
-    auto type = cast<spirv::CompositeType>(constructOp.getType());
+    auto type = llvm::cast<spirv::CompositeType>(constructOp.getType());
     if (getIndices().size() == 1 &&
         constructOp.getConstituents().size() == type.getNumElements()) {
-      auto i = cast<IntegerAttr>(*getIndices().begin());
+      auto i = llvm::cast<IntegerAttr>(*getIndices().begin());
       if (i.getValue().getSExtValue() <
           static_cast<int64_t>(constructOp.getConstituents().size()))
         return constructOp.getConstituents()[i.getValue().getSExtValue()];
@@ -423,7 +415,7 @@ OpFoldResult spirv::CompositeExtractOp::fold(FoldAdaptor adaptor) {
   }
 
   auto indexVector = llvm::map_to_vector(getIndices(), [](Attribute attr) {
-    return static_cast<unsigned>(cast<IntegerAttr>(attr).getInt());
+    return static_cast<unsigned>(llvm::cast<IntegerAttr>(attr).getInt());
   });
   return extractCompositeElement(adaptor.getComposite(), indexVector);
 }
@@ -484,7 +476,7 @@ OpFoldResult spirv::IMulOp::fold(FoldAdaptor adaptor) {
 OpFoldResult spirv::ISubOp::fold(FoldAdaptor adaptor) {
   // x - x = 0
   if (getOperand1() == getOperand2())
-    return Builder(getContext()).getZeroAttr(getType());
+    return Builder(getContext()).getIntegerAttr(getType(), 0);
 
   // According to the SPIR-V spec:
   //
@@ -1271,7 +1263,7 @@ namespace {
 //                       +-------------+
 //
 struct ConvertSelectionOpToSelect final : OpRewritePattern<spirv::SelectionOp> {
-  using Base::Base;
+  using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(spirv::SelectionOp selectionOp,
                                 PatternRewriter &rewriter) const override {
@@ -1309,11 +1301,11 @@ struct ConvertSelectionOpToSelect final : OpRewritePattern<spirv::SelectionOp> {
     auto storeOpAttributes =
         cast<spirv::StoreOp>(trueBlock->front())->getAttrs();
 
-    auto selectOp = spirv::SelectOp::create(
-        rewriter, selectionOp.getLoc(), trueValue.getType(),
+    auto selectOp = rewriter.create<spirv::SelectOp>(
+        selectionOp.getLoc(), trueValue.getType(),
         brConditionalOp.getCondition(), trueValue, falseValue);
-    spirv::StoreOp::create(rewriter, selectOp.getLoc(), ptrValue,
-                           selectOp.getResult(), storeOpAttributes);
+    rewriter.create<spirv::StoreOp>(selectOp.getLoc(), ptrValue,
+                                    selectOp.getResult(), storeOpAttributes);
 
     // `spirv.mlir.selection` is not needed anymore.
     rewriter.eraseOp(op);
@@ -1379,7 +1371,7 @@ LogicalResult ConvertSelectionOpToSelect::canCanonicalizeSelection(
   // Starting with version 1.4, Result Type can additionally be a composite type
   // other than a vector."
   bool isScalarOrVector =
-      cast<spirv::SPIRVType>(trueBrStoreOp.getValue().getType())
+      llvm::cast<spirv::SPIRVType>(trueBrStoreOp.getValue().getType())
           .isScalarOrVector();
 
   // Check that each `spirv.Store` uses the same pointer, memory access

@@ -14,10 +14,11 @@
 
 #include "mlir/Dialect/Async/IR/Async.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/Support/Debug.h"
 
 namespace mlir {
-#define GEN_PASS_DEF_ASYNCRUNTIMEREFCOUNTINGOPTPASS
+#define GEN_PASS_DEF_ASYNCRUNTIMEREFCOUNTINGOPT
 #include "mlir/Dialect/Async/Passes.h.inc"
 } // namespace mlir
 
@@ -29,7 +30,7 @@ using namespace mlir::async;
 namespace {
 
 class AsyncRuntimeRefCountingOptPass
-    : public impl::AsyncRuntimeRefCountingOptPassBase<
+    : public impl::AsyncRuntimeRefCountingOptBase<
           AsyncRuntimeRefCountingOptPass> {
 public:
   AsyncRuntimeRefCountingOptPass() = default;
@@ -228,4 +229,8 @@ void AsyncRuntimeRefCountingOptPass::runOnOperation() {
     kv.first->erase();
     kv.second->erase();
   }
+}
+
+std::unique_ptr<Pass> mlir::createAsyncRuntimeRefCountingOptPass() {
+  return std::make_unique<AsyncRuntimeRefCountingOptPass>();
 }

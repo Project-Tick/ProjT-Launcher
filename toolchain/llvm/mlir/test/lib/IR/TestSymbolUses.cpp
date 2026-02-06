@@ -23,7 +23,7 @@ struct SymbolUsesPass
   StringRef getDescription() const final {
     return "Test detection of symbol uses";
   }
-  WalkResult operateOnSymbol(SymbolOpInterface symbol, ModuleOp module,
+  WalkResult operateOnSymbol(Operation *symbol, ModuleOp module,
                              SmallVectorImpl<func::FuncOp> &deadFunctions) {
     // Test computing uses on a non symboltable op.
     std::optional<SymbolTable::UseRange> symbolUses =
@@ -42,7 +42,7 @@ struct SymbolUsesPass
 
     // Test the functionality of symbolKnownUseEmpty.
     if (SymbolTable::symbolKnownUseEmpty(symbol, &module.getBodyRegion())) {
-      func::FuncOp funcSymbol = dyn_cast<func::FuncOp>(symbol.getOperation());
+      func::FuncOp funcSymbol = dyn_cast<func::FuncOp>(symbol);
       if (funcSymbol && funcSymbol.isExternal())
         deadFunctions.push_back(funcSymbol);
 
@@ -51,7 +51,7 @@ struct SymbolUsesPass
     }
 
     // Test the functionality of getSymbolUses.
-    symbolUses = symbol.getSymbolUses(module);
+    symbolUses = SymbolTable::getSymbolUses(symbol, &module.getBodyRegion());
     assert(symbolUses && "expected no unknown operations");
     for (SymbolTable::SymbolUse symbolUse : *symbolUses) {
       // Check that we can resolve back to our symbol.
@@ -59,7 +59,7 @@ struct SymbolUsesPass
               symbolUse.getUser()->getParentOp(), symbolUse.getSymbolRef())) {
         symbolUse.getUser()->emitRemark()
             << "found use of symbol : " << symbolUse.getSymbolRef() << " : "
-            << symbol.getNameAttr();
+            << *symbol->getInherentAttr(SymbolTable::getSymbolAttrName());
       }
     }
     symbol->emitRemark() << "symbol has " << llvm::size(*symbolUses) << " uses";
@@ -71,8 +71,10 @@ struct SymbolUsesPass
 
     // Walk nested symbols.
     SmallVector<func::FuncOp, 4> deadFunctions;
-    module.getBodyRegion().walk([&](SymbolOpInterface nestedOp) {
-      return operateOnSymbol(nestedOp, module, deadFunctions);
+    module.getBodyRegion().walk([&](Operation *nestedOp) {
+      if (isa<SymbolOpInterface>(nestedOp))
+        return operateOnSymbol(nestedOp, module, deadFunctions);
+      return WalkResult::advance();
     });
 
     SymbolTable table(module);

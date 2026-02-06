@@ -15,9 +15,13 @@
 #include "ClangDoc.h"
 #include "Mapper.h"
 #include "Representation.h"
+#include "clang/AST/AST.h"
 #include "clang/AST/ASTConsumer.h"
+#include "clang/AST/ASTContext.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/ASTConsumers.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/FrontendActions.h"
 
 namespace clang {
 namespace doc {

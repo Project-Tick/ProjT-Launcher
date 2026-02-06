@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -917,7 +918,7 @@ public:
   }
 
 protected:
-  inline void addRoot(NodeT *BB) { this->Roots.push_back(BB); }
+  void addRoot(NodeT *BB) { this->Roots.push_back(BB); }
 
   DomTreeNodeBase<NodeT> *createNode(NodeT *BB,
                                      DomTreeNodeBase<NodeT> *IDom = nullptr) {

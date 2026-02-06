@@ -31,7 +31,8 @@ public:
   bool processBlock(MachineBasicBlock &MBB);
   bool runOnMachineFunction(MachineFunction &F) override;
   MachineFunctionProperties getRequiredProperties() const override {
-    return MachineFunctionProperties().setNoVRegs();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::NoVRegs);
   }
 
 private:
@@ -59,7 +60,9 @@ FunctionPass *llvm::createSystemZShortenInstPass(SystemZTargetMachine &TM) {
 }
 
 SystemZShortenInst::SystemZShortenInst()
-    : MachineFunctionPass(ID), TII(nullptr) {}
+    : MachineFunctionPass(ID), TII(nullptr) {
+  initializeSystemZShortenInstPass(*PassRegistry::getPassRegistry());
+}
 
 // Tie operands if MI has become a two-address instruction.
 static void tieOpsIfNeeded(MachineInstr &MI) {

@@ -48,7 +48,7 @@ public:
 };
 
 Error BuildIDRewriter::sectionInitializer() {
-  // Typically, build ID will reside in .note.gnu.build-id section. However,
+  // Typically, build ID will reside in .note.gnu.build-id section. Howerver,
   // a linker script can change the section name and such is the case with
   // the Linux kernel. Hence, we iterate over all note sections.
   for (BinarySection &NoteSection : BC.sections()) {
@@ -78,7 +78,8 @@ Error BuildIDRewriter::sectionInitializer() {
                                  "out of bounds while reading note section: %s",
                                  toString(Cursor.takeError()).c_str());
 
-      if (Type == ELF::NT_GNU_BUILD_ID && Name.starts_with("GNU") && DescSz) {
+      if (Type == ELF::NT_GNU_BUILD_ID && Name.substr(0, 3) == "GNU" &&
+          DescSz) {
         BuildIDSection = NoteSection;
         BuildID = Desc;
         BC.setFileBuildID(getPrintableBuildID(Desc));

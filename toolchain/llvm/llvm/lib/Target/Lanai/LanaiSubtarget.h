@@ -64,8 +64,8 @@ public:
   }
 
 private:
-  LanaiInstrInfo InstrInfo;
   LanaiFrameLowering FrameLowering;
+  LanaiInstrInfo InstrInfo;
   LanaiTargetLowering TLInfo;
   LanaiSelectionDAGInfo TSInfo;
 };

@@ -15,6 +15,7 @@
 
 #include "llvm/Analysis/CallPrinter.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/Analysis/BlockFrequencyInfo.h"
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Analysis/HeatUtils.h"
@@ -69,7 +70,7 @@ public:
 
     for (Function &F : M->getFunctionList()) {
       uint64_t localSumFreq = 0;
-      SmallPtrSet<Function *, 16> Callers;
+      SmallSet<Function *, 16> Callers;
       for (User *U : F.users())
         if (isa<CallInst>(U))
           Callers.insert(cast<Instruction>(U)->getFunction());
@@ -98,7 +99,7 @@ private:
 
       bool FoundParallelEdge = true;
       while (FoundParallelEdge) {
-        SmallPtrSet<Function *, 16> Visited;
+        SmallSet<Function *, 16> Visited;
         FoundParallelEdge = false;
         for (auto CI = Node->begin(), CE = Node->end(); CI != CE; CI++) {
           if (!(Visited.insert(CI->second->getFunction())).second) {

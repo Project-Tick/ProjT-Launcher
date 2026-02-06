@@ -367,13 +367,13 @@ class StdLibraryFunctionsChecker
   };
 
   /// Check null or non-null-ness of an argument that is of pointer type.
-  class NullnessConstraint : public ValueConstraint {
+  class NotNullConstraint : public ValueConstraint {
     using ValueConstraint::ValueConstraint;
     // This variable has a role when we negate the constraint.
     bool CannotBeNull = true;
 
   public:
-    NullnessConstraint(ArgNo ArgN, bool CannotBeNull = true)
+    NotNullConstraint(ArgNo ArgN, bool CannotBeNull = true)
         : ValueConstraint(ArgN), CannotBeNull(CannotBeNull) {}
 
     ProgramStateRef apply(ProgramStateRef State, const CallEvent &Call,
@@ -389,9 +389,9 @@ class StdLibraryFunctionsChecker
                                llvm::raw_ostream &Out) const override;
 
     ValueConstraintPtr negate() const override {
-      NullnessConstraint Tmp(*this);
+      NotNullConstraint Tmp(*this);
       Tmp.CannotBeNull = !this->CannotBeNull;
-      return std::make_shared<NullnessConstraint>(Tmp);
+      return std::make_shared<NotNullConstraint>(Tmp);
     }
 
   protected:
@@ -407,9 +407,9 @@ class StdLibraryFunctionsChecker
   /// The argument is meant to be a buffer that has a size constraint, and it
   /// is allowed to have a NULL value if the size is 0. The size can depend on
   /// 1 or 2 additional arguments, if one of these is 0 the buffer is allowed to
-  /// be NULL. Otherwise, the buffer pointer must be non-null. This is useful
-  /// for functions like `fread` which have this special property.
-  class BufferNullnessConstraint : public ValueConstraint {
+  /// be NULL. This is useful for functions like `fread` which have this special
+  /// property.
+  class NotNullBufferConstraint : public ValueConstraint {
     using ValueConstraint::ValueConstraint;
     ArgNo SizeArg1N;
     std::optional<ArgNo> SizeArg2N;
@@ -417,9 +417,9 @@ class StdLibraryFunctionsChecker
     bool CannotBeNull = true;
 
   public:
-    BufferNullnessConstraint(ArgNo ArgN, ArgNo SizeArg1N,
-                             std::optional<ArgNo> SizeArg2N,
-                             bool CannotBeNull = true)
+    NotNullBufferConstraint(ArgNo ArgN, ArgNo SizeArg1N,
+                            std::optional<ArgNo> SizeArg2N,
+                            bool CannotBeNull = true)
         : ValueConstraint(ArgN), SizeArg1N(SizeArg1N), SizeArg2N(SizeArg2N),
           CannotBeNull(CannotBeNull) {}
 
@@ -436,9 +436,9 @@ class StdLibraryFunctionsChecker
                                llvm::raw_ostream &Out) const override;
 
     ValueConstraintPtr negate() const override {
-      BufferNullnessConstraint Tmp(*this);
+      NotNullBufferConstraint Tmp(*this);
       Tmp.CannotBeNull = !this->CannotBeNull;
-      return std::make_shared<BufferNullnessConstraint>(Tmp);
+      return std::make_shared<NotNullBufferConstraint>(Tmp);
     }
 
   protected:
@@ -537,7 +537,7 @@ class StdLibraryFunctionsChecker
     /// a later bug report created by ErrnoChecker.
     /// Empty return value means that 'errno' related bug may not happen from
     /// the current analyzed function.
-    virtual std::string describe(CheckerContext &C) const { return ""; }
+    virtual const std::string describe(CheckerContext &C) const { return ""; }
 
     virtual ~ErrnoConstraintBase() {}
 
@@ -584,9 +584,11 @@ class StdLibraryFunctionsChecker
                           const Summary &Summary,
                           CheckerContext &C) const override {
       SValBuilder &SVB = C.getSValBuilder();
-      NonLoc ErrnoSVal = SVB.conjureSymbolVal(Call, C.getASTContext().IntTy,
-                                              C.blockCount(), &Tag)
-                             .castAs<NonLoc>();
+      NonLoc ErrnoSVal =
+          SVB.conjureSymbolVal(&Tag, Call.getOriginExpr(),
+                               C.getLocationContext(), C.getASTContext().IntTy,
+                               C.blockCount())
+              .castAs<NonLoc>();
       return errno_modeling::setErrnoForStdFailure(State, C, ErrnoSVal);
     }
   };
@@ -604,7 +606,7 @@ class StdLibraryFunctionsChecker
       return errno_modeling::setErrnoForStdSuccess(State, C);
     }
 
-    std::string describe(CheckerContext &C) const override {
+    const std::string describe(CheckerContext &C) const override {
       return "'errno' becomes undefined after the call";
     }
   };
@@ -619,10 +621,10 @@ class StdLibraryFunctionsChecker
                           const Summary &Summary,
                           CheckerContext &C) const override {
       return errno_modeling::setErrnoStdMustBeChecked(State, C,
-                                                      Call.getCFGElementRef());
+                                                      Call.getOriginExpr());
     }
 
-    std::string describe(CheckerContext &C) const override {
+    const std::string describe(CheckerContext &C) const override {
       return "reading 'errno' is required to find out if the call has failed";
     }
   };
@@ -1149,7 +1151,7 @@ ProgramStateRef StdLibraryFunctionsChecker::ComparisonConstraint::apply(
   return State;
 }
 
-ProgramStateRef StdLibraryFunctionsChecker::NullnessConstraint::apply(
+ProgramStateRef StdLibraryFunctionsChecker::NotNullConstraint::apply(
     ProgramStateRef State, const CallEvent &Call, const Summary &Summary,
     CheckerContext &C) const {
   SVal V = getArgSVal(Call, getArgNo());
@@ -1163,27 +1165,26 @@ ProgramStateRef StdLibraryFunctionsChecker::NullnessConstraint::apply(
   return State->assume(L, CannotBeNull);
 }
 
-void StdLibraryFunctionsChecker::NullnessConstraint::describe(
+void StdLibraryFunctionsChecker::NotNullConstraint::describe(
     DescriptionKind DK, const CallEvent &Call, ProgramStateRef State,
     const Summary &Summary, llvm::raw_ostream &Out) const {
   assert(CannotBeNull &&
-         "'describe' is not implemented when the value must be NULL");
+         "Describe should not be used when the value must be NULL");
   if (DK == Violation)
     Out << "should not be NULL";
   else
     Out << "is not NULL";
 }
 
-bool StdLibraryFunctionsChecker::NullnessConstraint::describeArgumentValue(
+bool StdLibraryFunctionsChecker::NotNullConstraint::describeArgumentValue(
     const CallEvent &Call, ProgramStateRef State, const Summary &Summary,
     llvm::raw_ostream &Out) const {
-  assert(!CannotBeNull && "'describeArgumentValue' is not implemented when the "
-                          "value must be non-NULL");
+  assert(!CannotBeNull && "This function is used when the value is NULL");
   Out << "is NULL";
   return true;
 }
 
-ProgramStateRef StdLibraryFunctionsChecker::BufferNullnessConstraint::apply(
+ProgramStateRef StdLibraryFunctionsChecker::NotNullBufferConstraint::apply(
     ProgramStateRef State, const CallEvent &Call, const Summary &Summary,
     CheckerContext &C) const {
   SVal V = getArgSVal(Call, getArgNo());
@@ -1212,23 +1213,21 @@ ProgramStateRef StdLibraryFunctionsChecker::BufferNullnessConstraint::apply(
   return State->assume(L, CannotBeNull);
 }
 
-void StdLibraryFunctionsChecker::BufferNullnessConstraint::describe(
+void StdLibraryFunctionsChecker::NotNullBufferConstraint::describe(
     DescriptionKind DK, const CallEvent &Call, ProgramStateRef State,
     const Summary &Summary, llvm::raw_ostream &Out) const {
   assert(CannotBeNull &&
-         "'describe' is not implemented when the buffer must be NULL");
+         "Describe should not be used when the value must be NULL");
   if (DK == Violation)
     Out << "should not be NULL";
   else
     Out << "is not NULL";
 }
 
-bool StdLibraryFunctionsChecker::BufferNullnessConstraint::
-    describeArgumentValue(const CallEvent &Call, ProgramStateRef State,
-                          const Summary &Summary,
-                          llvm::raw_ostream &Out) const {
-  assert(!CannotBeNull && "'describeArgumentValue' is not implemented when the "
-                          "buffer must be non-NULL");
+bool StdLibraryFunctionsChecker::NotNullBufferConstraint::describeArgumentValue(
+    const CallEvent &Call, ProgramStateRef State, const Summary &Summary,
+    llvm::raw_ostream &Out) const {
+  assert(!CannotBeNull && "This function is used when the value is NULL");
   Out << "is NULL";
   return true;
 }
@@ -1479,7 +1478,8 @@ bool StdLibraryFunctionsChecker::evalCall(const CallEvent &Call,
     ProgramStateRef State = C.getState();
     const LocationContext *LC = C.getLocationContext();
     const auto *CE = cast<CallExpr>(Call.getOriginExpr());
-    SVal V = C.getSValBuilder().conjureSymbolVal(Call, C.blockCount());
+    SVal V = C.getSValBuilder().conjureSymbolVal(
+        CE, LC, CE->getType().getCanonicalType(), C.blockCount());
     State = State->BindExpr(CE, LC, V);
 
     C.addTransition(State);
@@ -1582,14 +1582,14 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
       if (LookupRes.empty())
         return std::nullopt;
 
-      // Prioritize typedef declarations.
+      // Prioritze typedef declarations.
       // This is needed in case of C struct typedefs. E.g.:
       //   typedef struct FILE FILE;
       // In this case, we have a RecordDecl 'struct FILE' with the name 'FILE'
       // and we have a TypedefDecl with the name 'FILE'.
       for (Decl *D : LookupRes)
         if (auto *TD = dyn_cast<TypedefNameDecl>(D))
-          return ACtx.getCanonicalTypeDeclType(TD);
+          return ACtx.getTypeDeclType(TD).getCanonicalType();
 
       // Find the first TypeDecl.
       // There maybe cases when a function has the same name as a struct.
@@ -1597,7 +1597,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
       //   int stat(const char *restrict path, struct stat *restrict buf);
       for (Decl *D : LookupRes)
         if (auto *TD = dyn_cast<TypeDecl>(D))
-          return ACtx.getCanonicalTypeDeclType(TD);
+          return ACtx.getTypeDeclType(TD).getCanonicalType();
       return std::nullopt;
     }
   } lookupTy(ACtx);
@@ -1666,7 +1666,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
   const QualType IntTy = ACtx.IntTy;
   const QualType UnsignedIntTy = ACtx.UnsignedIntTy;
   const QualType LongTy = ACtx.LongTy;
-  const QualType SizeTyCanonTy = ACtx.getCanonicalSizeType();
+  const QualType SizeTy = ACtx.getSizeType();
 
   const QualType VoidPtrTy = getPointerTy(VoidTy); // void *
   const QualType IntPtrTy = getPointerTy(IntTy);   // int *
@@ -1684,14 +1684,14 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
   const QualType ConstWchar_tPtrTy =
       getPointerTy(getConstTy(WCharTy)); // const wchar_t *
   const QualType ConstVoidPtrRestrictTy = getRestrictTy(ConstVoidPtrTy);
-  const QualType SizePtrTy = getPointerTy(SizeTyCanonTy);
+  const QualType SizePtrTy = getPointerTy(SizeTy);
   const QualType SizePtrRestrictTy = getRestrictTy(SizePtrTy);
 
   const RangeInt IntMax = BVF.getMaxValue(IntTy)->getLimitedValue();
   const RangeInt UnsignedIntMax =
       BVF.getMaxValue(UnsignedIntTy)->getLimitedValue();
   const RangeInt LongMax = BVF.getMaxValue(LongTy)->getLimitedValue();
-  const RangeInt SizeMax = BVF.getMaxValue(SizeTyCanonTy)->getLimitedValue();
+  const RangeInt SizeMax = BVF.getMaxValue(SizeTy)->getLimitedValue();
 
   // Set UCharRangeMax to min of int or uchar maximum value.
   // The C standard states that the arguments of functions like isalpha must
@@ -1792,15 +1792,14 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
   };
   auto LessThanOrEq = BO_LE;
   auto NotNull = [&](ArgNo ArgN) {
-    return std::make_shared<NullnessConstraint>(ArgN);
+    return std::make_shared<NotNullConstraint>(ArgN);
   };
   auto IsNull = [&](ArgNo ArgN) {
-    return std::make_shared<NullnessConstraint>(ArgN, false);
+    return std::make_shared<NotNullConstraint>(ArgN, false);
   };
-  auto NotNullBuffer = [&](ArgNo ArgN, ArgNo SizeArg1N,
-                           std::optional<ArgNo> SizeArg2N = std::nullopt) {
-    return std::make_shared<BufferNullnessConstraint>(ArgN, SizeArg1N,
-                                                      SizeArg2N);
+  auto NotNullBuffer = [&](ArgNo ArgN, ArgNo SizeArg1N, ArgNo SizeArg2N) {
+    return std::make_shared<NotNullBufferConstraint>(ArgN, SizeArg1N,
+                                                     SizeArg2N);
   };
 
   std::optional<QualType> FileTy = lookupTy("FILE");
@@ -2057,19 +2056,18 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
 
   // size_t fread(void *restrict ptr, size_t size, size_t nitems,
   //              FILE *restrict stream);
-  addToFunctionSummaryMap("fread",
-                          Signature(ArgTypes{VoidPtrRestrictTy, SizeTyCanonTy,
-                                             SizeTyCanonTy, FilePtrRestrictTy},
-                                    RetType{SizeTyCanonTy}),
-                          FreadSummary);
+  addToFunctionSummaryMap(
+      "fread",
+      Signature(ArgTypes{VoidPtrRestrictTy, SizeTy, SizeTy, FilePtrRestrictTy},
+                RetType{SizeTy}),
+      FreadSummary);
   // size_t fwrite(const void *restrict ptr, size_t size, size_t nitems,
   //               FILE *restrict stream);
-  addToFunctionSummaryMap(
-      "fwrite",
-      Signature(ArgTypes{ConstVoidPtrRestrictTy, SizeTyCanonTy, SizeTyCanonTy,
-                         FilePtrRestrictTy},
-                RetType{SizeTyCanonTy}),
-      FreadSummary);
+  addToFunctionSummaryMap("fwrite",
+                          Signature(ArgTypes{ConstVoidPtrRestrictTy, SizeTy,
+                                             SizeTy, FilePtrRestrictTy},
+                                    RetType{SizeTy}),
+                          FreadSummary);
 
   std::optional<QualType> Ssize_tTy = lookupTy("ssize_t");
   std::optional<RangeInt> Ssize_tMax = getMaxValue(Ssize_tTy);
@@ -2084,14 +2082,12 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
   // should handle them together with the rest of the POSIX functions.
   // ssize_t read(int fildes, void *buf, size_t nbyte);
   addToFunctionSummaryMap(
-      "read",
-      Signature(ArgTypes{IntTy, VoidPtrTy, SizeTyCanonTy}, RetType{Ssize_tTy}),
+      "read", Signature(ArgTypes{IntTy, VoidPtrTy, SizeTy}, RetType{Ssize_tTy}),
       ReadSummary);
   // ssize_t write(int fildes, const void *buf, size_t nbyte);
   addToFunctionSummaryMap(
       "write",
-      Signature(ArgTypes{IntTy, ConstVoidPtrTy, SizeTyCanonTy},
-                RetType{Ssize_tTy}),
+      Signature(ArgTypes{IntTy, ConstVoidPtrTy, SizeTy}, RetType{Ssize_tTy}),
       ReadSummary);
 
   auto GetLineSummary =
@@ -2621,7 +2617,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     // char *strndup(const char *s, size_t n);
     addToFunctionSummaryMap(
         "strndup",
-        Signature(ArgTypes{ConstCharPtrTy, SizeTyCanonTy}, RetType{CharPtrTy}),
+        Signature(ArgTypes{ConstCharPtrTy, SizeTy}, RetType{CharPtrTy}),
         Summary(NoEvalCall)
             .ArgConstraint(NotNull(ArgNo(0)))
             .ArgConstraint(
@@ -2652,25 +2648,18 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
 
     // char *getcwd(char *buf, size_t size);
     addToFunctionSummaryMap(
-        "getcwd",
-        Signature(ArgTypes{CharPtrTy, SizeTyCanonTy}, RetType{CharPtrTy}),
+        "getcwd", Signature(ArgTypes{CharPtrTy, SizeTy}, RetType{CharPtrTy}),
         Summary(NoEvalCall)
-            .Case({NotNull(0),
-                   ArgumentCondition(1, WithinRange, Range(1, SizeMax)),
+            .Case({ArgumentCondition(1, WithinRange, Range(1, SizeMax)),
                    ReturnValueCondition(BO_EQ, ArgNo(0))},
                   ErrnoMustNotBeChecked, GenericSuccessMsg)
-            .Case({NotNull(0),
-                   ArgumentCondition(1, WithinRange, SingleValue(0)),
+            .Case({ArgumentCondition(1, WithinRange, SingleValue(0)),
                    IsNull(Ret)},
                   ErrnoNEZeroIrrelevant, "Assuming that argument 'size' is 0")
-            .Case({NotNull(0),
-                   ArgumentCondition(1, WithinRange, Range(1, SizeMax)),
+            .Case({ArgumentCondition(1, WithinRange, Range(1, SizeMax)),
                    IsNull(Ret)},
                   ErrnoNEZeroIrrelevant, GenericFailureMsg)
-            .Case({IsNull(0), NotNull(Ret)}, ErrnoMustNotBeChecked,
-                  GenericSuccessMsg)
-            .Case({IsNull(0), IsNull(Ret)}, ErrnoNEZeroIrrelevant,
-                  GenericFailureMsg)
+            .ArgConstraint(NotNull(ArgNo(0)))
             .ArgConstraint(
                 BufferSize(/*Buffer*/ ArgNo(0), /*BufSize*/ ArgNo(1)))
             .ArgConstraint(
@@ -2961,9 +2950,8 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     // FIXME: Improve for errno modeling.
     addToFunctionSummaryMap(
         "mmap",
-        Signature(
-            ArgTypes{VoidPtrTy, SizeTyCanonTy, IntTy, IntTy, IntTy, Off_tTy},
-            RetType{VoidPtrTy}),
+        Signature(ArgTypes{VoidPtrTy, SizeTy, IntTy, IntTy, IntTy, Off_tTy},
+                  RetType{VoidPtrTy}),
         Summary(NoEvalCall)
             .ArgConstraint(ArgumentCondition(1, WithinRange, Range(1, SizeMax)))
             .ArgConstraint(
@@ -2975,9 +2963,8 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     // FIXME: Improve for errno modeling.
     addToFunctionSummaryMap(
         "mmap64",
-        Signature(
-            ArgTypes{VoidPtrTy, SizeTyCanonTy, IntTy, IntTy, IntTy, Off64_tTy},
-            RetType{VoidPtrTy}),
+        Signature(ArgTypes{VoidPtrTy, SizeTy, IntTy, IntTy, IntTy, Off64_tTy},
+                  RetType{VoidPtrTy}),
         Summary(NoEvalCall)
             .ArgConstraint(ArgumentCondition(1, WithinRange, Range(1, SizeMax)))
             .ArgConstraint(
@@ -3008,9 +2995,8 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     //                  size_t bufsize);
     addToFunctionSummaryMap(
         "readlink",
-        Signature(
-            ArgTypes{ConstCharPtrRestrictTy, CharPtrRestrictTy, SizeTyCanonTy},
-            RetType{Ssize_tTy}),
+        Signature(ArgTypes{ConstCharPtrRestrictTy, CharPtrRestrictTy, SizeTy},
+                  RetType{Ssize_tTy}),
         Summary(NoEvalCall)
             .Case({ArgumentCondition(2, WithinRange, Range(1, IntMax)),
                    ReturnValueCondition(LessThanOrEq, ArgNo(2)),
@@ -3032,9 +3018,9 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     //                    char *restrict buf, size_t bufsize);
     addToFunctionSummaryMap(
         "readlinkat",
-        Signature(ArgTypes{IntTy, ConstCharPtrRestrictTy, CharPtrRestrictTy,
-                           SizeTyCanonTy},
-                  RetType{Ssize_tTy}),
+        Signature(
+            ArgTypes{IntTy, ConstCharPtrRestrictTy, CharPtrRestrictTy, SizeTy},
+            RetType{Ssize_tTy}),
         Summary(NoEvalCall)
             .Case({ArgumentCondition(3, WithinRange, Range(1, IntMax)),
                    ReturnValueCondition(LessThanOrEq, ArgNo(3)),
@@ -3275,14 +3261,14 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
             //                  size_t length,
             //                  int flags, struct sockaddr *restrict address,
             //                  socklen_t *restrict address_len);
-            Signature(ArgTypes{IntTy, VoidPtrRestrictTy, SizeTyCanonTy, IntTy,
+            Signature(ArgTypes{IntTy, VoidPtrRestrictTy, SizeTy, IntTy,
                                StructSockaddrPtrRestrictTy,
                                Socklen_tPtrRestrictTy},
                       RetType{Ssize_tTy}),
             Recvfrom))
       addToFunctionSummaryMap(
           "recvfrom",
-          Signature(ArgTypes{IntTy, VoidPtrRestrictTy, SizeTyCanonTy, IntTy,
+          Signature(ArgTypes{IntTy, VoidPtrRestrictTy, SizeTy, IntTy,
                              Irrelevant, Socklen_tPtrRestrictTy},
                     RetType{Ssize_tTy}),
           Recvfrom);
@@ -3304,14 +3290,14 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
             // ssize_t sendto(int socket, const void *message, size_t length,
             //                int flags, const struct sockaddr *dest_addr,
             //                socklen_t dest_len);
-            Signature(ArgTypes{IntTy, ConstVoidPtrTy, SizeTyCanonTy, IntTy,
+            Signature(ArgTypes{IntTy, ConstVoidPtrTy, SizeTy, IntTy,
                                ConstStructSockaddrPtrTy, Socklen_tTy},
                       RetType{Ssize_tTy}),
             Sendto))
       addToFunctionSummaryMap(
           "sendto",
-          Signature(ArgTypes{IntTy, ConstVoidPtrTy, SizeTyCanonTy, IntTy,
-                             Irrelevant, Socklen_tTy},
+          Signature(ArgTypes{IntTy, ConstVoidPtrTy, SizeTy, IntTy, Irrelevant,
+                             Socklen_tTy},
                     RetType{Ssize_tTy}),
           Sendto);
 
@@ -3327,7 +3313,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     // ssize_t recv(int sockfd, void *buf, size_t len, int flags);
     addToFunctionSummaryMap(
         "recv",
-        Signature(ArgTypes{IntTy, VoidPtrTy, SizeTyCanonTy, IntTy},
+        Signature(ArgTypes{IntTy, VoidPtrTy, SizeTy, IntTy},
                   RetType{Ssize_tTy}),
         Summary(NoEvalCall)
             .Case({ReturnValueCondition(LessThanOrEq, ArgNo(2)),
@@ -3379,7 +3365,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
         Summary(NoEvalCall)
             .Case(ReturnsZero, ErrnoMustNotBeChecked, GenericSuccessMsg)
             .Case(ReturnsMinusOne, ErrnoNEZeroIrrelevant, GenericFailureMsg)
-            .ArgConstraint(NotNullBuffer(ArgNo(3), ArgNo(4)))
+            .ArgConstraint(NotNull(ArgNo(3)))
             .ArgConstraint(
                 BufferSize(/*Buffer=*/ArgNo(3), /*BufSize=*/ArgNo(4)))
             .ArgConstraint(
@@ -3402,7 +3388,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     // ssize_t send(int sockfd, const void *buf, size_t len, int flags);
     addToFunctionSummaryMap(
         "send",
-        Signature(ArgTypes{IntTy, ConstVoidPtrTy, SizeTyCanonTy, IntTy},
+        Signature(ArgTypes{IntTy, ConstVoidPtrTy, SizeTy, IntTy},
                   RetType{Ssize_tTy}),
         Summary(NoEvalCall)
             .Case({ReturnValueCondition(LessThanOrEq, ArgNo(2)),
@@ -3690,7 +3676,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     // int pthread_attr_setguardsize(pthread_attr_t *attr, size_t guardsize);
     addToFunctionSummaryMap(
         {"pthread_attr_setstacksize", "pthread_attr_setguardsize"},
-        Signature(ArgTypes{Pthread_attr_tPtrTy, SizeTyCanonTy}, RetType{IntTy}),
+        Signature(ArgTypes{Pthread_attr_tPtrTy, SizeTy}, RetType{IntTy}),
         Summary(NoEvalCall)
             .ArgConstraint(NotNull(ArgNo(0)))
             .ArgConstraint(
@@ -3895,14 +3881,13 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
             .ArgConstraint(NotNull(ArgNo(1))));
     addToFunctionSummaryMap(
         "__buf_size_arg_constraint",
-        Signature(ArgTypes{ConstVoidPtrTy, SizeTyCanonTy}, RetType{IntTy}),
+        Signature(ArgTypes{ConstVoidPtrTy, SizeTy}, RetType{IntTy}),
         Summary(EvalCallAsPure)
             .ArgConstraint(
                 BufferSize(/*Buffer=*/ArgNo(0), /*BufSize=*/ArgNo(1))));
     addToFunctionSummaryMap(
         "__buf_size_arg_constraint_mul",
-        Signature(ArgTypes{ConstVoidPtrTy, SizeTyCanonTy, SizeTyCanonTy},
-                  RetType{IntTy}),
+        Signature(ArgTypes{ConstVoidPtrTy, SizeTy, SizeTy}, RetType{IntTy}),
         Summary(EvalCallAsPure)
             .ArgConstraint(BufferSize(/*Buffer=*/ArgNo(0), /*BufSize=*/ArgNo(1),
                                       /*BufSizeMultiplier=*/ArgNo(2))));

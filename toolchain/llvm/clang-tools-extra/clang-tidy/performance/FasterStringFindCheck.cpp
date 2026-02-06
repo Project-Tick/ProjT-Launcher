@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- FasterStringFindCheck.cpp - clang-tidy----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -17,8 +17,9 @@ using namespace clang::ast_matchers;
 
 namespace clang::tidy::performance {
 
-static std::optional<std::string>
-makeCharacterLiteral(const StringLiteral *Literal) {
+namespace {
+
+std::optional<std::string> makeCharacterLiteral(const StringLiteral *Literal) {
   std::string Result;
   {
     llvm::raw_string_ostream OS(Result);
@@ -41,8 +42,6 @@ makeCharacterLiteral(const StringLiteral *Literal) {
 
   return Result;
 }
-
-namespace {
 
 AST_MATCHER_FUNCTION(ast_matchers::internal::Matcher<Expr>,
                      hasSubstitutedType) {

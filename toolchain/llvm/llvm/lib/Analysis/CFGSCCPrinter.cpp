@@ -8,7 +8,6 @@
 
 #include "llvm/Analysis/CFGSCCPrinter.h"
 #include "llvm/ADT/SCCIterator.h"
-#include "llvm/ADT/StringExtras.h"
 #include "llvm/IR/CFG.h"
 
 using namespace llvm;
@@ -20,9 +19,12 @@ PreservedAnalyses CFGSCCPrinterPass::run(Function &F,
   for (scc_iterator<Function *> SCCI = scc_begin(&F); !SCCI.isAtEnd(); ++SCCI) {
     const std::vector<BasicBlock *> &NextSCC = *SCCI;
     OS << "\nSCC #" << ++SccNum << ": ";
-    ListSeparator LS;
+    bool First = true;
     for (BasicBlock *BB : NextSCC) {
-      OS << LS;
+      if (First)
+        First = false;
+      else
+        OS << ", ";
       BB->printAsOperand(OS, false);
     }
     if (NextSCC.size() == 1 && SCCI.hasCycle())

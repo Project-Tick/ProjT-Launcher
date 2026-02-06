@@ -198,7 +198,7 @@ public:
   /// Diagnostic IDs.
   const llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs;
   /// Options controlling the diagnostic engine.
-  clang::DiagnosticOptions DiagnosticOpts;
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> DiagnosticOpts;
   /// Diagnostic consumer.
   clang::TextDiagnosticPrinter DC;
   /// Diagnostic engine.
@@ -213,8 +213,6 @@ public:
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileMgr;
   /// Source manager.
   llvm::IntrusiveRefCntPtr<clang::SourceManager> SourceMgr;
-  /// Header search options.
-  clang::HeaderSearchOptions HSOpts;
   /// Header search manager.
   std::unique_ptr<clang::HeaderSearch> HeaderInfo;
   // The loaded module map objects.

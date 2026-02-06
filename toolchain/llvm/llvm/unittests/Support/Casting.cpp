@@ -23,12 +23,14 @@ template <typename T> IllegalCast *cast(...) { return nullptr; }
 // with conversion facility
 //
 struct bar {
-  bar() = default;
-  bar(const bar &) = delete;
+  bar() {}
   struct foo *baz();
   struct foo *caz();
   struct foo *daz();
   struct foo *naz();
+
+private:
+  bar(const bar &);
 };
 struct foo {
   foo(const bar &) {}
@@ -36,7 +38,7 @@ struct foo {
 };
 
 struct base {
-  virtual ~base() = default;
+  virtual ~base() {}
 };
 
 struct derived : public base {
@@ -375,12 +377,12 @@ namespace inferred_upcasting {
 class Base {
 public:
   // No classof. We are testing that the upcast is inferred.
-  Base() = default;
+  Base() {}
 };
 
 class Derived : public Base {
 public:
-  Derived() = default;
+  Derived() {}
 };
 
 // Even with no explicit classof() in Base, we should still be able to cast
@@ -529,7 +531,7 @@ TEST(CastingTest, smart_dyn_cast_or_null) {
 #ifndef NDEBUG
 namespace assertion_checks {
 struct Base {
-  virtual ~Base() = default;
+  virtual ~Base() {}
 };
 
 struct Derived : public Base {
@@ -559,47 +561,6 @@ TEST(CastingTest, assertion_check_unique_ptr) {
   EXPECT_DEATH((void)cast<Derived>(std::move(B)),
                "argument of incompatible type")
       << "Invalid cast of const ref did not cause an abort()";
-}
-
-TEST(Casting, StaticCastPredicate) {
-  uint32_t Value = 1;
-
-  static_assert(
-      std::is_same_v<decltype(StaticCastTo<uint64_t>(Value)), uint64_t>);
-}
-
-TEST(Casting, LLVMRTTIPredicates) {
-  struct Base {
-    enum Kind { BK_Base, BK_Derived };
-    const Kind K;
-    Base(Kind K = BK_Base) : K(K) {}
-    Kind getKind() const { return K; }
-    virtual ~Base() = default;
-  };
-
-  struct Derived : Base {
-    Derived() : Base(BK_Derived) {}
-    static bool classof(const Base *B) { return B->getKind() == BK_Derived; }
-    bool Field = false;
-  };
-
-  Base B;
-  Derived D;
-  Base *BD = &D;
-  Base *Null = nullptr;
-
-  // Pointers.
-  EXPECT_EQ(DynCastTo<Derived>(BD), &D);
-  EXPECT_EQ(CastTo<Derived>(BD), &D);
-  EXPECT_EQ(DynCastTo<Derived>(&B), nullptr);
-  EXPECT_EQ(CastIfPresentTo<Derived>(BD), &D);
-  EXPECT_EQ(CastIfPresentTo<Derived>(Null), nullptr);
-  EXPECT_EQ(DynCastIfPresentTo<Derived>(BD), &D);
-  EXPECT_EQ(DynCastIfPresentTo<Derived>(Null), nullptr);
-
-  Base &R = D;
-  CastTo<Derived>(R).Field = true;
-  EXPECT_TRUE(D.Field);
 }
 
 } // end namespace assertion_checks

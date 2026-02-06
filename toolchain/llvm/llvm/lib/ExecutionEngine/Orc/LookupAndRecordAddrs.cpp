@@ -72,10 +72,9 @@ Error lookupAndRecordAddrs(
     return make_error<StringError>("Error in lookup result elements",
                                    inconvertibleErrorCode());
 
-  for (unsigned I = 0; I != Pairs.size(); ++I) {
-    if (Result->front()[I])
-      *Pairs[I].second = Result->front()[I]->getAddress();
-  }
+  for (unsigned I = 0; I != Pairs.size(); ++I)
+    *Pairs[I].second = Result->front()[I].getAddress();
+
   return Error::success();
 }
 

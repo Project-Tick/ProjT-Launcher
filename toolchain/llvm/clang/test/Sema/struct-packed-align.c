@@ -1,6 +1,5 @@
 // RUN: %clang_cc1 %s -fsyntax-only -verify
 // RUN: %clang_cc1 %s -fsyntax-only -triple=x86_64-windows-coff -verify
-// RUN: %clang_cc1 %s -fsyntax-only -triple=x86_64-windows-gnu -verify
 // RUN: %clang_cc1 %s -fsyntax-only -triple=x86_64-scei-ps4 -verify
 // RUN: %clang_cc1 %s -fsyntax-only -triple=x86_64-sie-ps5 -verify
 
@@ -132,7 +131,7 @@ struct nS {
   nt start_lba;
 };
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__declspec) // _MSC_VER is unavailable in cc1.
 // Alignment doesn't affect packing in MS mode.
 extern int n1[sizeof(struct nS) == 16 ? 1 : -1];
 extern int n2[__alignof(struct nS) == 8 ? 1 : -1];
@@ -160,7 +159,7 @@ struct packed_chars {
   char f : 4, g : 8, h : 8, i : 8;
 };
 
-#if defined(_WIN32) || defined(__SCE__)
+#if (defined(_WIN32) || defined(__SCE__)) && !defined(__declspec) // _MSC_VER is unavailable in cc1.
 // On Windows clang uses MSVC compatible layout in this case.
 //
 // Additionally, test for pre-r254596 clang behavior on the PS4/PS5 targets.

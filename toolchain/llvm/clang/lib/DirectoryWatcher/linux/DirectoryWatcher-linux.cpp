@@ -9,14 +9,19 @@
 #include "DirectoryScanner.h"
 #include "clang/DirectoryWatcher/DirectoryWatcher.h"
 
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopeExit.h"
+#include "llvm/Support/AlignOf.h"
 #include "llvm/Support/Errno.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/Path.h"
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include <fcntl.h>
 #include <limits.h>
@@ -191,7 +196,7 @@ void DirectoryWatcherLinux::InotifyPollingLoop() {
     StopWork();
     return;
   }
-  llvm::scope_exit EpollFDGuard([EpollFD]() { close(EpollFD); });
+  auto EpollFDGuard = llvm::make_scope_exit([EpollFD]() { close(EpollFD); });
 
   struct epoll_event EventSpec;
   EventSpec.events = EPOLLIN;

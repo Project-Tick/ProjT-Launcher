@@ -289,6 +289,9 @@ public:
     /// An Expression (optional) that performs the writeback with any required
     /// casting.
     const Expr *WritebackExpr;
+
+    // Size for optional lifetime end on the temporary.
+    llvm::Value *LifetimeSz;
   };
 
   struct CallArgCleanup {
@@ -309,17 +312,21 @@ public:
   /// this, the old CallArgList retains its list of arguments, but must not
   /// be used to emit a call.
   void addFrom(const CallArgList &other) {
-    llvm::append_range(*this, other);
-    llvm::append_range(Writebacks, other.Writebacks);
-    llvm::append_range(CleanupsToDeactivate, other.CleanupsToDeactivate);
+    insert(end(), other.begin(), other.end());
+    Writebacks.insert(Writebacks.end(), other.Writebacks.begin(),
+                      other.Writebacks.end());
+    CleanupsToDeactivate.insert(CleanupsToDeactivate.end(),
+                                other.CleanupsToDeactivate.begin(),
+                                other.CleanupsToDeactivate.end());
     assert(!(StackBase && other.StackBase) && "can't merge stackbases");
     if (!StackBase)
       StackBase = other.StackBase;
   }
 
   void addWriteback(LValue srcLV, Address temporary, llvm::Value *toUse,
-                    const Expr *writebackExpr = nullptr) {
-    Writeback writeback = {srcLV, temporary, toUse, writebackExpr};
+                    const Expr *writebackExpr = nullptr,
+                    llvm::Value *lifetimeSz = nullptr) {
+    Writeback writeback = {srcLV, temporary, toUse, writebackExpr, lifetimeSz};
     Writebacks.push_back(writeback);
   }
 
@@ -410,10 +417,10 @@ public:
 /// This is useful for adding attrs to bitcode modules that you want to link
 /// with but don't control, such as CUDA's libdevice.  When linking with such
 /// a bitcode library, you might want to set e.g. its functions'
-/// "denormal-fp-math" attribute to match the attr of the functions you're
+/// "unsafe-fp-math" attribute to match the attr of the functions you're
 /// codegen'ing.  Otherwise, LLVM will interpret the bitcode module's lack of
-/// denormal-fp-math attrs as tantamount to denormal-fp-math=ieee, and then LLVM
-/// will propagate denormal-fp-math=ieee up to every transitive caller of a
+/// unsafe-fp-math attrs as tantamount to unsafe-fp-math=false, and then LLVM
+/// will propagate unsafe-fp-math=false up to every transitive caller of a
 /// function in the bitcode library!
 ///
 /// With the exception of fast-math attrs, this will only make the attributes
@@ -452,15 +459,6 @@ inline FnInfoOpts &operator&=(FnInfoOpts &A, FnInfoOpts B) {
   A = A & B;
   return A;
 }
-
-struct DisableDebugLocationUpdates {
-  CodeGenFunction &CGF;
-  DisableDebugLocationUpdates(CodeGenFunction &CGF);
-  ~DisableDebugLocationUpdates();
-  DisableDebugLocationUpdates(const DisableDebugLocationUpdates &) = delete;
-  DisableDebugLocationUpdates &
-  operator=(const DisableDebugLocationUpdates &) = delete;
-};
 
 } // end namespace CodeGen
 } // end namespace clang

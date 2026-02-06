@@ -48,8 +48,7 @@ addFrameReference(const MachineInstrBuilder &MIB, int FI) {
 }
 
 XtensaInstrInfo::XtensaInstrInfo(const XtensaSubtarget &STI)
-    : XtensaGenInstrInfo(STI, RI, Xtensa::ADJCALLSTACKDOWN,
-                         Xtensa::ADJCALLSTACKUP),
+    : XtensaGenInstrInfo(Xtensa::ADJCALLSTACKDOWN, Xtensa::ADJCALLSTACKUP),
       RI(STI), STI(STI) {}
 
 Register XtensaInstrInfo::isLoadFromStackSlot(const MachineInstr &MI,
@@ -77,7 +76,7 @@ Register XtensaInstrInfo::isStoreToStackSlot(const MachineInstr &MI,
 }
 
 /// Adjust SP by Amount bytes.
-void XtensaInstrInfo::adjustStackPtr(MCRegister SP, int64_t Amount,
+void XtensaInstrInfo::adjustStackPtr(unsigned SP, int64_t Amount,
                                      MachineBasicBlock &MBB,
                                      MachineBasicBlock::iterator I) const {
   DebugLoc DL = I != MBB.end() ? I->getDebugLoc() : DebugLoc();
@@ -89,64 +88,43 @@ void XtensaInstrInfo::adjustStackPtr(MCRegister SP, int64_t Amount,
   const TargetRegisterClass *RC = &Xtensa::ARRegClass;
 
   // create virtual reg to store immediate
-  MCRegister Reg = RegInfo.createVirtualRegister(RC);
+  unsigned Reg = RegInfo.createVirtualRegister(RC);
 
   if (isInt<8>(Amount)) { // addi sp, sp, amount
     BuildMI(MBB, I, DL, get(Xtensa::ADDI), Reg).addReg(SP).addImm(Amount);
   } else { // Expand immediate that doesn't fit in 8-bit.
-    MCRegister Reg1;
+    unsigned Reg1;
     loadImmediate(MBB, I, &Reg1, Amount);
     BuildMI(MBB, I, DL, get(Xtensa::ADD), Reg)
         .addReg(SP)
         .addReg(Reg1, RegState::Kill);
   }
 
-  if (STI.isWindowedABI()) {
-    BuildMI(MBB, I, DL, get(Xtensa::MOVSP), SP).addReg(Reg, RegState::Kill);
-  } else {
-    BuildMI(MBB, I, DL, get(Xtensa::OR), SP)
-        .addReg(Reg, RegState::Kill)
-        .addReg(Reg, RegState::Kill);
-  }
+  BuildMI(MBB, I, DL, get(Xtensa::OR), SP)
+      .addReg(Reg, RegState::Kill)
+      .addReg(Reg, RegState::Kill);
 }
 
 void XtensaInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                   MachineBasicBlock::iterator MBBI,
-                                  const DebugLoc &DL, Register DestReg,
-                                  Register SrcReg, bool KillSrc,
+                                  const DebugLoc &DL, MCRegister DestReg,
+                                  MCRegister SrcReg, bool KillSrc,
                                   bool RenamableDest, bool RenamableSrc) const {
-  unsigned Opcode;
-
-  // The MOV instruction is not present in core ISA for AR registers,
+  // The MOV instruction is not present in core ISA,
   // so use OR instruction.
-  if (Xtensa::ARRegClass.contains(DestReg, SrcReg)) {
+  if (Xtensa::ARRegClass.contains(DestReg, SrcReg))
     BuildMI(MBB, MBBI, DL, get(Xtensa::OR), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc))
         .addReg(SrcReg, getKillRegState(KillSrc));
-    return;
-  }
-
-  if (STI.hasSingleFloat() && Xtensa::FPRRegClass.contains(SrcReg) &&
-      Xtensa::FPRRegClass.contains(DestReg))
-    Opcode = Xtensa::MOV_S;
-  else if (STI.hasSingleFloat() && Xtensa::FPRRegClass.contains(SrcReg) &&
-           Xtensa::ARRegClass.contains(DestReg))
-    Opcode = Xtensa::RFR;
-  else if (STI.hasSingleFloat() && Xtensa::ARRegClass.contains(SrcReg) &&
-           Xtensa::FPRRegClass.contains(DestReg))
-    Opcode = Xtensa::WFR;
   else
     report_fatal_error("Impossible reg-to-reg copy");
-
-  BuildMI(MBB, MBBI, DL, get(Opcode), DestReg)
-      .addReg(SrcReg, getKillRegState(KillSrc));
 }
 
 void XtensaInstrInfo::storeRegToStackSlot(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI, Register SrcReg,
     bool isKill, int FrameIdx, const TargetRegisterClass *RC,
-
-    Register VReg, MachineInstr::MIFlag Flags) const {
+    const TargetRegisterInfo *TRI, Register VReg,
+    MachineInstr::MIFlag Flags) const {
   DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
   unsigned LoadOpcode, StoreOpcode;
   getLoadStoreOpcodes(RC, LoadOpcode, StoreOpcode, FrameIdx);
@@ -155,12 +133,10 @@ void XtensaInstrInfo::storeRegToStackSlot(
   addFrameReference(MIB, FrameIdx);
 }
 
-void XtensaInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
-                                           MachineBasicBlock::iterator MBBI,
-                                           Register DestReg, int FrameIdx,
-                                           const TargetRegisterClass *RC,
-                                           Register VReg, unsigned SubReg,
-                                           MachineInstr::MIFlag Flags) const {
+void XtensaInstrInfo::loadRegFromStackSlot(
+    MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI, Register DestReg,
+    int FrameIdx, const TargetRegisterClass *RC, const TargetRegisterInfo *TRI,
+    Register VReg, MachineInstr::MIFlag Flags) const {
   DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
   unsigned LoadOpcode, StoreOpcode;
   getLoadStoreOpcodes(RC, LoadOpcode, StoreOpcode, FrameIdx);
@@ -171,20 +147,16 @@ void XtensaInstrInfo::getLoadStoreOpcodes(const TargetRegisterClass *RC,
                                           unsigned &LoadOpcode,
                                           unsigned &StoreOpcode,
                                           int64_t offset) const {
-  if (RC == &Xtensa::ARRegClass) {
-    LoadOpcode = Xtensa::L32I;
-    StoreOpcode = Xtensa::S32I;
-  } else if (RC == &Xtensa::FPRRegClass) {
-    LoadOpcode = Xtensa::LSI;
-    StoreOpcode = Xtensa::SSI;
-  } else {
-    llvm_unreachable("Unsupported regclass to load or store");
-  }
+  assert((RC == &Xtensa::ARRegClass) &&
+         "Unsupported regclass to load or store");
+
+  LoadOpcode = Xtensa::L32I;
+  StoreOpcode = Xtensa::S32I;
 }
 
 void XtensaInstrInfo::loadImmediate(MachineBasicBlock &MBB,
                                     MachineBasicBlock::iterator MBBI,
-                                    MCRegister *Reg, int64_t Value) const {
+                                    unsigned *Reg, int64_t Value) const {
   DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
   MachineRegisterInfo &RegInfo = MBB.getParent()->getRegInfo();
   const TargetRegisterClass *RC = &Xtensa::ARRegClass;
@@ -281,12 +253,6 @@ bool XtensaInstrInfo::reverseBranchCondition(
   case Xtensa::BGEZ:
     Cond[0].setImm(Xtensa::BLTZ);
     return false;
-  case Xtensa::BF:
-    Cond[0].setImm(Xtensa::BT);
-    return false;
-  case Xtensa::BT:
-    Cond[0].setImm(Xtensa::BF);
-    return false;
   default:
     report_fatal_error("Invalid branch condition!");
   }
@@ -319,9 +285,6 @@ XtensaInstrInfo::getBranchDestBlock(const MachineInstr &MI) const {
   case Xtensa::BNEZ:
   case Xtensa::BLTZ:
   case Xtensa::BGEZ:
-    return MI.getOperand(1).getMBB();
-  case Xtensa::BT:
-  case Xtensa::BF:
     return MI.getOperand(1).getMBB();
   default:
     llvm_unreachable("Unknown branch opcode");
@@ -358,10 +321,6 @@ bool XtensaInstrInfo::isBranchOffsetInRange(unsigned BranchOp,
   case Xtensa::BGEZ:
     BrOffset -= 4;
     return isIntN(12, BrOffset);
-  case Xtensa::BT:
-  case Xtensa::BF:
-    BrOffset -= 4;
-    return isIntN(8, BrOffset);
   default:
     llvm_unreachable("Unknown branch opcode");
   }
@@ -546,21 +505,19 @@ void XtensaInstrInfo::insertIndirectBranch(MachineBasicBlock &MBB,
           "function code size is significantly larger than estimated");
 
     storeRegToStackSlot(MBB, L32R, ScavRegister, /*IsKill=*/true, FrameIndex,
-                        &Xtensa::ARRegClass, Register());
+                        &Xtensa::ARRegClass, &RI, Register());
     RI.eliminateFrameIndex(std::prev(L32R.getIterator()),
                            /*SpAdj=*/0, /*FIOperandNum=*/1);
 
     loadRegFromStackSlot(RestoreBB, RestoreBB.end(), ScavRegister, FrameIndex,
-                         &Xtensa::ARRegClass, Register());
+                         &Xtensa::ARRegClass, &RI, Register());
     RI.eliminateFrameIndex(RestoreBB.back(),
                            /*SpAdj=*/0, /*FIOperandNum=*/1);
     JumpToMBB = &RestoreBB;
   }
 
-  unsigned LabelId = XtensaFI->createCPLabelId();
-
   XtensaConstantPoolValue *C = XtensaConstantPoolMBB::Create(
-      MF->getFunction().getContext(), JumpToMBB, LabelId);
+      MF->getFunction().getContext(), JumpToMBB, 0);
   unsigned Idx = ConstantPool->getConstantPoolIndex(C, Align(4));
   L32R.addOperand(MachineOperand::CreateCPI(Idx, 0));
 
@@ -612,10 +569,6 @@ unsigned XtensaInstrInfo::insertConstBranchAtInst(
   case Xtensa::BNEZ:
   case Xtensa::BLTZ:
   case Xtensa::BGEZ:
-    MI = BuildMI(MBB, I, DL, get(BR_C)).addImm(offset).addReg(Cond[1].getReg());
-    break;
-  case Xtensa::BT:
-  case Xtensa::BF:
     MI = BuildMI(MBB, I, DL, get(BR_C)).addImm(offset).addReg(Cond[1].getReg());
     break;
   default:
@@ -678,10 +631,6 @@ unsigned XtensaInstrInfo::insertBranchAtInst(MachineBasicBlock &MBB,
   case Xtensa::BGEZ:
     MI = BuildMI(MBB, I, DL, get(BR_C)).addReg(Cond[1].getReg()).addMBB(TBB);
     break;
-  case Xtensa::BT:
-  case Xtensa::BF:
-    MI = BuildMI(MBB, I, DL, get(BR_C)).addReg(Cond[1].getReg()).addMBB(TBB);
-    break;
   default:
     report_fatal_error("Invalid branch type!");
   }
@@ -726,12 +675,6 @@ bool XtensaInstrInfo::isBranch(const MachineBasicBlock::iterator &MI,
   case Xtensa::BNEZ:
   case Xtensa::BLTZ:
   case Xtensa::BGEZ:
-    Cond[0].setImm(OpCode);
-    Target = &MI->getOperand(1);
-    return true;
-
-  case Xtensa::BT:
-  case Xtensa::BF:
     Cond[0].setImm(OpCode);
     Target = &MI->getOperand(1);
     return true;

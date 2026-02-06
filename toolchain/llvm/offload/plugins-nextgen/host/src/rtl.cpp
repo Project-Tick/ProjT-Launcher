@@ -45,8 +45,6 @@
 // The number of devices in this plugin.
 #define NUM_DEVICES 4
 
-using namespace llvm::offload::debug;
-
 namespace llvm {
 namespace omp {
 namespace target {
@@ -58,7 +56,6 @@ struct GenELF64DeviceTy;
 struct GenELF64PluginTy;
 
 using llvm::sys::DynamicLibrary;
-using namespace error;
 
 /// Class implementing kernel functionalities for GenELF64.
 struct GenELF64KernelTy : public GenericKernelTy {
@@ -77,8 +74,7 @@ struct GenELF64KernelTy : public GenericKernelTy {
 
     // Check that the function pointer is valid.
     if (!Global.getPtr())
-      return Plugin::error(ErrorCode::INVALID_BINARY,
-                           "invalid function for kernel %s", getName());
+      return Plugin::error("Invalid function for kernel %s", getName());
 
     // Save the function pointer.
     Func = (void (*)())Global.getPtr();
@@ -106,22 +102,13 @@ struct GenELF64KernelTy : public GenericKernelTy {
     ffi_status Status = ffi_prep_cif(&Cif, FFI_DEFAULT_ABI, KernelArgs.NumArgs,
                                      &ffi_type_void, ArgTypesPtr);
     if (Status != FFI_OK)
-      return Plugin::error(ErrorCode::UNKNOWN, "error in ffi_prep_cif: %d",
-                           Status);
+      return Plugin::error("Error in ffi_prep_cif: %d", Status);
 
     // Call the kernel function through libffi.
     long Return;
     ffi_call(&Cif, Func, &Return, (void **)LaunchParams.Ptrs);
 
     return Plugin::success();
-  }
-
-  /// Return maximum block size for maximum occupancy
-  Expected<uint64_t> maxGroupSize(GenericDeviceTy &Device,
-                                  uint64_t DynamicMemSize) const override {
-    return Plugin::error(
-        ErrorCode::UNSUPPORTED,
-        "occupancy calculations are not implemented for the host device");
   }
 
 private:
@@ -133,8 +120,8 @@ private:
 struct GenELF64DeviceImageTy : public DeviceImageTy {
   /// Create the GenELF64 image with the id and the target image pointer.
   GenELF64DeviceImageTy(int32_t ImageId, GenericDeviceTy &Device,
-                        std::unique_ptr<MemoryBuffer> &&TgtImage)
-      : DeviceImageTy(ImageId, Device, std::move(TgtImage)), DynLib() {}
+                        const __tgt_device_image *TgtImage)
+      : DeviceImageTy(ImageId, Device, TgtImage), DynLib() {}
 
   /// Getter and setter for the dynamic library.
   DynamicLibrary &getDynamicLibrary() { return DynLib; }
@@ -157,17 +144,6 @@ struct GenELF64DeviceTy : public GenericDeviceTy {
   /// Initialize the device, which is a no-op
   Error initImpl(GenericPluginTy &Plugin) override { return Plugin::success(); }
 
-  /// Unload the binary image
-  ///
-  /// TODO: This currently does nothing, and should be implemented as part of
-  /// broader memory handling logic for this plugin
-  Error unloadBinaryImpl(DeviceImageTy *Image) override {
-    auto Elf = reinterpret_cast<GenELF64DeviceImageTy *>(Image);
-    DynamicLibrary::closeLibrary(Elf->getDynamicLibrary());
-    Plugin.free(Elf);
-    return Plugin::success();
-  }
-
   /// Deinitialize the device, which is a no-op
   Error deinitImpl() override { return Plugin::success(); }
 
@@ -179,8 +155,7 @@ struct GenELF64DeviceTy : public GenericDeviceTy {
     // Allocate and construct the kernel.
     GenELF64KernelTy *GenELF64Kernel = Plugin.allocate<GenELF64KernelTy>();
     if (!GenELF64Kernel)
-      return Plugin::error(ErrorCode::OUT_OF_RESOURCES,
-                           "failed to allocate memory for GenELF64 kernel");
+      return Plugin::error("Failed to allocate memory for GenELF64 kernel");
 
     new (GenELF64Kernel) GenELF64KernelTy(Name);
 
@@ -191,49 +166,44 @@ struct GenELF64DeviceTy : public GenericDeviceTy {
   Error setContext() override { return Plugin::success(); }
 
   /// Load the binary image into the device and allocate an image object.
-  Expected<DeviceImageTy *>
-  loadBinaryImpl(std::unique_ptr<MemoryBuffer> &&TgtImage,
-                 int32_t ImageId) override {
+  Expected<DeviceImageTy *> loadBinaryImpl(const __tgt_device_image *TgtImage,
+                                           int32_t ImageId) override {
     // Allocate and initialize the image object.
     GenELF64DeviceImageTy *Image = Plugin.allocate<GenELF64DeviceImageTy>();
-    new (Image) GenELF64DeviceImageTy(ImageId, *this, std::move(TgtImage));
+    new (Image) GenELF64DeviceImageTy(ImageId, *this, TgtImage);
 
     // Create a temporary file.
     char TmpFileName[] = "/tmp/tmpfile_XXXXXX";
     int TmpFileFd = mkstemp(TmpFileName);
     if (TmpFileFd == -1)
-      return Plugin::error(ErrorCode::HOST_IO,
-                           "failed to create tmpfile for loading target image");
+      return Plugin::error("Failed to create tmpfile for loading target image");
 
     // Open the temporary file.
     FILE *TmpFile = fdopen(TmpFileFd, "wb");
     if (!TmpFile)
-      return Plugin::error(ErrorCode::HOST_IO,
-                           "failed to open tmpfile %s for loading target image",
+      return Plugin::error("Failed to open tmpfile %s for loading target image",
                            TmpFileName);
 
     // Write the image into the temporary file.
     size_t Written = fwrite(Image->getStart(), Image->getSize(), 1, TmpFile);
     if (Written != 1)
-      return Plugin::error(ErrorCode::HOST_IO,
-                           "failed to write target image to tmpfile %s",
+      return Plugin::error("Failed to write target image to tmpfile %s",
                            TmpFileName);
 
     // Close the temporary file.
     int Ret = fclose(TmpFile);
     if (Ret)
-      return Plugin::error(ErrorCode::HOST_IO,
-                           "failed to close tmpfile %s with the target image",
+      return Plugin::error("Failed to close tmpfile %s with the target image",
                            TmpFileName);
 
     // Load the temporary file as a dynamic library.
     std::string ErrMsg;
-    DynamicLibrary DynLib = DynamicLibrary::getLibrary(TmpFileName, &ErrMsg);
+    DynamicLibrary DynLib =
+        DynamicLibrary::getPermanentLibrary(TmpFileName, &ErrMsg);
 
     // Check if the loaded library is valid.
     if (!DynLib.isValid())
-      return Plugin::error(ErrorCode::INVALID_BINARY,
-                           "failed to load target image: %s", ErrMsg.c_str());
+      return Plugin::error("Failed to load target image: %s", ErrMsg.c_str());
 
     // Save a reference of the image's dynamic library.
     Image->setDynamicLibrary(DynLib);
@@ -242,7 +212,7 @@ struct GenELF64DeviceTy : public GenericDeviceTy {
   }
 
   /// Allocate memory. Use std::malloc in all cases.
-  Expected<void *> allocate(size_t Size, void *, TargetAllocTy Kind) override {
+  void *allocate(size_t Size, void *, TargetAllocTy Kind) override {
     if (Size == 0)
       return nullptr;
 
@@ -252,6 +222,7 @@ struct GenELF64DeviceTy : public GenericDeviceTy {
     case TARGET_ALLOC_DEVICE:
     case TARGET_ALLOC_HOST:
     case TARGET_ALLOC_SHARED:
+    case TARGET_ALLOC_DEVICE_NON_BLOCKING:
       MemAlloc = std::malloc(Size);
       break;
     }
@@ -259,9 +230,9 @@ struct GenELF64DeviceTy : public GenericDeviceTy {
   }
 
   /// Free the memory. Use std::free in all cases.
-  Error free(void *TgtPtr, TargetAllocTy Kind) override {
+  int free(void *TgtPtr, TargetAllocTy Kind) override {
     std::free(TgtPtr);
-    return Plugin::success();
+    return OFFLOAD_SUCCESS;
   }
 
   /// This plugin does nothing to lock buffers. Do not return an error, just
@@ -301,36 +272,12 @@ struct GenELF64DeviceTy : public GenericDeviceTy {
                          AsyncInfoWrapperTy &AsyncInfoWrapper) override {
     // This function should never be called because the function
     // GenELF64PluginTy::isDataExchangable() returns false.
-    return Plugin::error(ErrorCode::UNSUPPORTED,
-                         "dataExchangeImpl not supported");
-  }
-
-  /// Insert a data fence between previous data operations and the following
-  /// operations. This is a no-op for Host devices as operations inserted into
-  /// a queue are in-order.
-  Error dataFence(__tgt_async_info *Async) override {
-    return Plugin::success();
-  }
-
-  Error dataFillImpl(void *TgtPtr, const void *PatternPtr, int64_t PatternSize,
-                     int64_t Size,
-                     AsyncInfoWrapperTy &AsyncInfoWrapper) override {
-    if (PatternSize == 1) {
-      std::memset(TgtPtr, *static_cast<const char *>(PatternPtr), Size);
-    } else {
-      for (unsigned int Step = 0; Step < Size; Step += PatternSize) {
-        auto *Dst = static_cast<char *>(TgtPtr) + Step;
-        std::memcpy(Dst, PatternPtr, PatternSize);
-      }
-    }
-
-    return Plugin::success();
+    return Plugin::error("dataExchangeImpl not supported");
   }
 
   /// All functions are already synchronous. No need to do anything on this
   /// synchronization function.
-  Error synchronizeImpl(__tgt_async_info &AsyncInfo,
-                        bool ReleaseQueue) override {
+  Error synchronizeImpl(__tgt_async_info &AsyncInfo) override {
     return Plugin::success();
   }
 
@@ -342,15 +289,13 @@ struct GenELF64DeviceTy : public GenericDeviceTy {
 
   /// This plugin does not support interoperability
   Error initAsyncInfoImpl(AsyncInfoWrapperTy &AsyncInfoWrapper) override {
-    return Plugin::error(ErrorCode::UNSUPPORTED,
-                         "initAsyncInfoImpl not supported");
+    return Plugin::error("initAsyncInfoImpl not supported");
   }
 
-  Error enqueueHostCallImpl(void (*Callback)(void *), void *UserData,
-                            AsyncInfoWrapperTy &AsyncInfo) override {
-    Callback(UserData);
-    return Plugin::success();
-  };
+  /// This plugin does not support interoperability
+  Error initDeviceInfoImpl(__tgt_device_info *DeviceInfo) override {
+    return Plugin::error("initDeviceInfoImpl not supported");
+  }
 
   /// This plugin does not support the event API. Do nothing without failing.
   Error createEventImpl(void **EventPtrStorage) override {
@@ -366,21 +311,17 @@ struct GenELF64DeviceTy : public GenericDeviceTy {
                       AsyncInfoWrapperTy &AsyncInfoWrapper) override {
     return Plugin::success();
   }
-  Expected<bool> hasPendingWorkImpl(AsyncInfoWrapperTy &AsyncInfo) override {
-    return true;
-  }
-  Expected<bool> isEventCompleteImpl(void *Event,
-                                     AsyncInfoWrapperTy &AsyncInfo) override {
-    return true;
-  }
   Error syncEventImpl(void *EventPtr) override { return Plugin::success(); }
 
   /// Print information about the device.
-  Expected<InfoTreeNode> obtainInfoImpl() override {
-    InfoTreeNode Info;
+  Error obtainInfoImpl(InfoQueueTy &Info) override {
     Info.add("Device Type", "Generic-elf-64bit");
-    return Info;
+    return Plugin::success();
   }
+
+  /// This plugin should not setup the device environment or memory pool.
+  virtual bool shouldSetupDeviceEnvironment() const override { return false; };
+  virtual bool shouldSetupDeviceMemoryPool() const override { return false; };
 
   /// Getters and setters for stack size and heap size not relevant.
   Error getDeviceStackSize(uint64_t &Value) override {
@@ -390,6 +331,11 @@ struct GenELF64DeviceTy : public GenericDeviceTy {
   Error setDeviceStackSize(uint64_t Value) override {
     return Plugin::success();
   }
+  Error getDeviceHeapSize(uint64_t &Value) override {
+    Value = 0;
+    return Plugin::success();
+  }
+  Error setDeviceHeapSize(uint64_t Value) override { return Plugin::success(); }
 
 private:
   /// Grid values for Generic ELF64 plugins.
@@ -419,8 +365,7 @@ public:
     // Get the address of the symbol.
     void *Addr = DynLib.getAddressOfSymbol(GlobalName);
     if (Addr == nullptr) {
-      return Plugin::error(ErrorCode::NOT_FOUND, "failed to load global '%s'",
-                           GlobalName);
+      return Plugin::error("Failed to load global '%s'", GlobalName);
     }
 
     // Save the pointer to the symbol.
@@ -442,11 +387,9 @@ struct GenELF64PluginTy final : public GenericPluginTy {
   /// Initialize the plugin and return the number of devices.
   Expected<int32_t> initImpl() override {
 #ifdef USES_DYNAMIC_FFI
-    if (auto Err = Plugin::check(ffi_init(), "failed to initialize libffi"))
+    if (auto Err = Plugin::check(ffi_init(), "Failed to initialize libffi"))
       return std::move(Err);
 #endif
-    ODBG(OLDT_Init) << "GenELF64 plugin detected " << ODBG_IF_LEVEL(2)
-                    << NUM_DEVICES << " " << ODBG_RESET_LEVEL() << "devices";
 
     return NUM_DEVICES;
   }
@@ -512,10 +455,10 @@ struct GenELF64PluginTy final : public GenericPluginTy {
 template <typename... ArgsTy>
 static Error Plugin::check(int32_t Code, const char *ErrMsg, ArgsTy... Args) {
   if (Code == 0)
-    return Plugin::success();
+    return Error::success();
 
-  return Plugin::error(ErrorCode::UNKNOWN, ErrMsg, Args...,
-                       std::to_string(Code).data());
+  return createStringError<ArgsTy..., const char *>(
+      inconvertibleErrorCode(), ErrMsg, Args..., std::to_string(Code).data());
 }
 
 } // namespace plugin

@@ -17,15 +17,6 @@
 #include "src/string/memory_utils/inline_memmove.h"
 #include "src/string/memory_utils/inline_memset.h"
 
-asm(R"(
-.globl _end, __llvm_libc_heap_limit
-
-.bss
-_end:
-  .fill 1024
-__llvm_libc_heap_limit:
-)");
-
 using LIBC_NAMESPACE::FreeListHeap;
 using LIBC_NAMESPACE::inline_memset;
 using LIBC_NAMESPACE::cpp::nullopt;
@@ -147,7 +138,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t remainder) {
 
       // Perform allocation.
       void *ptr = nullptr;
-      size_t alignment = Block::MIN_ALIGN;
+      size_t alignment = alignof(max_align_t);
       switch (alloc_type) {
       case AllocType::MALLOC:
         ptr = heap.allocate(alloc_size);
@@ -172,7 +163,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t remainder) {
                           alloc_size - alloc.size);
           alloc.ptr = ptr;
           alloc.size = alloc_size;
-          alloc.alignment = Block::MIN_ALIGN;
+          alloc.alignment = alignof(max_align_t);
         }
         break;
       }
@@ -194,8 +185,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t remainder) {
 
       if (ptr) {
         // aligned_allocate should automatically apply a minimum alignment.
-        if (alignment < Block::MIN_ALIGN)
-          alignment = Block::MIN_ALIGN;
+        if (alignment < alignof(max_align_t))
+          alignment = alignof(max_align_t);
         // Check alignment.
         if (reinterpret_cast<uintptr_t>(ptr) % alignment)
           __builtin_trap();

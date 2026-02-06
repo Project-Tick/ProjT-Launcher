@@ -4,6 +4,11 @@
 ; RUN: sed 's/iXLen/i64/g' %s | llc -mtriple=riscv64 -mattr=+v,+zvfh \
 ; RUN:   -verify-machineinstrs -target-abi=lp64d | FileCheck %s --check-prefixes=CHECK,RV64
 
+declare <vscale x 1 x i8> @llvm.riscv.vle.nxv1i8(
+  <vscale x 1 x i8>,
+  ptr,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vle_v_tu_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, ptr %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vle_v_tu_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -18,6 +23,13 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vlse(
+  <vscale x 1 x i8>,
+  ptr,
+  iXLen,
+  iXLen);
+
 
 define <vscale x 1 x i8> @intrinsic_vlse_v_tu(<vscale x 1 x i8> %0, ptr %1, iXLen %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vlse_v_tu:
@@ -35,7 +47,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
-define <vscale x 1 x i8> @intrinsic_vleff_v_tu(<vscale x 1 x i8> %0, ptr %1, iXLen %2, ptr %3) nounwind {
+declare { <vscale x 1 x i8>, iXLen } @llvm.riscv.vleff(
+  <vscale x 1 x i8>,
+  ptr,
+  iXLen);
+
+define <vscale x 1 x i8> @intrinsic_vleff_v_tu(<vscale x 1 x i8> %0, ptr %1, iXLen %2, iXLen* %3) nounwind {
 ; RV32-LABEL: intrinsic_vleff_v_tu:
 ; RV32:       # %bb.0: # %entry
 ; RV32-NEXT:    vsetvli zero, a1, e8, mf8, tu, ma
@@ -58,9 +75,15 @@ entry:
     iXLen %2)
   %b = extractvalue { <vscale x 1 x i8>, iXLen } %a, 0
   %c = extractvalue { <vscale x 1 x i8>, iXLen } %a, 1
-  store iXLen %c, ptr %3
+  store iXLen %c, iXLen* %3
   ret <vscale x 1 x i8> %b
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vloxei.nxv1i8(
+  <vscale x 1 x i8>,
+  ptr,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vloxei_v_tu_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, ptr %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vloxei_v_tu_nxv1i8_nxv1i8:
@@ -77,6 +100,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vaadd.rm.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen, iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vaadd_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vaadd_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -95,6 +124,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vaaddu.rm.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen, iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vaaddu_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vaaddu_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -112,6 +147,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vadd.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vadd_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vadd_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -127,6 +168,11 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+declare <vscale x 1 x i8> @llvm.riscv.vand.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vand_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vand_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -143,6 +189,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vasub.rm.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen, iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vasub_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vasub_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -161,6 +213,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vasubu.rm.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen, iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vasubu_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vasubu_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -178,6 +236,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vdiv.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vdiv_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vdiv_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -193,6 +257,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vdivu.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vdivu_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vdivu_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -210,6 +280,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfadd.nxv1f16.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfadd_vv_nxv1f16_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfadd_vv_nxv1f16_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -225,6 +301,12 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfdiv.nxv1f16.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfdiv_vv_nxv1f16_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfdiv_vv_nxv1f16_nxv1f16_nxv1f16:
@@ -242,6 +324,12 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfmax.nxv1f16.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfmax_vv_nxv1f16_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfmax_vv_nxv1f16_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -257,6 +345,12 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfmin.nxv1f16.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfmin_vv_nxv1f16_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfmin_vv_nxv1f16_nxv1f16_nxv1f16:
@@ -274,6 +368,12 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfmul.nxv1f16.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfmul_vv_nxv1f16_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfmul_vv_nxv1f16_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -289,6 +389,12 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfrdiv.nxv1f16.f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  half,
+  iXLen, iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfrdiv_vf_nxv1f16_nxv1f16_f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, half %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfrdiv_vf_nxv1f16_nxv1f16_f16:
@@ -306,6 +412,12 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfsgnj.nxv1f16.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfsgnj_vv_nxv1f16_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfsgnj_vv_nxv1f16_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -321,6 +433,12 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfsgnjn.nxv1f16.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfsgnjn_vv_nxv1f16_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfsgnjn_vv_nxv1f16_nxv1f16_nxv1f16:
@@ -338,6 +456,12 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfsgnjx.nxv1f16.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfsgnjx_vv_nxv1f16_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfsgnjx_vv_nxv1f16_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -353,6 +477,12 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfrsub.nxv1f16.f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  half,
+  iXLen, iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfrsub_vf_nxv1f16_nxv1f16_f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, half %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfrsub_vf_nxv1f16_nxv1f16_f16:
@@ -370,6 +500,12 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfslide1down.nxv1f16.f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  half,
+  iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfslide1down_vf_nxv1f16_nxv1f16_f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, half %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfslide1down_vf_nxv1f16_nxv1f16_f16:
 ; CHECK:       # %bb.0: # %entry
@@ -385,6 +521,12 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfslide1up.nxv1f16.f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  half,
+  iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfslide1up_vf_nxv1f16_nxv1f16_f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, half %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfslide1up_vf_nxv1f16_nxv1f16_f16:
@@ -402,6 +544,12 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x float> @llvm.riscv.vfwsub.nxv1f32.nxv1f16.nxv1f16(
+  <vscale x 1 x float>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x float> @intrinsic_vfwsub_vv_nxv1f32_nxv1f16_nxv1f16(<vscale x 1 x float> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfwsub_vv_nxv1f32_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -418,6 +566,12 @@ entry:
   ret <vscale x 1 x float> %a
 }
 
+declare <vscale x 1 x float> @llvm.riscv.vfwsub.w.nxv1f32.nxv1f16(
+  <vscale x 1 x float>,
+  <vscale x 1 x float>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x float> @intrinsic_vfwsub.w_wv_nxv1f32_nxv1f32_nxv1f16(<vscale x 1 x float> %0, <vscale x 1 x float> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfwsub.w_wv_nxv1f32_nxv1f32_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -433,6 +587,12 @@ entry:
 
   ret <vscale x 1 x float> %a
 }
+
+declare <vscale x 16 x float> @llvm.riscv.vfwsub.w.nxv16f32.nxv16f16(
+  <vscale x 16 x float>,
+  <vscale x 16 x float>,
+  <vscale x 16 x half>,
+  iXLen, iXLen);
 
 define <vscale x 16 x float> @intrinsic_vfwsub.w_wv_nxv16f32_nxv16f32_nxv16f16(<vscale x 16 x float> %0, <vscale x 16 x float> %1, <vscale x 16 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfwsub.w_wv_nxv16f32_nxv16f32_nxv16f16:
@@ -451,6 +611,12 @@ entry:
   ret <vscale x 16 x float> %a
 }
 
+declare <vscale x 1 x float> @llvm.riscv.vfwmul.nxv1f32.nxv1f16.nxv1f16(
+  <vscale x 1 x float>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x float> @intrinsic_vfwmul_vv_nxv1f32_nxv1f16_nxv1f16(<vscale x 1 x float> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfwmul_vv_nxv1f32_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -466,6 +632,12 @@ entry:
 
   ret <vscale x 1 x float> %a
 }
+
+declare <vscale x 1 x float> @llvm.riscv.vfwadd.w.nxv1f32.nxv1f16(
+  <vscale x 1 x float>,
+  <vscale x 1 x float>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
 
 define <vscale x 1 x float> @intrinsic_vfwadd.w_wv_nxv1f32_nxv1f32_nxv1f16(<vscale x 1 x float> %0, <vscale x 1 x float> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfwadd.w_wv_nxv1f32_nxv1f32_nxv1f16:
@@ -483,6 +655,12 @@ entry:
   ret <vscale x 1 x float> %a
 }
 
+declare <vscale x 1 x float> @llvm.riscv.vfwadd.nxv1f32.nxv1f16.nxv1f16(
+  <vscale x 1 x float>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x float> @intrinsic_vfwadd_vv_nxv1f32_nxv1f16_nxv1f16(<vscale x 1 x float> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfwadd_vv_nxv1f32_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -499,6 +677,12 @@ entry:
   ret <vscale x 1 x float> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfsub.nxv1f16.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfsub_vv_nxv1f16_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfsub_vv_nxv1f16_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -514,6 +698,13 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+
+declare <vscale x 1 x i64> @llvm.riscv.vslide1down.nxv1i64(
+  <vscale x 1 x i64>,
+  <vscale x 1 x i64>,
+  i64,
+  iXLen);
 
 define <vscale x 1 x i64> @intrinsic_vslide1down_vx_nxv1i64_nxv1i64_i64(<vscale x 1 x i64> %0, <vscale x 1 x i64> %1, i64 %2, iXLen %3) nounwind {
 ; RV32-LABEL: intrinsic_vslide1down_vx_nxv1i64_nxv1i64_i64:
@@ -541,6 +732,12 @@ entry:
   ret <vscale x 1 x i64> %a
 }
 
+declare <vscale x 1 x i64> @llvm.riscv.vslide1up.nxv1i64.i64(
+  <vscale x 1 x i64>,
+  <vscale x 1 x i64>,
+  i64,
+  iXLen);
+
 define <vscale x 1 x i64> @intrinsic_vslide1up_vx_nxv1i64_nxv1i64_i64(<vscale x 1 x i64> %0, <vscale x 1 x i64> %1, i64 %2, iXLen %3) nounwind {
 ; RV32-LABEL: intrinsic_vslide1up_vx_nxv1i64_nxv1i64_i64:
 ; RV32:       # %bb.0: # %entry
@@ -567,6 +764,12 @@ entry:
   ret <vscale x 1 x i64> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vmax.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vmax_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vmax_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -582,6 +785,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vmaxu.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vmaxu_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vmaxu_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -599,6 +808,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vmin.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vmin_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vmin_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -614,6 +829,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vminu.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vminu_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vminu_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -631,6 +852,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vmul.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vmul_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vmul_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -646,6 +873,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vmulh.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vmulh_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vmulh_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -663,6 +896,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vmulhsu.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vmulhsu_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vmulhsu_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -679,6 +918,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vmulhu.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vmulhu_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vmulhu_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -694,6 +939,13 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vnclip.nxv1i8.nxv1i16.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  iXLen,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vnclip_wv_nxv1i8_nxv1i16_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i16> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vnclip_wv_nxv1i8_nxv1i16_nxv1i8:
@@ -712,6 +964,13 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vnclipu.nxv1i8.nxv1i16.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  iXLen,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vnclipu_wv_nxv1i8_nxv1i16_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i16> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vnclipu_wv_nxv1i8_nxv1i16_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -729,6 +988,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vnsra.nxv1i8.nxv1i16.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vnsra_wv_nxv1i8_nxv1i16_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i16> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vnsra_wv_nxv1i8_nxv1i16_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -744,6 +1009,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vnsrl.nxv1i8.nxv1i16.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vnsrl_wv_nxv1i8_nxv1i16_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i16> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vnsrl_wv_nxv1i8_nxv1i16_nxv1i8:
@@ -761,6 +1032,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vor.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vor_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vor_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -776,6 +1053,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vrem.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vrem_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vrem_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -793,6 +1076,17 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vremu.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+declare <vscale x 1 x i8> @llvm.riscv.vrgather.vv.nxv1i8.i32(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vrgather_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vrgather_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -808,6 +1102,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vrgather.vx.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vrgather_vx_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, iXLen %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vrgather_vx_nxv1i8_nxv1i8:
@@ -825,6 +1125,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vrgatherei16.vv.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i16>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vrgatherei16_vv_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i16> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vrgatherei16_vv_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -840,6 +1146,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i64> @llvm.riscv.vrsub.nxv1i64.i64(
+  <vscale x 1 x i64>,
+  <vscale x 1 x i64>,
+  i64,
+  iXLen);
 
 define <vscale x 1 x i64> @intrinsic_vrsub_vx_nxv1i64_nxv1i64_i64(<vscale x 1 x i64> %0, <vscale x 1 x i64> %1, i64 %2, iXLen %3) nounwind {
 ; RV32-LABEL: intrinsic_vrsub_vx_nxv1i64_nxv1i64_i64:
@@ -870,6 +1182,12 @@ entry:
   ret <vscale x 1 x i64> %a
 }
 
+declare <vscale x 1 x i64> @llvm.riscv.vsadd.nxv1i64.i64(
+  <vscale x 1 x i64>,
+  <vscale x 1 x i64>,
+  i64,
+  iXLen);
+
 define <vscale x 1 x i64> @intrinsic_vsadd_vx_nxv1i64_nxv1i64_i64(<vscale x 1 x i64> %0, <vscale x 1 x i64> %1, i64 %2, iXLen %3) nounwind {
 ; RV32-LABEL: intrinsic_vsadd_vx_nxv1i64_nxv1i64_i64:
 ; RV32:       # %bb.0: # %entry
@@ -899,6 +1217,12 @@ entry:
   ret <vscale x 1 x i64> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vsaddu.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vsaddu_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vsaddu_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -914,6 +1238,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vsll.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vsll_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vsll_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -931,6 +1261,13 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vsmul.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vsmul_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vsmul_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -947,6 +1284,13 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i64> @llvm.riscv.vsmul.nxv1i64.i64(
+  <vscale x 1 x i64>,
+  <vscale x 1 x i64>,
+  i64,
+  iXLen,
+  iXLen);
 
 define <vscale x 1 x i64> @intrinsic_vsmul_vx_nxv1i64_nxv1i64_i64(<vscale x 1 x i64> %0, <vscale x 1 x i64> %1, i64 %2, iXLen %3) nounwind {
 ; RV32-LABEL: intrinsic_vsmul_vx_nxv1i64_nxv1i64_i64:
@@ -979,6 +1323,12 @@ entry:
   ret <vscale x 1 x i64> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vsra.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vsra_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vsra_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -994,6 +1344,11 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+declare <vscale x 1 x i8> @llvm.riscv.vsrl.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vsrl_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vsrl_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -1010,6 +1365,13 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vssra.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vssra_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vssra_vv_nxv1i8_nxv1i8_nxv1i8:
@@ -1028,6 +1390,13 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vssrl.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vssrl_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vssrl_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1045,6 +1414,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vssub.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vssub_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vssub_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1061,6 +1436,12 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vssubu.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vssubu_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vssubu_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1076,6 +1457,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i64> @llvm.riscv.vssub.nxv1i64.i64(
+  <vscale x 1 x i64>,
+  <vscale x 1 x i64>,
+  i64,
+  iXLen);
 
 define <vscale x 1 x i64> @intrinsic_vssub_vx_nxv1i64_nxv1i64_i64(<vscale x 1 x i64> %0, <vscale x 1 x i64> %1, i64 %2, iXLen %3) nounwind {
 ; RV32-LABEL: intrinsic_vssub_vx_nxv1i64_nxv1i64_i64:
@@ -1106,6 +1493,12 @@ entry:
   ret <vscale x 1 x i64> %a
 }
 
+declare <vscale x 1 x i64> @llvm.riscv.vssubu.nxv1i64.i64(
+  <vscale x 1 x i64>,
+  <vscale x 1 x i64>,
+  i64,
+  iXLen);
+
 define <vscale x 1 x i64> @intrinsic_vssubu_vx_nxv1i64_nxv1i64_i64(<vscale x 1 x i64> %0, <vscale x 1 x i64> %1, i64 %2, iXLen %3) nounwind {
 ; RV32-LABEL: intrinsic_vssubu_vx_nxv1i64_nxv1i64_i64:
 ; RV32:       # %bb.0: # %entry
@@ -1135,6 +1528,12 @@ entry:
   ret <vscale x 1 x i64> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vsub.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vsub_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vsub_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1150,6 +1549,12 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i16> @llvm.riscv.vwadd.nxv1i16.nxv1i8.nxv1i8(
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i16> @intrinsic_vwadd_vv_nxv1i16_nxv1i8_nxv1i8(<vscale x 1 x i16> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vwadd_vv_nxv1i16_nxv1i8_nxv1i8:
@@ -1167,6 +1572,12 @@ entry:
   ret <vscale x 1 x i16> %a
 }
 
+declare <vscale x 1 x i16> @llvm.riscv.vwadd.w.nxv1i16.nxv1i8(
+  <vscale x 1 x i16>,
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i16> @intrinsic_vwadd.w_wv_nxv1i16_nxv1i16_nxv1i8(<vscale x 1 x i16> %0, <vscale x 1 x i16> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vwadd.w_wv_nxv1i16_nxv1i16_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1182,6 +1593,12 @@ entry:
 
   ret <vscale x 1 x i16> %a
 }
+
+declare <vscale x 1 x i16> @llvm.riscv.vwaddu.nxv1i16.nxv1i8.nxv1i8(
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i16> @intrinsic_vwaddu_vv_nxv1i16_nxv1i8_nxv1i8(<vscale x 1 x i16> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vwaddu_vv_nxv1i16_nxv1i8_nxv1i8:
@@ -1199,6 +1616,12 @@ entry:
   ret <vscale x 1 x i16> %a
 }
 
+declare <vscale x 1 x i16> @llvm.riscv.vwmul.nxv1i16.nxv1i8.nxv1i8(
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i16> @intrinsic_vwmul_vv_nxv1i16_nxv1i8_nxv1i8(<vscale x 1 x i16> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vwmul_vv_nxv1i16_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1214,6 +1637,12 @@ entry:
 
   ret <vscale x 1 x i16> %a
 }
+
+declare <vscale x 1 x i16> @llvm.riscv.vwmulu.nxv1i16.nxv1i8.nxv1i8(
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i16> @intrinsic_vwmulu_vv_nxv1i16_nxv1i8_nxv1i8(<vscale x 1 x i16> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vwmulu_vv_nxv1i16_nxv1i8_nxv1i8:
@@ -1231,6 +1660,12 @@ entry:
   ret <vscale x 1 x i16> %a
 }
 
+declare <vscale x 1 x i16> @llvm.riscv.vwmulsu.nxv1i16.nxv1i8.nxv1i8(
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i16> @intrinsic_vwmulsu_vv_nxv1i16_nxv1i8_nxv1i8(<vscale x 1 x i16> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vwmulsu_vv_nxv1i16_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1247,6 +1682,12 @@ entry:
   ret <vscale x 1 x i16> %a
 }
 
+declare <vscale x 1 x i16> @llvm.riscv.vwsub.nxv1i16.nxv1i8.nxv1i8(
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i16> @intrinsic_vwsub_vv_nxv1i16_nxv1i8_nxv1i8(<vscale x 1 x i16> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vwsub_vv_nxv1i16_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1262,6 +1703,12 @@ entry:
 
   ret <vscale x 1 x i16> %a
 }
+
+declare <vscale x 1 x i16> @llvm.riscv.vwsub.w.nxv1i16.nxv1i8(
+  <vscale x 1 x i16>,
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i16> @intrinsic_vwsub.w_wv_nxv1i16_nxv1i16_nxv1i8(<vscale x 1 x i16> %0, <vscale x 1 x i16> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vwsub.w_wv_nxv1i16_nxv1i16_nxv1i8:
@@ -1295,6 +1742,12 @@ entry:
   ret <vscale x 1 x i16> %a
 }
 
+declare <vscale x 1 x i16> @llvm.riscv.vwsubu.nxv1i16.nxv1i8.nxv1i8(
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i16> @intrinsic_vwsubu_vv_nxv1i16_nxv1i8_nxv1i8(<vscale x 1 x i16> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vwsubu_vv_nxv1i16_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1310,6 +1763,12 @@ entry:
 
   ret <vscale x 1 x i16> %a
 }
+
+declare <vscale x 1 x i16> @llvm.riscv.vwsubu.w.nxv1i16.nxv1i8(
+  <vscale x 1 x i16>,
+  <vscale x 1 x i16>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i16> @intrinsic_vwsubu.w_wv_nxv1i16_nxv1i16_nxv1i8(<vscale x 1 x i16> %0, <vscale x 1 x i16> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vwsubu.w_wv_nxv1i16_nxv1i16_nxv1i8:
@@ -1327,6 +1786,12 @@ entry:
   ret <vscale x 1 x i16> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vxor.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vxor_vv_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vxor_vv_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1343,6 +1808,11 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i64> @llvm.riscv.vsext.nxv1i64.nxv1i8(
+  <vscale x 1 x i64>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i64> @intrinsic_vsext_vf8_nxv1i64(<vscale x 1 x i64> %0, <vscale x 1 x i8> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vsext_vf8_nxv1i64:
 ; CHECK:       # %bb.0: # %entry
@@ -1357,6 +1827,11 @@ entry:
 
   ret <vscale x 1 x i64> %a
 }
+
+declare <vscale x 1 x i64> @llvm.riscv.vzext.nxv1i64.nxv1i8(
+  <vscale x 1 x i64>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x i64> @intrinsic_vzext_vf8_nxv1i64(<vscale x 1 x i64> %0, <vscale x 1 x i8> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vzext_vf8_nxv1i64:
@@ -1373,6 +1848,11 @@ entry:
   ret <vscale x 1 x i64> %a
 }
 
+declare <vscale x 2 x i16> @llvm.riscv.vfncvt.x.f.w.nxv2i16.nxv2f32(
+  <vscale x 2 x i16>,
+  <vscale x 2 x float>,
+  iXLen, iXLen);
+
 define <vscale x 2 x i16> @intrinsic_vfncvt_x.f.w_nxv2i16_nxv2f32( <vscale x 2 x i16> %0, <vscale x 2 x float> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfncvt_x.f.w_nxv2i16_nxv2f32:
 ; CHECK:       # %bb.0: # %entry
@@ -1388,6 +1868,10 @@ entry:
   ret <vscale x 2 x i16> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vid.nxv1i8(
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vid_v_nxv1i8(<vscale x 1 x i8> %0, iXLen %1) nounwind {
 ; CHECK-LABEL: intrinsic_vid_v_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1401,6 +1885,11 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i16> @llvm.riscv.vfclass.nxv1i16(
+  <vscale x 1 x i16>,
+  <vscale x 1 x half>,
+  iXLen);
 
 define <vscale x 1 x i16> @intrinsic_vfclass_v_nxv1i16_nxv1f16(
 ; CHECK-LABEL: intrinsic_vfclass_v_nxv1i16_nxv1f16:
@@ -1420,6 +1909,11 @@ entry:
   ret <vscale x 1 x i16> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfcvt.f.x.v.nxv1f16.nxv1i16(
+  <vscale x 1 x half>,
+  <vscale x 1 x i16>,
+  iXLen, iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfcvt_f.x.v_nxv1f16_nxv1i16(<vscale x 1 x half> %0, <vscale x 1 x i16> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfcvt_f.x.v_nxv1f16_nxv1i16:
 ; CHECK:       # %bb.0: # %entry
@@ -1434,6 +1928,11 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfcvt.f.xu.v.nxv1f16.nxv1i16(
+  <vscale x 1 x half>,
+  <vscale x 1 x i16>,
+  iXLen, iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfcvt_f.xu.v_nxv1f16_nxv1i16(<vscale x 1 x half> %0, <vscale x 1 x i16> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfcvt_f.xu.v_nxv1f16_nxv1i16:
@@ -1450,6 +1949,11 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x i16> @llvm.riscv.vfcvt.rtz.x.f.v.nxv1i16.nxv1f16(
+  <vscale x 1 x i16>,
+  <vscale x 1 x half>,
+  iXLen);
+
 define <vscale x 1 x i16> @intrinsic_vfcvt_rtz.x.f.v_nxv1i16_nxv1f16(<vscale x 1 x i16> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfcvt_rtz.x.f.v_nxv1i16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -1464,6 +1968,11 @@ entry:
 
   ret <vscale x 1 x i16> %a
 }
+
+declare <vscale x 1 x i16> @llvm.riscv.vfcvt.rtz.xu.f.v.nxv1i16.nxv1f16(
+  <vscale x 1 x i16>,
+  <vscale x 1 x half>,
+  iXLen);
 
 define <vscale x 1 x i16> @intrinsic_vfcvt_rtz.xu.f.v_nxv1i16_nxv1f16(<vscale x 1 x i16> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfcvt_rtz.xu.f.v_nxv1i16_nxv1f16:
@@ -1480,6 +1989,11 @@ entry:
   ret <vscale x 1 x i16> %a
 }
 
+declare <vscale x 1 x i16> @llvm.riscv.vfcvt.x.f.v.nxv1i16.nxv1f16(
+  <vscale x 1 x i16>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x i16> @intrinsic_vfcvt_x.f.v_nxv1i16_nxv1f16(<vscale x 1 x i16> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfcvt_x.f.v_nxv1i16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -1494,6 +2008,11 @@ entry:
 
   ret <vscale x 1 x i16> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfncvt.f.f.w.nxv1f16.nxv1f32(
+  <vscale x 1 x half>,
+  <vscale x 1 x float>,
+  iXLen, iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfncvt_f.f.w_nxv1f16_nxv1f32(<vscale x 1 x half> %0, <vscale x 1 x float> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfncvt_f.f.w_nxv1f16_nxv1f32:
@@ -1510,6 +2029,11 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x i16> @llvm.riscv.vfcvt.xu.f.v.nxv1i16.nxv1f16(
+  <vscale x 1 x i16>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x i16> @intrinsic_vfcvt_xu.f.v_nxv1i16_nxv1f16(<vscale x 1 x i16> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfcvt_xu.f.v_nxv1i16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -1524,6 +2048,11 @@ entry:
 
   ret <vscale x 1 x i16> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfncvt.f.x.w.nxv1f16.nxv1i32(
+  <vscale x 1 x half>,
+  <vscale x 1 x i32>,
+  iXLen, iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfncvt_f.x.w_nxv1f16_nxv1i32(<vscale x 1 x half> %0, <vscale x 1 x i32> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfncvt_f.x.w_nxv1f16_nxv1i32:
@@ -1540,6 +2069,11 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfncvt.f.xu.w.nxv1f16.nxv1i32(
+  <vscale x 1 x half>,
+  <vscale x 1 x i32>,
+  iXLen, iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfncvt_f.xu.w_nxv1f16_nxv1i32(<vscale x 1 x half> %0, <vscale x 1 x i32> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfncvt_f.xu.w_nxv1f16_nxv1i32:
 ; CHECK:       # %bb.0: # %entry
@@ -1554,6 +2088,11 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfncvt.rod.f.f.w.nxv1f16.nxv1f32(
+  <vscale x 1 x half>,
+  <vscale x 1 x float>,
+  iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfncvt_rod.f.f.w_nxv1f16_nxv1f32(<vscale x 1 x half> %0, <vscale x 1 x float> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfncvt_rod.f.f.w_nxv1f16_nxv1f32:
@@ -1570,6 +2109,11 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vfncvt.rtz.x.f.w.nxv1i8.nxv1f16(
+  <vscale x 1 x i8>,
+  <vscale x 1 x half>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vfncvt_rtz.x.f.w_nxv1i8_nxv1f16(<vscale x 1 x i8> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfncvt_rtz.x.f.w_nxv1i8_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -1584,6 +2128,11 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vfncvt.rtz.xu.f.w.nxv1i8.nxv1f16(
+  <vscale x 1 x i8>,
+  <vscale x 1 x half>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vfncvt_rtz.xu.f.w_nxv1i8_nxv1f16(<vscale x 1 x i8> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfncvt_rtz.xu.f.w_nxv1i8_nxv1f16:
@@ -1600,6 +2149,11 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vfncvt.x.f.w.nxv1i8.nxv1f16(
+  <vscale x 1 x i8>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vfncvt_x.f.w_nxv1i8_nxv1f16(<vscale x 1 x i8> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfncvt_x.f.w_nxv1i8_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -1614,6 +2168,11 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vfncvt.xu.f.w.nxv1i8.nxv1f16(
+  <vscale x 1 x i8>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vfncvt_xu.f.w_nxv1i8_nxv1f16(<vscale x 1 x i8> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfncvt_xu.f.w_nxv1i8_nxv1f16:
@@ -1630,6 +2189,11 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfrec7.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfrec7_v_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfrec7_v_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -1644,6 +2208,11 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfrsqrt7.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfrsqrt7_v_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfrsqrt7_v_nxv1f16_nxv1f16:
@@ -1660,6 +2229,11 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfsqrt.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfsqrt_v_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfsqrt_v_nxv1f16_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -1674,6 +2248,11 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x float> @llvm.riscv.vfwcvt.f.f.v.nxv1f32.nxv1f16(
+  <vscale x 1 x float>,
+  <vscale x 1 x half>,
+  iXLen);
 
 define <vscale x 1 x float> @intrinsic_vfwcvt_f.f.v_nxv1f32_nxv1f16(<vscale x 1 x float> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfwcvt_f.f.v_nxv1f32_nxv1f16:
@@ -1690,6 +2269,11 @@ entry:
   ret <vscale x 1 x float> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfwcvt.f.x.v.nxv1f16.nxv1i8(
+  <vscale x 1 x half>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfwcvt_f.x.v_nxv1f16_nxv1i8(<vscale x 1 x half> %0, <vscale x 1 x i8> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfwcvt_f.x.v_nxv1f16_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1704,6 +2288,11 @@ entry:
 
   ret <vscale x 1 x half> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vfwcvt.f.xu.v.nxv1f16.nxv1i8(
+  <vscale x 1 x half>,
+  <vscale x 1 x i8>,
+  iXLen);
 
 define <vscale x 1 x half> @intrinsic_vfwcvt_f.xu.v_nxv1f16_nxv1i8(<vscale x 1 x half> %0, <vscale x 1 x i8> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfwcvt_f.xu.v_nxv1f16_nxv1i8:
@@ -1720,6 +2309,11 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x i32> @llvm.riscv.vfwcvt.rtz.x.f.v.nxv1i32.nxv1f16(
+  <vscale x 1 x i32>,
+  <vscale x 1 x half>,
+  iXLen);
+
 define <vscale x 1 x i32> @intrinsic_vfwcvt_rtz.x.f.v_nxv1i32_nxv1f16(<vscale x 1 x i32> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfwcvt_rtz.x.f.v_nxv1i32_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -1734,6 +2328,11 @@ entry:
 
   ret <vscale x 1 x i32> %a
 }
+
+declare <vscale x 1 x i32> @llvm.riscv.vfwcvt.rtz.xu.f.v.nxv1i32.nxv1f16(
+  <vscale x 1 x i32>,
+  <vscale x 1 x half>,
+  iXLen);
 
 define <vscale x 1 x i32> @intrinsic_vfwcvt_rtz.xu.f.v_nxv1i32_nxv1f16(<vscale x 1 x i32> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfwcvt_rtz.xu.f.v_nxv1i32_nxv1f16:
@@ -1750,6 +2349,11 @@ entry:
   ret <vscale x 1 x i32> %a
 }
 
+declare <vscale x 1 x i32> @llvm.riscv.vfwcvt.x.f.v.nxv1i32.nxv1f16(
+  <vscale x 1 x i32>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
+
 define <vscale x 1 x i32> @intrinsic_vfwcvt_x.f.v_nxv1i32_nxv1f16(<vscale x 1 x i32> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfwcvt_x.f.v_nxv1i32_nxv1f16:
 ; CHECK:       # %bb.0: # %entry
@@ -1764,6 +2368,11 @@ entry:
 
   ret <vscale x 1 x i32> %a
 }
+
+declare <vscale x 1 x i32> @llvm.riscv.vfwcvt.xu.f.v.nxv1i32.nxv1f16(
+  <vscale x 1 x i32>,
+  <vscale x 1 x half>,
+  iXLen, iXLen);
 
 define <vscale x 1 x i32> @intrinsic_vfwcvt_xu.f.v_nxv1i32_nxv1f16(<vscale x 1 x i32> %0, <vscale x 1 x half> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfwcvt_xu.f.v_nxv1i32_nxv1f16:
@@ -1780,6 +2389,11 @@ entry:
   ret <vscale x 1 x i32> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.viota.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i1>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_viota_m_nxv1i8_nxv1i1(<vscale x 1 x i8> %0, <vscale x 1 x i1> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_viota_m_nxv1i8_nxv1i1:
 ; CHECK:       # %bb.0: # %entry
@@ -1794,6 +2408,13 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 1 x i8> @llvm.riscv.vadc.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i1>,
+  iXLen);
 
 define <vscale x 1 x i8> @intrinsic_vadc_vvm_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, <vscale x 1 x i1> %3, iXLen %4) nounwind {
 ; CHECK-LABEL: intrinsic_vadc_vvm_nxv1i8_nxv1i8_nxv1i8:
@@ -1812,6 +2433,13 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vsbc.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i1>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vsbc_vvm_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, <vscale x 1 x i1> %3, iXLen %4) nounwind {
 ; CHECK-LABEL: intrinsic_vsbc_vvm_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1829,6 +2457,13 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vmerge.nxv1i8.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  <vscale x 1 x i1>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vmerge_vvm_nxv1i8_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, <vscale x 1 x i8> %2, <vscale x 1 x i1> %3, iXLen %4) nounwind {
 ; CHECK-LABEL: intrinsic_vmerge_vvm_nxv1i8_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1845,6 +2480,13 @@ entry:
 
   ret <vscale x 1 x i8> %a
 }
+
+declare <vscale x 8 x i64> @llvm.riscv.vmerge.nxv8i64.i64(
+  <vscale x 8 x i64>,
+  <vscale x 8 x i64>,
+  i64,
+  <vscale x 8 x i1>,
+  iXLen);
 
 define <vscale x 8 x i64> @intrinsic_vmerge_vxm_nxv8i64_nxv8i64_i64(<vscale x 8 x i64> %0, <vscale x 8 x i64> %1, i64 %2, <vscale x 8 x i1> %3, iXLen %4) nounwind {
 ; RV32-LABEL: intrinsic_vmerge_vxm_nxv8i64_nxv8i64_i64:
@@ -1910,6 +2552,13 @@ entry:
   ret <vscale x 8 x i64> %a
 }
 
+declare <vscale x 8 x double> @llvm.riscv.vfmerge.nxv8f64.f64(
+  <vscale x 8 x double>,
+  <vscale x 8 x double>,
+  double,
+  <vscale x 8 x i1>,
+  iXLen);
+
 define <vscale x 8 x double> @intrinsic_vfmerge_vfm_nxv8f64_nxv8f64_f64(<vscale x 8 x double> %0, <vscale x 8 x double> %1, double %2, <vscale x 8 x i1> %3, iXLen %4) nounwind {
 ; CHECK-LABEL: intrinsic_vfmerge_vfm_nxv8f64_nxv8f64_f64:
 ; CHECK:       # %bb.0: # %entry
@@ -1926,6 +2575,13 @@ entry:
 
   ret <vscale x 8 x double> %a
 }
+
+declare <vscale x 1 x half> @llvm.riscv.vmerge.nxv1f16.nxv1f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  <vscale x 1 x i1>,
+  iXLen);
 
 define <vscale x 1 x half> @intrinsic_vmerge_vvm_nxv1f16_nxv1f16_nxv1f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x half> %2, <vscale x 1 x i1> %3, iXLen %4) nounwind {
 ; CHECK-LABEL: intrinsic_vmerge_vvm_nxv1f16_nxv1f16_nxv1f16:
@@ -1944,6 +2600,13 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x half> @llvm.riscv.vfmerge.nxv1f16.f16(
+  <vscale x 1 x half>,
+  <vscale x 1 x half>,
+  half,
+  <vscale x 1 x i1>,
+  iXLen);
+
 define <vscale x 1 x half> @intrinsic_vfmerge_vzm_nxv1f16_nxv1f16_f16(<vscale x 1 x half> %0, <vscale x 1 x half> %1, <vscale x 1 x i1> %2, iXLen %3) nounwind {
 ; CHECK-LABEL: intrinsic_vfmerge_vzm_nxv1f16_nxv1f16_f16:
 ; CHECK:       # %bb.0: # %entry
@@ -1961,6 +2624,11 @@ entry:
   ret <vscale x 1 x half> %a
 }
 
+declare <vscale x 1 x i8> @llvm.riscv.vmv.v.v.nxv1i8(
+  <vscale x 1 x i8>,
+  <vscale x 1 x i8>,
+  iXLen);
+
 define <vscale x 1 x i8> @intrinsic_vmv.v.v_v_nxv1i8_nxv1i8(<vscale x 1 x i8> %0, <vscale x 1 x i8> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.v.v_v_nxv1i8_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -1976,6 +2644,11 @@ entry:
   ret <vscale x 1 x i8> %a
 }
 
+declare <vscale x 1 x float> @llvm.riscv.vmv.v.v.nxv1f32(
+  <vscale x 1 x float>,
+  <vscale x 1 x float>,
+  iXLen);
+
 define <vscale x 1 x float> @intrinsic_vmv.v.v_v_nxv1f32_nxv1f32(<vscale x 1 x float> %0, <vscale x 1 x float> %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.v.v_v_nxv1f32_nxv1f32:
 ; CHECK:       # %bb.0: # %entry
@@ -1990,6 +2663,11 @@ entry:
 
   ret <vscale x 1 x float> %a
 }
+
+declare <vscale x 1 x i64> @llvm.riscv.vmv.v.x.nxv1i64(
+  <vscale x 1 x i64>,
+  i64,
+  iXLen);
 
 define <vscale x 1 x i64> @intrinsic_vmv.v.x_x_nxv1i64(<vscale x 1 x i64> %0, i64 %1, iXLen %2) nounwind {
 ; RV32-LABEL: intrinsic_vmv.v.x_x_nxv1i64:
@@ -2016,6 +2694,11 @@ entry:
 
   ret <vscale x 1 x i64> %a
 }
+
+declare <vscale x 1 x float> @llvm.riscv.vfmv.v.f.nxv1f32(
+  <vscale x 1 x float>,
+  float,
+  iXLen);
 
 define <vscale x 1 x float> @intrinsic_vfmv.v.f_f_nxv1f32(<vscale x 1 x float> %0, float %1, iXLen %2) nounwind {
 ; CHECK-LABEL: intrinsic_vfmv.v.f_f_nxv1f32:

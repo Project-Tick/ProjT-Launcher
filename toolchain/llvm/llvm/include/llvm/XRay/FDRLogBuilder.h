@@ -10,7 +10,8 @@
 
 #include "llvm/XRay/FDRRecords.h"
 
-namespace llvm::xray {
+namespace llvm {
+namespace xray {
 
 /// The LogBuilder class allows for creating ad-hoc collections of records
 /// through the `add<...>(...)` function. An example use of this API is in
@@ -33,6 +34,7 @@ public:
   std::vector<std::unique_ptr<Record>> consume() { return std::move(Records); }
 };
 
-} // namespace llvm::xray
+} // namespace xray
+} // namespace llvm
 
 #endif // LLVM_XRAY_FDRLOGBUILDER_H

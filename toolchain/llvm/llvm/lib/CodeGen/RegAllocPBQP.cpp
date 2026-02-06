@@ -135,11 +135,13 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override;
 
   MachineFunctionProperties getRequiredProperties() const override {
-    return MachineFunctionProperties().setNoPHIs();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::NoPHIs);
   }
 
   MachineFunctionProperties getClearedProperties() const override {
-    return MachineFunctionProperties().setIsSSA();
+    return MachineFunctionProperties().set(
+      MachineFunctionProperties::Property::IsSSA);
   }
 
 private:

@@ -10,8 +10,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "clang/AST/ASTContext.h"
-#include "clang/AST/AttrIterator.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/ParentMap.h"
 #include "clang/AST/StmtCXX.h"
@@ -24,7 +22,6 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/SVals.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/Sequence.h"
-#include "llvm/Support/Casting.h"
 #include <optional>
 
 using namespace clang;
@@ -71,30 +68,15 @@ void ExprEngine::performTrivialCopy(NodeBuilder &Bldr, ExplodedNode *Pred,
   Bldr.takeNodes(Pred);
 
   assert(ThisRD);
+  SVal V = Call.getArgSVal(0);
 
-  if (!ThisRD->isEmpty()) {
-    SVal V = Call.getArgSVal(0);
-    const Expr *VExpr = Call.getArgExpr(0);
-
-    // If the value being copied is not unknown, load from its location to get
-    // an aggregate rvalue.
-    if (std::optional<Loc> L = V.getAs<Loc>())
-      V = Pred->getState()->getSVal(*L);
-    else
-      assert(V.isUnknownOrUndef());
-
-    ExplodedNodeSet Tmp;
-    evalLocation(Tmp, CallExpr, VExpr, Pred, Pred->getState(), V,
-                 /*isLoad=*/true);
-    for (ExplodedNode *N : Tmp)
-      evalBind(Dst, CallExpr, N, ThisVal, V, !AlwaysReturnsLValue);
-  } else {
-    // We can't copy empty classes because of empty base class optimization.
-    // In that case, copying the empty base class subobject would overwrite the
-    // object that it overlaps with - so let's not do that.
-    // See issue-157467.cpp for an example.
-    Dst.Add(Pred);
-  }
+  // If the value being copied is not unknown, load from its location to get
+  // an aggregate rvalue.
+  if (std::optional<Loc> L = V.getAs<Loc>())
+    V = Pred->getState()->getSVal(*L);
+  else
+    assert(V.isUnknownOrUndef());
+  evalBind(Dst, CallExpr, Pred, ThisVal, V, true);
 
   PostStmt PS(CallExpr, LCtx);
   for (ExplodedNode *N : Dst) {
@@ -253,8 +235,8 @@ SVal ExprEngine::computeObjectUnderConstruction(
         assert(RetE && "Void returns should not have a construction context");
         QualType ReturnTy = RetE->getType();
         QualType RegionTy = ACtx.getPointerType(ReturnTy);
-        return SVB.conjureSymbolVal(&TopLevelSymRegionTag, getCFGElementRef(),
-                                    SFC, RegionTy, currBldrCtx->blockCount());
+        return SVB.conjureSymbolVal(&TopLevelSymRegionTag, RetE, SFC, RegionTy,
+                                    currBldrCtx->blockCount());
       }
       llvm_unreachable("Unhandled return value construction context!");
     }
@@ -726,11 +708,7 @@ void ExprEngine::handleConstructor(const Expr *E,
         // actually make things worse. Placement new makes this tricky as well,
         // since it's then possible to be initializing one part of a multi-
         // dimensional array.
-        const CXXRecordDecl *TargetHeldRecord =
-            dyn_cast_or_null<CXXRecordDecl>(CE->getType()->getAsRecordDecl());
-
-        if (!TargetHeldRecord || !TargetHeldRecord->isEmpty())
-          State = State->bindDefaultZero(Target, LCtx);
+        State = State->bindDefaultZero(Target, LCtx);
       }
 
       Bldr.generateNode(CE, N, State, /*tag=*/nullptr,
@@ -909,14 +887,7 @@ void ExprEngine::VisitCXXNewAllocatorCall(const CXXNewExpr *CNE,
   ExplodedNodeSet DstPostCall;
   StmtNodeBuilder CallBldr(DstPreCall, DstPostCall, *currBldrCtx);
   for (ExplodedNode *I : DstPreCall) {
-    // Operator new calls (CXXNewExpr) are intentionally not eval-called,
-    // because it does not make sense to eval-call user-provided functions.
-    // 1) If the new operator can be inlined, then don't prevent it from
-    //    inlining by having an eval-call of that operator.
-    // 2) If it can't be inlined, then the default conservative modeling
-    //    is what we want anyway.
-    // So the best is to not allow eval-calling CXXNewExprs from checkers.
-    // Checkers can provide their pre/post-call callbacks if needed.
+    // FIXME: Provide evalCall for checkers?
     defaultEvalCall(CallBldr, I, *Call);
   }
   // If the call is inlined, DstPostCall will be empty and we bail out now.
@@ -997,11 +968,10 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   // a custom global allocator.
   if (symVal.isUnknown()) {
     if (IsStandardGlobalOpNewFunction)
-      symVal = svalBuilder.getConjuredHeapSymbolVal(getCFGElementRef(), LCtx,
-                                                    CNE->getType(), blockCount);
+      symVal = svalBuilder.getConjuredHeapSymbolVal(CNE, LCtx, blockCount);
     else
-      symVal = svalBuilder.conjureSymbolVal(
-          /*symbolTag=*/nullptr, getCFGElementRef(), LCtx, blockCount);
+      symVal = svalBuilder.conjureSymbolVal(nullptr, CNE, LCtx, CNE->getType(),
+                                            blockCount);
   }
 
   CallEventManager &CEMgr = getStateManager().getCallEventManager();
@@ -1013,7 +983,7 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
     // FIXME: Once we figure out how we want allocators to work,
     // we should be using the usual pre-/(default-)eval-/post-call checkers
     // here.
-    State = Call->invalidateRegions(blockCount, State);
+    State = Call->invalidateRegions(blockCount);
     if (!State)
       return;
 
@@ -1117,10 +1087,6 @@ void ExprEngine::VisitCXXDeleteExpr(const CXXDeleteExpr *CDE,
   if (AMgr.getAnalyzerOptions().MayInlineCXXAllocator) {
     StmtNodeBuilder Bldr(DstPreCall, DstPostCall, *currBldrCtx);
     for (ExplodedNode *I : DstPreCall) {
-      // Intentionally either inline or conservative eval-call the operator
-      // delete, but avoid triggering an eval-call event for checkers.
-      // As detailed at handling CXXNewExprs, in short, because it does not
-      // really make sense to eval-call user-provided functions.
       defaultEvalCall(Bldr, I, *Call);
     }
   } else {
@@ -1138,7 +1104,7 @@ void ExprEngine::VisitCXXCatchStmt(const CXXCatchStmt *CS, ExplodedNode *Pred,
   }
 
   const LocationContext *LCtx = Pred->getLocationContext();
-  SVal V = svalBuilder.conjureSymbolVal(getCFGElementRef(), LCtx, VD->getType(),
+  SVal V = svalBuilder.conjureSymbolVal(CS, LCtx, VD->getType(),
                                         currBldrCtx->blockCount());
   ProgramStateRef state = Pred->getState();
   state = state->bindLoc(state->getLValue(VD, LCtx), V, LCtx);
@@ -1235,21 +1201,4 @@ void ExprEngine::VisitLambdaExpr(const LambdaExpr *LE, ExplodedNode *Pred,
 
   // FIXME: Move all post/pre visits to ::Visit().
   getCheckerManager().runCheckersForPostStmt(Dst, Tmp, LE, *this);
-}
-
-void ExprEngine::VisitAttributedStmt(const AttributedStmt *A,
-                                     ExplodedNode *Pred, ExplodedNodeSet &Dst) {
-  ExplodedNodeSet CheckerPreStmt;
-  getCheckerManager().runCheckersForPreStmt(CheckerPreStmt, Pred, A, *this);
-
-  ExplodedNodeSet EvalSet;
-  StmtNodeBuilder Bldr(CheckerPreStmt, EvalSet, *currBldrCtx);
-
-  for (const auto *Attr : getSpecificAttrs<CXXAssumeAttr>(A->getAttrs())) {
-    for (ExplodedNode *N : CheckerPreStmt) {
-      Visit(Attr->getAssumption()->IgnoreParens(), N, EvalSet);
-    }
-  }
-
-  getCheckerManager().runCheckersForPostStmt(Dst, EvalSet, A, *this);
 }

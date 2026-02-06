@@ -6,9 +6,7 @@
 #
 #===------------------------------------------------------------------------===#
 
-# REQUIRES: target={{x86_64-.+}}
-# UNSUPPORTED: target={{.*-windows.*}}
-# UNSUPPORTED: target={{.*-apple.*}}
+# REQUIRES: target={{x86_64-.+-linux-gnu}}
 
 # Inline assembly isn't supported by Memory Sanitizer
 # UNSUPPORTED: msan
@@ -40,7 +38,6 @@
 
     SIZEOF_UNWIND_EXCEPTION = 32
 
-    .att_syntax
     .text
 callback:
     xorl    %eax, %eax

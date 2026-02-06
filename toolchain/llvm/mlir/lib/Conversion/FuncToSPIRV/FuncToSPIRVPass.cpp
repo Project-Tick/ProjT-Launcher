@@ -17,7 +17,7 @@
 #include "mlir/Dialect/SPIRV/Transforms/SPIRVConversion.h"
 
 namespace mlir {
-#define GEN_PASS_DEF_CONVERTFUNCTOSPIRVPASS
+#define GEN_PASS_DEF_CONVERTFUNCTOSPIRV
 #include "mlir/Conversion/Passes.h.inc"
 } // namespace mlir
 
@@ -26,8 +26,7 @@ using namespace mlir;
 namespace {
 /// A pass converting MLIR Func operations into the SPIR-V dialect.
 class ConvertFuncToSPIRVPass
-    : public impl::ConvertFuncToSPIRVPassBase<ConvertFuncToSPIRVPass> {
-  using Base::Base;
+    : public impl::ConvertFuncToSPIRVBase<ConvertFuncToSPIRVPass> {
   void runOnOperation() override;
 };
 } // namespace
@@ -42,7 +41,6 @@ void ConvertFuncToSPIRVPass::runOnOperation() {
 
   SPIRVConversionOptions options;
   options.emulateLT32BitScalarTypes = this->emulateLT32BitScalarTypes;
-  options.emulateUnsupportedFloatTypes = this->emulateUnsupportedFloatTypes;
   SPIRVTypeConverter typeConverter(targetAttr, options);
 
   RewritePatternSet patterns(context);
@@ -51,4 +49,8 @@ void ConvertFuncToSPIRVPass::runOnOperation() {
 
   if (failed(applyPartialConversion(op, *target, std::move(patterns))))
     return signalPassFailure();
+}
+
+std::unique_ptr<OperationPass<>> mlir::createConvertFuncToSPIRVPass() {
+  return std::make_unique<ConvertFuncToSPIRVPass>();
 }

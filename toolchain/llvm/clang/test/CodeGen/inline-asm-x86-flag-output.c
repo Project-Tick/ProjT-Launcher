@@ -389,7 +389,7 @@ int test_assume_boolean_flag(long nr, volatile long *addr) {
       : "=@cca"(x), "=@ccae"(y), "=m"(*(volatile long *)(addr))
       : "r"(nr)
       : "cc");
-  if (x && y)
+  if (x)
     return 0;
   return 1;
 }

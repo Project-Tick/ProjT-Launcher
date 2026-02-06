@@ -2,15 +2,15 @@
 // RUN: mlir-translate -mlir-to-cpp -declare-variables-at-top %s | FileCheck --match-full-lines %s -check-prefix=CPP-DECLTOP
 
 func.func @test_for(%arg0 : index, %arg1 : index, %arg2 : index) {
-  %lb = emitc.expression %arg0, %arg1 : (index, index) -> index {
+  %lb = emitc.expression : index {
     %a = emitc.add %arg0, %arg1 : (index, index) -> index
     emitc.yield %a : index
   }
-  %ub = emitc.expression %arg1, %arg2 : (index, index) -> index {
+  %ub = emitc.expression : index {
     %a = emitc.mul %arg1, %arg2 : (index, index) -> index
     emitc.yield %a : index
   }
-  %step = emitc.expression %arg0, %arg2 : (index, index) -> index {
+  %step = emitc.expression : index {
     %a = emitc.div %arg0, %arg2 : (index, index) -> index
     emitc.yield %a : index
   }

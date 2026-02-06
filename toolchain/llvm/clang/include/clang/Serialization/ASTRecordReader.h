@@ -32,6 +32,7 @@ class OMPChildren;
 class ASTRecordReader
     : public serialization::DataStreamBasicReader<ASTRecordReader> {
   using ModuleFile = serialization::ModuleFile;
+  using LocSeq = SourceLocationSequence;
 
   ASTReader *Reader;
   ModuleFile *F;
@@ -159,7 +160,7 @@ public:
   TypeSourceInfo *readTypeSourceInfo();
 
   /// Reads the location information for a type.
-  void readTypeLoc(TypeLoc TL);
+  void readTypeLoc(TypeLoc TL, LocSeq *Seq = nullptr);
 
   /// Map a local type ID within a given AST file to a global type ID.
   serialization::TypeID getGlobalTypeID(serialization::TypeID LocalID) const {
@@ -213,8 +214,6 @@ public:
 
   TypeCoupledDeclRefInfo readTypeCoupledDeclRefInfo();
 
-  SpirvOperand readHLSLSpirvOperand();
-
   /// Read a declaration name, advancing Idx.
   // DeclarationName readDeclarationName(); (inherited)
   DeclarationNameLoc readDeclarationNameLoc(DeclarationName Name);
@@ -223,7 +222,7 @@ public:
   void readQualifierInfo(QualifierInfo &Info);
 
   /// Return a nested name specifier, advancing Idx.
-  // NestedNameSpecifier readNestedNameSpecifier(); (inherited)
+  // NestedNameSpecifier *readNestedNameSpecifier(); (inherited)
 
   NestedNameSpecifierLoc readNestedNameSpecifierLoc();
 
@@ -279,20 +278,17 @@ public:
   /// Read an OpenACC clause, advancing Idx.
   OpenACCClause *readOpenACCClause();
 
-  /// Read a list of OpenACC clauses into the passed SmallVector, during
-  /// statement reading.
+  /// Read a list of OpenACC clauses into the passed SmallVector.
   void readOpenACCClauseList(MutableArrayRef<const OpenACCClause *> Clauses);
 
-  void readOpenACCRoutineDeclAttr(OpenACCRoutineDeclAttr *A);
-
   /// Read a source location, advancing Idx.
-  SourceLocation readSourceLocation() {
-    return Reader->ReadSourceLocation(*F, Record, Idx);
+  SourceLocation readSourceLocation(LocSeq *Seq = nullptr) {
+    return Reader->ReadSourceLocation(*F, Record, Idx, Seq);
   }
 
   /// Read a source range, advancing Idx.
-  SourceRange readSourceRange() {
-    return Reader->ReadSourceRange(*F, Record, Idx);
+  SourceRange readSourceRange(LocSeq *Seq = nullptr) {
+    return Reader->ReadSourceRange(*F, Record, Idx, Seq);
   }
 
   /// Read an arbitrary constant value, advancing Idx.
@@ -318,10 +314,6 @@ public:
   /// Read a 64-bit unsigned value; required to satisfy BasicReader.
   uint64_t readUInt64() {
     return readInt();
-  }
-
-  UnsignedOrNone readUnsignedOrNone() {
-    return UnsignedOrNone::fromInternalRepresentation(unsigned(readInt()));
   }
 
   /// Read a string, advancing Idx.

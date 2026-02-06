@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- HeaderGuard.cpp - clang-tidy -------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -10,6 +10,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Tooling/Tooling.h"
 #include "llvm/Support/Path.h"
 
 namespace clang::tidy::utils {
@@ -32,11 +33,11 @@ public:
                    FileID PrevFID) override {
     // Record all files we enter. We'll need them to diagnose headers without
     // guards.
-    const SourceManager &SM = PP->getSourceManager();
+    SourceManager &SM = PP->getSourceManager();
     if (Reason == EnterFile && FileType == SrcMgr::C_User) {
       if (OptionalFileEntryRef FE =
               SM.getFileEntryRefForID(SM.getFileID(Loc))) {
-        const std::string FileName = cleanPath(FE->getName());
+        std::string FileName = cleanPath(FE->getName());
         Files[FileName] = *FE;
       }
     }
@@ -48,8 +49,8 @@ public:
       return;
 
     // Record #ifndefs that succeeded. We also need the Location of the Name.
-    Ifndefs[MacroNameTok.getIdentifierInfo()] = {Loc,
-                                                 MacroNameTok.getLocation()};
+    Ifndefs[MacroNameTok.getIdentifierInfo()] =
+        std::make_pair(Loc, MacroNameTok.getLocation());
   }
 
   void MacroDefined(const Token &MacroNameTok,
@@ -66,7 +67,7 @@ public:
 
   void EndOfMainFile() override {
     // Now that we have all this information from the preprocessor, use it!
-    const SourceManager &SM = PP->getSourceManager();
+    SourceManager &SM = PP->getSourceManager();
 
     for (const auto &MacroEntry : Macros) {
       const MacroInfo *MI = MacroEntry.second;
@@ -79,7 +80,7 @@ public:
 
       OptionalFileEntryRef FE =
           SM.getFileEntryRefForID(SM.getFileID(MI->getDefinitionLoc()));
-      const std::string FileName = cleanPath(FE->getName());
+      std::string FileName = cleanPath(FE->getName());
       Files.erase(FileName);
 
       // See if we should check and fix this header guard.
@@ -87,17 +88,18 @@ public:
         continue;
 
       // Look up Locations for this guard.
-      const auto &Locs = Ifndefs[MacroEntry.first.getIdentifierInfo()];
-      const SourceLocation Ifndef = Locs.second;
-      const SourceLocation Define = MacroEntry.first.getLocation();
-      const SourceLocation EndIf = EndIfs[Locs.first];
+      SourceLocation Ifndef =
+          Ifndefs[MacroEntry.first.getIdentifierInfo()].second;
+      SourceLocation Define = MacroEntry.first.getLocation();
+      SourceLocation EndIf =
+          EndIfs[Ifndefs[MacroEntry.first.getIdentifierInfo()].first];
 
       // If the macro Name is not equal to what we can compute, correct it in
       // the #ifndef and #define.
-      const StringRef CurHeaderGuard =
+      StringRef CurHeaderGuard =
           MacroEntry.first.getIdentifierInfo()->getName();
       std::vector<FixItHint> FixIts;
-      const std::string NewGuard = checkHeaderGuardDefinition(
+      std::string NewGuard = checkHeaderGuardDefinition(
           Ifndef, Define, EndIf, FileName, CurHeaderGuard, FixIts);
 
       // Now look at the #endif. We want a comment with the header guard. Fix it
@@ -129,7 +131,7 @@ public:
     if (!EndIf.isValid())
       return false;
     const char *EndIfData = PP->getSourceManager().getCharacterData(EndIf);
-    const size_t EndIfLen = std::strcspn(EndIfData, "\r\n");
+    size_t EndIfLen = std::strcspn(EndIfData, "\r\n");
     if (EndIfLenPtr)
       *EndIfLenPtr = EndIfLen;
 
@@ -137,12 +139,12 @@ public:
     EndIfStr = EndIfStr.substr(EndIfStr.find_first_not_of("#endif \t"));
 
     // Give up if there's an escaped newline.
-    const size_t FindEscapedNewline = EndIfStr.find_last_not_of(' ');
+    size_t FindEscapedNewline = EndIfStr.find_last_not_of(' ');
     if (FindEscapedNewline != StringRef::npos &&
         EndIfStr[FindEscapedNewline] == '\\')
       return false;
 
-    const bool IsLineComment =
+    bool IsLineComment =
         EndIfStr.consume_front("//") ||
         (EndIfStr.consume_front("/*") && EndIfStr.consume_back("*/"));
     if (!IsLineComment)
@@ -162,7 +164,7 @@ public:
                                          std::vector<FixItHint> &FixIts) {
     std::string CPPVar = Check->getHeaderGuard(FileName, CurHeaderGuard);
     CPPVar = Check->sanitizeHeaderGuard(CPPVar);
-    const std::string CPPVarUnder = CPPVar + '_';
+    std::string CPPVarUnder = CPPVar + '_';
 
     // Allow a trailing underscore if and only if we don't have to change the
     // endif comment too.
@@ -203,20 +205,19 @@ public:
     // fix-its to add the guard.
     // TODO: Insert the guard after top comments.
     for (const auto &FE : Files) {
-      const StringRef FileName = FE.getKey();
+      StringRef FileName = FE.getKey();
       if (!Check->shouldSuggestToAddHeaderGuard(FileName))
         continue;
 
-      const SourceManager &SM = PP->getSourceManager();
-      const FileID FID = SM.translateFile(FE.getValue());
-      const SourceLocation StartLoc = SM.getLocForStartOfFile(FID);
+      SourceManager &SM = PP->getSourceManager();
+      FileID FID = SM.translateFile(FE.getValue());
+      SourceLocation StartLoc = SM.getLocForStartOfFile(FID);
       if (StartLoc.isInvalid())
         continue;
 
       std::string CPPVar = Check->getHeaderGuard(FileName);
       CPPVar = Check->sanitizeHeaderGuard(CPPVar);
-      const std::string CPPVarUnder =
-          CPPVar + '_'; // Allow a trailing underscore.
+      std::string CPPVarUnder = CPPVar + '_'; // Allow a trailing underscore.
       // If there's a macro with a name that follows the header guard convention
       // but was not recognized by the preprocessor as a header guard there must
       // be code outside of the guarded area. Emit a plain warning without
@@ -224,8 +225,8 @@ public:
       // FIXME: Can we move it into the right spot?
       bool SeenMacro = false;
       for (const auto &MacroEntry : Macros) {
-        const StringRef Name = MacroEntry.first.getIdentifierInfo()->getName();
-        const SourceLocation DefineLoc = MacroEntry.first.getLocation();
+        StringRef Name = MacroEntry.first.getIdentifierInfo()->getName();
+        SourceLocation DefineLoc = MacroEntry.first.getLocation();
         if ((Name == CPPVar || Name == CPPVarUnder) &&
             SM.isWrittenInSameFile(StartLoc, DefineLoc)) {
           Check->diag(DefineLoc, "code/includes outside of area guarded by "
@@ -240,9 +241,7 @@ public:
 
       Check->diag(StartLoc, "header is missing header guard")
           << FixItHint::CreateInsertion(
-                 StartLoc,
-                 (Twine("#ifndef ") + CPPVar + "\n#define " + CPPVar + "\n\n")
-                     .str())
+                 StartLoc, "#ifndef " + CPPVar + "\n#define " + CPPVar + "\n\n")
           << FixItHint::CreateInsertion(
                  SM.getLocForEndOfFile(FID),
                  Check->shouldSuggestEndifComment(FileName)
@@ -261,10 +260,9 @@ private:
 
   std::vector<std::pair<Token, const MacroInfo *>> Macros;
   llvm::StringMap<const FileEntry *> Files;
-  llvm::DenseMap<const IdentifierInfo *,
-                 std::pair<SourceLocation, SourceLocation>>
+  std::map<const IdentifierInfo *, std::pair<SourceLocation, SourceLocation>>
       Ifndefs;
-  llvm::DenseMap<SourceLocation, SourceLocation> EndIfs;
+  std::map<SourceLocation, SourceLocation> EndIfs;
 
   Preprocessor *PP;
   HeaderGuardCheck *Check;

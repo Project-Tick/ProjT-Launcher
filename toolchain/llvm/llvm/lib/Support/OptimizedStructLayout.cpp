@@ -82,7 +82,7 @@ llvm::performOptimizedStructLayout(MutableArrayRef<Field> Fields) {
 #ifndef NDEBUG
     checkValidLayout(Fields, Size, MaxAlign);
 #endif
-    return {Size, MaxAlign};
+    return std::make_pair(Size, MaxAlign);
   }
 
   // Walk over the flexible-offset fields, tracking MaxAlign and
@@ -164,7 +164,7 @@ llvm::performOptimizedStructLayout(MutableArrayRef<Field> Fields) {
 #ifndef NDEBUG
       checkValidLayout(Fields, LastEnd, MaxAlign);
 #endif
-      return {LastEnd, MaxAlign};
+      return std::make_pair(LastEnd, MaxAlign);
     }
   }
 
@@ -452,5 +452,5 @@ llvm::performOptimizedStructLayout(MutableArrayRef<Field> Fields) {
   checkValidLayout(Fields, LastEnd, MaxAlign);
 #endif
 
-  return {LastEnd, MaxAlign};
+  return std::make_pair(LastEnd, MaxAlign);
 }

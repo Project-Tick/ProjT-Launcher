@@ -115,11 +115,6 @@ class ShLexer:
             c = self.eat()
             if c == delim:
                 return str
-            # LLDB uses "$" at the start of global variable names; it should
-            # not be escaped nor dropped.
-            elif c == "\\" and self.look() == "$" and delim == '"':
-                c = self.eat()
-                str += c
             elif c == "\\" and delim == '"':
                 # Inside a '"' quoted string, '\\' only escapes the quote
                 # character and backslash, otherwise it is preserved.

@@ -37,8 +37,6 @@
 #include "X86Subtarget.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
-#include "llvm/IR/Analysis.h"
-#include "llvm/IR/PassManager.h"
 
 #define AVOIDCALL_DESC "X86 avoid trailing call pass"
 #define AVOIDCALL_NAME "x86-avoid-trailing-call"
@@ -48,9 +46,9 @@
 using namespace llvm;
 
 namespace {
-class X86AvoidTrailingCallLegacyPass : public MachineFunctionPass {
+class X86AvoidTrailingCallPass : public MachineFunctionPass {
 public:
-  X86AvoidTrailingCallLegacyPass() : MachineFunctionPass(ID) {}
+  X86AvoidTrailingCallPass() : MachineFunctionPass(ID) {}
 
   bool runOnMachineFunction(MachineFunction &MF) override;
 
@@ -61,14 +59,13 @@ private:
 };
 } // end anonymous namespace
 
-char X86AvoidTrailingCallLegacyPass::ID = 0;
+char X86AvoidTrailingCallPass::ID = 0;
 
-FunctionPass *llvm::createX86AvoidTrailingCallLegacyPass() {
-  return new X86AvoidTrailingCallLegacyPass();
+FunctionPass *llvm::createX86AvoidTrailingCallPass() {
+  return new X86AvoidTrailingCallPass();
 }
 
-INITIALIZE_PASS(X86AvoidTrailingCallLegacyPass, AVOIDCALL_NAME, AVOIDCALL_DESC,
-                false, false)
+INITIALIZE_PASS(X86AvoidTrailingCallPass, AVOIDCALL_NAME, AVOIDCALL_DESC, false, false)
 
 // A real instruction is a non-meta, non-pseudo instruction.  Some pseudos
 // expand to nothing, and some expand to code. This logic conservatively assumes
@@ -82,7 +79,7 @@ static bool isCallInstruction(const MachineInstr &MI) {
   return MI.isCall() && !MI.isReturn();
 }
 
-bool UpdatedOnX86AvoidTrailingCallPass(MachineFunction &MF) {
+bool X86AvoidTrailingCallPass::runOnMachineFunction(MachineFunction &MF) {
   const X86Subtarget &STI = MF.getSubtarget<X86Subtarget>();
   const X86InstrInfo &TII = *STI.getInstrInfo();
   assert(STI.isTargetWin64() && "pass only runs on Win64");
@@ -136,18 +133,4 @@ bool UpdatedOnX86AvoidTrailingCallPass(MachineFunction &MF) {
   }
 
   return Changed;
-}
-
-bool X86AvoidTrailingCallLegacyPass::runOnMachineFunction(MachineFunction &MF) {
-  return UpdatedOnX86AvoidTrailingCallPass(MF);
-}
-
-PreservedAnalyses
-X86AvoidTrailingCallPass::run(MachineFunction &MF,
-                              MachineFunctionAnalysisManager &MFAM) {
-  bool Changed = UpdatedOnX86AvoidTrailingCallPass(MF);
-  if (!Changed)
-    return PreservedAnalyses::all();
-
-  return getMachineFunctionPassPreservedAnalyses().preserveSet<CFGAnalyses>();
 }

@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "SystemZInstPrinterCommon.h"
-#include "MCTargetDesc/SystemZMCAsmInfo.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCRegister.h"
@@ -53,7 +52,7 @@ void SystemZInstPrinterCommon::printOperand(const MCOperand &MO,
   } else if (MO.isImm())
     markup(O, Markup::Immediate) << MO.getImm();
   else if (MO.isExpr())
-    MAI->printExpr(O, *MO.getExpr());
+    MO.getExpr()->print(O, MAI);
   else
     llvm_unreachable("Invalid operand");
 }
@@ -67,7 +66,7 @@ void SystemZInstPrinterCommon::printUImmOperand(const MCInst *MI, int OpNum,
                                                 raw_ostream &O) {
   const MCOperand &MO = MI->getOperand(OpNum);
   if (MO.isExpr()) {
-    MAI.printExpr(O, *MO.getExpr());
+    O << *MO.getExpr();
     return;
   }
   uint64_t Value = static_cast<uint64_t>(MO.getImm());
@@ -80,7 +79,7 @@ void SystemZInstPrinterCommon::printSImmOperand(const MCInst *MI, int OpNum,
                                                 raw_ostream &O) {
   const MCOperand &MO = MI->getOperand(OpNum);
   if (MO.isExpr()) {
-    MAI.printExpr(O, *MO.getExpr());
+    O << *MO.getExpr();
     return;
   }
   int64_t Value = MI->getOperand(OpNum).getImm();
@@ -148,54 +147,38 @@ void SystemZInstPrinterCommon::printU48ImmOperand(const MCInst *MI, int OpNum,
   printUImmOperand<48>(MI, OpNum, O);
 }
 
-void SystemZInstPrinterCommon::printPCRelOperand(const MCInst *MI,
-                                                 uint64_t Address, int OpNum,
+void SystemZInstPrinterCommon::printPCRelOperand(const MCInst *MI, int OpNum,
                                                  raw_ostream &O) {
   const MCOperand &MO = MI->getOperand(OpNum);
-
-  // If the label has already been resolved to an immediate offset (say, when
-  // we're running the disassembler), just print the immediate.
   if (MO.isImm()) {
-    int64_t Offset = MO.getImm();
-    if (PrintBranchImmAsAddress)
-      markup(O, Markup::Target) << formatHex(Address + Offset);
-    else
-      markup(O, Markup::Immediate) << formatImm(Offset);
-    return;
-  }
-
-  // If the branch target is simply an address then print it in hex.
-  const MCConstantExpr *BranchTarget = dyn_cast<MCConstantExpr>(MO.getExpr());
-  int64_t TargetAddress;
-  if (BranchTarget && BranchTarget->evaluateAsAbsolute(TargetAddress)) {
-    markup(O, Markup::Target) << formatHex((uint64_t)TargetAddress);
-  } else {
-    // Otherwise, just print the expression.
-    MAI.printExpr(O, *MO.getExpr());
-  }
+    WithMarkup M = markup(O, Markup::Immediate);
+    O << "0x";
+    O.write_hex(MO.getImm());
+  } else
+    MO.getExpr()->print(O, &MAI);
 }
 
 void SystemZInstPrinterCommon::printPCRelTLSOperand(const MCInst *MI,
                                                     uint64_t Address, int OpNum,
                                                     raw_ostream &O) {
   // Output the PC-relative operand.
-  printPCRelOperand(MI, Address, OpNum, O);
+  printPCRelOperand(MI, OpNum, O);
 
   // Output the TLS marker if present.
   if ((unsigned)OpNum + 1 < MI->getNumOperands()) {
     const MCOperand &MO = MI->getOperand(OpNum + 1);
-    const MCSymbolRefExpr &RefExp = cast<MCSymbolRefExpr>(*MO.getExpr());
-    switch (RefExp.getSpecifier()) {
-    case SystemZ::S_TLSGD:
+    const MCSymbolRefExpr &refExp = cast<MCSymbolRefExpr>(*MO.getExpr());
+    switch (refExp.getKind()) {
+    case MCSymbolRefExpr::VK_TLSGD:
       O << ":tls_gdcall:";
       break;
-    case SystemZ::S_TLSLDM:
+    case MCSymbolRefExpr::VK_TLSLDM:
       O << ":tls_ldcall:";
       break;
     default:
       llvm_unreachable("Unexpected symbol kind");
     }
-    O << RefExp.getSymbol().getName();
+    O << refExp.getSymbol().getName();
   }
 }
 
@@ -218,7 +201,7 @@ void SystemZInstPrinterCommon::printBDXAddrOperand(const MCInst *MI, int OpNum,
 
 void SystemZInstPrinterCommon::printBDLAddrOperand(const MCInst *MI, int OpNum,
                                                    raw_ostream &O) {
-  MCRegister Base = MI->getOperand(OpNum).getReg();
+  unsigned Base = MI->getOperand(OpNum).getReg();
   const MCOperand &DispMO = MI->getOperand(OpNum + 1);
   uint64_t Length = MI->getOperand(OpNum + 2).getImm();
   printOperand(DispMO, &MAI, O);
@@ -232,9 +215,9 @@ void SystemZInstPrinterCommon::printBDLAddrOperand(const MCInst *MI, int OpNum,
 
 void SystemZInstPrinterCommon::printBDRAddrOperand(const MCInst *MI, int OpNum,
                                                    raw_ostream &O) {
-  MCRegister Base = MI->getOperand(OpNum).getReg();
+  unsigned Base = MI->getOperand(OpNum).getReg();
   const MCOperand &DispMO = MI->getOperand(OpNum + 1);
-  MCRegister Length = MI->getOperand(OpNum + 2).getReg();
+  unsigned Length = MI->getOperand(OpNum + 2).getReg();
   printOperand(DispMO, &MAI, O);
   O << "(";
   printRegName(O, Length);

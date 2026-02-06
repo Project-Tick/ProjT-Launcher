@@ -24,7 +24,7 @@ namespace interp {
 /// Base class for stack frames, shared between VM and walker.
 class Frame {
 public:
-  virtual ~Frame() = default;
+  virtual ~Frame();
 
   /// Generates a human-readable description of the call site.
   virtual void describe(llvm::raw_ostream &OS) const = 0;

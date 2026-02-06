@@ -62,7 +62,7 @@ public:
   static std::unique_ptr<WorkListMaintainer>
   create(Level Lvl, WorkListTy &WorkList, MachineRegisterInfo &MRI);
 
-  ~WorkListMaintainer() override = default;
+  virtual ~WorkListMaintainer() = default;
 
   void reportFullyCreatedInstrs() {
     LLVM_DEBUG({
@@ -95,7 +95,7 @@ public:
   WorkListMaintainerImpl(WorkListTy &WorkList, MachineRegisterInfo &MRI)
       : WorkList(WorkList), MRI(MRI) {}
 
-  ~WorkListMaintainerImpl() override = default;
+  virtual ~WorkListMaintainerImpl() = default;
 
   void reset() override {
     DeferList.clear();
@@ -222,7 +222,7 @@ Combiner::WorkListMaintainer::create(Level Lvl, WorkListTy &WorkList,
 }
 
 Combiner::Combiner(MachineFunction &MF, CombinerInfo &CInfo,
-                   const TargetPassConfig *TPC, GISelValueTracking *VT,
+                   const TargetPassConfig *TPC, GISelKnownBits *KB,
                    GISelCSEInfo *CSEInfo)
     : Builder(CSEInfo ? std::make_unique<CSEMIRBuilder>()
                       : std::make_unique<MachineIRBuilder>()),
@@ -230,7 +230,7 @@ Combiner::Combiner(MachineFunction &MF, CombinerInfo &CInfo,
                                             MF.getRegInfo())),
       ObserverWrapper(std::make_unique<GISelObserverWrapper>()), CInfo(CInfo),
       Observer(*ObserverWrapper), B(*Builder), MF(MF), MRI(MF.getRegInfo()),
-      VT(VT), TPC(TPC), CSEInfo(CSEInfo) {
+      KB(KB), TPC(TPC), CSEInfo(CSEInfo) {
   (void)this->TPC; // FIXME: Remove when used.
 
   // Setup builder.
@@ -255,14 +255,15 @@ bool Combiner::tryDCE(MachineInstr &MI, MachineRegisterInfo &MRI) {
 bool Combiner::combineMachineInstrs() {
   // If the ISel pipeline failed, do not bother running this pass.
   // FIXME: Should this be here or in individual combiner passes.
-  if (MF.getProperties().hasFailedISel())
+  if (MF.getProperties().hasProperty(
+          MachineFunctionProperties::Property::FailedISel))
     return false;
 
   // We can't call this in the constructor because the derived class is
   // uninitialized at that time.
   if (!HasSetupMF) {
     HasSetupMF = true;
-    setupMF(MF, VT);
+    setupMF(MF, KB);
   }
 
   LLVM_DEBUG(dbgs() << "Generic MI Combiner for: " << MF.getName() << '\n');

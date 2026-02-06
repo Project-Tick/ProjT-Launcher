@@ -8,9 +8,7 @@
 
 #include <__config>
 
-// This has technically been removed in LLVM 3.4
-#if !defined(_LIBCPP_OBJECT_FORMAT_COFF) && !defined(_LIBCPP_OBJECT_FORMAT_XCOFF) &&                                   \
-    _LIBCPP_AVAILABILITY_MINIMUM_HEADER_VERSION < 4
+#ifdef _LIBCPP_DEPRECATED_ABI_LEGACY_LIBRARY_DEFINITIONS_FOR_INLINE_FUNCTIONS
 #  define _LIBCPP_ERROR_CATEGORY_DEFINE_LEGACY_INLINE_FUNCTIONS
 #endif
 

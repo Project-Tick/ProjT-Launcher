@@ -35,11 +35,9 @@ define void @more_csrs(ptr swiftasync %context) "frame-pointer"="all" {
 ; CHECK64: .seh_endprologue
 ; CHECK64: movq    %r14, (%rbp)
 ; [...]
-; CHECK64: .seh_startepilogue
 ; CHECK64: addq    $8, %rsp
 ; CHECK64: popq    %r15
 ; CHECK64: popq    %rbp
-; CHECK64: .seh_endepilogue
 ; CHECK64: retq
 
 declare void @f(ptr)

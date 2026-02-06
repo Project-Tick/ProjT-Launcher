@@ -17,7 +17,6 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/DIE.h"
-#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/Target/TargetMachine.h"
 #include <optional>
 #include <string>
@@ -108,7 +107,7 @@ public:
     return LabelBegin;
   }
   MCSymbol *getEndLabel() const { return EndLabel; }
-  llvm::dwarf::SourceLanguage getSourceLanguage() const;
+  uint16_t getLanguage() const { return CUNode->getSourceLanguage(); }
   const DICompileUnit *getCUNode() const { return CUNode; }
   DwarfDebug &getDwarfDebug() const { return *DD; }
 
@@ -166,8 +165,7 @@ public:
   void addSInt(DIEValueList &Die, dwarf::Attribute Attribute,
                std::optional<dwarf::Form> Form, int64_t Integer);
 
-  void addSInt(DIEValueList &Die, std::optional<dwarf::Form> Form,
-               int64_t Integer);
+  void addSInt(DIELoc &Die, std::optional<dwarf::Form> Form, int64_t Integer);
 
   /// Add an integer attribute data and value; value may be any width.
   void addInt(DIE &Die, dwarf::Attribute Attribute, const APInt &Integer,
@@ -216,12 +214,8 @@ public:
   void addBlock(DIE &Die, dwarf::Attribute Attribute, dwarf::Form Form,
                 DIEBlock *Block);
 
-  /// Add an expression as block data.
-  void addBlock(DIE &Die, dwarf::Attribute Attribute, const DIExpression *Expr);
-
   /// Add location information to specified debug information entry.
-  void addSourceLine(DIE &Die, unsigned Line, unsigned Column,
-                     const DIFile *File);
+  void addSourceLine(DIE &Die, unsigned Line, const DIFile *File);
   void addSourceLine(DIE &Die, const DILocalVariable *V);
   void addSourceLine(DIE &Die, const DIGlobalVariable *G);
   void addSourceLine(DIE &Die, const DISubprogram *SP);
@@ -260,9 +254,7 @@ public:
 
   DIE *getOrCreateNameSpace(const DINamespace *NS);
   DIE *getOrCreateModule(const DIModule *M);
-  virtual DIE *getOrCreateSubprogramDIE(const DISubprogram *SP,
-                                        const Function *FnHint,
-                                        bool Minimal = false);
+  DIE *getOrCreateSubprogramDIE(const DISubprogram *SP, bool Minimal = false);
 
   void applySubprogramAttributes(const DISubprogram *SP, DIE &SPDie,
                                  bool SkipSPAttributes = false);
@@ -281,10 +273,8 @@ public:
 
   /// Construct function argument DIEs.
   ///
-  /// \returns The index of the object parameter in \c Args if one exists.
-  /// Returns std::nullopt otherwise.
-  std::optional<unsigned> constructSubprogramArguments(DIE &Buffer,
-                                                       DITypeRefArray Args);
+  /// \returns DIE of the object pointer if one exists. Nullptr otherwise.
+  DIE *constructSubprogramArguments(DIE &Buffer, DITypeRefArray Args);
 
   /// Create a DIE with the given Tag, add the DIE to its parent, and
   /// call insertDIE if MD is not null.
@@ -337,7 +327,7 @@ public:
                                const DIE &TyDIE);
 
 protected:
-  ~DwarfUnit() override;
+  ~DwarfUnit();
 
   /// Create new static data member DIE.
   DIE *getOrCreateStaticMemberDIE(const DIDerivedType *DT);
@@ -349,39 +339,18 @@ protected:
   /// Emit the common part of the header for this unit.
   void emitCommonHeader(bool UseOffsets, dwarf::UnitType UT);
 
-  bool shouldPlaceInUnitDIE(const DISubprogram *SP, bool Minimal) {
-    // Add subprogram declarations to the CU die directly.
-    return Minimal || SP->getDeclaration();
-  }
-
-  DIE *getOrCreateSubprogramContextDIE(const DISubprogram *SP,
-                                       bool IgnoreScope) {
-    if (IgnoreScope)
-      return &getUnitDie();
-    return getOrCreateContextDIE(SP->getScope());
-  }
-
 private:
-  DISourceLanguageName getLanguage() const {
-    return CUNode->getSourceLanguage();
-  }
-
   /// A helper to add a wide integer constant to a DIE using a block
   /// form.
   void addIntAsBlock(DIE &Die, dwarf::Attribute Attribute, const APInt &Val);
 
-  // Add discriminant constants to a DW_TAG_variant DIE.
-  void addDiscriminant(DIE &Variant, Constant *Discriminant, bool IsUnsigned);
-
   void constructTypeDIE(DIE &Buffer, const DIBasicType *BTy);
-  void constructTypeDIE(DIE &Buffer, const DIFixedPointType *BTy);
   void constructTypeDIE(DIE &Buffer, const DIStringType *BTy);
   void constructTypeDIE(DIE &Buffer, const DIDerivedType *DTy);
   void constructTypeDIE(DIE &Buffer, const DISubroutineType *CTy);
-  void constructSubrangeDIE(DIE &Buffer, const DISubrangeType *SR,
-                            bool ForArray = false);
-  void constructSubrangeDIE(DIE &Buffer, const DISubrange *SR);
-  void constructGenericSubrangeDIE(DIE &Buffer, const DIGenericSubrange *SR);
+  void constructSubrangeDIE(DIE &Buffer, const DISubrange *SR, DIE *IndexTy);
+  void constructGenericSubrangeDIE(DIE &Buffer, const DIGenericSubrange *SR,
+                                   DIE *IndexTy);
   void constructArrayTypeDIE(DIE &Buffer, const DICompositeType *CTy);
   void constructEnumTypeDIE(DIE &Buffer, const DICompositeType *CTy);
   DIE &constructMemberDIE(DIE &Buffer, const DIDerivedType *DT);

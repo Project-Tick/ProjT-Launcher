@@ -17,11 +17,12 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace llvm {
@@ -63,18 +64,11 @@ public:
 /// This struct can be extended as needed to add additional configuration
 /// points specific to a vendor's implementation.
 struct Config {
-  static constexpr bool BuildTimeEnableTelemetry = LLVM_ENABLE_TELEMETRY;
+  virtual ~Config() = default;
 
   // If true, telemetry will be enabled.
   const bool EnableTelemetry;
-
-  explicit Config() : EnableTelemetry(BuildTimeEnableTelemetry) {}
-
-  virtual ~Config() = default;
-
-  // Telemetry can only be enabled if both the runtime and buildtime flag
-  // are set.
-  explicit Config(bool E) : EnableTelemetry(E && BuildTimeEnableTelemetry) {}
+  Config(bool E) : EnableTelemetry(E) {}
 
   virtual std::optional<std::string> makeSessionId() { return std::nullopt; }
 };
@@ -100,7 +94,7 @@ struct EntryKind {
 /// For example, The LLDB debugger can define a DebugCommandInfo subclass
 /// which has additional fields about the debug-command being instrumented,
 /// such as `CommandArguments` or `CommandName`.
-struct LLVM_ABI TelemetryInfo {
+struct TelemetryInfo {
   // This represents a unique-id, conventionally corresponding to
   // a tool's session - i.e., every time the tool starts until it exits.
   //
@@ -140,14 +134,13 @@ public:
 /// and this framework.
 /// It is responsible for collecting telemetry data from the tool being
 /// monitored and transmitting the data elsewhere.
-class LLVM_ABI Manager {
+class Manager {
 public:
-  Manager() = default;
   virtual ~Manager() = default;
 
-  // Explicitly non-copyable.
-  Manager(Manager const &) = delete;
-  Manager &operator=(Manager const &) = delete;
+  // Optional callback for subclasses to perform additional tasks before
+  // dispatching to Destinations.
+  virtual Error preDispatch(TelemetryInfo *Entry) = 0;
 
   // Dispatch Telemetry data to the Destination(s).
   // The argument is non-const because the Manager may add or remove
@@ -156,11 +149,6 @@ public:
 
   // Register a Destination.
   void addDestination(std::unique_ptr<Destination> Destination);
-
-protected:
-  // Optional callback for subclasses to perform additional tasks before
-  // dispatching to Destinations.
-  virtual Error preDispatch(TelemetryInfo *Entry);
 
 private:
   std::vector<std::unique_ptr<Destination>> Destinations;

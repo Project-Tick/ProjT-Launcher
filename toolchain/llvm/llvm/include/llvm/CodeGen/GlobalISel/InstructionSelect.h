@@ -17,12 +17,11 @@
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/Support/CodeGen.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm {
 
 class InstructionSelector;
-class GISelValueTracking;
+class GISelKnownBits;
 class BlockFrequencyInfo;
 class ProfileSummaryInfo;
 
@@ -33,7 +32,7 @@ class ProfileSummaryInfo;
 /// reverse order.
 ///
 /// \post for all inst in MF: not isPreISelGenericOpcode(inst.opcode)
-class LLVM_ABI InstructionSelect : public MachineFunctionPass {
+class InstructionSelect : public MachineFunctionPass {
 public:
   static char ID;
   StringRef getPassName() const override { return "InstructionSelect"; }
@@ -42,13 +41,14 @@ public:
 
   MachineFunctionProperties getRequiredProperties() const override {
     return MachineFunctionProperties()
-        .setIsSSA()
-        .setLegalized()
-        .setRegBankSelected();
+        .set(MachineFunctionProperties::Property::IsSSA)
+        .set(MachineFunctionProperties::Property::Legalized)
+        .set(MachineFunctionProperties::Property::RegBankSelected);
   }
 
   MachineFunctionProperties getSetProperties() const override {
-    return MachineFunctionProperties().setSelected();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::Selected);
   }
 
   InstructionSelect(CodeGenOptLevel OL = CodeGenOptLevel::Default,
@@ -62,7 +62,7 @@ protected:
   class MIIteratorMaintainer;
 
   InstructionSelector *ISel = nullptr;
-  GISelValueTracking *VT = nullptr;
+  GISelKnownBits *KB = nullptr;
   BlockFrequencyInfo *BFI = nullptr;
   ProfileSummaryInfo *PSI = nullptr;
 

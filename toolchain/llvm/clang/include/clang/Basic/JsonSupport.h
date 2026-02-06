@@ -106,7 +106,7 @@ inline void printSourceLocationAsJson(raw_ostream &Out, SourceLocation Loc,
         return llvm::is_contained(ForbiddenChars, Char);
       });
       // Handle windows-specific path delimiters.
-      llvm::replace(filename, '\\', '/');
+      std::replace(filename.begin(), filename.end(), '\\', '/');
     }
     Out << "\"line\": " << PLoc.getLine()
         << ", \"column\": " << PLoc.getColumn()

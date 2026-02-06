@@ -20,12 +20,13 @@
 #include "llvm/BinaryFormat/Wasm.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCObjectFileInfo.h"
-#include "llvm/MC/MCParser/AsmLexer.h"
+#include "llvm/MC/MCParser/MCAsmLexer.h"
 #include "llvm/MC/MCParser/MCAsmParser.h"
 #include "llvm/MC/MCParser/MCAsmParserExtension.h"
 #include "llvm/MC/MCSectionWasm.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbolWasm.h"
+#include "llvm/Support/Casting.h"
 #include <optional>
 
 using namespace llvm;
@@ -34,7 +35,7 @@ namespace {
 
 class WasmAsmParser : public MCAsmParserExtension {
   MCAsmParser *Parser = nullptr;
-  AsmLexer *Lexer = nullptr;
+  MCAsmLexer *Lexer = nullptr;
 
   template<bool (WasmAsmParser::*HandlerMethod)(StringRef, SMLoc)>
   void addDirectiveHandler(StringRef Directive) {
@@ -192,7 +193,7 @@ public:
 
     // TODO: Parse UniqueID
     MCSectionWasm *WS = getContext().getWasmSection(
-        Name, *Kind, Flags, GroupName, MCSection::NonUniqueID);
+        Name, *Kind, Flags, GroupName, MCContext::GenericSectionID);
 
     if (WS->getSegmentFlags() != Flags)
       Parser->Error(loc, "changed section flags for " + Name +
@@ -212,9 +213,10 @@ public:
   // TODO: This function is almost the same as ELFAsmParser::ParseDirectiveSize
   // so maybe could be shared somehow.
   bool parseDirectiveSize(StringRef, SMLoc Loc) {
-    MCSymbol *Sym;
-    if (Parser->parseSymbol(Sym))
+    StringRef Name;
+    if (Parser->parseIdentifier(Name))
       return TokError("expected identifier in directive");
+    auto Sym = getContext().getOrCreateSymbol(Name);
     if (expect(AsmToken::Comma, ","))
       return true;
     const MCExpr *Expr;
@@ -222,7 +224,7 @@ public:
       return true;
     if (expect(AsmToken::EndOfStatement, "eol"))
       return true;
-    auto WasmSym = static_cast<const MCSymbolWasm *>(Sym);
+    auto WasmSym = cast<MCSymbolWasm>(Sym);
     if (WasmSym->isFunction()) {
       // Ignore .size directives for function symbols.  They get their size
       // set automatically based on their content.
@@ -239,8 +241,9 @@ public:
     if (!Lexer->is(AsmToken::Identifier))
       return error("Expected label after .type directive, got: ",
                    Lexer->getTok());
-    auto *WasmSym = static_cast<MCSymbolWasm *>(
-        getStreamer().getContext().parseSymbol(Lexer->getTok().getString()));
+    auto WasmSym = cast<MCSymbolWasm>(
+                     getStreamer().getContext().getOrCreateSymbol(
+                       Lexer->getTok().getString()));
     Lex();
     if (!(isNext(AsmToken::Comma) && isNext(AsmToken::At) &&
           Lexer->is(AsmToken::Identifier)))
@@ -249,7 +252,7 @@ public:
     if (TypeName == "function") {
       WasmSym->setType(wasm::WASM_SYMBOL_TYPE_FUNCTION);
       auto *Current =
-          static_cast<MCSectionWasm *>(getStreamer().getCurrentSectionOnly());
+          cast<MCSectionWasm>(getStreamer().getCurrentSectionOnly());
       if (Current->getGroup())
         WasmSym->setComdat(true);
     } else if (TypeName == "global")
@@ -291,9 +294,10 @@ public:
     assert(Attr != MCSA_Invalid && "unexpected symbol attribute directive!");
     if (getLexer().isNot(AsmToken::EndOfStatement)) {
       while (true) {
-        MCSymbol *Sym;
-        if (getParser().parseSymbol(Sym))
+        StringRef Name;
+        if (getParser().parseIdentifier(Name))
           return TokError("expected identifier in directive");
+        MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
         getStreamer().emitSymbolAttribute(Sym, Attr);
         if (getLexer().is(AsmToken::EndOfStatement))
           break;
@@ -309,4 +313,10 @@ public:
 
 } // end anonymous namespace
 
-MCAsmParserExtension *llvm::createWasmAsmParser() { return new WasmAsmParser; }
+namespace llvm {
+
+MCAsmParserExtension *createWasmAsmParser() {
+  return new WasmAsmParser;
+}
+
+} // end namespace llvm

@@ -19,7 +19,9 @@ public:
 
   MachineFunctionProperties getClearedProperties() const {
     // SILowerSGPRSpills introduces new Virtual VGPRs for spilling SGPRs.
-    return MachineFunctionProperties().setIsSSA().setNoVRegs();
+    return MachineFunctionProperties()
+        .set(MachineFunctionProperties::Property::IsSSA)
+        .set(MachineFunctionProperties::Property::NoVRegs);
   }
 };
 } // namespace llvm

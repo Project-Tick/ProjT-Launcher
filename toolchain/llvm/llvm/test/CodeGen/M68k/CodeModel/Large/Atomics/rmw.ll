@@ -55,10 +55,9 @@ define i8 @atomicrmw_add_i8(i8 %val, ptr %ptr) {
 ; ATOMIC-NEXT:    move.b %d0, %d3
 ; ATOMIC-NEXT:    sub.b %d2, %d3
 ; ATOMIC-NEXT:    seq %d2
-; ATOMIC-NEXT:    and.b #1, %d2
-; ATOMIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-NEXT:    move.b %d0, %d2
-; ATOMIC-NEXT:    beq .LBB0_1
+; ATOMIC-NEXT:    bne .LBB0_1
 ; ATOMIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-NEXT:    adda.l #8, %sp
@@ -82,10 +81,9 @@ define i8 @atomicrmw_add_i8(i8 %val, ptr %ptr) {
 ; ATOMIC-PIC-NEXT:    move.b %d0, %d3
 ; ATOMIC-PIC-NEXT:    sub.b %d2, %d3
 ; ATOMIC-PIC-NEXT:    seq %d2
-; ATOMIC-PIC-NEXT:    and.b #1, %d2
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-PIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-PIC-NEXT:    move.b %d0, %d2
-; ATOMIC-PIC-NEXT:    beq .LBB0_1
+; ATOMIC-PIC-NEXT:    bne .LBB0_1
 ; ATOMIC-PIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-PIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-PIC-NEXT:    adda.l #8, %sp
@@ -139,10 +137,9 @@ define i16 @atomicrmw_sub_i16(i16 %val, ptr %ptr) {
 ; ATOMIC-NEXT:    move.w %d0, %d3
 ; ATOMIC-NEXT:    sub.w %d2, %d3
 ; ATOMIC-NEXT:    seq %d2
-; ATOMIC-NEXT:    and.b #1, %d2
-; ATOMIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-NEXT:    move.w %d0, %d2
-; ATOMIC-NEXT:    beq .LBB1_1
+; ATOMIC-NEXT:    bne .LBB1_1
 ; ATOMIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-NEXT:    adda.l #8, %sp
@@ -166,10 +163,9 @@ define i16 @atomicrmw_sub_i16(i16 %val, ptr %ptr) {
 ; ATOMIC-PIC-NEXT:    move.w %d0, %d3
 ; ATOMIC-PIC-NEXT:    sub.w %d2, %d3
 ; ATOMIC-PIC-NEXT:    seq %d2
-; ATOMIC-PIC-NEXT:    and.b #1, %d2
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-PIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-PIC-NEXT:    move.w %d0, %d2
-; ATOMIC-PIC-NEXT:    beq .LBB1_1
+; ATOMIC-PIC-NEXT:    bne .LBB1_1
 ; ATOMIC-PIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-PIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-PIC-NEXT:    adda.l #8, %sp
@@ -219,10 +215,9 @@ define i32 @atomicrmw_and_i32(i32 %val, ptr %ptr) {
 ; ATOMIC-NEXT:    move.l %d0, %d3
 ; ATOMIC-NEXT:    sub.l %d2, %d3
 ; ATOMIC-NEXT:    seq %d2
-; ATOMIC-NEXT:    and.b #1, %d2
-; ATOMIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-NEXT:    move.l %d0, %d2
-; ATOMIC-NEXT:    beq .LBB2_1
+; ATOMIC-NEXT:    bne .LBB2_1
 ; ATOMIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-NEXT:    adda.l #8, %sp
@@ -246,10 +241,9 @@ define i32 @atomicrmw_and_i32(i32 %val, ptr %ptr) {
 ; ATOMIC-PIC-NEXT:    move.l %d0, %d3
 ; ATOMIC-PIC-NEXT:    sub.l %d2, %d3
 ; ATOMIC-PIC-NEXT:    seq %d2
-; ATOMIC-PIC-NEXT:    and.b #1, %d2
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-PIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-PIC-NEXT:    move.l %d0, %d2
-; ATOMIC-PIC-NEXT:    beq .LBB2_1
+; ATOMIC-PIC-NEXT:    bne .LBB2_1
 ; ATOMIC-PIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-PIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-PIC-NEXT:    adda.l #8, %sp
@@ -359,10 +353,9 @@ define i8 @atomicrmw_or_i8(i8 %val, ptr %ptr) {
 ; ATOMIC-NEXT:    move.b %d0, %d3
 ; ATOMIC-NEXT:    sub.b %d2, %d3
 ; ATOMIC-NEXT:    seq %d2
-; ATOMIC-NEXT:    and.b #1, %d2
-; ATOMIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-NEXT:    move.b %d0, %d2
-; ATOMIC-NEXT:    beq .LBB4_1
+; ATOMIC-NEXT:    bne .LBB4_1
 ; ATOMIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-NEXT:    adda.l #8, %sp
@@ -386,10 +379,9 @@ define i8 @atomicrmw_or_i8(i8 %val, ptr %ptr) {
 ; ATOMIC-PIC-NEXT:    move.b %d0, %d3
 ; ATOMIC-PIC-NEXT:    sub.b %d2, %d3
 ; ATOMIC-PIC-NEXT:    seq %d2
-; ATOMIC-PIC-NEXT:    and.b #1, %d2
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-PIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-PIC-NEXT:    move.b %d0, %d2
-; ATOMIC-PIC-NEXT:    beq .LBB4_1
+; ATOMIC-PIC-NEXT:    bne .LBB4_1
 ; ATOMIC-PIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-PIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-PIC-NEXT:    adda.l #8, %sp
@@ -452,10 +444,9 @@ define i16 @atmoicrmw_nand_i16(i16 %val, ptr %ptr) {
 ; ATOMIC-NEXT:    move.w %d1, %d3
 ; ATOMIC-NEXT:    sub.w %d2, %d3
 ; ATOMIC-NEXT:    seq %d2
-; ATOMIC-NEXT:    and.b #1, %d2
-; ATOMIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-NEXT:    move.w %d1, %d2
-; ATOMIC-NEXT:    beq .LBB5_1
+; ATOMIC-NEXT:    bne .LBB5_1
 ; ATOMIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-NEXT:    adda.l #8, %sp
@@ -480,10 +471,9 @@ define i16 @atmoicrmw_nand_i16(i16 %val, ptr %ptr) {
 ; ATOMIC-PIC-NEXT:    move.w %d1, %d3
 ; ATOMIC-PIC-NEXT:    sub.w %d2, %d3
 ; ATOMIC-PIC-NEXT:    seq %d2
-; ATOMIC-PIC-NEXT:    and.b #1, %d2
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-PIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-PIC-NEXT:    move.w %d1, %d2
-; ATOMIC-PIC-NEXT:    beq .LBB5_1
+; ATOMIC-PIC-NEXT:    bne .LBB5_1
 ; ATOMIC-PIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-PIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-PIC-NEXT:    adda.l #8, %sp
@@ -532,10 +522,9 @@ define i32 @atomicrmw_min_i32(i32 %val, ptr %ptr) {
 ; ATOMIC-NEXT:    move.l %d0, %d3
 ; ATOMIC-NEXT:    sub.l %d2, %d3
 ; ATOMIC-NEXT:    seq %d2
-; ATOMIC-NEXT:    and.b #1, %d2
-; ATOMIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-NEXT:    move.l %d0, %d2
-; ATOMIC-NEXT:    bne .LBB6_4
+; ATOMIC-NEXT:    beq .LBB6_4
 ; ATOMIC-NEXT:  .LBB6_1: ; %atomicrmw.start
 ; ATOMIC-NEXT:    ; =>This Inner Loop Header: Depth=1
 ; ATOMIC-NEXT:    move.l %d2, %d0
@@ -568,10 +557,9 @@ define i32 @atomicrmw_min_i32(i32 %val, ptr %ptr) {
 ; ATOMIC-PIC-NEXT:    move.l %d0, %d3
 ; ATOMIC-PIC-NEXT:    sub.l %d2, %d3
 ; ATOMIC-PIC-NEXT:    seq %d2
-; ATOMIC-PIC-NEXT:    and.b #1, %d2
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-PIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-PIC-NEXT:    move.l %d0, %d2
-; ATOMIC-PIC-NEXT:    bne .LBB6_4
+; ATOMIC-PIC-NEXT:    beq .LBB6_4
 ; ATOMIC-PIC-NEXT:  .LBB6_1: ; %atomicrmw.start
 ; ATOMIC-PIC-NEXT:    ; =>This Inner Loop Header: Depth=1
 ; ATOMIC-PIC-NEXT:    move.l %d2, %d0
@@ -830,10 +818,9 @@ define i8 @atomicrmw_i8_umin(i8 %val, ptr %ptr) {
 ; ATOMIC-NEXT:    move.b %d0, %d3
 ; ATOMIC-NEXT:    sub.b %d2, %d3
 ; ATOMIC-NEXT:    seq %d2
-; ATOMIC-NEXT:    and.b #1, %d2
-; ATOMIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-NEXT:    move.b %d0, %d2
-; ATOMIC-NEXT:    bne .LBB8_4
+; ATOMIC-NEXT:    beq .LBB8_4
 ; ATOMIC-NEXT:  .LBB8_1: ; %atomicrmw.start
 ; ATOMIC-NEXT:    ; =>This Inner Loop Header: Depth=1
 ; ATOMIC-NEXT:    move.b %d2, %d0
@@ -866,10 +853,9 @@ define i8 @atomicrmw_i8_umin(i8 %val, ptr %ptr) {
 ; ATOMIC-PIC-NEXT:    move.b %d0, %d3
 ; ATOMIC-PIC-NEXT:    sub.b %d2, %d3
 ; ATOMIC-PIC-NEXT:    seq %d2
-; ATOMIC-PIC-NEXT:    and.b #1, %d2
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-PIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-PIC-NEXT:    move.b %d0, %d2
-; ATOMIC-PIC-NEXT:    bne .LBB8_4
+; ATOMIC-PIC-NEXT:    beq .LBB8_4
 ; ATOMIC-PIC-NEXT:  .LBB8_1: ; %atomicrmw.start
 ; ATOMIC-PIC-NEXT:    ; =>This Inner Loop Header: Depth=1
 ; ATOMIC-PIC-NEXT:    move.b %d2, %d0
@@ -932,10 +918,9 @@ define i16 @atomicrmw_umax_i16(i16 %val, ptr %ptr) {
 ; ATOMIC-NEXT:    move.w %d0, %d3
 ; ATOMIC-NEXT:    sub.w %d2, %d3
 ; ATOMIC-NEXT:    seq %d2
-; ATOMIC-NEXT:    and.b #1, %d2
-; ATOMIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-NEXT:    move.w %d0, %d2
-; ATOMIC-NEXT:    bne .LBB9_4
+; ATOMIC-NEXT:    beq .LBB9_4
 ; ATOMIC-NEXT:  .LBB9_1: ; %atomicrmw.start
 ; ATOMIC-NEXT:    ; =>This Inner Loop Header: Depth=1
 ; ATOMIC-NEXT:    move.w %d2, %d0
@@ -968,10 +953,9 @@ define i16 @atomicrmw_umax_i16(i16 %val, ptr %ptr) {
 ; ATOMIC-PIC-NEXT:    move.w %d0, %d3
 ; ATOMIC-PIC-NEXT:    sub.w %d2, %d3
 ; ATOMIC-PIC-NEXT:    seq %d2
-; ATOMIC-PIC-NEXT:    and.b #1, %d2
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-PIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-PIC-NEXT:    move.w %d0, %d2
-; ATOMIC-PIC-NEXT:    bne .LBB9_4
+; ATOMIC-PIC-NEXT:    beq .LBB9_4
 ; ATOMIC-PIC-NEXT:  .LBB9_1: ; %atomicrmw.start
 ; ATOMIC-PIC-NEXT:    ; =>This Inner Loop Header: Depth=1
 ; ATOMIC-PIC-NEXT:    move.w %d2, %d0
@@ -1033,10 +1017,9 @@ define i16 @atomicrmw_xchg_i16(i16 %val, ptr %ptr) {
 ; ATOMIC-NEXT:    move.w %d0, %d3
 ; ATOMIC-NEXT:    sub.w %d2, %d3
 ; ATOMIC-NEXT:    seq %d2
-; ATOMIC-NEXT:    and.b #1, %d2
-; ATOMIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-NEXT:    move.w %d0, %d2
-; ATOMIC-NEXT:    beq .LBB10_1
+; ATOMIC-NEXT:    bne .LBB10_1
 ; ATOMIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-NEXT:    adda.l #8, %sp
@@ -1058,10 +1041,9 @@ define i16 @atomicrmw_xchg_i16(i16 %val, ptr %ptr) {
 ; ATOMIC-PIC-NEXT:    move.w %d0, %d3
 ; ATOMIC-PIC-NEXT:    sub.w %d2, %d3
 ; ATOMIC-PIC-NEXT:    seq %d2
-; ATOMIC-PIC-NEXT:    and.b #1, %d2
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-PIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-PIC-NEXT:    move.w %d0, %d2
-; ATOMIC-PIC-NEXT:    beq .LBB10_1
+; ATOMIC-PIC-NEXT:    bne .LBB10_1
 ; ATOMIC-PIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-PIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-PIC-NEXT:    adda.l #8, %sp
@@ -1110,10 +1092,9 @@ define i32 @atomicrmw_xchg_i32(i32 %val, ptr %ptr) {
 ; ATOMIC-NEXT:    move.l %d0, %d3
 ; ATOMIC-NEXT:    sub.l %d2, %d3
 ; ATOMIC-NEXT:    seq %d2
-; ATOMIC-NEXT:    and.b #1, %d2
-; ATOMIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-NEXT:    move.l %d0, %d2
-; ATOMIC-NEXT:    beq .LBB11_1
+; ATOMIC-NEXT:    bne .LBB11_1
 ; ATOMIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-NEXT:    adda.l #8, %sp
@@ -1135,10 +1116,9 @@ define i32 @atomicrmw_xchg_i32(i32 %val, ptr %ptr) {
 ; ATOMIC-PIC-NEXT:    move.l %d0, %d3
 ; ATOMIC-PIC-NEXT:    sub.l %d2, %d3
 ; ATOMIC-PIC-NEXT:    seq %d2
-; ATOMIC-PIC-NEXT:    and.b #1, %d2
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d2
+; ATOMIC-PIC-NEXT:    sub.b #1, %d2
 ; ATOMIC-PIC-NEXT:    move.l %d0, %d2
-; ATOMIC-PIC-NEXT:    beq .LBB11_1
+; ATOMIC-PIC-NEXT:    bne .LBB11_1
 ; ATOMIC-PIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-PIC-NEXT:    movem.l (0,%sp), %d2-%d3 ; 12-byte Folded Reload
 ; ATOMIC-PIC-NEXT:    adda.l #8, %sp
@@ -1195,10 +1175,9 @@ define i8 @atomicrmw_sub_i8_arid(ptr align 2 %self) {
 ; ATOMIC-NEXT:    move.b %d0, %d2
 ; ATOMIC-NEXT:    sub.b %d1, %d2
 ; ATOMIC-NEXT:    seq %d1
-; ATOMIC-NEXT:    and.b #1, %d1
-; ATOMIC-NEXT:    cmpi.b #0, %d1
+; ATOMIC-NEXT:    sub.b #1, %d1
 ; ATOMIC-NEXT:    move.b %d0, %d1
-; ATOMIC-NEXT:    beq .LBB12_1
+; ATOMIC-NEXT:    bne .LBB12_1
 ; ATOMIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-NEXT:    movem.l (0,%sp), %d2 ; 8-byte Folded Reload
 ; ATOMIC-NEXT:    adda.l #4, %sp
@@ -1222,10 +1201,9 @@ define i8 @atomicrmw_sub_i8_arid(ptr align 2 %self) {
 ; ATOMIC-PIC-NEXT:    move.b %d0, %d2
 ; ATOMIC-PIC-NEXT:    sub.b %d1, %d2
 ; ATOMIC-PIC-NEXT:    seq %d1
-; ATOMIC-PIC-NEXT:    and.b #1, %d1
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d1
+; ATOMIC-PIC-NEXT:    sub.b #1, %d1
 ; ATOMIC-PIC-NEXT:    move.b %d0, %d1
-; ATOMIC-PIC-NEXT:    beq .LBB12_1
+; ATOMIC-PIC-NEXT:    bne .LBB12_1
 ; ATOMIC-PIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-PIC-NEXT:    movem.l (0,%sp), %d2 ; 8-byte Folded Reload
 ; ATOMIC-PIC-NEXT:    adda.l #4, %sp
@@ -1284,10 +1262,9 @@ define i16 @atomicrmw_sub_i16_arid(ptr align 2 %self) {
 ; ATOMIC-NEXT:    move.w %d0, %d2
 ; ATOMIC-NEXT:    sub.w %d1, %d2
 ; ATOMIC-NEXT:    seq %d1
-; ATOMIC-NEXT:    and.b #1, %d1
-; ATOMIC-NEXT:    cmpi.b #0, %d1
+; ATOMIC-NEXT:    sub.b #1, %d1
 ; ATOMIC-NEXT:    move.w %d0, %d1
-; ATOMIC-NEXT:    beq .LBB13_1
+; ATOMIC-NEXT:    bne .LBB13_1
 ; ATOMIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-NEXT:    movem.l (0,%sp), %d2 ; 8-byte Folded Reload
 ; ATOMIC-NEXT:    adda.l #4, %sp
@@ -1311,10 +1288,9 @@ define i16 @atomicrmw_sub_i16_arid(ptr align 2 %self) {
 ; ATOMIC-PIC-NEXT:    move.w %d0, %d2
 ; ATOMIC-PIC-NEXT:    sub.w %d1, %d2
 ; ATOMIC-PIC-NEXT:    seq %d1
-; ATOMIC-PIC-NEXT:    and.b #1, %d1
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d1
+; ATOMIC-PIC-NEXT:    sub.b #1, %d1
 ; ATOMIC-PIC-NEXT:    move.w %d0, %d1
-; ATOMIC-PIC-NEXT:    beq .LBB13_1
+; ATOMIC-PIC-NEXT:    bne .LBB13_1
 ; ATOMIC-PIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-PIC-NEXT:    movem.l (0,%sp), %d2 ; 8-byte Folded Reload
 ; ATOMIC-PIC-NEXT:    adda.l #4, %sp
@@ -1373,10 +1349,9 @@ define i32 @atomicrmw_sub_i32_arid(ptr align 2 %self) {
 ; ATOMIC-NEXT:    move.l %d0, %d2
 ; ATOMIC-NEXT:    sub.l %d1, %d2
 ; ATOMIC-NEXT:    seq %d1
-; ATOMIC-NEXT:    and.b #1, %d1
-; ATOMIC-NEXT:    cmpi.b #0, %d1
+; ATOMIC-NEXT:    sub.b #1, %d1
 ; ATOMIC-NEXT:    move.l %d0, %d1
-; ATOMIC-NEXT:    beq .LBB14_1
+; ATOMIC-NEXT:    bne .LBB14_1
 ; ATOMIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-NEXT:    movem.l (0,%sp), %d2 ; 8-byte Folded Reload
 ; ATOMIC-NEXT:    adda.l #4, %sp
@@ -1400,10 +1375,9 @@ define i32 @atomicrmw_sub_i32_arid(ptr align 2 %self) {
 ; ATOMIC-PIC-NEXT:    move.l %d0, %d2
 ; ATOMIC-PIC-NEXT:    sub.l %d1, %d2
 ; ATOMIC-PIC-NEXT:    seq %d1
-; ATOMIC-PIC-NEXT:    and.b #1, %d1
-; ATOMIC-PIC-NEXT:    cmpi.b #0, %d1
+; ATOMIC-PIC-NEXT:    sub.b #1, %d1
 ; ATOMIC-PIC-NEXT:    move.l %d0, %d1
-; ATOMIC-PIC-NEXT:    beq .LBB14_1
+; ATOMIC-PIC-NEXT:    bne .LBB14_1
 ; ATOMIC-PIC-NEXT:  ; %bb.2: ; %atomicrmw.end
 ; ATOMIC-PIC-NEXT:    movem.l (0,%sp), %d2 ; 8-byte Folded Reload
 ; ATOMIC-PIC-NEXT:    adda.l #4, %sp

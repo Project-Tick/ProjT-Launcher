@@ -4,16 +4,13 @@ endif()
 
 add_subdirectory(${LIBC_TARGET_ARCHITECTURE})
 
-add_object_library(
+add_header_library(
   darwin_util
-  SRCS
-    exit.cpp
   HDRS
     io.h
     syscall.h
   DEPENDS
-  .${LIBC_TARGET_ARCHITECTURE}.darwin_${LIBC_TARGET_ARCHITECTURE}_util
+    .${LIBC_TARGET_ARCHITECTURE}.darwin_util
     libc.src.__support.common
     libc.src.__support.CPP.string_view
-    libc.include.sys_syscall
 )

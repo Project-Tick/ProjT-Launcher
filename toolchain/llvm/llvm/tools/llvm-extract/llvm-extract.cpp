@@ -41,7 +41,7 @@
 
 using namespace llvm;
 
-static cl::OptionCategory ExtractCat("llvm-extract Options");
+cl::OptionCategory ExtractCat("llvm-extract Options");
 
 // InputFilename - The filename to read from.
 static cl::opt<std::string> InputFilename(cl::Positional,
@@ -90,13 +90,10 @@ static cl::list<std::string> ExtractBlocks(
         "Each pair will create a function.\n"
         "If multiple basic blocks are specified in one pair,\n"
         "the first block in the sequence should dominate the rest.\n"
-        "If an unnamed basic block is to be extracted,\n"
-        "'%' should be added before the basic block variable names.\n"
         "eg:\n"
         "  --bb=f:bb1;bb2 will extract one function with both bb1 and bb2;\n"
         "  --bb=f:bb1 --bb=f:bb2 will extract two functions, one with bb1, one "
-        "with bb2.\n"
-        "  --bb=f:%1 will extract one function with basic block 1;"),
+        "with bb2."),
     cl::value_desc("function:bb1[;bb2...]"), cl::cat(ExtractCat));
 
 // ExtractAlias - The alias to extract from the module.
@@ -128,6 +125,16 @@ static cl::list<std::string>
 static cl::opt<bool> OutputAssembly("S",
                                     cl::desc("Write output as LLVM assembly"),
                                     cl::Hidden, cl::cat(ExtractCat));
+
+static cl::opt<bool> PreserveBitcodeUseListOrder(
+    "preserve-bc-uselistorder",
+    cl::desc("Preserve use-list order when writing LLVM bitcode."),
+    cl::init(true), cl::Hidden, cl::cat(ExtractCat));
+
+static cl::opt<bool> PreserveAssemblyUseListOrder(
+    "preserve-ll-uselistorder",
+    cl::desc("Preserve use-list order when writing LLVM assembly."),
+    cl::init(false), cl::Hidden, cl::cat(ExtractCat));
 
 int main(int argc, char **argv) {
   InitLLVM X(argc, argv);
@@ -306,7 +313,7 @@ int main(int argc, char **argv) {
       Materialize(*GVs[i]);
   } else {
     // Deleting. Materialize every GV that's *not* in GVs.
-    SmallPtrSet<GlobalValue *, 8> GVSet(llvm::from_range, GVs);
+    SmallPtrSet<GlobalValue *, 8> GVSet(GVs.begin(), GVs.end());
     for (auto &F : *M) {
       if (!GVSet.count(&F))
         Materialize(F);
@@ -349,7 +356,7 @@ int main(int argc, char **argv) {
         // The function has been materialized, so add its matching basic blocks
         // to the block extractor list, or fail if a name is not found.
         auto Res = llvm::find_if(*P.first, [&](const BasicBlock &BB) {
-          return BB.getNameOrAsOperand() == BBName;
+          return BB.getName() == BBName;
         });
         if (Res == P.first->end()) {
           errs() << argv[0] << ": function " << P.first->getName()
@@ -401,7 +408,6 @@ int main(int argc, char **argv) {
     PM.addPass(GlobalDCEPass());
   PM.addPass(StripDeadDebugInfoPass());
   PM.addPass(StripDeadPrototypesPass());
-  PM.addPass(StripDeadCGProfilePass());
 
   std::error_code EC;
   ToolOutputFile Out(OutputFilename, EC, sys::fs::OF_None);
@@ -411,11 +417,9 @@ int main(int argc, char **argv) {
   }
 
   if (OutputAssembly)
-    PM.addPass(
-        PrintModulePass(Out.os(), "", /* ShouldPreserveUseListOrder */ false));
+    PM.addPass(PrintModulePass(Out.os(), "", PreserveAssemblyUseListOrder));
   else if (Force || !CheckBitcodeOutputToConsole(Out.os()))
-    PM.addPass(
-        BitcodeWriterPass(Out.os(), /* ShouldPreserveUseListOrder */ true));
+    PM.addPass(BitcodeWriterPass(Out.os(), PreserveBitcodeUseListOrder));
 
   PM.run(*M, MAM);
 

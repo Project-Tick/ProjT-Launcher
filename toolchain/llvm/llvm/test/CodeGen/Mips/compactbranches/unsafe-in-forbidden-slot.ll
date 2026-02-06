@@ -24,7 +24,7 @@ sw.bb:                                            ; preds = %entry
 sw.bb1:                                           ; preds = %entry, %entry
   store volatile i32 2, ptr @boo, align 4
   br label %sw.epilog
-; CHECK: bltuc
+; CHECK: bnezc
 ; CHECK-NEXT: nop
 ; CHECK-NEXT: # %bb.3
 ; CHECK-NEXT: j

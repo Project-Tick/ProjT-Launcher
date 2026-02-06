@@ -36,9 +36,11 @@
 #include "clang/Basic/SourceManager.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/FoldingSet.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/Support/Allocator.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/SaveAndRestore.h"
@@ -69,8 +71,8 @@ AnalysisDeclContextManager::AnalysisDeclContextManager(
     bool addLoopExit, bool addScopes, bool synthesizeBodies,
     bool addStaticInitBranch, bool addCXXNewAllocator,
     bool addRichCXXConstructors, bool markElidedCXXConstructors,
-    bool addVirtualBaseBranches, std::unique_ptr<CodeInjector> injector)
-    : Injector(std::move(injector)), FunctionBodyFarm(ASTCtx, Injector.get()),
+    bool addVirtualBaseBranches, CodeInjector *injector)
+    : Injector(injector), FunctionBodyFarm(ASTCtx, injector),
       SynthesizeBodies(synthesizeBodies) {
   cfgBuildOptions.PruneTriviallyFalseEdges = !useUnoptimizedCFG;
   cfgBuildOptions.AddImplicitDtors = addImplicitDtors;
@@ -117,11 +119,6 @@ Stmt *AnalysisDeclContext::getBody(bool &IsAutosynthesized) const {
     return BD->getBody();
   else if (const auto *FunTmpl = dyn_cast_or_null<FunctionTemplateDecl>(D))
     return FunTmpl->getTemplatedDecl()->getBody();
-  else if (const auto *VD = dyn_cast_or_null<VarDecl>(D)) {
-    if (VD->isFileVarDecl()) {
-      return const_cast<Stmt *>(dyn_cast_or_null<Stmt>(VD->getInit()));
-    }
-  }
 
   llvm_unreachable("unknown code decl");
 }
@@ -250,13 +247,13 @@ CFG *AnalysisDeclContext::getUnoptimizedCFG() {
   return completeCFG.get();
 }
 
-const CFGStmtMap *AnalysisDeclContext::getCFGStmtMap() {
+CFGStmtMap *AnalysisDeclContext::getCFGStmtMap() {
   if (cfgStmtMap)
-    return &*cfgStmtMap;
+    return cfgStmtMap.get();
 
-  if (const CFG *c = getCFG()) {
-    cfgStmtMap.emplace(*c, getParentMap());
-    return &*cfgStmtMap;
+  if (CFG *c = getCFG()) {
+    cfgStmtMap.reset(CFGStmtMap::Build(c, &getParentMap()));
+    return cfgStmtMap.get();
   }
 
   return nullptr;

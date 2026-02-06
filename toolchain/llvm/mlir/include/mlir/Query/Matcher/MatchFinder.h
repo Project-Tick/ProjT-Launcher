@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 //
 // This file contains the MatchFinder class, which is used to find operations
-// that match a given matcher and print them.
+// that match a given matcher.
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,45 +15,25 @@
 #define MLIR_TOOLS_MLIRQUERY_MATCHER_MATCHERFINDER_H
 
 #include "MatchersInternal.h"
-#include "mlir/Query/Query.h"
-#include "mlir/Query/QuerySession.h"
-#include "llvm/ADT/SetVector.h"
 
 namespace mlir::query::matcher {
 
-/// Finds and collects matches from the IR. After construction
-/// `collectMatches` can be used to traverse the IR and apply
-/// matchers.
+// MatchFinder is used to find all operations that match a given matcher.
 class MatchFinder {
-
 public:
-  /// A subclass which preserves the matching information. Each instance
-  /// contains the `rootOp` along with the matching environment.
-  struct MatchResult {
-    MatchResult() = default;
-    MatchResult(Operation *rootOp, std::vector<Operation *> matchedOps);
+  // Returns all operations that match the given matcher.
+  static std::vector<Operation *> getMatches(Operation *root,
+                                             DynMatcher matcher) {
+    std::vector<Operation *> matches;
 
-    Operation *rootOp = nullptr;
-    /// Contains the matching environment.
-    std::vector<Operation *> matchedOps;
-  };
+    // Simple match finding with walk.
+    root->walk([&](Operation *subOp) {
+      if (matcher.match(subOp))
+        matches.push_back(subOp);
+    });
 
-  /// Traverses the IR and returns a vector of `MatchResult` for each match of
-  /// the `matcher`.
-  std::vector<MatchResult> collectMatches(Operation *root,
-                                          DynMatcher matcher) const;
-
-  /// Prints the matched operation.
-  void printMatch(llvm::raw_ostream &os, QuerySession &qs, Operation *op) const;
-
-  /// Labels the matched operation with the given binding (e.g., `"root"`) and
-  /// prints it.
-  void printMatch(llvm::raw_ostream &os, QuerySession &qs, Operation *op,
-                  const std::string &binding) const;
-
-  /// Flattens a vector of `MatchResult` into a vector of operations.
-  std::vector<Operation *>
-  flattenMatchedOps(std::vector<MatchResult> &matches) const;
+    return matches;
+  }
 };
 
 } // namespace mlir::query::matcher

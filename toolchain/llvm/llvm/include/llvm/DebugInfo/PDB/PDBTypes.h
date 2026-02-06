@@ -510,9 +510,7 @@ struct Variant {
 
 #define VARIANT_APSINT(Enum, NumBits, IsUnsigned)                              \
   case PDB_VariantType::Enum:                                                  \
-    return APSInt(                                                             \
-        APInt(NumBits, static_cast<uint64_t>(Value.Enum), !IsUnsigned),        \
-        IsUnsigned);
+    return APSInt(APInt(NumBits, Value.Enum), IsUnsigned);
 
   APSInt toAPSInt() const {
     switch (Type) {
@@ -597,10 +595,17 @@ struct Variant {
 } // end namespace pdb
 } // end namespace llvm
 
-template <> struct std::hash<llvm::pdb::PDB_SymType> {
-  std::size_t operator()(const llvm::pdb::PDB_SymType &Arg) const {
+namespace std {
+
+template <> struct hash<llvm::pdb::PDB_SymType> {
+  using argument_type = llvm::pdb::PDB_SymType;
+  using result_type = std::size_t;
+
+  result_type operator()(const argument_type &Arg) const {
     return std::hash<int>()(static_cast<int>(Arg));
   }
 };
+
+} // end namespace std
 
 #endif // LLVM_DEBUGINFO_PDB_PDBTYPES_H

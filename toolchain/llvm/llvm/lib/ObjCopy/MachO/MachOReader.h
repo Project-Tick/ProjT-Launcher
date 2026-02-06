@@ -23,7 +23,7 @@ namespace macho {
 // raw binaries and regular MachO object files.
 class Reader {
 public:
-  virtual ~Reader() = default;
+  virtual ~Reader(){};
   virtual Expected<std::unique_ptr<Object>> create() const = 0;
 };
 

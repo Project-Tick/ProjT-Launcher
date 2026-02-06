@@ -14,17 +14,31 @@ add_object_library(
     libc.src.__support.OSUtil.linux.vdso
 )
 
-add_object_library(
-  clock_settime
+add_header_library(
+  clock_conversion
   HDRS
-    ../clock_settime.h
-  SRCS
-    clock_settime.cpp
+    clock_conversion.h
   DEPENDS
-    libc.include.sys_syscall
+    .clock_gettime
+    libc.src.__support.time.units
+)
+
+add_header_library(
+  abs_timeout
+  HDRS
+    abs_timeout.h
+  DEPENDS
     libc.hdr.types.struct_timespec
-    libc.hdr.types.clockid_t
-    libc.src.__support.common
-    libc.src.__support.error_or
-    libc.src.__support.OSUtil.osutil
+    libc.src.__support.time.units
+    libc.src.__support.CPP.expected
+)
+
+add_header_library(
+  monotonicity
+  HDRS
+    monotonicity.h
+  DEPENDS
+    .clock_conversion
+    .abs_timeout
+    libc.hdr.time_macros
 )

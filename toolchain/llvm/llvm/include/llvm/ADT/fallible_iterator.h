@@ -67,9 +67,10 @@ namespace llvm {
 /// without requiring redundant error checks.
 template <typename Underlying> class fallible_iterator {
 private:
-  template <typename T, typename U = decltype(std::declval<T>().operator->())>
-  using enable_if_struct_deref_supported =
-      std::enable_if_t<!std::is_void_v<U>, U>;
+  template <typename T>
+  using enable_if_struct_deref_supported = std::enable_if_t<
+      !std::is_void<decltype(std::declval<T>().operator->())>::value,
+      decltype(std::declval<T>().operator->())>;
 
 public:
   /// Construct a fallible iterator that *cannot* be used as an end-of-range

@@ -51,7 +51,7 @@ private:
   std::unique_ptr<ContextDecision> Tables[12];
 
   // Table of ModRM encodings.
-  using ModRMMapTy = std::map<std::vector<unsigned>, unsigned>;
+  typedef std::map<std::vector<unsigned>, unsigned> ModRMMapTy;
   mutable ModRMMapTy ModRMTable;
 
   /// The instruction information table

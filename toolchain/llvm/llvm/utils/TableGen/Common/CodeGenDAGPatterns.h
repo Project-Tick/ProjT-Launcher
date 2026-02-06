@@ -29,6 +29,7 @@
 #include "llvm/TableGen/Record.h"
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <map>
 #include <numeric>
 #include <vector>
@@ -70,7 +71,7 @@ struct MachineValueTypeSet {
     return Count;
   }
   LLVM_ATTRIBUTE_ALWAYS_INLINE
-  void clear() { Words.fill(0); }
+  void clear() { std::memset(Words.data(), 0, NumWords * sizeof(WordType)); }
   LLVM_ATTRIBUTE_ALWAYS_INLINE
   bool empty() const {
     for (WordType W : Words)
@@ -85,7 +86,7 @@ struct MachineValueTypeSet {
   }
   std::pair<MachineValueTypeSet &, bool> insert(MVT T) {
     assert(T.SimpleTy < Capacity && "Capacity needs to be enlarged");
-    bool V = count(T);
+    bool V = count(T.SimpleTy);
     Words[T.SimpleTy / WordWidth] |= WordType(1) << (T.SimpleTy % WordWidth);
     return {*this, V};
   }
@@ -137,19 +138,25 @@ struct MachineValueTypeSet {
   private:
     unsigned find_from_pos(unsigned P) const {
       unsigned SkipWords = P / WordWidth;
+      unsigned SkipBits = P % WordWidth;
+      unsigned Count = SkipWords * WordWidth;
+
+      // If P is in the middle of a word, process it manually here, because
+      // the trailing bits need to be masked off to use findFirstSet.
+      if (SkipBits != 0) {
+        WordType W = Set->Words[SkipWords];
+        W &= maskLeadingOnes<WordType>(WordWidth - SkipBits);
+        if (W != 0)
+          return Count + llvm::countr_zero(W);
+        Count += WordWidth;
+        SkipWords++;
+      }
 
       for (unsigned i = SkipWords; i != NumWords; ++i) {
         WordType W = Set->Words[i];
-
-        // If P is in the middle of a word, process it manually here, because
-        // the trailing bits need to be masked off to use countr_zero.
-        if (i == SkipWords) {
-          unsigned SkipBits = P % WordWidth;
-          W &= maskTrailingZeros<WordType>(SkipBits);
-        }
-
         if (W != 0)
-          return i * WordWidth + llvm::countr_zero(W);
+          return Count + llvm::countr_zero(W);
+        Count += WordWidth;
       }
       return Capacity;
     }
@@ -184,7 +191,8 @@ struct TypeSetByHwMode : public InfoByHwMode<MachineValueTypeSet> {
   TypeSetByHwMode() = default;
   TypeSetByHwMode(const TypeSetByHwMode &VTS) = default;
   TypeSetByHwMode &operator=(const TypeSetByHwMode &) = default;
-  TypeSetByHwMode(MVT VT) : TypeSetByHwMode(ValueTypeByHwMode(VT)) {}
+  TypeSetByHwMode(MVT::SimpleValueType VT)
+      : TypeSetByHwMode(ValueTypeByHwMode(VT)) {}
   TypeSetByHwMode(ArrayRef<ValueTypeByHwMode> VTList);
 
   SetType &getOrCreate(unsigned Mode) { return Map[Mode]; }
@@ -237,12 +245,21 @@ raw_ostream &operator<<(raw_ostream &OS, const TypeSetByHwMode &T);
 struct TypeInfer {
   TypeInfer(TreePattern &T) : TP(T) {}
 
+  bool isConcrete(const TypeSetByHwMode &VTS, bool AllowEmpty) const {
+    return VTS.isValueTypeByHwMode(AllowEmpty);
+  }
+  ValueTypeByHwMode getConcrete(const TypeSetByHwMode &VTS,
+                                bool AllowEmpty) const {
+    assert(VTS.isValueTypeByHwMode(AllowEmpty));
+    return VTS.getValueTypeByHwMode();
+  }
+
   /// The protocol in the following functions (Merge*, force*, Enforce*,
   /// expand*) is to return "true" if a change has been made, "false"
   /// otherwise.
 
   bool MergeInTypeInfo(TypeSetByHwMode &Out, const TypeSetByHwMode &In) const;
-  bool MergeInTypeInfo(TypeSetByHwMode &Out, MVT InVT) const {
+  bool MergeInTypeInfo(TypeSetByHwMode &Out, MVT::SimpleValueType InVT) const {
     return MergeInTypeInfo(Out, TypeSetByHwMode(InVT));
   }
   bool MergeInTypeInfo(TypeSetByHwMode &Out,
@@ -332,7 +349,7 @@ private:
 };
 
 /// Set type used to track multiply used variables in patterns
-using MultipleUseVarSet = StringSet<>;
+typedef StringSet<> MultipleUseVarSet;
 
 /// SDTypeConstraint - This is a discriminated union of constraints,
 /// corresponding to the SDTypeConstraint tablegen class in Target.td.
@@ -376,9 +393,6 @@ struct SDTypeConstraint {
                         const SDTypeConstraint &RHS);
 };
 
-bool operator==(const SDTypeConstraint &LHS, const SDTypeConstraint &RHS);
-bool operator<(const SDTypeConstraint &LHS, const SDTypeConstraint &RHS);
-
 /// ScopedName - A name of a node associated with a "scope" that indicates
 /// the context (e.g. instance of Pattern or PatFrag) in which the name was
 /// used. This enables substitution of pattern fragments while keeping track
@@ -389,7 +403,7 @@ class ScopedName {
 
 public:
   ScopedName(unsigned Scope, StringRef Identifier)
-      : Scope(Scope), Identifier(Identifier.str()) {
+      : Scope(Scope), Identifier(std::string(Identifier)) {
     assert(Scope != 0 &&
            "Scope == 0 is used to indicate predicates without arguments");
   }
@@ -434,8 +448,8 @@ public:
 
   /// getKnownType - If the type constraints on this node imply a fixed type
   /// (e.g. all stores return void, etc), then return it as an
-  /// MVT.  Otherwise, return MVT::Other.
-  MVT getKnownType(unsigned ResNo) const;
+  /// MVT::SimpleValueType.  Otherwise, return MVT::Other.
+  MVT::SimpleValueType getKnownType(unsigned ResNo) const;
 
   unsigned getProperties() const { return Properties; }
 
@@ -573,11 +587,6 @@ public:
   bool hasGISelPredicateCode() const;
   std::string getGISelPredicateCode() const;
 
-  // If true, indicates that GlobalISel-based C++ code was supplied for checking
-  // register operands.
-  bool hasGISelLeafPredicateCode() const;
-  std::string getGISelLeafPredicateCode() const;
-
 private:
   bool hasPredCode() const;
   bool hasImmCode() const;
@@ -621,7 +630,7 @@ class TreePatternNode : public RefCountedBase<TreePatternNode> {
 
   /// Name - The name given to this node with the :$foo notation.
   ///
-  StringRef Name;
+  std::string Name;
 
   std::vector<ScopedName> NamesAsPredicateArg;
 
@@ -655,8 +664,8 @@ public:
   }
 
   bool hasName() const { return !Name.empty(); }
-  StringRef getName() const { return Name; }
-  void setName(StringRef N) { Name = N; }
+  const std::string &getName() const { return Name; }
+  void setName(StringRef N) { Name.assign(N.begin(), N.end()); }
 
   const std::vector<ScopedName> &getNamesAsPredicateArg() const {
     return NamesAsPredicateArg;
@@ -672,14 +681,17 @@ public:
 
   // Type accessors.
   unsigned getNumTypes() const { return Types.size(); }
+  ValueTypeByHwMode getType(unsigned ResNo) const {
+    return Types[ResNo].getValueTypeByHwMode();
+  }
   const std::vector<TypeSetByHwMode> &getExtTypes() const { return Types; }
   const TypeSetByHwMode &getExtType(unsigned ResNo) const {
     return Types[ResNo];
   }
   TypeSetByHwMode &getExtType(unsigned ResNo) { return Types[ResNo]; }
   void setType(unsigned ResNo, const TypeSetByHwMode &T) { Types[ResNo] = T; }
-  MVT getSimpleType(unsigned ResNo) const {
-    return Types[ResNo].getMachineValueType();
+  MVT::SimpleValueType getSimpleType(unsigned ResNo) const {
+    return Types[ResNo].getMachineValueType().SimpleTy;
   }
 
   bool hasConcreteType(unsigned ResNo) const {
@@ -727,8 +739,8 @@ public:
 
   /// hasChild - Return true if N is any of our children.
   bool hasChild(const TreePatternNode *N) const {
-    for (const TreePatternNodePtr &Child : Children)
-      if (Child.get() == N)
+    for (unsigned i = 0, e = Children.size(); i != e; ++i)
+      if (Children[i].get() == N)
         return true;
     return false;
   }
@@ -811,7 +823,7 @@ public: // Higher level manipulation routines.
   /// SubstituteFormalArguments - Replace the formal arguments in this tree
   /// with actual values specified by ArgMap.
   void
-  SubstituteFormalArguments(std::map<StringRef, TreePatternNodePtr> &ArgMap);
+  SubstituteFormalArguments(std::map<std::string, TreePatternNodePtr> &ArgMap);
 
   /// InlinePatternFragments - If \p T pattern refers to any pattern
   /// fragments, return the set of inlined versions (this can be more than
@@ -830,7 +842,8 @@ public: // Higher level manipulation routines.
   ///
   bool UpdateNodeType(unsigned ResNo, const TypeSetByHwMode &InTy,
                       TreePattern &TP);
-  bool UpdateNodeType(unsigned ResNo, MVT InTy, TreePattern &TP);
+  bool UpdateNodeType(unsigned ResNo, MVT::SimpleValueType InTy,
+                      TreePattern &TP);
   bool UpdateNodeType(unsigned ResNo, const ValueTypeByHwMode &InTy,
                       TreePattern &TP);
 
@@ -904,9 +917,6 @@ public:
               CodeGenDAGPatterns &ise);
   TreePattern(const Record *TheRec, const DagInit *Pat, bool isInput,
               CodeGenDAGPatterns &ise);
-  TreePattern(const Record *TheRec, ArrayRef<const Init *> Args,
-              ArrayRef<const StringInit *> ArgNames, bool isInput,
-              CodeGenDAGPatterns &ise);
   TreePattern(const Record *TheRec, TreePatternNodePtr Pat, bool isInput,
               CodeGenDAGPatterns &ise);
 
@@ -915,6 +925,7 @@ public:
   const std::vector<TreePatternNodePtr> &getTrees() const { return Trees; }
   unsigned getNumTrees() const { return Trees.size(); }
   const TreePatternNodePtr &getTree(unsigned i) const { return Trees[i]; }
+  void setTree(unsigned i, TreePatternNodePtr Tree) { Trees[i] = Tree; }
   const TreePatternNodePtr &getOnlyTree() const {
     assert(Trees.size() == 1 && "Doesn't have exactly one pattern!");
     return Trees[0];
@@ -970,9 +981,6 @@ public:
 
 private:
   TreePatternNodePtr ParseTreePattern(const Init *DI, StringRef OpName);
-  TreePatternNodePtr
-  ParseRootlessTreePattern(ArrayRef<const Init *> Args,
-                           ArrayRef<const StringInit *> ArgNames);
   void ComputeNamedNodes();
   void ComputeNamedNodes(TreePatternNode &N);
 };
@@ -985,7 +993,8 @@ inline bool TreePatternNode::UpdateNodeType(unsigned ResNo,
   return TP.getInfer().MergeInTypeInfo(Types[ResNo], VTS);
 }
 
-inline bool TreePatternNode::UpdateNodeType(unsigned ResNo, MVT InTy,
+inline bool TreePatternNode::UpdateNodeType(unsigned ResNo,
+                                            MVT::SimpleValueType InTy,
                                             TreePattern &TP) {
   TypeSetByHwMode VTS(InTy);
   TP.getInfer().expandOverloads(VTS);
@@ -1118,17 +1127,19 @@ private:
   std::vector<PatternToMatch> PatternsToMatch;
 
   TypeSetByHwMode LegalVTS;
-  TypeSetByHwMode LegalPtrVTS;
+
+  using PatternRewriterFn = std::function<void(TreePattern *)>;
+  PatternRewriterFn PatternRewriter;
 
   unsigned NumScopes = 0;
 
 public:
-  CodeGenDAGPatterns(const RecordKeeper &R);
+  CodeGenDAGPatterns(const RecordKeeper &R,
+                     PatternRewriterFn PatternRewriter = nullptr);
 
   CodeGenTarget &getTargetInfo() { return Target; }
   const CodeGenTarget &getTargetInfo() const { return Target; }
   const TypeSetByHwMode &getLegalTypes() const { return LegalVTS; }
-  const TypeSetByHwMode &getLegalPtrTypes() const { return LegalPtrVTS; }
 
   const Record *getSDNodeNamed(StringRef Name) const;
 
@@ -1152,9 +1163,9 @@ public:
   }
 
   const CodeGenIntrinsic &getIntrinsic(const Record *R) const {
-    for (const CodeGenIntrinsic &Intrinsic : Intrinsics)
-      if (Intrinsic.TheDef == R)
-        return Intrinsic;
+    for (unsigned i = 0, e = Intrinsics.size(); i != e; ++i)
+      if (Intrinsics[i].TheDef == R)
+        return Intrinsics[i];
     llvm_unreachable("Unknown intrinsic!");
   }
 
@@ -1196,15 +1207,15 @@ public:
   iterator_range<pf_iterator> ptfs() const { return PatternFragments; }
 
   // Patterns to match information.
-  using ptm_iterator = std::vector<PatternToMatch>::const_iterator;
+  typedef std::vector<PatternToMatch>::const_iterator ptm_iterator;
   ptm_iterator ptm_begin() const { return PatternsToMatch.begin(); }
   ptm_iterator ptm_end() const { return PatternsToMatch.end(); }
   iterator_range<ptm_iterator> ptms() const { return PatternsToMatch; }
 
   /// Parse the Pattern for an instruction, and insert the result in DAGInsts.
-  using DAGInstMap = std::map<const Record *, DAGInstruction, LessRecordByID>;
-  void parseInstructionPattern(const CodeGenInstruction &CGI,
-                               const ListInit *Pattern, DAGInstMap &DAGInsts);
+  typedef std::map<const Record *, DAGInstruction, LessRecordByID> DAGInstMap;
+  void parseInstructionPattern(CodeGenInstruction &CGI, const ListInit *Pattern,
+                               DAGInstMap &DAGInsts);
 
   const DAGInstruction &getInstruction(const Record *R) const {
     auto F = Instructions.find(R);
@@ -1230,7 +1241,6 @@ public:
   }
 
 private:
-  TypeSetByHwMode ComputeLegalPtrTypes() const;
   void ParseNodeInfo();
   void ParseNodeTransforms();
   void ParseComplexPatterns();
@@ -1248,22 +1258,20 @@ private:
                        ArrayRef<const Record *> InstImpResults,
                        bool ShouldIgnore = false);
   void AddPatternToMatch(TreePattern *Pattern, PatternToMatch &&PTM);
-
-  using InstInputsTy = std::map<StringRef, TreePatternNodePtr>;
-  using InstResultsTy =
-      MapVector<StringRef, TreePatternNodePtr, std::map<StringRef, unsigned>>;
-  void FindPatternInputsAndOutputs(TreePattern &I, TreePatternNodePtr Pat,
-                                   InstInputsTy &InstInputs,
-                                   InstResultsTy &InstResults,
-                                   std::vector<const Record *> &InstImpResults);
+  void FindPatternInputsAndOutputs(
+      TreePattern &I, TreePatternNodePtr Pat,
+      std::map<std::string, TreePatternNodePtr> &InstInputs,
+      MapVector<std::string, TreePatternNodePtr,
+                std::map<std::string, unsigned>> &InstResults,
+      std::vector<const Record *> &InstImpResults);
   unsigned getNewUID();
 };
 
 inline bool SDNodeInfo::ApplyTypeConstraints(TreePatternNode &N,
                                              TreePattern &TP) const {
   bool MadeChange = false;
-  for (const SDTypeConstraint &TypeConstraint : TypeConstraints)
-    MadeChange |= TypeConstraint.ApplyTypeConstraint(N, *this, TP);
+  for (unsigned i = 0, e = TypeConstraints.size(); i != e; ++i)
+    MadeChange |= TypeConstraints[i].ApplyTypeConstraint(N, *this, TP);
   return MadeChange;
 }
 

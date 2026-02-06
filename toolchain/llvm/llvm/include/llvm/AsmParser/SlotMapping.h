@@ -17,6 +17,7 @@
 #include "llvm/AsmParser/NumberedValues.h"
 #include "llvm/IR/TrackingMDRef.h"
 #include <map>
+#include <vector>
 
 namespace llvm {
 

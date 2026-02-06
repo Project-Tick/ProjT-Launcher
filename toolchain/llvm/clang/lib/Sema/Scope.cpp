@@ -99,7 +99,6 @@ void Scope::Init(Scope *parent, unsigned flags) {
   UsingDirectives.clear();
   Entity = nullptr;
   ErrorTrap.reset();
-  PrecedingLabel = nullptr;
   NRVO = std::nullopt;
 }
 
@@ -235,8 +234,7 @@ void Scope::dumpImpl(raw_ostream &OS) const {
       {OpenACCComputeConstructScope, "OpenACCComputeConstructScope"},
       {TypeAliasScope, "TypeAliasScope"},
       {FriendScope, "FriendScope"},
-      {OpenACCComputeConstructScope, "OpenACCComputeConstructScope"},
-      {OpenACCLoopConstructScope, "OpenACCLoopConstructScope"}};
+  };
 
   for (auto Info : FlagInfo) {
     if (Flags & Info.first) {

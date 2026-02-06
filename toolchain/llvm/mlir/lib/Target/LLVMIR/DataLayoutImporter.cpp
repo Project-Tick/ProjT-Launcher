@@ -6,14 +6,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "mlir/Target/LLVMIR/DataLayoutImporter.h"
+#include "DataLayoutImporter.h"
 #include "mlir/Dialect/DLTI/DLTI.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/Interfaces/DataLayoutInterfaces.h"
 #include "mlir/Target/LLVMIR/Import.h"
-
 #include "llvm/IR/DataLayout.h"
 
 using namespace mlir;
@@ -63,23 +63,18 @@ FailureOr<uint64_t> DataLayoutImporter::tryToParseInt(StringRef &token) const {
   return parameter;
 }
 
-template <class T>
-static FailureOr<SmallVector<T>> tryToParseIntListImpl(StringRef token) {
+FailureOr<SmallVector<uint64_t>>
+DataLayoutImporter::tryToParseIntList(StringRef token) const {
   SmallVector<StringRef> tokens;
   token.consume_front(":");
   token.split(tokens, ':');
 
   // Parse an integer list.
-  SmallVector<T> results(tokens.size());
+  SmallVector<uint64_t> results(tokens.size());
   for (auto [result, token] : llvm::zip(results, tokens))
     if (token.getAsInteger(/*Radix=*/10, result))
       return failure();
   return results;
-}
-
-FailureOr<SmallVector<uint64_t>>
-DataLayoutImporter::tryToParseIntList(StringRef token) const {
-  return tryToParseIntListImpl<uint64_t>(token);
 }
 
 FailureOr<DenseIntElementsAttr>
@@ -168,21 +163,6 @@ DataLayoutImporter::tryToEmplaceEndiannessEntry(StringRef endianness,
   return success();
 }
 
-LogicalResult DataLayoutImporter::tryToEmplaceManglingModeEntry(
-    StringRef token, llvm::StringLiteral manglingKey) {
-  auto key = StringAttr::get(context, manglingKey);
-  if (keyEntries.count(key))
-    return success();
-
-  token.consume_front(":");
-  if (token.empty())
-    return failure();
-
-  keyEntries.try_emplace(
-      key, DataLayoutEntryAttr::get(key, StringAttr::get(context, token)));
-  return success();
-}
-
 LogicalResult
 DataLayoutImporter::tryToEmplaceAddrSpaceEntry(StringRef token,
                                                llvm::StringLiteral spaceKey) {
@@ -226,137 +206,94 @@ DataLayoutImporter::tryToEmplaceStackAlignmentEntry(StringRef token) {
   return success();
 }
 
-LogicalResult DataLayoutImporter::tryToEmplaceFunctionPointerAlignmentEntry(
-    StringRef fnPtrString, StringRef token) {
-  auto key = StringAttr::get(
-      context, DLTIDialect::kDataLayoutFunctionPointerAlignmentKey);
-  if (keyEntries.count(key))
-    return success();
+void DataLayoutImporter::translateDataLayout(
+    const llvm::DataLayout &llvmDataLayout) {
+  dataLayout = {};
 
-  // The data layout entry for "F<type><abi>". <abi> is the aligment value,
-  // preceded by one of the two possible <types>:
-  // "i": The alignment of function pointers is independent of the alignment of
-  //      functions, and is a multiple of <abi>.
-  // "n": The alignment of function pointers is a multiple of the explicit
-  //      alignment specified on the function, and is a multiple of <abi>.
-  bool functionDependent = false;
-  if (fnPtrString == "n")
-    functionDependent = true;
-  else if (fnPtrString != "i")
-    return failure();
-
-  FailureOr<uint64_t> alignment = tryToParseInt(token);
-  if (failed(alignment))
-    return failure();
-
-  keyEntries.try_emplace(
-      key, DataLayoutEntryAttr::get(
-               key, FunctionPointerAlignmentAttr::get(
-                        key.getContext(), *alignment, functionDependent)));
-  return success();
-}
-
-LogicalResult
-DataLayoutImporter::tryToEmplaceLegalIntWidthsEntry(StringRef token) {
-  auto key =
-      StringAttr::get(context, DLTIDialect::kDataLayoutLegalIntWidthsKey);
-  if (keyEntries.count(key))
-    return success();
-
-  FailureOr<SmallVector<int32_t>> intWidths =
-      tryToParseIntListImpl<int32_t>(token);
-  if (failed(intWidths) || intWidths->empty())
-    return failure();
-
-  OpBuilder builder(context);
-  keyEntries.try_emplace(
-      key,
-      DataLayoutEntryAttr::get(key, builder.getDenseI32ArrayAttr(*intWidths)));
-  return success();
-}
-
-DataLayoutSpecInterface DataLayoutImporter::dataLayoutSpecFromDataLayoutStr() {
-  if (!dataLayoutStr.empty())
-    dataLayoutStr += "-";
-  dataLayoutStr += kDefaultDataLayout;
+  // Transform the data layout to its string representation and append the
+  // default data layout string specified in the language reference
+  // (https://llvm.org/docs/LangRef.html#data-layout). The translation then
+  // parses the string and ignores the default value if a specific kind occurs
+  // in both strings. Additionally, the following default values exist:
+  // - non-default address space pointer specifications default to the default
+  //   address space pointer specification
+  // - the alloca address space defaults to the default address space.
+  layoutStr = llvmDataLayout.getStringRepresentation();
+  if (!layoutStr.empty())
+    layoutStr += "-";
+  layoutStr += kDefaultDataLayout;
+  StringRef layout(layoutStr);
 
   // Split the data layout string into tokens separated by a dash.
   SmallVector<StringRef> tokens;
-  StringRef(dataLayoutStr).split(tokens, '-');
+  layout.split(tokens, '-');
 
   for (StringRef token : tokens) {
     lastToken = token;
     FailureOr<StringRef> prefix = tryToParseAlphaPrefix(token);
     if (failed(prefix))
-      return {};
+      return;
 
     // Parse the endianness.
     if (*prefix == "e") {
       if (failed(tryToEmplaceEndiannessEntry(
               DLTIDialect::kDataLayoutEndiannessLittle, token)))
-        return {};
+        return;
       continue;
     }
     if (*prefix == "E") {
       if (failed(tryToEmplaceEndiannessEntry(
               DLTIDialect::kDataLayoutEndiannessBig, token)))
-        return {};
+        return;
       continue;
     }
     // Parse the program address space.
     if (*prefix == "P") {
       if (failed(tryToEmplaceAddrSpaceEntry(
               token, DLTIDialect::kDataLayoutProgramMemorySpaceKey)))
-        return {};
-      continue;
-    }
-    // Parse the mangling mode.
-    if (*prefix == "m") {
-      if (failed(tryToEmplaceManglingModeEntry(
-              token, DLTIDialect::kDataLayoutManglingModeKey)))
-        return {};
+        return;
       continue;
     }
     // Parse the global address space.
     if (*prefix == "G") {
       if (failed(tryToEmplaceAddrSpaceEntry(
               token, DLTIDialect::kDataLayoutGlobalMemorySpaceKey)))
-        return {};
+        return;
       continue;
     }
     // Parse the alloca address space.
     if (*prefix == "A") {
       if (failed(tryToEmplaceAddrSpaceEntry(
               token, DLTIDialect::kDataLayoutAllocaMemorySpaceKey)))
-        return {};
+        return;
       continue;
     }
     // Parse the stack alignment.
     if (*prefix == "S") {
       if (failed(tryToEmplaceStackAlignmentEntry(token)))
-        return {};
+        return;
       continue;
     }
     // Parse integer alignment specifications.
     if (*prefix == "i") {
       FailureOr<uint64_t> width = tryToParseInt(token);
       if (failed(width))
-        return {};
+        return;
 
       Type type = IntegerType::get(context, *width);
       if (failed(tryToEmplaceAlignmentEntry(type, token)))
-        return {};
+        return;
       continue;
     }
     // Parse float alignment specifications.
     if (*prefix == "f") {
       FailureOr<uint64_t> width = tryToParseInt(token);
       if (failed(width))
-        return {};
+        return;
 
       Type type = getFloatType(context, *width);
       if (failed(tryToEmplaceAlignmentEntry(type, token)))
-        return {};
+        return;
       continue;
     }
     // Parse pointer alignment specifications.
@@ -364,25 +301,11 @@ DataLayoutSpecInterface DataLayoutImporter::dataLayoutSpecFromDataLayoutStr() {
       FailureOr<uint64_t> space =
           token.starts_with(":") ? 0 : tryToParseInt(token);
       if (failed(space))
-        return {};
+        return;
 
       auto type = LLVMPointerType::get(context, *space);
       if (failed(tryToEmplacePointerAlignmentEntry(type, token)))
-        return {};
-      continue;
-    }
-    // Parse native integer widths specifications.
-    if (*prefix == "n") {
-      if (failed(tryToEmplaceLegalIntWidthsEntry(token)))
-        return {};
-      continue;
-    }
-    // Parse function pointer alignment specifications.
-    // Note that prefix here is "Fn" or "Fi", not a single character.
-    if (prefix->starts_with("F")) {
-      StringRef nextPrefix = prefix->drop_front(1);
-      if (failed(tryToEmplaceFunctionPointerAlignmentEntry(nextPrefix, token)))
-        return {};
+        return;
       continue;
     }
 
@@ -397,12 +320,11 @@ DataLayoutSpecInterface DataLayoutImporter::dataLayoutSpecFromDataLayoutStr() {
     entries.push_back(it.second);
   for (const auto &it : keyEntries)
     entries.push_back(it.second);
-  return DataLayoutSpecAttr::get(context, entries);
+  dataLayout = DataLayoutSpecAttr::get(context, entries);
 }
 
 DataLayoutSpecInterface
 mlir::translateDataLayout(const llvm::DataLayout &dataLayout,
                           MLIRContext *context) {
-  return DataLayoutImporter(context, dataLayout.getStringRepresentation())
-      .getDataLayoutSpec();
+  return DataLayoutImporter(context, dataLayout).getDataLayout();
 }

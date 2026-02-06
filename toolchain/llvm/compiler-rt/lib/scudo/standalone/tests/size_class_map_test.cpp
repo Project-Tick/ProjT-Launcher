@@ -12,10 +12,8 @@
 
 template <class SizeClassMap> void testSizeClassMap() {
   typedef SizeClassMap SCMap;
+  scudo::printMap<SCMap>();
   scudo::validateMap<SCMap>();
-  if (TEST_HAS_FAILURE) {
-    scudo::printMap<SCMap>();
-  }
 }
 
 TEST(ScudoSizeClassMapTest, DefaultSizeClassMap) {

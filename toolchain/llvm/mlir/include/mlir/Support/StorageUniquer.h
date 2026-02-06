@@ -97,9 +97,9 @@ public:
     template <typename T>
     ArrayRef<T> copyInto(ArrayRef<T> elements) {
       if (elements.empty())
-        return {};
+        return std::nullopt;
       auto result = allocator.Allocate<T>(elements.size());
-      llvm::uninitialized_copy(elements, result);
+      std::uninitialized_copy(elements.begin(), elements.end(), result);
       return ArrayRef<T>(result, elements.size());
     }
 
@@ -110,7 +110,7 @@ public:
         return StringRef();
 
       char *result = allocator.Allocate<char>(str.size() + 1);
-      llvm::uninitialized_copy(str, result);
+      std::uninitialized_copy(str.begin(), str.end(), result);
       result[str.size()] = 0;
       return StringRef(result, str.size());
     }

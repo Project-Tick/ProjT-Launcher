@@ -27,7 +27,7 @@ int main ()
 {
   @autoreleasepool
   {
-    MyClass *c = [MyClass new];
+    MyClass *c = [MyClass alloc];
     [c doSomething];
   }
 }

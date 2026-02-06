@@ -22,7 +22,7 @@
 
 namespace mlir {
 namespace bufferization {
-#define GEN_PASS_DEF_BUFFERDEALLOCATIONSIMPLIFICATIONPASS
+#define GEN_PASS_DEF_BUFFERDEALLOCATIONSIMPLIFICATION
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h.inc"
 } // namespace bufferization
 } // namespace mlir
@@ -37,12 +37,8 @@ using namespace mlir::bufferization;
 /// Given a memref value, return the "base" value by skipping over all
 /// ViewLikeOpInterface ops (if any) in the reverse use-def chain.
 static Value getViewBase(Value value) {
-  while (auto viewLikeOp = value.getDefiningOp<ViewLikeOpInterface>()) {
-    if (value != viewLikeOp.getViewDest()) {
-      break;
-    }
+  while (auto viewLikeOp = value.getDefiningOp<ViewLikeOpInterface>())
     value = viewLikeOp.getViewSource();
-  }
   return value;
 }
 
@@ -171,8 +167,8 @@ struct RemoveDeallocMemrefsContainedInRetained
       std::optional<bool> analysisResult =
           analysis.isSameAllocation(retained, memref);
       if (analysisResult == true) {
-        auto disjunction = arith::OrIOp::create(rewriter, deallocOp.getLoc(),
-                                                updatedCondition, cond);
+        auto disjunction = rewriter.create<arith::OrIOp>(
+            deallocOp.getLoc(), updatedCondition, cond);
         rewriter.replaceAllUsesExcept(updatedCondition, disjunction.getResult(),
                                       disjunction);
       }
@@ -251,16 +247,16 @@ struct RemoveRetainedMemrefsGuaranteedToNotAlias
         continue;
       }
 
-      replacements.push_back(arith::ConstantOp::create(
-          rewriter, deallocOp.getLoc(), rewriter.getBoolAttr(false)));
+      replacements.push_back(rewriter.create<arith::ConstantOp>(
+          deallocOp.getLoc(), rewriter.getBoolAttr(false)));
     }
 
     if (newRetainedMemrefs.size() == deallocOp.getRetained().size())
       return failure();
 
-    auto newDeallocOp =
-        DeallocOp::create(rewriter, deallocOp.getLoc(), deallocOp.getMemrefs(),
-                          deallocOp.getConditions(), newRetainedMemrefs);
+    auto newDeallocOp = rewriter.create<DeallocOp>(
+        deallocOp.getLoc(), deallocOp.getMemrefs(), deallocOp.getConditions(),
+        newRetainedMemrefs);
     int i = 0;
     for (auto &repl : replacements) {
       if (!repl)
@@ -330,8 +326,8 @@ struct SplitDeallocWhenNotAliasingAnyOther
       }
 
       // Create new bufferization.dealloc op for `memref`.
-      auto newDeallocOp = DeallocOp::create(rewriter, loc, memref, cond,
-                                            deallocOp.getRetained());
+      auto newDeallocOp = rewriter.create<DeallocOp>(loc, memref, cond,
+                                                     deallocOp.getRetained());
       updatedConditions.push_back(
           llvm::to_vector(ValueRange(newDeallocOp.getUpdatedConditions())));
     }
@@ -341,9 +337,8 @@ struct SplitDeallocWhenNotAliasingAnyOther
       return failure();
 
     // Create bufferization.dealloc op for all remaining memrefs.
-    auto newDeallocOp =
-        DeallocOp::create(rewriter, loc, remainingMemrefs, remainingConditions,
-                          deallocOp.getRetained());
+    auto newDeallocOp = rewriter.create<DeallocOp>(
+        loc, remainingMemrefs, remainingConditions, deallocOp.getRetained());
 
     // Bit-or all conditions.
     SmallVector<Value> replacements =
@@ -352,8 +347,8 @@ struct SplitDeallocWhenNotAliasingAnyOther
       assert(replacements.size() == additionalConditions.size() &&
              "expected same number of updated conditions");
       for (int64_t i = 0, e = replacements.size(); i < e; ++i) {
-        replacements[i] = arith::OrIOp::create(rewriter, loc, replacements[i],
-                                               additionalConditions[i]);
+        replacements[i] = rewriter.create<arith::OrIOp>(
+            loc, replacements[i], additionalConditions[i]);
       }
     }
     rewriter.replaceOp(deallocOp, replacements);
@@ -458,7 +453,7 @@ namespace {
 /// into the right positions. Furthermore, it inserts additional clones if
 /// necessary. It uses the algorithm described at the top of the file.
 struct BufferDeallocationSimplificationPass
-    : public bufferization::impl::BufferDeallocationSimplificationPassBase<
+    : public bufferization::impl::BufferDeallocationSimplificationBase<
           BufferDeallocationSimplificationPass> {
   void runOnOperation() override {
     BufferOriginAnalysis analysis(getOperation());
@@ -468,17 +463,22 @@ struct BufferDeallocationSimplificationPass
                  SplitDeallocWhenNotAliasingAnyOther,
                  RetainedMemrefAliasingAlwaysDeallocatedMemref>(&getContext(),
                                                                 analysis);
-
-    populateDeallocOpCanonicalizationPatterns(patterns, &getContext());
     // We don't want that the block structure changes invalidating the
-    // `BufferOriginAnalysis` so we apply the rewrites with `Normal` level of
+    // `BufferOriginAnalysis` so we apply the rewrites witha `Normal` level of
     // region simplification
-    if (failed(applyPatternsGreedily(
-            getOperation(), std::move(patterns),
-            GreedyRewriteConfig().setRegionSimplificationLevel(
-                GreedySimplifyRegionLevel::Normal))))
+    GreedyRewriteConfig config;
+    config.enableRegionSimplification = GreedySimplifyRegionLevel::Normal;
+    populateDeallocOpCanonicalizationPatterns(patterns, &getContext());
+
+    if (failed(
+            applyPatternsGreedily(getOperation(), std::move(patterns), config)))
       signalPassFailure();
   }
 };
 
 } // namespace
+
+std::unique_ptr<Pass>
+mlir::bufferization::createBufferDeallocationSimplificationPass() {
+  return std::make_unique<BufferDeallocationSimplificationPass>();
+}

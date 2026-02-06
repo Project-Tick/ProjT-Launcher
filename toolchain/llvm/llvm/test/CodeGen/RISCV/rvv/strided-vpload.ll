@@ -24,6 +24,8 @@
 ; RUN:   -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s --check-prefixes=CHECK,CHECK-RV64,CHECK-NO-OPT,CHECK-NO-OPT-ZVFHMIN,CHECK-NO-OPT-RV64
 
+declare <vscale x 1 x i8> @llvm.experimental.vp.strided.load.nxv1i8.p0.i8(ptr, i8, <vscale x 1 x i1>, i32)
+
 define <vscale x 1 x i8> @strided_vpload_nxv1i8_i8(ptr %ptr, i8 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv1i8_i8:
 ; CHECK:       # %bb.0:
@@ -34,6 +36,8 @@ define <vscale x 1 x i8> @strided_vpload_nxv1i8_i8(ptr %ptr, i8 signext %stride,
   ret <vscale x 1 x i8> %load
 }
 
+declare <vscale x 1 x i8> @llvm.experimental.vp.strided.load.nxv1i8.p0.i16(ptr, i16, <vscale x 1 x i1>, i32)
+
 define <vscale x 1 x i8> @strided_vpload_nxv1i8_i16(ptr %ptr, i16 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv1i8_i16:
 ; CHECK:       # %bb.0:
@@ -43,6 +47,8 @@ define <vscale x 1 x i8> @strided_vpload_nxv1i8_i16(ptr %ptr, i16 signext %strid
   %load = call <vscale x 1 x i8> @llvm.experimental.vp.strided.load.nxv1i8.p0.i16(ptr %ptr, i16 %stride, <vscale x 1 x i1> %m, i32 %evl)
   ret <vscale x 1 x i8> %load
 }
+
+declare <vscale x 1 x i8> @llvm.experimental.vp.strided.load.nxv1i8.p0.i64(ptr, i64, <vscale x 1 x i1>, i32)
 
 define <vscale x 1 x i8> @strided_vpload_nxv1i8_i64(ptr %ptr, i64 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-RV32-LABEL: strided_vpload_nxv1i8_i64:
@@ -76,6 +82,8 @@ define <vscale x 1 x i8> @strided_vpload_nxv1i8_i64_allones_mask(ptr %ptr, i64 s
   ret <vscale x 1 x i8> %load
 }
 
+declare <vscale x 1 x i8> @llvm.experimental.vp.strided.load.nxv1i8.p0.i32(ptr, i32, <vscale x 1 x i1>, i32)
+
 define <vscale x 1 x i8> @strided_vpload_nxv1i8(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv1i8:
 ; CHECK:       # %bb.0:
@@ -96,6 +104,8 @@ define <vscale x 1 x i8> @strided_vpload_nxv1i8_allones_mask(ptr %ptr, i32 signe
   ret <vscale x 1 x i8> %load
 }
 
+declare <vscale x 2 x i8> @llvm.experimental.vp.strided.load.nxv2i8.p0.i32(ptr, i32, <vscale x 2 x i1>, i32)
+
 define <vscale x 2 x i8> @strided_vpload_nxv2i8(ptr %ptr, i32 signext %stride, <vscale x 2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv2i8:
 ; CHECK:       # %bb.0:
@@ -106,6 +116,8 @@ define <vscale x 2 x i8> @strided_vpload_nxv2i8(ptr %ptr, i32 signext %stride, <
   ret <vscale x 2 x i8> %load
 }
 
+declare <vscale x 4 x i8> @llvm.experimental.vp.strided.load.nxv4i8.p0.i32(ptr, i32, <vscale x 4 x i1>, i32)
+
 define <vscale x 4 x i8> @strided_vpload_nxv4i8(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv4i8:
 ; CHECK:       # %bb.0:
@@ -115,6 +127,8 @@ define <vscale x 4 x i8> @strided_vpload_nxv4i8(ptr %ptr, i32 signext %stride, <
   %load = call <vscale x 4 x i8> @llvm.experimental.vp.strided.load.nxv4i8.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> %m, i32 %evl)
   ret <vscale x 4 x i8> %load
 }
+
+declare <vscale x 8 x i8> @llvm.experimental.vp.strided.load.nxv8i8.p0.i32(ptr, i32, <vscale x 8 x i1>, i32)
 
 define <vscale x 8 x i8> @strided_vpload_nxv8i8(ptr %ptr, i32 signext %stride, <vscale x 8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv8i8:
@@ -146,6 +160,8 @@ define <vscale x 8 x i8> @strided_vpload_nxv8i8_allones_mask(ptr %ptr, i32 signe
   ret <vscale x 8 x i8> %load
 }
 
+declare <vscale x 1 x i16> @llvm.experimental.vp.strided.load.nxv1i16.p0.i32(ptr, i32, <vscale x 1 x i1>, i32)
+
 define <vscale x 1 x i16> @strided_vpload_nxv1i16(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv1i16:
 ; CHECK:       # %bb.0:
@@ -155,6 +171,8 @@ define <vscale x 1 x i16> @strided_vpload_nxv1i16(ptr %ptr, i32 signext %stride,
   %load = call <vscale x 1 x i16> @llvm.experimental.vp.strided.load.nxv1i16.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 %evl)
   ret <vscale x 1 x i16> %load
 }
+
+declare <vscale x 2 x i16> @llvm.experimental.vp.strided.load.nxv2i16.p0.i32(ptr, i32, <vscale x 2 x i1>, i32)
 
 define <vscale x 2 x i16> @strided_vpload_nxv2i16(ptr %ptr, i32 signext %stride, <vscale x 2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv2i16:
@@ -176,6 +194,8 @@ define <vscale x 2 x i16> @strided_vpload_nxv2i16_allones_mask(ptr %ptr, i32 sig
   ret <vscale x 2 x i16> %load
 }
 
+declare <vscale x 4 x i16> @llvm.experimental.vp.strided.load.nxv4i16.p0.i32(ptr, i32, <vscale x 4 x i1>, i32)
+
 define <vscale x 4 x i16> @strided_vpload_nxv4i16(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv4i16:
 ; CHECK:       # %bb.0:
@@ -196,6 +216,8 @@ define <vscale x 4 x i16> @strided_vpload_nxv4i16_unit_stride(ptr %ptr, <vscale 
   ret <vscale x 4 x i16> %load
 }
 
+declare <vscale x 8 x i16> @llvm.experimental.vp.strided.load.nxv8i16.p0.i32(ptr, i32, <vscale x 8 x i1>, i32)
+
 define <vscale x 8 x i16> @strided_vpload_nxv8i16(ptr %ptr, i32 signext %stride, <vscale x 8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv8i16:
 ; CHECK:       # %bb.0:
@@ -206,6 +228,8 @@ define <vscale x 8 x i16> @strided_vpload_nxv8i16(ptr %ptr, i32 signext %stride,
   ret <vscale x 8 x i16> %load
 }
 
+declare <vscale x 1 x i32> @llvm.experimental.vp.strided.load.nxv1i32.p0.i32(ptr, i32, <vscale x 1 x i1>, i32)
+
 define <vscale x 1 x i32> @strided_vpload_nxv1i32(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv1i32:
 ; CHECK:       # %bb.0:
@@ -215,6 +239,8 @@ define <vscale x 1 x i32> @strided_vpload_nxv1i32(ptr %ptr, i32 signext %stride,
   %load = call <vscale x 1 x i32> @llvm.experimental.vp.strided.load.nxv1i32.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 %evl)
   ret <vscale x 1 x i32> %load
 }
+
+declare <vscale x 2 x i32> @llvm.experimental.vp.strided.load.nxv2i32.p0.i32(ptr, i32, <vscale x 2 x i1>, i32)
 
 define <vscale x 2 x i32> @strided_vpload_nxv2i32(ptr %ptr, i32 signext %stride, <vscale x 2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv2i32:
@@ -236,6 +262,8 @@ define <vscale x 2 x i32> @strided_vpload_nxv2i32_unit_stride(ptr %ptr, <vscale 
   ret <vscale x 2 x i32> %load
 }
 
+declare <vscale x 4 x i32> @llvm.experimental.vp.strided.load.nxv4i32.p0.i32(ptr, i32, <vscale x 4 x i1>, i32)
+
 define <vscale x 4 x i32> @strided_vpload_nxv4i32(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv4i32:
 ; CHECK:       # %bb.0:
@@ -256,6 +284,8 @@ define <vscale x 4 x i32> @strided_vpload_nxv4i32_allones_mask(ptr %ptr, i32 sig
   ret <vscale x 4 x i32> %load
 }
 
+declare <vscale x 8 x i32> @llvm.experimental.vp.strided.load.nxv8i32.p0.i32(ptr, i32, <vscale x 8 x i1>, i32)
+
 define <vscale x 8 x i32> @strided_vpload_nxv8i32(ptr %ptr, i32 signext %stride, <vscale x 8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv8i32:
 ; CHECK:       # %bb.0:
@@ -265,6 +295,8 @@ define <vscale x 8 x i32> @strided_vpload_nxv8i32(ptr %ptr, i32 signext %stride,
   %load = call <vscale x 8 x i32> @llvm.experimental.vp.strided.load.nxv8i32.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 8 x i1> %m, i32 %evl)
   ret <vscale x 8 x i32> %load
 }
+
+declare <vscale x 1 x i64> @llvm.experimental.vp.strided.load.nxv1i64.p0.i32(ptr, i32, <vscale x 1 x i1>, i32)
 
 define <vscale x 1 x i64> @strided_vpload_nxv1i64(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv1i64:
@@ -296,6 +328,8 @@ define <vscale x 1 x i64> @strided_vpload_nxv1i64_allones_mask(ptr %ptr, i32 sig
   ret <vscale x 1 x i64> %load
 }
 
+declare <vscale x 2 x i64> @llvm.experimental.vp.strided.load.nxv2i64.p0.i32(ptr, i32, <vscale x 2 x i1>, i32)
+
 define <vscale x 2 x i64> @strided_vpload_nxv2i64(ptr %ptr, i32 signext %stride, <vscale x 2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv2i64:
 ; CHECK:       # %bb.0:
@@ -305,6 +339,8 @@ define <vscale x 2 x i64> @strided_vpload_nxv2i64(ptr %ptr, i32 signext %stride,
   %load = call <vscale x 2 x i64> @llvm.experimental.vp.strided.load.nxv2i64.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 2 x i1> %m, i32 %evl)
   ret <vscale x 2 x i64> %load
 }
+
+declare <vscale x 4 x i64> @llvm.experimental.vp.strided.load.nxv4i64.p0.i32(ptr, i32, <vscale x 4 x i1>, i32)
 
 define <vscale x 4 x i64> @strided_vpload_nxv4i64(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv4i64:
@@ -316,6 +352,8 @@ define <vscale x 4 x i64> @strided_vpload_nxv4i64(ptr %ptr, i32 signext %stride,
   ret <vscale x 4 x i64> %load
 }
 
+declare <vscale x 8 x i64> @llvm.experimental.vp.strided.load.nxv8i64.p0.i32(ptr, i32, <vscale x 8 x i1>, i32)
+
 define <vscale x 8 x i64> @strided_vpload_nxv8i64(ptr %ptr, i32 signext %stride, <vscale x 8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv8i64:
 ; CHECK:       # %bb.0:
@@ -326,6 +364,8 @@ define <vscale x 8 x i64> @strided_vpload_nxv8i64(ptr %ptr, i32 signext %stride,
   ret <vscale x 8 x i64> %load
 }
 
+declare <vscale x 1 x bfloat> @llvm.experimental.vp.strided.load.nxv1bf16.p0.i32(ptr, i32, <vscale x 1 x i1>, i32)
+
 define <vscale x 1 x bfloat> @strided_vpload_nxv1bf16(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv1bf16:
 ; CHECK:       # %bb.0:
@@ -335,6 +375,8 @@ define <vscale x 1 x bfloat> @strided_vpload_nxv1bf16(ptr %ptr, i32 signext %str
   %load = call <vscale x 1 x bfloat> @llvm.experimental.vp.strided.load.nxv1bf16.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 %evl)
   ret <vscale x 1 x bfloat> %load
 }
+
+declare <vscale x 2 x bfloat> @llvm.experimental.vp.strided.load.nxv2bf16.p0.i32(ptr, i32, <vscale x 2 x i1>, i32)
 
 define <vscale x 2 x bfloat> @strided_vpload_nxv2bf16(ptr %ptr, i32 signext %stride, <vscale x 2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv2bf16:
@@ -356,6 +398,8 @@ define <vscale x 2 x bfloat> @strided_vpload_nxv2bf16_allones_mask(ptr %ptr, i32
   ret <vscale x 2 x bfloat> %load
 }
 
+declare <vscale x 4 x bfloat> @llvm.experimental.vp.strided.load.nxv4bf16.p0.i32(ptr, i32, <vscale x 4 x i1>, i32)
+
 define <vscale x 4 x bfloat> @strided_vpload_nxv4bf16(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv4bf16:
 ; CHECK:       # %bb.0:
@@ -376,6 +420,8 @@ define <vscale x 4 x bfloat> @strided_vpload_nxv4bf16_unit_stride(ptr %ptr, <vsc
   ret <vscale x 4 x bfloat> %load
 }
 
+declare <vscale x 8 x bfloat> @llvm.experimental.vp.strided.load.nxv8bf16.p0.i32(ptr, i32, <vscale x 8 x i1>, i32)
+
 define <vscale x 8 x bfloat> @strided_vpload_nxv8bf16(ptr %ptr, i32 signext %stride, <vscale x 8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv8bf16:
 ; CHECK:       # %bb.0:
@@ -386,6 +432,8 @@ define <vscale x 8 x bfloat> @strided_vpload_nxv8bf16(ptr %ptr, i32 signext %str
   ret <vscale x 8 x bfloat> %load
 }
 
+declare <vscale x 1 x half> @llvm.experimental.vp.strided.load.nxv1f16.p0.i32(ptr, i32, <vscale x 1 x i1>, i32)
+
 define <vscale x 1 x half> @strided_vpload_nxv1f16(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv1f16:
 ; CHECK:       # %bb.0:
@@ -395,6 +443,8 @@ define <vscale x 1 x half> @strided_vpload_nxv1f16(ptr %ptr, i32 signext %stride
   %load = call <vscale x 1 x half> @llvm.experimental.vp.strided.load.nxv1f16.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 %evl)
   ret <vscale x 1 x half> %load
 }
+
+declare <vscale x 2 x half> @llvm.experimental.vp.strided.load.nxv2f16.p0.i32(ptr, i32, <vscale x 2 x i1>, i32)
 
 define <vscale x 2 x half> @strided_vpload_nxv2f16(ptr %ptr, i32 signext %stride, <vscale x 2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv2f16:
@@ -416,6 +466,8 @@ define <vscale x 2 x half> @strided_vpload_nxv2f16_allones_mask(ptr %ptr, i32 si
   ret <vscale x 2 x half> %load
 }
 
+declare <vscale x 4 x half> @llvm.experimental.vp.strided.load.nxv4f16.p0.i32(ptr, i32, <vscale x 4 x i1>, i32)
+
 define <vscale x 4 x half> @strided_vpload_nxv4f16(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv4f16:
 ; CHECK:       # %bb.0:
@@ -436,6 +488,8 @@ define <vscale x 4 x half> @strided_vpload_nxv4f16_unit_stride(ptr %ptr, <vscale
   ret <vscale x 4 x half> %load
 }
 
+declare <vscale x 8 x half> @llvm.experimental.vp.strided.load.nxv8f16.p0.i32(ptr, i32, <vscale x 8 x i1>, i32)
+
 define <vscale x 8 x half> @strided_vpload_nxv8f16(ptr %ptr, i32 signext %stride, <vscale x 8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv8f16:
 ; CHECK:       # %bb.0:
@@ -446,6 +500,8 @@ define <vscale x 8 x half> @strided_vpload_nxv8f16(ptr %ptr, i32 signext %stride
   ret <vscale x 8 x half> %load
 }
 
+declare <vscale x 1 x float> @llvm.experimental.vp.strided.load.nxv1f32.p0.i32(ptr, i32, <vscale x 1 x i1>, i32)
+
 define <vscale x 1 x float> @strided_vpload_nxv1f32(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv1f32:
 ; CHECK:       # %bb.0:
@@ -455,6 +511,8 @@ define <vscale x 1 x float> @strided_vpload_nxv1f32(ptr %ptr, i32 signext %strid
   %load = call <vscale x 1 x float> @llvm.experimental.vp.strided.load.nxv1f32.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 %evl)
   ret <vscale x 1 x float> %load
 }
+
+declare <vscale x 2 x float> @llvm.experimental.vp.strided.load.nxv2f32.p0.i32(ptr, i32, <vscale x 2 x i1>, i32)
 
 define <vscale x 2 x float> @strided_vpload_nxv2f32(ptr %ptr, i32 signext %stride, <vscale x 2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv2f32:
@@ -476,6 +534,8 @@ define <vscale x 2 x float> @strided_vpload_nxv2f32_unit_stride(ptr %ptr, <vscal
   ret <vscale x 2 x float> %load
 }
 
+declare <vscale x 4 x float> @llvm.experimental.vp.strided.load.nxv4f32.p0.i32(ptr, i32, <vscale x 4 x i1>, i32)
+
 define <vscale x 4 x float> @strided_vpload_nxv4f32(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv4f32:
 ; CHECK:       # %bb.0:
@@ -485,6 +545,8 @@ define <vscale x 4 x float> @strided_vpload_nxv4f32(ptr %ptr, i32 signext %strid
   %load = call <vscale x 4 x float> @llvm.experimental.vp.strided.load.nxv4f32.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> %m, i32 %evl)
   ret <vscale x 4 x float> %load
 }
+
+declare <vscale x 8 x float> @llvm.experimental.vp.strided.load.nxv8f32.p0.i32(ptr, i32, <vscale x 8 x i1>, i32)
 
 define <vscale x 8 x float> @strided_vpload_nxv8f32(ptr %ptr, i32 signext %stride, <vscale x 8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv8f32:
@@ -506,6 +568,8 @@ define <vscale x 8 x float> @strided_vpload_nxv8f32_allones_mask(ptr %ptr, i32 s
   ret <vscale x 8 x float> %load
 }
 
+declare <vscale x 1 x double> @llvm.experimental.vp.strided.load.nxv1f64.p0.i32(ptr, i32, <vscale x 1 x i1>, i32)
+
 define <vscale x 1 x double> @strided_vpload_nxv1f64(ptr %ptr, i32 signext %stride, <vscale x 1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv1f64:
 ; CHECK:       # %bb.0:
@@ -526,6 +590,8 @@ define <vscale x 1 x double> @strided_vpload_nxv1f64_unit_stride(ptr %ptr, <vsca
   ret <vscale x 1 x double> %load
 }
 
+declare <vscale x 2 x double> @llvm.experimental.vp.strided.load.nxv2f64.p0.i32(ptr, i32, <vscale x 2 x i1>, i32)
+
 define <vscale x 2 x double> @strided_vpload_nxv2f64(ptr %ptr, i32 signext %stride, <vscale x 2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv2f64:
 ; CHECK:       # %bb.0:
@@ -535,6 +601,8 @@ define <vscale x 2 x double> @strided_vpload_nxv2f64(ptr %ptr, i32 signext %stri
   %load = call <vscale x 2 x double> @llvm.experimental.vp.strided.load.nxv2f64.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 2 x i1> %m, i32 %evl)
   ret <vscale x 2 x double> %load
 }
+
+declare <vscale x 4 x double> @llvm.experimental.vp.strided.load.nxv4f64.p0.i32(ptr, i32, <vscale x 4 x i1>, i32)
 
 define <vscale x 4 x double> @strided_vpload_nxv4f64(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv4f64:
@@ -555,6 +623,8 @@ define <vscale x 4 x double> @strided_vpload_nxv4f64_allones_mask(ptr %ptr, i32 
   %load = call <vscale x 4 x double> @llvm.experimental.vp.strided.load.nxv4f64.p0.i32(ptr %ptr, i32 signext %stride, <vscale x 4 x i1> splat (i1 true), i32 %evl)
   ret <vscale x 4 x double> %load
 }
+
+declare <vscale x 8 x double> @llvm.experimental.vp.strided.load.nxv8f64.p0.i32(ptr, i32, <vscale x 8 x i1>, i32)
 
 define <vscale x 8 x double> @strided_vpload_nxv8f64(ptr %ptr, i32 signext %stride, <vscale x 8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: strided_vpload_nxv8f64:
@@ -586,6 +656,8 @@ define <vscale x 3 x double> @strided_vpload_nxv3f64_allones_mask(ptr %ptr, i32 
   %v = call <vscale x 3 x double> @llvm.experimental.vp.strided.load.nxv3f64.p0.i32(ptr %ptr, i32 %stride, <vscale x 3 x i1> splat (i1 true), i32 %evl)
   ret <vscale x 3 x double> %v
 }
+
+declare <vscale x 3 x double> @llvm.experimental.vp.strided.load.nxv3f64.p0.i32(ptr, i32, <vscale x 3 x i1>, i32)
 
 ; Splitting
 define <vscale x 16 x double> @strided_load_nxv16f64(ptr %ptr, i64 %stride, <vscale x 16 x i1> %mask, i32 zeroext %evl) {
@@ -685,6 +757,8 @@ define <vscale x 16 x double> @strided_load_nxv16f64_allones_mask(ptr %ptr, i64 
   %v = call <vscale x 16 x double> @llvm.experimental.vp.strided.load.nxv16f64.p0.i64(ptr %ptr, i64 %stride, <vscale x 16 x i1> splat (i1 true), i32 %evl)
   ret <vscale x 16 x double> %v
 }
+
+declare <vscale x 16 x double> @llvm.experimental.vp.strided.load.nxv16f64.p0.i64(ptr, i64, <vscale x 16 x i1>, i32)
 
 ; Widening + splitting (with HiIsEmpty == true)
 ; NOTE: We can't return <vscale x 17 x double> as that introduces a vector
@@ -793,6 +867,10 @@ define <vscale x 16 x double> @strided_load_nxv17f64(ptr %ptr, i64 %stride, <vsc
   ret <vscale x 16 x double> %lo
 }
 
+declare <vscale x 17 x double> @llvm.experimental.vp.strided.load.nxv17f64.p0.i64(ptr, i64, <vscale x 17 x i1>, i32)
+declare <vscale x 1 x double> @llvm.experimental.vector.extract.nxv1f64(<vscale x 17 x double> %vec, i64 %idx)
+declare <vscale x 16 x double> @llvm.experimental.vector.extract.nxv16f64(<vscale x 17 x double> %vec, i64 %idx)
+
 ; Test unmasked integer zero strided
 define <vscale x 1 x i8> @zero_strided_unmasked_vpload_nxv1i8_i8(ptr %ptr) {
 ; CHECK-OPT-LABEL: zero_strided_unmasked_vpload_nxv1i8_i8:
@@ -861,17 +939,21 @@ define <vscale x 16 x i64> @zero_strided_vadd_nxv16i64(<vscale x 16 x i64> %v, p
 ; CHECK-RV32:       # %bb.0:
 ; CHECK-RV32-NEXT:    csrr a1, vlenb
 ; CHECK-RV32-NEXT:    srli a2, a1, 3
-; CHECK-RV32-NEXT:    sub a1, a2, a1
-; CHECK-RV32-NEXT:    sltu a3, a2, a1
-; CHECK-RV32-NEXT:    addi a3, a3, -1
-; CHECK-RV32-NEXT:    and a1, a3, a1
-; CHECK-RV32-NEXT:    vsetvli zero, a2, e64, m8, ta, ma
+; CHECK-RV32-NEXT:    sub a3, a2, a1
+; CHECK-RV32-NEXT:    sltu a4, a2, a3
+; CHECK-RV32-NEXT:    addi a4, a4, -1
+; CHECK-RV32-NEXT:    and a3, a4, a3
+; CHECK-RV32-NEXT:    vsetvli zero, a3, e64, m8, ta, ma
 ; CHECK-RV32-NEXT:    vlse64.v v24, (a0), zero
-; CHECK-RV32-NEXT:    vsetvli zero, a1, e64, m8, ta, ma
+; CHECK-RV32-NEXT:    bltu a2, a1, .LBB61_2
+; CHECK-RV32-NEXT:  # %bb.1:
+; CHECK-RV32-NEXT:    mv a2, a1
+; CHECK-RV32-NEXT:  .LBB61_2:
+; CHECK-RV32-NEXT:    vsetvli zero, a2, e64, m8, ta, ma
 ; CHECK-RV32-NEXT:    vlse64.v v0, (a0), zero
 ; CHECK-RV32-NEXT:    vsetvli a0, zero, e64, m8, ta, ma
-; CHECK-RV32-NEXT:    vadd.vv v8, v8, v24
-; CHECK-RV32-NEXT:    vadd.vv v16, v16, v0
+; CHECK-RV32-NEXT:    vadd.vv v16, v16, v24
+; CHECK-RV32-NEXT:    vadd.vv v8, v8, v0
 ; CHECK-RV32-NEXT:    ret
 ;
 ; CHECK-RV64-LABEL: zero_strided_vadd_nxv16i64:

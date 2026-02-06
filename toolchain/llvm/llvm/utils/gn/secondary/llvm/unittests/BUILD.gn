@@ -8,12 +8,8 @@ group("unittests") {
     "BinaryFormat:BinaryFormatTests",
     "Bitcode:BitcodeTests",
     "Bitstream:BitstreamTests",
-    "CAS:CASTests",
     "CGData:CodeGenDataTests",
     "CodeGen:CodeGenTests",
-
-    # FIXME: Figure out how to make pass.
-    # "CodeGen/CGPluginTest",
     "CodeGen/GlobalISel:GlobalISelTests",
     "DWARFLinkerParallel:DWARFLinkerParallelTests",
     "DebugInfo/BTF:DebugInfoBTFTests",
@@ -51,7 +47,6 @@ group("unittests") {
     "SandboxIR:SandboxIRTests",
     "Support:SupportTests",
     "Support/DynamicLibrary:DynamicLibraryTests",
-    "Support/LSP:LSPTests",
     "TableGen:TableGenTests",
     "Target:TargetMachineCTests",
     "TargetParser:TargetParserTests",

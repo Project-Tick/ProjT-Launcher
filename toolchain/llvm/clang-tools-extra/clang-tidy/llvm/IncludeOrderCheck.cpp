@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- IncludeOrderCheck.cpp - clang-tidy -------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -42,7 +42,7 @@ private:
   };
 
   using FileIncludes = std::vector<IncludeDirective>;
-  llvm::DenseMap<FileID, FileIncludes> IncludeDirectives;
+  std::map<clang::FileID, FileIncludes> IncludeDirectives;
   bool LookForMainModule = true;
 
   ClangTidyCheck &Check;
@@ -162,15 +162,15 @@ void IncludeOrderPPCallbacks::EndOfMainFile() {
           continue;
         const IncludeDirective &CopyFrom = FileDirectives[IncludeIndices[I]];
 
-        const SourceLocation FromLoc = CopyFrom.Range.getBegin();
+        SourceLocation FromLoc = CopyFrom.Range.getBegin();
         const char *FromData = SM.getCharacterData(FromLoc);
-        const unsigned FromLen = std::strcspn(FromData, "\n");
+        unsigned FromLen = std::strcspn(FromData, "\n");
 
-        const StringRef FixedName(FromData, FromLen);
+        StringRef FixedName(FromData, FromLen);
 
-        const SourceLocation ToLoc = FileDirectives[I].Range.getBegin();
+        SourceLocation ToLoc = FileDirectives[I].Range.getBegin();
         const char *ToData = SM.getCharacterData(ToLoc);
-        const unsigned ToLen = std::strcspn(ToData, "\n");
+        unsigned ToLen = std::strcspn(ToData, "\n");
         auto ToRange =
             CharSourceRange::getCharRange(ToLoc, ToLoc.getLocWithOffset(ToLen));
 

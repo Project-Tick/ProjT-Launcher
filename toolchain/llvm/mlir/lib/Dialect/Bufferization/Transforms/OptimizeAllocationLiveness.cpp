@@ -15,16 +15,17 @@
 #include "mlir/Dialect/Bufferization/Transforms/BufferViewFlowAnalysis.h"
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/IR/Operation.h"
-#include "mlir/IR/Value.h"
-#include "mlir/Interfaces/SideEffectInterfaces.h"
-#include "llvm/Support/DebugLog.h"
+#include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "optimize-allocation-liveness"
+#define DBGS() (llvm::dbgs() << '[' << DEBUG_TYPE << "] ")
+#define LDBG(X) LLVM_DEBUG(DBGS() << X << "\n")
 
 namespace mlir {
 namespace bufferization {
-#define GEN_PASS_DEF_OPTIMIZEALLOCATIONLIVENESSPASS
+#define GEN_PASS_DEF_OPTIMIZEALLOCATIONLIVENESS
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h.inc"
 } // namespace bufferization
 } // namespace mlir
@@ -63,8 +64,8 @@ Operation *findUserWithFreeSideEffect(Value value) {
       for (const auto &effect : effects) {
         if (isa<MemoryEffects::Free>(effect.getEffect())) {
           if (freeOpUser) {
-            LDBG() << "Multiple users with free effect found: " << *freeOpUser
-                   << " and " << *user;
+            LDBG("Multiple users with free effect found: " << *freeOpUser
+                                                           << " and " << *user);
             return nullptr;
           }
           freeOpUser = user;
@@ -87,21 +88,8 @@ static bool hasMemoryAllocEffect(MemoryEffectOpInterface memEffectOp) {
   return false;
 }
 
-/// Extracts OpResult's with Allocate effects from given op
-static SmallVector<OpResult>
-collectAllocations(MemoryEffectOpInterface allocOp) {
-  SmallVector<MemoryEffects::EffectInstance> effects;
-  allocOp.getEffects(effects);
-  SmallVector<OpResult> allocResults;
-  for (const MemoryEffects::EffectInstance &it : effects)
-    if (isa<MemoryEffects::Allocate>(it.getEffect()))
-      if (auto val = it.getValue(); val && val.getDefiningOp() == allocOp)
-        allocResults.push_back(cast<OpResult>(val));
-  return allocResults;
-}
-
 struct OptimizeAllocationLiveness
-    : public bufferization::impl::OptimizeAllocationLivenessPassBase<
+    : public bufferization::impl::OptimizeAllocationLivenessBase<
           OptimizeAllocationLiveness> {
 public:
   OptimizeAllocationLiveness() = default;
@@ -119,17 +107,9 @@ public:
         return WalkResult::advance();
 
       auto allocOp = memEffectOp;
-      LDBG() << "Checking alloc op: " << allocOp;
+      LDBG("Checking alloc op: " << allocOp);
 
-      SmallVector<OpResult> allocationResults = collectAllocations(allocOp);
-      // Multiple allocations from a single op are not considered here yet.
-      if (allocationResults.size() != 1)
-        return WalkResult::advance();
-
-      OpResult allocResult = allocationResults[0];
-      LDBG() << "On allocation result: " << allocResult;
-
-      auto *deallocOp = findUserWithFreeSideEffect(allocResult);
+      auto deallocOp = findUserWithFreeSideEffect(allocOp->getResult(0));
       if (!deallocOp || (deallocOp->getBlock() != allocOp->getBlock())) {
         // The pass handles allocations that have a single dealloc op in the
         // same block. We also should not hoist the dealloc op out of
@@ -139,16 +119,16 @@ public:
 
       Operation *lastUser = nullptr;
       const BufferViewFlowAnalysis::ValueSetT &deps =
-          analysis.resolve(allocResult);
+          analysis.resolve(allocOp->getResult(0));
       for (auto dep : llvm::make_early_inc_range(deps)) {
-        for (auto *user : dep.getUsers()) {
+        for (auto user : dep.getUsers()) {
           // We are looking for a non dealloc op user.
           // check if user is the dealloc op itself.
           if (user == deallocOp)
             continue;
 
           // find the ancestor of user that is in the same block as the allocOp.
-          auto *topUser = allocOp->getBlock()->findAncestorOpInBlock(*user);
+          auto topUser = allocOp->getBlock()->findAncestorOpInBlock(*user);
           if (!lastUser || happensBefore(lastUser, topUser)) {
             lastUser = topUser;
           }
@@ -157,12 +137,12 @@ public:
       if (lastUser == nullptr) {
         return WalkResult::advance();
       }
-      LDBG() << "Last user found: " << *lastUser;
+      LDBG("Last user found: " << *lastUser);
       assert(lastUser->getBlock() == allocOp->getBlock());
       assert(lastUser->getBlock() == deallocOp->getBlock());
       // Move the dealloc op after the last user.
       deallocOp->moveAfter(lastUser);
-      LDBG() << "Moved dealloc op after: " << *lastUser;
+      LDBG("Moved dealloc op after: " << *lastUser);
 
       return WalkResult::advance();
     });
@@ -170,3 +150,12 @@ public:
 };
 
 } // end anonymous namespace
+
+//===----------------------------------------------------------------------===//
+// OptimizeAllocatinliveness construction
+//===----------------------------------------------------------------------===//
+
+std::unique_ptr<Pass>
+mlir::bufferization::createOptimizeAllocationLivenessPass() {
+  return std::make_unique<OptimizeAllocationLiveness>();
+}

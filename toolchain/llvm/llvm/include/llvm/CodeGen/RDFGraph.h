@@ -447,7 +447,7 @@ private:
   AllocatorTy MemPool;
 };
 
-using RegisterSet = std::set<RegisterRef, RegisterRefLess>;
+using RegisterSet = std::set<RegisterRef>;
 
 struct TargetOperandInfo {
   TargetOperandInfo(const TargetInstrInfo &tii) : TII(tii) {}
@@ -462,7 +462,7 @@ struct TargetOperandInfo {
 
 // Packed register reference. Only used for storage.
 struct PackedRegisterRef {
-  RegisterId Id;
+  RegisterId Reg;
   uint32_t MaskId;
 };
 
@@ -779,13 +779,13 @@ struct DataFlowGraph {
   void releaseBlock(NodeId B, DefStackMap &DefM);
 
   PackedRegisterRef pack(RegisterRef RR) {
-    return {RR.Id, LMI.getIndexForLaneMask(RR.Mask)};
+    return {RR.Reg, LMI.getIndexForLaneMask(RR.Mask)};
   }
   PackedRegisterRef pack(RegisterRef RR) const {
-    return {RR.Id, LMI.getIndexForLaneMask(RR.Mask)};
+    return {RR.Reg, LMI.getIndexForLaneMask(RR.Mask)};
   }
   RegisterRef unpack(PackedRegisterRef PR) const {
-    return RegisterRef(PR.Id, LMI.getLaneMaskForIndex(PR.MaskId));
+    return RegisterRef(PR.Reg, LMI.getLaneMaskForIndex(PR.MaskId));
   }
 
   RegisterRef makeRegRef(unsigned Reg, unsigned Sub) const;
@@ -865,9 +865,8 @@ private:
   using BlockRefsMap = RegisterAggrMap<NodeId>;
 
   void buildStmt(Block BA, MachineInstr &In);
-  void recordDefsForDF(BlockRefsMap &PhiM, BlockRefsMap &PhiClobberM, Block BA);
-  void buildPhis(BlockRefsMap &PhiM, Block BA,
-                 const DefStackMap &DefM = DefStackMap());
+  void recordDefsForDF(BlockRefsMap &PhiM, Block BA);
+  void buildPhis(BlockRefsMap &PhiM, Block BA);
   void removeUnusedPhis();
 
   void pushClobbers(Instr IA, DefStackMap &DM);
@@ -875,7 +874,7 @@ private:
   template <typename T> void linkRefUp(Instr IA, NodeAddr<T> TA, DefStack &DS);
   template <typename Predicate>
   void linkStmtRefs(DefStackMap &DefM, Stmt SA, Predicate P);
-  void linkBlockRefs(DefStackMap &DefM, BlockRefsMap &PhiClobberM, Block BA);
+  void linkBlockRefs(DefStackMap &DefM, Block BA);
 
   void unlinkUseDF(Use UA);
   void unlinkDefDF(Def DA);

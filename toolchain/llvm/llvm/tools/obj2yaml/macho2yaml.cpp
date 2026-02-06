@@ -15,6 +15,7 @@
 #include "llvm/Support/Error.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LEB128.h"
+#include "llvm/Support/SystemZ/zOSSupport.h"
 
 #include <string.h> // for memcpy
 
@@ -363,7 +364,8 @@ void MachODumper::dumpFunctionStarts(std::unique_ptr<MachOYAML::Object> &Y) {
   MachOYAML::LinkEditData &LEData = Y->LinkEdit;
 
   auto FunctionStarts = Obj.getFunctionStarts();
-  llvm::append_range(LEData.FunctionStarts, FunctionStarts);
+  for (auto Addr : FunctionStarts)
+    LEData.FunctionStarts.push_back(Addr);
 }
 
 void MachODumper::dumpRebaseOpcodes(std::unique_ptr<MachOYAML::Object> &Y) {
@@ -635,7 +637,9 @@ void MachODumper::dumpChainedFixups(std::unique_ptr<MachOYAML::Object> &Y) {
         assert(DC.dataoff < Obj.getData().size());
         assert(DC.dataoff + DC.datasize <= Obj.getData().size());
         const char *Bytes = Obj.getData().data() + DC.dataoff;
-        llvm::append_range(LEData.ChainedFixups, ArrayRef(Bytes, DC.datasize));
+        for (size_t Idx = 0; Idx < DC.datasize; Idx++) {
+          LEData.ChainedFixups.push_back(Bytes[Idx]);
+        }
       }
       break;
     }

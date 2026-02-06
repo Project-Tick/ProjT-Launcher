@@ -92,7 +92,7 @@ char LLVMRemarkSetupFileError::ID = 0;
 char LLVMRemarkSetupPatternError::ID = 0;
 char LLVMRemarkSetupFormatError::ID = 0;
 
-Expected<LLVMRemarkFileHandle> llvm::setupLLVMOptimizationRemarks(
+Expected<std::unique_ptr<ToolOutputFile>> llvm::setupLLVMOptimizationRemarks(
     LLVMContext &Context, StringRef RemarksFilename, StringRef RemarksPasses,
     StringRef RemarksFormat, bool RemarksWithHotness,
     std::optional<uint64_t> RemarksHotnessThreshold) {
@@ -102,7 +102,7 @@ Expected<LLVMRemarkFileHandle> llvm::setupLLVMOptimizationRemarks(
   Context.setDiagnosticsHotnessThreshold(RemarksHotnessThreshold);
 
   if (RemarksFilename.empty())
-    return LLVMRemarkFileHandle();
+    return nullptr;
 
   Expected<remarks::Format> Format = remarks::parseFormat(RemarksFormat);
   if (Error E = Format.takeError())
@@ -119,35 +119,24 @@ Expected<LLVMRemarkFileHandle> llvm::setupLLVMOptimizationRemarks(
     return make_error<LLVMRemarkSetupFileError>(errorCodeToError(EC));
 
   Expected<std::unique_ptr<remarks::RemarkSerializer>> RemarkSerializer =
-      remarks::createRemarkSerializer(*Format, RemarksFile->os());
+      remarks::createRemarkSerializer(
+          *Format, remarks::SerializerMode::Separate, RemarksFile->os());
   if (Error E = RemarkSerializer.takeError())
     return make_error<LLVMRemarkSetupFormatError>(std::move(E));
 
-  auto RS = std::make_unique<remarks::RemarkStreamer>(
-      std::move(*RemarkSerializer), RemarksFilename);
-
-  if (!RemarksPasses.empty())
-    if (Error E = RS->setFilter(RemarksPasses)) {
-      RS->releaseSerializer();
-      return make_error<LLVMRemarkSetupPatternError>(std::move(E));
-    }
-
-  // Install the main remark streamer. Only install this after setting the
-  // filter, because this might fail.
-  Context.setMainRemarkStreamer(std::move(RS));
+  // Create the main remark streamer.
+  Context.setMainRemarkStreamer(std::make_unique<remarks::RemarkStreamer>(
+      std::move(*RemarkSerializer), RemarksFilename));
 
   // Create LLVM's optimization remarks streamer.
   Context.setLLVMRemarkStreamer(
       std::make_unique<LLVMRemarkStreamer>(*Context.getMainRemarkStreamer()));
 
-  return LLVMRemarkFileHandle{std::move(RemarksFile), Context};
-}
+  if (!RemarksPasses.empty())
+    if (Error E = Context.getMainRemarkStreamer()->setFilter(RemarksPasses))
+      return make_error<LLVMRemarkSetupPatternError>(std::move(E));
 
-void LLVMRemarkFileHandle::Finalizer::finalize() {
-  if (!Context)
-    return;
-  finalizeLLVMOptimizationRemarks(*Context);
-  Context = nullptr;
+  return std::move(RemarksFile);
 }
 
 Error llvm::setupLLVMOptimizationRemarks(
@@ -164,34 +153,22 @@ Error llvm::setupLLVMOptimizationRemarks(
     return make_error<LLVMRemarkSetupFormatError>(std::move(E));
 
   Expected<std::unique_ptr<remarks::RemarkSerializer>> RemarkSerializer =
-      remarks::createRemarkSerializer(*Format, OS);
+      remarks::createRemarkSerializer(*Format,
+                                      remarks::SerializerMode::Separate, OS);
   if (Error E = RemarkSerializer.takeError())
     return make_error<LLVMRemarkSetupFormatError>(std::move(E));
 
-  auto RS =
-      std::make_unique<remarks::RemarkStreamer>(std::move(*RemarkSerializer));
-
-  if (!RemarksPasses.empty())
-    if (Error E = RS->setFilter(RemarksPasses)) {
-      RS->releaseSerializer();
-      return make_error<LLVMRemarkSetupPatternError>(std::move(E));
-    }
-
-  // Install the main remark streamer. Only install this after setting the
-  // filter, because this might fail.
-  Context.setMainRemarkStreamer(std::move(RS));
+  // Create the main remark streamer.
+  Context.setMainRemarkStreamer(
+      std::make_unique<remarks::RemarkStreamer>(std::move(*RemarkSerializer)));
 
   // Create LLVM's optimization remarks streamer.
   Context.setLLVMRemarkStreamer(
       std::make_unique<LLVMRemarkStreamer>(*Context.getMainRemarkStreamer()));
 
-  return Error::success();
-}
+  if (!RemarksPasses.empty())
+    if (Error E = Context.getMainRemarkStreamer()->setFilter(RemarksPasses))
+      return make_error<LLVMRemarkSetupPatternError>(std::move(E));
 
-void llvm::finalizeLLVMOptimizationRemarks(LLVMContext &Context) {
-  Context.setLLVMRemarkStreamer(nullptr);
-  if (auto *RS = Context.getMainRemarkStreamer()) {
-    RS->releaseSerializer();
-    Context.setMainRemarkStreamer(nullptr);
-  }
+  return Error::success();
 }

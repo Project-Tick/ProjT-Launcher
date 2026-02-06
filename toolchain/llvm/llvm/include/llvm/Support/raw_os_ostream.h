@@ -13,7 +13,6 @@
 #ifndef LLVM_SUPPORT_RAW_OS_OSTREAM_H
 #define LLVM_SUPPORT_RAW_OS_OSTREAM_H
 
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/raw_ostream.h"
 #include <iosfwd>
 
@@ -22,7 +21,7 @@ namespace llvm {
 /// raw_os_ostream - A raw_ostream that writes to an std::ostream.  This is a
 /// simple adaptor class.  It does not check for output errors; clients should
 /// use the underlying stream to detect errors.
-class LLVM_ABI raw_os_ostream : public raw_ostream {
+class raw_os_ostream : public raw_ostream {
   std::ostream &OS;
 
   /// write_impl - See raw_ostream::write_impl.

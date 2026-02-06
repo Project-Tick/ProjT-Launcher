@@ -9,6 +9,7 @@
 #include "mlir/Dialect/Bufferization/Pipelines/Passes.h"
 
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/MemRef/Transforms/Passes.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/Passes.h"
@@ -17,20 +18,11 @@
 // Pipeline implementation.
 //===----------------------------------------------------------------------===//
 
-void mlir::bufferization::buildBufferDeallocationPipeline(OpPassManager &pm) {
-  buildBufferDeallocationPipeline(pm, BufferDeallocationPipelineOptions());
-}
-
 void mlir::bufferization::buildBufferDeallocationPipeline(
     OpPassManager &pm, const BufferDeallocationPipelineOptions &options) {
-  memref::ExpandReallocPassOptions expandAllocPassOptions{
-      /*emitDeallocs=*/false};
-  pm.addPass(memref::createExpandReallocPass(expandAllocPassOptions));
+  pm.addPass(memref::createExpandReallocPass(/*emitDeallocs=*/false));
   pm.addPass(createCanonicalizerPass());
-
-  OwnershipBasedBufferDeallocationPassOptions deallocationOptions{
-      options.privateFunctionDynamicOwnership};
-  pm.addPass(createOwnershipBasedBufferDeallocationPass(deallocationOptions));
+  pm.addPass(createOwnershipBasedBufferDeallocationPass(options));
   pm.addPass(createCanonicalizerPass());
   pm.addPass(createBufferDeallocationSimplificationPass());
   pm.addPass(createLowerDeallocationsPass());
@@ -48,7 +40,5 @@ void mlir::bufferization::registerBufferizationPipelines() {
       "The default pipeline for automatically inserting deallocation "
       "operations after one-shot bufferization. Deallocation operations "
       "(except `memref.realloc`) may not be present already.",
-      [](OpPassManager &pm, const BufferDeallocationPipelineOptions &options) {
-        buildBufferDeallocationPipeline(pm, options);
-      });
+      buildBufferDeallocationPipeline);
 }

@@ -21,7 +21,9 @@
 #include "llvm/IR/Module.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
+#include "llvm/MC/MCParser/MCAsmParser.h"
 #include "llvm/MC/MCSection.h"
+#include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Object/IRObjectFile.h"
@@ -29,7 +31,9 @@
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/SourceMgr.h"
+#include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/TargetParser/Host.h"
 #include "llvm/TargetParser/SubtargetFeature.h"
@@ -196,17 +200,16 @@ LTOModule::makeLTOModule(MemoryBufferRef Buffer, const TargetOptions &options,
     return EC;
   std::unique_ptr<Module> &M = *MOrErr;
 
-  llvm::Triple Triple = M->getTargetTriple();
-  if (Triple.empty())
-    Triple = llvm::Triple(sys::getDefaultTargetTriple());
+  std::string TripleStr = M->getTargetTriple();
+  if (TripleStr.empty())
+    TripleStr = sys::getDefaultTargetTriple();
+  llvm::Triple Triple(TripleStr);
 
   // find machine architecture for this module
   std::string errMsg;
-  const Target *march = TargetRegistry::lookupTarget(Triple, errMsg);
-  if (!march) {
-    Context.emitError(errMsg);
+  const Target *march = TargetRegistry::lookupTarget(TripleStr, errMsg);
+  if (!march)
     return make_error_code(object::object_error::arch_not_found);
-  }
 
   // construct LTOModule, hand over ownership of module and target
   SubtargetFeatures Features;
@@ -226,7 +229,7 @@ LTOModule::makeLTOModule(MemoryBufferRef Buffer, const TargetOptions &options,
       CPU = "cyclone";
   }
 
-  TargetMachine *target = march->createTargetMachine(Triple, CPU, FeatureStr,
+  TargetMachine *target = march->createTargetMachine(TripleStr, CPU, FeatureStr,
                                                      options, std::nullopt);
 
   std::unique_ptr<LTOModule> Ret(new LTOModule(std::move(M), Buffer, target));
@@ -269,7 +272,8 @@ void LTOModule::addObjCClass(const GlobalVariable *clgv) {
   // second slot in __OBJC,__class is pointer to superclass name
   std::string superclassName;
   if (objcClassNameFromExpression(c->getOperand(1), superclassName)) {
-    auto IterBool = _undefines.try_emplace(superclassName);
+    auto IterBool =
+        _undefines.insert(std::make_pair(superclassName, NameAndAttributes()));
     if (IterBool.second) {
       NameAndAttributes &info = IterBool.first->second;
       info.name = IterBool.first->first();
@@ -304,7 +308,8 @@ void LTOModule::addObjCCategory(const GlobalVariable *clgv) {
   if (!objcClassNameFromExpression(c->getOperand(1), targetclassName))
     return;
 
-  auto IterBool = _undefines.try_emplace(targetclassName);
+  auto IterBool =
+      _undefines.insert(std::make_pair(targetclassName, NameAndAttributes()));
 
   if (!IterBool.second)
     return;
@@ -322,7 +327,8 @@ void LTOModule::addObjCClassRef(const GlobalVariable *clgv) {
   if (!objcClassNameFromExpression(clgv->getInitializer(), targetclassName))
     return;
 
-  auto IterBool = _undefines.try_emplace(targetclassName);
+  auto IterBool =
+      _undefines.insert(std::make_pair(targetclassName, NameAndAttributes()));
 
   if (!IterBool.second)
     return;
@@ -416,11 +422,8 @@ void LTOModule::addDefinedFunctionSymbol(StringRef Name, const GlobalValue *F) {
 
 void LTOModule::addDefinedSymbol(StringRef Name, const GlobalValue *def,
                                  bool isFunction) {
-  uint32_t attr = 0;
-  if (auto *gv = dyn_cast<GlobalVariable>(def))
-    attr = Log2(gv->getAlign().valueOrOne());
-  else if (auto *f = dyn_cast<Function>(def))
-    attr = Log2(f->getAlign().valueOrOne());
+  const GlobalObject *go = dyn_cast<GlobalObject>(def);
+  uint32_t attr = go ? Log2(go->getAlign().valueOrOne()) : 0;
 
   // set permissions part
   if (isFunction) {
@@ -520,7 +523,7 @@ void LTOModule::addAsmGlobalSymbol(StringRef name,
 /// addAsmGlobalSymbolUndef - Add a global symbol from module-level ASM to the
 /// undefined list.
 void LTOModule::addAsmGlobalSymbolUndef(StringRef name) {
-  auto IterBool = _undefines.try_emplace(name);
+  auto IterBool = _undefines.insert(std::make_pair(name, NameAndAttributes()));
 
   _asm_undefines.push_back(IterBool.first->first());
 
@@ -547,7 +550,8 @@ void LTOModule::addPotentialUndefinedSymbol(ModuleSymbolTable::Symbol Sym,
     name.c_str();
   }
 
-  auto IterBool = _undefines.try_emplace(name.str());
+  auto IterBool =
+      _undefines.insert(std::make_pair(name.str(), NameAndAttributes()));
 
   // we already have the symbol
   if (!IterBool.second)
@@ -620,11 +624,13 @@ void LTOModule::parseSymbols() {
   }
 
   // make symbols for all undefines
-  for (const auto &[Key, Value] : _undefines) {
+  for (StringMap<NameAndAttributes>::iterator u =_undefines.begin(),
+         e = _undefines.end(); u != e; ++u) {
     // If this symbol also has a definition, then don't make an undefine because
     // it is a tentative definition.
-    if (!_defines.contains(Key))
-      _symbols.push_back(Value);
+    if (_defines.count(u->getKey())) continue;
+    NameAndAttributes info = u->getValue();
+    _symbols.push_back(info);
   }
 }
 
@@ -685,11 +691,11 @@ const char *LTOModule::getDependentLibrary(lto::InputFile *input, size_t index,
 }
 
 Expected<uint32_t> LTOModule::getMachOCPUType() const {
-  return MachO::getCPUType(Mod->getTargetTriple());
+  return MachO::getCPUType(Triple(Mod->getTargetTriple()));
 }
 
 Expected<uint32_t> LTOModule::getMachOCPUSubType() const {
-  return MachO::getCPUSubType(Mod->getTargetTriple());
+  return MachO::getCPUSubType(Triple(Mod->getTargetTriple()));
 }
 
 bool LTOModule::hasCtorDtor() const {

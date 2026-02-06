@@ -78,7 +78,6 @@ public:
     // in SetOptionValue if anything the selects a location is set.
     lldb::addr_t symbol_containing_addr = 0;
     bool force = false;
-    bool enable_variable_annotations = false;
   };
 
   CommandObjectDisassemble(CommandInterpreter &interpreter);
@@ -101,8 +100,7 @@ protected:
   llvm::Expected<std::vector<AddressRange>> GetPCRanges();
   llvm::Expected<std::vector<AddressRange>> GetStartEndAddressRanges();
 
-  llvm::Expected<std::vector<AddressRange>>
-  CheckRangeSize(std::vector<AddressRange> ranges, llvm::StringRef what);
+  llvm::Error CheckRangeSize(const AddressRange &range, llvm::StringRef what);
 
   CommandOptions m_options;
 };

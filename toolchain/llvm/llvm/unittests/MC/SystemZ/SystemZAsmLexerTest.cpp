@@ -9,7 +9,7 @@
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCObjectFileInfo.h"
-#include "llvm/MC/MCParser/AsmLexer.h"
+#include "llvm/MC/MCParser/MCAsmLexer.h"
 #include "llvm/MC/MCParser/MCTargetAsmParser.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCStreamer.h"
@@ -46,33 +46,34 @@ protected:
   std::unique_ptr<MCTargetAsmParser> TargetAsmParser;
 
   SourceMgr SrcMgr;
-  StringRef TripleName;
-  const llvm::Triple Triple;
+  std::string TripleName;
+  llvm::Triple Triple;
   const Target *TheTarget;
 
   const MCTargetOptions MCOptions;
 
   SystemZAsmLexerTest() = delete;
 
-  SystemZAsmLexerTest(StringRef SystemZTriple)
-      : TripleName(SystemZTriple), Triple(SystemZTriple) {
+  SystemZAsmLexerTest(std::string SystemZTriple) {
     // We will use the SystemZ triple, because of missing
     // Object File and Streamer support for the z/OS target.
+    TripleName = SystemZTriple;
+    Triple = llvm::Triple(TripleName);
 
     std::string Error;
-    TheTarget = TargetRegistry::lookupTarget(Triple, Error);
+    TheTarget = TargetRegistry::lookupTarget(TripleName, Error);
     EXPECT_NE(TheTarget, nullptr);
 
-    MRI.reset(TheTarget->createMCRegInfo(Triple));
+    MRI.reset(TheTarget->createMCRegInfo(TripleName));
     EXPECT_NE(MRI, nullptr);
 
     MII.reset(TheTarget->createMCInstrInfo());
     EXPECT_NE(MII, nullptr);
 
-    STI.reset(TheTarget->createMCSubtargetInfo(Triple, "z10", ""));
+    STI.reset(TheTarget->createMCSubtargetInfo(TripleName, "z10", ""));
     EXPECT_NE(STI, nullptr);
 
-    MAI.reset(TheTarget->createMCAsmInfo(*MRI, Triple, MCOptions));
+    MAI.reset(TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
     EXPECT_NE(MAI, nullptr);
   }
 
@@ -99,7 +100,7 @@ protected:
   void lexAndCheckTokens(StringRef AsmStr,
                          SmallVector<AsmToken::TokenKind> ExpectedTokens) {
     // Get reference to AsmLexer.
-    AsmLexer &Lexer = Parser->getLexer();
+    MCAsmLexer &Lexer = Parser->getLexer();
     // Loop through all expected tokens checking one by one.
     for (size_t I = 0; I < ExpectedTokens.size(); ++I) {
       EXPECT_EQ(Lexer.getTok().getKind(), ExpectedTokens[I]);
@@ -110,7 +111,7 @@ protected:
   void lexAndCheckIntegerTokensAndValues(StringRef AsmStr,
                                          SmallVector<int64_t> ExpectedValues) {
     // Get reference to AsmLexer.
-    AsmLexer &Lexer = Parser->getLexer();
+    MCAsmLexer &Lexer = Parser->getLexer();
     // Loop through all expected tokens and expected values.
     for (size_t I = 0; I < ExpectedValues.size(); ++I) {
       // Skip any EndOfStatement tokens, we're not concerned with them.

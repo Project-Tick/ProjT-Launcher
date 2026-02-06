@@ -25,17 +25,27 @@ namespace llvm {
 class TargetRegisterClass;
 
 class MipsRegisterInfo : public MipsGenRegisterInfo {
-private:
-  const bool ArePtrs64bit;
-
 public:
-  explicit MipsRegisterInfo(const MipsSubtarget &STI);
+  enum class MipsPtrClass {
+    /// The default register class for integer values.
+    Default = 0,
+    /// The subset of registers permitted in certain microMIPS instructions
+    /// such as lw16.
+    GPR16MM = 1,
+    /// The stack pointer only.
+    StackPointer = 2,
+    /// The global pointer only.
+    GlobalPointer = 3,
+  };
+
+  MipsRegisterInfo();
 
   /// Get PIC indirect call register
   static unsigned getPICCallReg();
 
   /// Code Generation virtual methods...
-  const TargetRegisterClass *getPointerRegClass(unsigned Kind) const override;
+  const TargetRegisterClass *getPointerRegClass(const MachineFunction &MF,
+                                                unsigned Kind) const override;
 
   unsigned getRegPressureLimit(const TargetRegisterClass *RC,
                                MachineFunction &MF) const override;

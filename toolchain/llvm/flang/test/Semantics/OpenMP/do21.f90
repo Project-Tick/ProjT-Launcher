@@ -2,26 +2,26 @@
 ! Check for existence of loop following a DO directive
 
 subroutine do1
-  !ERROR: This construct should contain a DO-loop or a loop-nest-generating OpenMP construct
+  !ERROR: A DO loop must follow the DO directive
   !$omp do
 end subroutine
 
 subroutine do2
-  !ERROR: This construct should contain a DO-loop or a loop-nest-generating OpenMP construct
+  !ERROR: A DO loop must follow the PARALLEL DO directive
   !$omp parallel do
 end subroutine
 
 subroutine do3
-  !ERROR: This construct should contain a DO-loop or a loop-nest-generating OpenMP construct
+  !ERROR: A DO loop must follow the SIMD directive
   !$omp simd
 end subroutine
 
 subroutine do4
-  !ERROR: This construct should contain a DO-loop or a loop-nest-generating OpenMP construct
+  !ERROR: A DO loop must follow the DO SIMD directive
   !$omp do simd
 end subroutine
 
 subroutine do5
-  !ERROR: This construct should contain a DO-loop or a loop-nest-generating OpenMP construct
+  !ERROR: A DO loop must follow the LOOP directive
   !$omp loop
 end subroutine

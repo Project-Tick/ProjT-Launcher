@@ -3,13 +3,12 @@
 
 # REQUIRES: x86
 
-# RUN: mkdir -p %t.dir
-# RUN: llvm-mc --filetype=obj --triple x86_64-pc-linux %s -o %t.dir/obj.o
-# RUN: llvm-objcopy --split-dwo=%t.dir/dwo-relative-path.dwo %t.dir/obj.o
+# RUN: llvm-mc --filetype=obj --triple x86_64-pc-linux %s -o %t.o
+# RUN: llvm-objcopy --split-dwo=%T/dwo-relative-path.dwo %t.o
 
 # RUN: cd ../..
 
-# RUN: %lldb %t.dir/obj.o -o "target var x" -b 2>&1 | FileCheck %s
+# RUN: %lldb %t.o -o "target var x" -b 2>&1 | FileCheck %s
 
 # CHECK: x = 10
 

@@ -49,7 +49,7 @@ bool ComparisonCategoryInfo::ValueInfo::hasValidIntValue() const {
   // Before we attempt to get the value of the first field, ensure that we
   // actually have one (and only one) field.
   const auto *Record = VD->getType()->getAsCXXRecordDecl();
-  if (!Record || Record->getNumFields() != 1 ||
+  if (std::distance(Record->field_begin(), Record->field_end()) != 1 ||
       !Record->field_begin()->getType()->isIntegralOrEnumerationType())
     return false;
 
@@ -83,15 +83,7 @@ ComparisonCategoryInfo::ValueInfo *ComparisonCategoryInfo::lookupValueInfo(
       &Ctx.Idents.get(ComparisonCategories::getResultString(ValueKind)));
   if (Lookup.empty() || !isa<VarDecl>(Lookup.front()))
     return nullptr;
-  // The static member must have the same type as the comparison category class
-  // itself (e.g., std::partial_ordering::less must be of type
-  // partial_ordering).
-  VarDecl *VD = cast<VarDecl>(Lookup.front());
-  const CXXRecordDecl *VDRecord = VD->getType()->getAsCXXRecordDecl();
-  if (!VDRecord || VDRecord->getCanonicalDecl() != Record->getCanonicalDecl())
-    return nullptr;
-
-  Objects.emplace_back(ValueKind, VD);
+  Objects.emplace_back(ValueKind, cast<VarDecl>(Lookup.front()));
   return &Objects.back();
 }
 
@@ -174,7 +166,7 @@ const ComparisonCategoryInfo &ComparisonCategories::getInfoForType(QualType Ty) 
 
 QualType ComparisonCategoryInfo::getType() const {
   assert(Record);
-  return Record->getASTContext().getCanonicalTagType(Record);
+  return QualType(Record->getTypeForDecl(), 0);
 }
 
 StringRef ComparisonCategories::getCategoryString(ComparisonCategoryType Kind) {

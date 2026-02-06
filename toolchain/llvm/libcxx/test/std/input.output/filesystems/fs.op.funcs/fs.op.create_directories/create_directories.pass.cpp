@@ -9,6 +9,7 @@
 // REQUIRES: can-create-symlinks
 // UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: no-filesystem
+// UNSUPPORTED: availability-filesystem-missing
 
 // This test requires the dylib support introduced in e4ed349c7658.
 // XFAIL: using-built-library-before-llvm-12

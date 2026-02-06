@@ -2,15 +2,10 @@
 
 // Test that no_sanitize_address attribute applies even when the function would
 // be normally inlined.
-//
-// MSVC doesn't apply __declspec(no_sanitize_address) to inlined functions
-//    (i.e. it contains this bug)
-// XFAIL: msvc
 
-#include "defines.h"
 #include <stdlib.h>
 
-ATTRIBUTE_NO_SANITIZE_ADDRESS
+__attribute__((no_sanitize_address))
 int f(int *p) {
   return *p; // BOOOM?? Nope!
 }

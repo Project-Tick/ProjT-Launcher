@@ -214,9 +214,11 @@ struct UndefinedDiag {
   std::vector<File> files;
 };
 
-void SymbolTable::reportUndefinedSymbol(const UndefinedDiag &undefDiag) {
+static void reportUndefinedSymbol(SymbolTable *symTab,
+                                  COFFLinkerContext &ctx,
+                                  const UndefinedDiag &undefDiag) {
   auto diag = errorOrWarn(ctx);
-  diag << "undefined symbol: " << printSymbol(undefDiag.sym);
+  diag << "undefined symbol: " << undefDiag.sym;
 
   const size_t maxUndefReferences = 3;
   size_t numDisplayedRefs = 0, numRefs = 0;
@@ -235,7 +237,7 @@ void SymbolTable::reportUndefinedSymbol(const UndefinedDiag &undefDiag) {
   // Hints
   StringRef name = undefDiag.sym->getName();
   if (name.consume_front("__imp_")) {
-    Symbol *imp = find(name);
+    Symbol *imp = symTab->find(name);
     if (imp && imp->isLazy()) {
       diag << "\nNOTE: a relevant symbol '" << imp->getName()
            << "' is available in " << toString(imp->getFile())
@@ -245,7 +247,6 @@ void SymbolTable::reportUndefinedSymbol(const UndefinedDiag &undefDiag) {
 }
 
 void SymbolTable::loadMinGWSymbols() {
-  std::vector<Symbol *> undefs;
   for (auto &i : symMap) {
     Symbol *sym = i.second;
     auto *undef = dyn_cast<Undefined>(sym);
@@ -253,15 +254,7 @@ void SymbolTable::loadMinGWSymbols() {
       continue;
     if (undef->getWeakAlias())
       continue;
-    undefs.push_back(sym);
-  }
 
-  for (auto sym : undefs) {
-    auto *undef = dyn_cast<Undefined>(sym);
-    if (!undef)
-      continue;
-    if (undef->getWeakAlias())
-      continue;
     StringRef name = undef->getName();
 
     if (machine == I386 && ctx.config.stdcallFixup) {
@@ -382,12 +375,12 @@ void SymbolTable::reportProblemSymbols(
 
   for (Symbol *b : ctx.config.gcroot) {
     if (undefs.count(b))
-      errorOrWarn(ctx) << "<root>: undefined symbol: " << printSymbol(b);
+      errorOrWarn(ctx) << "<root>: undefined symbol: " << b;
     if (localImports)
       if (Symbol *imp = localImports->lookup(b))
-        Warn(ctx) << "<root>: locally defined symbol imported: "
-                  << printSymbol(imp) << " (defined in "
-                  << toString(imp->getFile()) << ") [LNK4217]";
+        Warn(ctx) << "<root>: locally defined symbol imported: " << imp
+                  << " (defined in " << toString(imp->getFile())
+                  << ") [LNK4217]";
   }
 
   std::vector<UndefinedDiag> undefDiags;
@@ -408,8 +401,7 @@ void SymbolTable::reportProblemSymbols(
       }
       if (localImports)
         if (Symbol *imp = localImports->lookup(sym))
-          Warn(ctx) << file
-                    << ": locally defined symbol imported: " << printSymbol(imp)
+          Warn(ctx) << file << ": locally defined symbol imported: " << imp
                     << " (defined in " << imp->getFile() << ") [LNK4217]";
     }
   };
@@ -422,7 +414,7 @@ void SymbolTable::reportProblemSymbols(
       processFile(file, file->getSymbols());
 
   for (const UndefinedDiag &undefDiag : undefDiags)
-    reportUndefinedSymbol(undefDiag);
+    reportUndefinedSymbol(this, ctx, undefDiag);
 }
 
 void SymbolTable::reportUnresolvable() {
@@ -452,7 +444,7 @@ void SymbolTable::reportUnresolvable() {
   reportProblemSymbols(undefs, /*localImports=*/nullptr, true);
 }
 
-void SymbolTable::resolveRemainingUndefines(std::vector<Undefined *> &aliases) {
+void SymbolTable::resolveRemainingUndefines() {
   llvm::TimeTraceScope timeScope("Resolve remaining undefined symbols");
   SmallPtrSet<Symbol *, 8> undefs;
   DenseMap<Symbol *, Symbol *> localImports;
@@ -468,21 +460,25 @@ void SymbolTable::resolveRemainingUndefines(std::vector<Undefined *> &aliases) {
     StringRef name = undef->getName();
 
     // A weak alias may have been resolved, so check for that.
-    if (undef->getWeakAlias()) {
-      aliases.push_back(undef);
+    if (undef->resolveWeakAlias())
       continue;
-    }
 
     // If we can resolve a symbol by removing __imp_ prefix, do that.
     // This odd rule is for compatibility with MSVC linker.
     if (name.starts_with("__imp_")) {
       auto findLocalSym = [&](StringRef n) {
         Symbol *sym = find(n);
-        return sym ? sym->getDefined() : nullptr;
+        if (auto undef = dyn_cast_or_null<Undefined>(sym)) {
+          // The unprefixed symbol might come later in symMap, so handle it now
+          // if needed.
+          if (!undef->resolveWeakAlias())
+            sym = nullptr;
+        }
+        return sym;
       };
 
       StringRef impName = name.substr(strlen("__imp_"));
-      Defined *imp = findLocalSym(impName);
+      Symbol *imp = findLocalSym(impName);
       if (!imp && isEC()) {
         // Try to use the mangled symbol on ARM64EC.
         std::optional<std::string> mangledName =
@@ -496,10 +492,11 @@ void SymbolTable::resolveRemainingUndefines(std::vector<Undefined *> &aliases) {
             imp = findLocalSym(*mangledName);
         }
       }
-      if (imp) {
-        replaceSymbol<DefinedLocalImport>(sym, ctx, name, imp);
+      if (imp && isa<Defined>(imp)) {
+        auto *d = cast<Defined>(imp);
+        replaceSymbol<DefinedLocalImport>(sym, ctx, name, d);
         localImportChunks.push_back(cast<DefinedLocalImport>(sym)->getChunk());
-        localImports[sym] = imp;
+        localImports[sym] = d;
         continue;
       }
     }
@@ -555,7 +552,7 @@ void SymbolTable::initializeLoadConfig() {
       Warn(ctx) << "EC version of '_load_config_used' is missing";
       return;
     }
-    if (ctx.config.machine == ARM64X) {
+    if (ctx.hybridSymtab) {
       Warn(ctx) << "native version of '_load_config_used' is missing for "
                    "ARM64X target";
       return;
@@ -615,10 +612,10 @@ void SymbolTable::initializeECThunks() {
     return;
 
   for (auto it : entryThunks) {
-    Defined *to = it.second->getDefined();
+    auto *to = dyn_cast<Defined>(it.second);
     if (!to)
       continue;
-    auto *from = dyn_cast_or_null<DefinedRegular>(it.first->getDefined());
+    auto *from = dyn_cast<DefinedRegular>(it.first);
     // We need to be able to add padding to the function and fill it with an
     // offset to its entry thunks. To ensure that padding the function is
     // feasible, functions are required to be COMDAT symbols with no offset.
@@ -637,8 +634,7 @@ void SymbolTable::initializeECThunks() {
     Symbol *sym = exitThunks.lookup(file->thunkSym);
     if (!sym)
       sym = exitThunks.lookup(file->impECSym);
-    if (sym)
-      file->impchkThunk->exitThunk = sym->getDefined();
+    file->impchkThunk->exitThunk = dyn_cast_or_null<Defined>(sym);
   }
 
   // On ARM64EC, the __imp_ symbol references the auxiliary IAT, while the
@@ -653,35 +649,6 @@ void SymbolTable::initializeECThunks() {
         sym = impSym->file->impSym;
     }
   });
-}
-
-void SymbolTable::initializeSameAddressThunks() {
-  for (auto iter : ctx.config.sameAddresses) {
-    auto sym = dyn_cast_or_null<DefinedRegular>(iter.first->getDefined());
-    if (!sym || !sym->isLive())
-      continue;
-    auto nativeSym =
-        dyn_cast_or_null<DefinedRegular>(iter.second->getDefined());
-    if (!nativeSym || !nativeSym->isLive())
-      continue;
-    Defined *entryThunk = sym->getChunk()->getEntryThunk();
-    if (!entryThunk)
-      continue;
-
-    // Replace symbols with symbols referencing the thunk. Store the original
-    // symbol as equivalent DefinedSynthetic instances for use in the thunk
-    // itself.
-    auto symClone = make<DefinedSynthetic>(sym->getName(), sym->getChunk(),
-                                           sym->getValue());
-    auto nativeSymClone = make<DefinedSynthetic>(
-        nativeSym->getName(), nativeSym->getChunk(), nativeSym->getValue());
-    SameAddressThunkARM64EC *thunk =
-        make<SameAddressThunkARM64EC>(nativeSymClone, symClone, entryThunk);
-    sameAddressThunks.push_back(thunk);
-
-    replaceSymbol<DefinedSynthetic>(sym, sym->getName(), thunk);
-    replaceSymbol<DefinedSynthetic>(nativeSym, nativeSym->getName(), thunk);
-  }
 }
 
 Symbol *SymbolTable::addUndefined(StringRef name, InputFile *f,
@@ -805,7 +772,7 @@ void SymbolTable::addLazyDLLSymbol(DLLFile *f, DLLFile::Symbol *sym,
     return;
   }
   auto *u = dyn_cast<Undefined>(s);
-  if (!u || (u->weakAlias && !u->isECAlias(machine)) || s->pendingArchiveLoad)
+  if (!u || u->weakAlias || s->pendingArchiveLoad)
     return;
   s->pendingArchiveLoad = true;
   f->makeImport(sym);
@@ -860,7 +827,7 @@ void SymbolTable::reportDuplicate(Symbol *existing, InputFile *newFile,
                                   uint32_t newSectionOffset) {
   COFFSyncStream diag(ctx, ctx.config.forceMultiple ? DiagLevel::Warn
                                                     : DiagLevel::Err);
-  diag << "duplicate symbol: " << printSymbol(existing);
+  diag << "duplicate symbol: " << existing;
 
   DefinedRegular *d = dyn_cast<DefinedRegular>(existing);
   if (d && isa<ObjFile>(d->getFile())) {
@@ -1358,92 +1325,19 @@ void SymbolTable::parseModuleDefs(StringRef path) {
   }
 }
 
-// Parse a string of the form of "<from>=<to>".
-void SymbolTable::parseAlternateName(StringRef s) {
-  auto [from, to] = s.split('=');
-  if (from.empty() || to.empty())
-    Fatal(ctx) << "/alternatename: invalid argument: " << s;
-  auto it = alternateNames.find(from);
-  if (it != alternateNames.end() && it->second != to)
-    Fatal(ctx) << "/alternatename: conflicts: " << s;
-  alternateNames.insert(it, std::make_pair(from, to));
-}
-
-void SymbolTable::resolveAlternateNames() {
-  // Add weak aliases. Weak aliases is a mechanism to give remaining
-  // undefined symbols final chance to be resolved successfully.
-  for (auto pair : alternateNames) {
-    StringRef from = pair.first;
-    StringRef to = pair.second;
-    Symbol *sym = find(from);
-    if (!sym)
-      continue;
-    if (auto *u = dyn_cast<Undefined>(sym)) {
-      if (u->weakAlias) {
-        // On ARM64EC, anti-dependency aliases are treated as undefined
-        // symbols unless a demangled symbol aliases a defined one, which
-        // is part of the implementation.
-        if (!isEC() || !u->isAntiDep)
-          continue;
-        if (!isa<Undefined>(u->weakAlias) &&
-            !isArm64ECMangledFunctionName(u->getName()))
-          continue;
-      }
-
-      // Check if the destination symbol is defined. If not, skip it.
-      // It may still be resolved later if more input files are added.
-      // Also skip anti-dependency targets, as they can't be chained anyway.
-      Symbol *toSym = find(to);
-      if (!toSym)
-        continue;
-      auto toUndef = dyn_cast<Undefined>(toSym);
-      if (toUndef && (!toUndef->weakAlias || toUndef->isAntiDep))
-        continue;
-      toSym->isUsedInRegularObj = true;
-      if (toSym->isLazy())
-        forceLazy(toSym);
-      u->setWeakAlias(toSym);
-    }
-  }
-}
-
-// Parses /aligncomm option argument.
-void SymbolTable::parseAligncomm(StringRef s) {
-  auto [name, align] = s.split(',');
-  if (name.empty() || align.empty()) {
-    Err(ctx) << "/aligncomm: invalid argument: " << s;
-    return;
-  }
-  int v;
-  if (align.getAsInteger(0, v)) {
-    Err(ctx) << "/aligncomm: invalid argument: " << s;
-    return;
-  }
-  alignComm[std::string(name)] = std::max(alignComm[std::string(name)], 1 << v);
-}
-
 Symbol *SymbolTable::addUndefined(StringRef name) {
   return addUndefined(name, nullptr, false);
-}
-
-std::string SymbolTable::printSymbol(Symbol *sym) const {
-  std::string name = maybeDemangleSymbol(ctx, sym->getName());
-  if (ctx.hybridSymtab)
-    return name + (isEC() ? " (EC symbol)" : " (native symbol)");
-  return name;
 }
 
 void SymbolTable::compileBitcodeFiles() {
   if (bitcodeFileInstances.empty())
     return;
 
+  llvm::TimeTraceScope timeScope("Compile bitcode");
   ScopedTimer t(ctx.ltoTimer);
   lto.reset(new BitcodeCompiler(ctx));
-  {
-    llvm::TimeTraceScope addScope("Add bitcode file instances");
-    for (BitcodeFile *f : bitcodeFileInstances)
-      lto->add(*f);
-  }
+  for (BitcodeFile *f : bitcodeFileInstances)
+    lto->add(*f);
   for (InputFile *newObj : lto->compile()) {
     ObjFile *obj = cast<ObjFile>(newObj);
     obj->parse();

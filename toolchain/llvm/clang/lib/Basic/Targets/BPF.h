@@ -34,7 +34,11 @@ public:
     IntMaxType = SignedLong;
     Int64Type = SignedLong;
     RegParmMax = 5;
-    resetDataLayout();
+    if (Triple.getArch() == llvm::Triple::bpfeb) {
+      resetDataLayout("E-m:e-p:64:64-i64:64-i128:128-n32:64-S128");
+    } else {
+      resetDataLayout("e-m:e-p:64:64-i64:64-i128:128-n32:64-S128");
+    }
     MaxAtomicPromoteWidth = 64;
     MaxAtomicInlineWidth = 64;
     TLSSupported = false;
@@ -54,7 +58,7 @@ public:
   bool handleTargetFeatures(std::vector<std::string> &Features,
                             DiagnosticsEngine &Diags) override;
 
-  llvm::SmallVector<Builtin::InfosShard> getTargetBuiltins() const override;
+  ArrayRef<Builtin::Info> getTargetBuiltins() const override;
 
   std::string_view getClobbers() const override { return ""; }
 
@@ -90,7 +94,7 @@ public:
     default:
       return CCCR_Warning;
     case CC_C:
-    case CC_DeviceKernel:
+    case CC_OpenCLKernel:
       return CCCR_OK;
     }
   }

@@ -43,7 +43,6 @@
 #include "support/Trace.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
-#include "clang/AST/DeclTemplate.h"
 #include "clang/Basic/CharInfo.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
@@ -98,9 +97,6 @@ toCompletionItemKind(index::SymbolKind Kind,
                      const llvm::StringRef *Signature = nullptr) {
   using SK = index::SymbolKind;
   switch (Kind) {
-  // FIXME: for backwards compatibility, the include directive kind is treated
-  // the same as Unknown
-  case SK::IncludeDirective:
   case SK::Unknown:
     return CompletionItemKind::Missing;
   case SK::Module:
@@ -197,11 +193,7 @@ MarkupContent renderDoc(const markup::Document &Doc, MarkupKind Kind) {
     Result.value.append(Doc.asPlainText());
     break;
   case MarkupKind::Markdown:
-    if (Config::current().Documentation.CommentFormat ==
-        Config::CommentFormatPolicy::PlainText)
-      Result.value.append(Doc.asEscapedMarkdown());
-    else
-      Result.value.append(Doc.asMarkdown());
+    Result.value.append(Doc.asMarkdown());
     break;
   }
   return Result;
@@ -302,7 +294,7 @@ struct CompletionCandidate {
   std::optional<llvm::StringRef>
   headerToInsertIfAllowed(const CodeCompleteOptions &Opts,
                           CodeCompletionContext::Kind ContextKind) const {
-    if (Opts.InsertIncludes == Config::HeaderInsertionPolicy::NeverInsert ||
+    if (Opts.InsertIncludes == CodeCompleteOptions::NeverInsert ||
         RankedIncludeHeaders.empty() ||
         !contextAllowsHeaderInsertion(ContextKind))
       return std::nullopt;
@@ -878,7 +870,7 @@ bool contextAllowsIndex(enum CodeCompletionContext::Kind K) {
 }
 
 static bool isInjectedClass(const NamedDecl &D) {
-  if (auto *R = dyn_cast_or_null<CXXRecordDecl>(&D))
+  if (auto *R = dyn_cast_or_null<RecordDecl>(&D))
     if (R->isInjectedClassName())
       return true;
   return false;
@@ -934,8 +926,7 @@ struct CompletionRecorder : public CodeCompleteConsumer {
     // FIXME: in case there is no future sema completion callback after the
     // recovery mode, we might still want to provide some results (e.g. trivial
     // identifier-based completion).
-    CodeCompletionContext::Kind ContextKind = Context.getKind();
-    if (ContextKind == CodeCompletionContext::CCC_Recovery) {
+    if (Context.getKind() == CodeCompletionContext::CCC_Recovery) {
       log("Code complete: Ignoring sema code complete callback with Recovery "
           "context.");
       return;
@@ -959,12 +950,6 @@ struct CompletionRecorder : public CodeCompleteConsumer {
     // Retain the results we might want.
     for (unsigned I = 0; I < NumResults; ++I) {
       auto &Result = InResults[I];
-      if (Config::current().Completion.CodePatterns ==
-              Config::CodePatternsPolicy::None &&
-          Result.Kind == CodeCompletionResult::RK_Pattern &&
-          // keep allowing the include files autocomplete suggestions
-          ContextKind != CodeCompletionContext::CCC_IncludedFile)
-        continue;
       // Class members that are shadowed by subclasses are usually noise.
       if (Result.Hidden && Result.Declaration &&
           Result.Declaration->isCXXClassMember())
@@ -1435,8 +1420,7 @@ bool semaCodeComplete(std::unique_ptr<CodeCompleteConsumer> Consumer,
   Clang->setCodeCompletionConsumer(Consumer.release());
 
   if (Input.Preamble.RequiredModules)
-    Input.Preamble.RequiredModules->adjustHeaderSearchOptions(
-        Clang->getHeaderSearchOpts());
+    Input.Preamble.RequiredModules->adjustHeaderSearchOptions(Clang->getHeaderSearchOpts());
 
   SyntaxOnlyAction Action;
   if (!Action.BeginSourceFile(*Clang, Clang->getFrontendOpts().Inputs[0])) {
@@ -1471,15 +1455,21 @@ bool allowIndex(CodeCompletionContext &CC) {
   auto Scope = CC.getCXXScopeSpecifier();
   if (!Scope)
     return true;
+  NestedNameSpecifier *NameSpec = (*Scope)->getScopeRep();
+  if (!NameSpec)
+    return true;
   // We only query the index when qualifier is a namespace.
   // If it's a class, we rely solely on sema completions.
-  switch ((*Scope)->getScopeRep().getKind()) {
-  case NestedNameSpecifier::Kind::Null:
-  case NestedNameSpecifier::Kind::Global:
-  case NestedNameSpecifier::Kind::Namespace:
+  switch (NameSpec->getKind()) {
+  case NestedNameSpecifier::Global:
+  case NestedNameSpecifier::Namespace:
+  case NestedNameSpecifier::NamespaceAlias:
     return true;
-  case NestedNameSpecifier::Kind::MicrosoftSuper:
-  case NestedNameSpecifier::Kind::Type:
+  case NestedNameSpecifier::Super:
+  case NestedNameSpecifier::TypeSpec:
+  case NestedNameSpecifier::TypeSpecWithTemplate:
+  // Unresolved inside a template.
+  case NestedNameSpecifier::Identifier:
     return false;
   }
   llvm_unreachable("invalid NestedNameSpecifier kind");
@@ -1888,15 +1878,7 @@ private:
         for (auto &Cand : C.first) {
           if (Cand.SemaResult &&
               Cand.SemaResult->Kind == CodeCompletionResult::RK_Declaration) {
-            const NamedDecl *DeclToLookup = Cand.SemaResult->getDeclaration();
-            // For instantiations of members of class templates, the
-            // documentation will be stored at the member's original
-            // declaration.
-            if (const NamedDecl *Adjusted =
-                    dyn_cast<NamedDecl>(&adjustDeclToTemplate(*DeclToLookup))) {
-              DeclToLookup = Adjusted;
-            }
-            auto ID = clangd::getSymbolID(DeclToLookup);
+            auto ID = clangd::getSymbolID(Cand.SemaResult->getDeclaration());
             if (!ID)
               continue;
             Req.IDs.insert(ID);
@@ -2038,28 +2020,13 @@ private:
   }
 
   std::optional<float> fuzzyScore(const CompletionCandidate &C) {
-    using MacroFilterPolicy = Config::MacroFilterPolicy;
-
-    const auto IsMacroResult =
-        ((C.SemaResult &&
+    // Macros can be very spammy, so we only support prefix completion.
+    if (((C.SemaResult &&
           C.SemaResult->Kind == CodeCompletionResult::RK_Macro) ||
          (C.IndexResult &&
-          C.IndexResult->SymInfo.Kind == index::SymbolKind::Macro));
-
-    if (!IsMacroResult)
-      return Filter->match(C.Name);
-
-    // macros with underscores are probably noisy, so don't suggest them
-    bool RequireExactPrefix =
-        Opts.MacroFilter == MacroFilterPolicy::ExactPrefix ||
-        C.Name.starts_with_insensitive("_") ||
-        C.Name.ends_with_insensitive("_");
-
-    if (RequireExactPrefix &&
-        !C.Name.starts_with_insensitive(Filter->pattern())) {
+          C.IndexResult->SymInfo.Kind == index::SymbolKind::Macro)) &&
+        !C.Name.starts_with_insensitive(Filter->pattern()))
       return std::nullopt;
-    }
-
     return Filter->match(C.Name);
   }
 
@@ -2187,8 +2154,7 @@ private:
 
 clang::CodeCompleteOptions CodeCompleteOptions::getClangCompleteOpts() const {
   clang::CodeCompleteOptions Result;
-  Result.IncludeCodePatterns =
-      EnableSnippets && (CodePatterns != Config::CodePatternsPolicy::None);
+  Result.IncludeCodePatterns = EnableSnippets;
   Result.IncludeMacros = true;
   Result.IncludeGlobals = true;
   // We choose to include full comments and not do doxygen parsing in
@@ -2458,9 +2424,6 @@ CompletionItem CodeCompletion::render(const CodeCompleteOptions &Opts) const {
 }
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const CodeCompletion &C) {
-  OS << "Signature: " << "\"" << C.Signature << "\", "
-     << "SnippetSuffix: " << "\"" << C.SnippetSuffix << "\""
-     << ", Rendered:";
   // For now just lean on CompletionItem.
   return OS << C.render(CodeCompleteOptions());
 }

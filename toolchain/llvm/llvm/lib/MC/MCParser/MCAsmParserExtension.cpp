@@ -9,7 +9,7 @@
 #include "llvm/MC/MCParser/MCAsmParserExtension.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCExpr.h"
-#include "llvm/MC/MCParser/AsmLexer.h"
+#include "llvm/MC/MCParser/MCAsmLexer.h"
 #include "llvm/MC/MCStreamer.h"
 
 using namespace llvm;
@@ -44,39 +44,21 @@ bool MCAsmParserExtension::parseDirectiveCGProfile(StringRef, SMLoc) {
   Lex();
 
   int64_t Count;
-  if (getParser().parseIntToken(Count))
+  if (getParser().parseIntToken(
+          Count, "expected integer count in '.cg_profile' directive"))
     return true;
 
   if (getLexer().isNot(AsmToken::EndOfStatement))
     return TokError("unexpected token in directive");
 
-  MCSymbol *FromSym = getContext().parseSymbol(From);
-  MCSymbol *ToSym = getContext().parseSymbol(To);
+  MCSymbol *FromSym = getContext().getOrCreateSymbol(From);
+  MCSymbol *ToSym = getContext().getOrCreateSymbol(To);
 
   getStreamer().emitCGProfileEntry(
-      MCSymbolRefExpr::create(FromSym, getContext(), FromLoc),
-      MCSymbolRefExpr::create(ToSym, getContext(), ToLoc), Count);
-  return false;
-}
-
-bool MCAsmParserExtension::maybeParseUniqueID(int64_t &UniqueID) {
-  AsmLexer &L = getLexer();
-  if (L.isNot(AsmToken::Comma))
-    return false;
-  Lex();
-  StringRef UniqueStr;
-  if (getParser().parseIdentifier(UniqueStr))
-    return TokError("expected identifier");
-  if (UniqueStr != "unique")
-    return TokError("expected 'unique'");
-  if (L.isNot(AsmToken::Comma))
-    return TokError("expected commma");
-  Lex();
-  if (getParser().parseAbsoluteExpression(UniqueID))
-    return true;
-  if (UniqueID < 0)
-    return TokError("unique id must be positive");
-  if (!isUInt<32>(UniqueID) || UniqueID == ~0U)
-    return TokError("unique id is too large");
+      MCSymbolRefExpr::create(FromSym, MCSymbolRefExpr::VK_None, getContext(),
+                              FromLoc),
+      MCSymbolRefExpr::create(ToSym, MCSymbolRefExpr::VK_None, getContext(),
+                              ToLoc),
+      Count);
   return false;
 }

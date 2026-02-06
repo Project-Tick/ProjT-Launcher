@@ -12,6 +12,7 @@
 #include "llvm/ExecutionEngine/Orc/Debugging/DebuggerSupportPlugin.h"
 #include "llvm/ExecutionEngine/Orc/MachOBuilder.h"
 
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/BinaryFormat/MachO.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
@@ -38,7 +39,7 @@ public:
 
   MachODebugObjectSynthesizerBase(LinkGraph &G, ExecutorAddr RegisterActionAddr)
       : G(G), RegisterActionAddr(RegisterActionAddr) {}
-  ~MachODebugObjectSynthesizerBase() override = default;
+  virtual ~MachODebugObjectSynthesizerBase() = default;
 
   Error preserveDebugSections() {
     if (G.findSectionByName(SynthDebugSectionName)) {
@@ -63,7 +64,7 @@ public:
       LLVM_DEBUG({
         dbgs() << "  Preserving debug section " << Sec.getName() << "\n";
       });
-      SmallPtrSet<Block *, 8> PreservedBlocks;
+      SmallSet<Block *, 8> PreservedBlocks;
       for (auto *Sym : Sec.symbols()) {
         bool NewPreservedBlock =
             PreservedBlocks.insert(&Sym->getBlock()).second;

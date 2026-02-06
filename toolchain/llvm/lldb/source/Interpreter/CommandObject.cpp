@@ -32,6 +32,7 @@
 #include "lldb/Target/Language.h"
 
 #include "lldb/Interpreter/CommandInterpreter.h"
+#include "lldb/Interpreter/CommandOptionArgumentTable.h"
 #include "lldb/Interpreter/CommandReturnObject.h"
 
 using namespace lldb;
@@ -119,24 +120,17 @@ bool CommandObject::ParseOptions(Args &args, CommandReturnObject &result) {
     if (args_or) {
       args = std::move(*args_or);
       error = options->NotifyOptionParsingFinished(&exe_ctx);
-    } else {
+    } else
       error = Status::FromError(args_or.takeError());
-    }
 
-    if (error.Fail()) {
+    if (error.Success()) {
+      if (options->VerifyOptions(result))
+        return true;
+    } else {
       result.SetError(error.takeError());
-      result.SetStatus(eReturnStatusFailed);
-      return false;
     }
-
-    if (llvm::Error error = options->VerifyOptions()) {
-      result.SetError(std::move(error));
-      result.SetStatus(eReturnStatusFailed);
-      return false;
-    }
-
-    result.SetStatus(eReturnStatusSuccessFinishNoResult);
-    return true;
+    result.SetStatus(eReturnStatusFailed);
+    return false;
   }
   return true;
 }
@@ -217,7 +211,7 @@ bool CommandObject::CheckRequirements(CommandReturnObject &result) {
     if (process == nullptr) {
       // A process that is not running is considered paused.
       if (GetFlags().Test(eCommandProcessMustBeLaunched)) {
-        result.AppendError("process must exist");
+        result.AppendError("Process must exist.");
         return false;
       }
     } else {
@@ -236,7 +230,7 @@ bool CommandObject::CheckRequirements(CommandReturnObject &result) {
       case eStateExited:
       case eStateUnloaded:
         if (GetFlags().Test(eCommandProcessMustBeLaunched)) {
-          result.AppendError("process must be launched");
+          result.AppendError("Process must be launched.");
           return false;
         }
         break;
@@ -255,7 +249,7 @@ bool CommandObject::CheckRequirements(CommandReturnObject &result) {
   if (GetFlags().Test(eCommandProcessMustBeTraced)) {
     Target *target = m_exe_ctx.GetTargetPtr();
     if (target && !target->GetTrace()) {
-      result.AppendError("process is not being traced");
+      result.AppendError("Process is not being traced.");
       return false;
     }
   }
@@ -272,7 +266,7 @@ void CommandObject::Cleanup() {
 void CommandObject::HandleCompletion(CompletionRequest &request) {
 
   m_exe_ctx = m_interpreter.GetExecutionContext();
-  llvm::scope_exit reset_ctx([this]() { Cleanup(); });
+  auto reset_ctx = llvm::make_scope_exit([this]() { Cleanup(); });
 
   // Default implementation of WantsCompletion() is !WantsRawCommandString().
   // Subclasses who want raw command string but desire, for example, argument
@@ -284,6 +278,7 @@ void CommandObject::HandleCompletion(CompletionRequest &request) {
   } else {
     // Can we do anything generic with the options?
     Options *cur_options = GetOptions();
+    CommandReturnObject result(m_interpreter.GetDebugger().GetUseColor());
     OptionElementVector opt_element_vector;
 
     if (cur_options != nullptr) {
@@ -337,11 +332,14 @@ void CommandObject::HandleArgumentCompletion(
 
 }
 
+
 bool CommandObject::HelpTextContainsWord(llvm::StringRef search_word,
                                          bool search_short_help,
                                          bool search_long_help,
                                          bool search_syntax,
                                          bool search_options) {
+  std::string options_usage_help;
+
   bool found_word = false;
 
   llvm::StringRef short_help = GetHelp();
@@ -359,8 +357,7 @@ bool CommandObject::HelpTextContainsWord(llvm::StringRef search_word,
     StreamString usage_help;
     GetOptions()->GenerateOptionUsage(
         usage_help, *this,
-        GetCommandInterpreter().GetDebugger().GetTerminalWidth(),
-        GetCommandInterpreter().GetDebugger().GetUseColor());
+        GetCommandInterpreter().GetDebugger().GetTerminalWidth());
     if (!usage_help.Empty()) {
       llvm::StringRef usage_text = usage_help.GetString();
       if (usage_text.contains_insensitive(search_word))
@@ -673,8 +670,7 @@ void CommandObject::GenerateHelpText(Stream &output_strm) {
   if (options != nullptr) {
     options->GenerateOptionUsage(
         output_strm, *this,
-        GetCommandInterpreter().GetDebugger().GetTerminalWidth(),
-        GetCommandInterpreter().GetDebugger().GetUseColor());
+        GetCommandInterpreter().GetDebugger().GetTerminalWidth());
   }
   llvm::StringRef long_help = GetHelpLong();
   if (!long_help.empty()) {

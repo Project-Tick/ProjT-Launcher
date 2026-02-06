@@ -77,6 +77,13 @@ static cl::opt<bool>
 
 extern cl::opt<bool> ScheduleInlineAsm;
 
+namespace llvm {
+
+FunctionPass *createHexagonPacketizer(bool Minimal);
+void initializeHexagonPacketizerPass(PassRegistry&);
+
+} // end namespace llvm
+
 namespace {
 
   class HexagonPacketizer : public MachineFunctionPass {
@@ -101,7 +108,8 @@ namespace {
     bool runOnMachineFunction(MachineFunction &Fn) override;
 
     MachineFunctionProperties getRequiredProperties() const override {
-      return MachineFunctionProperties().setNoVRegs();
+      return MachineFunctionProperties().set(
+          MachineFunctionProperties::Property::NoVRegs);
     }
 
   private:
@@ -197,7 +205,8 @@ static MachineBasicBlock::iterator moveInstrOut(MachineInstr &MI,
 
 bool HexagonPacketizer::runOnMachineFunction(MachineFunction &MF) {
   // FIXME: This pass causes verification failures.
-  MF.getProperties().setFailsVerification();
+  MF.getProperties().set(
+      MachineFunctionProperties::Property::FailsVerification);
 
   auto &HST = MF.getSubtarget<HexagonSubtarget>();
   HII = HST.getInstrInfo();
@@ -431,7 +440,7 @@ bool HexagonPacketizerList::canPromoteToDotCur(const MachineInstr &MI,
     return false;
 
   // Check for existing uses of a vector register within the packet which
-  // would be affected by converting a vector load into .cur format.
+  // would be affected by converting a vector load into .cur formt.
   for (auto *BI : CurrentPacketMIs) {
     LLVM_DEBUG(dbgs() << "packet has "; BI->dump(););
     if (BI->readsRegister(DepReg, MF.getSubtarget().getRegisterInfo()))
@@ -653,7 +662,7 @@ bool HexagonPacketizerList::canPromoteToNewValueStore(const MachineInstr &MI,
   const MCInstrDesc& MCID = PacketMI.getDesc();
 
   // First operand is always the result.
-  const TargetRegisterClass *PacketRC = HII->getRegClass(MCID, 0);
+  const TargetRegisterClass *PacketRC = HII->getRegClass(MCID, 0, HRI, MF);
   // Double regs can not feed into new value store: PRM section: 5.4.2.2.
   if (PacketRC == &Hexagon::DoubleRegsRegClass)
     return false;
@@ -741,7 +750,7 @@ bool HexagonPacketizerList::canPromoteToNewValueStore(const MachineInstr &MI,
   // modified by they should not be modified between the producer and the store
   // instruction as it will make them both conditional on different values.
   // We already know this to be true for all the instructions before and
-  // including PacketMI. However, we need to perform the check for the
+  // including PacketMI. Howerver, we need to perform the check for the
   // remaining instructions in the packet.
 
   unsigned StartCheck = 0;
@@ -859,14 +868,14 @@ bool HexagonPacketizerList::canPromoteToDotNew(const MachineInstr &MI,
   if (PI.isImplicitDef())
     return false;
 
-  // If dependency is through an implicitly defined register, we should not
+  // If dependency is trough an implicitly defined register, we should not
   // newify the use.
   if (isImplicitDependency(PI, true, DepReg) ||
       isImplicitDependency(MI, false, DepReg))
     return false;
 
   const MCInstrDesc& MCID = PI.getDesc();
-  const TargetRegisterClass *VecRC = HII->getRegClass(MCID, 0);
+  const TargetRegisterClass *VecRC = HII->getRegClass(MCID, 0, HRI, MF);
   if (DisableVecDblNVStores && VecRC == &Hexagon::HvxWRRegClass)
     return false;
 
@@ -980,7 +989,7 @@ bool HexagonPacketizerList::arePredicatesComplements(MachineInstr &MI1,
   // We attempt to detect it by analyzing existing dependencies in the packet.
 
   // Analyze relationships between all existing members of the packet.
-  // Look for Anti dependency on the same predicate reg as used in the
+  // Look for Anti dependecy on the same predicate reg as used in the
   // candidate.
   for (auto *I : CurrentPacketMIs) {
     // Scheduling Unit for current insn in the packet.
@@ -1267,7 +1276,7 @@ bool HexagonPacketizerList::hasRegMaskDependence(const MachineInstr &I,
   // occur on calls, and the problematic case is when we add an instruction
   // defining a register R to a packet that has a call that clobbers R via
   // a regmask. Those cannot be packetized together, because the call will
-  // be executed last. That's also a reason why it is ok to add a call
+  // be executed last. That's also a reson why it is ok to add a call
   // clobbering R to a packet that defines R.
 
   // Look for regmasks in J.
@@ -1441,7 +1450,7 @@ bool HexagonPacketizerList::isLegalToPacketizeTogether(SUnit *SUI, SUnit *SUJ) {
           continue;
     }
 
-    // Data dependence ok if we have load.cur.
+    // Data dpendence ok if we have load.cur.
     if (DepType == SDep::Data && HII->isDotCurInst(J)) {
       if (HII->isHVXVec(I))
         continue;
@@ -1834,7 +1843,7 @@ bool HexagonPacketizerList::shouldAddToPacket(const MachineInstr &MI) {
   // with any other instruction in the existing packet.
   auto &HST = MI.getParent()->getParent()->getSubtarget<HexagonSubtarget>();
   // Constraint 1: Only one duplex allowed per packet.
-  // Constraint 2: Consider duplex checks only if there is at least one
+  // Constraint 2: Consider duplex checks only if there is atleast one
   // instruction in a packet.
   // Constraint 3: If one of the existing instructions in the packet has a
   // SLOT0 only instruction that can not be duplexed, do not attempt to form

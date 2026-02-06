@@ -92,6 +92,8 @@ loop:
   br label %loop
 }
 
+
+declare i32 @llvm.read_register.i32(metadata) nounwind
 declare void @unknown()
 declare void @use(i32)
 

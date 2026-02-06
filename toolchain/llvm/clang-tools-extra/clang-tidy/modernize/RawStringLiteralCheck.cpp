@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- RawStringLiteralCheck.cpp - clang-tidy----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -19,7 +19,9 @@ using namespace clang::ast_matchers;
 
 namespace clang::tidy::modernize {
 
-static bool containsEscapes(StringRef HayStack, StringRef Escapes) {
+namespace {
+
+bool containsEscapes(StringRef HayStack, StringRef Escapes) {
   size_t BackSlash = HayStack.find('\\');
   if (BackSlash == StringRef::npos)
     return false;
@@ -33,16 +35,16 @@ static bool containsEscapes(StringRef HayStack, StringRef Escapes) {
   return true;
 }
 
-static bool isRawStringLiteral(StringRef Text) {
+bool isRawStringLiteral(StringRef Text) {
   // Already a raw string literal if R comes before ".
   const size_t QuotePos = Text.find('"');
   assert(QuotePos != StringRef::npos);
   return (QuotePos > 0) && (Text[QuotePos - 1] == 'R');
 }
 
-static bool containsEscapedCharacters(const MatchFinder::MatchResult &Result,
-                                      const StringLiteral *Literal,
-                                      const CharsBitSet &DisallowedChars) {
+bool containsEscapedCharacters(const MatchFinder::MatchResult &Result,
+                               const StringLiteral *Literal,
+                               const CharsBitSet &DisallowedChars) {
   // FIXME: Handle L"", u8"", u"" and U"" literals.
   if (!Literal->isOrdinary())
     return false;
@@ -51,22 +53,24 @@ static bool containsEscapedCharacters(const MatchFinder::MatchResult &Result,
     if (DisallowedChars.test(C))
       return false;
 
-  const CharSourceRange CharRange = Lexer::makeFileCharRange(
+  CharSourceRange CharRange = Lexer::makeFileCharRange(
       CharSourceRange::getTokenRange(Literal->getSourceRange()),
       *Result.SourceManager, Result.Context->getLangOpts());
-  const StringRef Text = Lexer::getSourceText(CharRange, *Result.SourceManager,
-                                              Result.Context->getLangOpts());
+  StringRef Text = Lexer::getSourceText(CharRange, *Result.SourceManager,
+                                        Result.Context->getLangOpts());
   if (Text.empty() || isRawStringLiteral(Text))
     return false;
 
   return containsEscapes(Text, R"('\"?x01)");
 }
 
-static bool containsDelimiter(StringRef Bytes, const std::string &Delimiter) {
+bool containsDelimiter(StringRef Bytes, const std::string &Delimiter) {
   return Bytes.find(Delimiter.empty()
                         ? std::string(R"lit()")lit")
                         : (")" + Delimiter + R"(")")) != StringRef::npos;
 }
+
+} // namespace
 
 RawStringLiteralCheck::RawStringLiteralCheck(StringRef Name,
                                              ClangTidyContext *Context)
@@ -116,7 +120,7 @@ createUserDefinedSuffix(const StringLiteral *Literal, const SourceManager &SM,
   const CharSourceRange CharRange =
       Lexer::makeFileCharRange(TokenRange, SM, LangOpts);
   if (T.hasUDSuffix()) {
-    const StringRef Text = Lexer::getSourceText(CharRange, SM, LangOpts);
+    StringRef Text = Lexer::getSourceText(CharRange, SM, LangOpts);
     const size_t UDSuffixPos = Text.find_last_of('"');
     if (UDSuffixPos == StringRef::npos)
       return std::nullopt;
@@ -131,10 +135,11 @@ static std::string createRawStringLiteral(const StringLiteral *Literal,
                                           const LangOptions &LangOpts) {
   const StringRef Bytes = Literal->getBytes();
   std::string Delimiter;
-  for (int I = 0; containsDelimiter(Bytes, Delimiter); ++I)
+  for (int I = 0; containsDelimiter(Bytes, Delimiter); ++I) {
     Delimiter = (I == 0) ? DelimiterStem : DelimiterStem + std::to_string(I);
+  }
 
-  const std::optional<StringRef> UserDefinedSuffix =
+  std::optional<StringRef> UserDefinedSuffix =
       createUserDefinedSuffix(Literal, SM, LangOpts);
 
   if (Delimiter.empty())

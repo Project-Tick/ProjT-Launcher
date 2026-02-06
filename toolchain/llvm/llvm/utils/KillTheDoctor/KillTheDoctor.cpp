@@ -43,6 +43,7 @@
 #include "llvm/Support/WindowsError.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/type_traits.h"
+#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <map>

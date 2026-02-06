@@ -21,6 +21,8 @@
 #include "clang/StaticAnalyzer/Core/CheckerManager.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/DynamicExtent.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/Support/raw_ostream.h"
 #include <optional>
 
@@ -92,7 +94,7 @@ ProgramStateRef VLASizeChecker::checkVLA(CheckerContext &C,
 
   ASTContext &Ctx = C.getASTContext();
   SValBuilder &SVB = C.getSValBuilder();
-  QualType SizeTy = Ctx.getSizeType();
+  CanQualType SizeTy = Ctx.getSizeType();
   uint64_t SizeMax =
       SVB.getBasicValueFactory().getMaxValue(SizeTy)->getZExtValue();
 

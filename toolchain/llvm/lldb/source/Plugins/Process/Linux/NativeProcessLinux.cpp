@@ -218,8 +218,8 @@ static Status EnsureFDFlags(int fd, int flags) {
 static llvm::Error AddPtraceScopeNote(llvm::Error original_error) {
   Expected<int> ptrace_scope = GetPtraceScope();
   if (auto E = ptrace_scope.takeError()) {
-    LLDB_LOG_ERROR(GetLog(POSIXLog::Process), std::move(E),
-                   "error reading value of ptrace_scope: {0}");
+    Log *log = GetLog(POSIXLog::Process);
+    LLDB_LOG(log, "error reading value of ptrace_scope: {0}", E);
 
     // The original error is probably more interesting than not being able to
     // read or interpret ptrace_scope.
@@ -230,7 +230,6 @@ static llvm::Error AddPtraceScopeNote(llvm::Error original_error) {
   switch (*ptrace_scope) {
   case 1:
   case 2:
-    llvm::consumeError(std::move(original_error));
     return llvm::createStringError(
         std::error_code(errno, std::generic_category()),
         "The current value of ptrace_scope is %d, which can cause ptrace to "
@@ -240,7 +239,6 @@ static llvm::Error AddPtraceScopeNote(llvm::Error original_error) {
         "https://www.kernel.org/doc/Documentation/security/Yama.txt.",
         *ptrace_scope);
   case 3:
-    llvm::consumeError(std::move(original_error));
     return llvm::createStringError(
         std::error_code(errno, std::generic_category()),
         "The current value of ptrace_scope is 3, which will cause ptrace to "
@@ -835,7 +833,7 @@ void NativeProcessLinux::MonitorBreakpoint(NativeThreadLinux &thread) {
   auto stepping_with_bp_it =
       m_threads_stepping_with_breakpoint.find(thread.GetID());
   if (stepping_with_bp_it != m_threads_stepping_with_breakpoint.end() &&
-      llvm::is_contained(stepping_with_bp_it->second, reg_ctx.GetPC()))
+      stepping_with_bp_it->second == reg_ctx.GetPC())
     thread.SetStoppedByTrace();
 
   StopRunningThreads(thread.GetID());
@@ -1366,7 +1364,7 @@ NativeProcessLinux::Syscall(llvm::ArrayRef<uint64_t> args) {
   WritableDataBufferSP registers_sp;
   if (llvm::Error Err = reg_ctx.ReadAllRegisterValues(registers_sp).ToError())
     return std::move(Err);
-  llvm::scope_exit restore_regs(
+  auto restore_regs = llvm::make_scope_exit(
       [&] { reg_ctx.WriteAllRegisterValues(registers_sp); });
 
   llvm::SmallVector<uint8_t, 8> memory(syscall_data.Insn.size());
@@ -1377,7 +1375,7 @@ NativeProcessLinux::Syscall(llvm::ArrayRef<uint64_t> args) {
     return std::move(Err);
   }
 
-  llvm::scope_exit restore_mem(
+  auto restore_mem = llvm::make_scope_exit(
       [&] { WriteMemory(exe_addr, memory.data(), memory.size(), bytes_read); });
 
   if (llvm::Error Err = reg_ctx.SetPC(exe_addr).ToError())
@@ -1962,12 +1960,10 @@ void NativeProcessLinux::SignalIfAllThreadsStopped() {
   // Clear any temporary breakpoints we used to implement software single
   // stepping.
   for (const auto &thread_info : m_threads_stepping_with_breakpoint) {
-    for (auto &&bp_addr : thread_info.second) {
-      Status error = RemoveBreakpoint(bp_addr);
-      if (error.Fail())
-        LLDB_LOG(log, "pid = {0} remove stepping breakpoint: {1}",
-                 thread_info.first, error);
-    }
+    Status error = RemoveBreakpoint(thread_info.second);
+    if (error.Fail())
+      LLDB_LOG(log, "pid = {0} remove stepping breakpoint: {1}",
+               thread_info.first, error);
   }
   m_threads_stepping_with_breakpoint.clear();
 

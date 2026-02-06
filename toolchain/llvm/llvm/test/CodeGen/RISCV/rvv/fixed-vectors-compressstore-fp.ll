@@ -2,6 +2,7 @@
 ; RUN: llc -mtriple=riscv32 -mattr=+m,+v,+f,+d,+zvfh -verify-machineinstrs < %s | FileCheck %s --check-prefixes=RV32
 ; RUN: llc -mtriple=riscv64 -mattr=+m,+v,+f,+d,+zvfh -verify-machineinstrs < %s | FileCheck %s --check-prefixes=RV64
 
+declare void @llvm.masked.compressstore.v1f16(<1 x half>, ptr, <1 x i1>)
 define void @compressstore_v1f16(ptr %base, <1 x half> %v, <1 x i1> %mask) {
 ; RV32-LABEL: compressstore_v1f16:
 ; RV32:       # %bb.0:
@@ -24,6 +25,7 @@ define void @compressstore_v1f16(ptr %base, <1 x half> %v, <1 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v2f16(<2 x half>, ptr, <2 x i1>)
 define void @compressstore_v2f16(ptr %base, <2 x half> %v, <2 x i1> %mask) {
 ; RV32-LABEL: compressstore_v2f16:
 ; RV32:       # %bb.0:
@@ -46,6 +48,7 @@ define void @compressstore_v2f16(ptr %base, <2 x half> %v, <2 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v4f16(<4 x half>, ptr, <4 x i1>)
 define void @compressstore_v4f16(ptr %base, <4 x half> %v, <4 x i1> %mask) {
 ; RV32-LABEL: compressstore_v4f16:
 ; RV32:       # %bb.0:
@@ -68,6 +71,7 @@ define void @compressstore_v4f16(ptr %base, <4 x half> %v, <4 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v8f16(<8 x half>, ptr, <8 x i1>)
 define void @compressstore_v8f16(ptr %base, <8 x half> %v, <8 x i1> %mask) {
 ; RV32-LABEL: compressstore_v8f16:
 ; RV32:       # %bb.0:
@@ -90,6 +94,7 @@ define void @compressstore_v8f16(ptr %base, <8 x half> %v, <8 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v1f32(<1 x float>, ptr, <1 x i1>)
 define void @compressstore_v1f32(ptr %base, <1 x float> %v, <1 x i1> %mask) {
 ; RV32-LABEL: compressstore_v1f32:
 ; RV32:       # %bb.0:
@@ -112,6 +117,7 @@ define void @compressstore_v1f32(ptr %base, <1 x float> %v, <1 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v2f32(<2 x float>, ptr, <2 x i1>)
 define void @compressstore_v2f32(ptr %base, <2 x float> %v, <2 x i1> %mask) {
 ; RV32-LABEL: compressstore_v2f32:
 ; RV32:       # %bb.0:
@@ -134,6 +140,7 @@ define void @compressstore_v2f32(ptr %base, <2 x float> %v, <2 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v4f32(<4 x float>, ptr, <4 x i1>)
 define void @compressstore_v4f32(ptr %base, <4 x float> %v, <4 x i1> %mask) {
 ; RV32-LABEL: compressstore_v4f32:
 ; RV32:       # %bb.0:
@@ -156,6 +163,7 @@ define void @compressstore_v4f32(ptr %base, <4 x float> %v, <4 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v8f32(<8 x float>, ptr, <8 x i1>)
 define void @compressstore_v8f32(ptr %base, <8 x float> %v, <8 x i1> %mask) {
 ; RV32-LABEL: compressstore_v8f32:
 ; RV32:       # %bb.0:
@@ -178,6 +186,7 @@ define void @compressstore_v8f32(ptr %base, <8 x float> %v, <8 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v1f64(<1 x double>, ptr, <1 x i1>)
 define void @compressstore_v1f64(ptr %base, <1 x double> %v, <1 x i1> %mask) {
 ; RV32-LABEL: compressstore_v1f64:
 ; RV32:       # %bb.0:
@@ -200,6 +209,7 @@ define void @compressstore_v1f64(ptr %base, <1 x double> %v, <1 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v2f64(<2 x double>, ptr, <2 x i1>)
 define void @compressstore_v2f64(ptr %base, <2 x double> %v, <2 x i1> %mask) {
 ; RV32-LABEL: compressstore_v2f64:
 ; RV32:       # %bb.0:
@@ -222,6 +232,7 @@ define void @compressstore_v2f64(ptr %base, <2 x double> %v, <2 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v4f64(<4 x double>, ptr, <4 x i1>)
 define void @compressstore_v4f64(ptr %base, <4 x double> %v, <4 x i1> %mask) {
 ; RV32-LABEL: compressstore_v4f64:
 ; RV32:       # %bb.0:
@@ -244,6 +255,7 @@ define void @compressstore_v4f64(ptr %base, <4 x double> %v, <4 x i1> %mask) {
   ret void
 }
 
+declare void @llvm.masked.compressstore.v8f64(<8 x double>, ptr, <8 x i1>)
 define void @compressstore_v8f64(ptr %base, <8 x double> %v, <8 x i1> %mask) {
 ; RV32-LABEL: compressstore_v8f64:
 ; RV32:       # %bb.0:

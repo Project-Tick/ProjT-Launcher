@@ -13,6 +13,8 @@
 #include "llvm/TextAPI/InterfaceFile.h"
 #include "llvm/TextAPI/RecordsSlice.h"
 #include "llvm/TextAPI/TextAPIError.h"
+#include <iomanip>
+#include <sstream>
 
 using namespace llvm;
 using namespace llvm::MachO;
@@ -57,11 +59,14 @@ void InterfaceFile::addRPath(StringRef RPath, const Target &InputTarget) {
     return;
   using RPathEntryT = const std::pair<Target, std::string>;
   RPathEntryT Entry(InputTarget, RPath);
+  auto Iter =
+      lower_bound(RPaths, Entry,
+                  [](RPathEntryT &LHS, RPathEntryT &RHS) { return LHS < RHS; });
 
-  if (is_contained(RPaths, Entry))
+  if ((Iter != RPaths.end()) && (*Iter == Entry))
     return;
 
-  RPaths.emplace_back(Entry);
+  RPaths.emplace(Iter, Entry);
 }
 
 void InterfaceFile::addTarget(const Target &Target) {
@@ -100,7 +105,8 @@ void InterfaceFile::inlineLibrary(std::shared_ptr<InterfaceFile> Library,
 
     if (Overwrite && It != Documents.end() &&
         Reexport->getInstallName() == (*It)->getInstallName()) {
-      llvm::replace(Documents, *It, std::move(Reexport));
+      std::replace(Documents.begin(), Documents.end(), *It,
+                   std::move(Reexport));
       return;
     }
 
@@ -421,11 +427,12 @@ bool InterfaceFile::operator==(const InterfaceFile &O) const {
       return false;
   }
 
-  if (!llvm::equal(Documents, O.Documents,
-                   [](const std::shared_ptr<InterfaceFile> &LHS,
-                      const std::shared_ptr<InterfaceFile> &RHS) {
-                     return *LHS == *RHS;
-                   }))
+  if (!std::equal(Documents.begin(), Documents.end(), O.Documents.begin(),
+                  O.Documents.end(),
+                  [](const std::shared_ptr<InterfaceFile> LHS,
+                     const std::shared_ptr<InterfaceFile> RHS) {
+                    return *LHS == *RHS;
+                  }))
     return false;
   return true;
 }

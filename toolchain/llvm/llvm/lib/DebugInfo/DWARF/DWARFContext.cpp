@@ -621,6 +621,8 @@ public:
     else
       return getNormalTypeUnitMap();
   }
+
+
 };
 
 class ThreadSafeState : public ThreadUnsafeDWARFContextState {
@@ -1344,20 +1346,9 @@ void DWARFContext::dump(
 DWARFTypeUnit *DWARFContext::getTypeUnitForHash(uint64_t Hash, bool IsDWO) {
   DWARFUnitVector &DWOUnits = State->getDWOUnits();
   if (const auto &TUI = getTUIndex()) {
-    if (const auto *R = TUI.getFromHash(Hash)) {
-      if (TUI.getVersion() >= 5) {
-        return dyn_cast_or_null<DWARFTypeUnit>(
-            DWOUnits.getUnitForIndexEntry(*R, DW_SECT_INFO));
-      } else {
-        DWARFUnit *TypesUnit = nullptr;
-        getDWARFObj().forEachTypesDWOSections([&](const DWARFSection &S) {
-          if (!TypesUnit)
-            TypesUnit =
-                DWOUnits.getUnitForIndexEntry(*R, DW_SECT_EXT_TYPES, &S);
-        });
-        return dyn_cast_or_null<DWARFTypeUnit>(TypesUnit);
-      }
-    }
+    if (const auto *R = TUI.getFromHash(Hash))
+      return dyn_cast_or_null<DWARFTypeUnit>(
+          DWOUnits.getUnitForIndexEntry(*R));
     return nullptr;
   }
   return State->getTypeUnitMap(IsDWO).lookup(Hash);
@@ -1369,7 +1360,7 @@ DWARFCompileUnit *DWARFContext::getDWOCompileUnitForHash(uint64_t Hash) {
   if (const auto &CUI = getCUIndex()) {
     if (const auto *R = CUI.getFromHash(Hash))
       return dyn_cast_or_null<DWARFCompileUnit>(
-          DWOUnits.getUnitForIndexEntry(*R, DW_SECT_INFO));
+          DWOUnits.getUnitForIndexEntry(*R));
     return nullptr;
   }
 
@@ -1739,14 +1730,13 @@ DWARFContext::getLocalsForAddress(object::SectionedAddress Address) {
   return Result;
 }
 
-std::optional<DILineInfo>
-DWARFContext::getLineInfoForAddress(object::SectionedAddress Address,
-                                    DILineInfoSpecifier Spec) {
+DILineInfo DWARFContext::getLineInfoForAddress(object::SectionedAddress Address,
+                                               DILineInfoSpecifier Spec) {
+  DILineInfo Result;
   DWARFCompileUnit *CU = getCompileUnitForCodeAddress(Address.Address);
   if (!CU)
-    return std::nullopt;
+    return Result;
 
-  DILineInfo Result;
   getFunctionNameAndStartLineForAddress(
       CU, Address.Address, Spec.FNKind, Spec.FLIKind, Result.FunctionName,
       Result.StartFileName, Result.StartLine, Result.StartAddress);
@@ -1761,7 +1751,7 @@ DWARFContext::getLineInfoForAddress(object::SectionedAddress Address,
   return Result;
 }
 
-std::optional<DILineInfo>
+DILineInfo
 DWARFContext::getLineInfoForDataAddress(object::SectionedAddress Address) {
   DILineInfo Result;
   DWARFCompileUnit *CU = getCompileUnitForDataAddress(Address.Address);
@@ -1913,8 +1903,8 @@ static Error createError(const Twine &Reason, llvm::Error E) {
 /// SymInfo contains information about symbol: it's address
 /// and section index which is -1LL for absolute symbols.
 struct SymInfo {
-  uint64_t Address = 0;
-  uint64_t SectionIndex = 0;
+  uint64_t Address;
+  uint64_t SectionIndex;
 };
 
 /// Returns the address of symbol relocation used against and a section index.
@@ -1932,7 +1922,7 @@ static Expected<SymInfo> getSymbolInfo(const object::ObjectFile &Obj,
   // in the object file
   if (Sym != Obj.symbol_end()) {
     bool New;
-    std::tie(CacheIt, New) = Cache.try_emplace(*Sym);
+    std::tie(CacheIt, New) = Cache.insert({*Sym, {0, 0}});
     if (!New)
       return CacheIt->second;
 
@@ -2271,7 +2261,7 @@ public:
           continue;
       }
 
-      if (Section.relocations().empty())
+      if (Section.relocation_begin() == Section.relocation_end())
         continue;
 
       // Symbol to [address, section index] cache mapping.

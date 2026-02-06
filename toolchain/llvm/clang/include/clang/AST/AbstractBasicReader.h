@@ -1,4 +1,4 @@
-//==--- AbstractBasicReader.h - Abstract basic value deserialization -----===//
+//==--- AbstractBasiceReader.h - Abstract basic value deserialization -----===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -143,7 +143,8 @@ public:
   // structure into a single data stream.
   Impl &readObject() { return asImpl(); }
 
-  template <class T> ArrayRef<T> readArray(llvm::SmallVectorImpl<T> &buffer) {
+  template <class T>
+  llvm::ArrayRef<T> readArray(llvm::SmallVectorImpl<T> &buffer) {
     assert(buffer.empty());
 
     uint32_t size = asImpl().readUInt32();
@@ -173,7 +174,7 @@ public:
     llvm::SmallVector<uint64_t, 4> data;
     for (uint32_t i = 0; i != numWords; ++i)
       data.push_back(asImpl().readUInt64());
-    return llvm::APInt(bitWidth, data);
+    return llvm::APInt(bitWidth, numWords, &data[0]);
   }
 
   llvm::FixedPointSemantics readFixedPointSemantics() {
@@ -193,11 +194,11 @@ public:
     auto elemTy = origTy;
     unsigned pathLength = asImpl().readUInt32();
     for (unsigned i = 0; i < pathLength; ++i) {
-      if (elemTy->isRecordType()) {
+      if (elemTy->template getAs<RecordType>()) {
         unsigned int_ = asImpl().readUInt32();
         Decl *decl = asImpl().template readDeclAs<Decl>();
         if (auto *recordDecl = dyn_cast<CXXRecordDecl>(decl))
-          elemTy = getASTContext().getCanonicalTagType(recordDecl);
+          elemTy = getASTContext().getRecordType(recordDecl);
         else
           elemTy = cast<ValueDecl>(decl)->getType();
         path.push_back(
@@ -252,34 +253,46 @@ public:
     return EffectConditionExpr{asImpl().readExprRef()};
   }
 
-  NestedNameSpecifier readNestedNameSpecifier() {
+  NestedNameSpecifier *readNestedNameSpecifier() {
     auto &ctx = getASTContext();
 
     // We build this up iteratively.
-    NestedNameSpecifier cur = std::nullopt;
+    NestedNameSpecifier *cur = nullptr;
 
     uint32_t depth = asImpl().readUInt32();
     for (uint32_t i = 0; i != depth; ++i) {
       auto kind = asImpl().readNestedNameSpecifierKind();
       switch (kind) {
-      case NestedNameSpecifier::Kind::Namespace:
-        cur =
-            NestedNameSpecifier(ctx, asImpl().readNamespaceBaseDeclRef(), cur);
+      case NestedNameSpecifier::Identifier:
+        cur = NestedNameSpecifier::Create(ctx, cur,
+                                          asImpl().readIdentifier());
         continue;
-      case NestedNameSpecifier::Kind::Type:
-        assert(!cur);
-        cur = NestedNameSpecifier(asImpl().readQualType().getTypePtr());
+
+      case NestedNameSpecifier::Namespace:
+        cur = NestedNameSpecifier::Create(ctx, cur,
+                                          asImpl().readNamespaceDeclRef());
         continue;
-      case NestedNameSpecifier::Kind::Global:
-        assert(!cur);
-        cur = NestedNameSpecifier::getGlobal();
+
+      case NestedNameSpecifier::NamespaceAlias:
+        cur = NestedNameSpecifier::Create(ctx, cur,
+                                     asImpl().readNamespaceAliasDeclRef());
         continue;
-      case NestedNameSpecifier::Kind::MicrosoftSuper:
-        assert(!cur);
-        cur = NestedNameSpecifier(asImpl().readCXXRecordDeclRef());
+
+      case NestedNameSpecifier::TypeSpec:
+      case NestedNameSpecifier::TypeSpecWithTemplate:
+        cur = NestedNameSpecifier::Create(ctx, cur,
+                          kind == NestedNameSpecifier::TypeSpecWithTemplate,
+                          asImpl().readQualType().getTypePtr());
         continue;
-      case NestedNameSpecifier::Kind::Null:
-        llvm_unreachable("unexpected null nested name specifier");
+
+      case NestedNameSpecifier::Global:
+        cur = NestedNameSpecifier::GlobalSpecifier(ctx);
+        continue;
+
+      case NestedNameSpecifier::Super:
+        cur = NestedNameSpecifier::SuperSpecifier(ctx,
+                                            asImpl().readCXXRecordDeclRef());
+        continue;
       }
       llvm_unreachable("bad nested name specifier kind");
     }

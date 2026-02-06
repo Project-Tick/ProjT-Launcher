@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#undef LIBC_MATH_USE_SYSTEM_FENV
-
 #include "FPExceptMatcher.h"
 
 #include "src/__support/macros/config.h"
@@ -33,13 +31,13 @@ namespace testing {
 static thread_local sigjmp_buf jumpBuffer;
 static thread_local bool caughtExcept;
 
-static void sigfpeHandler([[maybe_unused]] int sig) {
+static void sigfpeHandler(int sig) {
   caughtExcept = true;
   siglongjmp(jumpBuffer, -1);
 }
 
 FPExceptMatcher::FPExceptMatcher(FunctionCaller *func) {
-  auto *oldSIGFPEHandler = signal(SIGFPE, &sigfpeHandler);
+  sighandler_t oldSIGFPEHandler = signal(SIGFPE, &sigfpeHandler);
 
   caughtExcept = false;
   fenv_t oldEnv;

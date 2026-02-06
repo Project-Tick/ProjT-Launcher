@@ -258,15 +258,10 @@ struct S {
 };
 
 int foo() {
-#ifdef AVOID
-  auto [a] = S{0}; // cxx14-warning {{structured binding declarations are a C++17 extension}}
-  [a = a] () { // No warning with basic -Wshadow due to uncaptured-local classification
-  }();
-#else
-  auto [a] = S{0}; // cxx14-warning {{structured binding declarations are a C++17 extension}} expected-note {{previous declaration is here}}
+  auto [a] = S{0}; // expected-note {{previous}} \
+                   // cxx14-warning {{decomposition declarations are a C++17 extension}}
   [a = a] () { // expected-warning {{declaration shadows a structured binding}}
   }();
-#endif
 }
 
 }

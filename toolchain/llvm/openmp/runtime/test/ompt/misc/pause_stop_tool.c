@@ -1,7 +1,5 @@
-// clang-format off
 // RUN: %libomp-compile-and-run | FileCheck %s
 // REQUIRES: ompt
-// clang-format on
 #include "callback.h"
 #include <omp.h>
 int main() {
@@ -25,7 +23,6 @@ int main() {
   printf("x = %d\n", x);
   return 0;
 
-  // clang-format off
   // Check if
   // -- omp_pause_resource/resource_all returns expected code
   // -- OMPT interface is shut down as expected
@@ -44,5 +41,4 @@ int main() {
   // CHECK: omp_pause_resource_all succeeded
 
   // CHECK-NOT: ompt_event
-  // clang-format on
 }

@@ -14,11 +14,10 @@ iteration range.
     for (short i = 0; i < size; ++i) {}
   }
 
-This ``for`` loop is an infinite loop because the ``short`` type can't
-represent all values in the ``[0..size]`` interval.
+This ``for`` loop is an infinite loop because the ``short`` type can't represent
+all values in the ``[0..size]`` interval.
 
-In a real use case size means a container's size which depends on the
-user input.
+In a real use case size means a container's size which depends on the user input.
 
 .. code-block:: c++
 
@@ -30,12 +29,8 @@ This algorithm works for a small amount of objects, but will lead to freeze for
 a larger user input.
 
 It's recommended to enable the compiler warning
-`-Wtautological-constant-out-of-range-compare` as well, since check does
-not inspect compile-time constant loop boundaries to avoid overlaps with
-the warning.
-
-Options
--------
+`-Wtautological-constant-out-of-range-compare` as well, since check does not
+inspect compile-time constant loop boundaries to avoid overlaps with the warning.
 
 .. option:: MagnitudeBitsUpperLimit
 

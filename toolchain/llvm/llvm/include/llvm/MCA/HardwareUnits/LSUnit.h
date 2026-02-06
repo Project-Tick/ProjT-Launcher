@@ -20,13 +20,12 @@
 #include "llvm/MC/MCSchedule.h"
 #include "llvm/MCA/HardwareUnits/HardwareUnit.h"
 #include "llvm/MCA/Instruction.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm {
 namespace mca {
 
 /// Abstract base interface for LS (load/store) units in llvm-mca.
-class LLVM_ABI LSUnitBase : public HardwareUnit {
+class LSUnitBase : public HardwareUnit {
   /// Load queue size.
   ///
   /// A value of zero for this field means that the load queue is unbounded.
@@ -57,7 +56,7 @@ public:
   LSUnitBase(const MCSchedModel &SM, unsigned LoadQueueSize,
              unsigned StoreQueueSize, bool AssumeNoAlias);
 
-  ~LSUnitBase() override;
+  virtual ~LSUnitBase();
 
   /// Returns the total number of entries in the load queue.
   unsigned getLoadQueueSize() const { return LQSize; }
@@ -193,7 +192,7 @@ public:
 /// A load/store barrier is "executed" when it becomes the oldest entry in
 /// the load/store queue(s). That also means, all the older loads/stores have
 /// already been executed.
-class LLVM_ABI LSUnit : public LSUnitBase {
+class LSUnit : public LSUnitBase {
 
   // This class doesn't know about the latency of a load instruction. So, it
   // conservatively/pessimistically assumes that the latency of a load opcode
@@ -465,19 +464,19 @@ public:
   /// 6. A store has to wait until an older store barrier is fully executed.
   unsigned dispatch(const InstRef &IR) override;
 
-  void onInstructionIssued(const InstRef &IR) override {
+  virtual void onInstructionIssued(const InstRef &IR) override {
     unsigned GroupID = IR.getInstruction()->getLSUTokenID();
     Groups[GroupID]->onInstructionIssued(IR);
   }
 
-  void onInstructionRetired(const InstRef &IR) override;
+  virtual void onInstructionRetired(const InstRef &IR) override;
 
-  void onInstructionExecuted(const InstRef &IR) override;
+  virtual void onInstructionExecuted(const InstRef &IR) override;
 
-  void cycleEvent() override;
+  virtual void cycleEvent() override;
 
 #ifndef NDEBUG
-  void dump() const override;
+  virtual void dump() const override;
 #endif
 
 private:

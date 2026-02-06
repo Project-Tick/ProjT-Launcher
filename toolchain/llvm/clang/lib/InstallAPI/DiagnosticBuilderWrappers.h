@@ -14,7 +14,6 @@
 #define LLVM_CLANG_INSTALLAPI_DIAGNOSTICBUILDER_WRAPPER_H
 
 #include "clang/Basic/Diagnostic.h"
-#include "clang/InstallAPI/DylibVerifier.h"
 #include "llvm/TextAPI/Architecture.h"
 #include "llvm/TextAPI/ArchitectureSet.h"
 #include "llvm/TextAPI/InterfaceFile.h"
@@ -43,7 +42,7 @@ const clang::DiagnosticBuilder &operator<<(const clang::DiagnosticBuilder &DB,
 
 const clang::DiagnosticBuilder &
 operator<<(const clang::DiagnosticBuilder &DB,
-           const clang::installapi::LibAttrs::Entry &LibAttr);
+           const StringMapEntry<ArchitectureSet> &LibAttr);
 
 } // namespace MachO
 } // namespace llvm

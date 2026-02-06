@@ -12,6 +12,7 @@
 #include "Symbols.h"
 #include "SyntheticSections.h"
 #include "Target.h"
+#include "lld/Common/ErrorHandler.h"
 #include "lld/Common/Filesystem.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/Support/Endian.h"
@@ -472,7 +473,7 @@ bool ARM::inBranchRange(RelType type, uint64_t src, uint64_t dst) const {
     // Bit 0 == 1 denotes Thumb state, it is not part of the range.
     dst &= ~0x1;
 
-  int64_t offset = llvm::SignExtend64<32>(dst - src);
+  int64_t offset = dst - src;
   switch (type) {
   case R_ARM_PC24:
   case R_ARM_PLT32:
@@ -662,12 +663,12 @@ void ARM::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const {
   case R_ARM_THM_JUMP8:
     // We do a 9 bit check because val is right-shifted by 1 bit.
     checkInt(ctx, loc, val, 9, rel);
-    write16(ctx, loc, (read16(ctx, loc) & 0xff00) | ((val >> 1) & 0x00ff));
+    write16(ctx, loc, (read32(ctx, loc) & 0xff00) | ((val >> 1) & 0x00ff));
     break;
   case R_ARM_THM_JUMP11:
     // We do a 12 bit check because val is right-shifted by 1 bit.
     checkInt(ctx, loc, val, 12, rel);
-    write16(ctx, loc, (read16(ctx, loc) & 0xf800) | ((val >> 1) & 0x07ff));
+    write16(ctx, loc, (read32(ctx, loc) & 0xf800) | ((val >> 1) & 0x07ff));
     break;
   case R_ARM_THM_JUMP19:
     // Encoding T3: Val = S:J2:J1:imm6:imm11:0
@@ -1317,11 +1318,11 @@ void elf::processArmCmseSymbols(Ctx &ctx) {
   // with its corresponding special symbol __acle_se_<sym>.
   parallelForEach(ctx.objectFiles, [&](InputFile *file) {
     MutableArrayRef<Symbol *> syms = file->getMutableSymbols();
-    for (Symbol *&sym : syms) {
-      StringRef symName = sym->getName();
+    for (size_t i = 0, e = syms.size(); i != e; ++i) {
+      StringRef symName = syms[i]->getName();
       auto it = ctx.symtab->cmseSymMap.find(symName);
       if (it != ctx.symtab->cmseSymMap.end())
-        sym = it->second.acleSeSym;
+        syms[i] = it->second.acleSeSym;
     }
   });
 }
@@ -1488,7 +1489,7 @@ template <typename ELFT> void elf::writeARMCmseImportLib(Ctx &ctx) {
   const uint64_t fileSize =
       sectionHeaderOff + shnum * sizeof(typename ELFT::Shdr);
   const unsigned flags =
-      ctx.arg.mmapOutputFile ? (unsigned)FileOutputBuffer::F_mmap : 0;
+      ctx.arg.mmapOutputFile ? 0 : (unsigned)FileOutputBuffer::F_no_mmap;
   unlinkAsync(ctx.arg.cmseOutputLib);
   Expected<std::unique_ptr<FileOutputBuffer>> bufferOrErr =
       FileOutputBuffer::create(ctx.arg.cmseOutputLib, fileSize, flags);

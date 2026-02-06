@@ -85,9 +85,7 @@ public:
   using pointer = PointerT;
   using reference = ReferenceT;
 
-  // Note: These were previously protected, but MSVC has trouble with SFINAE
-  // accessing protected members in derived class templates (specifically in
-  // iterator_adaptor_base::operator-). Making them public fixes the build.
+protected:
   enum {
     IsRandomAccess = std::is_base_of<std::random_access_iterator_tag,
                                      IteratorCategoryT>::value,
@@ -95,7 +93,6 @@ public:
                                       IteratorCategoryT>::value,
   };
 
-protected:
   /// A proxy object for computing a reference via indirecting a copy of an
   /// iterator. This is used in APIs which need to produce a reference via
   /// indirection but for which the iterator object might be a temporary. The
@@ -270,8 +267,6 @@ public:
     return *static_cast<DerivedT *>(this);
   }
   using BaseT::operator-;
-  template <bool Enabled = BaseT::IsRandomAccess,
-            typename = std::enable_if_t<Enabled>>
   difference_type operator-(const DerivedT &RHS) const {
     static_assert(
         BaseT::IsRandomAccess,

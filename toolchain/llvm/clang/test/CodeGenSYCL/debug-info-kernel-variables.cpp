@@ -18,7 +18,7 @@ KERNEL void parallel_for(const KernelType &KernelFunc) {
   KernelFunc();
 }
 
-[[clang::sycl_external]] void my_kernel(int my_param) {
+void my_kernel(int my_param) {
   int my_local = 0;
   my_local = my_param;
 }

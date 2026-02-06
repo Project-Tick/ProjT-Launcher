@@ -40,11 +40,13 @@ public:
 
   lldb::ChildCacheState Update() override;
 
-  llvm::Expected<size_t> GetIndexOfChildWithName(ConstString name) override;
+  bool MightHaveChildren() override;
+
+  size_t GetIndexOfChildWithName(ConstString name) override;
 
 private:
   CompilerType GetNodeType();
-  CompilerType GetElementType(CompilerType table_type);
+  CompilerType GetElementType(CompilerType node_type);
   llvm::Expected<size_t> CalculateNumChildrenImpl(ValueObject &table);
 
   CompilerType m_element_type;
@@ -52,7 +54,7 @@ private:
   ValueObject *m_tree = nullptr;
   size_t m_num_elements = 0;
   ValueObject *m_next_element = nullptr;
-  std::vector<ValueObject *> m_elements_cache;
+  std::vector<std::pair<ValueObject *, uint64_t>> m_elements_cache;
 };
 
 class LibCxxUnorderedMapIteratorSyntheticFrontEnd
@@ -68,7 +70,9 @@ public:
 
   lldb::ChildCacheState Update() override;
 
-  llvm::Expected<size_t> GetIndexOfChildWithName(ConstString name) override;
+  bool MightHaveChildren() override;
+
+  size_t GetIndexOfChildWithName(ConstString name) override;
 
 private:
   lldb::ValueObjectSP m_pair_sp; ///< ValueObject for the key/value pair
@@ -98,32 +102,23 @@ static bool isUnorderedMap(ConstString type_name) {
 }
 
 CompilerType lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::
-    GetElementType(CompilerType table_type) {
-  auto element_type =
-      table_type.GetDirectNestedTypeWithName("value_type").GetTypedefedType();
-
-  // In newer unordered_map layouts, the std::pair element type isn't wrapped
-  // in any helper types. So return it directly.
-  if (isStdTemplate(element_type.GetTypeName(), "pair"))
-    return element_type;
+    GetElementType(CompilerType node_type) {
+  CompilerType element_type = node_type.GetTypeTemplateArgument(0);
 
   // This synthetic provider is used for both unordered_(multi)map and
-  // unordered_(multi)set. For older unordered_map layouts, the element type has
-  // an additional type layer, an internal struct (`__hash_value_type`) that
-  // wraps a std::pair. Peel away the internal wrapper type - whose structure is
-  // of no value to users, to expose the std::pair. This matches the structure
-  // returned by the std::map synthetic provider.
-  CompilerType backend_type = m_backend.GetCompilerType();
-  if (backend_type.IsPointerOrReferenceType())
-    backend_type = backend_type.GetPointeeType();
-
-  if (isUnorderedMap(backend_type.GetCanonicalType().GetTypeName())) {
+  // unordered_(multi)set. For unordered_map, the element type has an
+  // additional type layer, an internal struct (`__hash_value_type`)
+  // that wraps a std::pair. Peel away the internal wrapper type - whose
+  // structure is of no value to users, to expose the std::pair. This
+  // matches the structure returned by the std::map synthetic provider.
+  if (isUnorderedMap(
+          m_backend.GetCompilerType().GetCanonicalType().GetTypeName())) {
     std::string name;
     CompilerType field_type =
         element_type.GetFieldAtIndex(0, name, nullptr, nullptr, nullptr);
     CompilerType actual_type = field_type.GetTypedefedType();
     if (isStdTemplate(actual_type.GetTypeName(), "pair"))
-      return actual_type;
+      element_type = actual_type;
   }
 
   return element_type;
@@ -131,17 +126,22 @@ CompilerType lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::
 
 CompilerType lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::
     GetNodeType() {
-  auto table_sp = m_backend.GetChildMemberWithName("__table_");
-  if (!table_sp)
-    return {};
+  auto node_sp = m_backend.GetChildAtNamePath({"__table_", "__first_node_"});
 
-  auto [node_sp, is_compressed_pair] =
-      GetValueOrOldCompressedPair(*table_sp, "__first_node_", "__p1_");
-  if (is_compressed_pair)
-    node_sp = GetFirstValueOfLibCXXCompressedPair(*node_sp);
+  if (!node_sp) {
+    auto p1_sp = m_backend.GetChildAtNamePath({"__table_", "__p1_"});
+    if (!p1_sp)
+      return {};
 
-  if (!node_sp)
-    return {};
+    if (!isOldCompressedPairLayout(*p1_sp))
+      return {};
+
+    node_sp = GetFirstValueOfLibCXXCompressedPair(*p1_sp);
+    if (!node_sp)
+      return {};
+  }
+
+  assert(node_sp);
 
   return node_sp->GetCompilerType().GetTypeTemplateArgument(0).GetPointeeType();
 }
@@ -165,6 +165,13 @@ lldb::ValueObjectSP lldb_private::formatters::
     ValueObjectSP value_sp = node_sp->GetChildMemberWithName("__value_");
     ValueObjectSP hash_sp = node_sp->GetChildMemberWithName("__hash_");
     if (!hash_sp || !value_sp) {
+      if (!m_element_type) {
+        m_node_type = GetNodeType();
+        if (!m_node_type)
+          return nullptr;
+
+        m_element_type = GetElementType(m_node_type);
+      }
       node_sp = m_next_element->Cast(m_node_type.GetPointerType())
               ->Dereference(error);
       if (!node_sp || error.Fail())
@@ -192,25 +199,26 @@ lldb::ValueObjectSP lldb_private::formatters::
           return nullptr;
       }
     }
-    m_elements_cache.push_back(value_sp.get());
+    m_elements_cache.push_back(
+        {value_sp.get(), hash_sp->GetValueAsUnsigned(0)});
     m_next_element = node_sp->GetChildMemberWithName("__next_").get();
     if (!m_next_element || m_next_element->GetValueAsUnsigned(0) == 0)
       m_next_element = nullptr;
   }
 
-  ValueObject *val_hash = m_elements_cache[idx];
-  if (!val_hash)
+  std::pair<ValueObject *, uint64_t> val_hash = m_elements_cache[idx];
+  if (!val_hash.first)
     return lldb::ValueObjectSP();
   StreamString stream;
   stream.Printf("[%" PRIu64 "]", (uint64_t)idx);
   DataExtractor data;
   Status error;
-  val_hash->GetData(data, error);
+  val_hash.first->GetData(data, error);
   if (error.Fail())
     return lldb::ValueObjectSP();
   const bool thread_and_frame_only_if_stopped = true;
-  ExecutionContext exe_ctx =
-      val_hash->GetExecutionContextRef().Lock(thread_and_frame_only_if_stopped);
+  ExecutionContext exe_ctx = val_hash.first->GetExecutionContextRef().Lock(
+      thread_and_frame_only_if_stopped);
   return CreateValueObjectFromData(stream.GetString(), data, exe_ctx,
                                    m_element_type);
 }
@@ -218,15 +226,19 @@ lldb::ValueObjectSP lldb_private::formatters::
 llvm::Expected<size_t>
 lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::
     CalculateNumChildrenImpl(ValueObject &table) {
-  auto [size_sp, is_compressed_pair] =
-      GetValueOrOldCompressedPair(table, "__size_", "__p2_");
-  if (!is_compressed_pair && size_sp)
+  if (auto size_sp = table.GetChildMemberWithName("__size_"))
     return size_sp->GetValueAsUnsigned(0);
 
-  if (!is_compressed_pair)
-    return llvm::createStringError("Unsupported std::unordered_map layout.");
+  ValueObjectSP p2_sp = table.GetChildMemberWithName("__p2_");
+  if (!p2_sp)
+    return llvm::createStringError(
+        "Unexpected std::unordered_map layout: __p2_ member not found.");
 
-  ValueObjectSP num_elements_sp = GetFirstValueOfLibCXXCompressedPair(*size_sp);
+  if (!isOldCompressedPairLayout(*p2_sp))
+    return llvm::createStringError("Unexpected std::unordered_map layout: old "
+                                   "__compressed_pair layout not found.");
+
+  ValueObjectSP num_elements_sp = GetFirstValueOfLibCXXCompressedPair(*p2_sp);
 
   if (!num_elements_sp)
     return llvm::createStringError(
@@ -237,13 +249,19 @@ lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::
 }
 
 static ValueObjectSP GetTreePointer(ValueObject &table) {
-  auto [tree_sp, is_compressed_pair] =
-      GetValueOrOldCompressedPair(table, "__first_node_", "__p1_");
-  if (is_compressed_pair)
-    tree_sp = GetFirstValueOfLibCXXCompressedPair(*tree_sp);
+  ValueObjectSP tree_sp = table.GetChildMemberWithName("__first_node_");
+  if (!tree_sp) {
+    ValueObjectSP p1_sp = table.GetChildMemberWithName("__p1_");
+    if (!p1_sp)
+      return nullptr;
 
-  if (!tree_sp)
-    return nullptr;
+    if (!isOldCompressedPairLayout(*p1_sp))
+      return nullptr;
+
+    tree_sp = GetFirstValueOfLibCXXCompressedPair(*p1_sp);
+    if (!tree_sp)
+      return nullptr;
+  }
 
   return tree_sp->GetChildMemberWithName("__next_");
 }
@@ -255,14 +273,6 @@ lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::Update() {
   m_elements_cache.clear();
   ValueObjectSP table_sp = m_backend.GetChildMemberWithName("__table_");
   if (!table_sp)
-    return lldb::ChildCacheState::eRefetch;
-
-  m_node_type = GetNodeType();
-  if (!m_node_type)
-    return lldb::ChildCacheState::eRefetch;
-
-  m_element_type = GetElementType(table_sp->GetCompilerType());
-  if (!m_element_type)
     return lldb::ChildCacheState::eRefetch;
 
   ValueObjectSP tree_sp = GetTreePointer(*table_sp);
@@ -285,15 +295,14 @@ lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::Update() {
   return lldb::ChildCacheState::eRefetch;
 }
 
-llvm::Expected<size_t>
-lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::
+bool lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::
+    MightHaveChildren() {
+  return true;
+}
+
+size_t lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::
     GetIndexOfChildWithName(ConstString name) {
-  auto optional_idx = formatters::ExtractIndexFromString(name.GetCString());
-  if (!optional_idx) {
-    return llvm::createStringError("Type has no child named '%s'",
-                                   name.AsCString());
-  }
-  return *optional_idx;
+  return ExtractIndexFromString(name.GetCString());
 }
 
 SyntheticChildrenFrontEnd *
@@ -398,15 +407,18 @@ lldb::ValueObjectSP lldb_private::formatters::
   return lldb::ValueObjectSP();
 }
 
-llvm::Expected<size_t>
-lldb_private::formatters::LibCxxUnorderedMapIteratorSyntheticFrontEnd::
+bool lldb_private::formatters::LibCxxUnorderedMapIteratorSyntheticFrontEnd::
+    MightHaveChildren() {
+  return true;
+}
+
+size_t lldb_private::formatters::LibCxxUnorderedMapIteratorSyntheticFrontEnd::
     GetIndexOfChildWithName(ConstString name) {
   if (name == "first")
     return 0;
   if (name == "second")
     return 1;
-  return llvm::createStringError("Type has no child named '%s'",
-                                 name.AsCString());
+  return UINT32_MAX;
 }
 
 SyntheticChildrenFrontEnd *

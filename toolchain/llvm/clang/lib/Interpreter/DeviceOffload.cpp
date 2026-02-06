@@ -26,10 +26,9 @@ namespace clang {
 
 IncrementalCUDADeviceParser::IncrementalCUDADeviceParser(
     CompilerInstance &DeviceInstance, CompilerInstance &HostInstance,
-    IncrementalAction *DeviceAct,
     llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> FS,
-    llvm::Error &Err, std::list<PartialTranslationUnit> &PTUs)
-    : IncrementalParser(DeviceInstance, DeviceAct, Err, PTUs), VFS(FS),
+    llvm::Error &Err, const std::list<PartialTranslationUnit> &PTUs)
+    : IncrementalParser(DeviceInstance, Err), PTUs(PTUs), VFS(FS),
       CodeGenOpts(HostInstance.getCodeGenOpts()),
       TargetOpts(DeviceInstance.getTargetOpts()) {
   if (Err)
@@ -152,7 +151,7 @@ llvm::Error IncrementalCUDADeviceParser::GenerateFatbinary() {
                    llvm::StringRef(FatbinContent.data(), FatbinContent.size()),
                    "", false));
 
-  CodeGenOpts.CudaGpuBinaryFileName = std::move(FatbinFileName);
+  CodeGenOpts.CudaGpuBinaryFileName = FatbinFileName;
 
   FatbinContent.clear();
 

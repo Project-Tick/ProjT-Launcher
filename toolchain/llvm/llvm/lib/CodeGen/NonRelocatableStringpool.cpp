@@ -9,10 +9,10 @@
 #include "llvm/CodeGen/NonRelocatableStringpool.h"
 #include "llvm/ADT/STLExtras.h"
 
-using namespace llvm;
+namespace llvm {
 
 DwarfStringPoolEntryRef NonRelocatableStringpool::getEntry(StringRef S) {
-  auto I = Strings.try_emplace(S);
+  auto I = Strings.insert({S, DwarfStringPoolEntry()});
   auto &Entry = I.first->second;
   if (I.second || !Entry.isIndexed()) {
     Entry.Index = NumEntries++;
@@ -43,3 +43,5 @@ NonRelocatableStringpool::getEntriesForEmission() const {
   });
   return Result;
 }
+
+} // namespace llvm

@@ -27,15 +27,15 @@ using namespace llvm;
 STATISTIC(NumInvokes, "Number of invokes replaced");
 
 namespace {
-class LowerInvokeLegacyPass : public FunctionPass {
-public:
-  static char ID; // Pass identification, replacement for typeid
-  explicit LowerInvokeLegacyPass() : FunctionPass(ID) {
-    initializeLowerInvokeLegacyPassPass(*PassRegistry::getPassRegistry());
-  }
-  bool runOnFunction(Function &F) override;
-};
-} // namespace
+  class LowerInvokeLegacyPass : public FunctionPass {
+  public:
+    static char ID; // Pass identification, replacement for typeid
+    explicit LowerInvokeLegacyPass() : FunctionPass(ID) {
+      initializeLowerInvokeLegacyPassPass(*PassRegistry::getPassRegistry());
+    }
+    bool runOnFunction(Function &F) override;
+  };
+}
 
 char LowerInvokeLegacyPass::ID = 0;
 INITIALIZE_PASS(LowerInvokeLegacyPass, "lowerinvoke",
@@ -78,12 +78,11 @@ bool LowerInvokeLegacyPass::runOnFunction(Function &F) {
   return runImpl(F);
 }
 
-char &llvm::LowerInvokePassID = LowerInvokeLegacyPass::ID;
+namespace llvm {
+char &LowerInvokePassID = LowerInvokeLegacyPass::ID;
 
 // Public Interface To the LowerInvoke pass.
-FunctionPass *llvm::createLowerInvokePass() {
-  return new LowerInvokeLegacyPass();
-}
+FunctionPass *createLowerInvokePass() { return new LowerInvokeLegacyPass(); }
 
 PreservedAnalyses LowerInvokePass::run(Function &F,
                                        FunctionAnalysisManager &AM) {
@@ -92,4 +91,5 @@ PreservedAnalyses LowerInvokePass::run(Function &F,
     return PreservedAnalyses::all();
 
   return PreservedAnalyses::none();
+}
 }

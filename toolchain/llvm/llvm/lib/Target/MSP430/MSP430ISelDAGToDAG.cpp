@@ -11,7 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "MSP430.h"
-#include "MSP430SelectionDAGInfo.h"
 #include "MSP430TargetMachine.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"

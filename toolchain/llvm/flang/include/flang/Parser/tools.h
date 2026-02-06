@@ -117,12 +117,6 @@ template <typename A, typename B> const A *Unwrap(const B &x) {
 template <typename A, typename B> A *Unwrap(B &x) {
   return const_cast<A *>(Unwrap<A, B>(const_cast<const B &>(x)));
 }
-template <typename A, typename B> const A &UnwrapRef(const B &x) {
-  return DEREF(Unwrap<A>(x));
-}
-template <typename A, typename B> A &UnwrapRef(B &x) {
-  return DEREF(Unwrap<A>(x));
-}
 
 // Get the CoindexedNamedObject if the entity is a coindexed object.
 const CoindexedNamedObject *GetCoindexedNamedObject(const AllocateObject &);
@@ -136,19 +130,10 @@ template <typename A>
 struct HasSource<A, decltype(static_cast<void>(A::source), 0)>
     : std::true_type {};
 
-// Detects parse tree nodes with "typedExpr", "typedCall", &c. members.
+// Detects parse tree nodes with "typedExpr" members.
 template <typename A, typename = int> struct HasTypedExpr : std::false_type {};
 template <typename A>
 struct HasTypedExpr<A, decltype(static_cast<void>(A::typedExpr), 0)>
-    : std::true_type {};
-template <typename A, typename = int> struct HasTypedCall : std::false_type {};
-template <typename A>
-struct HasTypedCall<A, decltype(static_cast<void>(A::typedCall), 0)>
-    : std::true_type {};
-template <typename A, typename = int>
-struct HasTypedAssignment : std::false_type {};
-template <typename A>
-struct HasTypedAssignment<A, decltype(static_cast<void>(A::typedAssignment), 0)>
     : std::true_type {};
 
 // GetSource()
@@ -264,11 +249,6 @@ template <typename A> std::optional<CharBlock> GetLastSource(const A &x) {
 template <typename A> std::optional<CharBlock> GetLastSource(A &x) {
   return GetSourceHelper<false>::GetSource(const_cast<const A &>(x));
 }
-
-// Checks whether the assignment statement has a single variable on the RHS.
-bool CheckForSingleVariableOnRHS(const AssignmentStmt &);
-
-const Name *GetDesignatorNameIfDataRef(const Designator &);
 
 } // namespace Fortran::parser
 #endif // FORTRAN_PARSER_TOOLS_H_

@@ -514,7 +514,7 @@ TEST_F(FormatTestTextProto, FormatsRepeatedListInitializers) {
                "key: value");
 
   auto Style = getDefaultStyle();
-  Style.Cpp11BracedListStyle = FormatStyle::BLS_AlignFirstComment;
+  Style.Cpp11BracedListStyle = true;
   verifyFormat("keys: [1]", Style);
 }
 

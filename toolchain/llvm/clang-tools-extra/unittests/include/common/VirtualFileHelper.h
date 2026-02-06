@@ -32,8 +32,10 @@ class VirtualFileHelper {
 
 public:
   VirtualFileHelper()
-      : Diagnostics(DiagnosticIDs::create(), DiagOpts),
-        DiagnosticPrinter(llvm::outs(), DiagOpts),
+      : DiagOpts(new DiagnosticOptions()),
+        Diagnostics(IntrusiveRefCntPtr<DiagnosticIDs>(new DiagnosticIDs),
+                    &*DiagOpts),
+        DiagnosticPrinter(llvm::outs(), &*DiagOpts),
         Files((FileSystemOptions())) {}
 
   /// Create a virtual file \p FileName, with content \p Code.
@@ -65,7 +67,7 @@ public:
   }
 
 private:
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts;
   DiagnosticsEngine Diagnostics;
   TextDiagnosticPrinter DiagnosticPrinter;
   FileManager Files;

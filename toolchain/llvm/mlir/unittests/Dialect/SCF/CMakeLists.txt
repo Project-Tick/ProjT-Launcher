@@ -5,5 +5,4 @@ mlir_target_link_libraries(MLIRSCFTests
   PRIVATE
   MLIRIR
   MLIRSCFDialect
-  MLIRSCFUtils
 )

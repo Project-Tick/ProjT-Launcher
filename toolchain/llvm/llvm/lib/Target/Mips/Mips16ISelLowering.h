@@ -35,6 +35,8 @@ namespace llvm {
         const CCState &CCInfo, unsigned NextStackOffset,
         const MipsFunctionInfo &FI) const override;
 
+    void setMips16HardFloatLibCalls();
+
     unsigned int
       getMips16HelperFunctionStubNumber(ArgListTy &Args) const;
 

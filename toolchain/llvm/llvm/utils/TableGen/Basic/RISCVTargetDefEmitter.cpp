@@ -68,14 +68,13 @@ static void emitRISCVExtensions(const RecordKeeper &Records, raw_ostream &OS) {
   if (!Extensions.empty()) {
     OS << "\nstatic constexpr ImpliedExtsEntry ImpliedExts[] = {\n";
     for (const Record *Ext : Extensions) {
-      std::vector<const Record *> ImpliesList =
-          Ext->getValueAsListOfDefs("Implies");
+      auto ImpliesList = Ext->getValueAsListOfDefs("Implies");
       if (ImpliesList.empty())
         continue;
 
       StringRef Name = getExtensionName(Ext);
 
-      for (const Record *ImpliedExt : ImpliesList) {
+      for (auto *ImpliedExt : ImpliesList) {
         if (!ImpliedExt->isSubClassOf("RISCVExtension"))
           continue;
 
@@ -151,12 +150,11 @@ static void emitRISCVProfiles(const RecordKeeper &Records, raw_ostream &OS) {
   OS << "#ifdef GET_SUPPORTED_PROFILES\n";
   OS << "#undef GET_SUPPORTED_PROFILES\n\n";
 
-  ArrayRef<const Record *> Profiles =
-      Records.getAllDerivedDefinitionsIfDefined("RISCVProfile");
+  auto Profiles = Records.getAllDerivedDefinitionsIfDefined("RISCVProfile");
 
   if (!Profiles.empty()) {
     printProfileTable(OS, Profiles, /*Experimental=*/false);
-    bool HasExperimentalProfiles = any_of(Profiles, [&](const Record *Rec) {
+    bool HasExperimentalProfiles = any_of(Profiles, [&](auto &Rec) {
       return Rec->getValueAsBit("Experimental");
     });
     if (HasExperimentalProfiles)
@@ -175,17 +173,15 @@ static void emitRISCVProcs(const RecordKeeper &RK, raw_ostream &OS) {
   // Iterate on all definition records.
   for (const Record *Rec :
        RK.getAllDerivedDefinitionsIfDefined("RISCVProcessorModel")) {
-    std::vector<const Record *> Features =
+    const std::vector<const Record *> &Features =
         Rec->getValueAsListOfDefs("Features");
-    bool FastScalarUnalignedAccess =
-        any_of(Features, [&](const Record *Feature) {
-          return Feature->getValueAsString("Name") == "unaligned-scalar-mem";
-        });
+    bool FastScalarUnalignedAccess = any_of(Features, [&](auto &Feature) {
+      return Feature->getValueAsString("Name") == "unaligned-scalar-mem";
+    });
 
-    bool FastVectorUnalignedAccess =
-        any_of(Features, [&](const Record *Feature) {
-          return Feature->getValueAsString("Name") == "unaligned-vector-mem";
-        });
+    bool FastVectorUnalignedAccess = any_of(Features, [&](auto &Feature) {
+      return Feature->getValueAsString("Name") == "unaligned-vector-mem";
+    });
 
     OS << "PROC(" << Rec->getName() << ", {\"" << Rec->getValueAsString("Name")
        << "\"}, {\"";
@@ -228,12 +224,7 @@ static void emitRISCVExtensionBitmask(const RecordKeeper &RK, raw_ostream &OS) {
   std::vector<const Record *> Extensions =
       RK.getAllDerivedDefinitionsIfDefined("RISCVExtensionBitmask");
   llvm::sort(Extensions, [](const Record *Rec1, const Record *Rec2) {
-    unsigned GroupID1 = Rec1->getValueAsInt("GroupID");
-    unsigned GroupID2 = Rec2->getValueAsInt("GroupID");
-    if (GroupID1 != GroupID2)
-      return GroupID1 < GroupID2;
-
-    return Rec1->getValueAsInt("BitPos") < Rec2->getValueAsInt("BitPos");
+    return getExtensionName(Rec1) < getExtensionName(Rec2);
   });
 
 #ifndef NDEBUG

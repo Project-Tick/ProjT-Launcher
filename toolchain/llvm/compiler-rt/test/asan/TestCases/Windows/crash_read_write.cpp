@@ -2,13 +2,12 @@
 // RUN: not %run %t       2>&1 | FileCheck %s --check-prefix=READ
 // RUN: not %run %t write 2>&1 | FileCheck %s --check-prefix=WRITE
 
-#include "../defines.h"
-#include <stdio.h>
 #include <windows.h>
+#include <stdio.h>
 
 static volatile int sink;
-ATTRIBUTE_NOINLINE void Read(int *ptr) { sink = *ptr; }
-ATTRIBUTE_NOINLINE void Write(int *ptr) { *ptr = 0; }
+__attribute__((noinline)) void Read(int *ptr) { sink = *ptr; }
+__attribute__((noinline)) void Write(int *ptr) { *ptr = 0; }
 int main(int argc, char **argv) {
   // Writes to shadow are detected as reads from shadow gap (because of how the
   // shadow mapping works). This is kinda hard to fix. Test a random address in

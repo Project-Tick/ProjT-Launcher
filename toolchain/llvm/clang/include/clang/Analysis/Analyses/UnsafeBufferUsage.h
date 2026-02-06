@@ -14,13 +14,11 @@
 #ifndef LLVM_CLANG_ANALYSIS_ANALYSES_UNSAFEBUFFERUSAGE_H
 #define LLVM_CLANG_ANALYSIS_ANALYSES_UNSAFEBUFFERUSAGE_H
 
-#include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Stmt.h"
 #include "clang/Basic/SourceLocation.h"
 #include "llvm/Support/Debug.h"
-#include <set>
 
 namespace clang {
 
@@ -117,9 +115,8 @@ public:
   ///  safe pattern;
   ///  is 3 if string arguments do not guarantee null-termination
   ///  is 4 if the callee takes va_list
-  ///  has bit 3 (0x8) set if the callee is a function with the format attribute
   /// \param UnsafeArg one of the actual arguments that is unsafe, non-null
-  /// only when `2 <= PrintfInfo <= 3 (ignoring the "format attribute" bit)`
+  /// only when `2 <= PrintfInfo <= 3`
   virtual void handleUnsafeLibcCall(const CallExpr *Call, unsigned PrintfInfo,
                                     ASTContext &Ctx,
                                     const Expr *UnsafeArg = nullptr) = 0;
@@ -140,12 +137,6 @@ public:
                             const VariableGroupsManager &VarGrpMgr,
                             FixItList &&Fixes, const Decl *D,
                             const FixitStrategy &VarTargetTypes) = 0;
-
-  // Invoked when an array subscript operator[] is used on a
-  // std::unique_ptr<T[]>.
-  virtual void handleUnsafeUniquePtrArrayAccess(const DynTypedNode &Node,
-                                                bool IsRelatedToDecl,
-                                                ASTContext &Ctx) = 0;
 
 #ifndef NDEBUG
 public:
@@ -195,8 +186,6 @@ namespace internal {
 bool anyConflict(const llvm::SmallVectorImpl<FixItHint> &FixIts,
                  const SourceManager &SM);
 } // namespace internal
-
-std::set<const Expr *> findUnsafePointers(const FunctionDecl *FD);
 } // end namespace clang
 
 #endif /* LLVM_CLANG_ANALYSIS_ANALYSES_UNSAFEBUFFERUSAGE_H */

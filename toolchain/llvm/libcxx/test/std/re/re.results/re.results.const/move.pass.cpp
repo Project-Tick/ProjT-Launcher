@@ -14,10 +14,8 @@
 //
 //  Additionally, the stored Allocator value is move constructed from m.get_allocator().
 
-#include <cassert>
 #include <regex>
-#include <utility>
-
+#include <cassert>
 #include "test_macros.h"
 #include "test_allocator.h"
 

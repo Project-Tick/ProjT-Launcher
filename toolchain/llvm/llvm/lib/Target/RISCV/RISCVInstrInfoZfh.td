@@ -20,21 +20,12 @@ def SDT_RISCVFMV_H_X
 def SDT_RISCVFMV_X_EXTH
     : SDTypeProfile<1, 1, [SDTCisVT<0, XLenVT>, SDTCisFP<1>]>;
 
-// FPR<->GPR transfer operations when the FPR is smaller than XLEN, needed as
-// XLEN is the only legal integer width.
-//
-// FMV_H_X matches the semantics of the FMV.H.X.
-// FMV_X_ANYEXTH is similar to FMV.X.H but has an any-extended result.
-// FMV_X_SIGNEXTH is similar to FMV.X.H and has a sign-extended result.
-//
-// This is a more convenient semantic for producing dagcombines that remove
-// unnecessary GPR->FPR->GPR moves.
 def riscv_fmv_h_x
-    : RVSDNode<"FMV_H_X", SDT_RISCVFMV_H_X>;
+    : SDNode<"RISCVISD::FMV_H_X", SDT_RISCVFMV_H_X>;
 def riscv_fmv_x_anyexth
-    : RVSDNode<"FMV_X_ANYEXTH", SDT_RISCVFMV_X_EXTH>;
+    : SDNode<"RISCVISD::FMV_X_ANYEXTH", SDT_RISCVFMV_X_EXTH>;
 def riscv_fmv_x_signexth
-    : RVSDNode<"FMV_X_SIGNEXTH", SDT_RISCVFMV_X_EXTH>;
+    : SDNode<"RISCVISD::FMV_X_SIGNEXTH", SDT_RISCVFMV_X_EXTH>;
 
 //===----------------------------------------------------------------------===//
 // Operand and SDNode transformation definitions.
@@ -61,24 +52,24 @@ def ZfhDExt    : ExtInfo<"", "", [HasStdExtZfh, HasStdExtD],
 def ZfhminDExt : ExtInfo<"", "", [HasStdExtZfhmin, HasStdExtD],
                          ?, ?, FPR32, FPR64, FPR16>;
 
-def ZhinxExt            : ExtInfo<"_INX", "Zfinx",
+def ZhinxExt            : ExtInfo<"_INX", "RVZfinx",
                                   [HasStdExtZhinx],
                                   f16, FPR16INX, FPR32INX, ?, FPR16INX>;
-def ZhinxminExt         : ExtInfo<"_INX", "Zfinx",
+def ZhinxminExt         : ExtInfo<"_INX", "RVZfinx",
                                   [HasStdExtZhinxmin],
                                   f16, FPR16INX, FPR32INX, ?, FPR16INX>;
-def ZhinxZdinxExt       : ExtInfo<"_INX", "Zfinx",
+def ZhinxZdinxExt       : ExtInfo<"_INX", "RVZfinx",
                                   [HasStdExtZhinx, HasStdExtZdinx, IsRV64],
-                                  ?, ?, FPR32INX, FPR64INX, FPR16INX, i64>;
-def ZhinxminZdinxExt    : ExtInfo<"_INX", "Zfinx",
+                                  ?, ?, FPR32INX, FPR64INX, FPR16INX>;
+def ZhinxminZdinxExt    : ExtInfo<"_INX", "RVZfinx",
                                   [HasStdExtZhinxmin, HasStdExtZdinx, IsRV64],
-                                  ?, ?, FPR32INX, FPR64INX, FPR16INX, i64>;
-def ZhinxZdinx32Ext     : ExtInfo<"_IN32X", "ZdinxGPRPairRV32",
+                                  ?, ?, FPR32INX, FPR64INX, FPR16INX>;
+def ZhinxZdinx32Ext     : ExtInfo<"_IN32X", "RV32Zdinx",
                                   [HasStdExtZhinx, HasStdExtZdinx, IsRV32],
-                                  ?, ?, FPR32INX, FPR64IN32X, FPR16INX, i32>;
-def ZhinxminZdinx32Ext  : ExtInfo<"_IN32X", "ZdinxGPRPairRV32",
+                                  ?, ?, FPR32INX, FPR64IN32X, FPR16INX >;
+def ZhinxminZdinx32Ext  : ExtInfo<"_IN32X", "RV32Zdinx",
                                   [HasStdExtZhinxmin, HasStdExtZdinx, IsRV32],
-                                  ?, ?, FPR32INX, FPR64IN32X, FPR16INX, i32>;
+                                  ?, ?, FPR32INX, FPR64IN32X, FPR16INX>;
 
 defvar ZfhExts = [ZfhExt, ZhinxExt];
 defvar ZfhminExts = [ZfhminExt, ZhinxminExt];
@@ -90,7 +81,6 @@ defvar ZfhminDExts = [ZfhminDExt, ZhinxminZdinxExt, ZhinxminZdinx32Ext];
 //===----------------------------------------------------------------------===//
 
 let Predicates = [HasHalfFPLoadStoreMove] in {
-let canFoldAsLoad = 1, isReMaterializable = 1 in
 def FLH : FPLoad_r<0b001, "flh", FPR16, WriteFLD16>;
 
 // Operands for stores are in the order srcreg, base, offset rather than
@@ -228,7 +218,7 @@ foreach Ext = ZfhminDExts in {
 // Assembler Pseudo Instructions (User-Level ISA, Version 2.2, Chapter 20)
 //===----------------------------------------------------------------------===//
 
-let Predicates = [HasHalfFPLoadStoreMove] in {
+let Predicates = [HasStdExtZfhmin] in {
 def : InstAlias<"flh $rd, (${rs1})",  (FLH FPR16:$rd,  GPR:$rs1, 0), 0>;
 def : InstAlias<"fsh $rs2, (${rs1})", (FSH FPR16:$rs2, GPR:$rs1, 0), 0>;
 } // Predicates = [HasStdExtZfhmin]
@@ -251,7 +241,7 @@ def PseudoQuietFLT_H : PseudoQuietFCMP<FPR16>;
 }
 } // Predicates = [HasStdExtZfh]
 
-let Predicates = [HasHalfFPLoadStoreMove] in {
+let Predicates = [HasStdExtZfhmin] in {
 def PseudoFLH  : PseudoFloatLoad<"flh", FPR16>;
 def PseudoFSH  : PseudoStore<"fsh", FPR16>;
 } // Predicates = [HasStdExtZfhmin]
@@ -381,7 +371,6 @@ foreach Ext = ZfhExts in {
   defm : PatFprFpr_m<fmaximumnum, FMAX_H, Ext>;
   defm : PatFprFpr_m<riscv_fmin, FMIN_H, Ext>;
   defm : PatFprFpr_m<riscv_fmax, FMAX_H, Ext>;
-  let Predicates = Ext.Predicates in
   def : Pat<(f16 (fcanonicalize FPR16:$rs1)), (FMIN_H $rs1, $rs1)>;
 }
 
@@ -608,16 +597,13 @@ def : Pat<(fcopysign FPR64:$rs1, (f16 FPR16:$rs2)), (FSGNJ_D $rs1, (FCVT_D_H $rs
 let Predicates = [HasStdExtZhinxmin, HasStdExtZdinx, IsRV32] in {
 /// Float conversion operations
 // f64 -> f16, f16 -> f64
-def : Pat<(any_fpround FPR64IN32X:$rs1),
-          (FCVT_H_D_IN32X FPR64IN32X:$rs1, (i32 FRM_DYN))>;
-def : Pat<(any_fpextend FPR16INX:$rs1),
-          (FCVT_D_H_IN32X FPR16INX:$rs1, (i32 FRM_RNE))>;
+def : Pat<(any_fpround FPR64IN32X:$rs1), (FCVT_H_D_IN32X FPR64IN32X:$rs1, FRM_DYN)>;
+def : Pat<(any_fpextend FPR16INX:$rs1), (FCVT_D_H_IN32X FPR16INX:$rs1, FRM_RNE)>;
 
 /// Float arithmetic operations
 def : Pat<(fcopysign FPR16INX:$rs1, FPR64IN32X:$rs2),
-          (FSGNJ_H_INX $rs1, (FCVT_H_D_IN32X $rs2, (i32 FRM_DYN)))>;
-def : Pat<(fcopysign FPR64IN32X:$rs1, FPR16INX:$rs2),
-          (FSGNJ_D_IN32X $rs1, (FCVT_D_H_IN32X $rs2, (i32 FRM_RNE)))>;
+          (FSGNJ_H_INX $rs1, (FCVT_H_D_IN32X $rs2, 0b111))>;
+def : Pat<(fcopysign FPR64IN32X:$rs1, FPR16INX:$rs2), (FSGNJ_D_IN32X $rs1, (FCVT_D_H_IN32X $rs2, FRM_RNE))>;
 } // Predicates = [HasStdExtZhinxmin, HasStdExtZdinx, IsRV32]
 
 let Predicates = [HasStdExtZhinxmin, HasStdExtZdinx, IsRV64] in {

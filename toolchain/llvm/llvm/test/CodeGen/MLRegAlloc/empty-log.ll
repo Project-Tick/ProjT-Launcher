@@ -13,18 +13,18 @@
 
 declare void @f();
 
-define void @f1(i64 %lhs, i64 %rhs, ptr %addr) {
+define void @f1(i64 %lhs, i64 %rhs, i64* %addr) {
   ret void
 }
 
-define void @f2(i64 %lhs, i64 %rhs, ptr %addr) {
+define void @f2(i64 %lhs, i64 %rhs, i64* %addr) {
   %sum = add i64 %lhs, %rhs
   call void @f();
-  store i64 %sum, ptr %addr
+  store i64 %sum, i64* %addr
   ret void
 }
 
-define void @f3(i64 %lhs, i64 %rhs, ptr %addr) {
+define void @f3(i64 %lhs, i64 %rhs, i64* %addr) {
   ret void
 }
 

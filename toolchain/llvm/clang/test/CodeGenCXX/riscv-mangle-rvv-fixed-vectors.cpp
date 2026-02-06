@@ -1,43 +1,19 @@
-// RUN: %clang_cc1 -triple riscv32-none-linux-gnu %s -emit-llvm -o - \
-// RUN:  -target-feature +f -target-feature +d -target-feature +zfh \
-// RUN:  -target-feature +zve64d -target-feature +zvfh -mvscale-min=1 \
-// RUN:   -mvscale-max=1 | FileCheck %s --check-prefix=CHECK-64
 // RUN: %clang_cc1 -triple riscv64-none-linux-gnu %s -emit-llvm -o - \
 // RUN:  -target-feature +f -target-feature +d -target-feature +zfh \
 // RUN:  -target-feature +zve64d -target-feature +zvfh -mvscale-min=1 \
 // RUN:   -mvscale-max=1 | FileCheck %s --check-prefix=CHECK-64
-
-// RUN: %clang_cc1 -triple riscv32-none-linux-gnu %s -emit-llvm -o - \
+// RUN: %clang_cc1 -triple riscv64-none-linux-gnu %s -emit-llvm -o - \
 // RUN:  -target-feature +f -target-feature +d -target-feature +zfh \
 // RUN:  -target-feature +zve64d -target-feature +zvfh -mvscale-min=2 \
 // RUN:  -mvscale-max=2 | FileCheck %s --check-prefix=CHECK-128
 // RUN: %clang_cc1 -triple riscv64-none-linux-gnu %s -emit-llvm -o - \
 // RUN:  -target-feature +f -target-feature +d -target-feature +zfh \
-// RUN:  -target-feature +zve64d -target-feature +zvfh -mvscale-min=2 \
-// RUN:  -mvscale-max=2 | FileCheck %s --check-prefix=CHECK-128
-
-// RUN: %clang_cc1 -triple riscv32-none-linux-gnu %s -emit-llvm -o - \
-// RUN:  -target-feature +f -target-feature +d -target-feature +zfh \
 // RUN:  -target-feature +zve64d -target-feature +zvfh -mvscale-min=4 \
 // RUN:  -mvscale-max=4 | FileCheck %s --check-prefix=CHECK-256
 // RUN: %clang_cc1 -triple riscv64-none-linux-gnu %s -emit-llvm -o - \
 // RUN:  -target-feature +f -target-feature +d -target-feature +zfh \
-// RUN:  -target-feature +zve64d -target-feature +zvfh -mvscale-min=4 \
-// RUN:  -mvscale-max=4 | FileCheck %s --check-prefix=CHECK-256
-
-// RUN: %clang_cc1 -triple riscv32-none-linux-gnu %s -emit-llvm -o - \
-// RUN:  -target-feature +f -target-feature +d -target-feature +zfh \
 // RUN:  -target-feature +zve64d -target-feature +zvfh -mvscale-min=8 \
 // RUN:  -mvscale-max=8 | FileCheck %s --check-prefix=CHECK-512
-// RUN: %clang_cc1 -triple riscv64-none-linux-gnu %s -emit-llvm -o - \
-// RUN:  -target-feature +f -target-feature +d -target-feature +zfh \
-// RUN:  -target-feature +zve64d -target-feature +zvfh -mvscale-min=8 \
-// RUN:  -mvscale-max=8 | FileCheck %s --check-prefix=CHECK-512
-
-// RUN: %clang_cc1 -triple riscv32-none-linux-gnu %s -emit-llvm -o - \
-// RUN:  -target-feature +f -target-feature +d -target-feature +zfh \
-// RUN:  -target-feature +zve64d -target-feature +zvfh -mvscale-min=16 \
-// RUN:  -mvscale-max=16 | FileCheck %s --check-prefix=CHECK-1024
 // RUN: %clang_cc1 -triple riscv64-none-linux-gnu %s -emit-llvm -o - \
 // RUN:  -target-feature +f -target-feature +d -target-feature +zfh \
 // RUN:  -target-feature +zve64d -target-feature +zvfh -mvscale-min=16 \
@@ -51,7 +27,6 @@ typedef __rvv_uint8mf4_t vuint8mf4_t;
 typedef __rvv_int16mf4_t vint16mf4_t;
 typedef __rvv_uint16mf4_t vuint16mf4_t;
 typedef __rvv_float16mf4_t vfloat16mf4_t;
-typedef __rvv_bfloat16mf4_t vbfloat16mf4_t;
 
 typedef __rvv_int8mf2_t vint8mf2_t;
 typedef __rvv_uint8mf2_t vuint8mf2_t;
@@ -61,7 +36,6 @@ typedef __rvv_int32mf2_t vint32mf2_t;
 typedef __rvv_uint32mf2_t vuint32mf2_t;
 typedef __rvv_float16mf2_t vfloat16mf2_t;
 typedef __rvv_float32mf2_t vfloat32mf2_t;
-typedef __rvv_bfloat16mf2_t vbfloat16mf2_t;
 
 typedef __rvv_int8m1_t vint8m1_t;
 typedef __rvv_uint8m1_t vuint8m1_t;
@@ -74,7 +48,6 @@ typedef __rvv_uint64m1_t vuint64m1_t;
 typedef __rvv_float16m1_t vfloat16m1_t;
 typedef __rvv_float32m1_t vfloat32m1_t;
 typedef __rvv_float64m1_t vfloat64m1_t;
-typedef __rvv_bfloat16m1_t vbfloat16m1_t;
 
 typedef __rvv_int8m2_t vint8m2_t;
 typedef __rvv_uint8m2_t vuint8m2_t;
@@ -87,7 +60,6 @@ typedef __rvv_uint64m2_t vuint64m2_t;
 typedef __rvv_float16m2_t vfloat16m2_t;
 typedef __rvv_float32m2_t vfloat32m2_t;
 typedef __rvv_float64m2_t vfloat64m2_t;
-typedef __rvv_bfloat16m2_t vbfloat16m2_t;
 
 typedef __rvv_int8m4_t vint8m4_t;
 typedef __rvv_uint8m4_t vuint8m4_t;
@@ -100,7 +72,6 @@ typedef __rvv_uint64m4_t vuint64m4_t;
 typedef __rvv_float16m4_t vfloat16m4_t;
 typedef __rvv_float32m4_t vfloat32m4_t;
 typedef __rvv_float64m4_t vfloat64m4_t;
-typedef __rvv_bfloat16m4_t vbfloat16m4_t;
 
 typedef __rvv_int8m8_t vint8m8_t;
 typedef __rvv_uint8m8_t vuint8m8_t;
@@ -113,7 +84,6 @@ typedef __rvv_uint64m8_t vuint64m8_t;
 typedef __rvv_float16m8_t vfloat16m8_t;
 typedef __rvv_float32m8_t vfloat32m8_t;
 typedef __rvv_float64m8_t vfloat64m8_t;
-typedef __rvv_bfloat16m8_t vbfloat16m8_t;
 
 typedef __rvv_bool1_t vbool1_t;
 typedef __rvv_bool2_t vbool2_t;
@@ -134,7 +104,6 @@ typedef vuint8mf4_t fixed_uint8mf4_t __attribute__((riscv_rvv_vector_bits(__risc
 typedef vuint16mf4_t fixed_uint16mf4_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen/4)));
 
 typedef vfloat16mf4_t fixed_float16mf4_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen/4)));
-typedef vbfloat16mf4_t fixed_bfloat16mf4_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen/4)));
 
 typedef vint8mf2_t fixed_int8mf2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen/2)));
 typedef vint16mf2_t fixed_int16mf2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen/2)));
@@ -146,7 +115,6 @@ typedef vuint32mf2_t fixed_uint32mf2_t __attribute__((riscv_rvv_vector_bits(__ri
 
 typedef vfloat16mf2_t fixed_float16mf2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen/2)));
 typedef vfloat32mf2_t fixed_float32mf2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen/2)));
-typedef vbfloat16mf2_t fixed_bfloat16mf2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen/2)));
 
 typedef vint8m1_t fixed_int8m1_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen)));
 typedef vint16m1_t fixed_int16m1_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen)));
@@ -161,7 +129,6 @@ typedef vuint64m1_t fixed_uint64m1_t __attribute__((riscv_rvv_vector_bits(__risc
 typedef vfloat16m1_t fixed_float16m1_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen)));
 typedef vfloat32m1_t fixed_float32m1_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen)));
 typedef vfloat64m1_t fixed_float64m1_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen)));
-typedef vbfloat16m1_t fixed_bfloat16m1_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen)));
 
 typedef vint8m2_t fixed_int8m2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*2)));
 typedef vint16m2_t fixed_int16m2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*2)));
@@ -176,7 +143,6 @@ typedef vuint64m2_t fixed_uint64m2_t __attribute__((riscv_rvv_vector_bits(__risc
 typedef vfloat16m2_t fixed_float16m2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*2)));
 typedef vfloat32m2_t fixed_float32m2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*2)));
 typedef vfloat64m2_t fixed_float64m2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*2)));
-typedef vbfloat16m2_t fixed_bfloat16m2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*2)));
 
 typedef vint8m4_t fixed_int8m4_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*4)));
 typedef vint16m4_t fixed_int16m4_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*4)));
@@ -191,7 +157,6 @@ typedef vuint64m4_t fixed_uint64m4_t __attribute__((riscv_rvv_vector_bits(__risc
 typedef vfloat16m4_t fixed_float16m4_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*4)));
 typedef vfloat32m4_t fixed_float32m4_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*4)));
 typedef vfloat64m4_t fixed_float64m4_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*4)));
-typedef vbfloat16m4_t fixed_bfloat16m4_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*4)));
 
 typedef vint8m8_t fixed_int8m8_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*8)));
 typedef vint16m8_t fixed_int16m8_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*8)));
@@ -206,7 +171,6 @@ typedef vuint64m8_t fixed_uint64m8_t __attribute__((riscv_rvv_vector_bits(__risc
 typedef vfloat16m8_t fixed_float16m8_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*8)));
 typedef vfloat32m8_t fixed_float32m8_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*8)));
 typedef vfloat64m8_t fixed_float64m8_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*8)));
-typedef vbfloat16m8_t fixed_bfloat16m8_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen*8)));
 
 typedef vbool1_t fixed_bool1_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen)));
 typedef vbool2_t fixed_bool2_t __attribute__((riscv_rvv_vector_bits(__riscv_v_fixed_vlen/2)));
@@ -295,13 +259,6 @@ void f10(S<fixed_float64m1_t>) {}
 // CHECK-1024: _Z3f111SI9__RVV_VLSIu17__rvv_float16m1_tLj1024EEE
 void f11(S<fixed_float16m1_t>) {}
 
-// CHECK-64: _Z3f121SI9__RVV_VLSIu18__rvv_bfloat16m1_tLj64EEE
-// CHECK-128: _Z3f121SI9__RVV_VLSIu18__rvv_bfloat16m1_tLj128EEE
-// CHECK-256: _Z3f121SI9__RVV_VLSIu18__rvv_bfloat16m1_tLj256EEE
-// CHECK-512: _Z3f121SI9__RVV_VLSIu18__rvv_bfloat16m1_tLj512EEE
-// CHECK-1024: _Z3f121SI9__RVV_VLSIu18__rvv_bfloat16m1_tLj1024EEE
-void f12(S<fixed_bfloat16m1_t>) {}
-
 // CHECK-64: _Z4m2f11SI9__RVV_VLSIu14__rvv_int8m2_tLj128EEE
 // CHECK-128: _Z4m2f11SI9__RVV_VLSIu14__rvv_int8m2_tLj256EEE
 // CHECK-256: _Z4m2f11SI9__RVV_VLSIu14__rvv_int8m2_tLj512EEE
@@ -378,13 +335,6 @@ void m2f10(S<fixed_float64m2_t>) {}
 // CHECK-512: _Z5m2f111SI9__RVV_VLSIu17__rvv_float16m2_tLj1024EEE
 // CHECK-1024: _Z5m2f111SI9__RVV_VLSIu17__rvv_float16m2_tLj2048EEE
 void m2f11(S<fixed_float16m2_t>) {}
-
-// CHECK-64: _Z5m2f121SI9__RVV_VLSIu18__rvv_bfloat16m2_tLj128EEE
-// CHECK-128: _Z5m2f121SI9__RVV_VLSIu18__rvv_bfloat16m2_tLj256EEE
-// CHECK-256: _Z5m2f121SI9__RVV_VLSIu18__rvv_bfloat16m2_tLj512EEE
-// CHECK-512: _Z5m2f121SI9__RVV_VLSIu18__rvv_bfloat16m2_tLj1024EEE
-// CHECK-1024: _Z5m2f121SI9__RVV_VLSIu18__rvv_bfloat16m2_tLj2048EEE
-void m2f12(S<fixed_bfloat16m2_t>) {}
 
 // CHECK-64: _Z4m4f11SI9__RVV_VLSIu14__rvv_int8m4_tLj256EEE
 // CHECK-128: _Z4m4f11SI9__RVV_VLSIu14__rvv_int8m4_tLj512EEE
@@ -463,13 +413,6 @@ void m4f10(S<fixed_float64m4_t>) {}
 // CHECK-1024: _Z5m4f111SI9__RVV_VLSIu17__rvv_float16m4_tLj4096EEE
 void m4f11(S<fixed_float16m4_t>) {}
 
-// CHECK-64: _Z5m4f121SI9__RVV_VLSIu18__rvv_bfloat16m4_tLj256EEE
-// CHECK-128: _Z5m4f121SI9__RVV_VLSIu18__rvv_bfloat16m4_tLj512EEE
-// CHECK-256: _Z5m4f121SI9__RVV_VLSIu18__rvv_bfloat16m4_tLj1024EEE
-// CHECK-512: _Z5m4f121SI9__RVV_VLSIu18__rvv_bfloat16m4_tLj2048EEE
-// CHECK-1024: _Z5m4f121SI9__RVV_VLSIu18__rvv_bfloat16m4_tLj4096EEE
-void m4f12(S<fixed_bfloat16m4_t>) {}
-
 // CHECK-64: _Z4m8f11SI9__RVV_VLSIu14__rvv_int8m8_tLj512EEE
 // CHECK-128: _Z4m8f11SI9__RVV_VLSIu14__rvv_int8m8_tLj1024EEE
 // CHECK-256: _Z4m8f11SI9__RVV_VLSIu14__rvv_int8m8_tLj2048EEE
@@ -547,13 +490,6 @@ void m8f10(S<fixed_float64m8_t>) {}
 // CHECK-1024: _Z5m8f111SI9__RVV_VLSIu17__rvv_float16m8_tLj8192EEE
 void m8f11(S<fixed_float16m8_t>) {}
 
-// CHECK-64: _Z5m8f121SI9__RVV_VLSIu18__rvv_bfloat16m8_tLj512EEE
-// CHECK-128: _Z5m8f121SI9__RVV_VLSIu18__rvv_bfloat16m8_tLj1024EEE
-// CHECK-256: _Z5m8f121SI9__RVV_VLSIu18__rvv_bfloat16m8_tLj2048EEE
-// CHECK-512: _Z5m8f121SI9__RVV_VLSIu18__rvv_bfloat16m8_tLj4096EEE
-// CHECK-1024: _Z5m8f121SI9__RVV_VLSIu18__rvv_bfloat16m8_tLj8192EEE
-void m8f12(S<fixed_bfloat16m8_t>) {}
-
 // CHECK-64: _Z5mf2f11SI9__RVV_VLSIu15__rvv_int8mf2_tLj32EEE
 // CHECK-128: _Z5mf2f11SI9__RVV_VLSIu15__rvv_int8mf2_tLj64EEE
 // CHECK-256: _Z5mf2f11SI9__RVV_VLSIu15__rvv_int8mf2_tLj128EEE
@@ -610,13 +546,6 @@ void mf2f9(S<fixed_float32mf2_t>) {}
 // CHECK-1024: _Z6mf2f101SI9__RVV_VLSIu18__rvv_float16mf2_tLj512EEE
 void mf2f10(S<fixed_float16mf2_t>) {}
 
-// CHECK-64: _Z6mf2f111SI9__RVV_VLSIu19__rvv_bfloat16mf2_tLj32EEE
-// CHECK-128: _Z6mf2f111SI9__RVV_VLSIu19__rvv_bfloat16mf2_tLj64EEE
-// CHECK-256: _Z6mf2f111SI9__RVV_VLSIu19__rvv_bfloat16mf2_tLj128EEE
-// CHECK-512: _Z6mf2f111SI9__RVV_VLSIu19__rvv_bfloat16mf2_tLj256EEE
-// CHECK-1024: _Z6mf2f111SI9__RVV_VLSIu19__rvv_bfloat16mf2_tLj512EEE
-void mf2f11(S<fixed_bfloat16mf2_t>) {}
-
 // CHECK-64: _Z5mf4f11SI9__RVV_VLSIu15__rvv_int8mf4_tLj16EEE
 // CHECK-128: _Z5mf4f11SI9__RVV_VLSIu15__rvv_int8mf4_tLj32EEE
 // CHECK-256: _Z5mf4f11SI9__RVV_VLSIu15__rvv_int8mf4_tLj64EEE
@@ -651,13 +580,6 @@ void mf4f6(S<fixed_uint16mf4_t>) {}
 // CHECK-512: _Z5mf4f71SI9__RVV_VLSIu18__rvv_float16mf4_tLj128EEE
 // CHECK-1024: _Z5mf4f71SI9__RVV_VLSIu18__rvv_float16mf4_tLj256EEE
 void mf4f7(S<fixed_float16mf4_t>) {}
-
-// CHECK-64: _Z5mf4f81SI9__RVV_VLSIu19__rvv_bfloat16mf4_tLj16EEE
-// CHECK-128: _Z5mf4f81SI9__RVV_VLSIu19__rvv_bfloat16mf4_tLj32EEE
-// CHECK-256: _Z5mf4f81SI9__RVV_VLSIu19__rvv_bfloat16mf4_tLj64EEE
-// CHECK-512: _Z5mf4f81SI9__RVV_VLSIu19__rvv_bfloat16mf4_tLj128EEE
-// CHECK-1024: _Z5mf4f81SI9__RVV_VLSIu19__rvv_bfloat16mf4_tLj256EEE
-void mf4f8(S<fixed_bfloat16mf4_t>) {}
 
 // CHECK-64: _Z5mf8f11SI9__RVV_VLSIu15__rvv_int8mf8_tLj8EEE
 // CHECK-128: _Z5mf8f11SI9__RVV_VLSIu15__rvv_int8mf8_tLj16EEE

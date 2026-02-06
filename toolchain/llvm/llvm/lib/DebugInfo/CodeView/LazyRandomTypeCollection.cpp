@@ -102,8 +102,7 @@ std::optional<CVType> LazyRandomTypeCollection::tryGetType(TypeIndex Index) {
     return std::nullopt;
   }
 
-  if (!contains(Index))
-    return std::nullopt;
+  assert(contains(Index));
   return Records[Index.toArrayIndex()].Type;
 }
 

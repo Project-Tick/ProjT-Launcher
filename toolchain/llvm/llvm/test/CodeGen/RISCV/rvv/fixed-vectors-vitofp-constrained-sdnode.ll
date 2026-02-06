@@ -4,6 +4,7 @@
 ; RUN: llc -mtriple=riscv64 -mattr=+d,+zfh,+zvfh,+v -target-abi=lp64d \
 ; RUN:     -verify-machineinstrs < %s | FileCheck %s --check-prefixes=CHECK,RV64
 
+declare <1 x half> @llvm.experimental.constrained.sitofp.v1f16.v1i1(<1 x i1>, metadata, metadata)
 define <1 x half> @vsitofp_v1i1_v1f16(<1 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i1_v1f16:
 ; CHECK:       # %bb.0:
@@ -16,6 +17,7 @@ define <1 x half> @vsitofp_v1i1_v1f16(<1 x i1> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.uitofp.v1f16.v1i1(<1 x i1>, metadata, metadata)
 define <1 x half> @vuitofp_v1i1_v1f16(<1 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i1_v1f16:
 ; CHECK:       # %bb.0:
@@ -28,6 +30,7 @@ define <1 x half> @vuitofp_v1i1_v1f16(<1 x i1> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x float> @llvm.experimental.constrained.sitofp.v1f32.v1i1(<1 x i1>, metadata, metadata)
 define <1 x float> @vsitofp_v1i1_v1f32(<1 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i1_v1f32:
 ; CHECK:       # %bb.0:
@@ -40,6 +43,7 @@ define <1 x float> @vsitofp_v1i1_v1f32(<1 x i1> %va) strictfp {
   ret <1 x float> %evec
 }
 
+declare <1 x float> @llvm.experimental.constrained.uitofp.v1f32.v1i1(<1 x i1>, metadata, metadata)
 define <1 x float> @vuitofp_v1i1_v1f32(<1 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i1_v1f32:
 ; CHECK:       # %bb.0:
@@ -52,6 +56,7 @@ define <1 x float> @vuitofp_v1i1_v1f32(<1 x i1> %va) strictfp {
   ret <1 x float> %evec
 }
 
+declare <1 x double> @llvm.experimental.constrained.sitofp.v1f64.v1i1(<1 x i1>, metadata, metadata)
 define <1 x double> @vsitofp_v1i1_v1f64(<1 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i1_v1f64:
 ; CHECK:       # %bb.0:
@@ -64,6 +69,7 @@ define <1 x double> @vsitofp_v1i1_v1f64(<1 x i1> %va) strictfp {
   ret <1 x double> %evec
 }
 
+declare <1 x double> @llvm.experimental.constrained.uitofp.v1f64.v1i1(<1 x i1>, metadata, metadata)
 define <1 x double> @vuitofp_v1i1_v1f64(<1 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i1_v1f64:
 ; CHECK:       # %bb.0:
@@ -76,6 +82,7 @@ define <1 x double> @vuitofp_v1i1_v1f64(<1 x i1> %va) strictfp {
   ret <1 x double> %evec
 }
 
+declare <2 x half> @llvm.experimental.constrained.sitofp.v2f16.v2i1(<2 x i1>, metadata, metadata)
 define <2 x half> @vsitofp_v2i1_v2f16(<2 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i1_v2f16:
 ; CHECK:       # %bb.0:
@@ -88,6 +95,7 @@ define <2 x half> @vsitofp_v2i1_v2f16(<2 x i1> %va) strictfp {
   ret <2 x half> %evec
 }
 
+declare <2 x half> @llvm.experimental.constrained.uitofp.v2f16.v2i1(<2 x i1>, metadata, metadata)
 define <2 x half> @vuitofp_v2i1_v2f16(<2 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i1_v2f16:
 ; CHECK:       # %bb.0:
@@ -100,6 +108,7 @@ define <2 x half> @vuitofp_v2i1_v2f16(<2 x i1> %va) strictfp {
   ret <2 x half> %evec
 }
 
+declare <2 x float> @llvm.experimental.constrained.sitofp.v2f32.v2i1(<2 x i1>, metadata, metadata)
 define <2 x float> @vsitofp_v2i1_v2f32(<2 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i1_v2f32:
 ; CHECK:       # %bb.0:
@@ -112,6 +121,7 @@ define <2 x float> @vsitofp_v2i1_v2f32(<2 x i1> %va) strictfp {
   ret <2 x float> %evec
 }
 
+declare <2 x float> @llvm.experimental.constrained.uitofp.v2f32.v2i1(<2 x i1>, metadata, metadata)
 define <2 x float> @vuitofp_v2i1_v2f32(<2 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i1_v2f32:
 ; CHECK:       # %bb.0:
@@ -124,6 +134,7 @@ define <2 x float> @vuitofp_v2i1_v2f32(<2 x i1> %va) strictfp {
   ret <2 x float> %evec
 }
 
+declare <2 x double> @llvm.experimental.constrained.sitofp.v2f64.v2i1(<2 x i1>, metadata, metadata)
 define <2 x double> @vsitofp_v2i1_v2f64(<2 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i1_v2f64:
 ; CHECK:       # %bb.0:
@@ -136,6 +147,7 @@ define <2 x double> @vsitofp_v2i1_v2f64(<2 x i1> %va) strictfp {
   ret <2 x double> %evec
 }
 
+declare <2 x double> @llvm.experimental.constrained.uitofp.v2f64.v2i1(<2 x i1>, metadata, metadata)
 define <2 x double> @vuitofp_v2i1_v2f64(<2 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i1_v2f64:
 ; CHECK:       # %bb.0:
@@ -148,6 +160,7 @@ define <2 x double> @vuitofp_v2i1_v2f64(<2 x i1> %va) strictfp {
   ret <2 x double> %evec
 }
 
+declare <4 x half> @llvm.experimental.constrained.sitofp.v4f16.v4i1(<4 x i1>, metadata, metadata)
 define <4 x half> @vsitofp_v4i1_v4f16(<4 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i1_v4f16:
 ; CHECK:       # %bb.0:
@@ -160,6 +173,7 @@ define <4 x half> @vsitofp_v4i1_v4f16(<4 x i1> %va) strictfp {
   ret <4 x half> %evec
 }
 
+declare <4 x half> @llvm.experimental.constrained.uitofp.v4f16.v4i1(<4 x i1>, metadata, metadata)
 define <4 x half> @vuitofp_v4i1_v4f16(<4 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i1_v4f16:
 ; CHECK:       # %bb.0:
@@ -172,6 +186,7 @@ define <4 x half> @vuitofp_v4i1_v4f16(<4 x i1> %va) strictfp {
   ret <4 x half> %evec
 }
 
+declare <4 x float> @llvm.experimental.constrained.sitofp.v4f32.v4i1(<4 x i1>, metadata, metadata)
 define <4 x float> @vsitofp_v4i1_v4f32(<4 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i1_v4f32:
 ; CHECK:       # %bb.0:
@@ -184,6 +199,7 @@ define <4 x float> @vsitofp_v4i1_v4f32(<4 x i1> %va) strictfp {
   ret <4 x float> %evec
 }
 
+declare <4 x float> @llvm.experimental.constrained.uitofp.v4f32.v4i1(<4 x i1>, metadata, metadata)
 define <4 x float> @vuitofp_v4i1_v4f32(<4 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i1_v4f32:
 ; CHECK:       # %bb.0:
@@ -196,6 +212,7 @@ define <4 x float> @vuitofp_v4i1_v4f32(<4 x i1> %va) strictfp {
   ret <4 x float> %evec
 }
 
+declare <4 x double> @llvm.experimental.constrained.sitofp.v4f64.v4i1(<4 x i1>, metadata, metadata)
 define <4 x double> @vsitofp_v4i1_v4f64(<4 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i1_v4f64:
 ; CHECK:       # %bb.0:
@@ -208,6 +225,7 @@ define <4 x double> @vsitofp_v4i1_v4f64(<4 x i1> %va) strictfp {
   ret <4 x double> %evec
 }
 
+declare <4 x double> @llvm.experimental.constrained.uitofp.v4f64.v4i1(<4 x i1>, metadata, metadata)
 define <4 x double> @vuitofp_v4i1_v4f64(<4 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i1_v4f64:
 ; CHECK:       # %bb.0:
@@ -220,6 +238,7 @@ define <4 x double> @vuitofp_v4i1_v4f64(<4 x i1> %va) strictfp {
   ret <4 x double> %evec
 }
 
+declare <8 x half> @llvm.experimental.constrained.sitofp.v8f16.v8i1(<8 x i1>, metadata, metadata)
 define <8 x half> @vsitofp_v8i1_v8f16(<8 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i1_v8f16:
 ; CHECK:       # %bb.0:
@@ -232,6 +251,7 @@ define <8 x half> @vsitofp_v8i1_v8f16(<8 x i1> %va) strictfp {
   ret <8 x half> %evec
 }
 
+declare <8 x half> @llvm.experimental.constrained.uitofp.v8f16.v8i1(<8 x i1>, metadata, metadata)
 define <8 x half> @vuitofp_v8i1_v8f16(<8 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i1_v8f16:
 ; CHECK:       # %bb.0:
@@ -244,6 +264,7 @@ define <8 x half> @vuitofp_v8i1_v8f16(<8 x i1> %va) strictfp {
   ret <8 x half> %evec
 }
 
+declare <8 x float> @llvm.experimental.constrained.sitofp.v8f32.v8i1(<8 x i1>, metadata, metadata)
 define <8 x float> @vsitofp_v8i1_v8f32(<8 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i1_v8f32:
 ; CHECK:       # %bb.0:
@@ -256,6 +277,7 @@ define <8 x float> @vsitofp_v8i1_v8f32(<8 x i1> %va) strictfp {
   ret <8 x float> %evec
 }
 
+declare <8 x float> @llvm.experimental.constrained.uitofp.v8f32.v8i1(<8 x i1>, metadata, metadata)
 define <8 x float> @vuitofp_v8i1_v8f32(<8 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i1_v8f32:
 ; CHECK:       # %bb.0:
@@ -268,6 +290,7 @@ define <8 x float> @vuitofp_v8i1_v8f32(<8 x i1> %va) strictfp {
   ret <8 x float> %evec
 }
 
+declare <8 x double> @llvm.experimental.constrained.sitofp.v8f64.v8i1(<8 x i1>, metadata, metadata)
 define <8 x double> @vsitofp_v8i1_v8f64(<8 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i1_v8f64:
 ; CHECK:       # %bb.0:
@@ -280,6 +303,7 @@ define <8 x double> @vsitofp_v8i1_v8f64(<8 x i1> %va) strictfp {
   ret <8 x double> %evec
 }
 
+declare <8 x double> @llvm.experimental.constrained.uitofp.v8f64.v8i1(<8 x i1>, metadata, metadata)
 define <8 x double> @vuitofp_v8i1_v8f64(<8 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i1_v8f64:
 ; CHECK:       # %bb.0:
@@ -292,6 +316,7 @@ define <8 x double> @vuitofp_v8i1_v8f64(<8 x i1> %va) strictfp {
   ret <8 x double> %evec
 }
 
+declare <16 x half> @llvm.experimental.constrained.sitofp.v16f16.v16i1(<16 x i1>, metadata, metadata)
 define <16 x half> @vsitofp_v16i1_v16f16(<16 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v16i1_v16f16:
 ; CHECK:       # %bb.0:
@@ -304,6 +329,7 @@ define <16 x half> @vsitofp_v16i1_v16f16(<16 x i1> %va) strictfp {
   ret <16 x half> %evec
 }
 
+declare <16 x half> @llvm.experimental.constrained.uitofp.v16f16.v16i1(<16 x i1>, metadata, metadata)
 define <16 x half> @vuitofp_v16i1_v16f16(<16 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v16i1_v16f16:
 ; CHECK:       # %bb.0:
@@ -316,6 +342,7 @@ define <16 x half> @vuitofp_v16i1_v16f16(<16 x i1> %va) strictfp {
   ret <16 x half> %evec
 }
 
+declare <16 x float> @llvm.experimental.constrained.sitofp.v16f32.v16i1(<16 x i1>, metadata, metadata)
 define <16 x float> @vsitofp_v16i1_v16f32(<16 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v16i1_v16f32:
 ; CHECK:       # %bb.0:
@@ -328,6 +355,7 @@ define <16 x float> @vsitofp_v16i1_v16f32(<16 x i1> %va) strictfp {
   ret <16 x float> %evec
 }
 
+declare <16 x float> @llvm.experimental.constrained.uitofp.v16f32.v16i1(<16 x i1>, metadata, metadata)
 define <16 x float> @vuitofp_v16i1_v16f32(<16 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v16i1_v16f32:
 ; CHECK:       # %bb.0:
@@ -340,6 +368,7 @@ define <16 x float> @vuitofp_v16i1_v16f32(<16 x i1> %va) strictfp {
   ret <16 x float> %evec
 }
 
+declare <32 x half> @llvm.experimental.constrained.sitofp.v32f16.v32i1(<32 x i1>, metadata, metadata)
 define <32 x half> @vsitofp_v32i1_v32f16(<32 x i1> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v32i1_v32f16:
 ; CHECK:       # %bb.0:
@@ -353,6 +382,7 @@ define <32 x half> @vsitofp_v32i1_v32f16(<32 x i1> %va) strictfp {
   ret <32 x half> %evec
 }
 
+declare <32 x half> @llvm.experimental.constrained.uitofp.v32f16.v32i1(<32 x i1>, metadata, metadata)
 define <32 x half> @vuitofp_v32i1_v32f16(<32 x i1> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v32i1_v32f16:
 ; CHECK:       # %bb.0:
@@ -366,6 +396,7 @@ define <32 x half> @vuitofp_v32i1_v32f16(<32 x i1> %va) strictfp {
   ret <32 x half> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.sitofp.v1f16.v1i8(<1 x i8>, metadata, metadata)
 define <1 x half> @vsitofp_v1i8_v1f16(<1 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i8_v1f16:
 ; CHECK:       # %bb.0:
@@ -377,6 +408,7 @@ define <1 x half> @vsitofp_v1i8_v1f16(<1 x i8> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.sitofp.v1f16.v1i7(<1 x i7>, metadata, metadata)
 define <1 x half> @vsitofp_v1i7_v1f16(<1 x i7> %va) strictfp {
 ; RV32-LABEL: vsitofp_v1i7_v1f16:
 ; RV32:       # %bb.0:
@@ -399,6 +431,7 @@ define <1 x half> @vsitofp_v1i7_v1f16(<1 x i7> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.uitofp.v1f16.v1i7(<1 x i7>, metadata, metadata)
 define <1 x half> @vuitofp_v1i7_v1f16(<1 x i7> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i7_v1f16:
 ; CHECK:       # %bb.0:
@@ -411,6 +444,7 @@ define <1 x half> @vuitofp_v1i7_v1f16(<1 x i7> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.uitofp.v1f16.v1i8(<1 x i8>, metadata, metadata)
 define <1 x half> @vuitofp_v1i8_v1f16(<1 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i8_v1f16:
 ; CHECK:       # %bb.0:
@@ -422,6 +456,7 @@ define <1 x half> @vuitofp_v1i8_v1f16(<1 x i8> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x float> @llvm.experimental.constrained.sitofp.v1f32.v1i8(<1 x i8>, metadata, metadata)
 define <1 x float> @vsitofp_v1i8_v1f32(<1 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i8_v1f32:
 ; CHECK:       # %bb.0:
@@ -433,6 +468,7 @@ define <1 x float> @vsitofp_v1i8_v1f32(<1 x i8> %va) strictfp {
   ret <1 x float> %evec
 }
 
+declare <1 x float> @llvm.experimental.constrained.uitofp.v1f32.v1i8(<1 x i8>, metadata, metadata)
 define <1 x float> @vuitofp_v1i8_v1f32(<1 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i8_v1f32:
 ; CHECK:       # %bb.0:
@@ -444,6 +480,7 @@ define <1 x float> @vuitofp_v1i8_v1f32(<1 x i8> %va) strictfp {
   ret <1 x float> %evec
 }
 
+declare <1 x double> @llvm.experimental.constrained.sitofp.v1f64.v1i8(<1 x i8>, metadata, metadata)
 define <1 x double> @vsitofp_v1i8_v1f64(<1 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i8_v1f64:
 ; CHECK:       # %bb.0:
@@ -455,6 +492,7 @@ define <1 x double> @vsitofp_v1i8_v1f64(<1 x i8> %va) strictfp {
   ret <1 x double> %evec
 }
 
+declare <1 x double> @llvm.experimental.constrained.uitofp.v1f64.v1i8(<1 x i8>, metadata, metadata)
 define <1 x double> @vuitofp_v1i8_v1f64(<1 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i8_v1f64:
 ; CHECK:       # %bb.0:
@@ -466,6 +504,7 @@ define <1 x double> @vuitofp_v1i8_v1f64(<1 x i8> %va) strictfp {
   ret <1 x double> %evec
 }
 
+declare <2 x half> @llvm.experimental.constrained.sitofp.v2f16.v2i8(<2 x i8>, metadata, metadata)
 define <2 x half> @vsitofp_v2i8_v2f16(<2 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i8_v2f16:
 ; CHECK:       # %bb.0:
@@ -477,6 +516,7 @@ define <2 x half> @vsitofp_v2i8_v2f16(<2 x i8> %va) strictfp {
   ret <2 x half> %evec
 }
 
+declare <2 x half> @llvm.experimental.constrained.uitofp.v2f16.v2i8(<2 x i8>, metadata, metadata)
 define <2 x half> @vuitofp_v2i8_v2f16(<2 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i8_v2f16:
 ; CHECK:       # %bb.0:
@@ -488,6 +528,7 @@ define <2 x half> @vuitofp_v2i8_v2f16(<2 x i8> %va) strictfp {
   ret <2 x half> %evec
 }
 
+declare <2 x float> @llvm.experimental.constrained.sitofp.v2f32.v2i8(<2 x i8>, metadata, metadata)
 define <2 x float> @vsitofp_v2i8_v2f32(<2 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i8_v2f32:
 ; CHECK:       # %bb.0:
@@ -499,6 +540,7 @@ define <2 x float> @vsitofp_v2i8_v2f32(<2 x i8> %va) strictfp {
   ret <2 x float> %evec
 }
 
+declare <2 x float> @llvm.experimental.constrained.uitofp.v2f32.v2i8(<2 x i8>, metadata, metadata)
 define <2 x float> @vuitofp_v2i8_v2f32(<2 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i8_v2f32:
 ; CHECK:       # %bb.0:
@@ -510,6 +552,7 @@ define <2 x float> @vuitofp_v2i8_v2f32(<2 x i8> %va) strictfp {
   ret <2 x float> %evec
 }
 
+declare <2 x double> @llvm.experimental.constrained.sitofp.v2f64.v2i8(<2 x i8>, metadata, metadata)
 define <2 x double> @vsitofp_v2i8_v2f64(<2 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i8_v2f64:
 ; CHECK:       # %bb.0:
@@ -521,6 +564,7 @@ define <2 x double> @vsitofp_v2i8_v2f64(<2 x i8> %va) strictfp {
   ret <2 x double> %evec
 }
 
+declare <2 x double> @llvm.experimental.constrained.uitofp.v2f64.v2i8(<2 x i8>, metadata, metadata)
 define <2 x double> @vuitofp_v2i8_v2f64(<2 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i8_v2f64:
 ; CHECK:       # %bb.0:
@@ -532,6 +576,7 @@ define <2 x double> @vuitofp_v2i8_v2f64(<2 x i8> %va) strictfp {
   ret <2 x double> %evec
 }
 
+declare <4 x half> @llvm.experimental.constrained.sitofp.v4f16.v4i8(<4 x i8>, metadata, metadata)
 define <4 x half> @vsitofp_v4i8_v4f16(<4 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i8_v4f16:
 ; CHECK:       # %bb.0:
@@ -543,6 +588,7 @@ define <4 x half> @vsitofp_v4i8_v4f16(<4 x i8> %va) strictfp {
   ret <4 x half> %evec
 }
 
+declare <4 x half> @llvm.experimental.constrained.uitofp.v4f16.v4i8(<4 x i8>, metadata, metadata)
 define <4 x half> @vuitofp_v4i8_v4f16(<4 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i8_v4f16:
 ; CHECK:       # %bb.0:
@@ -554,6 +600,7 @@ define <4 x half> @vuitofp_v4i8_v4f16(<4 x i8> %va) strictfp {
   ret <4 x half> %evec
 }
 
+declare <4 x float> @llvm.experimental.constrained.sitofp.v4f32.v4i8(<4 x i8>, metadata, metadata)
 define <4 x float> @vsitofp_v4i8_v4f32(<4 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i8_v4f32:
 ; CHECK:       # %bb.0:
@@ -565,6 +612,7 @@ define <4 x float> @vsitofp_v4i8_v4f32(<4 x i8> %va) strictfp {
   ret <4 x float> %evec
 }
 
+declare <4 x float> @llvm.experimental.constrained.uitofp.v4f32.v4i8(<4 x i8>, metadata, metadata)
 define <4 x float> @vuitofp_v4i8_v4f32(<4 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i8_v4f32:
 ; CHECK:       # %bb.0:
@@ -576,6 +624,7 @@ define <4 x float> @vuitofp_v4i8_v4f32(<4 x i8> %va) strictfp {
   ret <4 x float> %evec
 }
 
+declare <4 x double> @llvm.experimental.constrained.sitofp.v4f64.v4i8(<4 x i8>, metadata, metadata)
 define <4 x double> @vsitofp_v4i8_v4f64(<4 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i8_v4f64:
 ; CHECK:       # %bb.0:
@@ -587,6 +636,7 @@ define <4 x double> @vsitofp_v4i8_v4f64(<4 x i8> %va) strictfp {
   ret <4 x double> %evec
 }
 
+declare <4 x double> @llvm.experimental.constrained.uitofp.v4f64.v4i8(<4 x i8>, metadata, metadata)
 define <4 x double> @vuitofp_v4i8_v4f64(<4 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i8_v4f64:
 ; CHECK:       # %bb.0:
@@ -598,6 +648,7 @@ define <4 x double> @vuitofp_v4i8_v4f64(<4 x i8> %va) strictfp {
   ret <4 x double> %evec
 }
 
+declare <8 x half> @llvm.experimental.constrained.sitofp.v8f16.v8i8(<8 x i8>, metadata, metadata)
 define <8 x half> @vsitofp_v8i8_v8f16(<8 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i8_v8f16:
 ; CHECK:       # %bb.0:
@@ -609,6 +660,7 @@ define <8 x half> @vsitofp_v8i8_v8f16(<8 x i8> %va) strictfp {
   ret <8 x half> %evec
 }
 
+declare <8 x half> @llvm.experimental.constrained.uitofp.v8f16.v8i8(<8 x i8>, metadata, metadata)
 define <8 x half> @vuitofp_v8i8_v8f16(<8 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i8_v8f16:
 ; CHECK:       # %bb.0:
@@ -620,6 +672,7 @@ define <8 x half> @vuitofp_v8i8_v8f16(<8 x i8> %va) strictfp {
   ret <8 x half> %evec
 }
 
+declare <8 x float> @llvm.experimental.constrained.sitofp.v8f32.v8i8(<8 x i8>, metadata, metadata)
 define <8 x float> @vsitofp_v8i8_v8f32(<8 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i8_v8f32:
 ; CHECK:       # %bb.0:
@@ -631,6 +684,7 @@ define <8 x float> @vsitofp_v8i8_v8f32(<8 x i8> %va) strictfp {
   ret <8 x float> %evec
 }
 
+declare <8 x float> @llvm.experimental.constrained.uitofp.v8f32.v8i8(<8 x i8>, metadata, metadata)
 define <8 x float> @vuitofp_v8i8_v8f32(<8 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i8_v8f32:
 ; CHECK:       # %bb.0:
@@ -642,6 +696,7 @@ define <8 x float> @vuitofp_v8i8_v8f32(<8 x i8> %va) strictfp {
   ret <8 x float> %evec
 }
 
+declare <8 x double> @llvm.experimental.constrained.sitofp.v8f64.v8i8(<8 x i8>, metadata, metadata)
 define <8 x double> @vsitofp_v8i8_v8f64(<8 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i8_v8f64:
 ; CHECK:       # %bb.0:
@@ -653,6 +708,7 @@ define <8 x double> @vsitofp_v8i8_v8f64(<8 x i8> %va) strictfp {
   ret <8 x double> %evec
 }
 
+declare <8 x double> @llvm.experimental.constrained.uitofp.v8f64.v8i8(<8 x i8>, metadata, metadata)
 define <8 x double> @vuitofp_v8i8_v8f64(<8 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i8_v8f64:
 ; CHECK:       # %bb.0:
@@ -664,28 +720,31 @@ define <8 x double> @vuitofp_v8i8_v8f64(<8 x i8> %va) strictfp {
   ret <8 x double> %evec
 }
 
+declare <16 x half> @llvm.experimental.constrained.sitofp.v16f16.v16i8(<16 x i8>, metadata, metadata)
 define <16 x half> @vsitofp_v16i8_v16f16(<16 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v16i8_v16f16:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 16, e8, m1, ta, ma
-; CHECK-NEXT:    vmv1r.v v10, v8
-; CHECK-NEXT:    vfwcvt.f.x.v v8, v10
+; CHECK-NEXT:    vfwcvt.f.x.v v10, v8
+; CHECK-NEXT:    vmv2r.v v8, v10
 ; CHECK-NEXT:    ret
   %evec = call <16 x half> @llvm.experimental.constrained.sitofp.v16f16.v16i8(<16 x i8> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <16 x half> %evec
 }
 
+declare <16 x half> @llvm.experimental.constrained.uitofp.v16f16.v16i8(<16 x i8>, metadata, metadata)
 define <16 x half> @vuitofp_v16i8_v16f16(<16 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v16i8_v16f16:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 16, e8, m1, ta, ma
-; CHECK-NEXT:    vmv1r.v v10, v8
-; CHECK-NEXT:    vfwcvt.f.xu.v v8, v10
+; CHECK-NEXT:    vfwcvt.f.xu.v v10, v8
+; CHECK-NEXT:    vmv2r.v v8, v10
 ; CHECK-NEXT:    ret
   %evec = call <16 x half> @llvm.experimental.constrained.uitofp.v16f16.v16i8(<16 x i8> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <16 x half> %evec
 }
 
+declare <16 x float> @llvm.experimental.constrained.sitofp.v16f32.v16i8(<16 x i8>, metadata, metadata)
 define <16 x float> @vsitofp_v16i8_v16f32(<16 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v16i8_v16f32:
 ; CHECK:       # %bb.0:
@@ -697,6 +756,7 @@ define <16 x float> @vsitofp_v16i8_v16f32(<16 x i8> %va) strictfp {
   ret <16 x float> %evec
 }
 
+declare <16 x float> @llvm.experimental.constrained.uitofp.v16f32.v16i8(<16 x i8>, metadata, metadata)
 define <16 x float> @vuitofp_v16i8_v16f32(<16 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v16i8_v16f32:
 ; CHECK:       # %bb.0:
@@ -708,32 +768,33 @@ define <16 x float> @vuitofp_v16i8_v16f32(<16 x i8> %va) strictfp {
   ret <16 x float> %evec
 }
 
+declare <32 x half> @llvm.experimental.constrained.sitofp.v32f16.v32i8(<32 x i8>, metadata, metadata)
 define <32 x half> @vsitofp_v32i8_v32f16(<32 x i8> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v32i8_v32f16:
 ; CHECK:       # %bb.0:
-; CHECK-NEXT:    vsetivli zero, 1, e8, m1, ta, ma
-; CHECK-NEXT:    vmv2r.v v12, v8
 ; CHECK-NEXT:    li a0, 32
 ; CHECK-NEXT:    vsetvli zero, a0, e8, m2, ta, ma
-; CHECK-NEXT:    vfwcvt.f.x.v v8, v12
+; CHECK-NEXT:    vfwcvt.f.x.v v12, v8
+; CHECK-NEXT:    vmv4r.v v8, v12
 ; CHECK-NEXT:    ret
   %evec = call <32 x half> @llvm.experimental.constrained.sitofp.v32f16.v32i8(<32 x i8> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <32 x half> %evec
 }
 
+declare <32 x half> @llvm.experimental.constrained.uitofp.v32f16.v32i8(<32 x i8>, metadata, metadata)
 define <32 x half> @vuitofp_v32i8_v32f16(<32 x i8> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v32i8_v32f16:
 ; CHECK:       # %bb.0:
-; CHECK-NEXT:    vsetivli zero, 1, e8, m1, ta, ma
-; CHECK-NEXT:    vmv2r.v v12, v8
 ; CHECK-NEXT:    li a0, 32
 ; CHECK-NEXT:    vsetvli zero, a0, e8, m2, ta, ma
-; CHECK-NEXT:    vfwcvt.f.xu.v v8, v12
+; CHECK-NEXT:    vfwcvt.f.xu.v v12, v8
+; CHECK-NEXT:    vmv4r.v v8, v12
 ; CHECK-NEXT:    ret
   %evec = call <32 x half> @llvm.experimental.constrained.uitofp.v32f16.v32i8(<32 x i8> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <32 x half> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.sitofp.v1f16.v1i16(<1 x i16>, metadata, metadata)
 define <1 x half> @vsitofp_v1i16_v1f16(<1 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i16_v1f16:
 ; CHECK:       # %bb.0:
@@ -744,6 +805,7 @@ define <1 x half> @vsitofp_v1i16_v1f16(<1 x i16> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.uitofp.v1f16.v1i16(<1 x i16>, metadata, metadata)
 define <1 x half> @vuitofp_v1i16_v1f16(<1 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i16_v1f16:
 ; CHECK:       # %bb.0:
@@ -754,6 +816,7 @@ define <1 x half> @vuitofp_v1i16_v1f16(<1 x i16> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x float> @llvm.experimental.constrained.sitofp.v1f32.v1i16(<1 x i16>, metadata, metadata)
 define <1 x float> @vsitofp_v1i16_v1f32(<1 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i16_v1f32:
 ; CHECK:       # %bb.0:
@@ -765,6 +828,7 @@ define <1 x float> @vsitofp_v1i16_v1f32(<1 x i16> %va) strictfp {
   ret <1 x float> %evec
 }
 
+declare <1 x float> @llvm.experimental.constrained.uitofp.v1f32.v1i16(<1 x i16>, metadata, metadata)
 define <1 x float> @vuitofp_v1i16_v1f32(<1 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i16_v1f32:
 ; CHECK:       # %bb.0:
@@ -776,6 +840,7 @@ define <1 x float> @vuitofp_v1i16_v1f32(<1 x i16> %va) strictfp {
   ret <1 x float> %evec
 }
 
+declare <1 x double> @llvm.experimental.constrained.sitofp.v1f64.v1i16(<1 x i16>, metadata, metadata)
 define <1 x double> @vsitofp_v1i16_v1f64(<1 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i16_v1f64:
 ; CHECK:       # %bb.0:
@@ -787,6 +852,7 @@ define <1 x double> @vsitofp_v1i16_v1f64(<1 x i16> %va) strictfp {
   ret <1 x double> %evec
 }
 
+declare <1 x double> @llvm.experimental.constrained.uitofp.v1f64.v1i16(<1 x i16>, metadata, metadata)
 define <1 x double> @vuitofp_v1i16_v1f64(<1 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i16_v1f64:
 ; CHECK:       # %bb.0:
@@ -798,6 +864,7 @@ define <1 x double> @vuitofp_v1i16_v1f64(<1 x i16> %va) strictfp {
   ret <1 x double> %evec
 }
 
+declare <2 x half> @llvm.experimental.constrained.sitofp.v2f16.v2i16(<2 x i16>, metadata, metadata)
 define <2 x half> @vsitofp_v2i16_v2f16(<2 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i16_v2f16:
 ; CHECK:       # %bb.0:
@@ -808,6 +875,7 @@ define <2 x half> @vsitofp_v2i16_v2f16(<2 x i16> %va) strictfp {
   ret <2 x half> %evec
 }
 
+declare <2 x half> @llvm.experimental.constrained.uitofp.v2f16.v2i16(<2 x i16>, metadata, metadata)
 define <2 x half> @vuitofp_v2i16_v2f16(<2 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i16_v2f16:
 ; CHECK:       # %bb.0:
@@ -818,6 +886,7 @@ define <2 x half> @vuitofp_v2i16_v2f16(<2 x i16> %va) strictfp {
   ret <2 x half> %evec
 }
 
+declare <2 x float> @llvm.experimental.constrained.sitofp.v2f32.v2i16(<2 x i16>, metadata, metadata)
 define <2 x float> @vsitofp_v2i16_v2f32(<2 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i16_v2f32:
 ; CHECK:       # %bb.0:
@@ -829,6 +898,7 @@ define <2 x float> @vsitofp_v2i16_v2f32(<2 x i16> %va) strictfp {
   ret <2 x float> %evec
 }
 
+declare <2 x float> @llvm.experimental.constrained.uitofp.v2f32.v2i16(<2 x i16>, metadata, metadata)
 define <2 x float> @vuitofp_v2i16_v2f32(<2 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i16_v2f32:
 ; CHECK:       # %bb.0:
@@ -840,6 +910,7 @@ define <2 x float> @vuitofp_v2i16_v2f32(<2 x i16> %va) strictfp {
   ret <2 x float> %evec
 }
 
+declare <2 x double> @llvm.experimental.constrained.sitofp.v2f64.v2i16(<2 x i16>, metadata, metadata)
 define <2 x double> @vsitofp_v2i16_v2f64(<2 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i16_v2f64:
 ; CHECK:       # %bb.0:
@@ -851,6 +922,7 @@ define <2 x double> @vsitofp_v2i16_v2f64(<2 x i16> %va) strictfp {
   ret <2 x double> %evec
 }
 
+declare <2 x double> @llvm.experimental.constrained.uitofp.v2f64.v2i16(<2 x i16>, metadata, metadata)
 define <2 x double> @vuitofp_v2i16_v2f64(<2 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i16_v2f64:
 ; CHECK:       # %bb.0:
@@ -862,6 +934,7 @@ define <2 x double> @vuitofp_v2i16_v2f64(<2 x i16> %va) strictfp {
   ret <2 x double> %evec
 }
 
+declare <4 x half> @llvm.experimental.constrained.sitofp.v4f16.v4i16(<4 x i16>, metadata, metadata)
 define <4 x half> @vsitofp_v4i16_v4f16(<4 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i16_v4f16:
 ; CHECK:       # %bb.0:
@@ -872,6 +945,7 @@ define <4 x half> @vsitofp_v4i16_v4f16(<4 x i16> %va) strictfp {
   ret <4 x half> %evec
 }
 
+declare <4 x half> @llvm.experimental.constrained.uitofp.v4f16.v4i16(<4 x i16>, metadata, metadata)
 define <4 x half> @vuitofp_v4i16_v4f16(<4 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i16_v4f16:
 ; CHECK:       # %bb.0:
@@ -882,6 +956,7 @@ define <4 x half> @vuitofp_v4i16_v4f16(<4 x i16> %va) strictfp {
   ret <4 x half> %evec
 }
 
+declare <4 x float> @llvm.experimental.constrained.sitofp.v4f32.v4i16(<4 x i16>, metadata, metadata)
 define <4 x float> @vsitofp_v4i16_v4f32(<4 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i16_v4f32:
 ; CHECK:       # %bb.0:
@@ -893,6 +968,7 @@ define <4 x float> @vsitofp_v4i16_v4f32(<4 x i16> %va) strictfp {
   ret <4 x float> %evec
 }
 
+declare <4 x float> @llvm.experimental.constrained.uitofp.v4f32.v4i16(<4 x i16>, metadata, metadata)
 define <4 x float> @vuitofp_v4i16_v4f32(<4 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i16_v4f32:
 ; CHECK:       # %bb.0:
@@ -904,6 +980,7 @@ define <4 x float> @vuitofp_v4i16_v4f32(<4 x i16> %va) strictfp {
   ret <4 x float> %evec
 }
 
+declare <4 x double> @llvm.experimental.constrained.sitofp.v4f64.v4i16(<4 x i16>, metadata, metadata)
 define <4 x double> @vsitofp_v4i16_v4f64(<4 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i16_v4f64:
 ; CHECK:       # %bb.0:
@@ -915,6 +992,7 @@ define <4 x double> @vsitofp_v4i16_v4f64(<4 x i16> %va) strictfp {
   ret <4 x double> %evec
 }
 
+declare <4 x double> @llvm.experimental.constrained.uitofp.v4f64.v4i16(<4 x i16>, metadata, metadata)
 define <4 x double> @vuitofp_v4i16_v4f64(<4 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i16_v4f64:
 ; CHECK:       # %bb.0:
@@ -926,6 +1004,7 @@ define <4 x double> @vuitofp_v4i16_v4f64(<4 x i16> %va) strictfp {
   ret <4 x double> %evec
 }
 
+declare <8 x half> @llvm.experimental.constrained.sitofp.v8f16.v8i16(<8 x i16>, metadata, metadata)
 define <8 x half> @vsitofp_v8i16_v8f16(<8 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i16_v8f16:
 ; CHECK:       # %bb.0:
@@ -936,6 +1015,7 @@ define <8 x half> @vsitofp_v8i16_v8f16(<8 x i16> %va) strictfp {
   ret <8 x half> %evec
 }
 
+declare <8 x half> @llvm.experimental.constrained.uitofp.v8f16.v8i16(<8 x i16>, metadata, metadata)
 define <8 x half> @vuitofp_v8i16_v8f16(<8 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i16_v8f16:
 ; CHECK:       # %bb.0:
@@ -946,28 +1026,31 @@ define <8 x half> @vuitofp_v8i16_v8f16(<8 x i16> %va) strictfp {
   ret <8 x half> %evec
 }
 
+declare <8 x float> @llvm.experimental.constrained.sitofp.v8f32.v8i16(<8 x i16>, metadata, metadata)
 define <8 x float> @vsitofp_v8i16_v8f32(<8 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i16_v8f32:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 8, e16, m1, ta, ma
-; CHECK-NEXT:    vmv1r.v v10, v8
-; CHECK-NEXT:    vfwcvt.f.x.v v8, v10
+; CHECK-NEXT:    vfwcvt.f.x.v v10, v8
+; CHECK-NEXT:    vmv2r.v v8, v10
 ; CHECK-NEXT:    ret
   %evec = call <8 x float> @llvm.experimental.constrained.sitofp.v8f32.v8i16(<8 x i16> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <8 x float> %evec
 }
 
+declare <8 x float> @llvm.experimental.constrained.uitofp.v8f32.v8i16(<8 x i16>, metadata, metadata)
 define <8 x float> @vuitofp_v8i16_v8f32(<8 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i16_v8f32:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 8, e16, m1, ta, ma
-; CHECK-NEXT:    vmv1r.v v10, v8
-; CHECK-NEXT:    vfwcvt.f.xu.v v8, v10
+; CHECK-NEXT:    vfwcvt.f.xu.v v10, v8
+; CHECK-NEXT:    vmv2r.v v8, v10
 ; CHECK-NEXT:    ret
   %evec = call <8 x float> @llvm.experimental.constrained.uitofp.v8f32.v8i16(<8 x i16> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <8 x float> %evec
 }
 
+declare <8 x double> @llvm.experimental.constrained.sitofp.v8f64.v8i16(<8 x i16>, metadata, metadata)
 define <8 x double> @vsitofp_v8i16_v8f64(<8 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i16_v8f64:
 ; CHECK:       # %bb.0:
@@ -979,6 +1062,7 @@ define <8 x double> @vsitofp_v8i16_v8f64(<8 x i16> %va) strictfp {
   ret <8 x double> %evec
 }
 
+declare <8 x double> @llvm.experimental.constrained.uitofp.v8f64.v8i16(<8 x i16>, metadata, metadata)
 define <8 x double> @vuitofp_v8i16_v8f64(<8 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i16_v8f64:
 ; CHECK:       # %bb.0:
@@ -990,6 +1074,7 @@ define <8 x double> @vuitofp_v8i16_v8f64(<8 x i16> %va) strictfp {
   ret <8 x double> %evec
 }
 
+declare <16 x half> @llvm.experimental.constrained.sitofp.v16f16.v16i16(<16 x i16>, metadata, metadata)
 define <16 x half> @vsitofp_v16i16_v16f16(<16 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v16i16_v16f16:
 ; CHECK:       # %bb.0:
@@ -1000,6 +1085,7 @@ define <16 x half> @vsitofp_v16i16_v16f16(<16 x i16> %va) strictfp {
   ret <16 x half> %evec
 }
 
+declare <16 x half> @llvm.experimental.constrained.uitofp.v16f16.v16i16(<16 x i16>, metadata, metadata)
 define <16 x half> @vuitofp_v16i16_v16f16(<16 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v16i16_v16f16:
 ; CHECK:       # %bb.0:
@@ -1010,28 +1096,31 @@ define <16 x half> @vuitofp_v16i16_v16f16(<16 x i16> %va) strictfp {
   ret <16 x half> %evec
 }
 
+declare <16 x float> @llvm.experimental.constrained.sitofp.v16f32.v16i16(<16 x i16>, metadata, metadata)
 define <16 x float> @vsitofp_v16i16_v16f32(<16 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v16i16_v16f32:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 16, e16, m2, ta, ma
-; CHECK-NEXT:    vmv2r.v v12, v8
-; CHECK-NEXT:    vfwcvt.f.x.v v8, v12
+; CHECK-NEXT:    vfwcvt.f.x.v v12, v8
+; CHECK-NEXT:    vmv4r.v v8, v12
 ; CHECK-NEXT:    ret
   %evec = call <16 x float> @llvm.experimental.constrained.sitofp.v16f32.v16i16(<16 x i16> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <16 x float> %evec
 }
 
+declare <16 x float> @llvm.experimental.constrained.uitofp.v16f32.v16i16(<16 x i16>, metadata, metadata)
 define <16 x float> @vuitofp_v16i16_v16f32(<16 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v16i16_v16f32:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 16, e16, m2, ta, ma
-; CHECK-NEXT:    vmv2r.v v12, v8
-; CHECK-NEXT:    vfwcvt.f.xu.v v8, v12
+; CHECK-NEXT:    vfwcvt.f.xu.v v12, v8
+; CHECK-NEXT:    vmv4r.v v8, v12
 ; CHECK-NEXT:    ret
   %evec = call <16 x float> @llvm.experimental.constrained.uitofp.v16f32.v16i16(<16 x i16> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <16 x float> %evec
 }
 
+declare <32 x half> @llvm.experimental.constrained.sitofp.v32f16.v32i16(<32 x i16>, metadata, metadata)
 define <32 x half> @vsitofp_v32i16_v32f16(<32 x i16> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v32i16_v32f16:
 ; CHECK:       # %bb.0:
@@ -1043,6 +1132,7 @@ define <32 x half> @vsitofp_v32i16_v32f16(<32 x i16> %va) strictfp {
   ret <32 x half> %evec
 }
 
+declare <32 x half> @llvm.experimental.constrained.uitofp.v32f16.v32i16(<32 x i16>, metadata, metadata)
 define <32 x half> @vuitofp_v32i16_v32f16(<32 x i16> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v32i16_v32f16:
 ; CHECK:       # %bb.0:
@@ -1054,6 +1144,7 @@ define <32 x half> @vuitofp_v32i16_v32f16(<32 x i16> %va) strictfp {
   ret <32 x half> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.sitofp.v1f16.v1i32(<1 x i32>, metadata, metadata)
 define <1 x half> @vsitofp_v1i32_v1f16(<1 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i32_v1f16:
 ; CHECK:       # %bb.0:
@@ -1065,6 +1156,7 @@ define <1 x half> @vsitofp_v1i32_v1f16(<1 x i32> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.uitofp.v1f16.v1i32(<1 x i32>, metadata, metadata)
 define <1 x half> @vuitofp_v1i32_v1f16(<1 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i32_v1f16:
 ; CHECK:       # %bb.0:
@@ -1076,6 +1168,7 @@ define <1 x half> @vuitofp_v1i32_v1f16(<1 x i32> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x float> @llvm.experimental.constrained.sitofp.v1f32.v1i32(<1 x i32>, metadata, metadata)
 define <1 x float> @vsitofp_v1i32_v1f32(<1 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i32_v1f32:
 ; CHECK:       # %bb.0:
@@ -1086,6 +1179,7 @@ define <1 x float> @vsitofp_v1i32_v1f32(<1 x i32> %va) strictfp {
   ret <1 x float> %evec
 }
 
+declare <1 x float> @llvm.experimental.constrained.uitofp.v1f32.v1i32(<1 x i32>, metadata, metadata)
 define <1 x float> @vuitofp_v1i32_v1f32(<1 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i32_v1f32:
 ; CHECK:       # %bb.0:
@@ -1096,6 +1190,7 @@ define <1 x float> @vuitofp_v1i32_v1f32(<1 x i32> %va) strictfp {
   ret <1 x float> %evec
 }
 
+declare <1 x double> @llvm.experimental.constrained.sitofp.v1f64.v1i32(<1 x i32>, metadata, metadata)
 define <1 x double> @vsitofp_v1i32_v1f64(<1 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i32_v1f64:
 ; CHECK:       # %bb.0:
@@ -1107,6 +1202,7 @@ define <1 x double> @vsitofp_v1i32_v1f64(<1 x i32> %va) strictfp {
   ret <1 x double> %evec
 }
 
+declare <1 x double> @llvm.experimental.constrained.uitofp.v1f64.v1i32(<1 x i32>, metadata, metadata)
 define <1 x double> @vuitofp_v1i32_v1f64(<1 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i32_v1f64:
 ; CHECK:       # %bb.0:
@@ -1118,6 +1214,7 @@ define <1 x double> @vuitofp_v1i32_v1f64(<1 x i32> %va) strictfp {
   ret <1 x double> %evec
 }
 
+declare <2 x half> @llvm.experimental.constrained.sitofp.v2f16.v2i32(<2 x i32>, metadata, metadata)
 define <2 x half> @vsitofp_v2i32_v2f16(<2 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i32_v2f16:
 ; CHECK:       # %bb.0:
@@ -1129,6 +1226,7 @@ define <2 x half> @vsitofp_v2i32_v2f16(<2 x i32> %va) strictfp {
   ret <2 x half> %evec
 }
 
+declare <2 x half> @llvm.experimental.constrained.uitofp.v2f16.v2i32(<2 x i32>, metadata, metadata)
 define <2 x half> @vuitofp_v2i32_v2f16(<2 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i32_v2f16:
 ; CHECK:       # %bb.0:
@@ -1140,6 +1238,7 @@ define <2 x half> @vuitofp_v2i32_v2f16(<2 x i32> %va) strictfp {
   ret <2 x half> %evec
 }
 
+declare <2 x float> @llvm.experimental.constrained.sitofp.v2f32.v2i32(<2 x i32>, metadata, metadata)
 define <2 x float> @vsitofp_v2i32_v2f32(<2 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i32_v2f32:
 ; CHECK:       # %bb.0:
@@ -1150,6 +1249,7 @@ define <2 x float> @vsitofp_v2i32_v2f32(<2 x i32> %va) strictfp {
   ret <2 x float> %evec
 }
 
+declare <2 x float> @llvm.experimental.constrained.uitofp.v2f32.v2i32(<2 x i32>, metadata, metadata)
 define <2 x float> @vuitofp_v2i32_v2f32(<2 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i32_v2f32:
 ; CHECK:       # %bb.0:
@@ -1160,6 +1260,7 @@ define <2 x float> @vuitofp_v2i32_v2f32(<2 x i32> %va) strictfp {
   ret <2 x float> %evec
 }
 
+declare <2 x double> @llvm.experimental.constrained.sitofp.v2f64.v2i32(<2 x i32>, metadata, metadata)
 define <2 x double> @vsitofp_v2i32_v2f64(<2 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i32_v2f64:
 ; CHECK:       # %bb.0:
@@ -1171,6 +1272,7 @@ define <2 x double> @vsitofp_v2i32_v2f64(<2 x i32> %va) strictfp {
   ret <2 x double> %evec
 }
 
+declare <2 x double> @llvm.experimental.constrained.uitofp.v2f64.v2i32(<2 x i32>, metadata, metadata)
 define <2 x double> @vuitofp_v2i32_v2f64(<2 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i32_v2f64:
 ; CHECK:       # %bb.0:
@@ -1182,6 +1284,7 @@ define <2 x double> @vuitofp_v2i32_v2f64(<2 x i32> %va) strictfp {
   ret <2 x double> %evec
 }
 
+declare <4 x half> @llvm.experimental.constrained.sitofp.v4f16.v4i32(<4 x i32>, metadata, metadata)
 define <4 x half> @vsitofp_v4i32_v4f16(<4 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i32_v4f16:
 ; CHECK:       # %bb.0:
@@ -1193,6 +1296,7 @@ define <4 x half> @vsitofp_v4i32_v4f16(<4 x i32> %va) strictfp {
   ret <4 x half> %evec
 }
 
+declare <4 x half> @llvm.experimental.constrained.uitofp.v4f16.v4i32(<4 x i32>, metadata, metadata)
 define <4 x half> @vuitofp_v4i32_v4f16(<4 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i32_v4f16:
 ; CHECK:       # %bb.0:
@@ -1204,6 +1308,7 @@ define <4 x half> @vuitofp_v4i32_v4f16(<4 x i32> %va) strictfp {
   ret <4 x half> %evec
 }
 
+declare <4 x float> @llvm.experimental.constrained.sitofp.v4f32.v4i32(<4 x i32>, metadata, metadata)
 define <4 x float> @vsitofp_v4i32_v4f32(<4 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i32_v4f32:
 ; CHECK:       # %bb.0:
@@ -1214,6 +1319,7 @@ define <4 x float> @vsitofp_v4i32_v4f32(<4 x i32> %va) strictfp {
   ret <4 x float> %evec
 }
 
+declare <4 x float> @llvm.experimental.constrained.uitofp.v4f32.v4i32(<4 x i32>, metadata, metadata)
 define <4 x float> @vuitofp_v4i32_v4f32(<4 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i32_v4f32:
 ; CHECK:       # %bb.0:
@@ -1224,28 +1330,31 @@ define <4 x float> @vuitofp_v4i32_v4f32(<4 x i32> %va) strictfp {
   ret <4 x float> %evec
 }
 
+declare <4 x double> @llvm.experimental.constrained.sitofp.v4f64.v4i32(<4 x i32>, metadata, metadata)
 define <4 x double> @vsitofp_v4i32_v4f64(<4 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i32_v4f64:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 4, e32, m1, ta, ma
-; CHECK-NEXT:    vmv1r.v v10, v8
-; CHECK-NEXT:    vfwcvt.f.x.v v8, v10
+; CHECK-NEXT:    vfwcvt.f.x.v v10, v8
+; CHECK-NEXT:    vmv2r.v v8, v10
 ; CHECK-NEXT:    ret
   %evec = call <4 x double> @llvm.experimental.constrained.sitofp.v4f64.v4i32(<4 x i32> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <4 x double> %evec
 }
 
+declare <4 x double> @llvm.experimental.constrained.uitofp.v4f64.v4i32(<4 x i32>, metadata, metadata)
 define <4 x double> @vuitofp_v4i32_v4f64(<4 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i32_v4f64:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 4, e32, m1, ta, ma
-; CHECK-NEXT:    vmv1r.v v10, v8
-; CHECK-NEXT:    vfwcvt.f.xu.v v8, v10
+; CHECK-NEXT:    vfwcvt.f.xu.v v10, v8
+; CHECK-NEXT:    vmv2r.v v8, v10
 ; CHECK-NEXT:    ret
   %evec = call <4 x double> @llvm.experimental.constrained.uitofp.v4f64.v4i32(<4 x i32> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <4 x double> %evec
 }
 
+declare <8 x half> @llvm.experimental.constrained.sitofp.v8f16.v8i32(<8 x i32>, metadata, metadata)
 define <8 x half> @vsitofp_v8i32_v8f16(<8 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i32_v8f16:
 ; CHECK:       # %bb.0:
@@ -1257,6 +1366,7 @@ define <8 x half> @vsitofp_v8i32_v8f16(<8 x i32> %va) strictfp {
   ret <8 x half> %evec
 }
 
+declare <8 x half> @llvm.experimental.constrained.uitofp.v8f16.v8i32(<8 x i32>, metadata, metadata)
 define <8 x half> @vuitofp_v8i32_v8f16(<8 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i32_v8f16:
 ; CHECK:       # %bb.0:
@@ -1268,6 +1378,7 @@ define <8 x half> @vuitofp_v8i32_v8f16(<8 x i32> %va) strictfp {
   ret <8 x half> %evec
 }
 
+declare <8 x float> @llvm.experimental.constrained.sitofp.v8f32.v8i32(<8 x i32>, metadata, metadata)
 define <8 x float> @vsitofp_v8i32_v8f32(<8 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i32_v8f32:
 ; CHECK:       # %bb.0:
@@ -1278,6 +1389,7 @@ define <8 x float> @vsitofp_v8i32_v8f32(<8 x i32> %va) strictfp {
   ret <8 x float> %evec
 }
 
+declare <8 x float> @llvm.experimental.constrained.uitofp.v8f32.v8i32(<8 x i32>, metadata, metadata)
 define <8 x float> @vuitofp_v8i32_v8f32(<8 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i32_v8f32:
 ; CHECK:       # %bb.0:
@@ -1288,28 +1400,31 @@ define <8 x float> @vuitofp_v8i32_v8f32(<8 x i32> %va) strictfp {
   ret <8 x float> %evec
 }
 
+declare <8 x double> @llvm.experimental.constrained.sitofp.v8f64.v8i32(<8 x i32>, metadata, metadata)
 define <8 x double> @vsitofp_v8i32_v8f64(<8 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i32_v8f64:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 8, e32, m2, ta, ma
-; CHECK-NEXT:    vmv2r.v v12, v8
-; CHECK-NEXT:    vfwcvt.f.x.v v8, v12
+; CHECK-NEXT:    vfwcvt.f.x.v v12, v8
+; CHECK-NEXT:    vmv4r.v v8, v12
 ; CHECK-NEXT:    ret
   %evec = call <8 x double> @llvm.experimental.constrained.sitofp.v8f64.v8i32(<8 x i32> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <8 x double> %evec
 }
 
+declare <8 x double> @llvm.experimental.constrained.uitofp.v8f64.v8i32(<8 x i32>, metadata, metadata)
 define <8 x double> @vuitofp_v8i32_v8f64(<8 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i32_v8f64:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 8, e32, m2, ta, ma
-; CHECK-NEXT:    vmv2r.v v12, v8
-; CHECK-NEXT:    vfwcvt.f.xu.v v8, v12
+; CHECK-NEXT:    vfwcvt.f.xu.v v12, v8
+; CHECK-NEXT:    vmv4r.v v8, v12
 ; CHECK-NEXT:    ret
   %evec = call <8 x double> @llvm.experimental.constrained.uitofp.v8f64.v8i32(<8 x i32> %va, metadata !"round.dynamic", metadata !"fpexcept.strict")
   ret <8 x double> %evec
 }
 
+declare <16 x half> @llvm.experimental.constrained.sitofp.v16f16.v16i32(<16 x i32>, metadata, metadata)
 define <16 x half> @vsitofp_v16i32_v16f16(<16 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v16i32_v16f16:
 ; CHECK:       # %bb.0:
@@ -1321,6 +1436,7 @@ define <16 x half> @vsitofp_v16i32_v16f16(<16 x i32> %va) strictfp {
   ret <16 x half> %evec
 }
 
+declare <16 x half> @llvm.experimental.constrained.uitofp.v16f16.v16i32(<16 x i32>, metadata, metadata)
 define <16 x half> @vuitofp_v16i32_v16f16(<16 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v16i32_v16f16:
 ; CHECK:       # %bb.0:
@@ -1332,6 +1448,7 @@ define <16 x half> @vuitofp_v16i32_v16f16(<16 x i32> %va) strictfp {
   ret <16 x half> %evec
 }
 
+declare <16 x float> @llvm.experimental.constrained.sitofp.v16f32.v16i32(<16 x i32>, metadata, metadata)
 define <16 x float> @vsitofp_v16i32_v16f32(<16 x i32> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v16i32_v16f32:
 ; CHECK:       # %bb.0:
@@ -1342,6 +1459,7 @@ define <16 x float> @vsitofp_v16i32_v16f32(<16 x i32> %va) strictfp {
   ret <16 x float> %evec
 }
 
+declare <16 x float> @llvm.experimental.constrained.uitofp.v16f32.v16i32(<16 x i32>, metadata, metadata)
 define <16 x float> @vuitofp_v16i32_v16f32(<16 x i32> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v16i32_v16f32:
 ; CHECK:       # %bb.0:
@@ -1352,6 +1470,7 @@ define <16 x float> @vuitofp_v16i32_v16f32(<16 x i32> %va) strictfp {
   ret <16 x float> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.sitofp.v1f16.v1i64(<1 x i64>, metadata, metadata)
 define <1 x half> @vsitofp_v1i64_v1f16(<1 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i64_v1f16:
 ; CHECK:       # %bb.0:
@@ -1364,6 +1483,7 @@ define <1 x half> @vsitofp_v1i64_v1f16(<1 x i64> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x half> @llvm.experimental.constrained.uitofp.v1f16.v1i64(<1 x i64>, metadata, metadata)
 define <1 x half> @vuitofp_v1i64_v1f16(<1 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i64_v1f16:
 ; CHECK:       # %bb.0:
@@ -1376,6 +1496,7 @@ define <1 x half> @vuitofp_v1i64_v1f16(<1 x i64> %va) strictfp {
   ret <1 x half> %evec
 }
 
+declare <1 x float> @llvm.experimental.constrained.sitofp.v1f32.v1i64(<1 x i64>, metadata, metadata)
 define <1 x float> @vsitofp_v1i64_v1f32(<1 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i64_v1f32:
 ; CHECK:       # %bb.0:
@@ -1387,6 +1508,7 @@ define <1 x float> @vsitofp_v1i64_v1f32(<1 x i64> %va) strictfp {
   ret <1 x float> %evec
 }
 
+declare <1 x float> @llvm.experimental.constrained.uitofp.v1f32.v1i64(<1 x i64>, metadata, metadata)
 define <1 x float> @vuitofp_v1i64_v1f32(<1 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i64_v1f32:
 ; CHECK:       # %bb.0:
@@ -1398,6 +1520,7 @@ define <1 x float> @vuitofp_v1i64_v1f32(<1 x i64> %va) strictfp {
   ret <1 x float> %evec
 }
 
+declare <1 x double> @llvm.experimental.constrained.sitofp.v1f64.v1i64(<1 x i64>, metadata, metadata)
 define <1 x double> @vsitofp_v1i64_v1f64(<1 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v1i64_v1f64:
 ; CHECK:       # %bb.0:
@@ -1408,6 +1531,7 @@ define <1 x double> @vsitofp_v1i64_v1f64(<1 x i64> %va) strictfp {
   ret <1 x double> %evec
 }
 
+declare <1 x double> @llvm.experimental.constrained.uitofp.v1f64.v1i64(<1 x i64>, metadata, metadata)
 define <1 x double> @vuitofp_v1i64_v1f64(<1 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v1i64_v1f64:
 ; CHECK:       # %bb.0:
@@ -1418,6 +1542,8 @@ define <1 x double> @vuitofp_v1i64_v1f64(<1 x i64> %va) strictfp {
   ret <1 x double> %evec
 }
 
+
+declare <2 x half> @llvm.experimental.constrained.sitofp.v2f16.v2i64(<2 x i64>, metadata, metadata)
 define <2 x half> @vsitofp_v2i64_v2f16(<2 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i64_v2f16:
 ; CHECK:       # %bb.0:
@@ -1430,6 +1556,7 @@ define <2 x half> @vsitofp_v2i64_v2f16(<2 x i64> %va) strictfp {
   ret <2 x half> %evec
 }
 
+declare <2 x half> @llvm.experimental.constrained.uitofp.v2f16.v2i64(<2 x i64>, metadata, metadata)
 define <2 x half> @vuitofp_v2i64_v2f16(<2 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i64_v2f16:
 ; CHECK:       # %bb.0:
@@ -1442,6 +1569,7 @@ define <2 x half> @vuitofp_v2i64_v2f16(<2 x i64> %va) strictfp {
   ret <2 x half> %evec
 }
 
+declare <2 x float> @llvm.experimental.constrained.sitofp.v2f32.v2i64(<2 x i64>, metadata, metadata)
 define <2 x float> @vsitofp_v2i64_v2f32(<2 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i64_v2f32:
 ; CHECK:       # %bb.0:
@@ -1453,6 +1581,7 @@ define <2 x float> @vsitofp_v2i64_v2f32(<2 x i64> %va) strictfp {
   ret <2 x float> %evec
 }
 
+declare <2 x float> @llvm.experimental.constrained.uitofp.v2f32.v2i64(<2 x i64>, metadata, metadata)
 define <2 x float> @vuitofp_v2i64_v2f32(<2 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i64_v2f32:
 ; CHECK:       # %bb.0:
@@ -1464,6 +1593,7 @@ define <2 x float> @vuitofp_v2i64_v2f32(<2 x i64> %va) strictfp {
   ret <2 x float> %evec
 }
 
+declare <2 x double> @llvm.experimental.constrained.sitofp.v2f64.v2i64(<2 x i64>, metadata, metadata)
 define <2 x double> @vsitofp_v2i64_v2f64(<2 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v2i64_v2f64:
 ; CHECK:       # %bb.0:
@@ -1474,6 +1604,7 @@ define <2 x double> @vsitofp_v2i64_v2f64(<2 x i64> %va) strictfp {
   ret <2 x double> %evec
 }
 
+declare <2 x double> @llvm.experimental.constrained.uitofp.v2f64.v2i64(<2 x i64>, metadata, metadata)
 define <2 x double> @vuitofp_v2i64_v2f64(<2 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v2i64_v2f64:
 ; CHECK:       # %bb.0:
@@ -1484,6 +1615,7 @@ define <2 x double> @vuitofp_v2i64_v2f64(<2 x i64> %va) strictfp {
   ret <2 x double> %evec
 }
 
+declare <4 x half> @llvm.experimental.constrained.sitofp.v4f16.v4i64(<4 x i64>, metadata, metadata)
 define <4 x half> @vsitofp_v4i64_v4f16(<4 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i64_v4f16:
 ; CHECK:       # %bb.0:
@@ -1496,6 +1628,7 @@ define <4 x half> @vsitofp_v4i64_v4f16(<4 x i64> %va) strictfp {
   ret <4 x half> %evec
 }
 
+declare <4 x half> @llvm.experimental.constrained.uitofp.v4f16.v4i64(<4 x i64>, metadata, metadata)
 define <4 x half> @vuitofp_v4i64_v4f16(<4 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i64_v4f16:
 ; CHECK:       # %bb.0:
@@ -1508,6 +1641,7 @@ define <4 x half> @vuitofp_v4i64_v4f16(<4 x i64> %va) strictfp {
   ret <4 x half> %evec
 }
 
+declare <4 x float> @llvm.experimental.constrained.sitofp.v4f32.v4i64(<4 x i64>, metadata, metadata)
 define <4 x float> @vsitofp_v4i64_v4f32(<4 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i64_v4f32:
 ; CHECK:       # %bb.0:
@@ -1519,6 +1653,7 @@ define <4 x float> @vsitofp_v4i64_v4f32(<4 x i64> %va) strictfp {
   ret <4 x float> %evec
 }
 
+declare <4 x float> @llvm.experimental.constrained.uitofp.v4f32.v4i64(<4 x i64>, metadata, metadata)
 define <4 x float> @vuitofp_v4i64_v4f32(<4 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i64_v4f32:
 ; CHECK:       # %bb.0:
@@ -1530,6 +1665,7 @@ define <4 x float> @vuitofp_v4i64_v4f32(<4 x i64> %va) strictfp {
   ret <4 x float> %evec
 }
 
+declare <4 x double> @llvm.experimental.constrained.sitofp.v4f64.v4i64(<4 x i64>, metadata, metadata)
 define <4 x double> @vsitofp_v4i64_v4f64(<4 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v4i64_v4f64:
 ; CHECK:       # %bb.0:
@@ -1540,6 +1676,7 @@ define <4 x double> @vsitofp_v4i64_v4f64(<4 x i64> %va) strictfp {
   ret <4 x double> %evec
 }
 
+declare <4 x double> @llvm.experimental.constrained.uitofp.v4f64.v4i64(<4 x i64>, metadata, metadata)
 define <4 x double> @vuitofp_v4i64_v4f64(<4 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v4i64_v4f64:
 ; CHECK:       # %bb.0:
@@ -1550,6 +1687,7 @@ define <4 x double> @vuitofp_v4i64_v4f64(<4 x i64> %va) strictfp {
   ret <4 x double> %evec
 }
 
+declare <8 x half> @llvm.experimental.constrained.sitofp.v8f16.v8i64(<8 x i64>, metadata, metadata)
 define <8 x half> @vsitofp_v8i64_v8f16(<8 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i64_v8f16:
 ; CHECK:       # %bb.0:
@@ -1562,6 +1700,7 @@ define <8 x half> @vsitofp_v8i64_v8f16(<8 x i64> %va) strictfp {
   ret <8 x half> %evec
 }
 
+declare <8 x half> @llvm.experimental.constrained.uitofp.v8f16.v8i64(<8 x i64>, metadata, metadata)
 define <8 x half> @vuitofp_v8i64_v8f16(<8 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i64_v8f16:
 ; CHECK:       # %bb.0:
@@ -1574,6 +1713,7 @@ define <8 x half> @vuitofp_v8i64_v8f16(<8 x i64> %va) strictfp {
   ret <8 x half> %evec
 }
 
+declare <8 x float> @llvm.experimental.constrained.sitofp.v8f32.v8i64(<8 x i64>, metadata, metadata)
 define <8 x float> @vsitofp_v8i64_v8f32(<8 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i64_v8f32:
 ; CHECK:       # %bb.0:
@@ -1585,6 +1725,7 @@ define <8 x float> @vsitofp_v8i64_v8f32(<8 x i64> %va) strictfp {
   ret <8 x float> %evec
 }
 
+declare <8 x float> @llvm.experimental.constrained.uitofp.v8f32.v8i64(<8 x i64>, metadata, metadata)
 define <8 x float> @vuitofp_v8i64_v8f32(<8 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i64_v8f32:
 ; CHECK:       # %bb.0:
@@ -1596,6 +1737,7 @@ define <8 x float> @vuitofp_v8i64_v8f32(<8 x i64> %va) strictfp {
   ret <8 x float> %evec
 }
 
+declare <8 x double> @llvm.experimental.constrained.sitofp.v8f64.v8i64(<8 x i64>, metadata, metadata)
 define <8 x double> @vsitofp_v8i64_v8f64(<8 x i64> %va) strictfp {
 ; CHECK-LABEL: vsitofp_v8i64_v8f64:
 ; CHECK:       # %bb.0:
@@ -1606,6 +1748,7 @@ define <8 x double> @vsitofp_v8i64_v8f64(<8 x i64> %va) strictfp {
   ret <8 x double> %evec
 }
 
+declare <8 x double> @llvm.experimental.constrained.uitofp.v8f64.v8i64(<8 x i64>, metadata, metadata)
 define <8 x double> @vuitofp_v8i64_v8f64(<8 x i64> %va) strictfp {
 ; CHECK-LABEL: vuitofp_v8i64_v8f64:
 ; CHECK:       # %bb.0:

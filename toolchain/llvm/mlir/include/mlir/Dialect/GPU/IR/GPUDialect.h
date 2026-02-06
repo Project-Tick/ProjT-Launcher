@@ -178,8 +178,8 @@ enum class SparseHandleKind { SpMat, DnTensor, SpGEMMOp };
 class SparseDnTensorHandleType
     : public Type::TypeBase<SparseDnTensorHandleType, Type, TypeStorage> {
 public:
-  using Base =
-      Type::TypeBase<SparseDnTensorHandleType, Type, TypeStorage>::Base;
+  using Base = typename Type::TypeBase<SparseDnTensorHandleType, Type,
+                                       TypeStorage>::Base;
   using Base::Base;
 
   static constexpr StringLiteral name = "gpu.sparse.dntensor_handle";
@@ -188,7 +188,8 @@ public:
 class SparseSpMatHandleType
     : public Type::TypeBase<SparseSpMatHandleType, Type, TypeStorage> {
 public:
-  using Base = Type::TypeBase<SparseSpMatHandleType, Type, TypeStorage>::Base;
+  using Base =
+      typename Type::TypeBase<SparseSpMatHandleType, Type, TypeStorage>::Base;
   using Base::Base;
 
   static constexpr StringLiteral name = "gpu.sparse.spmat_handle";
@@ -197,8 +198,8 @@ public:
 class SparseSpGEMMOpHandleType
     : public Type::TypeBase<SparseSpGEMMOpHandleType, Type, TypeStorage> {
 public:
-  using Base =
-      Type::TypeBase<SparseSpGEMMOpHandleType, Type, TypeStorage>::Base;
+  using Base = typename Type::TypeBase<SparseSpGEMMOpHandleType, Type,
+                                       TypeStorage>::Base;
   using Base::Base;
 
   static constexpr StringLiteral name = "gpu.sparse.spgemmop_handle";

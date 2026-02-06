@@ -19,7 +19,6 @@
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/MDBuilder.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/Support/DebugCounter.h"
 #include "llvm/Transforms/Scalar.h"
@@ -27,10 +26,6 @@
 #include <optional>
 
 using namespace llvm;
-
-namespace llvm {
-extern cl::opt<bool> ProfcheckDisableMetadataFixes;
-} // namespace llvm
 
 #define DEBUG_TYPE "partially-inline-libcalls"
 
@@ -99,14 +94,7 @@ static bool optimizeSQRT(CallInst *Call, Function *CalledFunc,
                     : Builder.CreateFCmpOGE(Call->getOperand(0),
                                             ConstantFP::get(Ty, 0.0));
   CurrBBTerm->setCondition(FCmp);
-  if (!ProfcheckDisableMetadataFixes &&
-      CurrBBTerm->getFunction()->getEntryCount()) {
-    // Presume the quick path - where we don't call the library call - is the
-    // frequent one
-    MDBuilder MDB(CurrBBTerm->getContext());
-    CurrBBTerm->setMetadata(LLVMContext::MD_prof,
-                            MDB.createLikelyBranchWeights());
-  }
+
   // Add phi operands.
   Phi->addIncoming(Call, &CurrBB);
   Phi->addIncoming(LibCall, LibCallBB);

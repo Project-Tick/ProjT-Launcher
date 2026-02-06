@@ -21,7 +21,7 @@ using namespace llvm;
 namespace llvm {
 
 TEST(BreadthFristIteratorTest, Basic) {
-  using BFIter = bf_iterator<Graph<4>>;
+  typedef bf_iterator<Graph<4>> BFIter;
 
   Graph<4> G;
   G.AddEdge(0, 1);
@@ -46,7 +46,7 @@ TEST(BreadthFristIteratorTest, Basic) {
 }
 
 TEST(BreadthFristIteratorTest, Cycle) {
-  using BFIter = bf_iterator<Graph<4>>;
+  typedef bf_iterator<Graph<4>> BFIter;
 
   Graph<4> G;
   G.AddEdge(0, 1);
@@ -78,7 +78,7 @@ TEST(BreadthFristIteratorTest, Cycle) {
 
 static_assert(
     std::is_convertible_v<decltype(*std::declval<bf_iterator<Graph<3>>>()),
-                          bf_iterator<Graph<3>>::reference>);
+                          typename bf_iterator<Graph<3>>::reference>);
 
 // bf_iterator should be (at-least) a forward-iterator
 static_assert(std::is_base_of_v<std::forward_iterator_tag,

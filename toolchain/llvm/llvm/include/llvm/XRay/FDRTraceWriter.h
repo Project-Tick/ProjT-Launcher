@@ -12,13 +12,13 @@
 #ifndef LLVM_XRAY_FDRTRACEWRITER_H
 #define LLVM_XRAY_FDRTRACEWRITER_H
 
-#include "llvm/Support/Compiler.h"
-#include "llvm/Support/EndianStream.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/EndianStream.h"
 #include "llvm/XRay/FDRRecords.h"
 #include "llvm/XRay/XRayRecord.h"
 
-namespace llvm::xray {
+namespace llvm {
+namespace xray {
 
 /// The FDRTraceWriter allows us to hand-craft an XRay Flight Data Recorder
 /// (FDR) mode log file. This is used primarily for testing, generating
@@ -26,11 +26,11 @@ namespace llvm::xray {
 /// generate various kinds of execution traces without using the XRay runtime.
 /// Note that this writer does not do any validation, but uses the types of
 /// records defined in the FDRRecords.h file.
-class LLVM_ABI FDRTraceWriter : public RecordVisitor {
+class FDRTraceWriter : public RecordVisitor {
 public:
   // Construct an FDRTraceWriter associated with an output stream.
   explicit FDRTraceWriter(raw_ostream &O, const XRayFileHeader &H);
-  ~FDRTraceWriter() override;
+  ~FDRTraceWriter();
 
   Error visit(BufferExtents &) override;
   Error visit(WallclockRecord &) override;
@@ -49,6 +49,7 @@ private:
   support::endian::Writer OS;
 };
 
-} // namespace llvm::xray
+} // namespace xray
+} // namespace llvm
 
 #endif // LLVM_XRAY_FDRTRACEWRITER_H

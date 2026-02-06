@@ -15,9 +15,10 @@
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Pass/Pass.h"
 
 namespace mlir {
-#define GEN_PASS_DEF_CONVERTLINALGTOSTANDARDPASS
+#define GEN_PASS_DEF_CONVERTLINALGTOSTANDARD
 #include "mlir/Conversion/Passes.h.inc"
 } // namespace mlir
 
@@ -78,8 +79,8 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter) {
   // Insert before module terminator.
   rewriter.setInsertionPoint(module.getBody(),
                              std::prev(module.getBody()->end()));
-  func::FuncOp funcOp = func::FuncOp::create(rewriter, op->getLoc(),
-                                             fnNameAttr.getValue(), libFnType);
+  func::FuncOp funcOp = rewriter.create<func::FuncOp>(
+      op->getLoc(), fnNameAttr.getValue(), libFnType);
   // Insert a function attribute that will trigger the emission of the
   // corresponding `_mlir_ciface_xxx` interface so that external libraries see
   // a normalized ABI. This interface is added during std to llvm conversion.
@@ -100,8 +101,8 @@ createTypeCanonicalizedMemRefOperands(OpBuilder &b, Location loc,
       res.push_back(op);
       continue;
     }
-    Value cast = memref::CastOp::create(
-        b, loc, makeStridedLayoutDynamic(memrefType), op);
+    Value cast =
+        b.create<memref::CastOp>(loc, makeStridedLayoutDynamic(memrefType), op);
     res.push_back(cast);
   }
   return res;
@@ -132,8 +133,7 @@ void mlir::linalg::populateLinalgToStandardConversionPatterns(
 
 namespace {
 struct ConvertLinalgToStandardPass
-    : public impl::ConvertLinalgToStandardPassBase<
-          ConvertLinalgToStandardPass> {
+    : public impl::ConvertLinalgToStandardBase<ConvertLinalgToStandardPass> {
   void runOnOperation() override;
 };
 } // namespace
@@ -144,9 +144,14 @@ void ConvertLinalgToStandardPass::runOnOperation() {
   target.addLegalDialect<affine::AffineDialect, arith::ArithDialect,
                          func::FuncDialect, memref::MemRefDialect,
                          scf::SCFDialect>();
-  target.addLegalOp<ModuleOp>();
+  target.addLegalOp<ModuleOp, func::FuncOp, func::ReturnOp>();
   RewritePatternSet patterns(&getContext());
   populateLinalgToStandardConversionPatterns(patterns);
   if (failed(applyFullConversion(module, target, std::move(patterns))))
     signalPassFailure();
+}
+
+std::unique_ptr<OperationPass<ModuleOp>>
+mlir::createConvertLinalgToStandardPass() {
+  return std::make_unique<ConvertLinalgToStandardPass>();
 }

@@ -10,11 +10,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 #include "mlir/IR/Matchers.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Support/LLVM.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include <optional>
 
 using namespace mlir;
@@ -128,7 +130,7 @@ public:
         return failure();
     }
 
-    SmallVector<int64_t, 4> loopBounds = linalgOp.getStaticLoopRanges();
+    SmallVector<int64_t, 4> loopBounds = linalgOp.computeStaticLoopSizes();
     int64_t numElements = outputType.getNumElements();
 
     // Use APInt/APFloat instead of Attribute here for constructing the output.

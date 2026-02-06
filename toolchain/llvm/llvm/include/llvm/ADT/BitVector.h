@@ -40,20 +40,12 @@ template <typename BitVectorT> class const_set_bits_iterator_impl {
     Current = Parent.find_next(Current);
   }
 
-  void retreat() {
-    if (Current == -1) {
-      Current = Parent.find_last();
-    } else {
-      Current = Parent.find_prev(Current);
-    }
-  }
-
 public:
-  using iterator_category = std::bidirectional_iterator_tag;
-  using difference_type = std::ptrdiff_t;
-  using value_type = unsigned;
-  using pointer = const value_type *;
-  using reference = value_type;
+  using iterator_category = std::forward_iterator_tag;
+  using difference_type   = std::ptrdiff_t;
+  using value_type        = int;
+  using pointer           = value_type*;
+  using reference         = value_type&;
 
   const_set_bits_iterator_impl(const BitVectorT &Parent, int Current)
       : Parent(Parent), Current(Current) {}
@@ -69,17 +61,6 @@ public:
 
   const_set_bits_iterator_impl &operator++() {
     advance();
-    return *this;
-  }
-
-  const_set_bits_iterator_impl operator--(int) {
-    auto Prev = *this;
-    retreat();
-    return Prev;
-  }
-
-  const_set_bits_iterator_impl &operator--() {
-    retreat();
     return *this;
   }
 
@@ -99,7 +80,7 @@ public:
 };
 
 class BitVector {
-  using BitWord = uintptr_t;
+  typedef uintptr_t BitWord;
 
   enum { BITWORD_SIZE = (unsigned)sizeof(BitWord) * CHAR_BIT };
 
@@ -147,8 +128,8 @@ public:
     }
   };
 
-  using const_set_bits_iterator = const_set_bits_iterator_impl<BitVector>;
-  using set_iterator = const_set_bits_iterator;
+  typedef const_set_bits_iterator_impl<BitVector> const_set_bits_iterator;
+  typedef const_set_bits_iterator set_iterator;
 
   const_set_bits_iterator set_bits_begin() const {
     return const_set_bits_iterator(*this);
@@ -346,7 +327,7 @@ public:
 
   /// find_prev_unset - Returns the index of the first unset bit that precedes
   /// the bit at \p PriorTo.  Returns -1 if all previous bits are set.
-  int find_prev_unset(unsigned PriorTo) const {
+  int find_prev_unset(unsigned PriorTo) {
     return find_last_unset_in(0, PriorTo);
   }
 
@@ -550,7 +531,7 @@ public:
     return *this;
   }
 
-  /// test - Check if (This - RHS) is non-zero.
+  /// test - Check if (This - RHS) is zero.
   /// This is the same as reset(RHS) and any().
   bool test(const BitVector &RHS) const {
     unsigned ThisWords = Bits.size();
@@ -567,13 +548,13 @@ public:
     return false;
   }
 
-  /// subsetOf - Check if This is a subset of RHS.
-  bool subsetOf(const BitVector &RHS) const { return !test(RHS); }
-
   template <class F, class... ArgTys>
   static BitVector &apply(F &&f, BitVector &Out, BitVector const &Arg,
                           ArgTys const &...Args) {
-    assert(((Arg.size() == Args.size()) && ...) && "consistent sizes");
+    assert(llvm::all_of(
+               std::initializer_list<unsigned>{Args.size()...},
+               [&Arg](auto const &BV) { return Arg.size() == BV; }) &&
+           "consistent sizes");
     Out.resize(Arg.size());
     for (size_type I = 0, E = Arg.Bits.size(); I != E; ++I)
       Out.Bits[I] = f(Arg.Bits[I], Args.Bits[I]...);
@@ -788,6 +769,11 @@ private:
     std::fill(Bits.begin() + NumWords - Count, Bits.begin() + NumWords, 0);
   }
 
+  int next_unset_in_word(int WordIndex, BitWord Word) const {
+    unsigned Result = WordIndex * BITWORD_SIZE + llvm::countr_one(Word);
+    return Result < size() ? Result : -1;
+  }
+
   unsigned NumBitWords(unsigned S) const {
     return (S + BITWORD_SIZE-1) / BITWORD_SIZE;
   }
@@ -809,7 +795,9 @@ private:
     set_unused_bits(false);
   }
 
-  void init_words(bool t) { llvm::fill(Bits, 0 - (BitWord)t); }
+  void init_words(bool t) {
+    std::fill(Bits.begin(), Bits.end(), 0 - (BitWord)t);
+  }
 
   template<bool AddBits, bool InvertMask>
   void applyMask(const uint32_t *Mask, unsigned MaskWords) {

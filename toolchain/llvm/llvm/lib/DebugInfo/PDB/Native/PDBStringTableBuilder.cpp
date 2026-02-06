@@ -15,6 +15,8 @@
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/TimeProfiler.h"
 
+#include <map>
+
 using namespace llvm;
 using namespace llvm::msf;
 using namespace llvm::support;

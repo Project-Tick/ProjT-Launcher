@@ -143,8 +143,8 @@ void VarInfo::setNum(Var::Num n) {
 
 /// Helper function for `assertUsageConsistency` to better handle SMLoc
 /// mismatches.
-[[maybe_unused]] static llvm::SMLoc minSMLoc(AsmParser &parser, llvm::SMLoc sm1,
-                                             llvm::SMLoc sm2) {
+LLVM_ATTRIBUTE_UNUSED static llvm::SMLoc
+minSMLoc(AsmParser &parser, llvm::SMLoc sm1, llvm::SMLoc sm2) {
   const auto loc1 = dyn_cast<FileLineColLoc>(parser.getEncodedSourceLoc(sm1));
   assert(loc1 && "Could not get `FileLineColLoc` for first `SMLoc`");
   const auto loc2 = dyn_cast<FileLineColLoc>(parser.getEncodedSourceLoc(sm2));
@@ -156,14 +156,13 @@ void VarInfo::setNum(Var::Num n) {
   return pair1 <= pair2 ? sm1 : sm2;
 }
 
-static bool isInternalConsistent(VarEnv const &env, VarInfo::ID id,
-                                 StringRef name) {
+bool isInternalConsistent(VarEnv const &env, VarInfo::ID id, StringRef name) {
   const auto &var = env.access(id);
   return (var.getName() == name && var.getID() == id);
 }
 
-static bool isUsageConsistent(VarEnv const &env, VarInfo::ID id,
-                              llvm::SMLoc loc, VarKind vk) {
+bool isUsageConsistent(VarEnv const &env, VarInfo::ID id, llvm::SMLoc loc,
+                       VarKind vk) {
   const auto &var = env.access(id);
   return var.getKind() == vk;
 }

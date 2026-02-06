@@ -25,14 +25,15 @@
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
+_LIBCPP_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _CharT = char, class _Traits = char_traits<_CharT>, class _Distance = ptrdiff_t>
-class istream_iterator
-    : public __iterator_base<istream_iterator<_Tp, _CharT, _Traits, _Distance>,
-                             input_iterator_tag,
-                             _Tp,
-                             _Distance,
-                             const _Tp*,
-                             const _Tp&> {
+class _LIBCPP_TEMPLATE_VIS istream_iterator
+#if _LIBCPP_STD_VER <= 14 || !defined(_LIBCPP_ABI_NO_ITERATOR_BASES)
+    : public iterator<input_iterator_tag, _Tp, _Distance, const _Tp*, const _Tp&>
+#endif
+{
+  _LIBCPP_SUPPRESS_DEPRECATED_POP
+
 public:
   typedef input_iterator_tag iterator_category;
   typedef _Tp value_type;
@@ -56,9 +57,6 @@ public:
     if (!(*__in_stream_ >> __value_))
       __in_stream_ = nullptr;
   }
-
-  // LWG3600 Changed the wording of the copy constructor. In libc++ this constructor
-  // can still be trivial after this change.
 
   _LIBCPP_HIDE_FROM_ABI const _Tp& operator*() const { return __value_; }
   _LIBCPP_HIDE_FROM_ABI const _Tp* operator->() const { return std::addressof((operator*())); }

@@ -11,6 +11,7 @@
 ; ----------------------------------------------------------------------
 ; Fully unaligned cases
 
+
 define void @unaligned_memcpy1(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-BOTH-LABEL: unaligned_memcpy1:
 ; RV32-BOTH:       # %bb.0: # %entry
@@ -644,6 +645,7 @@ entry:
   ret void
 }
 
+
 ; ----------------------------------------------------------------------
 ; Fully aligned cases
 
@@ -1029,6 +1031,7 @@ entry:
 ; ------------------------------------------------------------------------
 ; A few partially aligned cases
 
+
 define void @memcpy16_align4(ptr nocapture %dest, ptr nocapture %src) nounwind {
 ; RV32-LABEL: memcpy16_align4:
 ; RV32:       # %bb.0: # %entry
@@ -1109,3 +1112,6 @@ entry:
   ret i32 0
 }
 
+
+declare void @llvm.memcpy.inline.p0.p0.i32(ptr nocapture, ptr nocapture, i32, i1) nounwind
+declare void @llvm.memcpy.inline.p0.p0.i64(ptr nocapture, ptr nocapture, i64, i1) nounwind

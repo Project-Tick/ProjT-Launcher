@@ -1,6 +1,6 @@
-#include "attach.h"
+#include <stdio.h>
+
 #include <chrono>
-#include <cstdio>
 #include <thread>
 
 volatile int g_val = 12345;

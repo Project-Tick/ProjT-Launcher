@@ -12,6 +12,7 @@
 
 #include "clang/StaticAnalyzer/Core/PathSensitive/DynamicExtent.h"
 #include "clang/AST/Expr.h"
+#include "clang/Basic/LLVM.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/MemRegion.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/SValBuilder.h"
@@ -126,13 +127,6 @@ ProgramStateRef setDynamicExtent(ProgramStateRef State, const MemRegion *MR,
     return State;
 
   return State->set<DynamicExtentMap>(MR->StripCasts(), Size);
-}
-
-void markAllDynamicExtentLive(ProgramStateRef State, SymbolReaper &SymReaper) {
-  for (const auto &I : State->get<DynamicExtentMap>())
-    if (SymbolRef Sym = I.second.getAsSymbol())
-      if (SymReaper.isLiveRegion(I.first))
-        SymReaper.markLive(Sym);
 }
 
 } // namespace ento

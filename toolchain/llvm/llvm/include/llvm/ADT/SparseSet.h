@@ -20,7 +20,7 @@
 #ifndef LLVM_ADT_SPARSESET_H
 #define LLVM_ADT_SPARSESET_H
 
-#include "llvm/ADT/STLForwardCompat.h"
+#include "llvm/ADT/identity.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/AllocatorBase.h"
 #include <cassert>
@@ -53,23 +53,30 @@ namespace llvm {
 ///
 /// For best results, ValueT should not require a destructor.
 ///
-template <typename ValueT> struct SparseSetValTraits {
+template<typename ValueT>
+struct SparseSetValTraits {
   static unsigned getValIndex(const ValueT &Val) {
     return Val.getSparseSetIndex();
   }
 };
 
-/// SparseSetValFunctor - Helper class for getting a value's index.
+/// SparseSetValFunctor - Helper class for selecting SparseSetValTraits. The
+/// generic implementation handles ValueT classes which either provide
+/// getSparseSetIndex() or specialize SparseSetValTraits<>.
 ///
-/// In the generic case, this is done via SparseSetValTraits. When the value
-/// type is the same as the key type, the KeyFunctor is used directly.
-template <typename KeyT, typename ValueT, typename KeyFunctorT>
+template<typename KeyT, typename ValueT, typename KeyFunctorT>
 struct SparseSetValFunctor {
   unsigned operator()(const ValueT &Val) const {
-    if constexpr (std::is_same_v<KeyT, ValueT>)
-      return KeyFunctorT()(Val);
-    else
-      return SparseSetValTraits<ValueT>::getValIndex(Val);
+    return SparseSetValTraits<ValueT>::getValIndex(Val);
+  }
+};
+
+/// SparseSetValFunctor<KeyT, KeyT> - Helper class for the common case of
+/// identity key/value sets.
+template<typename KeyT, typename KeyFunctorT>
+struct SparseSetValFunctor<KeyT, KeyT, KeyFunctorT> {
+  unsigned operator()(const KeyT &Key) const {
+    return KeyFunctorT()(Key);
   }
 };
 
@@ -108,16 +115,17 @@ struct SparseSetValFunctor {
 /// uint16_t or uint32_t.
 ///
 /// @tparam ValueT      The type of objects in the set.
-/// @tparam KeyT        The type of the key, which is passed to the key functor.
 /// @tparam KeyFunctorT A functor that computes an unsigned index from KeyT.
 /// @tparam SparseT     An unsigned integer type. See above.
 ///
-template <typename ValueT, typename KeyT = unsigned,
-          typename KeyFunctorT = identity, typename SparseT = uint8_t>
+template<typename ValueT,
+         typename KeyFunctorT = identity<unsigned>,
+         typename SparseT = uint8_t>
 class SparseSet {
   static_assert(std::is_unsigned_v<SparseT>,
                 "SparseT must be an unsigned integer type");
 
+  using KeyT = typename KeyFunctorT::argument_type;
   using DenseT = SmallVector<ValueT, 8>;
   using size_type = unsigned;
   DenseT Dense;
@@ -154,7 +162,7 @@ public:
     // seem like a likely use case, so we can add that code when we need it.
     assert(empty() && "Can only resize universe on an empty map");
     // Hysteresis prevents needless reallocations.
-    if (U >= Universe / 4 && U <= Universe)
+    if (U >= Universe/4 && U <= Universe)
       return;
     // The Sparse array doesn't actually need to be initialized, so malloc
     // would be enough here, but that will cause tools like valgrind to
@@ -167,23 +175,23 @@ public:
   using iterator = typename DenseT::iterator;
   using const_iterator = typename DenseT::const_iterator;
 
-  [[nodiscard]] const_iterator begin() const { return Dense.begin(); }
-  [[nodiscard]] const_iterator end() const { return Dense.end(); }
-  [[nodiscard]] iterator begin() { return Dense.begin(); }
-  [[nodiscard]] iterator end() { return Dense.end(); }
+  const_iterator begin() const { return Dense.begin(); }
+  const_iterator end() const { return Dense.end(); }
+  iterator begin() { return Dense.begin(); }
+  iterator end() { return Dense.end(); }
 
   /// empty - Returns true if the set is empty.
   ///
   /// This is not the same as BitVector::empty().
   ///
-  [[nodiscard]] bool empty() const { return Dense.empty(); }
+  bool empty() const { return Dense.empty(); }
 
   /// size - Returns the number of elements in the set.
   ///
   /// This is not the same as BitVector::size() which returns the size of the
   /// universe.
   ///
-  [[nodiscard]] size_type size() const { return Dense.size(); }
+  size_type size() const { return Dense.size(); }
 
   /// clear - Clears the set.  This is a very fast constant time operation.
   ///
@@ -218,27 +226,23 @@ public:
   /// @param   Key A valid key to find.
   /// @returns An iterator to the element identified by key, or end().
   ///
-  [[nodiscard]] iterator find(const KeyT &Key) {
+  iterator find(const KeyT &Key) {
     return findIndex(KeyIndexOf(Key));
   }
 
-  [[nodiscard]] const_iterator find(const KeyT &Key) const {
-    return const_cast<SparseSet *>(this)->findIndex(KeyIndexOf(Key));
+  const_iterator find(const KeyT &Key) const {
+    return const_cast<SparseSet*>(this)->findIndex(KeyIndexOf(Key));
   }
 
   /// Check if the set contains the given \c Key.
   ///
   /// @param Key A valid key to find.
-  [[nodiscard]] bool contains(const KeyT &Key) const {
-    return find(Key) != end();
-  }
+  bool contains(const KeyT &Key) const { return find(Key) != end(); }
 
   /// count - Returns 1 if this set contains an element identified by Key,
   /// 0 otherwise.
   ///
-  [[nodiscard]] size_type count(const KeyT &Key) const {
-    return contains(Key) ? 1 : 0;
-  }
+  size_type count(const KeyT &Key) const { return contains(Key) ? 1 : 0; }
 
   /// insert - Attempts to insert a new element.
   ///
@@ -254,16 +258,18 @@ public:
     unsigned Idx = ValIndexOf(Val);
     iterator I = findIndex(Idx);
     if (I != end())
-      return {I, false};
+      return std::make_pair(I, false);
     Sparse[Idx] = size();
     Dense.push_back(Val);
-    return {end() - 1, true};
+    return std::make_pair(end() - 1, true);
   }
 
   /// array subscript - If an element already exists with this key, return it.
   /// Otherwise, automatically construct a new value from Key, insert it,
   /// and return the newly inserted element.
-  ValueT &operator[](const KeyT &Key) { return *insert(ValueT(Key)).first; }
+  ValueT &operator[](const KeyT &Key) {
+    return *insert(ValueT(Key)).first;
+  }
 
   ValueT pop_back_val() {
     // Sparse does not need to be cleared, see find().
@@ -312,6 +318,6 @@ public:
   }
 };
 
-} // namespace llvm
+} // end namespace llvm
 
 #endif // LLVM_ADT_SPARSESET_H

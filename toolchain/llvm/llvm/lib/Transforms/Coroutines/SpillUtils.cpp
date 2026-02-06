@@ -16,15 +16,19 @@
 #include "llvm/IR/InstIterator.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
-using namespace llvm;
-using namespace llvm::coro;
+namespace llvm {
+
+namespace coro {
+
+namespace {
 
 typedef SmallPtrSet<BasicBlock *, 8> VisitedBlocksSet;
 
-static bool isNonSpilledIntrinsic(Instruction &I) {
-  // Structural coroutine intrinsics that should not be spilled into the
-  // coroutine frame.
-  return isa<CoroIdInst>(&I) || isa<CoroSaveInst>(&I);
+// Check for structural coroutine intrinsics that should not be spilled into
+// the coroutine frame.
+static bool isCoroutineStructureIntrinsic(Instruction &I) {
+  return isa<CoroIdInst>(&I) || isa<CoroSaveInst>(&I) ||
+         isa<CoroSuspendInst>(&I);
 }
 
 /// Does control flow starting at the given block ever reach a suspend
@@ -68,7 +72,7 @@ static bool isLocalAlloca(CoroAllocaAllocInst *AI) {
 /// This happens during the all-instructions iteration, so it must not
 /// delete the call.
 static Instruction *
-lowerNonLocalAlloca(CoroAllocaAllocInst *AI, const Shape &Shape,
+lowerNonLocalAlloca(CoroAllocaAllocInst *AI, const coro::Shape &Shape,
                     SmallVectorImpl<Instruction *> &DeadInsts) {
   IRBuilder<> Builder(AI);
   auto Alloc = Shape.emitAlloc(Builder, AI->getSize(), nullptr);
@@ -180,16 +184,6 @@ struct AllocaUseVisitor : PtrUseVisitor<AllocaUseVisitor> {
     handleAlias(I);
   }
 
-  void visitInsertElementInst(InsertElementInst &I) {
-    enqueueUsers(I);
-    handleAlias(I);
-  }
-
-  void visitInsertValueInst(InsertValueInst &I) {
-    enqueueUsers(I);
-    handleAlias(I);
-  }
-
   void visitStoreInst(StoreInst &SI) {
     // Regardless whether the alias of the alloca is the value operand or the
     // pointer operand, we need to assume the alloca is been written.
@@ -232,8 +226,9 @@ struct AllocaUseVisitor : PtrUseVisitor<AllocaUseVisitor> {
           if (auto *S = dyn_cast<StoreInst>(U))
             if (S->getPointerOperand() == I)
               continue;
-          if (isa<LifetimeIntrinsic>(U))
-            continue;
+          if (auto *II = dyn_cast<IntrinsicInst>(U))
+            if (II->isLifetimeStartOrEnd())
+              continue;
           // BitCastInst creats aliases of the memory location being stored
           // into.
           if (auto *BI = dyn_cast<BitCastInst>(U)) {
@@ -271,6 +266,11 @@ struct AllocaUseVisitor : PtrUseVisitor<AllocaUseVisitor> {
   }
 
   void visitIntrinsicInst(IntrinsicInst &II) {
+    // When we found the lifetime markers refers to a
+    // subrange of the original alloca, ignore the lifetime
+    // markers to avoid misleading the analysis.
+    if (!IsOffsetKnown || !Offset.isZero())
+      return Base::visitIntrinsicInst(II);
     switch (II.getIntrinsicID()) {
     default:
       return Base::visitIntrinsicInst(II);
@@ -447,8 +447,10 @@ static void collectFrameAlloca(AllocaInst *AI, const coro::Shape &Shape,
                        Visitor.getMayWriteBeforeCoroBegin());
 }
 
-void coro::collectSpillsFromArgs(SpillInfo &Spills, Function &F,
-                                 const SuspendCrossingInfo &Checker) {
+} // namespace
+
+void collectSpillsFromArgs(SpillInfo &Spills, Function &F,
+                           const SuspendCrossingInfo &Checker) {
   // Collect the spills for arguments and other not-materializable values.
   for (Argument &A : F.args())
     for (User *U : A.users())
@@ -456,7 +458,7 @@ void coro::collectSpillsFromArgs(SpillInfo &Spills, Function &F,
         Spills[&A].push_back(cast<Instruction>(U));
 }
 
-void coro::collectSpillsAndAllocasFromInsts(
+void collectSpillsAndAllocasFromInsts(
     SpillInfo &Spills, SmallVector<AllocaInfo, 8> &Allocas,
     SmallVector<Instruction *, 4> &DeadInstructions,
     SmallVector<CoroAllocaAllocInst *, 4> &LocalAllocas, Function &F,
@@ -466,7 +468,7 @@ void coro::collectSpillsAndAllocasFromInsts(
   for (Instruction &I : instructions(F)) {
     // Values returned from coroutine structure intrinsics should not be part
     // of the Coroutine Frame.
-    if (isNonSpilledIntrinsic(I) || &I == Shape.CoroBegin)
+    if (isCoroutineStructureIntrinsic(I) || &I == Shape.CoroBegin)
       continue;
 
     // Handle alloca.alloc specially here.
@@ -511,16 +513,20 @@ void coro::collectSpillsAndAllocasFromInsts(
   }
 }
 
-void coro::collectSpillsFromDbgInfo(SpillInfo &Spills, Function &F,
-                                    const SuspendCrossingInfo &Checker) {
+void collectSpillsFromDbgInfo(SpillInfo &Spills, Function &F,
+                              const SuspendCrossingInfo &Checker) {
   // We don't want the layout of coroutine frame to be affected
-  // by debug information. So we only choose to salvage dbg.values for
+  // by debug information. So we only choose to salvage DbgValueInst for
   // whose value is already in the frame.
   // We would handle the dbg.values for allocas specially
   for (auto &Iter : Spills) {
     auto *V = Iter.first;
+    SmallVector<DbgValueInst *, 16> DVIs;
     SmallVector<DbgVariableRecord *, 16> DVRs;
-    findDbgValues(V, DVRs);
+    findDbgValues(DVIs, V, &DVRs);
+    for (DbgValueInst *DVI : DVIs)
+      if (Checker.isDefinitionAcrossSuspend(*V, DVI))
+        Spills[V].push_back(DVI);
     // Add the instructions which carry debug info that is in the frame.
     for (DbgVariableRecord *DVR : DVRs)
       if (Checker.isDefinitionAcrossSuspend(*V, DVR->Marker->MarkedInstr))
@@ -530,9 +536,10 @@ void coro::collectSpillsFromDbgInfo(SpillInfo &Spills, Function &F,
 
 /// Async and Retcon{Once} conventions assume that all spill uses can be sunk
 /// after the coro.begin intrinsic.
-void coro::sinkSpillUsesAfterCoroBegin(
-    const DominatorTree &Dom, CoroBeginInst *CoroBegin, coro::SpillInfo &Spills,
-    SmallVectorImpl<coro::AllocaInfo> &Allocas) {
+void sinkSpillUsesAfterCoroBegin(const DominatorTree &Dom,
+                                 CoroBeginInst *CoroBegin,
+                                 coro::SpillInfo &Spills,
+                                 SmallVectorImpl<coro::AllocaInfo> &Allocas) {
   SmallSetVector<Instruction *, 32> ToMove;
   SmallVector<Instruction *, 32> Worklist;
 
@@ -547,10 +554,10 @@ void coro::sinkSpillUsesAfterCoroBegin(
         Worklist.push_back(Inst);
     }
   };
-  for (auto &I : Spills)
-    collectUsers(I.first);
-  for (auto &I : Allocas)
-    collectUsers(I.Alloca);
+  std::for_each(Spills.begin(), Spills.end(),
+                [&](auto &I) { collectUsers(I.first); });
+  std::for_each(Allocas.begin(), Allocas.end(),
+                [&](auto &I) { collectUsers(I.Alloca); });
 
   // Recursively collect users before coro.begin.
   while (!Worklist.empty()) {
@@ -576,18 +583,17 @@ void coro::sinkSpillUsesAfterCoroBegin(
     Inst->moveBefore(InsertPt->getIterator());
 }
 
-BasicBlock::iterator coro::getSpillInsertionPt(const coro::Shape &Shape,
-                                               Value *Def,
-                                               const DominatorTree &DT) {
+BasicBlock::iterator getSpillInsertionPt(const coro::Shape &Shape, Value *Def,
+                                         const DominatorTree &DT) {
   BasicBlock::iterator InsertPt;
   if (auto *Arg = dyn_cast<Argument>(Def)) {
     // For arguments, we will place the store instruction right after
     // the coroutine frame pointer instruction, i.e. coro.begin.
     InsertPt = Shape.getInsertPtAfterFramePtr();
 
-    // If we're spilling an Argument, make sure we clear 'captures'
+    // If we're spilling an Argument, make sure we clear 'nocapture'
     // from the coroutine function.
-    Arg->getParent()->removeParamAttr(Arg->getArgNo(), Attribute::Captures);
+    Arg->getParent()->removeParamAttr(Arg->getArgNo(), Attribute::NoCapture);
   } else if (auto *CSI = dyn_cast<AnyCoroSuspendInst>(Def)) {
     // Don't spill immediately after a suspend; splitting assumes
     // that the suspend will be followed by a branch.
@@ -620,3 +626,7 @@ BasicBlock::iterator coro::getSpillInsertionPt(const coro::Shape &Shape,
 
   return InsertPt;
 }
+
+} // End namespace coro.
+
+} // End namespace llvm.

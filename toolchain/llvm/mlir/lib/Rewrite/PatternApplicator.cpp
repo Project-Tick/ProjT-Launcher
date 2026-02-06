@@ -13,11 +13,7 @@
 
 #include "mlir/Rewrite/PatternApplicator.h"
 #include "ByteCode.h"
-#include "llvm/Support/DebugLog.h"
-
-#ifndef NDEBUG
-#include "llvm/ADT/ScopeExit.h"
-#endif
+#include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "pattern-application"
 
@@ -37,9 +33,9 @@ PatternApplicator::~PatternApplicator() = default;
 #ifndef NDEBUG
 /// Log a message for a pattern that is impossible to match.
 static void logImpossibleToMatch(const Pattern &pattern) {
-  LDBG() << "Ignoring pattern '" << pattern.getRootKind()
-         << "' because it is impossible to match or cannot lead "
-            "to legal IR (by cost model)";
+  llvm::dbgs() << "Ignoring pattern '" << pattern.getRootKind()
+               << "' because it is impossible to match or cannot lead "
+                  "to legal IR (by cost model)\n";
 }
 
 /// Log IR after pattern application.
@@ -51,7 +47,9 @@ static Operation *getDumpRootOp(Operation *op) {
   return op;
 }
 static void logSucessfulPatternApplication(Operation *op) {
-  LDBG(2) << "// *** IR Dump After Pattern Application ***\n" << *op << "\n";
+  llvm::dbgs() << "// *** IR Dump After Pattern Application ***\n";
+  op->dump();
+  llvm::dbgs() << "\n\n";
 }
 #endif
 
@@ -105,7 +103,7 @@ void PatternApplicator::applyCostModel(CostModel model) {
 
     // Sort patterns with highest benefit first, and remove those that are
     // impossible to match.
-    llvm::stable_sort(list, cmp);
+    std::stable_sort(list.begin(), list.end(), cmp);
     while (!list.empty() && benefits[list.back()].isImpossibleToMatch()) {
       LLVM_DEBUG(logImpossibleToMatch(*list.back()));
       list.pop_back();
@@ -206,23 +204,16 @@ LogicalResult PatternApplicator::matchAndRewrite(
             result =
                 bytecode->rewrite(rewriter, *pdlMatch, *mutableByteCodeState);
           } else {
-            LDBG() << "Trying to match \"" << bestPattern->getDebugName()
-                   << "\"";
+            LLVM_DEBUG(llvm::dbgs() << "Trying to match \""
+                                    << bestPattern->getDebugName() << "\"\n");
+
             const auto *pattern =
                 static_cast<const RewritePattern *>(bestPattern);
-
-#ifndef NDEBUG
-            OpBuilder::Listener *oldListener = rewriter.getListener();
-            auto loggingListener =
-                std::make_unique<RewriterBase::PatternLoggingListener>(
-                    oldListener, pattern->getDebugName());
-            rewriter.setListener(loggingListener.get());
-            llvm::scope_exit resetListenerCallback(
-                [&] { rewriter.setListener(oldListener); });
-#endif
             result = pattern->matchAndRewrite(op, rewriter);
-            LDBG() << " -> matchAndRewrite "
-                   << (succeeded(result) ? "successful" : "failed");
+
+            LLVM_DEBUG(llvm::dbgs()
+                       << "\"" << bestPattern->getDebugName() << "\" result "
+                       << succeeded(result) << "\n");
           }
 
           // Process the result of the pattern application.

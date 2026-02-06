@@ -1,1 +1,1 @@
-void func_h_inc(void);
+void func_h_inc();

@@ -1,7 +1,5 @@
 set(LLVM_LINK_COMPONENTS
-  Object
   ObjectYAML
-  ProfileData
   Support
   )
 

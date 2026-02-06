@@ -29,7 +29,8 @@ _LIBCPP_PUSH_MACROS
 _LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _ForwardIterator>
-_LIBCPP_HIDE_FROM_ABI _ForwardIterator __rotate_left(_ForwardIterator __first, _ForwardIterator __last) {
+_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _ForwardIterator
+__rotate_left(_ForwardIterator __first, _ForwardIterator __last) {
   typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
   using _Ops = _IterOps<_AlgPolicy>;
 
@@ -40,7 +41,7 @@ _LIBCPP_HIDE_FROM_ABI _ForwardIterator __rotate_left(_ForwardIterator __first, _
 }
 
 template <class _AlgPolicy, class _BidirectionalIterator>
-_LIBCPP_HIDE_FROM_ABI _BidirectionalIterator
+_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _BidirectionalIterator
 __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last) {
   typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
   using _Ops = _IterOps<_AlgPolicy>;
@@ -53,7 +54,7 @@ __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last) {
 }
 
 template <class _AlgPolicy, class _ForwardIterator>
-_LIBCPP_HIDE_FROM_ABI _ForwardIterator
+_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX17 _ForwardIterator
 __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last) {
   _ForwardIterator __i = __middle;
   while (true) {
@@ -82,7 +83,7 @@ __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIt
 }
 
 template <typename _Integral>
-inline _LIBCPP_HIDE_FROM_ABI _Integral __algo_gcd(_Integral __x, _Integral __y) {
+inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX17 _Integral __algo_gcd(_Integral __x, _Integral __y) {
   do {
     _Integral __t = __x % __y;
     __x           = __y;
@@ -92,7 +93,7 @@ inline _LIBCPP_HIDE_FROM_ABI _Integral __algo_gcd(_Integral __x, _Integral __y) 
 }
 
 template <class _AlgPolicy, typename _RandomAccessIterator>
-_LIBCPP_HIDE_FROM_ABI _RandomAccessIterator
+_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX17 _RandomAccessIterator
 __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last) {
   typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
   typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
@@ -124,7 +125,7 @@ __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Ran
 }
 
 template <class _AlgPolicy, class _ForwardIterator>
-inline _LIBCPP_HIDE_FROM_ABI _ForwardIterator
+inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _ForwardIterator
 __rotate_impl(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, std::forward_iterator_tag) {
   typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
   if (is_trivially_move_assignable<value_type>::value) {
@@ -135,7 +136,7 @@ __rotate_impl(_ForwardIterator __first, _ForwardIterator __middle, _ForwardItera
 }
 
 template <class _AlgPolicy, class _BidirectionalIterator>
-inline _LIBCPP_HIDE_FROM_ABI _BidirectionalIterator __rotate_impl(
+inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _BidirectionalIterator __rotate_impl(
     _BidirectionalIterator __first,
     _BidirectionalIterator __middle,
     _BidirectionalIterator __last,
@@ -151,7 +152,7 @@ inline _LIBCPP_HIDE_FROM_ABI _BidirectionalIterator __rotate_impl(
 }
 
 template <class _AlgPolicy, class _RandomAccessIterator>
-inline _LIBCPP_HIDE_FROM_ABI _RandomAccessIterator __rotate_impl(
+inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _RandomAccessIterator __rotate_impl(
     _RandomAccessIterator __first,
     _RandomAccessIterator __middle,
     _RandomAccessIterator __last,
@@ -168,7 +169,8 @@ inline _LIBCPP_HIDE_FROM_ABI _RandomAccessIterator __rotate_impl(
 }
 
 template <class _AlgPolicy, class _Iterator, class _Sentinel>
-_LIBCPP_HIDE_FROM_ABI pair<_Iterator, _Iterator> __rotate(_Iterator __first, _Iterator __middle, _Sentinel __last) {
+_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 pair<_Iterator, _Iterator>
+__rotate(_Iterator __first, _Iterator __middle, _Sentinel __last) {
   using _Ret            = pair<_Iterator, _Iterator>;
   _Iterator __last_iter = _IterOps<_AlgPolicy>::next(__middle, __last);
 
@@ -184,7 +186,7 @@ _LIBCPP_HIDE_FROM_ABI pair<_Iterator, _Iterator> __rotate(_Iterator __first, _It
 }
 
 template <class _ForwardIterator>
-inline _LIBCPP_HIDE_FROM_ABI _ForwardIterator
+inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 _ForwardIterator
 rotate(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last) {
   return std::__rotate<_ClassicAlgPolicy>(std::move(__first), std::move(__middle), std::move(__last)).first;
 }

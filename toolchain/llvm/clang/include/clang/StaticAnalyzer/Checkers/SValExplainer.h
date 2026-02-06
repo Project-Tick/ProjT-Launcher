@@ -19,7 +19,6 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/SValVisitor.h"
 #include "llvm/ADT/StringExtras.h"
-#include "llvm/Support/raw_ostream.h"
 
 namespace clang {
 
@@ -28,14 +27,6 @@ namespace ento {
 class SValExplainer : public FullSValVisitor<SValExplainer, std::string> {
 private:
   ASTContext &ACtx;
-  ProgramStateRef State;
-
-  std::string printCFGElementRef(ConstCFGElementRef Elem) {
-    std::string Str;
-    llvm::raw_string_ostream OS(Str);
-    Elem->dumpToStream(OS, /*TerminateWithNewLine=*/false);
-    return Str;
-  }
 
   std::string printStmt(const Stmt *S) {
     std::string Str;
@@ -64,8 +55,7 @@ private:
   }
 
 public:
-  SValExplainer(ASTContext &Ctx, ProgramStateRef State)
-      : ACtx(Ctx), State(State) {}
+  SValExplainer(ASTContext &Ctx) : ACtx(Ctx) {}
 
   std::string VisitUnknownVal(UnknownVal V) {
     return "unknown value";
@@ -122,8 +112,7 @@ public:
 
   std::string VisitSymbolConjured(const SymbolConjured *S) {
     return "symbol of type '" + S->getType().getAsString() +
-           "' conjured at CFG element '" +
-           printCFGElementRef(S->getCFGElementRef()) + "'";
+           "' conjured at statement '" + printStmt(S->getStmt()) + "'";
   }
 
   std::string VisitSymbolDerived(const SymbolDerived *S) {
@@ -177,7 +166,7 @@ public:
             .getCanonicalType()->getAs<ObjCObjectPointerType>())
       return "object at " + Visit(R->getSymbol());
     // Other heap-based symbolic regions are also special.
-    if (R->hasMemorySpace<HeapSpaceRegion>(State))
+    if (isa<HeapSpaceRegion>(R->getMemorySpace()))
       return "heap segment that starts at " + Visit(R->getSymbol());
     return "pointee of " + Visit(R->getSymbol());
   }

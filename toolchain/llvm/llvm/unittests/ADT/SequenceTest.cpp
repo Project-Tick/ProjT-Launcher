@@ -11,9 +11,8 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-#include <iterator>
-#include <limits>
-#include <vector>
+#include <algorithm>
+#include <numeric>
 
 using namespace llvm;
 

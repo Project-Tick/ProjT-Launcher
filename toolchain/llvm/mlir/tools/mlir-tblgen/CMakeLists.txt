@@ -12,7 +12,6 @@ add_tablegen(mlir-tblgen MLIR
   AttrOrTypeFormatGen.cpp
   BytecodeDialectGen.cpp
   DialectGen.cpp
-  DialectInterfacesGen.cpp
   DirectiveCommonGen.cpp
   EnumsGen.cpp
   EnumPythonBindingGen.cpp
@@ -33,8 +32,6 @@ add_tablegen(mlir-tblgen MLIR
   PassGen.cpp
   RewriterGen.cpp
   SPIRVUtilsGen.cpp
-  TosaUtilsGen.cpp
-  CppGenUtilities.cpp
   )
 
 target_link_libraries(mlir-tblgen

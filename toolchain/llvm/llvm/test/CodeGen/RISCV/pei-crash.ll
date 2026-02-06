@@ -23,4 +23,6 @@ entry:
   ret i64 %0
 }
 
+declare i64 @llvm.readcyclecounter() #1
+
 attributes #0 = { noinline nounwind optnone }

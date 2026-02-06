@@ -11,7 +11,6 @@
 
 #include "lldb/Utility/Checksum.h"
 #include "lldb/Utility/FileSpec.h"
-#include "lldb/Utility/NonNullSharedPtr.h"
 
 namespace lldb_private {
 
@@ -76,8 +75,6 @@ protected:
   const FileSpec m_file_spec;
   const Checksum m_checksum;
 };
-
-typedef NonNullSharedPtr<lldb_private::SupportFile> SupportFileNSP;
 
 } // namespace lldb_private
 

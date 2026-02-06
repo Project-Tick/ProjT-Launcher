@@ -24,7 +24,7 @@ using namespace dxil;
 
 static ModuleMetadataInfo collectMetadataInfo(Module &M) {
   ModuleMetadataInfo MMDAI;
-  const Triple &TT = M.getTargetTriple();
+  Triple TT(Triple(M.getTargetTriple()));
   MMDAI.DXILVersion = TT.getDXILVersion();
   MMDAI.ShaderModelVersion = TT.getOSVersion();
   MMDAI.ShaderProfile = TT.getEnvironment();
@@ -65,22 +65,6 @@ static ModuleMetadataInfo collectMetadataInfo(Module &M) {
       assert(Success && "Failed to parse Y component of numthreads");
       Success = llvm::to_integer(NumThreadsVec[2], EFP.NumThreadsZ, 10);
       assert(Success && "Failed to parse Z component of numthreads");
-    }
-    // Get wavesize attribute value, if one exists
-    StringRef WaveSizeStr =
-        F.getFnAttribute("hlsl.wavesize").getValueAsString();
-    if (!WaveSizeStr.empty()) {
-      SmallVector<StringRef> WaveSizeVec;
-      WaveSizeStr.split(WaveSizeVec, ',');
-      assert(WaveSizeVec.size() == 3 && "Invalid wavesize specified");
-      // Read in the three component values of numthreads
-      [[maybe_unused]] bool Success =
-          llvm::to_integer(WaveSizeVec[0], EFP.WaveSizeMin, 10);
-      assert(Success && "Failed to parse Min component of wavesize");
-      Success = llvm::to_integer(WaveSizeVec[1], EFP.WaveSizeMax, 10);
-      assert(Success && "Failed to parse Max component of wavesize");
-      Success = llvm::to_integer(WaveSizeVec[2], EFP.WaveSizePref, 10);
-      assert(Success && "Failed to parse Preferred component of wavesize");
     }
     MMDAI.EntryPropertyVec.push_back(EFP);
   }
@@ -125,7 +109,10 @@ DXILMetadataAnalysisPrinterPass::run(Module &M, ModuleAnalysisManager &AM) {
 // DXILMetadataAnalysisWrapperPass
 
 DXILMetadataAnalysisWrapperPass::DXILMetadataAnalysisWrapperPass()
-    : ModulePass(ID) {}
+    : ModulePass(ID) {
+  initializeDXILMetadataAnalysisWrapperPassPass(
+      *PassRegistry::getPassRegistry());
+}
 
 DXILMetadataAnalysisWrapperPass::~DXILMetadataAnalysisWrapperPass() = default;
 

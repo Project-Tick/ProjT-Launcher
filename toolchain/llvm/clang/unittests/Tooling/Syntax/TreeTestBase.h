@@ -40,16 +40,15 @@ protected:
   syntax::Node *nodeByRange(llvm::Annotations::Range R, syntax::Node *Root);
 
   // Data fields.
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
   IntrusiveRefCntPtr<DiagnosticsEngine> Diags =
-      llvm::makeIntrusiveRefCnt<DiagnosticsEngine>(DiagnosticIDs::create(),
-                                                   DiagOpts);
+      new DiagnosticsEngine(new DiagnosticIDs, DiagOpts.get());
   IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> FS =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+      new llvm::vfs::InMemoryFileSystem;
   IntrusiveRefCntPtr<FileManager> FileMgr =
-      llvm::makeIntrusiveRefCnt<FileManager>(FileSystemOptions(), FS);
+      new FileManager(FileSystemOptions(), FS);
   IntrusiveRefCntPtr<SourceManager> SourceMgr =
-      llvm::makeIntrusiveRefCnt<SourceManager>(*Diags, *FileMgr);
+      new SourceManager(*Diags, *FileMgr);
   std::shared_ptr<CompilerInvocation> Invocation;
   // Set after calling buildTree().
   std::unique_ptr<syntax::TokenBuffer> TB;

@@ -52,7 +52,7 @@
 
 using namespace llvm;
 
-#define DEBUG_TYPE "x86-optimize-leas"
+#define DEBUG_TYPE "x86-optimize-LEAs"
 
 static cl::opt<bool>
     DisableX86LEAOpt("disable-x86-lea-opt", cl::Hidden,
@@ -236,10 +236,24 @@ static inline bool isLEA(const MachineInstr &MI) {
 
 namespace {
 
-class X86OptimizeLEAsImpl {
+class X86OptimizeLEAPass : public MachineFunctionPass {
 public:
-  bool runOnMachineFunction(MachineFunction &MF, ProfileSummaryInfo *PSI,
-                            MachineBlockFrequencyInfo *MBFI);
+  X86OptimizeLEAPass() : MachineFunctionPass(ID) {}
+
+  StringRef getPassName() const override { return "X86 LEA Optimize"; }
+
+  /// Loop over all of the basic blocks, replacing address
+  /// calculations in load and store instructions, if it's already
+  /// been calculated by LEA. Also, remove redundant LEAs.
+  bool runOnMachineFunction(MachineFunction &MF) override;
+
+  static char ID;
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.addRequired<ProfileSummaryInfoWrapperPass>();
+    AU.addRequired<LazyMachineBlockFrequencyInfoPass>();
+    MachineFunctionPass::getAnalysisUsage(AU);
+  }
 
 private:
   using MemOpMap = DenseMap<MemOpKey, SmallVector<MachineInstr *, 16>>;
@@ -280,8 +294,8 @@ private:
   /// Replace debug value MI with a new debug value instruction using register
   /// VReg with an appropriate offset and DIExpression to incorporate the
   /// address displacement AddrDispShift. Return new debug value instruction.
-  MachineInstr *replaceDebugValue(MachineInstr &MI, Register OldReg,
-                                  Register NewReg, int64_t AddrDispShift);
+  MachineInstr *replaceDebugValue(MachineInstr &MI, unsigned OldReg,
+                                  unsigned NewReg, int64_t AddrDispShift);
 
   /// Removes LEAs which calculate similar addresses.
   bool removeRedundantLEAs(MemOpMap &LEAs);
@@ -293,38 +307,16 @@ private:
   const X86RegisterInfo *TRI = nullptr;
 };
 
-class X86OptimizeLEAsLegacy : public MachineFunctionPass {
-public:
-  X86OptimizeLEAsLegacy() : MachineFunctionPass(ID) {}
-
-  StringRef getPassName() const override { return "X86 LEA Optimize"; }
-
-  /// Loop over all of the basic blocks, replacing address
-  /// calculations in load and store instructions, if it's already
-  /// been calculated by LEA. Also, remove redundant LEAs.
-  bool runOnMachineFunction(MachineFunction &MF) override;
-
-  static char ID;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<ProfileSummaryInfoWrapperPass>();
-    AU.addRequired<LazyMachineBlockFrequencyInfoPass>();
-    MachineFunctionPass::getAnalysisUsage(AU);
-  }
-};
-
 } // end anonymous namespace
 
-char X86OptimizeLEAsLegacy::ID = 0;
+char X86OptimizeLEAPass::ID = 0;
 
-FunctionPass *llvm::createX86OptimizeLEAsLegacyPass() {
-  return new X86OptimizeLEAsLegacy();
-}
-INITIALIZE_PASS(X86OptimizeLEAsLegacy, DEBUG_TYPE, "X86 optimize LEA pass",
-                false, false)
+FunctionPass *llvm::createX86OptimizeLEAs() { return new X86OptimizeLEAPass(); }
+INITIALIZE_PASS(X86OptimizeLEAPass, DEBUG_TYPE, "X86 optimize LEA pass", false,
+                false)
 
-int X86OptimizeLEAsImpl::calcInstrDist(const MachineInstr &First,
-                                       const MachineInstr &Last) {
+int X86OptimizeLEAPass::calcInstrDist(const MachineInstr &First,
+                                      const MachineInstr &Last) {
   // Both instructions must be in the same basic block and they must be
   // presented in InstrPos.
   assert(Last.getParent() == First.getParent() &&
@@ -344,9 +336,10 @@ int X86OptimizeLEAsImpl::calcInstrDist(const MachineInstr &First,
 // 3) Displacement of the new memory operand should fit in 1 byte if possible.
 // 4) The LEA should be as close to MI as possible, and prior to it if
 //    possible.
-bool X86OptimizeLEAsImpl::chooseBestLEA(
+bool X86OptimizeLEAPass::chooseBestLEA(
     const SmallVectorImpl<MachineInstr *> &List, const MachineInstr &MI,
     MachineInstr *&BestLEA, int64_t &AddrDispShift, int &Dist) {
+  const MachineFunction *MF = MI.getParent()->getParent();
   const MCInstrDesc &Desc = MI.getDesc();
   int MemOpNo = X86II::getMemoryOperandNo(Desc.TSFlags) +
                 X86II::getOperandBias(Desc);
@@ -367,7 +360,7 @@ bool X86OptimizeLEAsImpl::chooseBestLEA(
     // example MOV8mr_NOREX. We could constrain the register class of the LEA
     // def to suit MI, however since this case is very rare and hard to
     // reproduce in a test it's just more reliable to skip the LEA.
-    if (TII->getRegClass(Desc, MemOpNo + X86::AddrBaseReg) !=
+    if (TII->getRegClass(Desc, MemOpNo + X86::AddrBaseReg, TRI, *MF) !=
         MRI->getRegClass(DefMI->getOperand(0).getReg()))
       continue;
 
@@ -401,10 +394,10 @@ bool X86OptimizeLEAsImpl::chooseBestLEA(
 // Get the difference between the addresses' displacements of the two
 // instructions \p MI1 and \p MI2. The numbers of the first memory operands are
 // passed through \p N1 and \p N2.
-int64_t X86OptimizeLEAsImpl::getAddrDispShift(const MachineInstr &MI1,
-                                              unsigned N1,
-                                              const MachineInstr &MI2,
-                                              unsigned N2) const {
+int64_t X86OptimizeLEAPass::getAddrDispShift(const MachineInstr &MI1,
+                                             unsigned N1,
+                                             const MachineInstr &MI2,
+                                             unsigned N2) const {
   const MachineOperand &Op1 = MI1.getOperand(N1 + X86::AddrDisp);
   const MachineOperand &Op2 = MI2.getOperand(N2 + X86::AddrDisp);
 
@@ -426,9 +419,9 @@ int64_t X86OptimizeLEAsImpl::getAddrDispShift(const MachineInstr &MI1,
 // 2) Def registers of LEAs belong to the same class.
 // 3) All uses of the Last LEA def register are replaceable, thus the
 //    register is used only as address base.
-bool X86OptimizeLEAsImpl::isReplaceable(const MachineInstr &First,
-                                        const MachineInstr &Last,
-                                        int64_t &AddrDispShift) const {
+bool X86OptimizeLEAPass::isReplaceable(const MachineInstr &First,
+                                       const MachineInstr &Last,
+                                       int64_t &AddrDispShift) const {
   assert(isLEA(First) && isLEA(Last) &&
          "The function works only with LEA instructions");
 
@@ -482,8 +475,8 @@ bool X86OptimizeLEAsImpl::isReplaceable(const MachineInstr &First,
   return true;
 }
 
-void X86OptimizeLEAsImpl::findLEAs(const MachineBasicBlock &MBB,
-                                   MemOpMap &LEAs) {
+void X86OptimizeLEAPass::findLEAs(const MachineBasicBlock &MBB,
+                                  MemOpMap &LEAs) {
   unsigned Pos = 0;
   for (auto &MI : MBB) {
     // Assign the position number to the instruction. Note that we are going to
@@ -501,7 +494,7 @@ void X86OptimizeLEAsImpl::findLEAs(const MachineBasicBlock &MBB,
 // Try to find load and store instructions which recalculate addresses already
 // calculated by some LEA and replace their memory operands with its def
 // register.
-bool X86OptimizeLEAsImpl::removeRedundantAddrCalc(MemOpMap &LEAs) {
+bool X86OptimizeLEAPass::removeRedundantAddrCalc(MemOpMap &LEAs) {
   bool Changed = false;
 
   assert(!LEAs.empty());
@@ -578,10 +571,10 @@ bool X86OptimizeLEAsImpl::removeRedundantAddrCalc(MemOpMap &LEAs) {
   return Changed;
 }
 
-MachineInstr *X86OptimizeLEAsImpl::replaceDebugValue(MachineInstr &MI,
-                                                     Register OldReg,
-                                                     Register NewReg,
-                                                     int64_t AddrDispShift) {
+MachineInstr *X86OptimizeLEAPass::replaceDebugValue(MachineInstr &MI,
+                                                    unsigned OldReg,
+                                                    unsigned NewReg,
+                                                    int64_t AddrDispShift) {
   const DIExpression *Expr = MI.getDebugExpression();
   if (AddrDispShift != 0) {
     if (MI.isNonListDebugValue()) {
@@ -626,7 +619,7 @@ MachineInstr *X86OptimizeLEAsImpl::replaceDebugValue(MachineInstr &MI,
 }
 
 // Try to find similar LEAs in the list and replace one with another.
-bool X86OptimizeLEAsImpl::removeRedundantLEAs(MemOpMap &LEAs) {
+bool X86OptimizeLEAPass::removeRedundantLEAs(MemOpMap &LEAs) {
   bool Changed = false;
 
   // Loop over all entries in the table.
@@ -716,17 +709,20 @@ bool X86OptimizeLEAsImpl::removeRedundantLEAs(MemOpMap &LEAs) {
   return Changed;
 }
 
-bool X86OptimizeLEAsImpl::runOnMachineFunction(
-    MachineFunction &MF, ProfileSummaryInfo *PSI,
-    MachineBlockFrequencyInfo *MBFI) {
+bool X86OptimizeLEAPass::runOnMachineFunction(MachineFunction &MF) {
   bool Changed = false;
 
-  if (DisableX86LEAOpt)
+  if (DisableX86LEAOpt || skipFunction(MF.getFunction()))
     return false;
 
   MRI = &MF.getRegInfo();
   TII = MF.getSubtarget<X86Subtarget>().getInstrInfo();
   TRI = MF.getSubtarget<X86Subtarget>().getRegisterInfo();
+  auto *PSI =
+      &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
+  auto *MBFI = (PSI && PSI->hasProfileSummary()) ?
+               &getAnalysis<LazyMachineBlockFrequencyInfoPass>().getBFI() :
+               nullptr;
 
   // Process all basic blocks.
   for (auto &MBB : MF) {
@@ -750,35 +746,4 @@ bool X86OptimizeLEAsImpl::runOnMachineFunction(
   }
 
   return Changed;
-}
-
-bool X86OptimizeLEAsLegacy::runOnMachineFunction(MachineFunction &MF) {
-  if (skipFunction(MF.getFunction()))
-    return false;
-  ProfileSummaryInfo *PSI =
-      &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
-  MachineBlockFrequencyInfo *MBFI =
-      (PSI && PSI->hasProfileSummary())
-          ? &getAnalysis<LazyMachineBlockFrequencyInfoPass>().getBFI()
-          : nullptr;
-  X86OptimizeLEAsImpl PassImpl;
-  return PassImpl.runOnMachineFunction(MF, PSI, MBFI);
-}
-
-PreservedAnalyses
-X86OptimizeLEAsPass::run(MachineFunction &MF,
-                         MachineFunctionAnalysisManager &MFAM) {
-  ProfileSummaryInfo *PSI =
-      MFAM.getResult<ModuleAnalysisManagerMachineFunctionProxy>(MF)
-          .getCachedResult<ProfileSummaryAnalysis>(
-              *MF.getFunction().getParent());
-  MachineBlockFrequencyInfo *MBFI =
-      (PSI && PSI->hasProfileSummary())
-          ? &MFAM.getResult<MachineBlockFrequencyAnalysis>(MF)
-          : nullptr;
-  X86OptimizeLEAsImpl PassImpl;
-  bool Changed = PassImpl.runOnMachineFunction(MF, PSI, MBFI);
-  if (!Changed)
-    return PreservedAnalyses::all();
-  return getMachineFunctionPassPreservedAnalyses().preserveSet<CFGAnalyses>();
 }

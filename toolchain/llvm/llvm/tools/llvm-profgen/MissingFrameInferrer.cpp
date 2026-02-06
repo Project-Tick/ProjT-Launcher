@@ -7,13 +7,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "MissingFrameInferrer.h"
-#include "Options.h"
 #include "PerfReader.h"
 #include "ProfiledBinary.h"
 #include "llvm/ADT/SCCIterator.h"
 #include "llvm/ADT/Statistic.h"
 #include <algorithm>
 #include <cstdint>
+#include <iterator>
 #include <queue>
 #include <sys/types.h>
 
@@ -37,8 +37,7 @@ STATISTIC(TailCallMaxTailCallPath, "Length of the longest tail call path");
 static cl::opt<uint32_t>
     MaximumSearchDepth("max-search-depth", cl::init(UINT32_MAX - 1),
                        cl::desc("The maximum levels the DFS-based missing "
-                                "frame search should go with"),
-                       cl::cat(ProfGenCategory));
+                                "frame search should go with"));
 
 void MissingFrameInferrer::initialize(
     const ContextSampleCounterMap *SampleCounters) {
@@ -166,14 +165,14 @@ uint64_t MissingFrameInferrer::computeUniqueTailCallPath(
   if (CurSearchingDepth == MaximumSearchDepth)
     return 0;
 
-  auto It = FuncToTailCallMap.find(From);
-  if (It == FuncToTailCallMap.end())
+
+  if (!FuncToTailCallMap.count(From))
     return 0;
 
   CurSearchingDepth++;
   Visiting.insert(From);
   uint64_t NumPaths = 0;
-  for (auto TailCall : It->second) {
+  for (auto TailCall : FuncToTailCallMap[From]) {
     NumPaths += computeUniqueTailCallPath(TailCall, To, Path);
     // Stop analyzing the remaining if we are already seeing more than one
     // reachable paths.
@@ -207,12 +206,11 @@ uint64_t MissingFrameInferrer::computeUniqueTailCallPath(
 
 uint64_t MissingFrameInferrer::computeUniqueTailCallPath(
     uint64_t From, BinaryFunction *To, SmallVectorImpl<uint64_t> &Path) {
-  auto It = TailCallEdgesF.find(From);
-  if (It == TailCallEdgesF.end())
+  if (!TailCallEdgesF.count(From))
     return 0;
   Path.push_back(From);
   uint64_t NumPaths = 0;
-  for (auto Target : It->second) {
+  for (auto Target : TailCallEdgesF[From]) {
     NumPaths += computeUniqueTailCallPath(Target, To, Path);
     // Stop analyzing the remaining if we are already seeing more than one
     // reachable paths.
@@ -239,13 +237,12 @@ bool MissingFrameInferrer::inferMissingFrames(
     return false;
 
   // Bail out if caller has no known outgoing call edges.
-  auto It = CallEdgesF.find(From);
-  if (It == CallEdgesF.end())
+  if (!CallEdgesF.count(From))
     return false;
 
   // Done with the inference if the calle is reachable via a single callsite.
   // This may not be accurate but it improves the search throughput.
-  if (llvm::is_contained(It->second, ToFRange->Func))
+  if (llvm::is_contained(CallEdgesF[From], ToFRange->Func))
     return true;
 
   // Bail out if callee is not tailcall reachable at all.
@@ -255,7 +252,7 @@ bool MissingFrameInferrer::inferMissingFrames(
   Visiting.clear();
   CurSearchingDepth = 0;
   uint64_t NumPaths = 0;
-  for (auto Target : It->second) {
+  for (auto Target : CallEdgesF[From]) {
     NumPaths +=
         computeUniqueTailCallPath(Target, ToFRange->Func, UniquePath);
     // Stop analyzing the remaining if we are already seeing more than one

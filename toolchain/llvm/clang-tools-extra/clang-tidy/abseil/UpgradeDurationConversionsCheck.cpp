@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- UpgradeDurationConversionsCheck.cpp - clang-tidy -----------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -104,7 +104,7 @@ void UpgradeDurationConversionsCheck::registerMatchers(MatchFinder *Finder) {
                                       hasCastKind(CK_UserDefinedConversion)))),
                             hasParent(callExpr(
                                 callee(functionDecl(
-                                    durationFactoryFunction(),
+                                    DurationFactoryFunction(),
                                     unless(hasParent(functionTemplateDecl())))),
                                 hasArgument(0, expr().bind("arg")))))
                             .bind("OuterExpr")),
@@ -117,16 +117,16 @@ void UpgradeDurationConversionsCheck::check(
       "implicit conversion to 'int64_t' is deprecated in this context; use an "
       "explicit cast instead";
 
-  const TraversalKindScope RAII(*Result.Context, TK_AsIs);
+  TraversalKindScope RAII(*Result.Context, TK_AsIs);
 
   const auto *ArgExpr = Result.Nodes.getNodeAs<Expr>("arg");
-  const SourceLocation Loc = ArgExpr->getBeginLoc();
+  SourceLocation Loc = ArgExpr->getBeginLoc();
 
   const auto *OuterExpr = Result.Nodes.getNodeAs<Expr>("OuterExpr");
 
   if (!match(isInTemplateInstantiation(), *OuterExpr, *Result.Context)
            .empty()) {
-    if (!MatchedTemplateLocations.contains(Loc)) {
+    if (MatchedTemplateLocations.count(Loc) == 0) {
       // For each location matched in a template instantiation, we check if the
       // location can also be found in `MatchedTemplateLocations`. If it is not
       // found, that means the expression did not create a match without the
@@ -139,13 +139,13 @@ void UpgradeDurationConversionsCheck::check(
 
   // We gather source locations from template matches not in template
   // instantiations for future matches.
-  const internal::Matcher<Stmt> IsInsideTemplate =
+  internal::Matcher<Stmt> IsInsideTemplate =
       hasAncestor(decl(anyOf(classTemplateDecl(), functionTemplateDecl())));
   if (!match(IsInsideTemplate, *ArgExpr, *Result.Context).empty())
     MatchedTemplateLocations.insert(Loc);
 
-  const DiagnosticBuilder Diag = diag(Loc, Message);
-  const CharSourceRange SourceRange = Lexer::makeFileCharRange(
+  DiagnosticBuilder Diag = diag(Loc, Message);
+  CharSourceRange SourceRange = Lexer::makeFileCharRange(
       CharSourceRange::getTokenRange(ArgExpr->getSourceRange()),
       *Result.SourceManager, Result.Context->getLangOpts());
   if (SourceRange.isInvalid())

@@ -21,7 +21,6 @@ target_link_libraries(bbc PRIVATE
   FIRDialect
   FIRDialectSupport
   FIROpenACCSupport
-  FIROpenMPSupport
   FIRSupport
   FIRTransforms
   FIRBuilder
@@ -30,12 +29,11 @@ target_link_libraries(bbc PRIVATE
   flangFrontend
   flangPasses
   FlangOpenMPTransforms
-  FortranSupport
+  FortranCommon
   FortranParser
   FortranEvaluate
   FortranSemantics
   FortranLower
-  MIFDialect
 )
 
 mlir_target_link_libraries(bbc PRIVATE

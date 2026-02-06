@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- SizeofExpressionCheck.cpp - clang-tidy----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -50,14 +50,14 @@ AST_MATCHER_P2(Expr, hasSizeOfDescendant, int, Depth,
 
 AST_MATCHER(Expr, offsetOfExpr) { return isa<OffsetOfExpr>(Node); }
 
-} // namespace
-
-static CharUnits getSizeOfType(const ASTContext &Ctx, const Type *Ty) {
+CharUnits getSizeOfType(const ASTContext &Ctx, const Type *Ty) {
   if (!Ty || Ty->isIncompleteType() || Ty->isDependentType() ||
       isa<DependentSizedArrayType>(Ty) || !Ty->isConstantSizeType())
     return CharUnits::Zero();
   return Ctx.getTypeSizeInChars(Ty);
 }
+
+} // namespace
 
 SizeofExpressionCheck::SizeofExpressionCheck(StringRef Name,
                                              ClangTidyContext *Context)
@@ -72,9 +72,7 @@ SizeofExpressionCheck::SizeofExpressionCheck(StringRef Name,
           Options.get("WarnOnSizeOfPointerToAggregate", true)),
       WarnOnSizeOfPointer(Options.get("WarnOnSizeOfPointer", false)),
       WarnOnOffsetDividedBySizeOf(
-          Options.get("WarnOnOffsetDividedBySizeOf", true)),
-      WarnOnSizeOfInLoopTermination(
-          Options.get("WarnOnSizeOfInLoopTermination", true)) {}
+          Options.get("WarnOnOffsetDividedBySizeOf", true)) {}
 
 void SizeofExpressionCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
   Options.store(Opts, "WarnOnSizeOfConstant", WarnOnSizeOfConstant);
@@ -88,21 +86,12 @@ void SizeofExpressionCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
   Options.store(Opts, "WarnOnSizeOfPointer", WarnOnSizeOfPointer);
   Options.store(Opts, "WarnOnOffsetDividedBySizeOf",
                 WarnOnOffsetDividedBySizeOf);
-  Options.store(Opts, "WarnOnSizeOfInLoopTermination",
-                WarnOnSizeOfInLoopTermination);
 }
 
 void SizeofExpressionCheck::registerMatchers(MatchFinder *Finder) {
   // FIXME:
   // Some of the checks should not match in template code to avoid false
   // positives if sizeof is applied on template argument.
-
-  auto LoopCondExpr =
-      [](const ast_matchers::internal::Matcher<Stmt> &InnerMatcher) {
-        return stmt(anyOf(forStmt(hasCondition(InnerMatcher)),
-                          whileStmt(hasCondition(InnerMatcher)),
-                          doStmt(hasCondition(InnerMatcher))));
-      };
 
   const auto IntegerExpr = ignoringParenImpCasts(integerLiteral());
   const auto ConstantExpr = ignoringParenImpCasts(
@@ -138,14 +127,6 @@ void SizeofExpressionCheck::registerMatchers(MatchFinder *Finder) {
   if (WarnOnSizeOfThis) {
     Finder->addMatcher(sizeOfExpr(has(ignoringParenImpCasts(cxxThisExpr())))
                            .bind("sizeof-this"),
-                       this);
-  }
-
-  if (WarnOnSizeOfInLoopTermination) {
-    auto CondExpr = binaryOperator(
-        allOf(has(SizeOfExpr.bind("sizeof-expr")), isComparisonOperator()));
-    Finder->addMatcher(LoopCondExpr(anyOf(CondExpr, hasDescendant(CondExpr)))
-                           .bind("loop-expr"),
                        this);
   }
 
@@ -189,6 +170,8 @@ void SizeofExpressionCheck::registerMatchers(MatchFinder *Finder) {
 
     const auto PointerToStructType =
         hasUnqualifiedDesugaredType(pointerType(pointee(recordType())));
+    const auto PointerToStructTypeWithBinding =
+        type(PointerToStructType).bind("struct-type");
     const auto PointerToStructExpr =
         expr(hasType(hasCanonicalType(PointerToStructType)));
 
@@ -205,10 +188,12 @@ void SizeofExpressionCheck::registerMatchers(MatchFinder *Finder) {
         ignoringParenImpCasts(unaryOperator(hasOperatorName("*")));
 
     Finder->addMatcher(
-        expr(sizeOfExpr(has(ignoringParenImpCasts(expr(
-                 PointerToDetectedExpr, unless(DerefExpr),
-                 unless(SubscriptExprWithZeroIndex),
-                 unless(VarWithConstStrLiteralDecl), unless(cxxThisExpr()))))))
+        expr(sizeOfExpr(anyOf(has(ignoringParenImpCasts(
+                                  expr(PointerToDetectedExpr, unless(DerefExpr),
+                                       unless(SubscriptExprWithZeroIndex),
+                                       unless(VarWithConstStrLiteralDecl),
+                                       unless(cxxThisExpr())))),
+                              has(PointerToStructTypeWithBinding))))
             .bind("sizeof-pointer"),
         this);
   }
@@ -368,26 +353,17 @@ void SizeofExpressionCheck::check(const MatchFinder::MatchResult &Result) {
     diag(E->getBeginLoc(),
          "suspicious usage of 'sizeof(char*)'; do you mean 'strlen'?")
         << E->getSourceRange();
-  } else if (Result.Nodes.getNodeAs<Stmt>("loop-expr")) {
-    auto *SizeofArgTy = Result.Nodes.getNodeAs<Type>("sizeof-arg-type");
-    if (const auto *Member = dyn_cast<MemberPointerType>(SizeofArgTy))
-      SizeofArgTy = Member->getPointeeType().getTypePtr();
-
-    const auto *SzOfExpr = Result.Nodes.getNodeAs<Expr>("sizeof-expr");
-
-    if (const auto *Type = dyn_cast<ArrayType>(SizeofArgTy)) {
-      // check if the array element size is larger than one. If true,
-      // the size of the array is higher than the number of elements
-      if (!getSizeOfType(Ctx, Type->getElementType().getTypePtr()).isOne()) {
-        diag(SzOfExpr->getBeginLoc(),
-             "suspicious usage of 'sizeof' in the loop")
-            << SzOfExpr->getSourceRange();
-      }
-    }
   } else if (const auto *E = Result.Nodes.getNodeAs<Expr>("sizeof-pointer")) {
-    diag(E->getBeginLoc(), "suspicious usage of 'sizeof()' on an expression "
-                           "of pointer type")
-        << E->getSourceRange();
+    if (Result.Nodes.getNodeAs<Type>("struct-type")) {
+      diag(E->getBeginLoc(),
+           "suspicious usage of 'sizeof(A*)' on pointer-to-aggregate type; did "
+           "you mean 'sizeof(A)'?")
+          << E->getSourceRange();
+    } else {
+      diag(E->getBeginLoc(), "suspicious usage of 'sizeof()' on an expression "
+                             "of pointer type")
+          << E->getSourceRange();
+    }
   } else if (const auto *E = Result.Nodes.getNodeAs<BinaryOperator>(
                  "sizeof-compare-constant")) {
     diag(E->getOperatorLoc(),
@@ -407,9 +383,9 @@ void SizeofExpressionCheck::check(const MatchFinder::MatchResult &Result) {
     const auto *ElementTy = Result.Nodes.getNodeAs<Type>("elem-type");
     const auto *PointedTy = Result.Nodes.getNodeAs<Type>("elem-ptr-type");
 
-    const CharUnits NumeratorSize = getSizeOfType(Ctx, NumTy);
-    const CharUnits DenominatorSize = getSizeOfType(Ctx, DenomTy);
-    const CharUnits ElementSize = getSizeOfType(Ctx, ElementTy);
+    CharUnits NumeratorSize = getSizeOfType(Ctx, NumTy);
+    CharUnits DenominatorSize = getSizeOfType(Ctx, DenomTy);
+    CharUnits ElementSize = getSizeOfType(Ctx, ElementTy);
 
     if (DenominatorSize > CharUnits::Zero() &&
         !NumeratorSize.isMultipleOf(DenominatorSize)) {
@@ -424,7 +400,7 @@ void SizeofExpressionCheck::check(const MatchFinder::MatchResult &Result) {
            "suspicious usage of 'sizeof(array)/sizeof(...)';"
            " denominator differs from the size of array elements")
           << E->getLHS()->getSourceRange() << E->getRHS()->getSourceRange();
-    } else if (NumTy && DenomTy && ASTContext::hasSameType(NumTy, DenomTy) &&
+    } else if (NumTy && DenomTy && NumTy == DenomTy &&
                !NumTy->isDependentType()) {
       // Dependent type should not be compared.
       diag(E->getOperatorLoc(),
@@ -433,7 +409,7 @@ void SizeofExpressionCheck::check(const MatchFinder::MatchResult &Result) {
           << E->getLHS()->getSourceRange() << E->getRHS()->getSourceRange();
     } else if (!WarnOnSizeOfPointer) {
       // When 'WarnOnSizeOfPointer' is enabled, these messages become redundant:
-      if (PointedTy && DenomTy && ASTContext::hasSameType(PointedTy, DenomTy)) {
+      if (PointedTy && DenomTy && PointedTy == DenomTy) {
         diag(E->getOperatorLoc(),
              "suspicious usage of 'sizeof(...)/sizeof(...)'; size of pointer "
              "is divided by size of pointed type")
@@ -462,8 +438,7 @@ void SizeofExpressionCheck::check(const MatchFinder::MatchResult &Result) {
     const auto *SizeOfExpr =
         Result.Nodes.getNodeAs<UnaryExprOrTypeTraitExpr>("sizeof-ptr-mul-expr");
 
-    if (ASTContext::hasSameType(LPtrTy, RPtrTy) &&
-        ASTContext::hasSameType(LPtrTy, SizeofArgTy)) {
+    if ((LPtrTy == RPtrTy) && (LPtrTy == SizeofArgTy)) {
       diag(SizeOfExpr->getBeginLoc(), "suspicious usage of 'sizeof(...)' in "
                                       "pointer arithmetic")
           << SizeOfExpr->getSourceRange() << E->getOperatorLoc()
@@ -477,8 +452,7 @@ void SizeofExpressionCheck::check(const MatchFinder::MatchResult &Result) {
     const auto *SizeOfExpr =
         Result.Nodes.getNodeAs<UnaryExprOrTypeTraitExpr>("sizeof-ptr-div-expr");
 
-    if (ASTContext::hasSameType(LPtrTy, RPtrTy) &&
-        ASTContext::hasSameType(LPtrTy, SizeofArgTy)) {
+    if ((LPtrTy == RPtrTy) && (LPtrTy == SizeofArgTy)) {
       diag(SizeOfExpr->getBeginLoc(), "suspicious usage of 'sizeof(...)' in "
                                       "pointer arithmetic")
           << SizeOfExpr->getSourceRange() << E->getOperatorLoc()

@@ -79,6 +79,7 @@ define void @f1() #0 {
 ; CHECK-NEXT:    {
 ; CHECK-NEXT:     r4 = sub(#-1,r4)
 ; CHECK-NEXT:    }
+; CHECK-NEXT:    .p2align 4
 ; CHECK-NEXT:  .LBB1_1: // %cmpxchg.start
 ; CHECK-NEXT:    // =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    {

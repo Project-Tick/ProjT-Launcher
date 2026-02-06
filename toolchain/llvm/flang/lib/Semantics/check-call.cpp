@@ -18,7 +18,6 @@
 #include "flang/Parser/message.h"
 #include "flang/Semantics/scope.h"
 #include "flang/Semantics/tools.h"
-#include "llvm/ADT/StringSet.h"
 #include <map>
 #include <string>
 
@@ -57,41 +56,28 @@ static void CheckImplicitInterfaceArg(evaluate::ActualArgument &arg,
         "%VAL argument must be a scalar numeric or logical expression"_err_en_US);
   }
   if (const auto *expr{arg.UnwrapExpr()}) {
-    if (const Symbol *base{GetFirstSymbol(*expr)}) {
-      context.NoteDefinedSymbol(GetAssociationRoot(*base));
+    if (const Symbol * base{GetFirstSymbol(*expr)};
+        base && IsFunctionResult(*base)) {
+      context.NoteDefinedSymbol(*base);
     }
     if (IsBOZLiteral(*expr)) {
-      messages.Say("BOZ argument %s requires an explicit interface"_err_en_US,
-          expr->AsFortran());
-    } else if (evaluate::IsNullPointerOrAllocatable(expr)) {
+      messages.Say("BOZ argument requires an explicit interface"_err_en_US);
+    } else if (evaluate::IsNullPointer(*expr)) {
       messages.Say(
-          "Null pointer argument '%s' requires an explicit interface"_err_en_US,
-          expr->AsFortran());
+          "Null pointer argument requires an explicit interface"_err_en_US);
     } else if (auto named{evaluate::ExtractNamedEntity(*expr)}) {
-      const Symbol &resolved{ResolveAssociations(named->GetLastSymbol())};
-      if (IsAssumedRank(resolved)) {
+      const Symbol &symbol{named->GetLastSymbol()};
+      if (evaluate::IsAssumedRank(symbol)) {
         messages.Say(
-            "Assumed rank argument '%s' requires an explicit interface"_err_en_US,
-            expr->AsFortran());
+            "Assumed rank argument requires an explicit interface"_err_en_US);
       }
-      const Symbol &symbol{GetAssociationRoot(resolved)};
       if (symbol.attrs().test(Attr::ASYNCHRONOUS)) {
         messages.Say(
-            "ASYNCHRONOUS argument '%s' requires an explicit interface"_err_en_US,
-            expr->AsFortran());
+            "ASYNCHRONOUS argument requires an explicit interface"_err_en_US);
       }
       if (symbol.attrs().test(Attr::VOLATILE)) {
         messages.Say(
-            "VOLATILE argument '%s' requires an explicit interface"_err_en_US,
-            expr->AsFortran());
-      }
-      if (const auto *object{symbol.detailsIf<ObjectEntityDetails>()}) {
-        if (object->cudaDataAttr()) {
-          messages.Warn(/*inModuleFile=*/false, context.languageFeatures(),
-              common::UsageWarning::CUDAUsage,
-              "Actual argument '%s' with CUDA data attributes should be passed via an explicit interface"_warn_en_US,
-              expr->AsFortran());
-        }
+            "VOLATILE argument requires an explicit interface"_err_en_US);
       }
     } else if (auto argChars{characteristics::DummyArgument::FromActual(
                    "actual argument", *expr, context.foldingContext(),
@@ -145,7 +131,7 @@ static void CheckCharacterActual(evaluate::Expr<evaluate::SomeType> &actual,
       dummy.type.type().kind() == actualType.type().kind() &&
       !dummy.attrs.test(
           characteristics::DummyDataObject::Attr::DeducedFromActual)) {
-    bool actualIsAssumedRank{IsAssumedRank(actual)};
+    bool actualIsAssumedRank{evaluate::IsAssumedRank(actual)};
     if (actualIsAssumedRank &&
         !dummy.type.attrs().test(
             characteristics::TypeAndShape::Attr::AssumedRank)) {
@@ -154,8 +140,7 @@ static void CheckCharacterActual(evaluate::Expr<evaluate::SomeType> &actual,
         messages.Say(
             "Assumed-rank character array may not be associated with a dummy argument that is not assumed-rank"_err_en_US);
       } else {
-        context.Warn(messages,
-            common::LanguageFeature::AssumedRankPassedToNonAssumedRank,
+        context.Warn(common::LanguageFeature::AssumedRankPassedToNonAssumedRank,
             messages.at(),
             "Assumed-rank character array should not be associated with a dummy argument that is not assumed-rank"_port_en_US);
       }
@@ -183,8 +168,7 @@ static void CheckCharacterActual(evaluate::Expr<evaluate::SomeType> &actual,
                 } else if (static_cast<std::size_t>(actualOffset->offset()) >=
                         actualOffset->symbol().size() ||
                     !evaluate::IsContiguous(
-                        actualOffset->symbol(), foldingContext)
-                        .value_or(false)) {
+                        actualOffset->symbol(), foldingContext)) {
                   // If substring, take rest of substring
                   if (*actualLength > 0) {
                     actualChars -=
@@ -203,9 +187,9 @@ static void CheckCharacterActual(evaluate::Expr<evaluate::SomeType> &actual,
                         "Actual argument has fewer characters remaining in storage sequence (%jd) than %s (%jd)"_err_en_US,
                         static_cast<std::intmax_t>(actualChars), dummyName,
                         static_cast<std::intmax_t>(dummyChars));
-                  } else {
-                    context.Warn(messages,
-                        common::UsageWarning::ShortCharacterActual,
+                  } else if (context.ShouldWarn(
+                                 common::UsageWarning::ShortCharacterActual)) {
+                    messages.Say(common::UsageWarning::ShortCharacterActual,
                         "Actual argument has fewer characters remaining in storage sequence (%jd) than %s (%jd)"_warn_en_US,
                         static_cast<std::intmax_t>(actualChars), dummyName,
                         static_cast<std::intmax_t>(dummyChars));
@@ -223,9 +207,9 @@ static void CheckCharacterActual(evaluate::Expr<evaluate::SomeType> &actual,
                       static_cast<std::intmax_t>(*actualSize * *actualLength),
                       dummyName,
                       static_cast<std::intmax_t>(*dummySize * *dummyLength));
-                } else {
-                  context.Warn(messages,
-                      common::UsageWarning::ShortCharacterActual,
+                } else if (context.ShouldWarn(
+                               common::UsageWarning::ShortCharacterActual)) {
+                  messages.Say(common::UsageWarning::ShortCharacterActual,
                       "Actual argument array has fewer characters (%jd) than %s array (%jd)"_warn_en_US,
                       static_cast<std::intmax_t>(*actualSize * *actualLength),
                       dummyName,
@@ -245,14 +229,17 @@ static void CheckCharacterActual(evaluate::Expr<evaluate::SomeType> &actual,
           } else if (*actualLength < *dummyLength) {
             CHECK(dummy.type.Rank() == 0);
             bool isVariable{evaluate::IsVariable(actual)};
-            if (isVariable) {
-              context.Warn(messages, common::UsageWarning::ShortCharacterActual,
-                  "Actual argument variable length '%jd' is less than expected length '%jd'"_warn_en_US,
-                  *actualLength, *dummyLength);
-            } else {
-              context.Warn(messages, common::UsageWarning::ShortCharacterActual,
-                  "Actual argument expression length '%jd' is less than expected length '%jd'"_warn_en_US,
-                  *actualLength, *dummyLength);
+            if (context.ShouldWarn(
+                    common::UsageWarning::ShortCharacterActual)) {
+              if (isVariable) {
+                messages.Say(common::UsageWarning::ShortCharacterActual,
+                    "Actual argument variable length '%jd' is less than expected length '%jd'"_warn_en_US,
+                    *actualLength, *dummyLength);
+              } else {
+                messages.Say(common::UsageWarning::ShortCharacterActual,
+                    "Actual argument expression length '%jd' is less than expected length '%jd'"_warn_en_US,
+                    *actualLength, *dummyLength);
+              }
             }
             if (!isVariable) {
               auto converted{
@@ -292,8 +279,9 @@ static void ConvertIntegerActual(evaluate::Expr<evaluate::SomeType> &actual,
         messages.Say(
             "Actual argument scalar expression of type INTEGER(%d) cannot be implicitly converted to smaller dummy argument type INTEGER(%d)"_err_en_US,
             actualType.type().kind(), dummyType.type().kind());
-      } else {
-        semanticsContext.Warn(messages,
+      } else if (semanticsContext.ShouldWarn(common::LanguageFeature::
+                         ActualIntegerConvertedToSmallerKind)) {
+        messages.Say(
             common::LanguageFeature::ActualIntegerConvertedToSmallerKind,
             "Actual argument scalar expression of type INTEGER(%d) was converted to smaller dummy argument type INTEGER(%d)"_port_en_US,
             actualType.type().kind(), dummyType.type().kind());
@@ -338,12 +326,6 @@ static bool DefersSameTypeParameters(
   return true;
 }
 
-// List of intrinsics that are skipped when checking for device actual
-// arguments.
-static const llvm::StringSet<> cudaSkippedIntrinsics = {"__builtin_c_devloc",
-    "__builtin_c_f_pointer", "__builtin_c_loc", "allocated", "associated",
-    "kind", "lbound", "loc", "present", "shape", "size", "sizeof", "ubound"};
-
 static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
     const std::string &dummyName, evaluate::Expr<evaluate::SomeType> &actual,
     characteristics::TypeAndShape &actualType, bool isElemental,
@@ -351,8 +333,7 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
     const Scope *scope, const evaluate::SpecificIntrinsic *intrinsic,
     bool allowActualArgumentConversions, bool extentErrors,
     const characteristics::Procedure &procedure,
-    const evaluate::ActualArgument &arg,
-    const characteristics::DummyArgument &dummyArg) {
+    const evaluate::ActualArgument &arg) {
 
   // Basic type & rank checking
   parser::ContextualMessages &messages{foldingContext.messages()};
@@ -379,23 +360,24 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
   bool typesCompatible{typesCompatibleWithIgnoreTKR ||
       dummy.type.type().IsTkCompatibleWith(actualType.type())};
   int dummyRank{dummy.type.Rank()};
-  // Used to issue a general warning when we don't generate a specific warning
-  // or error for this case.
-  bool volatileOrAsyncNeedsTempDiagnosticIssued{false};
   if (typesCompatible) {
     if (const auto *constantChar{
             evaluate::UnwrapConstantValue<evaluate::Ascii>(actual)};
         constantChar && constantChar->wasHollerith() &&
-        dummy.type.type().IsUnlimitedPolymorphic()) {
-      foldingContext.Warn(common::LanguageFeature::HollerithPolymorphic,
+        dummy.type.type().IsUnlimitedPolymorphic() &&
+        context.ShouldWarn(common::LanguageFeature::HollerithPolymorphic)) {
+      messages.Say(common::LanguageFeature::HollerithPolymorphic,
           "passing Hollerith to unlimited polymorphic as if it were CHARACTER"_port_en_US);
     }
   } else if (dummyRank == 0 && allowActualArgumentConversions) {
     // Extension: pass Hollerith literal to scalar as if it had been BOZ
     if (auto converted{evaluate::HollerithToBOZ(
             foldingContext, actual, dummy.type.type())}) {
-      foldingContext.Warn(common::LanguageFeature::HollerithOrCharacterAsBOZ,
-          "passing Hollerith or character literal as if it were BOZ"_port_en_US);
+      if (context.ShouldWarn(
+              common::LanguageFeature::HollerithOrCharacterAsBOZ)) {
+        messages.Say(common::LanguageFeature::HollerithOrCharacterAsBOZ,
+            "passing Hollerith or character literal as if it were BOZ"_port_en_US);
+      }
       actual = *converted;
       actualType.type() = dummy.type.type();
       typesCompatible = true;
@@ -405,7 +387,7 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
       characteristics::TypeAndShape::Attr::AssumedRank)};
   bool actualIsAssumedSize{actualType.attrs().test(
       characteristics::TypeAndShape::Attr::AssumedSize)};
-  bool actualIsAssumedRank{IsAssumedRank(actual)};
+  bool actualIsAssumedRank{evaluate::IsAssumedRank(actual)};
   bool actualIsPointer{evaluate::IsObjectPointer(actual)};
   bool actualIsAllocatable{evaluate::IsAllocatableDesignator(actual)};
   bool actualMayBeAssumedSize{actualIsAssumedSize ||
@@ -429,7 +411,7 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
               "%s actual argument may not be associated with INTENT(OUT) assumed-rank dummy argument requiring finalization, destruction, or initialization"_err_en_US,
               actualDesc);
         } else {
-          foldingContext.Warn(common::UsageWarning::Portability, messages.at(),
+          context.Warn(common::UsageWarning::Portability, messages.at(),
               "%s actual argument should not be associated with INTENT(OUT) assumed-rank dummy argument"_port_en_US,
               actualDesc);
         }
@@ -462,7 +444,7 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
         dummy.type.type().AsFortran());
   }
 
-  auto actualCoarrayRef{ExtractCoarrayRef(actual)};
+  bool actualIsCoindexed{ExtractCoarrayRef(actual).has_value()};
   bool dummyIsAssumedSize{dummy.type.attrs().test(
       characteristics::TypeAndShape::Attr::AssumedSize)};
   bool dummyIsAsynchronous{
@@ -473,7 +455,7 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
       dummy.attrs.test(characteristics::DummyDataObject::Attr::Value)};
   bool dummyIsPolymorphic{dummy.type.type().IsPolymorphic()};
   if (actualIsPolymorphic && dummyIsPolymorphic &&
-      actualCoarrayRef) { // 15.5.2.4(2)
+      actualIsCoindexed) { // 15.5.2.4(2)
     messages.Say(
         "Coindexed polymorphic object may not be associated with a polymorphic %s"_err_en_US,
         dummyName);
@@ -517,7 +499,7 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
         }
       }
     }
-    if (actualCoarrayRef) {
+    if (actualIsCoindexed) {
       if (dummy.intent != common::Intent::In && !dummyIsValue) {
         if (auto bad{FindAllocatableUltimateComponent(
                 *actualDerived)}) { // 15.5.2.4(6)
@@ -526,13 +508,15 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
               bad.BuildResultDesignatorName(), dummyName);
         }
       }
-      const Symbol &coarray{actualCoarrayRef->GetLastSymbol()};
-      if (const DeclTypeSpec * type{coarray.GetType()}) { // C1537
-        if (const DerivedTypeSpec * derived{type->AsDerived()}) {
-          if (auto bad{semantics::FindPointerUltimateComponent(*derived)}) {
-            evaluate::SayWithDeclaration(messages, coarray,
-                "Coindexed object '%s' with POINTER ultimate component '%s' cannot be associated with %s"_err_en_US,
-                coarray.name(), bad.BuildResultDesignatorName(), dummyName);
+      if (auto coarrayRef{evaluate::ExtractCoarrayRef(actual)}) { // C1537
+        const Symbol &coarray{coarrayRef->GetLastSymbol()};
+        if (const DeclTypeSpec * type{coarray.GetType()}) {
+          if (const DerivedTypeSpec * derived{type->AsDerived()}) {
+            if (auto bad{semantics::FindPointerUltimateComponent(*derived)}) {
+              evaluate::SayWithDeclaration(messages, coarray,
+                  "Coindexed object '%s' with POINTER ultimate component '%s' cannot be associated with %s"_err_en_US,
+                  coarray.name(), bad.BuildResultDesignatorName(), dummyName);
+            }
           }
         }
       }
@@ -551,14 +535,12 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
   if (actualLastSymbol) {
     actualLastSymbol = &ResolveAssociations(*actualLastSymbol);
   }
+  const ObjectEntityDetails *actualLastObject{actualLastSymbol
+          ? actualLastSymbol->detailsIf<ObjectEntityDetails>()
+          : nullptr};
   int actualRank{actualType.Rank()};
-  if (dummyIsValue && dummyRank == 0 &&
-      dummy.ignoreTKR.test(common::IgnoreTKR::Rank) && actualRank > 0) {
-    messages.Say(
-        "Array actual argument may not be associated with IGNORE_TKR(R) scalar %s with VALUE attribute"_err_en_US,
-        dummyName);
-  } else if (dummy.type.attrs().test(
-                 characteristics::TypeAndShape::Attr::AssumedShape)) {
+  if (dummy.type.attrs().test(
+          characteristics::TypeAndShape::Attr::AssumedShape)) {
     // 15.5.2.4(16)
     if (actualIsAssumedRank) {
       messages.Say(
@@ -578,13 +560,13 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
     if (actualRank == 0 && !actualIsAssumedRank &&
         !dummyIsAllocatableOrPointer) {
       // Actual is scalar, dummy is an array.  F'2023 15.5.2.5p14
-      if (actualCoarrayRef) {
+      if (actualIsCoindexed) {
         basicError = true;
         messages.Say(
             "Coindexed scalar actual argument must be associated with a scalar %s"_err_en_US,
             dummyName);
       }
-      bool actualIsArrayElement{IsArrayElement(actual) != nullptr};
+      bool actualIsArrayElement{IsArrayElement(actual)};
       bool actualIsCKindCharacter{
           actualType.type().category() == TypeCategory::Character &&
           actualType.type().kind() == 1};
@@ -604,37 +586,20 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
               "Polymorphic scalar may not be associated with a %s array"_err_en_US,
               dummyName);
         }
-        bool isOkBecauseContiguous{
-            context.IsEnabled(
-                common::LanguageFeature::ContiguousOkForSeqAssociation) &&
-            actualLastSymbol &&
-            evaluate::IsContiguous(*actualLastSymbol, foldingContext)
-                .value_or(false)};
         if (actualIsArrayElement && actualLastSymbol &&
+            !evaluate::IsContiguous(*actualLastSymbol, foldingContext) &&
             !dummy.ignoreTKR.test(common::IgnoreTKR::Contiguous)) {
           if (IsPointer(*actualLastSymbol)) {
-            if (isOkBecauseContiguous) {
-              foldingContext.Warn(
-                  common::LanguageFeature::ContiguousOkForSeqAssociation,
-                  "Element of contiguous pointer array is accepted for storage sequence association"_port_en_US);
-            } else {
-              basicError = true;
-              messages.Say(
-                  "Element of pointer array may not be associated with a %s array"_err_en_US,
-                  dummyName);
-            }
+            basicError = true;
+            messages.Say(
+                "Element of pointer array may not be associated with a %s array"_err_en_US,
+                dummyName);
           } else if (IsAssumedShape(*actualLastSymbol) &&
               !dummy.ignoreTKR.test(common::IgnoreTKR::Contiguous)) {
-            if (isOkBecauseContiguous) {
-              foldingContext.Warn(
-                  common::LanguageFeature::ContiguousOkForSeqAssociation,
-                  "Element of contiguous assumed-shape array is accepted for storage sequence association"_port_en_US);
-            } else {
-              basicError = true;
-              messages.Say(
-                  "Element of assumed-shape array may not be associated with a %s array"_err_en_US,
-                  dummyName);
-            }
+            basicError = true;
+            messages.Say(
+                "Element of assumed-shape array may not be associated with a %s array"_err_en_US,
+                dummyName);
           }
         }
       }
@@ -655,8 +620,9 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
             messages.Say(
                 "Assumed-rank array may not be associated with a dummy argument that is not assumed-rank"_err_en_US);
           } else {
-            foldingContext.Warn(
+            context.Warn(
                 common::LanguageFeature::AssumedRankPassedToNonAssumedRank,
+                messages.at(),
                 "Assumed-rank array should not be associated with a dummy argument that is not assumed-rank"_port_en_US);
           }
         } else if (actualRank == 0) {
@@ -671,8 +637,7 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
               } else if (static_cast<std::size_t>(actualOffset->offset()) >=
                       actualOffset->symbol().size() ||
                   !evaluate::IsContiguous(
-                      actualOffset->symbol(), foldingContext)
-                      .value_or(false)) {
+                      actualOffset->symbol(), foldingContext)) {
                 actualElements = 1;
               } else if (auto actualSymType{evaluate::DynamicType::From(
                              actualOffset->symbol())}) {
@@ -693,8 +658,9 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
                       "Actual argument has fewer elements remaining in storage sequence (%jd) than %s array (%jd)"_err_en_US,
                       static_cast<std::intmax_t>(*actualElements), dummyName,
                       static_cast<std::intmax_t>(*dummySize));
-                } else {
-                  foldingContext.Warn(common::UsageWarning::ShortArrayActual,
+                } else if (context.ShouldWarn(
+                               common::UsageWarning::ShortArrayActual)) {
+                  messages.Say(common::UsageWarning::ShortArrayActual,
                       "Actual argument has fewer elements remaining in storage sequence (%jd) than %s array (%jd)"_warn_en_US,
                       static_cast<std::intmax_t>(*actualElements), dummyName,
                       static_cast<std::intmax_t>(*dummySize));
@@ -711,8 +677,9 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
                   "Actual argument array has fewer elements (%jd) than %s array (%jd)"_err_en_US,
                   static_cast<std::intmax_t>(*actualSize), dummyName,
                   static_cast<std::intmax_t>(*dummySize));
-            } else {
-              foldingContext.Warn(common::UsageWarning::ShortArrayActual,
+            } else if (context.ShouldWarn(
+                           common::UsageWarning::ShortArrayActual)) {
+              messages.Say(common::UsageWarning::ShortArrayActual,
                   "Actual argument array has fewer elements (%jd) than %s array (%jd)"_warn_en_US,
                   static_cast<std::intmax_t>(*actualSize), dummyName,
                   static_cast<std::intmax_t>(*dummySize));
@@ -722,9 +689,6 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
       }
     }
   }
-  const ObjectEntityDetails *actualLastObject{actualLastSymbol
-          ? actualLastSymbol->detailsIf<ObjectEntityDetails>()
-          : nullptr};
   if (actualLastObject && actualLastObject->IsCoarray() &&
       dummy.attrs.test(characteristics::DummyDataObject::Attr::Allocatable) &&
       dummy.intent == common::Intent::Out &&
@@ -771,7 +735,6 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
         if (whyNot->IsFatal()) {
           if (auto *msg{messages.Say(*undefinableMessage, dummyName)}) {
             if (!msg->IsFatal()) {
-              volatileOrAsyncNeedsTempDiagnosticIssued = true;
               msg->set_languageFeature(common::LanguageFeature::
                       UndefinableAsynchronousOrVolatileActual);
             }
@@ -783,96 +746,36 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
         }
       }
     } else if (dummy.intent != common::Intent::In ||
-        (dummyIsPointer && !actualIsPointer) ||
-        (intrinsic && intrinsic->name == "loc")) {
+        (dummyIsPointer && !actualIsPointer)) {
       if (auto named{evaluate::ExtractNamedEntity(actual)}) {
-        context.NoteDefinedSymbol(named->GetFirstSymbol());
-      }
-    }
-  }
-
-  bool dummyIsContiguous{
-      dummy.attrs.test(characteristics::DummyDataObject::Attr::Contiguous)};
-  bool actualIsContiguous{IsSimplyContiguous(actual, foldingContext)};
-
-  // Cases when temporaries might be needed but must not be permitted.
-  bool dummyIsAssumedShape{dummy.type.attrs().test(
-      characteristics::TypeAndShape::Attr::AssumedShape)};
-  bool copyOutNeeded{
-      evaluate::ActualArgNeedsCopy(&arg, &dummyArg, foldingContext,
-          /*forCopyOut=*/true)
-          .value_or(false)};
-  if (copyOutNeeded && !dummyIsValue &&
-      (dummyIsAsynchronous || dummyIsVolatile)) {
-    if (actualIsAsynchronous || actualIsVolatile) {
-      if (actualCoarrayRef) { // F'2023 C1547
-        messages.Say(
-            "Coindexed ASYNCHRONOUS or VOLATILE actual argument may not be associated with %s with ASYNCHRONOUS or VOLATILE attributes unless VALUE"_err_en_US,
-            dummyName);
-        volatileOrAsyncNeedsTempDiagnosticIssued = true;
-      }
-      if ((actualRank > 0 || actualIsAssumedRank) && !actualIsContiguous) {
-        if (dummyIsContiguous ||
-            !(dummyIsAssumedShape || dummyIsAssumedRank ||
-                (actualIsPointer && dummyIsPointer))) { // F'2023 C1548 & C1549
-          messages.Say(
-              "ASYNCHRONOUS or VOLATILE actual argument that is not simply contiguous may not be associated with a contiguous ASYNCHRONOUS or VOLATILE %s"_err_en_US,
-              dummyName);
-          volatileOrAsyncNeedsTempDiagnosticIssued = true;
+        if (const Symbol & base{named->GetFirstSymbol()};
+            IsFunctionResult(base)) {
+          context.NoteDefinedSymbol(base);
         }
       }
-    } else if (!(dummyIsAssumedShape || dummyIsAssumedRank ||
-                   (actualIsPointer && dummyIsPointer)) &&
-        evaluate::IsArraySection(actual) && !actualIsContiguous &&
-        !evaluate::HasVectorSubscript(actual)) {
-      foldingContext.Warn(common::UsageWarning::VolatileOrAsynchronousTemporary,
-          "The array section '%s' should not be associated with %s with %s attribute, unless the dummy is assumed-shape or assumed-rank"_warn_en_US,
-          actual.AsFortran(), dummyName,
-          dummyIsAsynchronous ? "ASYNCHRONOUS" : "VOLATILE");
-      volatileOrAsyncNeedsTempDiagnosticIssued = true;
     }
   }
-  // General implementation of F'23 15.5.2.5 note 5
-  // Adds a less specific error message for any copy-out that could overwrite
-  // a unread value in the actual argument.
-  // Occurences of `volatileOrAsyncNeedsTempDiagnosticIssued = true` indicate a
-  // more specific error message has already been issued. We might be able to
-  // clean this up by switching the coding style of ActualArgNeedsCopy to be
-  // more like WhyNotDefinable.
-  if (copyOutNeeded && !volatileOrAsyncNeedsTempDiagnosticIssued) {
-    if ((actualIsVolatile || actualIsAsynchronous) &&
-        (dummyIsVolatile || dummyIsAsynchronous)) {
-      foldingContext.Warn(common::UsageWarning::VolatileOrAsynchronousTemporary,
-          "The actual argument '%s' with %s attribute should not be associated with %s with %s attribute, because a temporary copy is required during the call"_warn_en_US,
-          actual.AsFortran(), actualIsVolatile ? "VOLATILE" : "ASYNCHRONOUS",
-          dummyName, dummyIsVolatile ? "VOLATILE" : "ASYNCHRONOUS");
+
+  // Cases when temporaries might be needed but must not be permitted.
+  bool actualIsContiguous{IsSimplyContiguous(actual, foldingContext)};
+  bool dummyIsAssumedShape{dummy.type.attrs().test(
+      characteristics::TypeAndShape::Attr::AssumedShape)};
+  bool dummyIsContiguous{
+      dummy.attrs.test(characteristics::DummyDataObject::Attr::Contiguous)};
+  if ((actualIsAsynchronous || actualIsVolatile) &&
+      (dummyIsAsynchronous || dummyIsVolatile) && !dummyIsValue) {
+    if (actualIsCoindexed) { // C1538
+      messages.Say(
+          "Coindexed ASYNCHRONOUS or VOLATILE actual argument may not be associated with %s with ASYNCHRONOUS or VOLATILE attributes unless VALUE"_err_en_US,
+          dummyName);
     }
-  }
-  // If there are any cases where we don't need a copy and some other compiler
-  // does, we issue a portability warning here.
-  if (context.ShouldWarn(common::UsageWarning::Portability)) {
-    // 3 other compilers error on this case even though it is ok.
-    // Possibly as an over-restriction of F'23 C1548.
-    if (!copyOutNeeded && !volatileOrAsyncNeedsTempDiagnosticIssued &&
-        (!dummyIsValue && (dummyIsAsynchronous || dummyIsVolatile)) &&
-        !(actualIsAsynchronous || actualIsVolatile) &&
-        !(dummyIsAssumedShape || dummyIsAssumedRank ||
-            (actualIsPointer && dummyIsPointer)) &&
-        evaluate::IsArraySection(actual) &&
-        !evaluate::HasVectorSubscript(actual)) {
-      foldingContext.Warn(common::UsageWarning::Portability,
-          "The array section '%s' should not be associated with %s with %s attribute, unless the dummy is assumed-shape or assumed-rank"_port_en_US,
-          actual.AsFortran(), dummyName,
-          dummyIsAsynchronous ? "ASYNCHRONOUS" : "VOLATILE");
-    }
-    // Possibly an over-restriction of F'23 15.5.2.5 note 5
-    if (copyOutNeeded && !volatileOrAsyncNeedsTempDiagnosticIssued) {
-      if ((dummyIsVolatile && !actualIsVolatile && !actualIsAsynchronous) ||
-          (dummyIsAsynchronous && !actualIsVolatile && !actualIsAsynchronous)) {
-        foldingContext.Warn(common::UsageWarning::Portability,
-            "The actual argument '%s' should not be associated with %s with %s attribute, because a temporary copy is required during the call"_port_en_US,
-            actual.AsFortran(), dummyName,
-            dummyIsVolatile ? "VOLATILE" : "ASYNCHRONOUS");
+    if ((actualRank > 0 || actualIsAssumedRank) && !actualIsContiguous) {
+      if (dummyIsContiguous ||
+          !(dummyIsAssumedShape || dummyIsAssumedRank ||
+              (actualIsPointer && dummyIsPointer))) { // C1539 & C1540
+        messages.Say(
+            "ASYNCHRONOUS or VOLATILE actual argument that is not simply contiguous may not be associated with a contiguous ASYNCHRONOUS or VOLATILE %s"_err_en_US,
+            dummyName);
       }
     }
   }
@@ -880,49 +783,41 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
   // 15.5.2.6 -- dummy is ALLOCATABLE
   bool dummyIsOptional{
       dummy.attrs.test(characteristics::DummyDataObject::Attr::Optional)};
+  bool actualIsNull{evaluate::IsNullPointer(actual)};
   if (dummyIsAllocatable) {
     if (actualIsAllocatable) {
-      if (actualCoarrayRef && dummy.intent != common::Intent::In) {
+      if (actualIsCoindexed && dummy.intent != common::Intent::In) {
         messages.Say(
             "ALLOCATABLE %s must have INTENT(IN) to be associated with a coindexed actual argument"_err_en_US,
             dummyName);
       }
-      if (!actualCoarrayRef && actualLastSymbol && dummy.type.corank() == 0 &&
-          actualLastSymbol->Corank() > 0) {
-        messages.Say(
-            "ALLOCATABLE %s is not a coarray but actual argument has corank %d"_err_en_US,
-            dummyName, actualLastSymbol->Corank());
-      }
-    } else if (evaluate::IsBareNullPointer(&actual)) {
+    } else if (actualIsNull) {
       if (dummyIsOptional) {
-      } else if (dummy.intent == common::Intent::Default &&
-          context.ShouldWarn(
-              common::UsageWarning::NullActualForDefaultIntentAllocatable)) {
-        messages.Say(
-            "A null pointer should not be associated with allocatable %s without INTENT(IN)"_warn_en_US,
-            dummyName);
       } else if (dummy.intent == common::Intent::In) {
-        foldingContext.Warn(common::LanguageFeature::NullActualForAllocatable,
-            "Allocatable %s is associated with a null pointer"_port_en_US,
-            dummyName);
-      }
-      // INTENT(OUT) and INTENT(IN OUT) cases are caught elsewhere as being
-      // undefinable actual arguments.
-    } else if (evaluate::IsNullAllocatable(&actual)) {
-      if (dummyIsOptional) {
-      } else if (dummy.intent == common::Intent::Default &&
-          context.ShouldWarn(
-              common::UsageWarning::NullActualForDefaultIntentAllocatable)) {
+        // Extension (Intel, NAG, XLF): a NULL() pointer is an acceptable
+        // actual argument for an INTENT(IN) allocatable dummy, and it
+        // is treated as an unassociated allocatable.
+        if (context.ShouldWarn(
+                common::LanguageFeature::NullActualForAllocatable)) {
+          messages.Say(common::LanguageFeature::NullActualForAllocatable,
+              "Allocatable %s is associated with a null pointer"_port_en_US,
+              dummyName);
+        }
+      } else {
         messages.Say(
-            "A null allocatable should not be associated with allocatable %s without INTENT(IN)"_warn_en_US,
+            "A null pointer may not be associated with allocatable %s without INTENT(IN)"_err_en_US,
             dummyName);
       }
-      // INTENT(OUT) and INTENT(IN OUT) cases are caught elsewhere
-    } else if (!actualIsAllocatable &&
-        !dummy.ignoreTKR.test(common::IgnoreTKR::Pointer)) {
+    } else {
       messages.Say(
           "ALLOCATABLE %s must be associated with an ALLOCATABLE actual argument"_err_en_US,
           dummyName);
+    }
+    if (!actualIsCoindexed && actualLastSymbol &&
+        actualLastSymbol->Corank() != dummy.type.corank()) {
+      messages.Say(
+          "ALLOCATABLE %s has corank %d but actual argument has corank %d"_err_en_US,
+          dummyName, dummy.type.corank(), actualLastSymbol->Corank());
     }
   }
 
@@ -932,10 +827,9 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
       if (scope) {
         semantics::CheckPointerAssignment(context, messages.at(), dummyName,
             dummy, actual, *scope,
-            /*isAssumedRank=*/dummyIsAssumedRank, actualIsPointer);
+            /*isAssumedRank=*/dummyIsAssumedRank);
       }
-    } else if (!actualIsPointer &&
-        !dummy.ignoreTKR.test(common::IgnoreTKR::Pointer)) {
+    } else if (!actualIsPointer) {
       messages.Say(
           "Actual argument associated with POINTER %s must also be POINTER unless INTENT(IN)"_err_en_US,
           dummyName);
@@ -958,8 +852,11 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
       checkTypeCompatibility = false;
       if (dummyIsUnlimited && dummy.intent == common::Intent::In &&
           context.IsEnabled(common::LanguageFeature::RelaxedIntentInChecking)) {
-        foldingContext.Warn(common::LanguageFeature::RelaxedIntentInChecking,
-            "If a POINTER or ALLOCATABLE dummy or actual argument is unlimited polymorphic, both should be so"_port_en_US);
+        if (context.ShouldWarn(
+                common::LanguageFeature::RelaxedIntentInChecking)) {
+          messages.Say(common::LanguageFeature::RelaxedIntentInChecking,
+              "If a POINTER or ALLOCATABLE dummy or actual argument is unlimited polymorphic, both should be so"_port_en_US);
+        }
       } else {
         messages.Say(
             "If a POINTER or ALLOCATABLE dummy or actual argument is unlimited polymorphic, both must be so"_err_en_US);
@@ -967,15 +864,21 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
     } else if (dummyIsPolymorphic != actualIsPolymorphic) {
       if (dummyIsPolymorphic && dummy.intent == common::Intent::In &&
           context.IsEnabled(common::LanguageFeature::RelaxedIntentInChecking)) {
-        foldingContext.Warn(common::LanguageFeature::RelaxedIntentInChecking,
-            "If a POINTER or ALLOCATABLE dummy or actual argument is polymorphic, both should be so"_port_en_US);
+        if (context.ShouldWarn(
+                common::LanguageFeature::RelaxedIntentInChecking)) {
+          messages.Say(common::LanguageFeature::RelaxedIntentInChecking,
+              "If a POINTER or ALLOCATABLE dummy or actual argument is polymorphic, both should be so"_port_en_US);
+        }
       } else if (actualIsPolymorphic &&
           context.IsEnabled(common::LanguageFeature::
                   PolymorphicActualAllocatableOrPointerToMonomorphicDummy)) {
-        foldingContext.Warn(
-            common::LanguageFeature::
-                PolymorphicActualAllocatableOrPointerToMonomorphicDummy,
-            "If a POINTER or ALLOCATABLE actual argument is polymorphic, the corresponding dummy argument should also be so"_port_en_US);
+        if (context.ShouldWarn(common::LanguageFeature::
+                    PolymorphicActualAllocatableOrPointerToMonomorphicDummy)) {
+          messages.Say(
+              common::LanguageFeature::
+                  PolymorphicActualAllocatableOrPointerToMonomorphicDummy,
+              "If a POINTER or ALLOCATABLE actual argument is polymorphic, the corresponding dummy argument should also be so"_port_en_US);
+        }
       } else {
         checkTypeCompatibility = false;
         messages.Say(
@@ -987,8 +890,11 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
         if (dummy.intent == common::Intent::In &&
             context.IsEnabled(
                 common::LanguageFeature::RelaxedIntentInChecking)) {
-          foldingContext.Warn(common::LanguageFeature::RelaxedIntentInChecking,
-              "POINTER or ALLOCATABLE dummy and actual arguments should have the same declared type and kind"_port_en_US);
+          if (context.ShouldWarn(
+                  common::LanguageFeature::RelaxedIntentInChecking)) {
+            messages.Say(common::LanguageFeature::RelaxedIntentInChecking,
+                "POINTER or ALLOCATABLE dummy and actual arguments should have the same declared type and kind"_port_en_US);
+          }
         } else {
           messages.Say(
               "POINTER or ALLOCATABLE dummy and actual arguments must have the same declared type and kind"_err_en_US);
@@ -1011,11 +917,6 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
       messages.Say(
           "Actual argument associated with coarray %s must be a coarray"_err_en_US,
           dummyName);
-    } else if (actualType.corank() != dummy.type.corank() &&
-        dummyIsAllocatableOrPointer) {
-      messages.Say(
-          "ALLOCATABLE or POINTER %s has corank %d but actual argument has corank %d"_err_en_US,
-          dummyName, dummy.type.corank(), actualType.corank());
     }
     if (dummyIsVolatile) {
       if (!actualIsVolatile) {
@@ -1045,7 +946,7 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
 
   // NULL(MOLD=) checking for non-intrinsic procedures
   if (!intrinsic && !dummyIsAllocatableOrPointer && !dummyIsOptional &&
-      evaluate::IsNullPointer(&actual)) {
+      actualIsNull) {
     messages.Say(
         "Actual argument associated with %s may not be null pointer %s"_err_en_US,
         dummyName, actual.AsFortran());
@@ -1056,16 +957,16 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
   if (dummy.attrs.test(characteristics::DummyDataObject::Attr::Target) &&
       context.ShouldWarn(common::UsageWarning::NonTargetPassedToTarget)) {
     bool actualIsVariable{evaluate::IsVariable(actual)};
-    bool actualIsTemp{
-        !actualIsVariable || HasVectorSubscript(actual) || actualCoarrayRef};
+    bool actualIsTemp{!actualIsVariable || HasVectorSubscript(actual) ||
+        evaluate::ExtractCoarrayRef(actual)};
     if (actualIsTemp) {
-      foldingContext.Warn(common::UsageWarning::NonTargetPassedToTarget,
+      messages.Say(common::UsageWarning::NonTargetPassedToTarget,
           "Any pointer associated with TARGET %s during this call will not be associated with the value of '%s' afterwards"_warn_en_US,
           dummyName, actual.AsFortran());
     } else {
       auto actualSymbolVector{GetSymbolVector(actual)};
       if (!evaluate::GetLastTarget(actualSymbolVector)) {
-        foldingContext.Warn(common::UsageWarning::NonTargetPassedToTarget,
+        messages.Say(common::UsageWarning::NonTargetPassedToTarget,
             "Any pointer associated with TARGET %s during this call must not be used afterwards, as '%s' is not a target"_warn_en_US,
             dummyName, actual.AsFortran());
       }
@@ -1101,37 +1002,11 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
               *actualDataAttr == common::CUDADataAttr::Managed)) {
         actualDataAttr = common::CUDADataAttr::Device;
       }
-      // For device procedures, treat actual arguments with VALUE attribute as
-      // device data
-      if (!actualDataAttr && actualLastSymbol && IsValue(*actualLastSymbol) &&
-          (*procedure.cudaSubprogramAttrs ==
-              common::CUDASubprogramAttrs::Device)) {
-        actualDataAttr = common::CUDADataAttr::Device;
-      }
     }
-    if (dummyDataAttr == common::CUDADataAttr::Device &&
-        (dummyIsAssumedShape || dummyIsAssumedRank) &&
-        !dummy.ignoreTKR.test(common::IgnoreTKR::Contiguous)) {
-      if (auto contig{evaluate::IsContiguous(actual, foldingContext,
-              /*namedConstantSectionsAreContiguous=*/true,
-              /*firstDimensionStride1=*/true)}) {
-        if (!*contig) {
-          messages.Say(
-              "actual argument associated with assumed shape/rank device %s is known to be discontiguous on its first dimension"_err_en_US,
-              dummyName);
-        }
-      } else {
-        messages.Say(
-            "actual argument associated with assumed shape/rank device %s is not known to be contiguous on its first dimension"_warn_en_US,
-            dummyName);
-      }
-    }
-    bool isHostDeviceProc{procedure.cudaSubprogramAttrs &&
-        *procedure.cudaSubprogramAttrs ==
-            common::CUDASubprogramAttrs::HostDevice};
+    std::optional<std::string> warning;
     if (!common::AreCompatibleCUDADataAttrs(dummyDataAttr, actualDataAttr,
-            dummy.ignoreTKR, /*allowUnifiedMatchingRule=*/true,
-            isHostDeviceProc, &context.languageFeatures())) {
+            dummy.ignoreTKR, &warning,
+            /*allowUnifiedMatchingRule=*/true, &context.languageFeatures())) {
       auto toStr{[](std::optional<common::CUDADataAttr> x) {
         return x ? "ATTRIBUTES("s +
                 parser::ToUpperCaseLetters(common::EnumToString(*x)) + ")"s
@@ -1141,23 +1016,9 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
           "%s has %s but its associated actual argument has %s"_err_en_US,
           dummyName, toStr(dummyDataAttr), toStr(actualDataAttr));
     }
-  }
-  // Emit an error message if an actual argument passed to a host intrinsic is
-  // on the device.
-  if (intrinsic && !FindCUDADeviceContext(scope) &&
-      !FindOpenACCConstructContaining(scope)) {
-    if (!cudaSkippedIntrinsics.contains(intrinsic->name)) {
-      std::optional<common::CUDADataAttr> actualDataAttr;
-      if (const auto *actualObject{actualLastSymbol
-                  ? actualLastSymbol->detailsIf<ObjectEntityDetails>()
-                  : nullptr}) {
-        actualDataAttr = actualObject->cudaDataAttr();
-      }
-      if (actualDataAttr && *actualDataAttr == common::CUDADataAttr::Device) {
-        messages.Say(
-            "Actual argument %s associated with host intrinsic %s is on the device"_err_en_US,
-            actualLastSymbol ? actualLastSymbol->name() : "", intrinsic->name);
-      }
+    if (warning && context.ShouldWarn(common::UsageWarning::CUDAUsage)) {
+      messages.Say(common::UsageWarning::CUDAUsage, "%s"_warn_en_US,
+          std::move(*warning));
     }
   }
 
@@ -1188,8 +1049,8 @@ static void CheckProcedureArg(evaluate::ActualArgument &arg,
     SemanticsContext &context, bool ignoreImplicitVsExplicit) {
   evaluate::FoldingContext &foldingContext{context.foldingContext()};
   parser::ContextualMessages &messages{foldingContext.messages()};
-  parser::CharBlock location{arg.sourceLocation().value_or(messages.at())};
-  auto restorer{messages.SetLocation(location)};
+  auto restorer{
+      messages.SetLocation(arg.sourceLocation().value_or(messages.at()))};
   const characteristics::Procedure &interface { dummy.procedure.value() };
   if (const auto *expr{arg.UnwrapExpr()}) {
     bool dummyIsPointer{
@@ -1212,8 +1073,9 @@ static void CheckProcedureArg(evaluate::ActualArgument &arg,
           evaluate::SayWithDeclaration(messages, *argProcSymbol,
               "Procedure binding '%s' passed as an actual argument"_err_en_US,
               argProcSymbol->name());
-        } else {
-          evaluate::WarnWithDeclaration(foldingContext, *argProcSymbol,
+        } else if (context.ShouldWarn(
+                       common::LanguageFeature::BindingAsProcedure)) {
+          evaluate::SayWithDeclaration(messages, *argProcSymbol,
               common::LanguageFeature::BindingAsProcedure,
               "Procedure binding '%s' passed as an actual argument"_port_en_US,
               argProcSymbol->name());
@@ -1229,8 +1091,6 @@ static void CheckProcedureArg(evaluate::ActualArgument &arg,
           characteristics::Procedure &argInterface{argProc->procedure.value()};
           argInterface.attrs.reset(
               characteristics::Procedure::Attr::NullPointer);
-          argInterface.attrs.reset(
-              characteristics::Procedure::Attr::NullAllocatable);
           if (!argProcSymbol || argProcSymbol->attrs().test(Attr::INTRINSIC)) {
             // It's ok to pass ELEMENTAL unrestricted intrinsic functions.
             argInterface.attrs.reset(
@@ -1245,8 +1105,6 @@ static void CheckProcedureArg(evaluate::ActualArgument &arg,
             } else {
               argInterface.attrs.reset(
                   characteristics::Procedure::Attr::NullPointer);
-              argInterface.attrs.reset(
-                  characteristics::Procedure::Attr::NullAllocatable);
             }
           }
           if (interface.HasExplicitInterface()) {
@@ -1265,14 +1123,15 @@ static void CheckProcedureArg(evaluate::ActualArgument &arg,
                 messages.Say(
                     "Actual procedure argument for %s of a PURE procedure must have an explicit interface"_err_en_US,
                     dummyName);
-              } else {
-                foldingContext.Warn(
-                    common::UsageWarning::ImplicitInterfaceActual,
+              } else if (context.ShouldWarn(
+                             common::UsageWarning::ImplicitInterfaceActual)) {
+                messages.Say(common::UsageWarning::ImplicitInterfaceActual,
                     "Actual procedure argument has an implicit interface which is not known to be compatible with %s which has an explicit interface"_warn_en_US,
                     dummyName);
               }
-            } else if (warning) {
-              foldingContext.Warn(common::UsageWarning::ProcDummyArgShapes,
+            } else if (warning &&
+                context.ShouldWarn(common::UsageWarning::ProcDummyArgShapes)) {
+              messages.Say(common::UsageWarning::ProcDummyArgShapes,
                   "Actual procedure argument has possible interface incompatibility with %s: %s"_warn_en_US,
                   dummyName, std::move(*warning));
             }
@@ -1302,7 +1161,7 @@ static void CheckProcedureArg(evaluate::ActualArgument &arg,
               "Actual argument associated with procedure %s is not a procedure"_err_en_US,
               dummyName);
         }
-      } else if (IsNullPointer(expr)) {
+      } else if (IsNullPointer(*expr)) {
         if (!dummyIsPointer &&
             !dummy.attrs.test(
                 characteristics::DummyProcedure::Attr::Optional)) {
@@ -1316,30 +1175,22 @@ static void CheckProcedureArg(evaluate::ActualArgument &arg,
             dummyName);
       }
     }
-    if (dummyIsPointer) {
-      if (dummy.intent == common::Intent::In) {
-        // need not be definable, can be a target
-      } else if (!IsProcedurePointer(*expr)) {
+    if (dummyIsPointer && dummy.intent != common::Intent::In) {
+      const Symbol *last{GetLastSymbol(*expr)};
+      if (last && IsProcedurePointer(*last)) {
+        if (dummy.intent != common::Intent::Default &&
+            IsIntentIn(last->GetUltimate())) { // 19.6.8
+          messages.Say(
+              "Actual argument associated with procedure pointer %s may not be INTENT(IN)"_err_en_US,
+              dummyName);
+        }
+      } else if (!(dummy.intent == common::Intent::Default &&
+                     IsNullProcedurePointer(*expr))) {
+        // 15.5.2.9(5) -- dummy procedure POINTER
+        // Interface compatibility has already been checked above
         messages.Say(
-            "Actual argument associated with procedure pointer %s is not a procedure pointer"_err_en_US,
+            "Actual argument associated with procedure pointer %s must be a pointer unless INTENT(IN)"_err_en_US,
             dummyName);
-      } else if (dummy.intent == common::Intent::Default) {
-        // ok, needs to be definable only if defined at run time
-      } else {
-        DefinabilityFlags flags{DefinabilityFlag::PointerDefinition};
-        if (dummy.intent != common::Intent::Out) {
-          flags.set(DefinabilityFlag::DoNotNoteDefinition);
-        }
-        if (auto whyNot{WhyNotDefinable(
-                location, context.FindScope(location), flags, *expr)}) {
-          if (auto *msg{messages.Say(
-                  "Actual argument associated with INTENT(%s) procedure pointer %s is not definable"_err_en_US,
-                  dummy.intent == common::Intent::Out ? "OUT" : "IN OUT",
-                  dummyName)}) {
-            msg->Attach(
-                std::move(whyNot->set_severity(parser::Severity::Because)));
-          }
-        }
       }
     }
   } else {
@@ -1399,17 +1250,16 @@ static void CheckExplicitInterfaceArg(evaluate::ActualArgument &arg,
                       object.type.Rank() == 0 && proc.IsElemental()};
                   CheckExplicitDataArg(object, dummyName, *expr, *type,
                       isElemental, context, foldingContext, scope, intrinsic,
-                      allowActualArgumentConversions, extentErrors, proc, arg,
-                      dummy);
+                      allowActualArgumentConversions, extentErrors, proc, arg);
                 } else if (object.type.type().IsTypelessIntrinsicArgument() &&
                     IsBOZLiteral(*expr)) {
                   // ok
                 } else if (object.type.type().IsTypelessIntrinsicArgument() &&
-                    evaluate::IsNullObjectPointer(expr)) {
+                    evaluate::IsNullObjectPointer(*expr)) {
                   // ok, ASSOCIATED(NULL(without MOLD=))
                 } else if (object.type.attrs().test(characteristics::
                                    TypeAndShape::Attr::AssumedRank) &&
-                    evaluate::IsNullObjectPointer(expr) &&
+                    evaluate::IsNullObjectPointer(*expr) &&
                     (object.attrs.test(
                          characteristics::DummyDataObject::Attr::Allocatable) ||
                         object.attrs.test(
@@ -1422,7 +1272,7 @@ static void CheckExplicitInterfaceArg(evaluate::ActualArgument &arg,
                                     Attr::Pointer) ||
                                object.attrs.test(characteristics::
                                        DummyDataObject::Attr::Optional)) &&
-                    evaluate::IsNullObjectPointer(expr)) {
+                    evaluate::IsNullObjectPointer(*expr)) {
                   // FOO(NULL(without MOLD=))
                   if (object.type.type().IsAssumedLengthCharacter()) {
                     messages.Say(
@@ -1441,24 +1291,20 @@ static void CheckExplicitInterfaceArg(evaluate::ActualArgument &arg,
                   }
                 } else if (object.attrs.test(characteristics::DummyDataObject::
                                    Attr::Allocatable) &&
-                    (evaluate::IsNullAllocatable(expr) ||
-                        evaluate::IsBareNullPointer(expr))) {
-                  if (object.intent == common::Intent::Out ||
-                      object.intent == common::Intent::InOut) {
-                    messages.Say(
-                        "NULL() actual argument '%s' may not be associated with allocatable dummy argument %s that is INTENT(OUT) or INTENT(IN OUT)"_err_en_US,
-                        expr->AsFortran(), dummyName);
-                  } else if (object.intent == common::Intent::Default) {
-                    foldingContext.Warn(
-                        common::UsageWarning::
-                            NullActualForDefaultIntentAllocatable,
-                        "NULL() actual argument '%s' should not be associated with allocatable dummy argument %s without INTENT(IN)"_warn_en_US,
-                        expr->AsFortran(), dummyName);
+                    evaluate::IsNullPointer(*expr)) {
+                  if (object.intent == common::Intent::In) {
+                    // Extension (Intel, NAG, XLF); see CheckExplicitDataArg.
+                    if (context.ShouldWarn(common::LanguageFeature::
+                                NullActualForAllocatable)) {
+                      messages.Say(
+                          common::LanguageFeature::NullActualForAllocatable,
+                          "Allocatable %s is associated with NULL()"_port_en_US,
+                          dummyName);
+                    }
                   } else {
-                    foldingContext.Warn(
-                        common::LanguageFeature::NullActualForAllocatable,
-                        "Allocatable %s is associated with %s"_port_en_US,
-                        dummyName, expr->AsFortran());
+                    messages.Say(
+                        "NULL() actual argument '%s' may not be associated with allocatable %s without INTENT(IN)"_err_en_US,
+                        expr->AsFortran(), dummyName);
                   }
                 } else {
                   messages.Say(
@@ -1473,7 +1319,8 @@ static void CheckExplicitInterfaceArg(evaluate::ActualArgument &arg,
                       assumed.name(), dummyName);
                 } else if (object.type.attrs().test(characteristics::
                                    TypeAndShape::Attr::AssumedRank) &&
-                    !IsAssumedShape(assumed) && !IsAssumedRank(assumed)) {
+                    !IsAssumedShape(assumed) &&
+                    !evaluate::IsAssumedRank(assumed)) {
                   messages.Say( // C711
                       "Assumed-type '%s' must be either assumed shape or assumed rank to be associated with assumed rank %s"_err_en_US,
                       assumed.name(), dummyName);
@@ -1581,10 +1428,6 @@ static bool CheckElementalConformance(parser::ContextualMessages &messages,
             evaluate::SayWithDeclaration(messages, *wholeSymbol,
                 "Whole assumed-size array '%s' may not be used as an argument to an elemental procedure"_err_en_US,
                 wholeSymbol->name());
-          } else if (IsAssumedRank(*wholeSymbol)) {
-            evaluate::SayWithDeclaration(messages, *wholeSymbol,
-                "Assumed-rank array '%s' may not be used as an argument to an elemental procedure"_err_en_US,
-                wholeSymbol->name());
           }
         }
         if (auto argShape{evaluate::GetShape(context, *expr)}) {
@@ -1593,10 +1436,10 @@ static bool CheckElementalConformance(parser::ContextualMessages &messages,
                 ") corresponding to dummy argument #" + std::to_string(index) +
                 " ('" + dummy.name + "')"};
             if (shape) {
-              if (!evaluate::CheckConformance(messages, *shape, *argShape,
-                      evaluate::CheckConformanceFlags::None, shapeName.c_str(),
-                      argName.c_str())
-                      .value_or(true)) {
+              auto tristate{evaluate::CheckConformance(messages, *shape,
+                  *argShape, evaluate::CheckConformanceFlags::None,
+                  shapeName.c_str(), argName.c_str())};
+              if (tristate && !*tristate) {
                 return false;
               }
             } else {
@@ -1635,8 +1478,6 @@ static void CheckAssociated(evaluate::ActualArguments &arguments,
       }
       if (const auto &targetArg{arguments[1]}) {
         // The standard requires that the TARGET= argument, when present,
-        // be type compatible with the POINTER= for a data pointer.  In
-        // the case of procedure pointers, the standard requires that it
         // be a valid RHS for a pointer assignment that has the POINTER=
         // argument as its LHS.  Some popular compilers misinterpret this
         // requirement more strongly than necessary, and actually validate
@@ -1648,7 +1489,7 @@ static void CheckAssociated(evaluate::ActualArguments &arguments,
         if (semanticsContext.ShouldWarn(common::UsageWarning::Portability)) {
           if (!evaluate::ExtractDataRef(*pointerExpr) &&
               !evaluate::IsProcedurePointer(*pointerExpr)) {
-            foldingContext.Warn(common::UsageWarning::Portability,
+            messages.Say(common::UsageWarning::Portability,
                 pointerArg->sourceLocation(),
                 "POINTER= argument of ASSOCIATED() is required by some other compilers to be a pointer"_port_en_US);
           } else if (scope && !evaluate::UnwrapProcedureRef(*pointerExpr)) {
@@ -1659,8 +1500,7 @@ static void CheckAssociated(evaluate::ActualArguments &arguments,
                         DefinabilityFlag::DoNotNoteDefinition},
                     *pointerExpr)}) {
               if (whyNot->IsFatal()) {
-                if (auto *msg{foldingContext.Warn(
-                        common::UsageWarning::Portability,
+                if (auto *msg{messages.Say(common::UsageWarning::Portability,
                         pointerArg->sourceLocation(),
                         "POINTER= argument of ASSOCIATED() is required by some other compilers to be a valid left-hand side of a pointer assignment statement"_port_en_US)}) {
                   msg->Attach(std::move(
@@ -1718,13 +1558,13 @@ static void CheckAssociated(evaluate::ActualArguments &arguments,
                     }
                   }
                 }
-              } else if (!IsNullProcedurePointer(targetExpr)) {
+              } else if (!IsNullProcedurePointer(*targetExpr)) {
                 messages.Say(
                     "POINTER= argument '%s' is a procedure pointer but the TARGET= argument '%s' is not a procedure or procedure pointer"_err_en_US,
                     pointerExpr->AsFortran(), targetExpr->AsFortran());
               }
             }
-          } else if (IsVariable(*targetExpr) || IsNullPointer(targetExpr)) {
+          } else if (IsVariable(*targetExpr) || IsNullPointer(*targetExpr)) {
             // Object pointer and target
             if (ExtractDataRef(*targetExpr)) {
               if (SymbolVector symbols{GetSymbolVector(*targetExpr)};
@@ -1744,8 +1584,7 @@ static void CheckAssociated(evaluate::ActualArguments &arguments,
             }
             if (const auto pointerType{pointerArg->GetType()}) {
               if (const auto targetType{targetArg->GetType()}) {
-                ok = pointerType->IsTkCompatibleWith(*targetType) ||
-                    targetType->IsTkCompatibleWith(*pointerType);
+                ok = pointerType->IsTkCompatibleWith(*targetType);
               }
             }
           } else {
@@ -1774,101 +1613,6 @@ static void CheckAssociated(evaluate::ActualArguments &arguments,
   if (!ok) {
     messages.Say(
         "Arguments of ASSOCIATED() must be a pointer and an optional valid target"_err_en_US);
-  }
-}
-
-// CO_REDUCE (F'2023 16.9.49)
-static void CheckCoReduce(
-    evaluate::ActualArguments &arguments, evaluate::FoldingContext &context) {
-  parser::ContextualMessages &messages{context.messages()};
-  evaluate::CheckForCoindexedObject(
-      context.messages(), arguments[0], "co_reduce", "a");
-  evaluate::CheckForCoindexedObject(
-      context.messages(), arguments[2], "co_reduce", "stat");
-  evaluate::CheckForCoindexedObject(
-      context.messages(), arguments[3], "co_reduce", "errmsg");
-
-  std::optional<evaluate::DynamicType> aType;
-  if (const auto &a{arguments[0]}) {
-    aType = a->GetType();
-  }
-  std::optional<characteristics::Procedure> procChars;
-  if (const auto &operation{arguments[1]}) {
-    if (const auto *expr{operation->UnwrapExpr()}) {
-      if (const auto *designator{
-              std::get_if<evaluate::ProcedureDesignator>(&expr->u)}) {
-        procChars = characteristics::Procedure::Characterize(
-            *designator, context, /*emitError=*/true);
-      } else if (const auto *ref{
-                     std::get_if<evaluate::ProcedureRef>(&expr->u)}) {
-        procChars = characteristics::Procedure::Characterize(*ref, context);
-      }
-    }
-  }
-
-  static constexpr characteristics::DummyDataObject::Attrs notAllowedArgAttrs{
-      characteristics::DummyDataObject::Attr::Optional,
-      characteristics::DummyDataObject::Attr::Allocatable,
-      characteristics::DummyDataObject::Attr::Pointer,
-  };
-  static constexpr characteristics::FunctionResult::Attrs
-      notAllowedFuncResAttrs{
-          characteristics::FunctionResult::Attr::Allocatable,
-          characteristics::FunctionResult::Attr::Pointer,
-      };
-  const characteristics::TypeAndShape *result{
-      procChars && procChars->functionResult
-          ? procChars->functionResult->GetTypeAndShape()
-          : nullptr};
-  if (!procChars || !procChars->IsPure() ||
-      procChars->dummyArguments.size() != 2 || !procChars->functionResult) {
-    messages.Say(
-        "OPERATION= argument of CO_REDUCE() must be a pure function of two data arguments"_err_en_US);
-  } else if (procChars->attrs.test(characteristics::Procedure::Attr::BindC)) {
-    messages.Say(
-        "A BIND(C) OPERATION= argument of CO_REDUCE() is not supported"_err_en_US);
-  } else if (!result || result->Rank() != 0) {
-    messages.Say(
-        "OPERATION= argument of CO_REDUCE() must be a scalar function"_err_en_US);
-  } else if (result->type().IsPolymorphic() ||
-      (aType && !aType->IsTkLenCompatibleWith(result->type()))) {
-    messages.Say(
-        "OPERATION= argument of CO_REDUCE() must have the same type as A="_err_en_US);
-  } else if (((procChars->functionResult->attrs & notAllowedFuncResAttrs) !=
-                 characteristics::FunctionResult::Attrs{}) ||
-      procChars->functionResult->GetTypeAndShape()->type().IsPolymorphic()) {
-    messages.Say(
-        "Result of OPERATION= procedure of CO_REDUCE() must be scalar and neither allocatable, pointer, nor polymorphic"_err_en_US);
-  } else {
-    const characteristics::DummyDataObject *data[2]{};
-    for (int j{0}; j < 2; ++j) {
-      const auto &dummy{procChars->dummyArguments.at(j)};
-      data[j] = std::get_if<characteristics::DummyDataObject>(&dummy.u);
-    }
-    if (!data[0] || !data[1]) {
-      messages.Say(
-          "OPERATION= argument of CO_REDUCE() may not have dummy procedure arguments"_err_en_US);
-    } else {
-      for (int j{0}; j < 2; ++j) {
-        if (((data[j]->attrs & notAllowedArgAttrs) !=
-                characteristics::DummyDataObject::Attrs{}) ||
-            data[j]->type.Rank() != 0 || data[j]->type.type().IsPolymorphic() ||
-            (aType && !data[j]->type.type().IsTkCompatibleWith(*aType))) {
-          messages.Say(
-              "Arguments of OPERATION= procedure of CO_REDUCE() must be both scalar of the same type as A=, and neither allocatable, pointer, polymorphic, nor optional"_err_en_US);
-          break;
-        }
-      }
-      static constexpr characteristics::DummyDataObject::Attrs attrs{
-          characteristics::DummyDataObject::Attr::Asynchronous,
-          characteristics::DummyDataObject::Attr::Target,
-          characteristics::DummyDataObject::Attr::Value,
-      };
-      if ((data[0]->attrs & attrs) != (data[1]->attrs & attrs)) {
-        messages.Say(
-            "If either argument of the OPERATION= procedure of CO_REDUCE() has the ASYNCHRONOUS, TARGET, or VALUE attribute, both must have that attribute"_err_en_US);
-      }
-    }
   }
 }
 
@@ -1973,13 +1717,6 @@ static void CheckMove_Alloc(evaluate::ActualArguments &arguments,
   if (arguments.size() >= 2) {
     evaluate::CheckForCoindexedObject(
         messages, arguments[1], "move_alloc", "to");
-    int fromCR{GetCorank(arguments[0])};
-    int toCR{GetCorank(arguments[1])};
-    if (fromCR != toCR) {
-      messages.Say(*arguments[0]->sourceLocation(),
-          "FROM= argument to MOVE_ALLOC has corank %d, but TO= argument has corank %d"_err_en_US,
-          fromCR, toCR);
-    }
   }
   if (arguments.size() >= 3) {
     evaluate::CheckForCoindexedObject(
@@ -2087,9 +1824,8 @@ static void CheckReduce(
       }
     }
   }
-  const auto *result{procChars && procChars->functionResult
-          ? procChars->functionResult->GetTypeAndShape()
-          : nullptr};
+  const auto *result{
+      procChars ? procChars->functionResult->GetTypeAndShape() : nullptr};
   if (!procChars || !procChars->IsPure() ||
       procChars->dummyArguments.size() != 2 || !procChars->functionResult) {
     messages.Say(
@@ -2175,8 +1911,10 @@ static void CheckReduce(
 // TRANSFER (16.9.193)
 static void CheckTransferOperandType(SemanticsContext &context,
     const evaluate::DynamicType &type, const char *which) {
-  if (type.IsPolymorphic()) {
-    context.foldingContext().Warn(common::UsageWarning::PolymorphicTransferArg,
+  if (type.IsPolymorphic() &&
+      context.ShouldWarn(common::UsageWarning::PolymorphicTransferArg)) {
+    context.foldingContext().messages().Say(
+        common::UsageWarning::PolymorphicTransferArg,
         "%s of TRANSFER is polymorphic"_warn_en_US, which);
   } else if (!type.IsUnlimitedPolymorphic() &&
       type.category() == TypeCategory::Derived &&
@@ -2184,7 +1922,7 @@ static void CheckTransferOperandType(SemanticsContext &context,
     DirectComponentIterator directs{type.GetDerivedTypeSpec()};
     if (auto bad{std::find_if(directs.begin(), directs.end(), IsDescriptor)};
         bad != directs.end()) {
-      evaluate::WarnWithDeclaration(context.foldingContext(), *bad,
+      evaluate::SayWithDeclaration(context.foldingContext().messages(), *bad,
           common::UsageWarning::PointerComponentTransferArg,
           "%s of TRANSFER contains allocatable or pointer component %s"_warn_en_US,
           which, bad.BuildResultDesignatorName());
@@ -2214,8 +1952,8 @@ static void CheckTransfer(evaluate::ActualArguments &arguments,
               messages.Say(
                   "Element size of MOLD= array may not be zero when SOURCE= is not empty"_err_en_US);
             }
-          } else {
-            foldingContext.Warn(common::UsageWarning::VoidMold,
+          } else if (context.ShouldWarn(common::UsageWarning::VoidMold)) {
+            messages.Say(common::UsageWarning::VoidMold,
                 "Element size of MOLD= array may not be zero unless SOURCE= is empty"_warn_en_US);
           }
         }
@@ -2231,7 +1969,7 @@ static void CheckTransfer(evaluate::ActualArguments &arguments,
         } else if (context.ShouldWarn(
                        common::UsageWarning::TransferSizePresence) &&
             IsAllocatableOrObjectPointer(whole)) {
-          foldingContext.Warn(common::UsageWarning::TransferSizePresence,
+          messages.Say(common::UsageWarning::TransferSizePresence,
               "SIZE= argument that is allocatable or pointer must be present at execution; parenthesize to silence this warning"_warn_en_US);
         }
       }
@@ -2244,8 +1982,6 @@ static void CheckSpecificIntrinsic(const characteristics::Procedure &proc,
     const Scope *scope, const evaluate::SpecificIntrinsic &intrinsic) {
   if (intrinsic.name == "associated") {
     CheckAssociated(arguments, context, scope);
-  } else if (intrinsic.name == "co_reduce") {
-    CheckCoReduce(arguments, context.foldingContext());
   } else if (intrinsic.name == "event_query") {
     CheckEvent_Query(arguments, context.foldingContext());
   } else if (intrinsic.name == "image_index") {
@@ -2265,9 +2001,10 @@ static void CheckSpecificIntrinsic(const characteristics::Procedure &proc,
   }
 }
 
-parser::Messages CheckExplicitInterface(const characteristics::Procedure &proc,
-    evaluate::ActualArguments &actuals, SemanticsContext &context,
-    const Scope *scope, const evaluate::SpecificIntrinsic *intrinsic,
+static parser::Messages CheckExplicitInterface(
+    const characteristics::Procedure &proc, evaluate::ActualArguments &actuals,
+    SemanticsContext &context, const Scope *scope,
+    const evaluate::SpecificIntrinsic *intrinsic,
     bool allowActualArgumentConversions, bool extentErrors,
     bool ignoreImplicitVsExplicit) {
   evaluate::FoldingContext &foldingContext{context.foldingContext()};
@@ -2429,51 +2166,47 @@ bool CheckArguments(const characteristics::Procedure &proc,
   evaluate::FoldingContext foldingContext{context.foldingContext()};
   parser::ContextualMessages &messages{foldingContext.messages()};
   bool allowArgumentConversions{true};
-  parser::Messages implicitBuffer;
   if (!explicitInterface || treatingExternalAsImplicit) {
+    parser::Messages buffer;
     {
-      auto restorer{messages.SetMessages(implicitBuffer)};
+      auto restorer{messages.SetMessages(buffer)};
       for (auto &actual : actuals) {
         if (actual) {
           CheckImplicitInterfaceArg(*actual, messages, context);
         }
       }
     }
-    if (implicitBuffer.AnyFatalError()) {
+    if (!buffer.empty()) {
       if (auto *msgs{messages.messages()}) {
-        msgs->Annex(std::move(implicitBuffer));
+        msgs->Annex(std::move(buffer));
       }
       return false; // don't pile on
     }
     allowArgumentConversions = false;
   }
   if (explicitInterface) {
-    auto explicitBuffer{CheckExplicitInterface(proc, actuals, context, &scope,
+    auto buffer{CheckExplicitInterface(proc, actuals, context, &scope,
         intrinsic, allowArgumentConversions,
         /*extentErrors=*/true, ignoreImplicitVsExplicit)};
-    if (!explicitBuffer.empty()) {
-      if (treatingExternalAsImplicit && explicitBuffer.AnyFatalError()) {
-        // Combine all messages into one warning
-        if (auto *warning{messages.Warn(/*inModuleFile=*/false,
-                context.languageFeatures(),
-                common::UsageWarning::KnownBadImplicitInterface,
-                "If the procedure's interface were explicit, this reference would be in error"_warn_en_US)}) {
-          explicitBuffer.AttachTo(*warning, parser::Severity::Because);
+    if (!buffer.empty()) {
+      if (treatingExternalAsImplicit) {
+        if (context.ShouldWarn(
+                common::UsageWarning::KnownBadImplicitInterface)) {
+          if (auto *msg{messages.Say(
+                  common::UsageWarning::KnownBadImplicitInterface,
+                  "If the procedure's interface were explicit, this reference would be in error"_warn_en_US)}) {
+            buffer.AttachTo(*msg, parser::Severity::Because);
+          }
+        } else {
+          buffer.clear();
         }
-      } else if (auto *msgs{messages.messages()}) {
-        msgs->Annex(std::move(explicitBuffer));
       }
-      // These messages override any in implicitBuffer.
+      if (auto *msgs{messages.messages()}) {
+        msgs->Annex(std::move(buffer));
+      }
       return false;
     }
   }
-  if (!implicitBuffer.empty()) {
-    if (auto *msgs{messages.messages()}) {
-      msgs->Annex(std::move(implicitBuffer));
-    }
-    return false;
-  } else {
-    return true; // no messages
-  }
+  return true;
 }
 } // namespace Fortran::semantics

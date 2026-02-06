@@ -67,7 +67,7 @@ void MipsRegInfoRecord::EmitMipsOptionRecord() {
   Streamer->popSection();
 }
 
-void MipsRegInfoRecord::SetPhysRegUsed(MCRegister Reg,
+void MipsRegInfoRecord::SetPhysRegUsed(unsigned Reg,
                                        const MCRegisterInfo *MCRegInfo) {
   unsigned Value = 0;
 

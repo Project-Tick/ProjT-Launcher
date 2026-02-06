@@ -9,8 +9,6 @@
 #include "SortingTest.h"
 #include "src/stdlib/qsort_util.h"
 
-namespace {
-
 void quick_sort(void *array, size_t array_size, size_t elem_size,
                 int (*compare)(const void *, const void *)) {
   constexpr bool USE_QUICKSORT = true;
@@ -25,5 +23,3 @@ void quick_sort(void *array, size_t array_size, size_t elem_size,
 }
 
 LIST_SORTING_TESTS(Qsort, quick_sort);
-
-} // namespace

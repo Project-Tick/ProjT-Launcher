@@ -22,6 +22,7 @@
 #include "llvm/IR/DiagnosticHandler.h"
 #include "llvm/Support/CodeGen.h"
 #include <memory>
+#include <vector>
 
 namespace llvm {
 class Module;

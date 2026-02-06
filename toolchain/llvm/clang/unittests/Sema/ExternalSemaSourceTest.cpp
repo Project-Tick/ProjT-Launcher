@@ -181,7 +181,7 @@ public:
 // performing semantic analysis.
 class ExternalSemaSourceInstaller : public clang::ASTFrontendAction {
   std::vector<DiagnosticWatcher *> Watchers;
-  std::vector<llvm::IntrusiveRefCntPtr<clang::ExternalSemaSource>> Sources;
+  std::vector<clang::ExternalSemaSource *> Sources;
   std::unique_ptr<DiagnosticConsumer> OwnedClient;
 
 protected:
@@ -212,8 +212,8 @@ protected:
   }
 
 public:
-  void PushSource(llvm::IntrusiveRefCntPtr<clang::ExternalSemaSource> Source) {
-    Sources.push_back(std::move(Source));
+  void PushSource(clang::ExternalSemaSource *Source) {
+    Sources.push_back(Source);
   }
 
   void PushWatcher(DiagnosticWatcher *Watcher) { Watchers.push_back(Watcher); }
@@ -238,7 +238,7 @@ TEST(ExternalSemaSource, ExternalTypoCorrectionPrioritized) {
   auto Installer = std::make_unique<ExternalSemaSourceInstaller>();
   auto Provider = makeIntrusiveRefCnt<NamespaceTypoProvider>("AAB", "BBB");
   DiagnosticWatcher Watcher("AAB", "BBB");
-  Installer->PushSource(Provider);
+  Installer->PushSource(Provider.get());
   Installer->PushWatcher(&Watcher);
   std::vector<std::string> Args(1, "-std=c++11");
   ASSERT_TRUE(clang::tooling::runToolOnCodeWithArgs(
@@ -255,9 +255,9 @@ TEST(ExternalSemaSource, ExternalTypoCorrectionOrdering) {
   auto Second = makeIntrusiveRefCnt<NamespaceTypoProvider>("AAB", "CCC");
   auto Third = makeIntrusiveRefCnt<NamespaceTypoProvider>("AAB", "DDD");
   DiagnosticWatcher Watcher("AAB", "CCC");
-  Installer->PushSource(First);
-  Installer->PushSource(Second);
-  Installer->PushSource(Third);
+  Installer->PushSource(First.get());
+  Installer->PushSource(Second.get());
+  Installer->PushSource(Third.get());
   Installer->PushWatcher(&Watcher);
   std::vector<std::string> Args(1, "-std=c++11");
   ASSERT_TRUE(clang::tooling::runToolOnCodeWithArgs(
@@ -268,12 +268,26 @@ TEST(ExternalSemaSource, ExternalTypoCorrectionOrdering) {
   ASSERT_EQ(1, Watcher.SeenCount);
 }
 
+TEST(ExternalSemaSource, ExternalDelayedTypoCorrection) {
+  auto Installer = std::make_unique<ExternalSemaSourceInstaller>();
+  auto Provider = makeIntrusiveRefCnt<FunctionTypoProvider>("aaa", "bbb");
+  DiagnosticWatcher Watcher("aaa", "bbb");
+  Installer->PushSource(Provider.get());
+  Installer->PushWatcher(&Watcher);
+  std::vector<std::string> Args(1, "-std=c++11");
+  ASSERT_TRUE(clang::tooling::runToolOnCodeWithArgs(
+      std::move(Installer), "namespace AAA { } void foo() { AAA::aaa(); }",
+      Args));
+  ASSERT_LE(0, Provider->CallCount);
+  ASSERT_EQ(1, Watcher.SeenCount);
+}
+
 // We should only try MaybeDiagnoseMissingCompleteType if we can't otherwise
 // solve the problem.
 TEST(ExternalSemaSource, TryOtherTacticsBeforeDiagnosing) {
   auto Installer = std::make_unique<ExternalSemaSourceInstaller>();
   auto Diagnoser = makeIntrusiveRefCnt<CompleteTypeDiagnoser>(false);
-  Installer->PushSource(Diagnoser);
+  Installer->PushSource(Diagnoser.get());
   std::vector<std::string> Args(1, "-std=c++11");
   // This code hits the class template specialization/class member of a class
   // template specialization checks in Sema::RequireCompleteTypeImpl.
@@ -291,9 +305,9 @@ TEST(ExternalSemaSource, FirstDiagnoserTaken) {
   auto First = makeIntrusiveRefCnt<CompleteTypeDiagnoser>(false);
   auto Second = makeIntrusiveRefCnt<CompleteTypeDiagnoser>(true);
   auto Third = makeIntrusiveRefCnt<CompleteTypeDiagnoser>(true);
-  Installer->PushSource(First);
-  Installer->PushSource(Second);
-  Installer->PushSource(Third);
+  Installer->PushSource(First.get());
+  Installer->PushSource(Second.get());
+  Installer->PushSource(Third.get());
   std::vector<std::string> Args(1, "-std=c++11");
   ASSERT_FALSE(clang::tooling::runToolOnCodeWithArgs(
       std::move(Installer), "class Incomplete; Incomplete IncompleteInstance;",

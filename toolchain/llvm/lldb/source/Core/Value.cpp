@@ -24,8 +24,6 @@
 #include "lldb/Utility/DataExtractor.h"
 #include "lldb/Utility/Endian.h"
 #include "lldb/Utility/FileSpec.h"
-#include "lldb/Utility/LLDBLog.h"
-#include "lldb/Utility/Log.h"
 #include "lldb/Utility/State.h"
 #include "lldb/Utility/Stream.h"
 #include "lldb/lldb-defines.h"
@@ -225,16 +223,10 @@ uint64_t Value::GetValueByteSize(Status *error_ptr, ExecutionContext *exe_ctx) {
   case ContextType::Variable: // Variable *
   {
     auto *scope = exe_ctx ? exe_ctx->GetBestExecutionContextScope() : nullptr;
-    auto size_or_err = GetCompilerType().GetByteSize(scope);
-    if (!size_or_err) {
-      if (error_ptr && error_ptr->Success())
-        *error_ptr = Status::FromError(size_or_err.takeError());
-      else
-        LLDB_LOG_ERRORV(GetLog(LLDBLog::Types), size_or_err.takeError(), "{0}");
-    } else {
+    if (std::optional<uint64_t> size = GetCompilerType().GetByteSize(scope)) {
       if (error_ptr)
         error_ptr->Clear();
-      return *size_or_err;
+      return *size;
     }
     break;
   }
@@ -329,9 +321,8 @@ Status Value::GetValueAsData(ExecutionContext *exe_ctx, DataExtractor &data,
   AddressType address_type = eAddressTypeFile;
   Address file_so_addr;
   const CompilerType &ast_type = GetCompilerType();
-  std::optional<uint64_t> type_size =
-      llvm::expectedToOptional(ast_type.GetByteSize(
-          exe_ctx ? exe_ctx->GetBestExecutionContextScope() : nullptr));
+  std::optional<uint64_t> type_size = ast_type.GetByteSize(
+      exe_ctx ? exe_ctx->GetBestExecutionContextScope() : nullptr);
   // Nothing to be done for a zero-sized type.
   if (type_size && *type_size == 0)
     return error;
@@ -347,12 +338,15 @@ Status Value::GetValueAsData(ExecutionContext *exe_ctx, DataExtractor &data,
     else
       data.SetAddressByteSize(sizeof(void *));
 
-    if (!type_size)
-      return Status::FromErrorString("type does not have a size");
+    uint32_t limit_byte_size = UINT32_MAX;
 
-    uint32_t result_byte_size = *type_size;
-    if (m_value.GetData(data, result_byte_size))
-      return error; // Success;
+    if (type_size)
+      limit_byte_size = *type_size;
+
+    if (limit_byte_size <= m_value.GetByteSize()) {
+      if (m_value.GetData(data, limit_byte_size))
+        return error; // Success;
+    }
 
     error = Status::FromErrorString("extracting data from value failed");
     break;
@@ -491,11 +485,9 @@ Status Value::GetValueAsData(ExecutionContext *exe_ctx, DataExtractor &data,
     address = m_value.ULongLong(LLDB_INVALID_ADDRESS);
     address_type = eAddressTypeHost;
     if (exe_ctx) {
-      if (Target *target = exe_ctx->GetTargetPtr()) {
-        // Registers are always stored in host endian.
-        data.SetByteOrder(m_context_type == ContextType::RegisterInfo
-                              ? endian::InlHostByteOrder()
-                              : target->GetArchitecture().GetByteOrder());
+      Target *target = exe_ctx->GetTargetPtr();
+      if (target) {
+        data.SetByteOrder(target->GetArchitecture().GetByteOrder());
         data.SetAddressByteSize(target->GetArchitecture().GetAddressByteSize());
         break;
       }

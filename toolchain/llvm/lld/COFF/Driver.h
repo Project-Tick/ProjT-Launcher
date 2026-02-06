@@ -88,13 +88,11 @@ public:
   void enqueueArchiveMember(const Archive::Child &c, const Archive::Symbol &sym,
                             StringRef parentName);
 
-  enum class InputOpt { None, DefaultLib, WholeArchive };
-  void enqueuePDB(StringRef Path) { enqueuePath(Path, false); }
+  void enqueuePDB(StringRef Path) { enqueuePath(Path, false, false); }
 
   MemoryBufferRef takeBuffer(std::unique_ptr<MemoryBuffer> mb);
 
-  void enqueuePath(StringRef path, bool lazy,
-                   InputOpt inputOpt = InputOpt::None);
+  void enqueuePath(StringRef path, bool wholeArchive, bool lazy);
 
   // Returns a list of chunks of selected symbols.
   std::vector<Chunk *> getChunks() const;
@@ -140,10 +138,6 @@ private:
   //
   std::string getImportName(bool asLib);
 
-  // Write fullly resolved path to repro file if /linkreprofullpathrsp
-  // is specified.
-  void handleReproFile(StringRef path, InputOpt inputOpt);
-
   void createImportLibrary(bool asLib);
 
   // Used by the resolver to parse .drectve section contents.
@@ -179,7 +173,6 @@ private:
                  bool lazy);
   void addArchiveBuffer(MemoryBufferRef mbref, StringRef symName,
                         StringRef parentName, uint64_t offsetInArchive);
-  void addThinArchiveBuffer(MemoryBufferRef mbref, StringRef symName);
 
   void enqueueTask(std::function<void()> task);
   bool run();
@@ -199,9 +192,6 @@ private:
   int sdkMajor = 0;
   llvm::SmallString<128> windowsSdkLibPath;
 
-  // For linkreprofullpathrsp
-  std::unique_ptr<llvm::raw_fd_ostream> reproFile;
-
   // Functions below this line are defined in DriverUtils.cpp.
 
   void printHelp(const char *argv0);
@@ -219,12 +209,11 @@ private:
   void parseSubsystem(StringRef arg, WindowsSubsystem *sys, uint32_t *major,
                       uint32_t *minor, bool *gotVersion = nullptr);
 
+  void parseAlternateName(StringRef);
   void parseMerge(StringRef);
   void parsePDBPageSize(StringRef);
   void parseSection(StringRef);
-  void parseSectionLayout(StringRef);
-
-  void parseSameAddress(StringRef);
+  void parseAligncomm(StringRef);
 
   // Parses a MS-DOS stub file
   void parseDosStub(StringRef path);

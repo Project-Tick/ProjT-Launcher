@@ -20,7 +20,7 @@
   .type _start, %function
 _start:
 # FDATA: 0 [unknown] 0 1 _start 0 0 1
-   bl dummy
+   bl dymmy
    ret
   .size _start, .-_start
 

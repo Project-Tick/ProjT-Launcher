@@ -224,27 +224,21 @@ void FunctionLayout::clear() {
 }
 
 const BinaryBasicBlock *
-FunctionLayout::getBasicBlockAfter(block_const_iterator BBIter,
-                                   bool IgnoreSplits) const {
-  const block_const_iterator BlockAfter = std::next(BBIter);
-  if (BlockAfter == block_end())
-    return nullptr;
-
-  if (!IgnoreSplits)
-    if (BlockAfter == getFragment((*BBIter)->getFragmentNum()).end())
-      return nullptr;
-
-  return *BlockAfter;
-}
-
-const BinaryBasicBlock *
 FunctionLayout::getBasicBlockAfter(const BinaryBasicBlock *BB,
                                    bool IgnoreSplits) const {
   const block_const_iterator BBPos = find(blocks(), BB);
   if (BBPos == block_end())
     return nullptr;
 
-  return getBasicBlockAfter(BBPos, IgnoreSplits);
+  const block_const_iterator BlockAfter = std::next(BBPos);
+  if (BlockAfter == block_end())
+    return nullptr;
+
+  if (!IgnoreSplits)
+    if (BlockAfter == getFragment(BB->getFragmentNum()).end())
+      return nullptr;
+
+  return *BlockAfter;
 }
 
 bool FunctionLayout::isSplit() const {

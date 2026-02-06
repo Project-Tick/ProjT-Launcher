@@ -10,6 +10,7 @@
 #include "../clang-tidy/ClangTidyCheck.h"
 #include "../clang-tidy/ClangTidyDiagnosticConsumer.h"
 #include "../clang-tidy/ClangTidyModule.h"
+#include "../clang-tidy/ClangTidyModuleRegistry.h"
 #include "../clang-tidy/ClangTidyOptions.h"
 #include "AST.h"
 #include "CollectMacros.h"
@@ -380,9 +381,8 @@ std::vector<Diag> getIncludeCleanerDiags(ParsedAST &AST, llvm::StringRef Code,
     Findings.MissingIncludes.clear();
   if (SuppressUnused)
     Findings.UnusedIncludes.clear();
-  return issueIncludeCleanerDiagnostics(
-      AST, Code, Findings, TFS, Cfg.Diagnostics.Includes.IgnoreHeader,
-      Cfg.Style.AngledHeaders, Cfg.Style.QuotedHeaders);
+  return issueIncludeCleanerDiagnostics(AST, Code, Findings, TFS,
+                                        Cfg.Diagnostics.Includes.IgnoreHeader);
 }
 
 tidy::ClangTidyCheckFactories
@@ -556,8 +556,7 @@ ParsedAST::build(llvm::StringRef Filename, const ParseInputs &Inputs,
         *AllCTFactories, Cfg.Diagnostics.ClangTidy.FastCheckFilter);
     CTContext.emplace(std::make_unique<tidy::DefaultOptionsProvider>(
         tidy::ClangTidyGlobalOptions(), ClangTidyOpts));
-    // The lifetime of DiagnosticOptions is managed by \c Clang.
-    CTContext->setDiagnosticsEngine(nullptr, &Clang->getDiagnostics());
+    CTContext->setDiagnosticsEngine(&Clang->getDiagnostics());
     CTContext->setASTContext(&Clang->getASTContext());
     CTContext->setCurrentFile(Filename);
     CTContext->setSelfContainedDiags(true);

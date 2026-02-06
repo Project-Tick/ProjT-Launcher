@@ -412,9 +412,9 @@ class _BodyBuilder:
             )
         if operand.type == to_type:
             return operand
-        if isinstance(to_type, IntegerType):
+        if _is_integer_type(to_type):
             return self._cast_to_integer(to_type, operand, is_unsigned_cast)
-        elif isinstance(to_type, FloatType):
+        elif _is_floating_point_type(to_type):
             return self._cast_to_floating_point(to_type, operand, is_unsigned_cast)
 
     def _cast_to_integer(
@@ -422,11 +422,11 @@ class _BodyBuilder:
     ) -> Value:
         to_width = IntegerType(to_type).width
         operand_type = operand.type
-        if isinstance(operand_type, FloatType):
+        if _is_floating_point_type(operand_type):
             if is_unsigned_cast:
                 return arith.FPToUIOp(to_type, operand).result
             return arith.FPToSIOp(to_type, operand).result
-        if isinstance(operand_type, IndexType):
+        if _is_index_type(operand_type):
             return arith.IndexCastOp(to_type, operand).result
         # Assume integer.
         from_width = IntegerType(operand_type).width
@@ -444,15 +444,13 @@ class _BodyBuilder:
         self, to_type: Type, operand: Value, is_unsigned_cast: bool
     ) -> Value:
         operand_type = operand.type
-        if isinstance(operand_type, IntegerType):
+        if _is_integer_type(operand_type):
             if is_unsigned_cast:
                 return arith.UIToFPOp(to_type, operand).result
             return arith.SIToFPOp(to_type, operand).result
         # Assume FloatType.
-        assert isinstance(to_type, FloatType)
-        assert isinstance(operand_type, FloatType)
-        to_width = to_type.width
-        from_width = operand_type.width
+        to_width = _get_floating_point_width(to_type)
+        from_width = _get_floating_point_width(operand_type)
         if to_width > from_width:
             return arith.ExtFOp(to_type, operand).result
         elif to_width < from_width:
@@ -468,89 +466,89 @@ class _BodyBuilder:
         return self._cast(type_var_name, operand, True)
 
     def _unary_exp(self, x: Value) -> Value:
-        if isinstance(x.type, FloatType):
+        if _is_floating_point_type(x.type):
             return math.ExpOp(x).result
         raise NotImplementedError("Unsupported 'exp' operand: {x}")
 
     def _unary_log(self, x: Value) -> Value:
-        if isinstance(x.type, FloatType):
+        if _is_floating_point_type(x.type):
             return math.LogOp(x).result
         raise NotImplementedError("Unsupported 'log' operand: {x}")
 
     def _unary_abs(self, x: Value) -> Value:
-        if isinstance(x.type, FloatType):
+        if _is_floating_point_type(x.type):
             return math.AbsFOp(x).result
         raise NotImplementedError("Unsupported 'abs' operand: {x}")
 
     def _unary_ceil(self, x: Value) -> Value:
-        if isinstance(x.type, FloatType):
+        if _is_floating_point_type(x.type):
             return math.CeilOp(x).result
         raise NotImplementedError("Unsupported 'ceil' operand: {x}")
 
     def _unary_floor(self, x: Value) -> Value:
-        if isinstance(x.type, FloatType):
+        if _is_floating_point_type(x.type):
             return math.FloorOp(x).result
         raise NotImplementedError("Unsupported 'floor' operand: {x}")
 
     def _unary_negf(self, x: Value) -> Value:
-        if isinstance(x.type, FloatType):
+        if _is_floating_point_type(x.type):
             return arith.NegFOp(x).result
-        if isinstance(x.type, ComplexType):
+        if _is_complex_type(x.type):
             return complex.NegOp(x).result
         raise NotImplementedError("Unsupported 'negf' operand: {x}")
 
     def _binary_add(self, lhs: Value, rhs: Value) -> Value:
-        if isinstance(lhs.type, FloatType):
+        if _is_floating_point_type(lhs.type):
             return arith.AddFOp(lhs, rhs).result
-        if isinstance(lhs.type, IntegerType) or isinstance(lhs.type, IndexType):
+        if _is_integer_type(lhs.type) or _is_index_type(lhs.type):
             return arith.AddIOp(lhs, rhs).result
-        if isinstance(lhs.type, ComplexType):
+        if _is_complex_type(lhs.type):
             return complex.AddOp(lhs, rhs).result
         raise NotImplementedError("Unsupported 'add' operands: {lhs}, {rhs}")
 
     def _binary_sub(self, lhs: Value, rhs: Value) -> Value:
-        if isinstance(lhs.type, FloatType):
+        if _is_floating_point_type(lhs.type):
             return arith.SubFOp(lhs, rhs).result
-        if isinstance(lhs.type, IntegerType) or isinstance(lhs.type, IndexType):
+        if _is_integer_type(lhs.type) or _is_index_type(lhs.type):
             return arith.SubIOp(lhs, rhs).result
-        if isinstance(lhs.type, ComplexType):
+        if _is_complex_type(lhs.type):
             return complex.SubOp(lhs, rhs).result
         raise NotImplementedError("Unsupported 'sub' operands: {lhs}, {rhs}")
 
     def _binary_mul(self, lhs: Value, rhs: Value) -> Value:
-        if isinstance(lhs.type, FloatType):
+        if _is_floating_point_type(lhs.type):
             return arith.MulFOp(lhs, rhs).result
-        if isinstance(lhs.type, IntegerType) or isinstance(lhs.type, IndexType):
+        if _is_integer_type(lhs.type) or _is_index_type(lhs.type):
             return arith.MulIOp(lhs, rhs).result
-        if isinstance(lhs.type, ComplexType):
+        if _is_complex_type(lhs.type):
             return complex.MulOp(lhs, rhs).result
         raise NotImplementedError("Unsupported 'mul' operands: {lhs}, {rhs}")
 
     def _binary_max_signed(self, lhs: Value, rhs: Value) -> Value:
-        if isinstance(lhs.type, FloatType):
+        if _is_floating_point_type(lhs.type):
             return arith.MaximumFOp(lhs, rhs).result
-        if isinstance(lhs.type, IntegerType) or isinstance(lhs.type, IndexType):
+        if _is_integer_type(lhs.type) or _is_index_type(lhs.type):
             return arith.MaxSIOp(lhs, rhs).result
         raise NotImplementedError("Unsupported 'max' operands: {lhs}, {rhs}")
 
     def _binary_max_unsigned(self, lhs: Value, rhs: Value) -> Value:
-        if (
-            isinstance(lhs.type, IntegerType) and not _is_bool_type(lhs.type)
-        ) or isinstance(lhs.type, IndexType):
+        if _is_floating_point_type(lhs.type):
+            return arith.MaximumFOp(lhs, rhs).result
+        if _is_integer_type(lhs.type) or _is_index_type(lhs.type):
             return arith.MaxUIOp(lhs, rhs).result
         raise NotImplementedError("Unsupported 'max_unsigned' operands: {lhs}, {rhs}")
 
     def _binary_min_signed(self, lhs: Value, rhs: Value) -> Value:
-        if isinstance(lhs.type, FloatType):
+        if _is_floating_point_type(lhs.type):
             return arith.MinimumFOp(lhs, rhs).result
-        if isinstance(lhs.type, IntegerType) or isinstance(lhs.type, IndexType):
+        if _is_integer_type(lhs.type) or _is_index_type(lhs.type):
             return arith.MinSIOp(lhs, rhs).result
         raise NotImplementedError("Unsupported 'min' operands: {lhs}, {rhs}")
 
     def _binary_min_unsigned(self, lhs: Value, rhs: Value) -> Value:
-        if (
-            isinstance(lhs.type, IntegerType) and not _is_bool_type(lhs.type)
-        ) or isinstance(lhs.type, IndexType):
+        if _is_floating_point_type(lhs.type):
+            return arith.MinimumFOp(lhs, rhs).result
+        if _is_integer_type(lhs.type) or _is_index_type(lhs.type):
             return arith.MinUIOp(lhs, rhs).result
         raise NotImplementedError("Unsupported 'min_unsigned' operands: {lhs}, {rhs}")
 
@@ -613,7 +611,38 @@ def _add_type_mapping(
     block_arg_types.append(element_or_self_type)
 
 
-def _is_bool_type(t: Type) -> bool:
-    if not isinstance(t, IntegerType):
-        return False
-    return t.width == 1
+def _is_complex_type(t: Type) -> bool:
+    return ComplexType.isinstance(t)
+
+
+def _is_floating_point_type(t: Type) -> bool:
+    # TODO: Create a FloatType in the Python API and implement the switch
+    # there.
+    return (
+        F64Type.isinstance(t)
+        or F32Type.isinstance(t)
+        or F16Type.isinstance(t)
+        or BF16Type.isinstance(t)
+    )
+
+
+def _is_integer_type(t: Type) -> bool:
+    return IntegerType.isinstance(t)
+
+
+def _is_index_type(t: Type) -> bool:
+    return IndexType.isinstance(t)
+
+
+def _get_floating_point_width(t: Type) -> int:
+    # TODO: Create a FloatType in the Python API and implement the switch
+    # there.
+    if F64Type.isinstance(t):
+        return 64
+    if F32Type.isinstance(t):
+        return 32
+    if F16Type.isinstance(t):
+        return 16
+    if BF16Type.isinstance(t):
+        return 16
+    raise NotImplementedError(f"Unhandled floating point type switch {t}")

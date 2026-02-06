@@ -43,6 +43,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Regex.h"
@@ -304,7 +305,8 @@ public:
 
       auto DefLoc = MI->getDefinitionLoc();
 
-      if (SM.isInPredefinedFile(DefLoc))
+      if (SM.isWrittenInBuiltinFile(DefLoc) ||
+          SM.isWrittenInCommandLineFile(DefLoc))
         continue;
 
       auto AssociatedModuleMacros = MD.getModuleMacros();
@@ -444,7 +446,8 @@ bool ExtractAPIAction::PrepareToExecuteAction(CompilerInstance &CI) {
     return true;
 
   if (!CI.hasFileManager())
-    CI.createFileManager();
+    if (!CI.createFileManager())
+      return false;
 
   auto Kind = Inputs[0].getKind();
 

@@ -83,9 +83,9 @@ static cl::opt<std::string>
              cl::cat(ToolOptions));
 
 static cl::opt<std::string>
-    TripleNameOpt("mtriple",
-                  cl::desc("Target triple. See -version for available targets"),
-                  cl::cat(ToolOptions));
+    TripleName("mtriple",
+               cl::desc("Target triple. See -version for available targets"),
+               cl::cat(ToolOptions));
 
 static cl::opt<std::string>
     MCPU("mcpu",
@@ -225,29 +225,10 @@ static cl::opt<unsigned> StoreQueueSize("squeue",
                                         cl::desc("Size of the store queue"),
                                         cl::cat(ToolOptions), cl::init(0));
 
-enum class InstructionTablesType { NONE, NORMAL, FULL };
-
-static cl::opt<enum InstructionTablesType> InstructionTablesOption(
-    "instruction-tables", cl::desc("Print instruction tables"),
-    cl::values(clEnumValN(InstructionTablesType::NONE, "none",
-                          "Do not print instruction tables"),
-               clEnumValN(InstructionTablesType::NORMAL, "normal",
-                          "Print instruction tables"),
-               clEnumValN(InstructionTablesType::NORMAL, "", ""),
-               clEnumValN(InstructionTablesType::FULL, "full",
-                          "Print instruction tables with additional"
-                          " information: bypass latency, LLVM opcode,"
-                          " used resources")),
-    cl::cat(ToolOptions), cl::init(InstructionTablesType::NONE),
-    cl::ValueOptional);
-
-static bool shouldPrintInstructionTables(enum InstructionTablesType ITType) {
-  return InstructionTablesOption == ITType;
-}
-
-static bool shouldPrintInstructionTables() {
-  return !shouldPrintInstructionTables(InstructionTablesType::NONE);
-}
+static cl::opt<bool>
+    PrintInstructionTables("instruction-tables",
+                           cl::desc("Print instruction tables"),
+                           cl::cat(ToolOptions), cl::init(false));
 
 static cl::opt<bool> PrintInstructionInfoView(
     "instruction-info",
@@ -292,7 +273,11 @@ static cl::opt<bool> DisableInstrumentManager(
 
 namespace {
 
-const Target *getTarget(Triple &TheTriple, const char *ProgName) {
+const Target *getTarget(const char *ProgName) {
+  if (TripleName.empty())
+    TripleName = Triple::normalize(sys::getDefaultTargetTriple());
+  Triple TheTriple(TripleName);
+
   // Get the target specific parser.
   std::string Error;
   const Target *TheTarget =
@@ -301,6 +286,9 @@ const Target *getTarget(Triple &TheTriple, const char *ProgName) {
     errs() << ProgName << ": " << Error;
     return nullptr;
   }
+
+  // Update TripleName with the updated triple from the target lookup.
+  TripleName = TheTriple.str();
 
   // Return the found target.
   return TheTarget;
@@ -380,30 +368,23 @@ int main(int argc, char **argv) {
   cl::ParseCommandLineOptions(argc, argv,
                               "llvm machine code performance analyzer.\n");
 
-  Triple TheTriple(TripleNameOpt.empty()
-                       ? Triple::normalize(sys::getDefaultTargetTriple())
-                       : TripleNameOpt);
-
   // Get the target from the triple. If a triple is not specified, then select
   // the default triple for the host. If the triple doesn't correspond to any
   // registered target, then exit with an error message.
   const char *ProgName = argv[0];
-  const Target *TheTarget = getTarget(TheTriple, ProgName);
+  const Target *TheTarget = getTarget(ProgName);
   if (!TheTarget)
     return 1;
 
-  const bool WantsCPUHelp = MCPU == "help";
+  // GetTarget() may replaced TripleName with a default triple.
+  // For safety, reconstruct the Triple object.
+  Triple TheTriple(TripleName);
 
-  std::unique_ptr<MemoryBuffer> InputBuffer;
-  if (!WantsCPUHelp) {
-    ErrorOr<std::unique_ptr<MemoryBuffer>> BufferOrErr =
-        MemoryBuffer::getFileOrSTDIN(InputFilename);
-    if (!BufferOrErr) {
-      std::error_code EC = BufferOrErr.getError();
-      WithColor::error() << InputFilename << ": " << EC.message() << '\n';
-      return 1;
-    }
-    InputBuffer = std::move(*BufferOrErr);
+  ErrorOr<std::unique_ptr<MemoryBuffer>> BufferPtr =
+      MemoryBuffer::getFileOrSTDIN(InputFilename);
+  if (std::error_code EC = BufferPtr.getError()) {
+    WithColor::error() << InputFilename << ": " << EC.message() << '\n';
+    return 1;
   }
 
   if (MCPU == "native")
@@ -419,15 +400,8 @@ int main(int argc, char **argv) {
   }
 
   std::unique_ptr<MCSubtargetInfo> STI(
-      TheTarget->createMCSubtargetInfo(TheTriple, MCPU, FeaturesStr));
-  if (!STI) {
-    WithColor::error() << "unable to create subtarget info\n";
-    return 1;
-  }
-
-  if (WantsCPUHelp)
-    return 0;
-
+      TheTarget->createMCSubtargetInfo(TripleName, MCPU, FeaturesStr));
+  assert(STI && "Unable to create subtarget info!");
   if (!STI->isCPUStringValid(MCPU))
     return 1;
 
@@ -448,18 +422,20 @@ int main(int argc, char **argv) {
   bool IsOutOfOrder = STI->getSchedModel().isOutOfOrder();
   processViewOptions(IsOutOfOrder);
 
-  std::unique_ptr<MCRegisterInfo> MRI(TheTarget->createMCRegInfo(TheTriple));
+  std::unique_ptr<MCRegisterInfo> MRI(TheTarget->createMCRegInfo(TripleName));
   assert(MRI && "Unable to create target register info!");
 
   MCTargetOptions MCOptions = mc::InitMCTargetOptionsFromFlags();
   std::unique_ptr<MCAsmInfo> MAI(
-      TheTarget->createMCAsmInfo(*MRI, TheTriple, MCOptions));
+      TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
   assert(MAI && "Unable to create target asm info!");
 
   SourceMgr SrcMgr;
 
   // Tell SrcMgr about this buffer, which is what the parser will pick up.
-  SrcMgr.AddNewSourceBuffer(std::move(InputBuffer), SMLoc());
+  SrcMgr.AddNewSourceBuffer(std::move(*BufferPtr), SMLoc());
+
+  std::unique_ptr<buffer_ostream> BOS;
 
   std::unique_ptr<MCInstrInfo> MCII(TheTarget->createMCInstrInfo());
   assert(MCII && "Unable to create instruction info!");
@@ -476,7 +452,7 @@ int main(int argc, char **argv) {
   unsigned IPtempOutputAsmVariant =
       OutputAsmVariant == -1 ? 0 : OutputAsmVariant;
   std::unique_ptr<MCInstPrinter> IPtemp(TheTarget->createMCInstPrinter(
-      TheTriple, IPtempOutputAsmVariant, *MAI, *MCII, *MRI));
+      Triple(TripleName), IPtempOutputAsmVariant, *MAI, *MCII, *MRI));
   if (!IPtemp) {
     WithColor::error()
         << "unable to create instruction printer for target triple '"
@@ -520,16 +496,11 @@ int main(int argc, char **argv) {
   if (!DisableInstrumentManager) {
     IM = std::unique_ptr<mca::InstrumentManager>(
         TheTarget->createInstrumentManager(*STI, *MCII));
-    if (!IM) {
-      // If the target doesn't have its own IM implemented we use base class
-      // with instruments enabled.
-      IM = std::make_unique<mca::InstrumentManager>(*STI, *MCII);
-    }
-  } else {
-    // If the -disable-im flag is set then we use the default base class
-    // implementation and disable the instruments.
-    IM = std::make_unique<mca::InstrumentManager>(*STI, *MCII,
-                                                  /*EnableInstruments=*/false);
+  }
+  if (!IM) {
+    // If the target doesn't have its own IM implemented (or the -disable-cb
+    // flag is set) then we use the base class (which does nothing).
+    IM = std::make_unique<mca::InstrumentManager>(*STI, *MCII);
   }
 
   // Parse the input and create InstrumentRegion that llvm-mca
@@ -570,7 +541,7 @@ int main(int argc, char **argv) {
   if (OutputAsmVariant >= 0)
     AssemblerDialect = static_cast<unsigned>(OutputAsmVariant);
   std::unique_ptr<MCInstPrinter> IP(TheTarget->createMCInstPrinter(
-      TheTriple, AssemblerDialect, *MAI, *MCII, *MRI));
+      Triple(TripleName), AssemblerDialect, *MAI, *MCII, *MRI));
   if (!IP) {
     WithColor::error()
         << "unable to create instruction printer for target triple '"
@@ -678,7 +649,7 @@ int main(int argc, char **argv) {
         return 1;
       }
 
-      IPP->postProcessInstruction(*Inst.get(), MCI);
+      IPP->postProcessInstruction(Inst.get(), MCI);
       InstToInstruments.insert({&MCI, Instruments});
       LoweredSequence.emplace_back(std::move(Inst.get()));
     }
@@ -691,9 +662,9 @@ int main(int argc, char **argv) {
     NonEmptyRegions++;
 
     mca::CircularSourceMgr S(LoweredSequence,
-                             shouldPrintInstructionTables() ? 1 : Iterations);
+                             PrintInstructionTables ? 1 : Iterations);
 
-    if (shouldPrintInstructionTables()) {
+    if (PrintInstructionTables) {
       //  Create a pipeline, stages, and a printer.
       auto P = std::make_unique<mca::Pipeline>();
       P->appendStage(std::make_unique<mca::EntryStage>(S));
@@ -709,14 +680,10 @@ int main(int argc, char **argv) {
       if (PrintInstructionInfoView) {
         Printer.addView(std::make_unique<mca::InstructionInfoView>(
             *STI, *MCII, CE, ShowEncoding, Insts, *IP, LoweredSequence,
-            ShowBarriers,
-            shouldPrintInstructionTables(InstructionTablesType::FULL), *IM,
-            InstToInstruments));
+            ShowBarriers, *IM, InstToInstruments));
       }
-
-      if (PrintResourcePressureView)
-        Printer.addView(
-            std::make_unique<mca::ResourcePressureView>(*STI, *IP, Insts));
+      Printer.addView(
+          std::make_unique<mca::ResourcePressureView>(*STI, *IP, Insts));
 
       if (!runPipeline(*P))
         return 1;
@@ -790,7 +757,7 @@ int main(int argc, char **argv) {
     if (PrintInstructionInfoView)
       Printer.addView(std::make_unique<mca::InstructionInfoView>(
           *STI, *MCII, CE, ShowEncoding, Insts, *IP, LoweredSequence,
-          ShowBarriers, /*ShouldPrintFullInfo=*/false, *IM, InstToInstruments));
+          ShowBarriers, *IM, InstToInstruments));
 
     // Fetch custom Views that are to be placed after the InstructionInfoView.
     // Refer to the comment paired with the CB->getStartViews(*IP, Insts); line

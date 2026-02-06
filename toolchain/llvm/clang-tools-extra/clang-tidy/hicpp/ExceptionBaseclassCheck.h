@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- ExceptionBaseclassCheck.h - clang-tidy------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,18 +6,17 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_HICPP_EXCEPTIONBASECLASSCHECK_H
-#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_HICPP_EXCEPTIONBASECLASSCHECK_H
+#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_HICPP_EXCEPTION_BASECLASS_H
+#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_HICPP_EXCEPTION_BASECLASS_H
 
 #include "../ClangTidyCheck.h"
 
 namespace clang::tidy::hicpp {
 
-/// Check for thrown exceptions and enforce they are all derived from
-/// std::exception.
+/// Check for thrown exceptions and enforce they are all derived from std::exception.
 ///
 /// For the user-facing documentation see:
-/// https://clang.llvm.org/extra/clang-tidy/checks/hicpp/exception-baseclass.html
+/// http://clang.llvm.org/extra/clang-tidy/checks/hicpp/exception-baseclass.html
 class ExceptionBaseclassCheck : public ClangTidyCheck {
 public:
   ExceptionBaseclassCheck(StringRef Name, ClangTidyContext *Context)
@@ -31,4 +30,4 @@ public:
 
 } // namespace clang::tidy::hicpp
 
-#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_HICPP_EXCEPTIONBASECLASSCHECK_H
+#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_HICPP_EXCEPTION_BASECLASS_H

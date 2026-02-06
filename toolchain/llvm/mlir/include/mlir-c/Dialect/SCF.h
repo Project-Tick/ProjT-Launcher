@@ -22,6 +22,4 @@ MLIR_DECLARE_CAPI_DIALECT_REGISTRATION(SCF, scf);
 }
 #endif
 
-#include "mlir/Dialect/SCF/Transforms/Passes.capi.h.inc"
-
 #endif // MLIR_C_DIALECT_SCF_H

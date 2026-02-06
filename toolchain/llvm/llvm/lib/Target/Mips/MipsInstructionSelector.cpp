@@ -123,13 +123,9 @@ const TargetRegisterClass *MipsInstructionSelector::getRegClassForTypeOnBank(
   const unsigned TySize = Ty.getSizeInBits();
 
   if (isRegInGprb(Reg, MRI)) {
-    assert((Ty.isScalar() || Ty.isPointer()) &&
-           (TySize == 32 || TySize == 64) &&
+    assert((Ty.isScalar() || Ty.isPointer()) && TySize == 32 &&
            "Register class not available for LLT, register bank combination");
-    if (TySize == 32)
-      return &Mips::GPR32RegClass;
-    if (TySize == 64)
-      return &Mips::GPR64RegClass;
+    return &Mips::GPR32RegClass;
   }
 
   if (isRegInFprb(Reg, MRI)) {

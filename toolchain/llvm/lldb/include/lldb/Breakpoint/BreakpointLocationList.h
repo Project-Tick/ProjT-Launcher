@@ -140,8 +140,7 @@ public:
   ///
   /// \return
   ///     \b true if we should stop, \b false otherwise.
-  bool ShouldStop(StoppointCallbackContext *context, lldb::break_id_t breakID,
-                  lldb::BreakpointLocationSP &bp_loc_sp);
+  bool ShouldStop(StoppointCallbackContext *context, lldb::break_id_t breakID);
 
   /// Returns the number of elements in this breakpoint location list.
   ///
@@ -205,7 +204,8 @@ protected:
   BreakpointLocationCollection *m_new_location_recorder;
 
 public:
-  typedef llvm::iterator_range<collection::const_iterator>
+  typedef AdaptedIterable<collection, lldb::BreakpointLocationSP,
+                          vector_adapter>
       BreakpointLocationIterable;
 
   BreakpointLocationIterable BreakpointLocations() {

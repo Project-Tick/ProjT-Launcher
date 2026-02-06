@@ -359,7 +359,7 @@ class CHR {
     unsigned Count = 0;
     // Find out how many times region R is cloned. Note that if the parent
     // of R is cloned, R is also cloned, but R's clone count is not updated
-    // from the clone of the parent. We need to accumulate all the counts
+    // from the clone of the parent. We need to accumlate all the counts
     // from the ancestors to get the clone count.
     while (R) {
       Count += DuplicationCount[R];
@@ -396,8 +396,9 @@ class CHR {
 
 } // end anonymous namespace
 
-[[maybe_unused]] static inline raw_ostream &operator<<(raw_ostream &OS,
-                                                       const CHRStats &Stats) {
+static inline
+raw_ostream LLVM_ATTRIBUTE_UNUSED &operator<<(raw_ostream &OS,
+                                              const CHRStats &Stats) {
   Stats.print(OS);
   return OS;
 }
@@ -424,8 +425,8 @@ static bool shouldApply(Function &F, ProfileSummaryInfo &PSI) {
   return PSI.isFunctionEntryHot(&F);
 }
 
-[[maybe_unused]] static void dumpIR(Function &F, const char *Label,
-                                    CHRStats *Stats) {
+static void LLVM_ATTRIBUTE_UNUSED dumpIR(Function &F, const char *Label,
+                                         CHRStats *Stats) {
   StringRef FuncName = F.getName();
   StringRef ModuleName = F.getParent()->getName();
   (void)(FuncName); // Unused in release build.
@@ -561,7 +562,7 @@ checkHoistValue(Value *V, Instruction *InsertPoint, DominatorTree &DT,
       if (AllOpsHoisted) {
         CHR_DEBUG(dbgs() << "checkHoistValue " << *I << "\n");
         if (HoistStops)
-          HoistStops->insert_range(OpsHoistStops);
+          HoistStops->insert(OpsHoistStops.begin(), OpsHoistStops.end());
         Visited[I] = true;
         return true;
       }
@@ -880,8 +881,11 @@ void CHR::checkScopeHoistable(CHRScope *Scope) {
     // Avoid a data dependence from a select or a branch to a(nother)
     // select. Note no instruction can't data-depend on a branch (a branch
     // instruction doesn't produce a value).
+    DenseSet<Instruction *> Unhoistables;
     // Initialize Unhoistables with the selects.
-    DenseSet<Instruction *> Unhoistables(llvm::from_range, Selects);
+    for (SelectInst *SI : Selects) {
+      Unhoistables.insert(SI);
+    }
     // Remove Selects that can't be hoisted.
     for (auto it = Selects.begin(); it != Selects.end(); ) {
       SelectInst *SI = *it;
@@ -1100,7 +1104,8 @@ static bool shouldSplit(Instruction *InsertPoint,
 static void getSelectsInScope(CHRScope *Scope,
                               DenseSet<Instruction *> &Output) {
   for (RegInfo &RI : Scope->RegInfos)
-    Output.insert_range(RI.Selects);
+    for (SelectInst *SI : RI.Selects)
+      Output.insert(SI);
   for (CHRScope *Sub : Scope->Subs)
     getSelectsInScope(Sub, Output);
 }
@@ -1171,7 +1176,8 @@ SmallVector<CHRScope *, 8> CHR::splitScope(
           // point. Union the bases.
           PrevSplitFromOuter = false;
           PrevConditionValues = *OuterConditionValues;
-          PrevConditionValues.insert_range(ConditionValues);
+          PrevConditionValues.insert(ConditionValues.begin(),
+                                     ConditionValues.end());
           PrevInsertPoint = OuterInsertPoint;
         }
       } else {
@@ -1203,7 +1209,7 @@ SmallVector<CHRScope *, 8> CHR::splitScope(
         });
       } else {
         // Not splitting. Union the bases. Keep the hoist point.
-        PrevConditionValues.insert_range(ConditionValues);
+        PrevConditionValues.insert(ConditionValues.begin(), ConditionValues.end());
       }
     }
   }
@@ -1365,8 +1371,11 @@ void CHR::setCHRRegions(CHRScope *Scope, CHRScope *OutermostScope) {
   // Put the biased selects in Unhoistables because they should stay where they
   // are and constant-folded after CHR (in case one biased select or a branch
   // can depend on another biased select.)
-  for (RegInfo &RI : Scope->RegInfos)
-    Unhoistables.insert_range(RI.Selects);
+  for (RegInfo &RI : Scope->RegInfos) {
+    for (SelectInst *SI : RI.Selects) {
+      Unhoistables.insert(SI);
+    }
+  }
   Instruction *InsertPoint = OutermostScope->BranchInsertPoint;
   for (RegInfo &RI : Scope->RegInfos) {
     Region *R = RI.R;
@@ -1513,7 +1522,7 @@ static bool negateICmpIfUsedByBranchOrSelectOnly(ICmpInst *ICmp,
       BI->swapSuccessors();
       // Don't need to swap this in terms of
       // TrueBiasedRegions/FalseBiasedRegions because true-based/false-based
-      // mean whether the branch is likely go into the if-then rather than
+      // mean whehter the branch is likely go into the if-then rather than
       // successor0/successor1 and because we can tell which edge is the then or
       // the else one by comparing the destination to the region exit block.
       continue;
@@ -1590,16 +1599,7 @@ static void insertTrivialPHIs(CHRScope *Scope,
         }
         TrivialPHIs.insert(PN);
         CHR_DEBUG(dbgs() << "Insert phi " << *PN << "\n");
-        bool FoundLifetimeAnnotation = false;
         for (Instruction *UI : Users) {
-          // If we found a lifetime annotation, remove it, but set a flag
-          // to ensure that we remove all other lifetime annotations attached
-          // to the alloca.
-          if (UI->isLifetimeStartOrEnd()) {
-            UI->eraseFromParent();
-            FoundLifetimeAnnotation = true;
-            continue;
-          }
           for (unsigned J = 0, NumOps = UI->getNumOperands(); J < NumOps; ++J) {
             if (UI->getOperand(J) == &I) {
               UI->setOperand(J, PN);
@@ -1607,21 +1607,13 @@ static void insertTrivialPHIs(CHRScope *Scope,
           }
           CHR_DEBUG(dbgs() << "Updated user " << *UI << "\n");
         }
-        // Erase any leftover lifetime annotations for a dynamic alloca.
-        if (FoundLifetimeAnnotation) {
-          for (User *U : make_early_inc_range(I.users())) {
-            if (auto *UI = dyn_cast<Instruction>(U))
-              if (UI->isLifetimeStartOrEnd())
-                UI->eraseFromParent();
-          }
-        }
       }
     }
   }
 }
 
 // Assert that all the CHR regions of the scope have a biased branch or select.
-[[maybe_unused]] static void
+static void LLVM_ATTRIBUTE_UNUSED
 assertCHRRegionsHaveBiasedBranchOrSelect(CHRScope *Scope) {
 #ifndef NDEBUG
   auto HasBiasedBranchOrSelect = [](RegInfo &RI, CHRScope *Scope) {
@@ -1643,9 +1635,8 @@ assertCHRRegionsHaveBiasedBranchOrSelect(CHRScope *Scope) {
 
 // Assert that all the condition values of the biased branches and selects have
 // been hoisted to the pre-entry block or outside of the scope.
-[[maybe_unused]] static void
-assertBranchOrSelectConditionHoisted(CHRScope *Scope,
-                                     BasicBlock *PreEntryBlock) {
+static void LLVM_ATTRIBUTE_UNUSED assertBranchOrSelectConditionHoisted(
+    CHRScope *Scope, BasicBlock *PreEntryBlock) {
   CHR_DEBUG(dbgs() << "Biased regions condition values \n");
   for (RegInfo &RI : Scope->CHRRegions) {
     Region *R = RI.R;
@@ -1710,12 +1701,14 @@ void CHR::transformScopes(CHRScope *Scope, DenseSet<PHINode *> &TrivialPHIs) {
   BasicBlock *ExitBlock = LastRegion->getExit();
   std::optional<uint64_t> ProfileCount = BFI.getBlockProfileCount(EntryBlock);
 
-  SmallVector<AllocaInst *> StaticAllocas;
-  for (Instruction &I : *EntryBlock) {
-    if (auto *AI = dyn_cast<AllocaInst>(&I)) {
-      if (AI->isStaticAlloca())
-        StaticAllocas.push_back(AI);
-    }
+  if (ExitBlock) {
+    // Insert a trivial phi at the exit block (where the CHR hot path and the
+    // cold path merges) for a value that's defined in the scope but used
+    // outside it (meaning it's alive at the exit block). We will add the
+    // incoming values for the CHR cold paths to it below. Without this, we'd
+    // miss updating phi's for such values unless there happens to already be a
+    // phi for that value there.
+    insertTrivialPHIs(Scope, EntryBlock, ExitBlock, TrivialPHIs);
   }
 
   // Split the entry block of the first region. The new block becomes the new
@@ -1733,20 +1726,6 @@ void CHR::transformScopes(CHRScope *Scope, DenseSet<PHINode *> &TrivialPHIs) {
          "NewEntryBlock's only pred must be EntryBlock");
   FirstRegion->replaceEntryRecursive(NewEntryBlock);
   BasicBlock *PreEntryBlock = EntryBlock;
-
-  // Move static allocas into the pre-entry block so they stay static.
-  for (AllocaInst *AI : StaticAllocas)
-    AI->moveBefore(EntryBlock->begin());
-
-  if (ExitBlock) {
-    // Insert a trivial phi at the exit block (where the CHR hot path and the
-    // cold path merges) for a value that's defined in the scope but used
-    // outside it (meaning it's alive at the exit block). We will add the
-    // incoming values for the CHR cold paths to it below. Without this, we'd
-    // miss updating phi's for such values unless there happens to already be a
-    // phi for that value there.
-    insertTrivialPHIs(Scope, EntryBlock, ExitBlock, TrivialPHIs);
-  }
 
   ValueToValueMapTy VMap;
   // Clone the blocks in the scope (excluding the PreEntryBlock) to split into a
@@ -1992,8 +1971,6 @@ void CHR::addToMergedCondition(bool IsTrueBiased, Value *Cond,
 
   // Use logical and to avoid propagating poison from later conditions.
   MergedCondition = IRB.CreateLogicalAnd(MergedCondition, Cond);
-  if (auto *MergedInst = dyn_cast<Instruction>(MergedCondition))
-    setExplicitlyUnknownBranchWeightsIfProfiled(*MergedInst, DEBUG_TYPE, &F);
 }
 
 void CHR::transformScopes(SmallVectorImpl<CHRScope *> &CHRScopes) {
@@ -2009,8 +1986,8 @@ void CHR::transformScopes(SmallVectorImpl<CHRScope *> &CHRScopes) {
   }
 }
 
-[[maybe_unused]] static void dumpScopes(SmallVectorImpl<CHRScope *> &Scopes,
-                                        const char *Label) {
+static void LLVM_ATTRIBUTE_UNUSED
+dumpScopes(SmallVectorImpl<CHRScope *> &Scopes, const char *Label) {
   dbgs() << Label << " " << Scopes.size() << "\n";
   for (CHRScope *Scope : Scopes) {
     dbgs() << *Scope << "\n";
@@ -2094,6 +2071,8 @@ bool CHR::run() {
   return Changed;
 }
 
+namespace llvm {
+
 ControlHeightReductionPass::ControlHeightReductionPass() {
   parseCHRFilterFiles();
 }
@@ -2116,3 +2095,5 @@ PreservedAnalyses ControlHeightReductionPass::run(
     return PreservedAnalyses::all();
   return PreservedAnalyses::none();
 }
+
+} // namespace llvm

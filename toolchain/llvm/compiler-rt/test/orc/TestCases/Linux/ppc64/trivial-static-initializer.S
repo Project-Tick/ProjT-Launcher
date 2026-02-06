@@ -6,10 +6,6 @@
 //
 // RUN: %clang -c -o %t %s
 // RUN: %llvm_jitlink %t
-
-// REQUIRES: disabled
-//// https://github.com/llvm/llvm-project/issues/175094
-
 	.text
 	.abiversion 2
 	.file	"init.c"

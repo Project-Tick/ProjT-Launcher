@@ -11,7 +11,6 @@
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Config/llvm-config.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/Threading.h"
@@ -28,7 +27,7 @@ namespace parallel {
 // Strategy for the default executor used by the parallel routines provided by
 // this file. It defaults to using all hardware threads and should be
 // initialized before the first use of parallel routines.
-LLVM_ABI extern ThreadPoolStrategy strategy;
+extern ThreadPoolStrategy strategy;
 
 #if LLVM_ENABLE_THREADS
 #define GET_THREAD_INDEX_IMPL                                                  \
@@ -42,15 +41,15 @@ LLVM_ABI extern ThreadPoolStrategy strategy;
 #ifdef _WIN32
 // Direct access to thread_local variables from a different DLL isn't
 // possible with Windows Native TLS.
-LLVM_ABI unsigned getThreadIndex();
+unsigned getThreadIndex();
 #else
 // Don't access this directly, use the getThreadIndex wrapper.
-LLVM_ABI extern thread_local unsigned threadIndex;
+extern thread_local unsigned threadIndex;
 
 inline unsigned getThreadIndex() { GET_THREAD_INDEX_IMPL; }
 #endif
 
-LLVM_ABI size_t getThreadCount();
+size_t getThreadCount();
 #else
 inline unsigned getThreadIndex() { return 0; }
 inline size_t getThreadCount() { return 1; }
@@ -92,13 +91,13 @@ class TaskGroup {
   bool Parallel;
 
 public:
-  LLVM_ABI TaskGroup();
-  LLVM_ABI ~TaskGroup();
+  TaskGroup();
+  ~TaskGroup();
 
   // Spawn a task, but does not wait for it to finish.
   // Tasks marked with \p Sequential will be executed
   // exactly in the order which they were spawned.
-  LLVM_ABI void spawn(std::function<void()> f);
+  void spawn(std::function<void()> f);
 
   void sync() const { L.sync(); }
 
@@ -226,8 +225,7 @@ void parallelSort(RandomAccessIterator Start, RandomAccessIterator End,
   llvm::sort(Start, End, Comp);
 }
 
-LLVM_ABI void parallelFor(size_t Begin, size_t End,
-                          function_ref<void(size_t)> Fn);
+void parallelFor(size_t Begin, size_t End, function_ref<void(size_t)> Fn);
 
 template <class IterTy, class FuncTy>
 void parallelForEach(IterTy Begin, IterTy End, FuncTy Fn) {

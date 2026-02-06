@@ -38,6 +38,7 @@ class SymbolTable;
 
 const COFFSyncStream &operator<<(const COFFSyncStream &,
                                  const llvm::object::Archive::Symbol *);
+const COFFSyncStream &operator<<(const COFFSyncStream &, Symbol *);
 
 // The base class for real symbol classes.
 class Symbol {
@@ -94,10 +95,6 @@ public:
     return symbolKind == LazyArchiveKind || symbolKind == LazyObjectKind ||
            symbolKind == LazyDLLSymbolKind;
   }
-
-  // Get the Defined symbol associated with this symbol, either itself or its
-  // weak alias.
-  Defined *getDefined();
 
 private:
   void computeName();
@@ -236,8 +233,6 @@ public:
                 CommonChunk *c = nullptr)
       : DefinedCOFF(DefinedCommonKind, f, n, s), data(c), size(size) {
     this->isExternal = true;
-    if (c)
-      c->live = true;
   }
 
   static bool classof(const Symbol *s) {

@@ -6,15 +6,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "src/errno/libc_errno.h"
 #include "src/time/ctime_r.h"
 #include "src/time/time_constants.h"
-#include "test/UnitTest/ErrnoCheckingTest.h"
 #include "test/UnitTest/Test.h"
 #include "test/src/time/TmHelper.h"
 
-using LlvmLibcCtimeR = LIBC_NAMESPACE::testing::ErrnoCheckingTest;
-
-TEST_F(LlvmLibcCtimeR, Nullptr) {
+TEST(LlvmLibcCtimeR, Nullptr) {
   char *result;
   result = LIBC_NAMESPACE::ctime_r(nullptr, nullptr);
   ASSERT_STREQ(nullptr, result);
@@ -28,7 +26,7 @@ TEST_F(LlvmLibcCtimeR, Nullptr) {
   ASSERT_STREQ(nullptr, result);
 }
 
-TEST_F(LlvmLibcCtimeR, ValidUnixTimestamp0) {
+TEST(LlvmLibcCtimeR, ValidUnixTimestamp0) {
   char buffer[LIBC_NAMESPACE::time_constants::ASCTIME_BUFFER_SIZE];
   time_t t;
   char *result;
@@ -38,7 +36,7 @@ TEST_F(LlvmLibcCtimeR, ValidUnixTimestamp0) {
   ASSERT_STREQ("Thu Jan  1 00:00:00 1970\n", result);
 }
 
-TEST_F(LlvmLibcCtimeR, ValidUnixTimestamp32Int) {
+TEST(LlvmLibcCtime, ValidUnixTimestamp32Int) {
   char buffer[LIBC_NAMESPACE::time_constants::ASCTIME_BUFFER_SIZE];
   time_t t;
   char *result;
@@ -48,7 +46,7 @@ TEST_F(LlvmLibcCtimeR, ValidUnixTimestamp32Int) {
   ASSERT_STREQ("Tue Jan 19 03:14:07 2038\n", result);
 }
 
-TEST_F(LlvmLibcCtimeR, InvalidArgument) {
+TEST(LlvmLibcCtimeR, InvalidArgument) {
   char buffer[LIBC_NAMESPACE::time_constants::ASCTIME_BUFFER_SIZE];
   time_t t;
   char *result;

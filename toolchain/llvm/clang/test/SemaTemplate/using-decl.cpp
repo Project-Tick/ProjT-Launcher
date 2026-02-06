@@ -14,15 +14,3 @@ namespace UsingInGenericLambda {
   }
   void e() { c<int>(); }
 }
-
-namespace UsingUsingEnum {
-  namespace foo {
-    enum class EnumOne {};
-  }
-  using foo::EnumOne;
-
-  template <class> void t() {
-    using enum EnumOne;
-  }
-  template void t<void>();
-} // namespace UsingUsingEnum

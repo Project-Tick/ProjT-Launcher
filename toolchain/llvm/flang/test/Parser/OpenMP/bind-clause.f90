@@ -19,8 +19,7 @@ end
 
 !PARSE-TREE: ExecutionPartConstruct -> ExecutableConstruct -> OpenMPConstruct -> OpenMPLoopConstruct
 !PARSE-TREE: | OmpBeginLoopDirective
-!PARSE-TREE: | | OmpDirectiveName -> llvm::omp::Directive = loop
+!PARSE-TREE: | | OmpLoopDirective -> llvm::omp::Directive = loop
 !PARSE-TREE: | | OmpClauseList -> OmpClause -> Bind -> OmpBindClause -> Binding = Parallel
-!PARSE-TREE: | | Flags = {}
-!PARSE-TREE: | ExecutionPartConstruct -> ExecutableConstruct -> DoConstruct
+!PARSE-TREE: | DoConstruct
 

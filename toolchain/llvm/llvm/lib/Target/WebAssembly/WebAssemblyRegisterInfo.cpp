@@ -117,7 +117,7 @@ bool WebAssemblyRegisterInfo::eliminateFrameIndex(
   if (FrameOffset) {
     // Create i32/64.add SP, offset and make it the operand.
     const TargetRegisterClass *PtrRC =
-        MRI.getTargetRegisterInfo()->getPointerRegClass();
+        MRI.getTargetRegisterInfo()->getPointerRegClass(MF);
     Register OffsetOp = MRI.createVirtualRegister(PtrRC);
     BuildMI(MBB, *II, II->getDebugLoc(),
             TII->get(WebAssemblyFrameLowering::getOpcConst(MF)),
@@ -149,8 +149,10 @@ WebAssemblyRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
 }
 
 const TargetRegisterClass *
-WebAssemblyRegisterInfo::getPointerRegClass(unsigned Kind) const {
+WebAssemblyRegisterInfo::getPointerRegClass(const MachineFunction &MF,
+                                            unsigned Kind) const {
   assert(Kind == 0 && "Only one kind of pointer on WebAssembly");
-  return TT.getArch() == Triple::wasm64 ? &WebAssembly::I64RegClass
-                                        : &WebAssembly::I32RegClass;
+  if (MF.getSubtarget<WebAssemblySubtarget>().hasAddr64())
+    return &WebAssembly::I64RegClass;
+  return &WebAssembly::I32RegClass;
 }

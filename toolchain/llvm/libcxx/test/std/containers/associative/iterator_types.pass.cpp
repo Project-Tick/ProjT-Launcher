@@ -14,6 +14,7 @@
 #include "min_allocator.h"
 #include "test_allocator.h"
 
+
 template <class Map, class ValueTp, class PtrT, class CPtrT>
 void testMap() {
   typedef typename Map::difference_type Diff;
@@ -33,9 +34,11 @@ void testMap() {
   }
 }
 
+
 template <class Set, class ValueTp, class CPtrT>
 void testSet() {
-  static_assert((std::is_same<typename Set::iterator, typename Set::const_iterator>::value), "");
+  static_assert((std::is_same<typename Set::iterator,
+                             typename Set::const_iterator>::value), "");
   typedef typename Set::difference_type Diff;
   {
     typedef typename Set::iterator It;
@@ -43,6 +46,7 @@ void testSet() {
     static_assert((std::is_same<typename It::reference, ValueTp const&>::value), "");
     static_assert((std::is_same<typename It::pointer, CPtrT>::value), "");
     static_assert((std::is_same<typename It::difference_type, Diff>::value), "");
+
   }
 }
 

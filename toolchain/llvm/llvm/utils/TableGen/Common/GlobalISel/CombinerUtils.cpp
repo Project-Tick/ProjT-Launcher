@@ -9,9 +9,9 @@
 #include "CombinerUtils.h"
 #include "llvm/ADT/StringSet.h"
 
-using namespace llvm;
+namespace llvm {
 
-StringRef llvm::insertStrRef(StringRef S) {
+StringRef insertStrRef(StringRef S) {
   if (S.empty())
     return {};
 
@@ -19,3 +19,5 @@ StringRef llvm::insertStrRef(StringRef S) {
   auto [It, Inserted] = Pool.insert(S);
   return It->getKey();
 }
+
+} // namespace llvm

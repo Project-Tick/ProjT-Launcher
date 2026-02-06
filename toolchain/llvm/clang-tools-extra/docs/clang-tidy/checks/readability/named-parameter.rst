@@ -10,9 +10,8 @@ Guide:
 
 https://google.github.io/styleguide/cppguide.html#Function_Declarations_and_Definitions
 
-All parameters should have the same name in both the function declaration and
-definition. If a parameter is not utilized, its name can be commented out in a
-function definition.
+All parameters should have the same name in both the function declaration and definition.
+If a parameter is not utilized, its name can be commented out in a function definition.
 
 .. code-block:: c++
 
@@ -24,12 +23,3 @@ function definition.
     }
 
 Corresponding cpplint.py check name: `readability/function`.
-
-Options
--------
-
-.. option:: InsertPlainNamesInForwardDecls
-
-   If set to `true`, the check will insert parameter names without comments for
-   forward declarations only. Otherwise, the check will insert parameter names
-   as comments (e.g., ``/*param*/``). Default is `false`.

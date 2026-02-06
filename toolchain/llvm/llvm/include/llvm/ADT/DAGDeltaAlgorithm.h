@@ -8,7 +8,6 @@
 #ifndef LLVM_ADT_DAGDELTAALGORITHM_H
 #define LLVM_ADT_DAGDELTAALGORITHM_H
 
-#include "llvm/Support/Compiler.h"
 #include <set>
 #include <utility>
 #include <vector>
@@ -36,7 +35,7 @@ namespace llvm {
 /// substantially fewer tests with appropriate dependencies. \see DeltaAlgorithm
 /// for more information on the properties which the predicate function itself
 /// should satisfy.
-class LLVM_ABI DAGDeltaAlgorithm {
+class DAGDeltaAlgorithm {
   virtual void anchor();
 
 public:

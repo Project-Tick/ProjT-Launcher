@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- RestrictSystemLibcHeadersCheck.cpp - clang-tidy ------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -8,6 +8,7 @@
 
 #include "RestrictSystemLibcHeadersCheck.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 #include "clang/Lex/Preprocessor.h"
@@ -22,11 +23,11 @@ namespace {
 class RestrictedIncludesPPCallbacks
     : public portability::RestrictedIncludesPPCallbacks {
 public:
-  explicit RestrictedIncludesPPCallbacks(RestrictSystemLibcHeadersCheck &Check,
-                                         const SourceManager &SM,
-                                         SmallString<128> CompilerIncudeDir)
+  explicit RestrictedIncludesPPCallbacks(
+      RestrictSystemLibcHeadersCheck &Check, const SourceManager &SM,
+      const SmallString<128> CompilerIncudeDir)
       : portability::RestrictedIncludesPPCallbacks(Check, SM),
-        CompilerIncudeDir(std::move(CompilerIncudeDir)) {}
+        CompilerIncudeDir(CompilerIncudeDir) {}
 
   void InclusionDirective(SourceLocation HashLoc, const Token &IncludeTok,
                           StringRef FileName, bool IsAngled,
@@ -61,7 +62,7 @@ void RestrictSystemLibcHeadersCheck::registerPPCallbacks(
       StringRef(PP->getHeaderSearchInfo().getHeaderSearchOpts().ResourceDir);
   llvm::sys::path::append(CompilerIncudeDir, "include");
   PP->addPPCallbacks(std::make_unique<RestrictedIncludesPPCallbacks>(
-      *this, SM, std::move(CompilerIncudeDir)));
+      *this, SM, CompilerIncudeDir));
 }
 
 } // namespace clang::tidy::llvm_libc

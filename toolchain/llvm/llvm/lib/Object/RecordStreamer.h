@@ -54,10 +54,9 @@ public:
   void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
                         Align ByteAlignment) override;
 
-  // Ignore format-specific directives; we do not need any information from
-  // them, but the default implementation of these methods crashes, so we
-  // override them with versions that do nothing.
-  void emitSubsectionsViaSymbols() override {};
+  // Ignore COFF-specific directives; we do not need any information from them,
+  // but the default implementation of these methods crashes, so we override
+  // them with versions that do nothing.
   void beginCOFFSymbolDef(const MCSymbol *Symbol) override {}
   void emitCOFFSymbolStorageClass(int StorageClass) override {}
   void emitCOFFSymbolType(int Type) override {}

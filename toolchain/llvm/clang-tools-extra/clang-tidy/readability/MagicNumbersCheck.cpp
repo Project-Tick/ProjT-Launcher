@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- MagicNumbersCheck.cpp - clang-tidy-------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -18,6 +18,7 @@
 #include "clang/AST/Type.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "llvm/ADT/STLExtras.h"
+#include <algorithm>
 
 using namespace clang::ast_matchers;
 
@@ -25,6 +26,7 @@ namespace clang {
 
 static bool isUsedToInitializeAConstant(const MatchFinder::MatchResult &Result,
                                         const DynTypedNode &Node) {
+
   const auto *AsDecl = Node.get<DeclaratorDecl>();
   if (AsDecl) {
     if (AsDecl->getType().isConstQualified())
@@ -44,6 +46,7 @@ static bool isUsedToInitializeAConstant(const MatchFinder::MatchResult &Result,
 
 static bool isUsedToDefineATypeAlias(const MatchFinder::MatchResult &Result,
                                      const DynTypedNode &Node) {
+
   if (Node.get<TypeAliasDecl>() || Node.get<TypedefNameDecl>())
     return true;
 
@@ -142,7 +145,8 @@ void MagicNumbersCheck::registerMatchers(MatchFinder *Finder) {
 }
 
 void MagicNumbersCheck::check(const MatchFinder::MatchResult &Result) {
-  const TraversalKindScope RAII(*Result.Context, TK_AsIs);
+
+  TraversalKindScope RAII(*Result.Context, TK_AsIs);
 
   checkBoundMatch<IntegerLiteral>(Result, "integer");
   checkBoundMatch<FloatingLiteral>(Result, "float");
@@ -187,8 +191,9 @@ bool MagicNumbersCheck::isConstant(const MatchFinder::MatchResult &Result,
 }
 
 bool MagicNumbersCheck::isIgnoredValue(const IntegerLiteral *Literal) const {
-  if (Literal->getType()->isBitIntType())
+  if (Literal->getType()->isBitIntType()) {
     return true;
+  }
   const llvm::APInt IntValue = Literal->getValue();
   const int64_t Value = IntValue.getZExtValue();
   if (Value == 0)
@@ -197,7 +202,8 @@ bool MagicNumbersCheck::isIgnoredValue(const IntegerLiteral *Literal) const {
   if (IgnorePowersOf2IntegerValues && IntValue.isPowerOf2())
     return true;
 
-  return llvm::binary_search(IgnoredIntegerValues, Value);
+  return std::binary_search(IgnoredIntegerValues.begin(),
+                            IgnoredIntegerValues.end(), Value);
 }
 
 bool MagicNumbersCheck::isIgnoredValue(const FloatingLiteral *Literal) const {
@@ -207,12 +213,14 @@ bool MagicNumbersCheck::isIgnoredValue(const FloatingLiteral *Literal) const {
 
   if (&FloatValue.getSemantics() == &llvm::APFloat::IEEEsingle()) {
     const float Value = FloatValue.convertToFloat();
-    return llvm::binary_search(IgnoredFloatingPointValues, Value);
+    return std::binary_search(IgnoredFloatingPointValues.begin(),
+                              IgnoredFloatingPointValues.end(), Value);
   }
 
   if (&FloatValue.getSemantics() == &llvm::APFloat::IEEEdouble()) {
     const double Value = FloatValue.convertToDouble();
-    return llvm::binary_search(IgnoredDoublePointValues, Value);
+    return std::binary_search(IgnoredDoublePointValues.begin(),
+                              IgnoredDoublePointValues.end(), Value);
   }
 
   return false;
@@ -244,7 +252,7 @@ bool MagicNumbersCheck::isBitFieldWidth(
 bool MagicNumbersCheck::isUserDefinedLiteral(
     const clang::ast_matchers::MatchFinder::MatchResult &Result,
     const clang::Expr &Literal) const {
-  const DynTypedNodeList Parents = Result.Context->getParents(Literal);
+  DynTypedNodeList Parents = Result.Context->getParents(Literal);
   if (Parents.empty())
     return false;
   return Parents[0].get<UserDefinedLiteral>() != nullptr;

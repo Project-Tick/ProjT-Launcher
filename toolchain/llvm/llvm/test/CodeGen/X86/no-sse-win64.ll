@@ -52,9 +52,7 @@ define void @pass_double(ptr %p) {
 ; CHECK-NEXT:    movq (%rcx), %rcx
 ; CHECK-NEXT:    callq take_double
 ; CHECK-NEXT:    nop
-; CHECK-NEXT:    .seh_startepilogue
 ; CHECK-NEXT:    addq $40, %rsp
-; CHECK-NEXT:    .seh_endepilogue
 ; CHECK-NEXT:    retq
 ; CHECK-NEXT:    .seh_endproc
   %v = load double, ptr %p
@@ -71,9 +69,7 @@ define void @pass_float(ptr %p) {
 ; CHECK-NEXT:    movl (%rcx), %ecx
 ; CHECK-NEXT:    callq take_float
 ; CHECK-NEXT:    nop
-; CHECK-NEXT:    .seh_startepilogue
 ; CHECK-NEXT:    addq $40, %rsp
-; CHECK-NEXT:    .seh_endepilogue
 ; CHECK-NEXT:    retq
 ; CHECK-NEXT:    .seh_endproc
   %v = load float, ptr %p
@@ -95,10 +91,8 @@ define void @call_double(ptr %p) {
 ; CHECK-NEXT:    movq %rcx, %rsi
 ; CHECK-NEXT:    callq produce_double
 ; CHECK-NEXT:    movq %rax, (%rsi)
-; CHECK-NEXT:    .seh_startepilogue
 ; CHECK-NEXT:    addq $32, %rsp
 ; CHECK-NEXT:    popq %rsi
-; CHECK-NEXT:    .seh_endepilogue
 ; CHECK-NEXT:    retq
 ; CHECK-NEXT:    .seh_endproc
   %v = call double @produce_double()
@@ -117,10 +111,8 @@ define void @call_float(ptr %p) {
 ; CHECK-NEXT:    movq %rcx, %rsi
 ; CHECK-NEXT:    callq produce_float
 ; CHECK-NEXT:    movl %eax, (%rsi)
-; CHECK-NEXT:    .seh_startepilogue
 ; CHECK-NEXT:    addq $32, %rsp
 ; CHECK-NEXT:    popq %rsi
-; CHECK-NEXT:    .seh_endepilogue
 ; CHECK-NEXT:    retq
 ; CHECK-NEXT:    .seh_endproc
   %v = call float @produce_float()

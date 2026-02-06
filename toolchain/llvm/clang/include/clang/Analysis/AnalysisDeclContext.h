@@ -20,7 +20,6 @@
 #include "clang/AST/DeclBase.h"
 #include "clang/Analysis/BodyFarm.h"
 #include "clang/Analysis/CFG.h"
-#include "clang/Analysis/CFGStmtMap.h"
 #include "clang/Analysis/CodeInjector.h"
 #include "clang/Basic/LLVM.h"
 #include "llvm/ADT/DenseMap.h"
@@ -38,6 +37,7 @@ class ASTContext;
 class BlockDecl;
 class BlockInvocationContext;
 class CFGReverseBlockReachabilityAnalysis;
+class CFGStmtMap;
 class ImplicitParamDecl;
 class LocationContext;
 class LocationContextManager;
@@ -77,7 +77,7 @@ class AnalysisDeclContext {
   const Decl *const D;
 
   std::unique_ptr<CFG> cfg, completeCFG;
-  std::optional<CFGStmtMap> cfgStmtMap;
+  std::unique_ptr<CFGStmtMap> cfgStmtMap;
 
   CFG::BuildOptions cfgBuildOptions;
   CFG::BuildOptions::ForcedBlkExprs *forcedBlkExprs = nullptr;
@@ -151,7 +151,7 @@ public:
 
   CFG *getCFG();
 
-  const CFGStmtMap *getCFGStmtMap();
+  CFGStmtMap *getCFGStmtMap();
 
   CFGReverseBlockReachabilityAnalysis *getCFGReachablityAnalysis();
 
@@ -451,7 +451,7 @@ public:
       bool synthesizeBodies = false, bool addStaticInitBranches = false,
       bool addCXXNewAllocator = true, bool addRichCXXConstructors = true,
       bool markElidedCXXConstructors = true, bool addVirtualBaseBranches = true,
-      std::unique_ptr<CodeInjector> injector = nullptr);
+      CodeInjector *injector = nullptr);
 
   AnalysisDeclContext *getContext(const Decl *D);
 

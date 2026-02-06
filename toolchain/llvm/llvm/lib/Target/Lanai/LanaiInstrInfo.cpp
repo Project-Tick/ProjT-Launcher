@@ -13,7 +13,6 @@
 #include "LanaiInstrInfo.h"
 #include "LanaiAluCode.h"
 #include "LanaiCondCode.h"
-#include "LanaiSubtarget.h"
 #include "MCTargetDesc/LanaiBaseInfo.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
@@ -26,16 +25,15 @@ using namespace llvm;
 #define GET_INSTRINFO_CTOR_DTOR
 #include "LanaiGenInstrInfo.inc"
 
-LanaiInstrInfo::LanaiInstrInfo(const LanaiSubtarget &STI)
-    : LanaiGenInstrInfo(STI, RegisterInfo, Lanai::ADJCALLSTACKDOWN,
-                        Lanai::ADJCALLSTACKUP),
+LanaiInstrInfo::LanaiInstrInfo()
+    : LanaiGenInstrInfo(Lanai::ADJCALLSTACKDOWN, Lanai::ADJCALLSTACKUP),
       RegisterInfo() {}
 
 void LanaiInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                  MachineBasicBlock::iterator Position,
                                  const DebugLoc &DL,
-                                 Register DestinationRegister,
-                                 Register SourceRegister, bool KillSource,
+                                 MCRegister DestinationRegister,
+                                 MCRegister SourceRegister, bool KillSource,
                                  bool RenamableDest, bool RenamableSrc) const {
   if (!Lanai::GPRRegClass.contains(DestinationRegister, SourceRegister)) {
     llvm_unreachable("Impossible reg-to-reg copy");
@@ -49,7 +47,8 @@ void LanaiInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
 void LanaiInstrInfo::storeRegToStackSlot(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
     Register SourceRegister, bool IsKill, int FrameIndex,
-    const TargetRegisterClass *RegisterClass, Register /*VReg*/,
+    const TargetRegisterClass *RegisterClass,
+    const TargetRegisterInfo * /*RegisterInfo*/, Register /*VReg*/,
     MachineInstr::MIFlag /*Flags*/) const {
   DebugLoc DL;
   if (Position != MBB.end()) {
@@ -69,8 +68,9 @@ void LanaiInstrInfo::storeRegToStackSlot(
 void LanaiInstrInfo::loadRegFromStackSlot(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
     Register DestinationRegister, int FrameIndex,
-    const TargetRegisterClass *RegisterClass, Register /*VReg*/,
-    unsigned /*SubReg*/, MachineInstr::MIFlag /*Flags*/) const {
+    const TargetRegisterClass *RegisterClass,
+    const TargetRegisterInfo * /*RegisterInfo*/, Register /*VReg*/,
+    MachineInstr::MIFlag /*Flags*/) const {
   DebugLoc DL;
   if (Position != MBB.end()) {
     DL = Position->getDebugLoc();
@@ -102,8 +102,7 @@ bool LanaiInstrInfo::areMemAccessesTriviallyDisjoint(
   const TargetRegisterInfo *TRI = &getRegisterInfo();
   const MachineOperand *BaseOpA = nullptr, *BaseOpB = nullptr;
   int64_t OffsetA = 0, OffsetB = 0;
-  LocationSize WidthA = LocationSize::precise(0),
-               WidthB = LocationSize::precise(0);
+  LocationSize WidthA = 0, WidthB = 0;
   if (getMemOperandWithOffsetWidth(MIa, BaseOpA, OffsetA, WidthA, TRI) &&
       getMemOperandWithOffsetWidth(MIb, BaseOpB, OffsetB, WidthB, TRI)) {
     if (BaseOpA->isIdenticalTo(*BaseOpB)) {
@@ -770,17 +769,17 @@ bool LanaiInstrInfo::getMemOperandWithOffsetWidth(
   case Lanai::LDW_RR:
   case Lanai::SW_RR:
   case Lanai::SW_RI:
-    Width = LocationSize::precise(4);
+    Width = 4;
     break;
   case Lanai::LDHs_RI:
   case Lanai::LDHz_RI:
   case Lanai::STH_RI:
-    Width = LocationSize::precise(2);
+    Width = 2;
     break;
   case Lanai::LDBs_RI:
   case Lanai::LDBz_RI:
   case Lanai::STB_RI:
-    Width = LocationSize::precise(1);
+    Width = 1;
     break;
   }
 

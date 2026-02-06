@@ -30,7 +30,8 @@ struct TestLinalgRankReduceContractionOps
 
   TestLinalgRankReduceContractionOps() = default;
   TestLinalgRankReduceContractionOps(
-      const TestLinalgRankReduceContractionOps &pass) = default;
+      const TestLinalgRankReduceContractionOps &pass)
+      : PassWrapper(pass) {}
   void getDependentDialects(DialectRegistry &registry) const override {
     registry.insert<affine::AffineDialect, linalg::LinalgDialect,
                     memref::MemRefDialect, tensor::TensorDialect>();
@@ -50,6 +51,7 @@ struct TestLinalgRankReduceContractionOps
     linalg::populateContractionOpRankReducingPatterns(patterns);
     if (failed(applyPatternsGreedily(funcOp.getBody(), std::move(patterns))))
       return signalPassFailure();
+    return;
   }
 };
 

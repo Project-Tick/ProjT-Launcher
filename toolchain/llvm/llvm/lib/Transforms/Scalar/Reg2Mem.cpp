@@ -107,7 +107,9 @@ PreservedAnalyses RegToMemPass::run(Function &F, FunctionAnalysisManager &AM) {
   return PA;
 }
 
-namespace {
+namespace llvm {
+
+void initializeRegToMemWrapperPassPass(PassRegistry &);
 
 class RegToMemWrapperPass : public FunctionPass {
 public:
@@ -134,7 +136,7 @@ public:
     return N != 0 || Changed;
   }
 };
-} // namespace
+} // namespace llvm
 
 INITIALIZE_PASS_BEGIN(RegToMemWrapperPass, "reg2mem", "", true, true)
 INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass);

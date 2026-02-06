@@ -11,9 +11,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "Wasm.h"
+#include "IncrementalExecutor.h"
 
-#include "llvm/Support/FileSystem.h"
-#include "llvm/Support/Path.h"
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
 #include <llvm/MC/TargetRegistry.h>
@@ -59,21 +58,9 @@ bool link(llvm::ArrayRef<const char *> args, llvm::raw_ostream &stdoutOS,
 
 namespace clang {
 
-WasmIncrementalExecutor::WasmIncrementalExecutor(llvm::Error &Err) {
-  llvm::ErrorAsOutParameter EAO(&Err);
-
-  if (Err)
-    return;
-
-  if (auto EC =
-          llvm::sys::fs::createUniqueDirectory("clang-wasm-exec-", TempDir))
-    Err = llvm::make_error<llvm::StringError>(
-        "Failed to create temporary directory for Wasm executor: " +
-            EC.message(),
-        llvm::inconvertibleErrorCode());
-}
-
-WasmIncrementalExecutor::~WasmIncrementalExecutor() = default;
+WasmIncrementalExecutor::WasmIncrementalExecutor(
+    llvm::orc::ThreadSafeContext &TSC)
+    : IncrementalExecutor(TSC) {}
 
 llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
   std::string ErrorString;
@@ -89,18 +76,11 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
   llvm::TargetMachine *TargetMachine = Target->createTargetMachine(
       PTU.TheModule->getTargetTriple(), "", "", TO, llvm::Reloc::Model::PIC_);
   PTU.TheModule->setDataLayout(TargetMachine->createDataLayout());
+  std::string ObjectFileName = PTU.TheModule->getName().str() + ".o";
+  std::string BinaryFileName = PTU.TheModule->getName().str() + ".wasm";
 
-  llvm::SmallString<256> ObjectFileName(TempDir);
-  llvm::sys::path::append(ObjectFileName, PTU.TheModule->getName() + ".o");
-
-  llvm::SmallString<256> BinaryFileName(TempDir);
-  llvm::sys::path::append(BinaryFileName, PTU.TheModule->getName() + ".wasm");
-
-  std::error_code EC;
-  llvm::raw_fd_ostream ObjectFileOutput(ObjectFileName, EC);
-
-  if (EC)
-    return llvm::errorCodeToError(EC);
+  std::error_code Error;
+  llvm::raw_fd_ostream ObjectFileOutput(llvm::StringRef(ObjectFileName), Error);
 
   llvm::legacy::PassManager PM;
   if (TargetMachine->addPassesToEmitFile(PM, ObjectFileOutput, nullptr,
@@ -177,13 +157,6 @@ WasmIncrementalExecutor::getSymbolAddress(llvm::StringRef Name,
   return llvm::orc::ExecutorAddr::fromPtr(Sym);
 }
 
-llvm::Error WasmIncrementalExecutor::LoadDynamicLibrary(const char *name) {
-  void *handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
-  if (!handle) {
-    llvm::errs() << dlerror() << '\n';
-    return llvm::make_error<llvm::StringError>("Failed to load dynamic library",
-                                               llvm::inconvertibleErrorCode());
-  }
-  return llvm::Error::success();
-}
+WasmIncrementalExecutor::~WasmIncrementalExecutor() = default;
+
 } // namespace clang

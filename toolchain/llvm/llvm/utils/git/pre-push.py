@@ -176,14 +176,27 @@ def handle_push(args, local_ref, local_sha, remote_ref, remote_sha):
 
     # Print the revision about to be pushed commits
     print('Pushing to "%s" on remote "%s"' % (remote_ref, args.url))
-    for sha in revs[:10]:
+    for sha in revs:
         print(" - " + git("show", "--oneline", "--quiet", sha))
-    if len(revs) > 10:
-        print("and %d more!" % (len(revs) - 5))
 
     if len(revs) > 1:
         if not ask_confirm("Are you sure you want to push %d commits?" % len(revs)):
             die("Aborting")
+
+    for sha in revs:
+        msg = git("log", "--format=%B", "-n1", sha)
+        if "Differential Revision" not in msg:
+            continue
+        for line in msg.splitlines():
+            for tag in ["Summary", "Reviewers", "Subscribers", "Tags"]:
+                if line.startswith(tag + ":"):
+                    eprint(
+                        'Please remove arcanist tags from the commit message (found "%s" tag in %s)'
+                        % (tag, sha[:12])
+                    )
+                    if len(revs) == 1:
+                        eprint("Try running: llvm/utils/git/arcfilter.sh")
+                    die('Aborting (force push by adding "--no-verify")')
 
     return
 

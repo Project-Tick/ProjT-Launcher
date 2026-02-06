@@ -17,9 +17,9 @@ def Myi32 : Operand<i32> {
 def HasA : Predicate<"Subtarget->hasA()">;
 def HasB : Predicate<"Subtarget->hasB()">;
 
-def ModeA : HwMode<[HasA]>; // Mode 1
-def ModeB : HwMode<[HasB]>; // Mode 2
-def ModeC : HwMode<[]>;     // Mode 3
+def ModeA : HwMode<"+a", [HasA]>; // Mode 1
+def ModeB : HwMode<"+b", [HasB]>; // Mode 2
+def ModeC : HwMode<"+c", []>;     // Mode 3
 
 
 def fooTypeEncDefault : InstructionEncoding {
@@ -114,38 +114,32 @@ def unrelated: Instruction {
 // For 'baz' we only assigned ModeB for it, so it will be presented
 // as '0' in the tables of ModeA, ModeC and Default Mode.
 // ENCODER-LABEL:   static const uint64_t InstBits[] = {
-// ENCODER-NEXT:    UINT64_C(2), UINT64_C(0),       // bar
-// ENCODER-NEXT:    UINT64_C(0), UINT64_C(0),       // baz
-// ENCODER-NEXT:    UINT64_C(8), UINT64_C(0),       // foo
-// ENCODER-NEXT:    UINT64_C(2), UINT64_C(0),       // unrelated
-// ENCODER-NEXT:    };
+// ENCODER:         UINT64_C(2), UINT64_C(0),       // bar
+// ENCODER:         UINT64_C(0), UINT64_C(0),       // baz
+// ENCODER:         UINT64_C(8), UINT64_C(0),       // foo
+// ENCODER:         UINT64_C(2), UINT64_C(0),       // unrelated
 // ENCODER-LABEL:   static const uint64_t InstBits_ModeA[] = {
-// ENCODER-NEXT:    UINT64_C(2), UINT64_C(0),       // bar
-// ENCODER-NEXT:    UINT64_C(0), UINT64_C(0),       // baz
-// ENCODER-NEXT:    UINT64_C(12), UINT64_C(0),      // foo
-// ENCODER-NEXT:    UINT64_C(2), UINT64_C(0),       // unrelated
-// ENCODER-NEXT:    };
+// ENCODER:         UINT64_C(2), UINT64_C(0),       // bar
+// ENCODER:         UINT64_C(0), UINT64_C(0),       // baz
+// ENCODER:         UINT64_C(12), UINT64_C(0),      // foo
+// ENCODER:         UINT64_C(2), UINT64_C(0),       // unrelated
 // ENCODER-LABEL:   static const uint64_t InstBits_ModeB[] = {
-// ENCODER-NEXT:    UINT64_C(2), UINT64_C(0),       // bar
-// ENCODER-NEXT:    UINT64_C(12), UINT64_C(0),      // baz
-// ENCODER-NEXT:    UINT64_C(0), UINT64_C(211106232532992),  // foo
-// ENCODER-NEXT:    UINT64_C(2), UINT64_C(0),       // unrelated
-// ENCODER-NEXT:    };
+// ENCODER:         UINT64_C(2), UINT64_C(0),       // bar
+// ENCODER:         UINT64_C(12), UINT64_C(0),      // baz
+// ENCODER:         UINT64_C(0), UINT64_C(211106232532992),  // foo
+// ENCODER:         UINT64_C(2), UINT64_C(0),       // unrelated
 // ENCODER-LABEL:   static const uint64_t InstBits_ModeC[] = {
-// ENCODER-NEXT:    UINT64_C(2), UINT64_C(0),      // bar
-// ENCODER-NEXT:    UINT64_C(0), UINT64_C(0),      // baz
-// ENCODER-NEXT:    UINT64_C(12582915),  UINT64_C(0),  // foo
-// ENCODER-NEXT:    UINT64_C(2),  UINT64_C(0),     // unrelated
-// ENCODER-NEXT:    };
+// ENCODER:         UINT64_C(2), UINT64_C(0),      // bar
+// ENCODER:         UINT64_C(0), UINT64_C(0),      // baz
+// ENCODER:         UINT64_C(12582915),  UINT64_C(0),  // foo
+// ENCODER:         UINT64_C(2),  UINT64_C(0),     // unrelated
+
 
 // ENCODER: const uint64_t *InstBitsByHw;
-// ENCODER: constexpr unsigned FirstSupportedOpcode
 // ENCODER: const unsigned opcode = MI.getOpcode();
-// ENCODER: if (opcode < FirstSupportedOpcode)
-// ENCODER: unsigned TableIndex = opcode - FirstSupportedOpcode
 // ENCODER: if (Scratch.getBitWidth() != 128)
 // ENCODER:   Scratch = Scratch.zext(128);
-// ENCODER: Inst = APInt(128, ArrayRef(InstBits + TableIndex * 2, 2));
+// ENCODER: Inst = APInt(128, ArrayRef(InstBits + opcode * 2, 2));
 // ENCODER: APInt &Value = Inst;
 // ENCODER: APInt &op = Scratch;
 // ENCODER: switch (opcode) {
@@ -161,21 +155,26 @@ def unrelated: Instruction {
 // ENCODER: case 2: InstBitsByHw = InstBits_ModeB; break;
 // ENCODER: case 3: InstBitsByHw = InstBits_ModeC; break;
 // ENCODER: };
-// ENCODER: Inst = APInt(128, ArrayRef(InstBitsByHw + TableIndex * 2, 2));
+// ENCODER: Inst = APInt(128, ArrayRef(InstBitsByHw + opcode * 2, 2));
 // ENCODER: Value = Inst;
 // ENCODER: switch (HwMode) {
 // ENCODER: default: llvm_unreachable("Unhandled HwMode");
-// ENCODER: case 1:
-// ENCODER: case 2: {
+// ENCODER: case 0: {
+// ENCODER: op.clearAllBits();
+// ENCODER: getMachineOpValue(MI, MI.getOperand(0), op, Fixups, STI);
+// ENCODER: Value.insertBits(op.extractBitsAsZExtValue(8, 0), 120, 8);
+// ENCODER: break;
+// ENCODER: }
+// ENCODER: case 1: {
 // ENCODER: op.clearAllBits();
 // ENCODER: getMachineOpValue(MI, MI.getOperand(0), op, Fixups, STI);
 // ENCODER: Value.insertBits(op.extractBitsAsZExtValue(8, 0), 112, 8);
 // ENCODER: break;
 // ENCODER: }
-// ENCODER: case 0: {
+// ENCODER: case 2: {
 // ENCODER: op.clearAllBits();
 // ENCODER: getMachineOpValue(MI, MI.getOperand(0), op, Fixups, STI);
-// ENCODER: Value.insertBits(op.extractBitsAsZExtValue(8, 0), 120, 8);
+// ENCODER: Value.insertBits(op.extractBitsAsZExtValue(8, 0), 112, 8);
 // ENCODER: break;
 // ENCODER: }
 // ENCODER: case 3: {
@@ -190,7 +189,7 @@ def unrelated: Instruction {
 // ENCODER: default: llvm_unreachable("Unknown hardware mode!"); break;
 // ENCODER: case 2: InstBitsByHw = InstBits_ModeB; break;
 // ENCODER: };
-// ENCODER: Inst = APInt(128, ArrayRef(InstBitsByHw + TableIndex * 2, 2));
+// ENCODER: Inst = APInt(128, ArrayRef(InstBitsByHw + opcode * 2, 2));
 // ENCODER: Value = Inst;
 // ENCODER: switch (HwMode) {
 // ENCODER: default: llvm_unreachable("Unhandled HwMode");
@@ -209,18 +208,24 @@ def unrelated: Instruction {
 // ENCODER:   unsigned HwMode = STI.getHwMode(MCSubtargetInfo::HwMode_EncodingInfo);
 // ENCODER:   switch (HwMode) {
 // ENCODER:   default: llvm_unreachable("Unhandled HwMode");
-// ENCODER:   case 1:
-// ENCODER:   case 2: {
+// ENCODER:   case 0: {
+// ENCODER:   switch (OpNum) {
+// ENCODER:   case 0:
+// ENCODER:     return 120;
+// ENCODER:   }
+// ENCODER:   break;
+// ENCODER:   }
+// ENCODER:   case 1: {
 // ENCODER:   switch (OpNum) {
 // ENCODER:   case 0:
 // ENCODER:     return 112;
 // ENCODER:   }
 // ENCODER:   break;
 // ENCODER:   }
-// ENCODER:   case 0: {
+// ENCODER:   case 2: {
 // ENCODER:   switch (OpNum) {
 // ENCODER:   case 0:
-// ENCODER:     return 120;
+// ENCODER:     return 112;
 // ENCODER:   }
 // ENCODER:   break;
 // ENCODER:   }

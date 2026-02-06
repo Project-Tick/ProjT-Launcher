@@ -27,38 +27,32 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/ProfDataUtils.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/DOTGraphTraits.h"
 #include "llvm/Support/FormatVariadic.h"
 
-#include <functional>
-#include <sstream>
-
 namespace llvm {
-class ModuleSlotTracker;
-
 template <class GraphType> struct GraphTraits;
 class CFGViewerPass : public PassInfoMixin<CFGViewerPass> {
 public:
-  LLVM_ABI PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
   static bool isRequired() { return true; }
 };
 
 class CFGOnlyViewerPass : public PassInfoMixin<CFGOnlyViewerPass> {
 public:
-  LLVM_ABI PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
   static bool isRequired() { return true; }
 };
 
 class CFGPrinterPass : public PassInfoMixin<CFGPrinterPass> {
 public:
-  LLVM_ABI PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
   static bool isRequired() { return true; }
 };
 
 class CFGOnlyPrinterPass : public PassInfoMixin<CFGOnlyPrinterPass> {
 public:
-  LLVM_ABI PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
   static bool isRequired() { return true; }
 };
 
@@ -67,31 +61,27 @@ private:
   const Function *F;
   const BlockFrequencyInfo *BFI;
   const BranchProbabilityInfo *BPI;
-  std::unique_ptr<ModuleSlotTracker> MSTStorage;
   uint64_t MaxFreq;
   bool ShowHeat;
   bool EdgeWeights;
   bool RawWeights;
-  using NodeIdFormatterTy =
-      std::function<std::optional<std::string>(const BasicBlock *)>;
-  std::optional<NodeIdFormatterTy> NodeIdFormatter;
 
 public:
   DOTFuncInfo(const Function *F) : DOTFuncInfo(F, nullptr, nullptr, 0) {}
-  LLVM_ABI ~DOTFuncInfo();
 
-  LLVM_ABI
   DOTFuncInfo(const Function *F, const BlockFrequencyInfo *BFI,
-              const BranchProbabilityInfo *BPI, uint64_t MaxFreq,
-              std::optional<NodeIdFormatterTy> NodeIdFormatter = std::nullopt);
+              const BranchProbabilityInfo *BPI, uint64_t MaxFreq)
+      : F(F), BFI(BFI), BPI(BPI), MaxFreq(MaxFreq) {
+    ShowHeat = false;
+    EdgeWeights = !!BPI; // Print EdgeWeights when BPI is available.
+    RawWeights = !!BFI;  // Print RawWeights when BFI is available.
+  }
 
   const BlockFrequencyInfo *getBFI() const { return BFI; }
 
   const BranchProbabilityInfo *getBPI() const { return BPI; }
 
   const Function *getFunction() const { return this->F; }
-
-  LLVM_ABI ModuleSlotTracker *getModuleSlotTracker();
 
   uint64_t getMaxFreq() const { return MaxFreq; }
 
@@ -110,10 +100,6 @@ public:
   void setEdgeWeights(bool EdgeWeights) { this->EdgeWeights = EdgeWeights; }
 
   bool showEdgeWeights() { return EdgeWeights; }
-
-  std::optional<NodeIdFormatterTy> getNodeIdFormatter() {
-    return NodeIdFormatter;
-  }
 };
 
 template <>
@@ -217,12 +203,22 @@ struct DOTGraphTraits<DOTFuncInfo *> : public DefaultDOTGraphTraits {
     return SimpleNodeLabelString(Node);
   }
 
-  LLVM_ABI static std::string getCompleteNodeLabel(
+  static void printBasicBlock(raw_string_ostream &OS, const BasicBlock &Node) {
+    // Prepend label name
+    Node.printAsOperand(OS, false);
+    OS << ":\n";
+    for (const Instruction &Inst : Node)
+      OS << Inst << "\n";
+  }
+
+  static std::string getCompleteNodeLabel(
       const BasicBlock *Node, DOTFuncInfo *,
       function_ref<void(raw_string_ostream &, const BasicBlock &)>
-          HandleBasicBlock = {},
-      function_ref<void(std::string &, unsigned &, unsigned)> HandleComment =
-          eraseComment);
+          HandleBasicBlock = printBasicBlock,
+      function_ref<void(std::string &, unsigned &, unsigned)>
+          HandleComment = eraseComment) {
+    return CompleteNodeLabelString(Node, HandleBasicBlock, HandleComment);
+  }
 
   std::string getNodeLabel(const BasicBlock *Node, DOTFuncInfo *CFGInfo) {
 
@@ -323,31 +319,24 @@ struct DOTGraphTraits<DOTFuncInfo *> : public DefaultDOTGraphTraits {
   }
 
   std::string getNodeAttributes(const BasicBlock *Node, DOTFuncInfo *CFGInfo) {
-    std::stringstream Attrs;
 
-    if (auto NodeIdFmt = CFGInfo->getNodeIdFormatter())
-      if (auto NodeId = (*NodeIdFmt)(Node))
-        Attrs << "id=\"" << *NodeId << "\"";
+    if (!CFGInfo->showHeatColors())
+      return "";
 
-    if (CFGInfo->showHeatColors()) {
-      uint64_t Freq = CFGInfo->getFreq(Node);
-      std::string Color = getHeatColor(Freq, CFGInfo->getMaxFreq());
-      std::string EdgeColor = (Freq <= (CFGInfo->getMaxFreq() / 2))
-                                  ? (getHeatColor(0))
-                                  : (getHeatColor(1));
-      if (!Attrs.str().empty())
-        Attrs << ",";
-      Attrs << "color=\"" << EdgeColor << "ff\", style=filled, "
-            << "fillcolor=\"" << Color << "70\", " << "fontname=\"Courier\"";
-    }
+    uint64_t Freq = CFGInfo->getFreq(Node);
+    std::string Color = getHeatColor(Freq, CFGInfo->getMaxFreq());
+    std::string EdgeColor = (Freq <= (CFGInfo->getMaxFreq() / 2))
+                                ? (getHeatColor(0))
+                                : (getHeatColor(1));
 
-    return Attrs.str();
+    std::string Attrs = "color=\"" + EdgeColor + "ff\", style=filled," +
+                        " fillcolor=\"" + Color + "70\"" +
+                        " fontname=\"Courier\"";
+    return Attrs;
   }
-
-  LLVM_ABI bool isNodeHidden(const BasicBlock *Node,
-                             const DOTFuncInfo *CFGInfo);
-  LLVM_ABI void computeDeoptOrUnreachablePaths(const Function *F);
+  bool isNodeHidden(const BasicBlock *Node, const DOTFuncInfo *CFGInfo);
+  void computeDeoptOrUnreachablePaths(const Function *F);
 };
-} // namespace llvm
+} // End llvm namespace
 
 #endif

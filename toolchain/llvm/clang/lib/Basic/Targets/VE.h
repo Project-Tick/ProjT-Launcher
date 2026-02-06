@@ -45,7 +45,9 @@ public:
     WCharType = UnsignedInt;
     WIntType = UnsignedInt;
     UseZeroLengthBitfieldAlignment = true;
-    resetDataLayout();
+    resetDataLayout(
+        "e-m:e-i64:64-n32:64-S128-v64:64:64-v128:64:64-v256:64:64-v512:64:64-"
+        "v1024:64:64-v2048:64:64-v4096:64:64-v8192:64:64-v16384:64:64");
   }
 
   void getTargetDefines(const LangOptions &Opts,
@@ -53,7 +55,7 @@ public:
 
   bool hasSjLjLowering() const override { return true; }
 
-  llvm::SmallVector<Builtin::InfosShard> getTargetBuiltins() const override;
+  ArrayRef<Builtin::Info> getTargetBuiltins() const override;
 
   BuiltinVaListKind getBuiltinVaListKind() const override {
     return TargetInfo::VoidPtrBuiltinVaList;

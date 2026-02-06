@@ -13,26 +13,25 @@
 // template<class T>
 //   optional(T) -> optional<T>;
 
-#include <cassert>
 #include <optional>
+#include <cassert>
 
 struct A {};
 
-int main(int, char**) {
-  //  Test the explicit deduction guides
+int main(int, char**)
+{
+//  Test the explicit deduction guides
 
-  //  Test the implicit deduction guides
+//  Test the implicit deduction guides
+    {
+//  optional()
+    std::optional opt;   // expected-error-re {{no viable constructor or deduction guide for deduction of template arguments of '{{(std::)?}}optional'}}
+    }
 
-  // clang-format off
-  {
-    //  optional()
-    std::optional opt; // expected-error-re {{no viable constructor or deduction guide for deduction of template arguments of '{{(std::)?}}optional'}}
-  }
+    {
+//  optional(nullopt_t)
+    std::optional opt(std::nullopt);   // expected-error-re@optional:* {{static assertion failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
+    }
 
-  {
-    //  optional(nullopt_t)
-    std::optional opt(std::nullopt); // expected-error-re@optional:* {{static assertion failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
-  }
-  // clang-format on
   return 0;
 }

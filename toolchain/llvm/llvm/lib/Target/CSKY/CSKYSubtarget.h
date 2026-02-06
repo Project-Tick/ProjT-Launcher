@@ -17,6 +17,7 @@
 #include "CSKYISelLowering.h"
 #include "CSKYInstrInfo.h"
 #include "CSKYRegisterInfo.h"
+#include "llvm/CodeGen/SelectionDAGTargetInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/Target/TargetMachine.h"
 
@@ -30,10 +31,10 @@ class CSKYSubtarget : public CSKYGenSubtargetInfo {
   virtual void anchor();
 
   CSKYFrameLowering FrameLowering;
-  CSKYRegisterInfo RegInfo;
   CSKYInstrInfo InstrInfo;
+  CSKYRegisterInfo RegInfo;
   CSKYTargetLowering TLInfo;
-  std::unique_ptr<const SelectionDAGTargetInfo> TSInfo;
+  SelectionDAGTargetInfo TSInfo;
 
   enum CSKYProcFamilyEnum {
     Others,
@@ -111,8 +112,6 @@ public:
   CSKYSubtarget(const Triple &TT, StringRef CPU, StringRef TuneCPU,
                 StringRef FS, const TargetMachine &TM);
 
-  ~CSKYSubtarget() override;
-
   const CSKYFrameLowering *getFrameLowering() const override {
     return &FrameLowering;
   }
@@ -121,8 +120,9 @@ public:
   const CSKYTargetLowering *getTargetLowering() const override {
     return &TLInfo;
   }
-
-  const SelectionDAGTargetInfo *getSelectionDAGInfo() const override;
+  const SelectionDAGTargetInfo *getSelectionDAGInfo() const override {
+    return &TSInfo;
+  }
 
   /// Initializes using the passed in CPU and feature strings so that we can
   /// use initializer lists for subtarget initialization.

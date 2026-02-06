@@ -112,7 +112,6 @@ private:
 public:
   std::pair<bool, bool> getIsCounterPair(const Stmt *S) const;
   void emitCounterSetOrIncrement(CGBuilderTy &Builder, const Stmt *S,
-                                 bool UseFalsePath, bool UseBoth,
                                  llvm::Value *StepV);
   void emitMCDCTestVectorBitmapUpdate(CGBuilderTy &Builder, const Expr *S,
                                       Address MCDCCondBitmapAddr,

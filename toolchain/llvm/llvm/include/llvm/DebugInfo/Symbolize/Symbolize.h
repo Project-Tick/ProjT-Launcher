@@ -13,20 +13,17 @@
 #ifndef LLVM_DEBUGINFO_SYMBOLIZE_SYMBOLIZE_H
 #define LLVM_DEBUGINFO_SYMBOLIZE_SYMBOLIZE_H
 
-#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/ilist_node.h"
 #include "llvm/ADT/simple_ilist.h"
 #include "llvm/DebugInfo/DIContext.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/BuildID.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 #include <algorithm>
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -61,72 +58,68 @@ public:
     bool RelativeAddresses = false;
     bool UntagAddresses = false;
     bool UseDIA = false;
-    bool DisableGsym = false;
     std::string DefaultArch;
     std::vector<std::string> DsymHints;
     std::string FallbackDebugPath;
     std::string DWPName;
     std::vector<std::string> DebugFileDirectory;
-    std::vector<std::string> GsymFileDirectory;
     size_t MaxCacheSize =
         sizeof(size_t) == 4
             ? 512 * 1024 * 1024 /* 512 MiB */
             : static_cast<size_t>(4ULL * 1024 * 1024 * 1024) /* 4 GiB */;
   };
 
-  LLVM_ABI LLVMSymbolizer();
-  LLVM_ABI LLVMSymbolizer(const Options &Opts);
+  LLVMSymbolizer();
+  LLVMSymbolizer(const Options &Opts);
 
-  LLVM_ABI ~LLVMSymbolizer();
+  ~LLVMSymbolizer();
 
   // Overloads accepting ObjectFile does not support COFF currently
-  LLVM_ABI Expected<DILineInfo>
-  symbolizeCode(const ObjectFile &Obj, object::SectionedAddress ModuleOffset);
-  LLVM_ABI Expected<DILineInfo>
-  symbolizeCode(StringRef ModuleName, object::SectionedAddress ModuleOffset);
-  LLVM_ABI Expected<DILineInfo>
-  symbolizeCode(ArrayRef<uint8_t> BuildID,
-                object::SectionedAddress ModuleOffset);
-  LLVM_ABI Expected<DIInliningInfo>
+  Expected<DILineInfo> symbolizeCode(const ObjectFile &Obj,
+                                     object::SectionedAddress ModuleOffset);
+  Expected<DILineInfo> symbolizeCode(StringRef ModuleName,
+                                     object::SectionedAddress ModuleOffset);
+  Expected<DILineInfo> symbolizeCode(ArrayRef<uint8_t> BuildID,
+                                     object::SectionedAddress ModuleOffset);
+  Expected<DIInliningInfo>
   symbolizeInlinedCode(const ObjectFile &Obj,
                        object::SectionedAddress ModuleOffset);
-  LLVM_ABI Expected<DIInliningInfo>
+  Expected<DIInliningInfo>
   symbolizeInlinedCode(StringRef ModuleName,
                        object::SectionedAddress ModuleOffset);
-  LLVM_ABI Expected<DIInliningInfo>
+  Expected<DIInliningInfo>
   symbolizeInlinedCode(ArrayRef<uint8_t> BuildID,
                        object::SectionedAddress ModuleOffset);
 
-  LLVM_ABI Expected<DIGlobal>
-  symbolizeData(const ObjectFile &Obj, object::SectionedAddress ModuleOffset);
-  LLVM_ABI Expected<DIGlobal>
-  symbolizeData(StringRef ModuleName, object::SectionedAddress ModuleOffset);
-  LLVM_ABI Expected<DIGlobal>
-  symbolizeData(ArrayRef<uint8_t> BuildID,
-                object::SectionedAddress ModuleOffset);
-  LLVM_ABI Expected<std::vector<DILocal>>
+  Expected<DIGlobal> symbolizeData(const ObjectFile &Obj,
+                                   object::SectionedAddress ModuleOffset);
+  Expected<DIGlobal> symbolizeData(StringRef ModuleName,
+                                   object::SectionedAddress ModuleOffset);
+  Expected<DIGlobal> symbolizeData(ArrayRef<uint8_t> BuildID,
+                                   object::SectionedAddress ModuleOffset);
+  Expected<std::vector<DILocal>>
   symbolizeFrame(const ObjectFile &Obj, object::SectionedAddress ModuleOffset);
-  LLVM_ABI Expected<std::vector<DILocal>>
+  Expected<std::vector<DILocal>>
   symbolizeFrame(StringRef ModuleName, object::SectionedAddress ModuleOffset);
-  LLVM_ABI Expected<std::vector<DILocal>>
+  Expected<std::vector<DILocal>>
   symbolizeFrame(ArrayRef<uint8_t> BuildID,
                  object::SectionedAddress ModuleOffset);
 
-  LLVM_ABI Expected<std::vector<DILineInfo>>
+  Expected<std::vector<DILineInfo>>
   findSymbol(const ObjectFile &Obj, StringRef Symbol, uint64_t Offset);
-  LLVM_ABI Expected<std::vector<DILineInfo>>
+  Expected<std::vector<DILineInfo>>
   findSymbol(StringRef ModuleName, StringRef Symbol, uint64_t Offset);
-  LLVM_ABI Expected<std::vector<DILineInfo>>
+  Expected<std::vector<DILineInfo>>
   findSymbol(ArrayRef<uint8_t> BuildID, StringRef Symbol, uint64_t Offset);
 
-  LLVM_ABI void flush();
+  void flush();
 
   // Evict entries from the binary cache until it is under the maximum size
   // given in the options. Calling this invalidates references in the DI...
   // objects returned by the methods above.
-  LLVM_ABI void pruneCache();
+  void pruneCache();
 
-  LLVM_ABI static std::string
+  static std::string
   DemangleName(StringRef Name, const SymbolizableModule *DbiModuleDescriptor);
 
   void setBuildIDFetcher(std::unique_ptr<BuildIDFetcher> Fetcher) {
@@ -137,8 +130,7 @@ public:
   /// Only one attempt is made to load a module, and errors during loading are
   /// only reported once. Subsequent calls to get module info for a module that
   /// failed to load will return nullptr.
-  LLVM_ABI Expected<SymbolizableModule *>
-  getOrCreateModuleInfo(StringRef ModuleName);
+  Expected<SymbolizableModule *> getOrCreateModuleInfo(StringRef ModuleName);
 
 private:
   // Bundles together object file with code/data and object file with
@@ -185,7 +177,6 @@ private:
   ObjectFile *lookUpBuildIDObject(const std::string &Path,
                                   const ELFObjectFileBase *Obj,
                                   const std::string &ArchName);
-  std::string lookUpGsymFile(const std::string &Path);
 
   bool findDebugBinary(const std::string &OrigPath,
                        const std::string &DebuglinkName, uint32_t CRCHash,
@@ -198,18 +189,11 @@ private:
   Expected<ObjectPair> getOrCreateObjectPair(const std::string &Path,
                                              const std::string &ArchName);
 
-  /// Return a pointer to the object file with the specified name, for a
-  /// specified architecture (e.g. if path refers to a Mach-O universal
-  /// binary, only one object file from it will be returned).
-  Expected<ObjectFile *> getOrCreateObject(const std::string &InputPath,
-                                           const std::string &DefaultArchName);
-
-  /// Return a pointer to the object file with the specified name, for a
-  /// specified architecture that is present inside an archive file.
-  Expected<ObjectFile *> getOrCreateObjectFromArchive(StringRef ArchivePath,
-                                                      StringRef MemberName,
-                                                      StringRef ArchName,
-                                                      StringRef FullPath);
+  /// Return a pointer to object file at specified path, for a specified
+  /// architecture (e.g. if path refers to a Mach-O universal binary, only one
+  /// object file from it will be returned).
+  Expected<ObjectFile *> getOrCreateObject(const std::string &Path,
+                                           const std::string &ArchName);
 
   /// Update the LRU cache order when a binary is accessed.
   void recordAccess(CachedBinary &Bin);
@@ -225,39 +209,15 @@ private:
   /// Contains parsed binary for each path, or parsing error.
   std::map<std::string, CachedBinary, std::less<>> BinaryForPath;
 
-  /// Store the archive path for the object file.
-  DenseMap<const object::ObjectFile *, std::string> ObjectToArchivePath;
-
   /// A list of cached binaries in LRU order.
   simple_ilist<CachedBinary> LRUBinaries;
   /// Sum of the sizes of the cached binaries.
   size_t CacheSize = 0;
 
-  struct ContainerCacheKey {
-    std::string Path;
-    std::string MemberName;
-    std::string ArchName;
-
-    // Required for map comparison.
-    bool operator<(const ContainerCacheKey &Other) const {
-      return std::tie(Path, MemberName, ArchName) <
-             std::tie(Other.Path, Other.MemberName, Other.ArchName);
-    }
-  };
-
-  /// Parsed object file for each path/member/architecture triple.
-  /// Used to cache objects extracted from containers (e.g., Mach-O
-  /// universal binaries, archives).
-  std::map<ContainerCacheKey, std::unique_ptr<ObjectFile>> ObjectFileCache;
-
-  Expected<object::Binary *>
-  loadOrGetBinary(const std::string &ArchivePathKey,
-                  std::optional<StringRef> FullPathKey = std::nullopt);
-
-  Expected<ObjectFile *> findOrCacheObject(
-      const ContainerCacheKey &Key,
-      llvm::function_ref<Expected<std::unique_ptr<ObjectFile>>()> Loader,
-      const std::string &PathForBinaryCache);
+  /// Parsed object file for path/architecture pair, where "path" refers
+  /// to Mach-O universal binary.
+  std::map<std::pair<std::string, std::string>, std::unique_ptr<ObjectFile>>
+      ObjectForUBPathAndArch;
 
   Options Opts;
 
@@ -277,7 +237,7 @@ public:
 
   // Add an action to be performed when the binary is evicted, before all
   // previously registered evictors.
-  LLVM_ABI void pushEvictor(std::function<void()> Evictor);
+  void pushEvictor(std::function<void()> Evictor);
 
   // Run all registered evictors in the reverse of the order in which they were
   // added.

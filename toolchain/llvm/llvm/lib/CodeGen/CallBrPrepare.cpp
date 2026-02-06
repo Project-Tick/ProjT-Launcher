@@ -59,7 +59,7 @@ static bool InsertIntrinsicCalls(ArrayRef<CallBrInst *> CBRs,
                                  DominatorTree &DT);
 static void UpdateSSA(DominatorTree &DT, CallBrInst *CBR, CallInst *Intrinsic,
                       SSAUpdater &SSAUpdate);
-static SmallVector<CallBrInst *, 2> FindCallBrs(Function &F);
+static SmallVector<CallBrInst *, 2> FindCallBrs(Function &Fn);
 
 namespace {
 
@@ -67,21 +67,21 @@ class CallBrPrepare : public FunctionPass {
 public:
   CallBrPrepare() : FunctionPass(ID) {}
   void getAnalysisUsage(AnalysisUsage &AU) const override;
-  bool runOnFunction(Function &F) override;
+  bool runOnFunction(Function &Fn) override;
   static char ID;
 };
 
 } // end anonymous namespace
 
-PreservedAnalyses CallBrPreparePass::run(Function &F,
+PreservedAnalyses CallBrPreparePass::run(Function &Fn,
                                          FunctionAnalysisManager &FAM) {
   bool Changed = false;
-  SmallVector<CallBrInst *, 2> CBRs = FindCallBrs(F);
+  SmallVector<CallBrInst *, 2> CBRs = FindCallBrs(Fn);
 
   if (CBRs.empty())
     return PreservedAnalyses::all();
 
-  auto &DT = FAM.getResult<DominatorTreeAnalysis>(F);
+  auto &DT = FAM.getResult<DominatorTreeAnalysis>(Fn);
 
   Changed |= SplitCriticalEdges(CBRs, DT);
   Changed |= InsertIntrinsicCalls(CBRs, DT);
@@ -106,9 +106,9 @@ void CallBrPrepare::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addPreserved<DominatorTreeWrapperPass>();
 }
 
-SmallVector<CallBrInst *, 2> FindCallBrs(Function &F) {
+SmallVector<CallBrInst *, 2> FindCallBrs(Function &Fn) {
   SmallVector<CallBrInst *, 2> CBRs;
-  for (BasicBlock &BB : F)
+  for (BasicBlock &BB : Fn)
     if (auto *CBR = dyn_cast<CallBrInst>(BB.getTerminator()))
       if (!CBR->getType()->isVoidTy() && !CBR->use_empty())
         CBRs.push_back(CBR);
@@ -219,9 +219,9 @@ void UpdateSSA(DominatorTree &DT, CallBrInst *CBR, CallInst *Intrinsic,
   }
 }
 
-bool CallBrPrepare::runOnFunction(Function &F) {
+bool CallBrPrepare::runOnFunction(Function &Fn) {
   bool Changed = false;
-  SmallVector<CallBrInst *, 2> CBRs = FindCallBrs(F);
+  SmallVector<CallBrInst *, 2> CBRs = FindCallBrs(Fn);
 
   if (CBRs.empty())
     return Changed;
@@ -238,7 +238,7 @@ bool CallBrPrepare::runOnFunction(Function &F) {
   if (auto *DTWP = getAnalysisIfAvailable<DominatorTreeWrapperPass>())
     DT = &DTWP->getDomTree();
   else {
-    LazilyComputedDomTree.emplace(F);
+    LazilyComputedDomTree.emplace(Fn);
     DT = &*LazilyComputedDomTree;
   }
 

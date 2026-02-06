@@ -39,11 +39,10 @@ public:
 private:
   AliasAnalysis *AA;
 };
-} // namespace
 
 /// iterativelyFlattenCFG - Call FlattenCFG on all the blocks in the function,
 /// iterating until no more changes are made.
-static bool iterativelyFlattenCFG(Function &F, AliasAnalysis *AA) {
+bool iterativelyFlattenCFG(Function &F, AliasAnalysis *AA) {
   bool Changed = false;
   bool LocalChange = true;
 
@@ -68,6 +67,7 @@ static bool iterativelyFlattenCFG(Function &F, AliasAnalysis *AA) {
   }
   return Changed;
 }
+} // namespace
 
 char FlattenCFGLegacyPass::ID = 0;
 

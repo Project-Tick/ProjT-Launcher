@@ -11,6 +11,8 @@
 #include "SyntheticSections.h"
 #include "Target.h"
 #include "Thunks.h"
+#include "lld/Common/ErrorHandler.h"
+#include "llvm/Support/Endian.h"
 
 using namespace llvm;
 using namespace llvm::support::endian;
@@ -49,7 +51,7 @@ public:
                 uint64_t val) const override;
   RelExpr adjustTlsExpr(RelType type, RelExpr expr) const override;
   int getTlsGdRelaxSkip(RelType type) const override;
-  void relocateAlloc(InputSection &sec, uint8_t *buf) const override;
+  void relocateAlloc(InputSectionBase &sec, uint8_t *buf) const override;
 
 private:
   void relaxTlsGdToIe(uint8_t *loc, const Relocation &rel, uint64_t val) const;
@@ -496,8 +498,10 @@ void PPC::relaxTlsIeToLe(uint8_t *loc, const Relocation &rel,
   }
 }
 
-void PPC::relocateAlloc(InputSection &sec, uint8_t *buf) const {
-  uint64_t secAddr = sec.getOutputSection()->addr + sec.outSecOff;
+void PPC::relocateAlloc(InputSectionBase &sec, uint8_t *buf) const {
+  uint64_t secAddr = sec.getOutputSection()->addr;
+  if (auto *s = dyn_cast<InputSection>(&sec))
+    secAddr += s->outSecOff;
   for (const Relocation &rel : sec.relocs()) {
     uint8_t *loc = buf + rel.offset;
     const uint64_t val =

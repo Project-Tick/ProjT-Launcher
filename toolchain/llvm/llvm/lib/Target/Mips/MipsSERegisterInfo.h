@@ -20,7 +20,7 @@ namespace llvm {
 
 class MipsSERegisterInfo : public MipsRegisterInfo {
 public:
-  explicit MipsSERegisterInfo(const MipsSubtarget &STI);
+  MipsSERegisterInfo();
 
   bool requiresRegisterScavenging(const MachineFunction &MF) const override;
 

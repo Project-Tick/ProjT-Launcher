@@ -10,7 +10,6 @@ from lldbsuite.test import lldbutil
 class ImportStdModule(TestBase):
     @add_test_categories(["libc++"])
     @skipIf(compiler=no_match("clang"))
-    @skipIf(macos_version=["<", "15.0"])
     def test(self):
         self.build()
 
@@ -39,7 +38,6 @@ class ImportStdModule(TestBase):
 
     @add_test_categories(["libc++"])
     @skipIf(compiler=no_match("clang"))
-    @skipIf(macos_version=["<", "15.0"])
     def test_non_cpp_language(self):
         self.build()
 

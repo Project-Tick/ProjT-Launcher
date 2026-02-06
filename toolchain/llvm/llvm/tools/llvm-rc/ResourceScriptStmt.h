@@ -49,16 +49,6 @@ public:
     return *this;
   }
 
-  RCInt &operator*=(const RCInt &Rhs) {
-    std::tie(Val, Long) = std::make_pair(Val * Rhs.Val, Long | Rhs.Long);
-    return *this;
-  }
-
-  RCInt &operator/=(const RCInt &Rhs) {
-    std::tie(Val, Long) = std::make_pair(Val / Rhs.Val, Long | Rhs.Long);
-    return *this;
-  }
-
   RCInt &operator|=(const RCInt &Rhs) {
     std::tie(Val, Long) = std::make_pair(Val | Rhs.Val, Long | Rhs.Long);
     return *this;
@@ -104,20 +94,6 @@ public:
   IntWithNotMask &operator-=(const IntWithNotMask &Rhs) {
     Value &= ~Rhs.NotMask;
     Value -= Rhs.Value;
-    NotMask |= Rhs.NotMask;
-    return *this;
-  }
-
-  IntWithNotMask &operator*=(const IntWithNotMask &Rhs) {
-    Value &= ~Rhs.NotMask;
-    Value *= Rhs.Value;
-    NotMask |= Rhs.NotMask;
-    return *this;
-  }
-
-  IntWithNotMask &operator/=(const IntWithNotMask &Rhs) {
-    Value &= ~Rhs.NotMask;
-    Value /= Rhs.Value;
     NotMask |= Rhs.NotMask;
     return *this;
   }
@@ -242,9 +218,9 @@ public:
   virtual raw_ostream &log(raw_ostream &OS) const {
     return OS << "Base statement\n";
   };
-  RCResource() = default;
+  RCResource() {}
   RCResource(uint16_t Flags) : MemoryFlags(Flags) {}
-  virtual ~RCResource() = default;
+  virtual ~RCResource() {}
 
   virtual Error visit(Visitor *) const {
     llvm_unreachable("This is unable to call methods from Visitor base");
@@ -290,7 +266,7 @@ class OptionalStmtList : public OptionalStmt {
   std::vector<std::unique_ptr<OptionalStmt>> Statements;
 
 public:
-  OptionalStmtList() = default;
+  OptionalStmtList() {}
   raw_ostream &log(raw_ostream &OS) const override;
 
   void addStmt(std::unique_ptr<OptionalStmt> Stmt) {
@@ -510,7 +486,7 @@ public:
   virtual raw_ostream &log(raw_ostream &OS) const {
     return OS << "Base menu definition\n";
   }
-  virtual ~MenuDefinition() = default;
+  virtual ~MenuDefinition() {}
 
   virtual uint16_t getResFlags() const { return 0; }
   virtual MenuDefKind getKind() const { return MkBase; }
@@ -818,7 +794,7 @@ public:
   enum StmtKind { StBase = 0, StBlock = 1, StValue = 2 };
 
   virtual raw_ostream &log(raw_ostream &OS) const { return OS << "VI stmt\n"; }
-  virtual ~VersionInfoStmt() = default;
+  virtual ~VersionInfoStmt() {}
 
   virtual StmtKind getKind() const { return StBase; }
   static bool classof(const VersionInfoStmt *S) {

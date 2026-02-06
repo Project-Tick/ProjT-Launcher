@@ -869,14 +869,14 @@ void LiveInterval::clearSubRanges() {
 /// For each VNI in \p SR, check whether or not that value defines part
 /// of the mask describe by \p LaneMask and if not, remove that value
 /// from \p SR.
-static void stripValuesNotDefiningMask(Register Reg, LiveInterval::SubRange &SR,
+static void stripValuesNotDefiningMask(unsigned Reg, LiveInterval::SubRange &SR,
                                        LaneBitmask LaneMask,
                                        const SlotIndexes &Indexes,
                                        const TargetRegisterInfo &TRI,
                                        unsigned ComposeSubRegIdx) {
   // Phys reg should not be tracked at subreg level.
   // Same for noreg (Reg == 0).
-  if (!Reg || !Reg.isVirtual())
+  if (!Register::isVirtualRegister(Reg) || !Reg)
     return;
   // Remove the values that don't define those lanes.
   SmallVector<VNInfo *, 8> ToBeRemoved;
@@ -996,17 +996,6 @@ LLVM_DUMP_METHOD void LiveRange::Segment::dump() const {
 }
 #endif
 
-void VNInfo::print(raw_ostream &OS) const {
-  OS << id << '@';
-  if (isUnused()) {
-    OS << 'x';
-  } else {
-    OS << def;
-    if (isPHIDef())
-      OS << "-phi";
-  }
-}
-
 void LiveRange::print(raw_ostream &OS) const {
   if (empty())
     OS << "EMPTY";
@@ -1024,10 +1013,15 @@ void LiveRange::print(raw_ostream &OS) const {
     for (const_vni_iterator i = vni_begin(), e = vni_end(); i != e;
          ++i, ++vnum) {
       const VNInfo *vni = *i;
-      if (vnum)
-        OS << ' ';
-      OS << *vni;
-      assert(vnum == vni->id && "Bad VNInfo");
+      if (vnum) OS << ' ';
+      OS << vnum << '@';
+      if (vni->isUnused()) {
+        OS << 'x';
+      } else {
+        OS << vni->def;
+        if (vni->isPHIDef())
+          OS << "-phi";
+      }
     }
   }
 }
@@ -1047,9 +1041,9 @@ void LiveInterval::print(raw_ostream &OS) const {
 }
 
 #if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
-LLVM_DUMP_METHOD void VNInfo::dump() const { dbgs() << *this << '\n'; }
-
-LLVM_DUMP_METHOD void LiveRange::dump() const { dbgs() << *this << '\n'; }
+LLVM_DUMP_METHOD void LiveRange::dump() const {
+  dbgs() << *this << '\n';
+}
 
 LLVM_DUMP_METHOD void LiveInterval::SubRange::dump() const {
   dbgs() << *this << '\n';
@@ -1168,8 +1162,8 @@ void LiveRangeUpdater::print(raw_ostream &OS) const {
   for (const auto &S : make_range(LR->begin(), WriteI))
     OS << ' ' << S;
   OS << "\n  Spills:";
-  for (const LiveRange::Segment &Spill : Spills)
-    OS << ' ' << Spill;
+  for (unsigned I = 0, E = Spills.size(); I != E; ++I)
+    OS << ' ' << Spills[I];
   OS << "\n  Area 2:";
   for (const auto &S : make_range(ReadI, LR->end()))
     OS << ' ' << S;

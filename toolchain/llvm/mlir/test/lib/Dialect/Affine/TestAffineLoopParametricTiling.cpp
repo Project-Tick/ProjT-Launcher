@@ -13,7 +13,7 @@
 
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Affine/LoopUtils.h"
-#include "mlir/Dialect/Affine/Transforms/Passes.h"
+#include "mlir/Dialect/Affine/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
 using namespace mlir;
@@ -74,13 +74,9 @@ getTilingParameters(ArrayRef<AffineForOp> band,
 }
 
 void TestAffineLoopParametricTiling::runOnOperation() {
-  // Get maximal perfect nest of 'affine.for' ops at the top-level.
+  // Bands of loops to tile.
   std::vector<SmallVector<AffineForOp, 6>> bands;
-  for (AffineForOp forOp : getOperation().getOps<AffineForOp>()) {
-    SmallVector<AffineForOp, 6> band;
-    getPerfectlyNestedLoops(band, forOp);
-    bands.push_back(band);
-  }
+  getTileableBands(getOperation(), &bands);
 
   // Tile each band.
   for (MutableArrayRef<AffineForOp> band : bands) {

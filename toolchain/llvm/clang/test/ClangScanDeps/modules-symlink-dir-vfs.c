@@ -5,7 +5,7 @@
 // RUN: rm -rf %t
 // RUN: split-file %s %t
 
-// REQUIRES: symlinks
+// REQUIRES: shell
 
 // RUN: mkdir -p %t/frameworks-symlink
 // RUN: ln -s %t/frameworks/FW.framework %t/frameworks-symlink/FW.framework

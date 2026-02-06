@@ -1,13 +1,10 @@
-from abc import ABC, abstractmethod
 import ctypes
 import errno
 import io
 import threading
 import socket
 import traceback
-from enum import Enum
 from lldbsuite.support import seven
-from typing import Optional, List, Tuple, Union, Sequence
 
 
 def checksum(message):
@@ -77,35 +74,6 @@ def hex_decode_bytes(hex_bytes):
     return out
 
 
-class PacketDirection(Enum):
-    RECV = "recv"
-    SEND = "send"
-
-
-class PacketLog:
-    def __init__(self):
-        self._packets: list[tuple[PacketDirection, str]] = []
-
-    def add_sent(self, packet: str):
-        self._packets.append((PacketDirection.SEND, packet))
-
-    def add_received(self, packet: str):
-        self._packets.append((PacketDirection.RECV, packet))
-
-    def get_sent(self):
-        return [
-            pkt for direction, pkt in self._packets if direction == PacketDirection.SEND
-        ]
-
-    def get_received(self):
-        return [
-            pkt for direction, pkt in self._packets if direction == PacketDirection.RECV
-        ]
-
-    def __iter__(self):
-        return iter(self._packets)
-
-
 class MockGDBServerResponder:
     """
     A base class for handling client packets and issuing server responses for
@@ -118,35 +86,21 @@ class MockGDBServerResponder:
     handles any packet not recognized in the common packet handling code.
     """
 
-    registerCount: int = 40
+    registerCount = 40
+    packetLog = None
 
-    class SpecialResponse(Enum):
-        RESPONSE_DISCONNECT = 0
-        RESPONSE_NONE = 1
-
-    RESPONSE_DISCONNECT = SpecialResponse.RESPONSE_DISCONNECT
-    RESPONSE_NONE = SpecialResponse.RESPONSE_NONE
-    Response = Union[str, SpecialResponse]
+    class RESPONSE_DISCONNECT:
+        pass
 
     def __init__(self):
-        self.packetLog = PacketLog()
+        self.packetLog = []
 
-    def respond(self, packet: str) -> Sequence[Response]:
+    def respond(self, packet):
         """
         Return the unframed packet data that the server should issue in response
         to the given packet received from the client.
         """
-        self.packetLog.add_received(packet)
-        response = self._respond_impl(packet)
-        if not isinstance(response, list):
-            response = [response]
-        for part in response:
-            if isinstance(part, self.SpecialResponse):
-                continue
-            self.packetLog.add_sent(part)
-        return response
-
-    def _respond_impl(self, packet) -> Union[Response, List[Response]]:
+        self.packetLog.append(packet)
         if packet is MockGDBServer.PACKET_INTERRUPT:
             return self.interrupt()
         if packet == "c":
@@ -227,8 +181,6 @@ class MockGDBServerResponder:
             return self.qQueryGDBServer()
         if packet == "qHostInfo":
             return self.qHostInfo()
-        if packet.startswith("qEcho"):
-            return self.qEcho(int(packet.split(":")[1]))
         if packet == "qGetWorkingDir":
             return self.qGetWorkingDir()
         if packet == "qOffsets":
@@ -264,31 +216,28 @@ class MockGDBServerResponder:
 
         return self.other(packet)
 
-    def qsProcessInfo(self) -> str:
+    def qsProcessInfo(self):
         return "E04"
 
-    def qfProcessInfo(self, packet) -> str:
+    def qfProcessInfo(self, packet):
         return "E04"
 
-    def jGetLoadedDynamicLibrariesInfos(self, packet) -> str:
+    def jGetLoadedDynamicLibrariesInfos(self, packet):
         return ""
 
-    def qGetWorkingDir(self) -> str:
+    def qGetWorkingDir(self):
         return "2f"
 
-    def qOffsets(self) -> str:
+    def qOffsets(self):
         return ""
 
-    def qProcessInfo(self) -> str:
+    def qProcessInfo(self):
         return ""
 
-    def qHostInfo(self) -> str:
+    def qHostInfo(self):
         return "ptrsize:8;endian:little;"
 
-    def qEcho(self, num: int) -> str:
-        return "E04"
-
-    def qQueryGDBServer(self) -> str:
+    def qQueryGDBServer(self):
         return "E04"
 
     def interrupt(self):
@@ -300,58 +249,56 @@ class MockGDBServerResponder:
     def vCont(self, packet):
         raise self.UnexpectedPacketException()
 
-    def A(self, packet) -> str:
+    def A(self, packet):
         return ""
 
-    def D(self, packet) -> str:
+    def D(self, packet):
         return "OK"
 
-    def readRegisters(self) -> str:
+    def readRegisters(self):
         return "00000000" * self.registerCount
 
-    def readRegister(self, register: int) -> str:
+    def readRegister(self, register):
         return "00000000"
 
-    def writeRegisters(self, registers_hex) -> str:
+    def writeRegisters(self, registers_hex):
         return "OK"
 
-    def writeRegister(self, register, value_hex) -> str:
+    def writeRegister(self, register, value_hex):
         return "OK"
 
-    def readMemory(self, addr, length) -> str:
+    def readMemory(self, addr, length):
         return "00" * length
 
-    def x(self, addr, length) -> str:
+    def x(self, addr, length):
         return ""
 
-    def writeMemory(self, addr, data_hex) -> str:
+    def writeMemory(self, addr, data_hex):
         return "OK"
 
-    def qSymbol(self, symbol_args) -> str:
+    def qSymbol(self, symbol_args):
         return "OK"
 
-    def qSupported(self, client_supported) -> str:
+    def qSupported(self, client_supported):
         return "qXfer:features:read+;PacketSize=3fff;QStartNoAckMode+"
 
-    def qfThreadInfo(self) -> str:
+    def qfThreadInfo(self):
         return "l"
 
-    def qsThreadInfo(self) -> str:
+    def qsThreadInfo(self):
         return "l"
 
-    def qC(self) -> str:
+    def qC(self):
         return "QC0"
 
-    def QEnableErrorStrings(self) -> str:
+    def QEnableErrorStrings(self):
         return "OK"
 
-    def haltReason(self) -> str:
+    def haltReason(self):
         # SIGINT is 2, return type is 2 digit hex string
         return "S02"
 
-    def qXferRead(
-        self, obj: str, annex: str, offset: int, length: int
-    ) -> Tuple[Optional[str], bool]:
+    def qXferRead(self, obj, annex, offset, length):
         return None, False
 
     def _qXferResponse(self, data, has_more):
@@ -360,50 +307,50 @@ class MockGDBServerResponder:
     def vAttach(self, pid):
         raise self.UnexpectedPacketException()
 
-    def selectThread(self, op, thread_id) -> str:
+    def selectThread(self, op, thread_id):
         return "OK"
 
-    def setBreakpoint(self, packet) -> str:
+    def setBreakpoint(self, packet):
         raise self.UnexpectedPacketException()
 
-    def threadStopInfo(self, threadnum) -> str:
+    def threadStopInfo(self, threadnum):
         return ""
 
-    def other(self, packet) -> str:
+    def other(self, packet):
         # empty string means unsupported
         return ""
 
-    def QThreadSuffixSupported(self) -> str:
+    def QThreadSuffixSupported(self):
         return ""
 
-    def QListThreadsInStopReply(self) -> str:
+    def QListThreadsInStopReply(self):
         return ""
 
-    def qMemoryRegionInfo(self, addr) -> str:
+    def qMemoryRegionInfo(self, addr):
         return ""
 
-    def qPathComplete(self) -> str:
+    def qPathComplete(self):
         return ""
 
-    def vFile(self, packet) -> str:
+    def vFile(self, packet):
         return ""
 
-    def vRun(self, packet) -> str:
+    def vRun(self, packet):
         return ""
 
     def qLaunchGDBServer(self, host):
         raise self.UnexpectedPacketException()
 
-    def qLaunchSuccess(self) -> str:
+    def qLaunchSuccess(self):
         return ""
 
-    def QEnvironment(self, packet) -> str:
+    def QEnvironment(self, packet):
         return "OK"
 
-    def QEnvironmentHexEncoded(self, packet) -> str:
+    def QEnvironmentHexEncoded(self, packet):
         return "OK"
 
-    def qRegisterInfo(self, num) -> str:
+    def qRegisterInfo(self, num):
         return ""
 
     def k(self):
@@ -419,17 +366,15 @@ class MockGDBServerResponder:
         pass
 
 
-class ServerChannel(ABC):
+class ServerChannel:
     """
     A wrapper class for TCP or pty-based server.
     """
 
-    @abstractmethod
-    def get_connect_address(self) -> str:
+    def get_connect_address(self):
         """Get address for the client to connect to."""
 
-    @abstractmethod
-    def get_connect_url(self) -> str:
+    def get_connect_url(self):
         """Get URL suitable for process connect command."""
 
     def close_server(self):
@@ -441,12 +386,10 @@ class ServerChannel(ABC):
     def close_connection(self):
         """Close all resources used by the accepted connection."""
 
-    @abstractmethod
-    def recv(self) -> bytes:
+    def recv(self):
         """Receive a data packet from the connected client."""
 
-    @abstractmethod
-    def sendall(self, data: bytes) -> None:
+    def sendall(self, data):
         """Send the data to the connected client."""
 
 
@@ -477,11 +420,11 @@ class ServerSocket(ServerChannel):
         self._connection.close()
         self._connection = None
 
-    def recv(self) -> bytes:
+    def recv(self):
         assert self._connection is not None
         return self._connection.recv(4096)
 
-    def sendall(self, data: bytes) -> None:
+    def sendall(self, data):
         assert self._connection is not None
         return self._connection.sendall(data)
 
@@ -493,10 +436,10 @@ class TCPServerSocket(ServerSocket):
         )[0]
         super().__init__(family, type, proto, addr)
 
-    def get_connect_address(self) -> str:
+    def get_connect_address(self):
         return "[{}]:{}".format(*self._server_socket.getsockname())
 
-    def get_connect_url(self) -> str:
+    def get_connect_url(self):
         return "connect://" + self.get_connect_address()
 
 
@@ -504,10 +447,10 @@ class UnixServerSocket(ServerSocket):
     def __init__(self, addr):
         super().__init__(socket.AF_UNIX, socket.SOCK_STREAM, 0, addr)
 
-    def get_connect_address(self) -> str:
+    def get_connect_address(self):
         return self._server_socket.getsockname()
 
-    def get_connect_url(self) -> str:
+    def get_connect_url(self):
         return "unix-connect://" + self.get_connect_address()
 
 
@@ -521,7 +464,7 @@ class PtyServerSocket(ServerChannel):
         self._primary = io.FileIO(primary, "r+b")
         self._secondary = io.FileIO(secondary, "r+b")
 
-    def get_connect_address(self) -> str:
+    def get_connect_address(self):
         libc = ctypes.CDLL(None)
         libc.ptsname.argtypes = (ctypes.c_int,)
         libc.ptsname.restype = ctypes.c_char_p
@@ -534,7 +477,7 @@ class PtyServerSocket(ServerChannel):
         self._secondary.close()
         self._primary.close()
 
-    def recv(self) -> bytes:
+    def recv(self):
         try:
             return self._primary.read(4096)
         except OSError as e:
@@ -543,8 +486,8 @@ class PtyServerSocket(ServerChannel):
                 return b""
             raise
 
-    def sendall(self, data: bytes) -> None:
-        self._primary.write(data)
+    def sendall(self, data):
+        return self._primary.write(data)
 
 
 class MockGDBServer:
@@ -573,25 +516,21 @@ class MockGDBServer:
         self._thread.start()
 
     def stop(self):
-        if self._thread is not None:
-            self._thread.join()
-            self._thread = None
+        self._thread.join()
+        self._thread = None
 
-    def get_connect_address(self) -> str:
-        assert self._socket is not None
+    def get_connect_address(self):
         return self._socket.get_connect_address()
 
-    def get_connect_url(self) -> str:
-        assert self._socket is not None
+    def get_connect_url(self):
         return self._socket.get_connect_url()
 
     def run(self):
-        assert self._socket is not None
         # For testing purposes, we only need to worry about one client
         # connecting just one time.
         try:
             self._socket.accept()
-        except Exception:
+        except:
             traceback.print_exc()
             return
         self._shouldSendAck = True
@@ -606,7 +545,7 @@ class MockGDBServer:
                 self._receive(data)
         except self.TerminateConnectionException:
             pass
-        except Exception:
+        except Exception as e:
             print(
                 "An exception happened when receiving the response from the gdb server. Closing the client..."
             )
@@ -639,9 +578,7 @@ class MockGDBServer:
         Once a complete packet is found at the front of self._receivedData,
         its data is removed form self._receivedData.
         """
-        assert self._receivedData is not None
         data = self._receivedData
-        assert self._receivedDataOffset is not None
         i = self._receivedDataOffset
         data_len = len(data)
         if data_len == 0:
@@ -694,40 +631,31 @@ class MockGDBServer:
         self._receivedDataOffset = 0
         return packet
 
-    def _sendPacket(self, packet: str):
-        assert self._socket is not None
-        framed_packet = seven.bitcast_to_bytes(frame_packet(packet))
-        self._socket.sendall(framed_packet)
+    def _sendPacket(self, packet):
+        self._socket.sendall(seven.bitcast_to_bytes(frame_packet(packet)))
 
     def _handlePacket(self, packet):
-        assert self._socket is not None
         if packet is self.PACKET_ACK:
             # Ignore ACKs from the client. For the future, we can consider
             # adding validation code to make sure the client only sends ACKs
             # when it's supposed to.
             return
-        response = [""]
+        response = ""
         # We'll handle the ack stuff here since it's not something any of the
         # tests will be concerned about, and it'll get turned off quickly anyway.
         if self._shouldSendAck:
             self._socket.sendall(seven.bitcast_to_bytes("+"))
         if packet == "QStartNoAckMode":
             self._shouldSendAck = False
-            response = ["OK"]
+            response = "OK"
         elif self.responder is not None:
             # Delegate everything else to our responder
             response = self.responder.respond(packet)
-        # MockGDBServerResponder no longer returns non-lists but others like
-        # ReverseTestBase still do
         if not isinstance(response, list):
             response = [response]
         for part in response:
-            if part is MockGDBServerResponder.RESPONSE_NONE:
-                continue
             if part is MockGDBServerResponder.RESPONSE_DISCONNECT:
                 raise self.TerminateConnectionException()
-            # Should have handled the non-str's above
-            assert isinstance(part, str)
             self._sendPacket(part)
 
     PACKET_ACK = object()

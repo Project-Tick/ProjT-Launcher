@@ -1,4 +1,4 @@
-; RUN: opt %loadNPMPolly -aa-pipeline=basic-aa '-passes=polly<no-default-opts>' -S < %s | FileCheck %s
+; RUN: opt %loadNPMPolly -aa-pipeline=basic-aa -passes=polly-codegen -S < %s | FileCheck %s
 ;
 ; Verify that we remove the misc intrinsics  from the optimized SCoP.
 ;
@@ -28,7 +28,7 @@ target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 @A = common global [1024 x i32] zeroinitializer, align 16
 
 ; Function Attrs: nounwind uwtable
-define void @jd() {
+define void @jd() #0 {
 entry:
   %tmp = alloca [1024 x i32], align 16
   br label %for.cond
@@ -39,7 +39,7 @@ for.cond:                                         ; preds = %for.inc11, %entry
   br i1 %exitcond5, label %for.body, label %for.end13
 
 for.body:                                         ; preds = %for.cond
-  %lis = call ptr @llvm.invariant.start(i64 4096, ptr @A)
+  %lis = call ptr @llvm.invariant.start(i64 4096, ptr @A) #1
   br label %for.cond2
 
 for.cond2:                                        ; preds = %for.inc, %for.body
@@ -68,7 +68,7 @@ for.end:                                          ; preds = %for.cond2
   %arrayidx8 = getelementptr inbounds [1024 x i32], ptr %tmp, i64 0, i64 %indvars.iv3
   %tmp8 = load i32, ptr %arrayidx8, align 4
   %arrayidx10 = getelementptr inbounds [1024 x i32], ptr @A, i64 0, i64 %indvars.iv3
-  call void @llvm.invariant.end(ptr %lis, i64 4096, ptr @A)
+  call void @llvm.invariant.end(ptr %lis, i64 4096, ptr @A) #1
   store i32 %tmp8, ptr %arrayidx10, align 4
   br label %for.inc11
 
@@ -81,16 +81,19 @@ for.end13:                                        ; preds = %for.cond
 }
 
 ; Function Attrs: nounwind
-declare void @llvm.donothing()
+declare void @llvm.donothing() #1
 
 ; Function Attrs: nounwind
-declare void @llvm.assume(i1)
+declare void @llvm.assume(i1) #1
 
 ; Function Attrs: nounwind
-declare i1 @llvm.expect.i1(i1, i1)
+declare i1 @llvm.expect.i1(i1, i1) #1
 
 ; Function Attrs: nounwind
-declare ptr @llvm.invariant.start(i64, ptr nocapture)
+declare ptr @llvm.invariant.start(i64, ptr nocapture) #1
 
 ; Function Attrs: nounwind
-declare void @llvm.invariant.end(ptr, i64, ptr nocapture)
+declare void @llvm.invariant.end(ptr, i64, ptr nocapture) #1
+
+attributes #0 = { nounwind uwtable "less-precise-fpmad"="false" "frame-pointer"="all" "no-infs-fp-math"="true" "no-nans-fp-math"="true" "stack-protector-buffer-size"="8" "unsafe-fp-math"="true" "use-soft-float"="false" }
+attributes #1 = { nounwind }

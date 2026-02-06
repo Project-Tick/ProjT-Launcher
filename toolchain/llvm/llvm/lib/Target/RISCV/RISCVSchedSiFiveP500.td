@@ -132,7 +132,7 @@ def : WriteRes<WriteLDW, [SiFiveP500Load]>;
 def : WriteRes<WriteLDD, [SiFiveP500Load]>;
 }
 
-let Latency = 5 in {
+let Latency = 6 in {
 def : WriteRes<WriteFLD16, [SiFiveP500Load]>;
 def : WriteRes<WriteFLD32, [SiFiveP500Load]>;
 def : WriteRes<WriteFLD64, [SiFiveP500Load]>;
@@ -348,7 +348,6 @@ def : ReadAdvance<ReadSHXADD32, 0>;
 
 //===----------------------------------------------------------------------===//
 // Unsupported extensions
-defm : UnsupportedSchedQ;
 defm : UnsupportedSchedV;
 defm : UnsupportedSchedZabha;
 defm : UnsupportedSchedZbc;
@@ -358,5 +357,5 @@ defm : UnsupportedSchedZbkx;
 defm : UnsupportedSchedSFB;
 defm : UnsupportedSchedZfa;
 defm : UnsupportedSchedZvk;
-defm : UnsupportedSchedXsf;
+defm : UnsupportedSchedXsfvcp;
 }

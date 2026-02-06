@@ -12,9 +12,11 @@
 
 #include "mlir/Conversion/ComplexToSPIRV/ComplexToSPIRV.h"
 #include "mlir/Dialect/Complex/IR/Complex.h"
+#include "mlir/Dialect/SPIRV/IR/SPIRVDialect.h"
 #include "mlir/Dialect/SPIRV/IR/SPIRVOps.h"
 #include "mlir/Dialect/SPIRV/Transforms/SPIRVConversion.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "complex-to-spirv-pattern"
 
@@ -27,7 +29,7 @@ using namespace mlir;
 namespace {
 
 struct ConstantOpPattern final : OpConversionPattern<complex::ConstantOp> {
-  using Base::Base;
+  using OpConversionPattern::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(complex::ConstantOp constOp, OpAdaptor adaptor,
@@ -46,7 +48,7 @@ struct ConstantOpPattern final : OpConversionPattern<complex::ConstantOp> {
 };
 
 struct CreateOpPattern final : OpConversionPattern<complex::CreateOp> {
-  using Base::Base;
+  using OpConversionPattern::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(complex::CreateOp createOp, OpAdaptor adaptor,
@@ -63,7 +65,7 @@ struct CreateOpPattern final : OpConversionPattern<complex::CreateOp> {
 };
 
 struct ReOpPattern final : OpConversionPattern<complex::ReOp> {
-  using Base::Base;
+  using OpConversionPattern::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(complex::ReOp reOp, OpAdaptor adaptor,
@@ -79,7 +81,7 @@ struct ReOpPattern final : OpConversionPattern<complex::ReOp> {
 };
 
 struct ImOpPattern final : OpConversionPattern<complex::ImOp> {
-  using Base::Base;
+  using OpConversionPattern::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(complex::ImOp imOp, OpAdaptor adaptor,

@@ -18,7 +18,6 @@
 #ifndef LLVM_EXECUTIONENGINE_ORC_LOADLINKABLEFILE_H
 #define LLVM_EXECUTIONENGINE_ORC_LOADLINKABLEFILE_H
 
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/TargetParser/Triple.h"
@@ -28,7 +27,7 @@ namespace orc {
 
 enum class LinkableFileKind { Archive, RelocatableObject };
 
-enum class LoadArchives {
+enum LoadArchives {
   Never,   // Linkable file must not be an archive.
   Allowed, // Linkable file is allowed to be an archive.
   Required // Linkable file is required to be an archive.
@@ -55,7 +54,7 @@ enum class LoadArchives {
 ///
 /// If IdentifierOverride is provided then it will be used as the name of the
 /// resulting buffer, rather than Path.
-LLVM_ABI Expected<std::pair<std::unique_ptr<MemoryBuffer>, LinkableFileKind>>
+Expected<std::pair<std::unique_ptr<MemoryBuffer>, LinkableFileKind>>
 loadLinkableFile(StringRef Path, const Triple &TT, LoadArchives LA,
                  std::optional<StringRef> IdentifierOverride = std::nullopt);
 

@@ -52,12 +52,14 @@ static cl::opt<bool> NoDemangle("no-demangle",
                                 cl::desc("don't demangle symbols"),
                                 cl::sub(Extract));
 
-static void exportAsYAML(const InstrumentationMap &Map, raw_ostream &OS,
-                         FuncIdConversionHelper &FH) {
+namespace {
+
+void exportAsYAML(const InstrumentationMap &Map, raw_ostream &OS,
+                  FuncIdConversionHelper &FH) {
   // First we translate the sleds into the YAMLXRaySledEntry objects in a deque.
   std::vector<YAMLXRaySledEntry> YAMLSleds;
   auto Sleds = Map.sleds();
-  YAMLSleds.reserve(llvm::size(Sleds));
+  YAMLSleds.reserve(std::distance(Sleds.begin(), Sleds.end()));
   for (const auto &Sled : Sleds) {
     auto FuncId = Map.getFunctionId(Sled.Function);
     if (!FuncId)
@@ -69,6 +71,8 @@ static void exportAsYAML(const InstrumentationMap &Map, raw_ostream &OS,
   Output Out(OS, nullptr, 0);
   Out << YAMLSleds;
 }
+
+} // namespace
 
 static CommandRegistration Unused(&Extract, []() -> Error {
   auto InstrumentationMapOrError = loadInstrumentationMap(ExtractInput);
@@ -90,8 +94,8 @@ static CommandRegistration Unused(&Extract, []() -> Error {
   if (Demangle.getPosition() < NoDemangle.getPosition())
     opts.Demangle = false;
   symbolize::LLVMSymbolizer Symbolizer(opts);
-  FuncIdConversionHelper FuncIdHelper(ExtractInput, Symbolizer,
-                                      FunctionAddresses);
+  llvm::xray::FuncIdConversionHelper FuncIdHelper(ExtractInput, Symbolizer,
+                                                  FunctionAddresses);
   exportAsYAML(*InstrumentationMapOrError, OS, FuncIdHelper);
   return Error::success();
 });

@@ -14,8 +14,6 @@
 #ifndef LLVM_SUPPORT_COM_H
 #define LLVM_SUPPORT_COM_H
 
-#include "llvm/Support/Compiler.h"
-
 namespace llvm {
 namespace sys {
 
@@ -23,9 +21,9 @@ enum class COMThreadingMode { SingleThreaded, MultiThreaded };
 
 class InitializeCOMRAII {
 public:
-  LLVM_ABI explicit InitializeCOMRAII(COMThreadingMode Threading,
-                                      bool SpeedOverMemory = false);
-  LLVM_ABI ~InitializeCOMRAII();
+  explicit InitializeCOMRAII(COMThreadingMode Threading,
+                             bool SpeedOverMemory = false);
+  ~InitializeCOMRAII();
 
 private:
   InitializeCOMRAII(const InitializeCOMRAII &) = delete;

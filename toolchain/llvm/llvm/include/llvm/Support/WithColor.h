@@ -21,7 +21,7 @@ namespace cl {
 class OptionCategory;
 }
 
-LLVM_ABI extern cl::OptionCategory &getColorCategory();
+extern cl::OptionCategory &getColorCategory();
 
 // Symbolic names for various syntax elements.
 enum class HighlightColor {
@@ -59,8 +59,8 @@ public:
   /// @param OS The output stream
   /// @param S Symbolic name for syntax element to color
   /// @param Mode Enable, disable or compute whether to use colors.
-  LLVM_CTOR_NODISCARD LLVM_ABI WithColor(raw_ostream &OS, HighlightColor S,
-                                         ColorMode Mode = ColorMode::Auto);
+  LLVM_CTOR_NODISCARD WithColor(raw_ostream &OS, HighlightColor S,
+                                ColorMode Mode = ColorMode::Auto);
   /// To be used like this: WithColor(OS, raw_ostream::BLACK) << "text";
   /// @param OS The output stream
   /// @param Color ANSI color to use, the special SAVEDCOLOR can be used to
@@ -74,7 +74,7 @@ public:
       : OS(OS), Mode(Mode) {
     changeColor(Color, Bold, BG);
   }
-  LLVM_ABI ~WithColor();
+  ~WithColor();
 
   raw_ostream &get() { return OS; }
   operator raw_ostream &() { return OS; }
@@ -88,55 +88,55 @@ public:
   }
 
   /// Convenience method for printing "error: " to stderr.
-  LLVM_ABI static raw_ostream &error();
+  static raw_ostream &error();
   /// Convenience method for printing "warning: " to stderr.
-  LLVM_ABI static raw_ostream &warning();
+  static raw_ostream &warning();
   /// Convenience method for printing "note: " to stderr.
-  LLVM_ABI static raw_ostream &note();
+  static raw_ostream &note();
   /// Convenience method for printing "remark: " to stderr.
-  LLVM_ABI static raw_ostream &remark();
+  static raw_ostream &remark();
 
   /// Convenience method for printing "error: " to the given stream.
-  LLVM_ABI static raw_ostream &error(raw_ostream &OS, StringRef Prefix = "",
-                                     bool DisableColors = false);
+  static raw_ostream &error(raw_ostream &OS, StringRef Prefix = "",
+                            bool DisableColors = false);
   /// Convenience method for printing "warning: " to the given stream.
-  LLVM_ABI static raw_ostream &warning(raw_ostream &OS, StringRef Prefix = "",
-                                       bool DisableColors = false);
+  static raw_ostream &warning(raw_ostream &OS, StringRef Prefix = "",
+                              bool DisableColors = false);
   /// Convenience method for printing "note: " to the given stream.
-  LLVM_ABI static raw_ostream &note(raw_ostream &OS, StringRef Prefix = "",
-                                    bool DisableColors = false);
+  static raw_ostream &note(raw_ostream &OS, StringRef Prefix = "",
+                           bool DisableColors = false);
   /// Convenience method for printing "remark: " to the given stream.
-  LLVM_ABI static raw_ostream &remark(raw_ostream &OS, StringRef Prefix = "",
-                                      bool DisableColors = false);
+  static raw_ostream &remark(raw_ostream &OS, StringRef Prefix = "",
+                             bool DisableColors = false);
 
   /// Determine whether colors are displayed.
-  LLVM_ABI bool colorsEnabled();
+  bool colorsEnabled();
 
   /// Change the color of text that will be output from this point forward.
   /// @param Color ANSI color to use, the special SAVEDCOLOR can be used to
   /// change only the bold attribute, and keep colors untouched
   /// @param Bold Bold/brighter text, default false
   /// @param BG If true, change the background, default: change foreground
-  LLVM_ABI WithColor &changeColor(raw_ostream::Colors Color, bool Bold = false,
-                                  bool BG = false);
+  WithColor &changeColor(raw_ostream::Colors Color, bool Bold = false,
+                         bool BG = false);
 
   /// Reset the colors to terminal defaults. Call this when you are done
   /// outputting colored text, or before program exit.
-  LLVM_ABI WithColor &resetColor();
+  WithColor &resetColor();
 
   /// Implement default handling for Error.
   /// Print "error: " to stderr.
-  LLVM_ABI static void defaultErrorHandler(Error Err);
+  static void defaultErrorHandler(Error Err);
 
   /// Implement default handling for Warning.
   /// Print "warning: " to stderr.
-  LLVM_ABI static void defaultWarningHandler(Error Warning);
+  static void defaultWarningHandler(Error Warning);
 
   /// Retrieve the default color auto detection function.
-  LLVM_ABI static AutoDetectFunctionType defaultAutoDetectFunction();
+  static AutoDetectFunctionType defaultAutoDetectFunction();
 
   /// Change the global auto detection function.
-  LLVM_ABI static void
+  static void
   setAutoDetectFunction(AutoDetectFunctionType NewAutoDetectFunction);
 
 private:

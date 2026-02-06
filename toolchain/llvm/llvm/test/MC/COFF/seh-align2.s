@@ -73,8 +73,6 @@
     .text
     .seh_endprologue
 func:
-    .seh_startepilogue
     addq $24, %rsp
-    .seh_endepilogue
     ret
     .seh_endproc

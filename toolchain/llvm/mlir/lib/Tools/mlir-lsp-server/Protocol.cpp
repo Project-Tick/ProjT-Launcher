@@ -11,13 +11,23 @@
 //===----------------------------------------------------------------------===//
 
 #include "Protocol.h"
+#include "llvm/ADT/Hashing.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/Format.h"
+#include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/JSON.h"
+#include "llvm/Support/Path.h"
+#include "llvm/Support/raw_ostream.h"
+
+using namespace mlir;
+using namespace mlir::lsp;
 
 //===----------------------------------------------------------------------===//
 // MLIRConvertBytecodeParams
 //===----------------------------------------------------------------------===//
 
-bool llvm::lsp::fromJSON(const llvm::json::Value &value,
+bool mlir::lsp::fromJSON(const llvm::json::Value &value,
                          MLIRConvertBytecodeParams &result,
                          llvm::json::Path path) {
   llvm::json::ObjectMapper o(value, path);
@@ -28,6 +38,6 @@ bool llvm::lsp::fromJSON(const llvm::json::Value &value,
 // MLIRConvertBytecodeResult
 //===----------------------------------------------------------------------===//
 
-llvm::json::Value llvm::lsp::toJSON(const MLIRConvertBytecodeResult &value) {
+llvm::json::Value mlir::lsp::toJSON(const MLIRConvertBytecodeResult &value) {
   return llvm::json::Object{{"output", value.output}};
 }

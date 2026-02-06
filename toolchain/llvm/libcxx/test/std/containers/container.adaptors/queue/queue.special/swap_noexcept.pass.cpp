@@ -22,11 +22,12 @@
 #include "test_macros.h"
 #include "MoveOnly.h"
 
-int main(int, char**) {
-  {
-    typedef std::queue<MoveOnly> C;
-    static_assert(noexcept(swap(std::declval<C&>(), std::declval<C&>())), "");
-  }
+int main(int, char**)
+{
+    {
+        typedef std::queue<MoveOnly> C;
+        static_assert(noexcept(swap(std::declval<C&>(), std::declval<C&>())), "");
+    }
 
   return 0;
 }

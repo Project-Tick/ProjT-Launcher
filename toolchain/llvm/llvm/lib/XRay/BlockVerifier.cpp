@@ -10,18 +10,19 @@
 
 #include <bitset>
 
-using namespace llvm;
-using namespace llvm::xray;
+namespace llvm {
+namespace xray {
+namespace {
 
-static constexpr unsigned long long mask(BlockVerifier::State S) {
+constexpr unsigned long long mask(BlockVerifier::State S) {
   return 1uLL << static_cast<std::size_t>(S);
 }
 
-static constexpr std::size_t number(BlockVerifier::State S) {
+constexpr std::size_t number(BlockVerifier::State S) {
   return static_cast<std::size_t>(S);
 }
 
-static StringRef recordToString(BlockVerifier::State R) {
+StringRef recordToString(BlockVerifier::State R) {
   switch (R) {
   case BlockVerifier::State::BufferExtents:
     return "BufferExtents";
@@ -51,8 +52,6 @@ static StringRef recordToString(BlockVerifier::State R) {
   }
   llvm_unreachable("Unkown state!");
 }
-
-namespace {
 
 struct Transition {
   BlockVerifier::State From;
@@ -134,7 +133,7 @@ Error BlockVerifier::transition(State To) {
 
   CurrentRecord = To;
   return Error::success();
-}
+} // namespace xray
 
 Error BlockVerifier::visit(BufferExtents &) {
   return transition(State::BufferExtents);
@@ -202,3 +201,6 @@ Error BlockVerifier::verify() {
 }
 
 void BlockVerifier::reset() { CurrentRecord = State::Unknown; }
+
+} // namespace xray
+} // namespace llvm

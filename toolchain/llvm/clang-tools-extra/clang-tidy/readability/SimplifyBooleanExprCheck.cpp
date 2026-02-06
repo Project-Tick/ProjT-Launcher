@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===-- SimplifyBooleanExprCheck.cpp - clang-tidy -------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -21,16 +21,19 @@ using namespace clang::ast_matchers;
 
 namespace clang::tidy::readability {
 
-static StringRef getText(const ASTContext &Context, SourceRange Range) {
+namespace {
+
+StringRef getText(const ASTContext &Context, SourceRange Range) {
   return Lexer::getSourceText(CharSourceRange::getTokenRange(Range),
                               Context.getSourceManager(),
                               Context.getLangOpts());
 }
 
-template <typename T>
-static StringRef getText(const ASTContext &Context, T &Node) {
+template <typename T> StringRef getText(const ASTContext &Context, T &Node) {
   return getText(Context, Node.getSourceRange());
 }
+
+} // namespace
 
 static constexpr char SimplifyOperatorDiagnostic[] =
     "redundant boolean literal supplied to boolean operator";
@@ -70,9 +73,10 @@ static std::pair<OverloadedOperatorKind, StringRef> OperatorNames[] = {
     {OO_GreaterEqual, ">="}, {OO_Greater, ">"},       {OO_LessEqual, "<="}};
 
 static StringRef getOperatorName(OverloadedOperatorKind OpKind) {
-  for (auto Name : OperatorNames)
+  for (auto Name : OperatorNames) {
     if (Name.first == OpKind)
       return Name.second;
+  }
 
   return {};
 }
@@ -202,7 +206,7 @@ static std::string replacementExpression(const ASTContext &Context,
                          .str(),
                      NeedsStaticCast));
 
-    const StringRef Text = getText(Context, *E);
+    StringRef Text = getText(Context, *E);
     if (!NeedsStaticCast && needsParensAfterUnaryNegation(E))
       return ("!(" + Text + ")").str();
 
@@ -246,9 +250,10 @@ static bool containsDiscardedTokens(const ASTContext &Context,
   Lex.SetCommentRetentionState(true);
 
   Token Tok;
-  while (!Lex.LexFromRawLexer(Tok))
+  while (!Lex.LexFromRawLexer(Tok)) {
     if (Tok.is(tok::TokenKind::comment) || Tok.is(tok::TokenKind::hash))
       return true;
+  }
 
   return false;
 }
@@ -274,8 +279,9 @@ public:
   }
 
   bool dataTraverseStmtPre(Stmt *S) {
-    if (!S)
+    if (!S) {
       return true;
+    }
     if (Check->canBeBypassed(S))
       return false;
     if (!shouldIgnore(S))
@@ -363,7 +369,7 @@ public:
      * if (false) ThenStmt(); -> <Empty>;
      * if (false) ThenStmt(); else ElseStmt() -> ElseStmt();
      */
-    const Expr *Cond = If->getCond()->IgnoreImplicit();
+    Expr *Cond = If->getCond()->IgnoreImplicit();
     if (std::optional<bool> Bool = getAsBoolLiteral(Cond, true)) {
       if (*Bool)
         Check->replaceWithThenStatement(Context, If, Cond);
@@ -376,9 +382,9 @@ public:
        * if (Cond) return true; else return false; -> return Cond;
        * if (Cond) return false; else return true; -> return !Cond;
        */
-      if (const ExprAndBool ThenReturnBool =
+      if (ExprAndBool ThenReturnBool =
               checkSingleStatement(If->getThen(), parseReturnLiteralBool)) {
-        const ExprAndBool ElseReturnBool =
+        ExprAndBool ElseReturnBool =
             checkSingleStatement(If->getElse(), parseReturnLiteralBool);
         if (ElseReturnBool && ThenReturnBool.Bool != ElseReturnBool.Bool) {
           if (Check->ChainedConditionalReturn ||
@@ -415,9 +421,9 @@ public:
             return {ME->getMemberDecl(), *RightasBool};
           return {};
         };
-        if (const DeclAndBool ThenAssignment =
+        if (DeclAndBool ThenAssignment =
                 checkSingleStatement(If->getThen(), VarBoolAssignmentMatcher)) {
-          const DeclAndBool ElseAssignment =
+          DeclAndBool ElseAssignment =
               checkSingleStatement(If->getElse(), VarBoolAssignmentMatcher);
           if (ElseAssignment.Item == ThenAssignment.Item &&
               ElseAssignment.Bool != ThenAssignment.Bool) {
@@ -458,7 +464,7 @@ public:
          Second != End; ++Second, ++First) {
       PrevIf = CurIf;
       CurIf = isa<IfStmt>(*First);
-      const ExprAndBool TrailingReturnBool = parseReturnLiteralBool(*Second);
+      ExprAndBool TrailingReturnBool = parseReturnLiteralBool(*Second);
       if (!TrailingReturnBool)
         continue;
 
@@ -470,7 +476,7 @@ public:
         auto *If = cast<IfStmt>(*First);
         if (!If->hasInitStorage() && !If->hasVarStorage() &&
             !If->isConsteval()) {
-          const ExprAndBool ThenReturnBool =
+          ExprAndBool ThenReturnBool =
               checkSingleStatement(If->getThen(), parseReturnLiteralBool);
           if (ThenReturnBool &&
               ThenReturnBool.Bool != TrailingReturnBool.Bool) {
@@ -494,7 +500,7 @@ public:
         auto *SubIf = dyn_cast<IfStmt>(SubStmt);
         if (SubIf && !SubIf->getElse() && !SubIf->hasInitStorage() &&
             !SubIf->hasVarStorage() && !SubIf->isConsteval()) {
-          const ExprAndBool ThenReturnBool =
+          ExprAndBool ThenReturnBool =
               checkSingleStatement(SubIf->getThen(), parseReturnLiteralBool);
           if (ThenReturnBool &&
               ThenReturnBool.Bool != TrailingReturnBool.Bool) {
@@ -571,7 +577,7 @@ public:
       if (Check->reportDeMorgan(Context, Op, BinaryOp, !IsProcessing, parent(),
                                 Parens) &&
           !Check->areDiagsSelfContained()) {
-        const llvm::SaveAndRestore RAII(IsProcessing, true);
+        llvm::SaveAndRestore RAII(IsProcessing, true);
         return Base::TraverseUnaryOperator(Op);
       }
     }
@@ -635,13 +641,13 @@ void SimplifyBooleanExprCheck::reportBinOp(const ASTContext &Context,
   if (!isa<CXXBoolLiteralExpr>(Other) && containsBoolLiteral(Other))
     return;
 
-  const bool BoolValue = Bool->getValue();
+  bool BoolValue = Bool->getValue();
 
   auto ReplaceWithExpression = [this, &Context, LHS, RHS,
                                 Bool](const Expr *ReplaceWith, bool Negated) {
-    const std::string Replacement =
+    std::string Replacement =
         replacementExpression(Context, Negated, ReplaceWith);
-    const SourceRange Range(LHS->getBeginLoc(), RHS->getEndLoc());
+    SourceRange Range(LHS->getBeginLoc(), RHS->getEndLoc());
     issueDiag(Context, Bool->getBeginLoc(), SimplifyOperatorDiagnostic, Range,
               Replacement);
   };
@@ -703,11 +709,11 @@ bool SimplifyBooleanExprCheck::issueDiag(const ASTContext &Context,
                                          StringRef Description,
                                          SourceRange ReplacementRange,
                                          StringRef Replacement) {
-  const CharSourceRange CharRange =
+  CharSourceRange CharRange =
       Lexer::makeFileCharRange(CharSourceRange::getTokenRange(ReplacementRange),
                                Context.getSourceManager(), getLangOpts());
 
-  const DiagnosticBuilder Diag = diag(Loc, Description);
+  DiagnosticBuilder Diag = diag(Loc, Description);
   const bool HasReplacement = !containsDiscardedTokens(Context, CharRange);
   if (HasReplacement)
     Diag << FixItHint::CreateReplacement(CharRange, Replacement);
@@ -734,7 +740,7 @@ void SimplifyBooleanExprCheck::replaceWithElseStatement(
 void SimplifyBooleanExprCheck::replaceWithCondition(
     const ASTContext &Context, const ConditionalOperator *Ternary,
     bool Negated) {
-  const std::string Replacement =
+  std::string Replacement =
       replacementExpression(Context, Negated, Ternary->getCond());
   issueDiag(Context, Ternary->getTrueExpr()->getBeginLoc(),
             "redundant boolean literal in ternary expression result",
@@ -744,11 +750,11 @@ void SimplifyBooleanExprCheck::replaceWithCondition(
 void SimplifyBooleanExprCheck::replaceWithReturnCondition(
     const ASTContext &Context, const IfStmt *If, const Expr *BoolLiteral,
     bool Negated) {
-  const StringRef Terminator = isa<CompoundStmt>(If->getElse()) ? ";" : "";
-  const std::string Condition =
+  StringRef Terminator = isa<CompoundStmt>(If->getElse()) ? ";" : "";
+  std::string Condition =
       replacementExpression(Context, Negated, If->getCond());
-  const std::string Replacement = ("return " + Condition + Terminator).str();
-  const SourceLocation Start = BoolLiteral->getBeginLoc();
+  std::string Replacement = ("return " + Condition + Terminator).str();
+  SourceLocation Start = BoolLiteral->getBeginLoc();
 
   const bool HasReplacement =
       issueDiag(Context, Start, SimplifyConditionalReturnDiagnostic,
@@ -792,13 +798,12 @@ void SimplifyBooleanExprCheck::replaceWithAssignment(const ASTContext &Context,
                                                      const Expr *Var,
                                                      SourceLocation Loc,
                                                      bool Negated) {
-  const SourceRange Range = IfAssign->getSourceRange();
-  const StringRef VariableName = getText(Context, *Var);
-  const StringRef Terminator =
-      isa<CompoundStmt>(IfAssign->getElse()) ? ";" : "";
-  const std::string Condition =
+  SourceRange Range = IfAssign->getSourceRange();
+  StringRef VariableName = getText(Context, *Var);
+  StringRef Terminator = isa<CompoundStmt>(IfAssign->getElse()) ? ";" : "";
+  std::string Condition =
       replacementExpression(Context, Negated, IfAssign->getCond());
-  const std::string Replacement =
+  std::string Replacement =
       (VariableName + " = " + Condition + Terminator).str();
   issueDiag(Context, Loc, "redundant boolean literal in conditional assignment",
             Range, Replacement);
@@ -917,11 +922,13 @@ static bool flipDemorganSide(SmallVectorImpl<FixItHint> &Fixes,
         FixItHint::CreateRemoval(cast<UnaryOperator>(E)->getOperatorLoc()));
     return false;
   }
-  if (const auto *BinOp = dyn_cast<BinaryOperator>(E))
+  if (const auto *BinOp = dyn_cast<BinaryOperator>(E)) {
     return flipDemorganBinaryOperator(Fixes, Ctx, BinOp, OuterBO);
+  }
   if (const auto *Paren = dyn_cast<ParenExpr>(E)) {
-    if (const auto *BinOp = dyn_cast<BinaryOperator>(Paren->getSubExpr()))
+    if (const auto *BinOp = dyn_cast<BinaryOperator>(Paren->getSubExpr())) {
       return flipDemorganBinaryOperator(Fixes, Ctx, BinOp, OuterBO, Paren);
+    }
   }
   // Fallback case just insert a logical not operator.
   if (E->getBeginLoc().isMacroID())

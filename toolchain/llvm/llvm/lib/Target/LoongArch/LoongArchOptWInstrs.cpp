@@ -561,7 +561,7 @@ static bool isSignExtendedW(Register SrcReg, const LoongArchSubtarget &ST,
       if (CopySrcReg == LoongArch::R4) {
         // For a method return value, we check the ZExt/SExt flags in attribute.
         // We assume the following code sequence for method call.
-        // PseudoCALL_SMALL @bar, ...
+        // PseudoCALL @bar, ...
         // ADJCALLSTACKUP 0, 0, implicit-def dead $r3, implicit $r3
         // %0:gpr = COPY $r4
         //
@@ -737,8 +737,7 @@ bool LoongArchOptWInstrs::removeSExtWInstrs(MachineFunction &MF,
         continue;
 
       Register DstReg = MI.getOperand(0).getReg();
-      if (!SrcReg.isVirtual() ||
-          !MRI.constrainRegClass(SrcReg, MRI.getRegClass(DstReg)))
+      if (!MRI.constrainRegClass(SrcReg, MRI.getRegClass(DstReg)))
         continue;
 
       // Convert Fixable instructions to their W versions.

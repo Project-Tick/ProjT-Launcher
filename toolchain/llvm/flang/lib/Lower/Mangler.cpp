@@ -119,7 +119,8 @@ std::string Fortran::lower::mangle::mangleName(
             // Mangle external procedure without any scope prefix.
             if (!keepExternalInScope &&
                 Fortran::semantics::IsExternal(ultimateSymbol))
-              return fir::NameUniquer::doProcedure({}, {}, symbolName);
+              return fir::NameUniquer::doProcedure(std::nullopt, std::nullopt,
+                                                   symbolName);
             // A separate module procedure must be mangled according to its
             // declaration scope, not its definition scope.
             const Fortran::semantics::Symbol *interface = &ultimateSymbol;
@@ -141,7 +142,8 @@ std::string Fortran::lower::mangle::mangleName(
             }
             // Otherwise, this is an external procedure, with or without an
             // explicit EXTERNAL attribute. Mangle it without any prefix.
-            return fir::NameUniquer::doProcedure({}, {}, symbolName);
+            return fir::NameUniquer::doProcedure(std::nullopt, std::nullopt,
+                                                 symbolName);
           },
           [&](const Fortran::semantics::ObjectEntityDetails &) {
             return mangleObject();
@@ -224,18 +226,8 @@ std::string Fortran::lower::mangle::mangleName(
       assert(paramExpr && "derived type kind param not explicit");
       std::optional<int64_t> init =
           Fortran::evaluate::ToInt64(paramValue->GetExplicit());
-      // TODO: put the assertion check back when parametrized derived types
-      // are supported:
-      // assert(init && "derived type kind param is not constant");
-      //
-      // The init parameter above will require a FoldingContext for proper
-      // expression evaluation to an integer constant, otherwise the
-      // compiler may crash here (see example in issue #127424).
-      if (!init) {
-        TODO_NOLOC("parameterized derived types");
-      } else {
-        kinds.emplace_back(*init);
-      }
+      assert(init && "derived type kind param is not constant");
+      kinds.emplace_back(*init);
     }
   }
   return fir::NameUniquer::doType(modules, procs, blockId, symbolName, kinds);

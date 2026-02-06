@@ -2,6 +2,7 @@
 ; RUN: llc -mtriple=riscv32 -mattr=+v,+m -verify-machineinstrs < %s | FileCheck %s
 ; RUN: llc -mtriple=riscv64 -mattr=+v,+m -verify-machineinstrs < %s | FileCheck %s
 
+declare <2 x i8> @llvm.vp.fshr.v2i8(<2 x i8>, <2 x i8>, <2 x i8>, <2 x i1>, i32)
 define <2 x i8> @fshr_v2i8(<2 x i8> %a, <2 x i8> %b, <2 x i8> %c, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v2i8:
 ; CHECK:       # %bb.0:
@@ -18,6 +19,7 @@ define <2 x i8> @fshr_v2i8(<2 x i8> %a, <2 x i8> %b, <2 x i8> %c, <2 x i1> %m, i
   ret <2 x i8> %res
 }
 
+declare <2 x i8> @llvm.vp.fshl.v2i8(<2 x i8>, <2 x i8>, <2 x i8>, <2 x i1>, i32)
 define <2 x i8> @fshl_v2i8(<2 x i8> %a, <2 x i8> %b, <2 x i8> %c, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v2i8:
 ; CHECK:       # %bb.0:
@@ -34,6 +36,7 @@ define <2 x i8> @fshl_v2i8(<2 x i8> %a, <2 x i8> %b, <2 x i8> %c, <2 x i1> %m, i
   ret <2 x i8> %res
 }
 
+declare <4 x i8> @llvm.vp.fshr.v4i8(<4 x i8>, <4 x i8>, <4 x i8>, <4 x i1>, i32)
 define <4 x i8> @fshr_v4i8(<4 x i8> %a, <4 x i8> %b, <4 x i8> %c, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v4i8:
 ; CHECK:       # %bb.0:
@@ -50,6 +53,7 @@ define <4 x i8> @fshr_v4i8(<4 x i8> %a, <4 x i8> %b, <4 x i8> %c, <4 x i1> %m, i
   ret <4 x i8> %res
 }
 
+declare <4 x i8> @llvm.vp.fshl.v4i8(<4 x i8>, <4 x i8>, <4 x i8>, <4 x i1>, i32)
 define <4 x i8> @fshl_v4i8(<4 x i8> %a, <4 x i8> %b, <4 x i8> %c, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v4i8:
 ; CHECK:       # %bb.0:
@@ -66,6 +70,7 @@ define <4 x i8> @fshl_v4i8(<4 x i8> %a, <4 x i8> %b, <4 x i8> %c, <4 x i1> %m, i
   ret <4 x i8> %res
 }
 
+declare <8 x i8> @llvm.vp.fshr.v8i8(<8 x i8>, <8 x i8>, <8 x i8>, <8 x i1>, i32)
 define <8 x i8> @fshr_v8i8(<8 x i8> %a, <8 x i8> %b, <8 x i8> %c, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v8i8:
 ; CHECK:       # %bb.0:
@@ -82,6 +87,7 @@ define <8 x i8> @fshr_v8i8(<8 x i8> %a, <8 x i8> %b, <8 x i8> %c, <8 x i1> %m, i
   ret <8 x i8> %res
 }
 
+declare <8 x i8> @llvm.vp.fshl.v8i8(<8 x i8>, <8 x i8>, <8 x i8>, <8 x i1>, i32)
 define <8 x i8> @fshl_v8i8(<8 x i8> %a, <8 x i8> %b, <8 x i8> %c, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v8i8:
 ; CHECK:       # %bb.0:
@@ -98,6 +104,7 @@ define <8 x i8> @fshl_v8i8(<8 x i8> %a, <8 x i8> %b, <8 x i8> %c, <8 x i1> %m, i
   ret <8 x i8> %res
 }
 
+declare <16 x i8> @llvm.vp.fshr.v16i8(<16 x i8>, <16 x i8>, <16 x i8>, <16 x i1>, i32)
 define <16 x i8> @fshr_v16i8(<16 x i8> %a, <16 x i8> %b, <16 x i8> %c, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v16i8:
 ; CHECK:       # %bb.0:
@@ -114,6 +121,7 @@ define <16 x i8> @fshr_v16i8(<16 x i8> %a, <16 x i8> %b, <16 x i8> %c, <16 x i1>
   ret <16 x i8> %res
 }
 
+declare <16 x i8> @llvm.vp.fshl.v16i8(<16 x i8>, <16 x i8>, <16 x i8>, <16 x i1>, i32)
 define <16 x i8> @fshl_v16i8(<16 x i8> %a, <16 x i8> %b, <16 x i8> %c, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v16i8:
 ; CHECK:       # %bb.0:
@@ -130,6 +138,7 @@ define <16 x i8> @fshl_v16i8(<16 x i8> %a, <16 x i8> %b, <16 x i8> %c, <16 x i1>
   ret <16 x i8> %res
 }
 
+declare <32 x i8> @llvm.vp.fshr.v32i8(<32 x i8>, <32 x i8>, <32 x i8>, <32 x i1>, i32)
 define <32 x i8> @fshr_v32i8(<32 x i8> %a, <32 x i8> %b, <32 x i8> %c, <32 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v32i8:
 ; CHECK:       # %bb.0:
@@ -146,6 +155,7 @@ define <32 x i8> @fshr_v32i8(<32 x i8> %a, <32 x i8> %b, <32 x i8> %c, <32 x i1>
   ret <32 x i8> %res
 }
 
+declare <32 x i8> @llvm.vp.fshl.v32i8(<32 x i8>, <32 x i8>, <32 x i8>, <32 x i1>, i32)
 define <32 x i8> @fshl_v32i8(<32 x i8> %a, <32 x i8> %b, <32 x i8> %c, <32 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v32i8:
 ; CHECK:       # %bb.0:
@@ -162,6 +172,7 @@ define <32 x i8> @fshl_v32i8(<32 x i8> %a, <32 x i8> %b, <32 x i8> %c, <32 x i1>
   ret <32 x i8> %res
 }
 
+declare <64 x i8> @llvm.vp.fshr.v64i8(<64 x i8>, <64 x i8>, <64 x i8>, <64 x i1>, i32)
 define <64 x i8> @fshr_v64i8(<64 x i8> %a, <64 x i8> %b, <64 x i8> %c, <64 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v64i8:
 ; CHECK:       # %bb.0:
@@ -178,6 +189,7 @@ define <64 x i8> @fshr_v64i8(<64 x i8> %a, <64 x i8> %b, <64 x i8> %c, <64 x i1>
   ret <64 x i8> %res
 }
 
+declare <64 x i8> @llvm.vp.fshl.v64i8(<64 x i8>, <64 x i8>, <64 x i8>, <64 x i1>, i32)
 define <64 x i8> @fshl_v64i8(<64 x i8> %a, <64 x i8> %b, <64 x i8> %c, <64 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v64i8:
 ; CHECK:       # %bb.0:
@@ -194,6 +206,7 @@ define <64 x i8> @fshl_v64i8(<64 x i8> %a, <64 x i8> %b, <64 x i8> %c, <64 x i1>
   ret <64 x i8> %res
 }
 
+declare <2 x i16> @llvm.vp.fshr.v2i16(<2 x i16>, <2 x i16>, <2 x i16>, <2 x i1>, i32)
 define <2 x i16> @fshr_v2i16(<2 x i16> %a, <2 x i16> %b, <2 x i16> %c, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v2i16:
 ; CHECK:       # %bb.0:
@@ -210,6 +223,7 @@ define <2 x i16> @fshr_v2i16(<2 x i16> %a, <2 x i16> %b, <2 x i16> %c, <2 x i1> 
   ret <2 x i16> %res
 }
 
+declare <2 x i16> @llvm.vp.fshl.v2i16(<2 x i16>, <2 x i16>, <2 x i16>, <2 x i1>, i32)
 define <2 x i16> @fshl_v2i16(<2 x i16> %a, <2 x i16> %b, <2 x i16> %c, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v2i16:
 ; CHECK:       # %bb.0:
@@ -226,6 +240,7 @@ define <2 x i16> @fshl_v2i16(<2 x i16> %a, <2 x i16> %b, <2 x i16> %c, <2 x i1> 
   ret <2 x i16> %res
 }
 
+declare <4 x i16> @llvm.vp.fshr.v4i16(<4 x i16>, <4 x i16>, <4 x i16>, <4 x i1>, i32)
 define <4 x i16> @fshr_v4i16(<4 x i16> %a, <4 x i16> %b, <4 x i16> %c, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v4i16:
 ; CHECK:       # %bb.0:
@@ -242,6 +257,7 @@ define <4 x i16> @fshr_v4i16(<4 x i16> %a, <4 x i16> %b, <4 x i16> %c, <4 x i1> 
   ret <4 x i16> %res
 }
 
+declare <4 x i16> @llvm.vp.fshl.v4i16(<4 x i16>, <4 x i16>, <4 x i16>, <4 x i1>, i32)
 define <4 x i16> @fshl_v4i16(<4 x i16> %a, <4 x i16> %b, <4 x i16> %c, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v4i16:
 ; CHECK:       # %bb.0:
@@ -258,6 +274,7 @@ define <4 x i16> @fshl_v4i16(<4 x i16> %a, <4 x i16> %b, <4 x i16> %c, <4 x i1> 
   ret <4 x i16> %res
 }
 
+declare <8 x i16> @llvm.vp.fshr.v8i16(<8 x i16>, <8 x i16>, <8 x i16>, <8 x i1>, i32)
 define <8 x i16> @fshr_v8i16(<8 x i16> %a, <8 x i16> %b, <8 x i16> %c, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v8i16:
 ; CHECK:       # %bb.0:
@@ -274,6 +291,7 @@ define <8 x i16> @fshr_v8i16(<8 x i16> %a, <8 x i16> %b, <8 x i16> %c, <8 x i1> 
   ret <8 x i16> %res
 }
 
+declare <8 x i16> @llvm.vp.fshl.v8i16(<8 x i16>, <8 x i16>, <8 x i16>, <8 x i1>, i32)
 define <8 x i16> @fshl_v8i16(<8 x i16> %a, <8 x i16> %b, <8 x i16> %c, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v8i16:
 ; CHECK:       # %bb.0:
@@ -290,6 +308,7 @@ define <8 x i16> @fshl_v8i16(<8 x i16> %a, <8 x i16> %b, <8 x i16> %c, <8 x i1> 
   ret <8 x i16> %res
 }
 
+declare <16 x i16> @llvm.vp.fshr.v16i16(<16 x i16>, <16 x i16>, <16 x i16>, <16 x i1>, i32)
 define <16 x i16> @fshr_v16i16(<16 x i16> %a, <16 x i16> %b, <16 x i16> %c, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v16i16:
 ; CHECK:       # %bb.0:
@@ -306,6 +325,7 @@ define <16 x i16> @fshr_v16i16(<16 x i16> %a, <16 x i16> %b, <16 x i16> %c, <16 
   ret <16 x i16> %res
 }
 
+declare <16 x i16> @llvm.vp.fshl.v16i16(<16 x i16>, <16 x i16>, <16 x i16>, <16 x i1>, i32)
 define <16 x i16> @fshl_v16i16(<16 x i16> %a, <16 x i16> %b, <16 x i16> %c, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v16i16:
 ; CHECK:       # %bb.0:
@@ -322,6 +342,7 @@ define <16 x i16> @fshl_v16i16(<16 x i16> %a, <16 x i16> %b, <16 x i16> %c, <16 
   ret <16 x i16> %res
 }
 
+declare <32 x i16> @llvm.vp.fshr.v32i16(<32 x i16>, <32 x i16>, <32 x i16>, <32 x i1>, i32)
 define <32 x i16> @fshr_v32i16(<32 x i16> %a, <32 x i16> %b, <32 x i16> %c, <32 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v32i16:
 ; CHECK:       # %bb.0:
@@ -338,6 +359,7 @@ define <32 x i16> @fshr_v32i16(<32 x i16> %a, <32 x i16> %b, <32 x i16> %c, <32 
   ret <32 x i16> %res
 }
 
+declare <32 x i16> @llvm.vp.fshl.v32i16(<32 x i16>, <32 x i16>, <32 x i16>, <32 x i1>, i32)
 define <32 x i16> @fshl_v32i16(<32 x i16> %a, <32 x i16> %b, <32 x i16> %c, <32 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v32i16:
 ; CHECK:       # %bb.0:
@@ -354,6 +376,7 @@ define <32 x i16> @fshl_v32i16(<32 x i16> %a, <32 x i16> %b, <32 x i16> %c, <32 
   ret <32 x i16> %res
 }
 
+declare <2 x i32> @llvm.vp.fshr.v2i32(<2 x i32>, <2 x i32>, <2 x i32>, <2 x i1>, i32)
 define <2 x i32> @fshr_v2i32(<2 x i32> %a, <2 x i32> %b, <2 x i32> %c, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v2i32:
 ; CHECK:       # %bb.0:
@@ -371,6 +394,7 @@ define <2 x i32> @fshr_v2i32(<2 x i32> %a, <2 x i32> %b, <2 x i32> %c, <2 x i1> 
   ret <2 x i32> %res
 }
 
+declare <2 x i32> @llvm.vp.fshl.v2i32(<2 x i32>, <2 x i32>, <2 x i32>, <2 x i1>, i32)
 define <2 x i32> @fshl_v2i32(<2 x i32> %a, <2 x i32> %b, <2 x i32> %c, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v2i32:
 ; CHECK:       # %bb.0:
@@ -388,6 +412,7 @@ define <2 x i32> @fshl_v2i32(<2 x i32> %a, <2 x i32> %b, <2 x i32> %c, <2 x i1> 
   ret <2 x i32> %res
 }
 
+declare <4 x i32> @llvm.vp.fshr.v4i32(<4 x i32>, <4 x i32>, <4 x i32>, <4 x i1>, i32)
 define <4 x i32> @fshr_v4i32(<4 x i32> %a, <4 x i32> %b, <4 x i32> %c, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v4i32:
 ; CHECK:       # %bb.0:
@@ -405,6 +430,7 @@ define <4 x i32> @fshr_v4i32(<4 x i32> %a, <4 x i32> %b, <4 x i32> %c, <4 x i1> 
   ret <4 x i32> %res
 }
 
+declare <4 x i32> @llvm.vp.fshl.v4i32(<4 x i32>, <4 x i32>, <4 x i32>, <4 x i1>, i32)
 define <4 x i32> @fshl_v4i32(<4 x i32> %a, <4 x i32> %b, <4 x i32> %c, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v4i32:
 ; CHECK:       # %bb.0:
@@ -422,6 +448,7 @@ define <4 x i32> @fshl_v4i32(<4 x i32> %a, <4 x i32> %b, <4 x i32> %c, <4 x i1> 
   ret <4 x i32> %res
 }
 
+declare <8 x i32> @llvm.vp.fshr.v8i32(<8 x i32>, <8 x i32>, <8 x i32>, <8 x i1>, i32)
 define <8 x i32> @fshr_v8i32(<8 x i32> %a, <8 x i32> %b, <8 x i32> %c, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v8i32:
 ; CHECK:       # %bb.0:
@@ -439,6 +466,7 @@ define <8 x i32> @fshr_v8i32(<8 x i32> %a, <8 x i32> %b, <8 x i32> %c, <8 x i1> 
   ret <8 x i32> %res
 }
 
+declare <8 x i32> @llvm.vp.fshl.v8i32(<8 x i32>, <8 x i32>, <8 x i32>, <8 x i1>, i32)
 define <8 x i32> @fshl_v8i32(<8 x i32> %a, <8 x i32> %b, <8 x i32> %c, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v8i32:
 ; CHECK:       # %bb.0:
@@ -456,6 +484,7 @@ define <8 x i32> @fshl_v8i32(<8 x i32> %a, <8 x i32> %b, <8 x i32> %c, <8 x i1> 
   ret <8 x i32> %res
 }
 
+declare <16 x i32> @llvm.vp.fshr.v16i32(<16 x i32>, <16 x i32>, <16 x i32>, <16 x i1>, i32)
 define <16 x i32> @fshr_v16i32(<16 x i32> %a, <16 x i32> %b, <16 x i32> %c, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v16i32:
 ; CHECK:       # %bb.0:
@@ -473,6 +502,7 @@ define <16 x i32> @fshr_v16i32(<16 x i32> %a, <16 x i32> %b, <16 x i32> %c, <16 
   ret <16 x i32> %res
 }
 
+declare <16 x i32> @llvm.vp.fshl.v16i32(<16 x i32>, <16 x i32>, <16 x i32>, <16 x i1>, i32)
 define <16 x i32> @fshl_v16i32(<16 x i32> %a, <16 x i32> %b, <16 x i32> %c, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v16i32:
 ; CHECK:       # %bb.0:
@@ -490,6 +520,7 @@ define <16 x i32> @fshl_v16i32(<16 x i32> %a, <16 x i32> %b, <16 x i32> %c, <16 
   ret <16 x i32> %res
 }
 
+declare <2 x i64> @llvm.vp.fshr.v2i64(<2 x i64>, <2 x i64>, <2 x i64>, <2 x i1>, i32)
 define <2 x i64> @fshr_v2i64(<2 x i64> %a, <2 x i64> %b, <2 x i64> %c, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v2i64:
 ; CHECK:       # %bb.0:
@@ -507,6 +538,7 @@ define <2 x i64> @fshr_v2i64(<2 x i64> %a, <2 x i64> %b, <2 x i64> %c, <2 x i1> 
   ret <2 x i64> %res
 }
 
+declare <2 x i64> @llvm.vp.fshl.v2i64(<2 x i64>, <2 x i64>, <2 x i64>, <2 x i1>, i32)
 define <2 x i64> @fshl_v2i64(<2 x i64> %a, <2 x i64> %b, <2 x i64> %c, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v2i64:
 ; CHECK:       # %bb.0:
@@ -524,6 +556,7 @@ define <2 x i64> @fshl_v2i64(<2 x i64> %a, <2 x i64> %b, <2 x i64> %c, <2 x i1> 
   ret <2 x i64> %res
 }
 
+declare <4 x i64> @llvm.vp.fshr.v4i64(<4 x i64>, <4 x i64>, <4 x i64>, <4 x i1>, i32)
 define <4 x i64> @fshr_v4i64(<4 x i64> %a, <4 x i64> %b, <4 x i64> %c, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v4i64:
 ; CHECK:       # %bb.0:
@@ -541,6 +574,7 @@ define <4 x i64> @fshr_v4i64(<4 x i64> %a, <4 x i64> %b, <4 x i64> %c, <4 x i1> 
   ret <4 x i64> %res
 }
 
+declare <4 x i64> @llvm.vp.fshl.v4i64(<4 x i64>, <4 x i64>, <4 x i64>, <4 x i1>, i32)
 define <4 x i64> @fshl_v4i64(<4 x i64> %a, <4 x i64> %b, <4 x i64> %c, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v4i64:
 ; CHECK:       # %bb.0:
@@ -558,6 +592,7 @@ define <4 x i64> @fshl_v4i64(<4 x i64> %a, <4 x i64> %b, <4 x i64> %c, <4 x i1> 
   ret <4 x i64> %res
 }
 
+declare <7 x i64> @llvm.vp.fshr.v7i64(<7 x i64>, <7 x i64>, <7 x i64>, <7 x i1>, i32)
 define <7 x i64> @fshr_v7i64(<7 x i64> %a, <7 x i64> %b, <7 x i64> %c, <7 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v7i64:
 ; CHECK:       # %bb.0:
@@ -575,6 +610,7 @@ define <7 x i64> @fshr_v7i64(<7 x i64> %a, <7 x i64> %b, <7 x i64> %c, <7 x i1> 
   ret <7 x i64> %res
 }
 
+declare <7 x i64> @llvm.vp.fshl.v7i64(<7 x i64>, <7 x i64>, <7 x i64>, <7 x i1>, i32)
 define <7 x i64> @fshl_v7i64(<7 x i64> %a, <7 x i64> %b, <7 x i64> %c, <7 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v7i64:
 ; CHECK:       # %bb.0:
@@ -592,6 +628,7 @@ define <7 x i64> @fshl_v7i64(<7 x i64> %a, <7 x i64> %b, <7 x i64> %c, <7 x i1> 
   ret <7 x i64> %res
 }
 
+declare <8 x i64> @llvm.vp.fshr.v8i64(<8 x i64>, <8 x i64>, <8 x i64>, <8 x i1>, i32)
 define <8 x i64> @fshr_v8i64(<8 x i64> %a, <8 x i64> %b, <8 x i64> %c, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v8i64:
 ; CHECK:       # %bb.0:
@@ -609,6 +646,7 @@ define <8 x i64> @fshr_v8i64(<8 x i64> %a, <8 x i64> %b, <8 x i64> %c, <8 x i1> 
   ret <8 x i64> %res
 }
 
+declare <8 x i64> @llvm.vp.fshl.v8i64(<8 x i64>, <8 x i64>, <8 x i64>, <8 x i1>, i32)
 define <8 x i64> @fshl_v8i64(<8 x i64> %a, <8 x i64> %b, <8 x i64> %c, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v8i64:
 ; CHECK:       # %bb.0:
@@ -626,6 +664,7 @@ define <8 x i64> @fshl_v8i64(<8 x i64> %a, <8 x i64> %b, <8 x i64> %c, <8 x i1> 
   ret <8 x i64> %res
 }
 
+declare <16 x i64> @llvm.vp.fshr.v16i64(<16 x i64>, <16 x i64>, <16 x i64>, <16 x i1>, i32)
 define <16 x i64> @fshr_v16i64(<16 x i64> %a, <16 x i64> %b, <16 x i64> %c, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshr_v16i64:
 ; CHECK:       # %bb.0:
@@ -636,7 +675,7 @@ define <16 x i64> @fshr_v16i64(<16 x i64> %a, <16 x i64> %b, <16 x i64> %c, <16 
 ; CHECK-NEXT:    sub sp, sp, a2
 ; CHECK-NEXT:    .cfi_escape 0x0f, 0x0d, 0x72, 0x00, 0x11, 0x10, 0x22, 0x11, 0x08, 0x92, 0xa2, 0x38, 0x00, 0x1e, 0x22 # sp + 16 + 8 * vlenb
 ; CHECK-NEXT:    addi a2, sp, 16
-; CHECK-NEXT:    vs8r.v v8, (a2) # vscale x 64-byte Folded Spill
+; CHECK-NEXT:    vs8r.v v8, (a2) # Unknown-size Folded Spill
 ; CHECK-NEXT:    vsetivli zero, 16, e64, m8, ta, ma
 ; CHECK-NEXT:    vle64.v v24, (a0)
 ; CHECK-NEXT:    li a0, 63
@@ -646,7 +685,7 @@ define <16 x i64> @fshr_v16i64(<16 x i64> %a, <16 x i64> %b, <16 x i64> %c, <16 
 ; CHECK-NEXT:    vnot.v v8, v24, v0.t
 ; CHECK-NEXT:    vand.vx v8, v8, a0, v0.t
 ; CHECK-NEXT:    addi a0, sp, 16
-; CHECK-NEXT:    vl8r.v v24, (a0) # vscale x 64-byte Folded Reload
+; CHECK-NEXT:    vl8r.v v24, (a0) # Unknown-size Folded Reload
 ; CHECK-NEXT:    vsll.vi v24, v24, 1, v0.t
 ; CHECK-NEXT:    vsll.vv v8, v24, v8, v0.t
 ; CHECK-NEXT:    vor.vv v8, v8, v16, v0.t
@@ -661,6 +700,7 @@ define <16 x i64> @fshr_v16i64(<16 x i64> %a, <16 x i64> %b, <16 x i64> %c, <16 
   ret <16 x i64> %res
 }
 
+declare <16 x i64> @llvm.vp.fshl.v16i64(<16 x i64>, <16 x i64>, <16 x i64>, <16 x i1>, i32)
 define <16 x i64> @fshl_v16i64(<16 x i64> %a, <16 x i64> %b, <16 x i64> %c, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: fshl_v16i64:
 ; CHECK:       # %bb.0:
@@ -671,7 +711,7 @@ define <16 x i64> @fshl_v16i64(<16 x i64> %a, <16 x i64> %b, <16 x i64> %c, <16 
 ; CHECK-NEXT:    sub sp, sp, a2
 ; CHECK-NEXT:    .cfi_escape 0x0f, 0x0d, 0x72, 0x00, 0x11, 0x10, 0x22, 0x11, 0x08, 0x92, 0xa2, 0x38, 0x00, 0x1e, 0x22 # sp + 16 + 8 * vlenb
 ; CHECK-NEXT:    addi a2, sp, 16
-; CHECK-NEXT:    vs8r.v v16, (a2) # vscale x 64-byte Folded Spill
+; CHECK-NEXT:    vs8r.v v16, (a2) # Unknown-size Folded Spill
 ; CHECK-NEXT:    vsetivli zero, 16, e64, m8, ta, ma
 ; CHECK-NEXT:    vmv8r.v v16, v8
 ; CHECK-NEXT:    vle64.v v24, (a0)
@@ -682,7 +722,7 @@ define <16 x i64> @fshl_v16i64(<16 x i64> %a, <16 x i64> %b, <16 x i64> %c, <16 
 ; CHECK-NEXT:    vnot.v v16, v24, v0.t
 ; CHECK-NEXT:    vand.vx v16, v16, a0, v0.t
 ; CHECK-NEXT:    addi a0, sp, 16
-; CHECK-NEXT:    vl8r.v v24, (a0) # vscale x 64-byte Folded Reload
+; CHECK-NEXT:    vl8r.v v24, (a0) # Unknown-size Folded Reload
 ; CHECK-NEXT:    vsrl.vi v24, v24, 1, v0.t
 ; CHECK-NEXT:    vsrl.vv v16, v24, v16, v0.t
 ; CHECK-NEXT:    vor.vv v8, v8, v16, v0.t

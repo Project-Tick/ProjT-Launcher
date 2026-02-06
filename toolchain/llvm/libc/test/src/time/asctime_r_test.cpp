@@ -6,14 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "hdr/errno_macros.h"
+#include "src/errno/libc_errno.h"
 #include "src/time/asctime_r.h"
 #include "src/time/time_constants.h"
-#include "test/UnitTest/ErrnoCheckingTest.h"
 #include "test/UnitTest/Test.h"
 #include "test/src/time/TmHelper.h"
-
-using LlvmLibcAsctimeR = LIBC_NAMESPACE::testing::ErrnoCheckingTest;
 
 static inline char *call_asctime_r(struct tm *tm_data, int year, int month,
                                    int mday, int hour, int min, int sec,
@@ -25,7 +22,7 @@ static inline char *call_asctime_r(struct tm *tm_data, int year, int month,
 
 // asctime and asctime_r share the same code and thus didn't repeat all the
 // tests from asctime. Added couple of validation tests.
-TEST_F(LlvmLibcAsctimeR, Nullptr) {
+TEST(LlvmLibcAsctimeR, Nullptr) {
   char *result;
   result = LIBC_NAMESPACE::asctime_r(nullptr, nullptr);
   ASSERT_ERRNO_EQ(EINVAL);
@@ -42,7 +39,7 @@ TEST_F(LlvmLibcAsctimeR, Nullptr) {
   ASSERT_STREQ(nullptr, result);
 }
 
-TEST_F(LlvmLibcAsctimeR, ValidDate) {
+TEST(LlvmLibcAsctimeR, ValidDate) {
   char buffer[LIBC_NAMESPACE::time_constants::ASCTIME_BUFFER_SIZE];
   struct tm tm_data;
   char *result;

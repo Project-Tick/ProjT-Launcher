@@ -13,6 +13,7 @@
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCStreamer.h"
 #include <cassert>
+#include <utility>
 
 using namespace llvm;
 
@@ -23,7 +24,7 @@ DwarfStringPool::DwarfStringPool(BumpPtrAllocator &A, AsmPrinter &Asm,
 
 StringMapEntry<DwarfStringPool::EntryTy> &
 DwarfStringPool::getEntryImpl(AsmPrinter &Asm, StringRef Str) {
-  auto I = Pool.try_emplace(Str);
+  auto I = Pool.insert(std::make_pair(Str, EntryTy()));
   auto &Entry = I.first->second;
   if (I.second) {
     Entry.Index = EntryTy::NotIndexed;
@@ -80,8 +81,11 @@ void DwarfStringPool::emit(AsmPrinter &Asm, MCSection *StrSection,
   Asm.OutStreamer->switchSection(StrSection);
 
   // Get all of the string pool entries and sort them by their offset.
-  SmallVector<const StringMapEntry<EntryTy> *, 64> Entries(
-      llvm::make_pointer_range(Pool));
+  SmallVector<const StringMapEntry<EntryTy> *, 64> Entries;
+  Entries.reserve(Pool.size());
+
+  for (const auto &E : Pool)
+    Entries.push_back(&E);
 
   llvm::sort(Entries, [](const StringMapEntry<EntryTy> *A,
                          const StringMapEntry<EntryTy> *B) {

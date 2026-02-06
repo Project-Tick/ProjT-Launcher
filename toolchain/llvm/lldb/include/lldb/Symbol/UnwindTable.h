@@ -38,9 +38,8 @@ public:
   ArmUnwindInfo *GetArmUnwindInfo();
   SymbolFile *GetSymbolFile();
 
-  lldb::FuncUnwindersSP
-  GetFuncUnwindersContainingAddress(const Address &addr,
-                                    const SymbolContext &sc);
+  lldb::FuncUnwindersSP GetFuncUnwindersContainingAddress(const Address &addr,
+                                                          SymbolContext &sc);
 
   bool GetAllowAssemblyEmulationUnwindPlans();
 
@@ -66,7 +65,8 @@ private:
   void Dump(Stream &s);
 
   void Initialize();
-  AddressRanges GetAddressRanges(const Address &addr, const SymbolContext &sc);
+  std::optional<AddressRange> GetAddressRange(const Address &addr,
+                                              const SymbolContext &sc);
 
   typedef std::map<lldb::addr_t, lldb::FuncUnwindersSP> collection;
   typedef collection::iterator iterator;

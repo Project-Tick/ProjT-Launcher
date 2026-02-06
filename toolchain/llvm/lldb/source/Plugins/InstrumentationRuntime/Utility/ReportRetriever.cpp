@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "ReportRetriever.h"
-#include "Utility.h"
 
 #include "lldb/Breakpoint/StoppointCallbackContext.h"
 #include "lldb/Core/Debugger.h"
@@ -81,13 +80,7 @@ ReportRetriever::RetrieveReportData(const ProcessSP process_sp) {
   options.SetTimeout(process_sp->GetUtilityExpressionTimeout());
   options.SetPrefix(address_sanitizer_retrieve_report_data_prefix);
   options.SetAutoApplyFixIts(false);
-  options.SetLanguage(eLanguageTypeC);
-
-  if (auto [m, _] = GetPreferredAsanModule(process_sp->GetTarget()); m) {
-    SymbolContextList sc_list;
-    sc_list.Append(SymbolContext(std::move(m)));
-    options.SetPreferredSymbolContexts(std::move(sc_list));
-  }
+  options.SetLanguage(eLanguageTypeObjC_plus_plus);
 
   ValueObjectSP return_value_sp;
   ExecutionContext exe_ctx;
@@ -207,11 +200,8 @@ bool ReportRetriever::NotifyBreakpointHit(ProcessSP process_sp,
     return false;
 
   StructuredData::ObjectSP report = RetrieveReportData(process_sp);
-  if (!report || report->GetType() != lldb::eStructuredDataTypeDictionary) {
-    LLDB_LOGF(GetLog(LLDBLog::InstrumentationRuntime),
-              "ReportRetriever::RetrieveReportData() failed");
+  if (!report || report->GetType() != lldb::eStructuredDataTypeDictionary)
     return false;
-  }
 
   std::string description = FormatDescription(report);
 
@@ -220,8 +210,8 @@ bool ReportRetriever::NotifyBreakpointHit(ProcessSP process_sp,
         InstrumentationRuntimeStopInfo::CreateStopReasonWithInstrumentationData(
             *thread_sp, description, report));
 
-  if (StreamSP stream_sp =
-          process_sp->GetTarget().GetDebugger().GetAsyncOutputStream())
+  if (StreamFileSP stream_sp = StreamFileSP(
+          process_sp->GetTarget().GetDebugger().GetOutputStreamSP()))
     stream_sp->Printf("AddressSanitizer report breakpoint hit. Use 'thread "
                       "info -s' to get extended information about the "
                       "report.\n");

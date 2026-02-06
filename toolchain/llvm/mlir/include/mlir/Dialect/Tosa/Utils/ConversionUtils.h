@@ -70,7 +70,7 @@ checkHasDynamicBatchDims(PatternRewriter &rewriter, Op op,
   }
 
   dynamicDims.push_back(
-      tensor::DimOp::create(rewriter, op->getLoc(), params[0], 0));
+      rewriter.create<tensor::DimOp>(op->getLoc(), params[0], 0));
   return dynamicDims;
 }
 
@@ -91,7 +91,7 @@ namespace {
 template <typename TosaOp, typename... Args>
 TosaOp createOpAndInferShape(ImplicitLocOpBuilder &builder, Type resultTy,
                              Args &&...args) {
-  auto op = TosaOp::create(builder, resultTy, args...);
+  auto op = builder.create<TosaOp>(resultTy, args...);
 
   InferShapedTypeOpInterface shapeInterface =
       dyn_cast<InferShapedTypeOpInterface>(op.getOperation());
@@ -145,7 +145,7 @@ TosaOp createOpAndInferShape(ImplicitLocOpBuilder &builder, Type resultTy,
 template <typename TosaOp, typename... Args>
 TosaOp CreateOpAndInferShape(ImplicitLocOpBuilder &builder, Type resultTy,
                              Args &&...args) {
-  if (TosaOp::template hasTrait<::mlir::OpTrait::SameOperandsAndResultRank>()) {
+  if (TosaOp::template hasTrait<OpTrait::SameOperandsAndResultRank>()) {
     // op requires same ranks for tensor operands
     if constexpr (sizeof...(Args) == 2) {
       auto argX = std::get<0>(std::tie(args...));
@@ -230,24 +230,13 @@ SmallVector<T> applyTOSAPermutation(ArrayRef<T> input,
 }
 
 // Computes shape value using tosa const_shape op.
-Value getTosaConstShape(ImplicitLocOpBuilder &builder,
-                        llvm::ArrayRef<int64_t> shape);
 Value getTosaConstShape(PatternRewriter &rewriter, Location loc,
                         llvm::ArrayRef<int64_t> shape);
-
 SmallVector<int64_t> convertFromMlirShape(ArrayRef<int64_t> shape);
 
-bool getConstShapeValues(Operation *op,
-                         llvm::SmallVector<int64_t> &result_shape);
+bool getConstShapeValue(Operation *op,
+                        llvm::SmallVector<int64_t> &result_shape);
 
-// returns a small vector of int64_t values that attr contains
-SmallVector<int64_t> convertFromIntAttr(const DenseElementsAttr &attr,
-                                        const int rank);
-
-// returns true iff constant indices for scatter op contains unique indices
-// per batch
-bool hasUniqueConstantScatterIndices(ShapedType indicesType,
-                                     DenseIntElementsAttr indicesAttr);
 } // namespace tosa
 } // namespace mlir
 

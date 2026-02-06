@@ -40,6 +40,7 @@
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Support/WithColor.h"
 #include "llvm/Support/raw_ostream.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -443,8 +444,7 @@ struct ConstModifier: public Modifier {
       case 4:
       case 5:
       case 6:
-        PT->push_back(ConstantInt::get(Ty, getRandom(), /*IsSigned=*/false,
-                                       /*ImplicitTrunc=*/true));
+        PT->push_back(ConstantInt::get(Ty, getRandom()));
       }
     }
   }

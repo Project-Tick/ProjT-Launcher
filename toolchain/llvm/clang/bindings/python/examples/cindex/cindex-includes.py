@@ -18,7 +18,7 @@ def main():
     import sys
     from clang.cindex import Index
 
-    from optparse import OptionParser
+    from optparse import OptionParser, OptionGroup
 
     parser = OptionParser("usage: %prog [options] {filename} [clang-args*]")
     parser.disable_interspersed_args()

@@ -435,15 +435,11 @@ define float @unary_negated_and_shrinkable_libcall(float %f) {
 ; TODO: It was ok to shrink the libcall, so the intrinsic should shrink too?
 
 define float @negated_and_shrinkable_intrinsic(float %f) {
-; NO-FLOAT-SHRINK-LABEL: @negated_and_shrinkable_intrinsic(
-; NO-FLOAT-SHRINK-NEXT:    [[CONV1:%.*]] = fpext float [[F:%.*]] to double
-; NO-FLOAT-SHRINK-NEXT:    [[COS:%.*]] = call double @llvm.cos.f64(double [[CONV1]])
-; NO-FLOAT-SHRINK-NEXT:    [[CONV2:%.*]] = fptrunc double [[COS]] to float
-; NO-FLOAT-SHRINK-NEXT:    ret float [[CONV2]]
-;
-; DO-FLOAT-SHRINK-LABEL: @negated_and_shrinkable_intrinsic(
-; DO-FLOAT-SHRINK-NEXT:    [[COS:%.*]] = call float @llvm.cos.f32(float [[F:%.*]])
-; DO-FLOAT-SHRINK-NEXT:    ret float [[COS]]
+; ANY-LABEL: @negated_and_shrinkable_intrinsic(
+; ANY-NEXT:    [[CONV1:%.*]] = fpext float [[F:%.*]] to double
+; ANY-NEXT:    [[COS:%.*]] = call double @llvm.cos.f64(double [[CONV1]])
+; ANY-NEXT:    [[CONV2:%.*]] = fptrunc double [[COS]] to float
+; ANY-NEXT:    ret float [[CONV2]]
 ;
   %conv1 = fpext float %f to double
   %neg = fsub double -0.0, %conv1
@@ -453,15 +449,11 @@ define float @negated_and_shrinkable_intrinsic(float %f) {
 }
 
 define float @unary_negated_and_shrinkable_intrinsic(float %f) {
-; NO-FLOAT-SHRINK-LABEL: @unary_negated_and_shrinkable_intrinsic(
-; NO-FLOAT-SHRINK-NEXT:    [[CONV1:%.*]] = fpext float [[F:%.*]] to double
-; NO-FLOAT-SHRINK-NEXT:    [[COS:%.*]] = call double @llvm.cos.f64(double [[CONV1]])
-; NO-FLOAT-SHRINK-NEXT:    [[CONV2:%.*]] = fptrunc double [[COS]] to float
-; NO-FLOAT-SHRINK-NEXT:    ret float [[CONV2]]
-;
-; DO-FLOAT-SHRINK-LABEL: @unary_negated_and_shrinkable_intrinsic(
-; DO-FLOAT-SHRINK-NEXT:    [[COS:%.*]] = call float @llvm.cos.f32(float [[F:%.*]])
-; DO-FLOAT-SHRINK-NEXT:    ret float [[COS]]
+; ANY-LABEL: @unary_negated_and_shrinkable_intrinsic(
+; ANY-NEXT:    [[CONV1:%.*]] = fpext float [[F:%.*]] to double
+; ANY-NEXT:    [[COS:%.*]] = call double @llvm.cos.f64(double [[CONV1]])
+; ANY-NEXT:    [[CONV2:%.*]] = fptrunc double [[COS]] to float
+; ANY-NEXT:    ret float [[CONV2]]
 ;
   %conv1 = fpext float %f to double
   %neg = fneg double %conv1

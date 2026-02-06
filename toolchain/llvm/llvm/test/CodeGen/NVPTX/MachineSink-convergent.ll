@@ -10,7 +10,7 @@ declare void @llvm.nvvm.barrier0()
 ; syncthreads is modeled as maystore.
 define i32 @f(i32 %x, ptr %ptr, i1 %cond) {
 Start:
-  ; CHECK: ld.b32
+  ; CHECK: ld.u32
   %ptr_val = load i32, ptr %ptr
   ; CHECK: bar.sync
   call void @llvm.nvvm.barrier0()

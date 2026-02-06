@@ -93,7 +93,7 @@ class VarStreamArray {
   friend class VarStreamArrayIterator<ValueType, Extractor>;
 
 public:
-  using Iterator = VarStreamArrayIterator<ValueType, Extractor>;
+  typedef VarStreamArrayIterator<ValueType, Extractor> Iterator;
 
   VarStreamArray() = default;
 
@@ -156,8 +156,8 @@ template <typename ValueType, typename Extractor>
 class VarStreamArrayIterator
     : public iterator_facade_base<VarStreamArrayIterator<ValueType, Extractor>,
                                   std::forward_iterator_tag, const ValueType> {
-  using IterType = VarStreamArrayIterator<ValueType, Extractor>;
-  using ArrayType = VarStreamArray<ValueType, Extractor>;
+  typedef VarStreamArrayIterator<ValueType, Extractor> IterType;
+  typedef VarStreamArray<ValueType, Extractor> ArrayType;
 
 public:
   VarStreamArrayIterator(const ArrayType &Array, const Extractor &E,
@@ -260,7 +260,7 @@ template <typename T> class FixedStreamArray {
   friend class FixedStreamArrayIterator<T>;
 
 public:
-  using Iterator = FixedStreamArrayIterator<T>;
+  typedef FixedStreamArrayIterator<T> Iterator;
 
   FixedStreamArray() = default;
   explicit FixedStreamArray(BinaryStreamRef Stream) : Stream(Stream) {

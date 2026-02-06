@@ -70,7 +70,8 @@ enum LangFeatures {
 /// standard.
 struct LangStandard {
   enum Kind {
-#define LANGSTANDARD(id, name, lang, desc, features, version) lang_##id,
+#define LANGSTANDARD(id, name, lang, desc, features) \
+    lang_##id,
 #include "clang/Basic/LangStandards.def"
     lang_unspecified
   };
@@ -79,7 +80,6 @@ struct LangStandard {
   const char *Description;
   unsigned Flags;
   clang::Language Language;
-  std::optional<uint32_t> Version;
 
 public:
   /// getName - Get the name of this standard.
@@ -90,9 +90,6 @@ public:
 
   /// Get the language that this standard describes.
   clang::Language getLanguage() const { return Language; }
-
-  /// Get the version code for this language standard.
-  std::optional<uint32_t> getVersion() const { return Version; }
 
   /// Language supports '//' comments.
   bool hasLineComments() const { return Flags & LineComment; }

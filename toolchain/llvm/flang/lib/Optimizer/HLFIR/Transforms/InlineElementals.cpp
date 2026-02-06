@@ -101,8 +101,9 @@ public:
         elemental.getLoc(), builder, elemental, apply.getIndices());
 
     // remove the old elemental and all of the bookkeeping
-    rewriter.replaceOp(apply, {yield.getElementValue()});
+    rewriter.replaceAllUsesWith(apply.getResult(), yield.getElementValue());
     rewriter.eraseOp(yield);
+    rewriter.eraseOp(apply);
     rewriter.eraseOp(destroy);
     rewriter.eraseOp(elemental);
 
@@ -118,8 +119,8 @@ public:
 
     mlir::GreedyRewriteConfig config;
     // Prevent the pattern driver from merging blocks.
-    config.setRegionSimplificationLevel(
-        mlir::GreedySimplifyRegionLevel::Disabled);
+    config.enableRegionSimplification =
+        mlir::GreedySimplifyRegionLevel::Disabled;
 
     mlir::RewritePatternSet patterns(context);
     patterns.insert<InlineElementalConversion>(context);

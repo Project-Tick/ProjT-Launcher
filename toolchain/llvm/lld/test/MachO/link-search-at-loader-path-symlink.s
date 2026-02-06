@@ -1,6 +1,4 @@
-# REQUIRES: x86
-# Windows does not support rpath
-# UNSUPPORTED: system-windows
+# REQUIRES: x86, shell
 
 # RUN: rm -rf %t; split-file %s %t
 

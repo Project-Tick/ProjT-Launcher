@@ -44,7 +44,7 @@ class DefaultTimingManagerImpl;
 /// This is a POD type with pointer size, so it should be passed around by
 /// value. The underlying data is owned by the `TimingManager`.
 class TimingIdentifier {
-  using EntryType = llvm::StringMapEntry<llvm::EmptyStringSetTag>;
+  using EntryType = llvm::StringMapEntry<std::nullopt_t>;
 
 public:
   TimingIdentifier(const TimingIdentifier &) = default;
@@ -472,11 +472,6 @@ void registerDefaultTimingManagerCLOptions();
 /// Apply any values that were registered with
 /// 'registerDefaultTimingManagerOptions' to a `DefaultTimingManager`.
 void applyDefaultTimingManagerCLOptions(DefaultTimingManager &tm);
-
-/// Create an output strategy for the specified format, to be passed to
-/// DefaultTimingManager::setOutput().
-std::unique_ptr<OutputStrategy>
-createOutputStrategy(DefaultTimingManager::OutputFormat fmt, raw_ostream &os);
 
 } // namespace mlir
 

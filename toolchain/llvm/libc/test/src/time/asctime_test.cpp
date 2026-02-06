@@ -6,13 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "hdr/errno_macros.h"
+#include "src/errno/libc_errno.h"
 #include "src/time/asctime.h"
-#include "test/UnitTest/ErrnoCheckingTest.h"
 #include "test/UnitTest/Test.h"
 #include "test/src/time/TmHelper.h"
-
-using LlvmLibcAsctime = LIBC_NAMESPACE::testing::ErrnoCheckingTest;
 
 static inline char *call_asctime(struct tm *tm_data, int year, int month,
                                  int mday, int hour, int min, int sec, int wday,
@@ -22,7 +19,7 @@ static inline char *call_asctime(struct tm *tm_data, int year, int month,
   return LIBC_NAMESPACE::asctime(tm_data);
 }
 
-TEST_F(LlvmLibcAsctime, Nullptr) {
+TEST(LlvmLibcAsctime, Nullptr) {
   char *result;
   result = LIBC_NAMESPACE::asctime(nullptr);
   ASSERT_ERRNO_EQ(EINVAL);
@@ -30,7 +27,7 @@ TEST_F(LlvmLibcAsctime, Nullptr) {
 }
 
 // Weekdays are in the range 0 to 6. Test passing invalid value in wday.
-TEST_F(LlvmLibcAsctime, InvalidWday) {
+TEST(LlvmLibcAsctime, InvalidWday) {
   struct tm tm_data;
 
   // Test with wday = -1.
@@ -59,7 +56,7 @@ TEST_F(LlvmLibcAsctime, InvalidWday) {
 }
 
 // Months are from January to December. Test passing invalid value in month.
-TEST_F(LlvmLibcAsctime, InvalidMonth) {
+TEST(LlvmLibcAsctime, InvalidMonth) {
   struct tm tm_data;
 
   // Test with month = 0.
@@ -87,7 +84,7 @@ TEST_F(LlvmLibcAsctime, InvalidMonth) {
   ASSERT_ERRNO_EQ(EINVAL);
 }
 
-TEST_F(LlvmLibcAsctime, ValidWeekdays) {
+TEST(LlvmLibcAsctime, ValidWeekdays) {
   struct tm tm_data;
   char *result;
   // 1970-01-01 00:00:00.
@@ -127,7 +124,7 @@ TEST_F(LlvmLibcAsctime, ValidWeekdays) {
   ASSERT_STREQ("Sun Jan  4 00:00:00 1970\n", result);
 }
 
-TEST_F(LlvmLibcAsctime, ValidMonths) {
+TEST(LlvmLibcAsctime, ValidMonths) {
   struct tm tm_data;
   char *result;
   // 1970-01-01 00:00:00.
@@ -167,7 +164,7 @@ TEST_F(LlvmLibcAsctime, ValidMonths) {
   ASSERT_STREQ("Thu Dec 31 23:59:59 1970\n", result);
 }
 
-TEST_F(LlvmLibcAsctime, EndOf32BitEpochYear) {
+TEST(LlvmLibcAsctime, EndOf32BitEpochYear) {
   struct tm tm_data;
   char *result;
   // Test for maximum value of a signed 32-bit integer.
@@ -184,7 +181,7 @@ TEST_F(LlvmLibcAsctime, EndOf32BitEpochYear) {
   ASSERT_STREQ("Tue Jan 19 03:14:07 2038\n", result);
 }
 
-TEST_F(LlvmLibcAsctime, Max64BitYear) {
+TEST(LlvmLibcAsctime, Max64BitYear) {
   if (sizeof(time_t) == 4)
     return;
   // Mon Jan 1 12:50:50 2170 (200 years from 1970),

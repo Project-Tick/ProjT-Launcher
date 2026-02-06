@@ -156,7 +156,7 @@ public:
   static char ID;
 
   StackSafetyGlobalInfoWrapperPass();
-  ~StackSafetyGlobalInfoWrapperPass() override;
+  ~StackSafetyGlobalInfoWrapperPass();
 
   const StackSafetyGlobalInfo &getResult() const { return SSGI; }
 

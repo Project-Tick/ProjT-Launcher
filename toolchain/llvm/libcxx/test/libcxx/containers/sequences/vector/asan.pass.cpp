@@ -23,9 +23,12 @@
 
 extern "C" void __sanitizer_set_death_callback(void (*callback)(void));
 
-void do_exit() { exit(0); }
+void do_exit() {
+  exit(0);
+}
 
-int main(int, char**) {
+int main(int, char**)
+{
 #if TEST_STD_VER >= 11
   {
     typedef int T;

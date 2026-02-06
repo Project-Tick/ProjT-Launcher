@@ -17,22 +17,22 @@ integer function timer_tick_sec()
 
    !$OMP CRITICAL (foo)
    t = t + 1
-   !ERROR: The names on CRITICAL and END CRITICAL must match
+   !ERROR: CRITICAL directive names do not match
    !$OMP END CRITICAL (bar)
 
    !$OMP CRITICAL (bar)
    t = t + 1
-   !ERROR: The names on CRITICAL and END CRITICAL must match
+   !ERROR: CRITICAL directive names do not match
    !$OMP END CRITICAL (foo)
 
-   !ERROR: Either both CRITICAL and END CRITICAL should have an argument, or none of them should
+   !ERROR: CRITICAL directive names do not match
    !$OMP CRITICAL (bar)
    t = t + 1
    !$OMP END CRITICAL
 
    !$OMP CRITICAL
    t = t + 1
-   !ERROR: Either both CRITICAL and END CRITICAL should have an argument, or none of them should
+   !ERROR: CRITICAL directive names do not match
    !$OMP END CRITICAL (foo)
 
    timer_tick_sec = t

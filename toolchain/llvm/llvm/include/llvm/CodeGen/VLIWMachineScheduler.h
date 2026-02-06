@@ -223,7 +223,7 @@ public:
   enum { TopQID = 1, BotQID = 2, LogMaxQID = 2 };
 
   ConvergingVLIWScheduler() : Top(TopQID, "TopQ"), Bot(BotQID, "BotQ") {}
-  ~ConvergingVLIWScheduler() override = default;
+  virtual ~ConvergingVLIWScheduler() = default;
 
   void initialize(ScheduleDAGMI *dag) override;
 

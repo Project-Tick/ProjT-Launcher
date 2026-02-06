@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include <poll.h>
 #include <sys/mman.h>

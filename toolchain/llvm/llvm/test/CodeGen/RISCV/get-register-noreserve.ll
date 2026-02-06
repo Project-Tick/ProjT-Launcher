@@ -41,6 +41,10 @@ entry:
   ret i32 %sp
 }
 
+
+declare i32 @llvm.read_register.i32(metadata) nounwind
+declare void @llvm.write_register.i32(metadata, i32) nounwind
+
 !0 = !{!"sp\00"}
 !1 = !{!"x4\00"}
 !2 = !{!"vlenb"}

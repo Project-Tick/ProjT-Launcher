@@ -16,31 +16,34 @@
 
 #include "test_macros.h"
 
-TEST_CONSTEXPR_CXX20 bool tests() {
-  bool a[] = {false, true, false, true};
-  bool* an = a + sizeof(a) / sizeof(a[0]);
+TEST_CONSTEXPR_CXX20 bool tests()
+{
 
-  std::vector<bool> v(a, an);
-  std::vector<bool>::reference r1 = v[0];
-  std::vector<bool>::reference r2 = v[3];
+    bool a[] = {false, true, false, true};
+    bool* an = a + sizeof(a)/sizeof(a[0]);
+
+    std::vector<bool> v(a, an);
+    std::vector<bool>::reference r1 = v[0];
+    std::vector<bool>::reference r2 = v[3];
 
 #if TEST_STD_VER >= 11
-  static_assert((noexcept(v.swap(r1, r2))), "");
+    static_assert((noexcept(v.swap(r1,r2))), "");
 #endif
 
-  assert(!r1);
-  assert(r2);
-  v.swap(r1, r2);
-  assert(r1);
-  assert(!r2);
+    assert(!r1);
+    assert( r2);
+    v.swap(r1, r2);
+    assert( r1);
+    assert(!r2);
 
-  return true;
+    return true;
 }
 
-int main(int, char**) {
-  tests();
+int main(int, char**)
+{
+    tests();
 #if TEST_STD_VER > 17
-  static_assert(tests());
+    static_assert(tests());
 #endif
-  return 0;
+    return 0;
 }

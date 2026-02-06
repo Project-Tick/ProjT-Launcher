@@ -1,5 +1,4 @@
 // RUN: %clangxx -O1 %s -o %t && %run %t
-// REQUIRES: page-size-4096
 // UNSUPPORTED: android
 
 // Fail on powerpc64 bots with:

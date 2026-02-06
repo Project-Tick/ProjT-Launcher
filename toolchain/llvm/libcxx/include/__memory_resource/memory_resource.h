@@ -42,9 +42,7 @@ public:
     do_deallocate(__p, __bytes, __align);
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI bool is_equal(const memory_resource& __other) const noexcept {
-    return do_is_equal(__other);
-  }
+  _LIBCPP_HIDE_FROM_ABI bool is_equal(const memory_resource& __other) const noexcept { return do_is_equal(__other); }
 
 private:
   virtual void* do_allocate(size_t, size_t)                       = 0;
@@ -70,7 +68,7 @@ operator!=(const memory_resource& __lhs, const memory_resource& __rhs) noexcept 
 
 // [mem.res.global]
 
-[[nodiscard, __gnu__::__returns_nonnull__]] _LIBCPP_AVAILABILITY_PMR _LIBCPP_EXPORTED_FROM_ABI memory_resource*
+[[__gnu__::__returns_nonnull__]] _LIBCPP_AVAILABILITY_PMR _LIBCPP_EXPORTED_FROM_ABI memory_resource*
 get_default_resource() noexcept;
 
 [[__gnu__::__returns_nonnull__]] _LIBCPP_AVAILABILITY_PMR _LIBCPP_EXPORTED_FROM_ABI memory_resource*

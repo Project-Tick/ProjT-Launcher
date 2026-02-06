@@ -53,7 +53,6 @@ static_library("MCTargetDesc") {
     ":SparcGenMCCodeEmitter",
     "//llvm/lib/MC",
     "//llvm/lib/Support",
-    "//llvm/lib/Target/Sparc/TargetInfo",
     "//llvm/lib/TargetParser",
   ]
   include_dirs = [ ".." ]

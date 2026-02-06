@@ -133,7 +133,8 @@ protected:
           RA.getInstClobberList(Point, Regs);
         else
           RA.getInstUsedRegsList(Point, Regs, false);
-        if (Regs.anyCommon(this->BC.MIB->getAliases(*TrackingReg)))
+        Regs &= this->BC.MIB->getAliases(*TrackingReg);
+        if (Regs.any())
           Next.set(this->ExprToIdx[&Point]);
       }
     }

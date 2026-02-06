@@ -8,7 +8,6 @@
 
 #include "flang/Evaluate/type.h"
 #include "flang/Common/idioms.h"
-#include "flang/Common/type-kinds.h"
 #include "flang/Evaluate/expression.h"
 #include "flang/Evaluate/fold.h"
 #include "flang/Evaluate/target.h"
@@ -119,7 +118,7 @@ namespace Fortran::evaluate {
 
 DynamicType::DynamicType(int k, const semantics::ParamValue &pv)
     : category_{TypeCategory::Character}, kind_{k} {
-  CHECK(common::IsValidKindOfIntrinsicType(category_, kind_));
+  CHECK(IsValidKindOfIntrinsicType(category_, kind_));
   if (auto n{ToInt64(pv.GetExplicit())}) {
     knownLength_ = *n > 0 ? *n : 0;
   } else {
@@ -299,18 +298,13 @@ static bool AreSameDerivedType(const semantics::DerivedTypeSpec &,
 
 // F2023 7.5.3.2
 static bool AreSameComponent(const semantics::Symbol &x,
-    const semantics::Symbol &y, bool ignoreSequence, bool sameModuleName,
+    const semantics::Symbol &y, bool ignoreSequence,
     SetOfDerivedTypePairs &inProgress) {
   if (x.attrs() != y.attrs()) {
     return false;
   }
-  if (x.attrs().test(semantics::Attr::PRIVATE) ||
-      y.attrs().test(semantics::Attr::PRIVATE)) {
-    if (!sameModuleName ||
-        x.attrs().test(semantics::Attr::PRIVATE) !=
-            y.attrs().test(semantics::Attr::PRIVATE)) {
-      return false;
-    }
+  if (x.attrs().test(semantics::Attr::PRIVATE)) {
+    return false;
   }
   if (x.size() && y.size()) {
     if (x.offset() != y.offset() || x.size() != y.size()) {
@@ -487,20 +481,9 @@ static bool AreSameDerivedType(const semantics::DerivedTypeSpec &x,
           ySymbol.attrs().test(semantics::Attr::BIND_C)) {
     return false;
   }
-  bool sameModuleName{false};
-  const semantics::Scope &xOwner{xSymbol.owner()};
-  const semantics::Scope &yOwner{ySymbol.owner()};
-  if (xOwner.IsModule() && yOwner.IsModule()) {
-    if (auto xModuleName{xOwner.GetName()}) {
-      if (auto yModuleName{yOwner.GetName()}) {
-        if (*xModuleName == *yModuleName) {
-          sameModuleName = true;
-        }
-      }
-    }
-  }
-  if (!sameModuleName && !ignoreSequence && !xDetails.sequence() &&
-      !xSymbol.attrs().test(semantics::Attr::BIND_C)) {
+  if (!ignoreSequence && !(xDetails.sequence() && yDetails.sequence()) &&
+      !(xSymbol.attrs().test(semantics::Attr::BIND_C) &&
+          ySymbol.attrs().test(semantics::Attr::BIND_C))) {
     // PGI does not enforce this requirement; all other Fortran
     // compilers do with a hard error when violations are caught.
     return false;
@@ -518,10 +501,9 @@ static bool AreSameDerivedType(const semantics::DerivedTypeSpec &x,
     const auto xLookup{xSymbol.scope()->find(*xComponentName)};
     const auto yLookup{ySymbol.scope()->find(*yComponentName)};
     if (xLookup == xSymbol.scope()->end() ||
-        yLookup == ySymbol.scope()->end()) {
-      return false;
-    } else if (!AreSameComponent(*xLookup->second, *yLookup->second,
-                   ignoreSequence, sameModuleName, inProgress)) {
+        yLookup == ySymbol.scope()->end() ||
+        !AreSameComponent(
+            *xLookup->second, *yLookup->second, ignoreSequence, inProgress)) {
       return false;
     }
   }
@@ -593,15 +575,17 @@ static bool AreCompatibleTypes(const DynamicType &x, const DynamicType &y,
     const auto yLen{y.knownLength()};
     return x.kind() == y.kind() &&
         (ignoreLengths || !xLen || !yLen || *xLen == *yLen);
-  } else if (x.category() == TypeCategory::Derived) {
+  } else if (x.category() != TypeCategory::Derived) {
+    if (x.IsTypelessIntrinsicArgument()) {
+      return y.IsTypelessIntrinsicArgument();
+    } else {
+      return !y.IsTypelessIntrinsicArgument() && x.kind() == y.kind();
+    }
+  } else {
     const auto *xdt{GetDerivedTypeSpec(x)};
     const auto *ydt{GetDerivedTypeSpec(y)};
     return AreCompatibleDerivedTypes(
         xdt, ydt, x.IsPolymorphic(), ignoreTypeParameterValues, false);
-  } else if (x.IsTypelessIntrinsicArgument()) {
-    return y.IsTypelessIntrinsicArgument();
-  } else {
-    return !y.IsTypelessIntrinsicArgument() && x.kind() == y.kind();
   }
 }
 
@@ -676,7 +660,7 @@ std::optional<DynamicType> DynamicType::From(
   if (const auto *intrinsic{type.AsIntrinsic()}) {
     if (auto kind{ToInt64(intrinsic->kind())}) {
       TypeCategory category{intrinsic->category()};
-      if (common::IsValidKindOfIntrinsicType(category, *kind)) {
+      if (IsValidKindOfIntrinsicType(category, *kind)) {
         if (category == TypeCategory::Character) {
           const auto &charType{type.characterTypeSpec()};
           return DynamicType{static_cast<int>(*kind), charType.length()};

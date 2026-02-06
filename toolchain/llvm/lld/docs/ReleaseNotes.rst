@@ -1,6 +1,3 @@
-.. If you want to modify sections/contents permanently, you should modify both
-   ReleaseNotes.rst and ReleaseNotesTemplate.txt.
-
 ===========================
 lld |release| Release Notes
 ===========================
@@ -29,173 +26,84 @@ Non-comprehensive list of changes in this release
 ELF Improvements
 ----------------
 
-* Added ``--print-gc-sections=<file>`` to redirect garbage collection section
-  listing to a file, avoiding contamination of stdout with other linker output.
-  (`#159706 <https://github.com/llvm/llvm-project/pull/159706>`_)
-* Added ``VersionNode`` lexer state for better version script parsing.
-  This brings the lexer behavior closer to GNU ld.
-  (`#174530 <https://github.com/llvm/llvm-project/pull/174530>`_)
-* Unversioned undefined symbols now use version index 0, aligning with
-  GNU ld 2.46 behavior.
-  (`#168189 <https://github.com/llvm/llvm-project/pull/168189>`_)
-* ``.data.rel.ro.hot`` and ``.data.rel.ro.unlikely`` are now recognized as
-  RELRO sections, allowing profile-guided static data partitioning.
-  (`#148920 <https://github.com/llvm/llvm-project/pull/148920>`_)
-* DTLTO now supports archive members and bitcode members of thin archives.
-  (`#157043 <https://github.com/llvm/llvm-project/pull/157043>`_)
-* For DTLTO, ``--thinlto-remote-compiler-prepend-arg=<arg>`` has been added to
-  prepend an argument to the remote compiler's command line.
-  (`#162456 <https://github.com/llvm/llvm-project/pull/162456>`_)
-* Balanced Partitioning (BP) section ordering now skips input sections with
-  null data, and filters out section symbols.
-  (`#149265 <https://github.com/llvm/llvm-project/pull/149265>`_)
-  (`#151685 <https://github.com/llvm/llvm-project/pull/151685>`_)
-* For AArch64, fixed a crash when using ``--fix-cortex-a53-843419`` with
-  synthetic sections and improved handling when patched code is far from
-  the short jump.
-  (`#170495 <https://github.com/llvm/llvm-project/pull/170495>`_)
-* For AArch64, added support for the ``R_AARCH64_FUNCINIT64`` dynamic
-  relocation type for relocating word-sized data using the return value
-  of a function.
-  (`#156564 <https://github.com/llvm/llvm-project/pull/156564>`_)
-* For AArch64, added support for the ``R_AARCH64_PATCHINST`` relocation type
-  to support deactivation symbols.
-  (`#133534 <https://github.com/llvm/llvm-project/pull/133534>`_)
-* For AArch64, added support for reading AArch64 Build Attributes and
-  converting them into GNU Properties.
-  (`#147970 <https://github.com/llvm/llvm-project/pull/147970>`_)
-* For ARM, fixed incorrect veneer generation for wraparound branches at
-  the high end of the 32-bit address space branching to the low end.
-  (`#165263 <https://github.com/llvm/llvm-project/pull/165263>`_)
-* For LoongArch, ``-r`` now synthesizes ``R_LARCH_ALIGN`` at input section
-  start to preserve alignment information.
-  (`#153935 <https://github.com/llvm/llvm-project/pull/153935>`_)
-* For LoongArch, added relocation types for LA32R/LA32S.
-  (`#172618 <https://github.com/llvm/llvm-project/pull/172618>`_)
-  (`#176312 <https://github.com/llvm/llvm-project/pull/176312>`_)
-* For RISC-V, added infrastructure for handling vendor-specific relocations.
-  (`#159987 <https://github.com/llvm/llvm-project/pull/159987>`_)
-* For RISC-V, added support for statically resolved vendor-specific relocations.
-  (`#169273 <https://github.com/llvm/llvm-project/pull/169273>`_)
-* For RISC-V, ``-r`` now synthesizes ``R_RISCV_ALIGN`` at input section start
-  to preserve alignment information during two-stage linking.
-  (`#151639 <https://github.com/llvm/llvm-project/pull/151639>`_)
+* ``-z nosectionheader`` has been implemented to omit the section header table.
+  The operation is similar to ``llvm-objcopy --strip-sections``.
+  (`#101286 <https://github.com/llvm/llvm-project/pull/101286>`_)
+* ``--randomize-section-padding=<seed>`` is introduced to insert random padding
+  between input sections and at the start of each segment. This can be used to
+  control measurement bias in A/B experiments.
+  (`#117653 <https://github.com/llvm/llvm-project/pull/117653>`_)
+* The reproduce tarball created with ``--reproduce=`` now excludes directories
+  specified in the ``--dependency-file`` argument (used by Ninja). This
+  resolves an error where non-existent directories could cause issues when
+  invoking ``ld.lld @response.txt``.
+* ``--symbol-ordering-file=`` and call graph profile can now be used together.
+* When ``--call-graph-ordering-file=`` is specified, ``.llvm.call-graph-profile``
+  sections in relocatable files are no longer used.
+* ``--lto-basic-block-sections=labels`` is deprecated in favor of
+  ``--lto-basic-block-address-map``.
+  (`#110697 <https://github.com/llvm/llvm-project/pull/110697>`_)
+* In non-relocatable links, a ``.note.GNU-stack`` section with the
+  ``SHF_EXECINSTR`` flag is now rejected unless ``-z execstack`` is specified.
+  (`#124068 <https://github.com/llvm/llvm-project/pull/124068>`_)
+* In relocatable links, the ``sh_entsize`` member of a ``SHF_MERGE`` section
+  with relocations is now respected in the output.
+* Quoted names can now be used in output section phdr, memory region names,
+  ``OVERLAY``, the LHS of ``--defsym``, and ``INSERT AFTER``.
+* Section ``CLASS`` linker script syntax binds input sections to named classes,
+  which are referenced later one or more times. This provides access to the
+  automatic spilling mechanism of `--enable-non-contiguous-regions` without
+  globally changing the semantics of section matching. It also independently
+  increases the expressive power of linker scripts.
+  (`#95323 <https://github.com/llvm/llvm-project/pull/95323>`_)
+* ``INCLUDE`` cycle detection has been fixed. A linker script can now be
+  included twice.
+* The ``archivename:`` syntax when matching input sections is now supported.
+  (`#119293 <https://github.com/llvm/llvm-project/pull/119293>`_)
+* To support Arm v6-M, short thunks using B.w are no longer generated.
+  (`#118111 <https://github.com/llvm/llvm-project/pull/118111>`_)
+* For AArch64, BTI-aware long branch thunks can now be created to a destination
+  function without a BTI instruction.
+  (`#108989 <https://github.com/llvm/llvm-project/pull/108989>`_)
+  (`#116402 <https://github.com/llvm/llvm-project/pull/116402>`_)
+* Relocations related to GOT and TLSDESC for the AArch64 Pointer Authentication ABI
+  are now supported.
+* Supported relocation types for x86-64 target:
+  * ``R_X86_64_CODE_4_GOTPCRELX`` (`#109783 <https://github.com/llvm/llvm-project/pull/109783>`_) (`#116737 <https://github.com/llvm/llvm-project/pull/116737>`_)
+  * ``R_X86_64_CODE_4_GOTTPOFF`` (`#116634 <https://github.com/llvm/llvm-project/pull/116634>`_)
+  * ``R_X86_64_CODE_4_GOTPC32_TLSDESC`` (`#116909 <https://github.com/llvm/llvm-project/pull/116909>`_)
+  * ``R_X86_64_CODE_6_GOTTPOFF``  (`#117675 <https://github.com/llvm/llvm-project/pull/117675>`_)
+* Supported relocation types for LoongArch target: ``R_LARCH_TLS_{LD,GD,DESC}_PCREL20_S2``.
+  (`#100105 <https://github.com/llvm/llvm-project/pull/100105>`_)
+
+* The default Hexagon architecture version in ELF object files produced by
+  lld is changed to v68. This change is only effective when the version is
+  not provided in the command line by the user and cannot be inferred from
+  inputs.
 
 Breaking changes
 ----------------
 
+* Removed support for the (deprecated) `R_RISCV_RVC_LUI` relocation. This
+  was a binutils-internal relocation used during relaxation, and was not
+  emitted by compilers/assemblers.
+
 COFF Improvements
 -----------------
-
-* Added ``-prefetch-inputs`` to improve link times by asynchronously loading input files in RAM.
-  This will dampen the effect of input file I/O latency on link times.
-  However this flag can have an adverse effect when linking a large number of inputs files, or if all
-  inputs do not fit in RAM at once. For those cases, linking might be a bit slower since the inputs
-  will be streamed into RAM upfront, only to be evicted later by swapping.
-  (`#169224 <https://github.com/llvm/llvm-project/pull/169224>`_)
-* Added ``/sectionlayout:@<file>`` to specify custom output section ordering.
-  (`#152779 <https://github.com/llvm/llvm-project/pull/152779>`_)
-* Added ``/nodbgdirmerge`` to emit the debug directory section in ``.cvinfo``
-  instead of merging it to ``.rdata``.
-  (`#159235 <https://github.com/llvm/llvm-project/pull/159235>`_)
-* Added ``-fat-lto-objects`` to support FatLTO. Without ``-fat-lto-objects`` or
-  with ``-fat-lto-objects:no``, LLD will link LLVM FatLTO objects using the
-  relocatable object file.
-  (`#165529 <https://github.com/llvm/llvm-project/pull/165529>`_)
-* Added ``/linkreprofullpathrsp`` to print the full path to each object
-  passed to the link line to a file. This is used in particular when linking
-  Arm64X binaries.
-  (`#174971 <https://github.com/llvm/llvm-project/pull/174971>`_)
-* Added CET flags: ``/cetcompatstrict``, ``/cetipvalidationrelaxed``,
-  ``/cetdynamicapisinproc``, and ``/hotpatchcompatible``.
-  (`#150761 <https://github.com/llvm/llvm-project/pull/150761>`_)
-* Added support for ARM64X same-address thunks.
-  (`#151255 <https://github.com/llvm/llvm-project/pull/151255>`_)
-* Added more ``--time-trace`` tags for ThinLTO linking.
-  (`#156471 <https://github.com/llvm/llvm-project/pull/156471>`_)
-* ``/summary`` now works when ``/debug`` isn't provided.
-  (`#157476 <https://github.com/llvm/llvm-project/pull/157476>`_)
-* ``/summary`` now displays the size of all consumed inputs.
-  (`#157284 <https://github.com/llvm/llvm-project/pull/157284>`_)
-* For DTLTO, ``-thinlto-remote-compiler-prepend-arg:<arg>`` has been added to
-  prepend an argument to the remote compiler's command line.
-  (`#162456 <https://github.com/llvm/llvm-project/pull/162456>`_)
-* Loop and SLP vectorize options are now passed to the LTO backend.
-  (`#173041 <https://github.com/llvm/llvm-project/pull/173041>`_)
-* Deduplicate common chunks when linking COFF files.
-  (`#162553 <https://github.com/llvm/llvm-project/pull/162553>`_)
-* Discard ``.llvmbc`` and ``.llvmcmd`` sections.
-  (`#150897 <https://github.com/llvm/llvm-project/pull/150897>`_)
-* Prevent emitting relocations for discarded weak wrapped symbols.
-  (`#156214 <https://github.com/llvm/llvm-project/pull/156214>`_)
+* ``/includeglob`` has been implemented to match the behavior of ``--undefined-glob`` available for ELF.
+* ``/lldsavetemps`` allows saving select intermediate LTO compilation results (e.g. resolution, preopt, promote, internalize, import, opt, precodegen, prelink, combinedindex).
+* ``/machine:arm64ec`` support completed, enabling the linking of ARM64EC images.
+* COFF weak anti-dependency alias symbols are now supported.
 
 MinGW Improvements
 ------------------
-
-* Added ``--fat-lto-objects`` flag.
-  (`#174962 <https://github.com/llvm/llvm-project/pull/174962>`_)
-* Handle ``-m mipspe`` for MIPS.
-  (`#157742 <https://github.com/llvm/llvm-project/pull/157742>`_)
-* Fixed implicit DLL entry point for MinGW.
-  (`#171680 <https://github.com/llvm/llvm-project/pull/171680>`_)
+* ``--undefined-glob`` is now supported by translating into the ``/includeglob`` flag.
 
 MachO Improvements
 ------------------
 
-* Added ``--read-workers=<N>`` for multi-threaded preload of input files
-  into memory, significantly reducing link times for large projects.
-  (`#147134 <https://github.com/llvm/llvm-project/pull/147134>`_)
-* Added ``--separate-cstring-literal-sections`` to emit cstring literals
-  into sections defined by their section name.
-  (`#158720 <https://github.com/llvm/llvm-project/pull/158720>`_)
-* Added ``--tail-merge-strings`` to enable tail merging of cstrings.
-  (`#161262 <https://github.com/llvm/llvm-project/pull/161262>`_)
-* Added ``--lto-emit-llvm`` command line option.
-* Added ``--slop-scale`` flag for adjusting slop scale.
-  (`#164295 <https://github.com/llvm/llvm-project/pull/164295>`_)
-* Added support for section branch relocations, including the 1-byte form.
-  (`#169062 <https://github.com/llvm/llvm-project/pull/169062>`_)
-* Enabled Linker Optimization Hints pass for arm64_32.
-  (`#148964 <https://github.com/llvm/llvm-project/pull/148964>`_)
-* Read cstring order for non-deduped sections.
-  (`#161879 <https://github.com/llvm/llvm-project/pull/161879>`_)
-* Allow independent override of weak symbols aliased via ``.set``.
-  (`#167825 <https://github.com/llvm/llvm-project/pull/167825>`_)
-* Fixed segfault while processing malformed object file.
-  (`#167025 <https://github.com/llvm/llvm-project/pull/167025>`_)
-* Fixed infinite recursion when parsing corrupted export tries.
-  (`#152569 <https://github.com/llvm/llvm-project/pull/152569>`_)
-* Error out gracefully when offset is outside literal section.
-  (`#164660 <https://github.com/llvm/llvm-project/pull/164660>`_)
-* Process OSO prefix only textually in both input and output.
-  (`#152063 <https://github.com/llvm/llvm-project/pull/152063>`_)
-
 WebAssembly Improvements
 ------------------------
-
-* ``--stack-first`` is now the default. Use ``--no-stack-first`` for the
-  old behavior.
-  (`#166998 <https://github.com/llvm/llvm-project/pull/166998>`_)
-* ``--import-memory`` can now take a single name (imports from default module).
-  (`#160409 <https://github.com/llvm/llvm-project/pull/160409>`_)
-* ``-r`` now forces ``-Bstatic``.
-  (`#108264 <https://github.com/llvm/llvm-project/pull/108264>`_)
-* LTO now uses PIC reloc model with dynamic imports.
-  (`#165342 <https://github.com/llvm/llvm-project/pull/165342>`_)
-* Honor command line reloc model during LTO.
-  (`#164838 <https://github.com/llvm/llvm-project/pull/164838>`_)
-* Fixed visibility of ``__stack_pointer`` global.
-  (`#161284 <https://github.com/llvm/llvm-project/pull/161284>`_)
-* Fixed check for exporting mutable globals.
-  (`#160787 <https://github.com/llvm/llvm-project/pull/160787>`_)
-* Fixed check for implicitly exported mutable globals.
-  (`#160966 <https://github.com/llvm/llvm-project/pull/160966>`_)
-* Don't export deps for unused stub symbols.
-  (`#173422 <https://github.com/llvm/llvm-project/pull/173422>`_)
-* Fixed SEGFAULT when importing wrapped symbol.
-  (`#169656 <https://github.com/llvm/llvm-project/pull/169656>`_)
-* Error on unexpected relocation types in ``-pie``/``-shared`` data sections.
-  (`#162117 <https://github.com/llvm/llvm-project/pull/162117>`_)
 
 Fixes
 #####

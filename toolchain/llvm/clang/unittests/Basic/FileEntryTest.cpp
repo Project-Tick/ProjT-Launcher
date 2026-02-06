@@ -40,7 +40,8 @@ public:
   FileEntryRef addFile(StringRef Name) {
     FEs.emplace_back(new FileEntry());
     return FileEntryRef(
-        *Files.insert({Name, FileEntryRef::MapValue(*FEs.back(), DR)}).first);
+        *Files.insert({Name, FileEntryRef::MapValue(*FEs.back().get(), DR)})
+             .first);
   }
   FileEntryRef addFileAlias(StringRef Name, FileEntryRef Base) {
     return FileEntryRef(

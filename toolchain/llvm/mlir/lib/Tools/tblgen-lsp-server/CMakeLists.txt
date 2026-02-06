@@ -2,7 +2,6 @@ set(LLVM_LINK_COMPONENTS
   Demangle
   Support
   TableGen
-  SupportLSP
 )
 
 llvm_add_library(TableGenLspServerLib

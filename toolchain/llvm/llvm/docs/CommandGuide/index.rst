@@ -27,7 +27,6 @@ Basic Commands
    llvm-dis
    llvm-dwarfdump
    llvm-dwarfutil
-   llvm-ir2vec
    llvm-lib
    llvm-libtool-darwin
    llvm-link
@@ -88,11 +87,9 @@ Developer Tools
    llvm-exegesis
    llvm-ifs
    llvm-locstats
-   llvm-test-mustache-spec
    llvm-pdbutil
    llvm-profgen
    llvm-tli-checker
-   llvm-offload-binary
 
 Remarks Tools
 ~~~~~~~~~~~~~~

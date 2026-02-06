@@ -8,8 +8,6 @@
 // RUN:   | FileCheck -check-prefix=NOEMU %s
 // RUN: %clang -### --target=i686-pc-cygwin %s 2>&1 \
 // RUN:   | FileCheck -check-prefix=EMU %s
-// RUN: %clang -### --target=x86_64-pc-cygwin %s 2>&1 \
-// RUN:   | FileCheck -check-prefix=EMU %s
 // RUN: %clang -### --target=i686-pc-openbsd %s 2>&1 \
 // RUN:   | FileCheck -check-prefix=EMU %s
 
@@ -19,8 +17,6 @@
 // RUN: | FileCheck -check-prefix=EMU %s
 // RUN: %clang -### -target i686-pc-cygwin %s -fno-emulated-tls -femulated-tls 2>&1 \
 // RUN: | FileCheck -check-prefix=EMU %s
-// RUN: %clang -### -target x86_64-pc-cygwin %s -fno-emulated-tls -femulated-tls 2>&1 \
-// RUN: | FileCheck -check-prefix=EMU %s
 // RUN: %clang -### -target i686-pc-openbsd %s -fno-emulated-tls -femulated-tls 2>&1 \
 // RUN: | FileCheck -check-prefix=EMU %s
 
@@ -29,8 +25,6 @@
 // RUN: %clang -### -target arm-linux-gnu %s -femulated-tls -fno-emulated-tls 2>&1 \
 // RUN: | FileCheck -check-prefix=NOEMU %s
 // RUN: %clang -### -target i686-pc-cygwin %s -femulated-tls -fno-emulated-tls 2>&1 \
-// RUN: | FileCheck -check-prefix=NOEMU %s
-// RUN: %clang -### -target x86_64-pc-cygwin %s -femulated-tls -fno-emulated-tls 2>&1 \
 // RUN: | FileCheck -check-prefix=NOEMU %s
 // RUN: %clang -### -target i686-pc-openbsd %s -femulated-tls -fno-emulated-tls 2>&1 \
 // RUN: | FileCheck -check-prefix=NOEMU %s

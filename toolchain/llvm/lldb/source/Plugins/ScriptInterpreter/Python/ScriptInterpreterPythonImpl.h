@@ -81,6 +81,17 @@ public:
   CreateStructuredDataFromScriptObject(ScriptObject obj) override;
 
   StructuredData::GenericSP
+  CreateScriptedBreakpointResolver(const char *class_name,
+                                   const StructuredDataImpl &args_data,
+                                   lldb::BreakpointSP &bkpt_sp) override;
+  bool ScriptedBreakpointResolverSearchCallback(
+      StructuredData::GenericSP implementor_sp,
+      SymbolContext *sym_ctx) override;
+
+  lldb::SearchDepth ScriptedBreakpointResolverSearchDepth(
+      StructuredData::GenericSP implementor_sp) override;
+
+  StructuredData::GenericSP
   CreateFrameRecognizer(const char *class_name) override;
 
   lldb::ValueObjectListSP
@@ -94,15 +105,7 @@ public:
 
   lldb::ScriptedStopHookInterfaceSP CreateScriptedStopHookInterface() override;
 
-  lldb::ScriptedBreakpointInterfaceSP
-  CreateScriptedBreakpointInterface() override;
-
   lldb::ScriptedThreadInterfaceSP CreateScriptedThreadInterface() override;
-
-  lldb::ScriptedFrameInterfaceSP CreateScriptedFrameInterface() override;
-
-  lldb::ScriptedFrameProviderInterfaceSP
-  CreateScriptedFrameProviderInterface() override;
 
   lldb::ScriptedThreadPlanInterfaceSP
   CreateScriptedThreadPlanInterface() override;
@@ -125,9 +128,8 @@ public:
   GetChildAtIndex(const StructuredData::ObjectSP &implementor,
                   uint32_t idx) override;
 
-  llvm::Expected<uint32_t>
-  GetIndexOfChildWithName(const StructuredData::ObjectSP &implementor,
-                          const char *child_name) override;
+  int GetIndexOfChildWithName(const StructuredData::ObjectSP &implementor,
+                              const char *child_name) override;
 
   bool UpdateSynthProviderInstance(
       const StructuredData::ObjectSP &implementor) override;
@@ -243,8 +245,7 @@ public:
                            const LoadScriptOptions &options,
                            lldb_private::Status &error,
                            StructuredData::ObjectSP *module_sp = nullptr,
-                           FileSpec extra_search_dir = {},
-                           lldb::TargetSP loaded_into_target_sp = {}) override;
+                           FileSpec extra_search_dir = {}) override;
 
   bool IsReservedWord(const char *word) override;
 
@@ -480,7 +481,7 @@ public:
         StreamString run_string;
         run_string.Printf("run_python_interpreter (%s)",
                           m_python->GetDictionaryName());
-        python::RunSimpleString(run_string.GetData());
+        PyRun_SimpleString(run_string.GetData());
       }
     }
     SetIsDone(true);

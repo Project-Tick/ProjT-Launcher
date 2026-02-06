@@ -12,7 +12,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "RISCVBaseInfo.h"
-#include "RISCVInstrInfo.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
@@ -33,25 +32,6 @@ namespace RISCVInsnOpcode {
 #define GET_RISCVOpcodesList_IMPL
 #include "RISCVGenSearchableTables.inc"
 } // namespace RISCVInsnOpcode
-
-namespace RISCVVInversePseudosTable {
-using namespace RISCV;
-#define GET_RISCVVInversePseudosTable_IMPL
-#include "RISCVGenSearchableTables.inc"
-} // namespace RISCVVInversePseudosTable
-
-namespace RISCV {
-#define GET_RISCVVSSEGTable_IMPL
-#define GET_RISCVVLSEGTable_IMPL
-#define GET_RISCVVLXSEGTable_IMPL
-#define GET_RISCVVSXSEGTable_IMPL
-#define GET_RISCVVLETable_IMPL
-#define GET_RISCVVSETable_IMPL
-#define GET_RISCVVLXTable_IMPL
-#define GET_RISCVVSXTable_IMPL
-#define GET_RISCVNDSVLNTable_IMPL
-#include "RISCVGenSearchableTables.inc"
-} // namespace RISCV
 
 namespace RISCVABI {
 ABI computeTargetABI(const Triple &TT, const FeatureBitset &FeatureBits,
@@ -89,7 +69,7 @@ ABI computeTargetABI(const Triple &TT, const FeatureBitset &FeatureBits,
   if ((TargetABI == RISCVABI::ABI::ABI_ILP32E ||
        (TargetABI == ABI_Unknown && IsRVE && !IsRV64)) &&
       FeatureBits[RISCV::FeatureStdExtD])
-    reportFatalUsageError("ILP32E cannot be used with the D ISA extension");
+    report_fatal_error("ILP32E cannot be used with the D ISA extension");
 
   if (TargetABI != ABI_Unknown)
     return TargetABI;
@@ -97,7 +77,7 @@ ABI computeTargetABI(const Triple &TT, const FeatureBitset &FeatureBits,
   // If no explicit ABI is given, try to compute the default ABI.
   auto ISAInfo = RISCVFeatures::parseFeatureBits(IsRV64, FeatureBits);
   if (!ISAInfo)
-    reportFatalUsageError(ISAInfo.takeError());
+    report_fatal_error(ISAInfo.takeError());
   return getTargetABI((*ISAInfo)->computeDefaultABI());
 }
 
@@ -129,12 +109,12 @@ namespace RISCVFeatures {
 
 void validate(const Triple &TT, const FeatureBitset &FeatureBits) {
   if (TT.isArch64Bit() && !FeatureBits[RISCV::Feature64Bit])
-    reportFatalUsageError("RV64 target requires an RV64 CPU");
+    report_fatal_error("RV64 target requires an RV64 CPU");
   if (!TT.isArch64Bit() && !FeatureBits[RISCV::Feature32Bit])
-    reportFatalUsageError("RV32 target requires an RV32 CPU");
+    report_fatal_error("RV32 target requires an RV32 CPU");
   if (FeatureBits[RISCV::Feature32Bit] &&
       FeatureBits[RISCV::Feature64Bit])
-    reportFatalUsageError("RV32 and RV64 can't be combined");
+    report_fatal_error("RV32 and RV64 can't be combined");
 }
 
 llvm::Expected<std::unique_ptr<RISCVISAInfo>>
@@ -242,16 +222,14 @@ float RISCVLoadFPImm::getFPImm(unsigned Imm) {
   return bit_cast<float>(I);
 }
 
-void RISCVZC::printRegList(unsigned RlistEncode, raw_ostream &OS) {
-  assert(RlistEncode >= RLISTENCODE::RA &&
-         RlistEncode <= RLISTENCODE::RA_S0_S11 && "Invalid Rlist");
+void RISCVZC::printRlist(unsigned SlistEncode, raw_ostream &OS) {
   OS << "{ra";
-  if (RlistEncode > RISCVZC::RA) {
+  if (SlistEncode > 4) {
     OS << ", s0";
-    if (RlistEncode == RISCVZC::RA_S0_S11)
+    if (SlistEncode == 15)
       OS << "-s11";
-    else if (RlistEncode > RISCVZC::RA_S0 && RlistEncode <= RISCVZC::RA_S0_S11)
-      OS << "-s" << (RlistEncode - RISCVZC::RA_S0);
+    else if (SlistEncode > 5 && SlistEncode <= 14)
+      OS << "-s" << (SlistEncode - 5);
   }
   OS << "}";
 }

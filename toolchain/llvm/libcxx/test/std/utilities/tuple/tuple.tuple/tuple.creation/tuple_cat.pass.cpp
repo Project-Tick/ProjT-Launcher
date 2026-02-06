@@ -31,7 +31,7 @@ template<typename ...Ts>
 void forward_as_tuple(Ts...) = delete;
 }
 
-// https://llvm.org/PR41689
+// https://github.com/llvm/llvm-project/issues/41034
 struct Unconstrained {
   int data;
   template <typename Arg>
@@ -312,7 +312,7 @@ int main(int, char**)
         assert(std::get<0>(t).i == 1);
         assert(std::get<0>(t2).i == 1);
     }
-    // See https://llvm.org/PR41689
+    // See https://github.com/llvm/llvm-project/issues/41034
     {
       test_tuple_cat_with_unconstrained_constructor();
 #if TEST_STD_VER >= 14

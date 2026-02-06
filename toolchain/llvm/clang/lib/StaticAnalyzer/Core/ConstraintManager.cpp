@@ -59,7 +59,8 @@ ConstraintManager::assumeDualImpl(ProgramStateRef &State,
   if (LLVM_UNLIKELY(AssumeStack.contains(RawSt)))
     return {State, State};
   AssumeStack.push(RawSt);
-  llvm::scope_exit AssumeStackBuilder([this]() { AssumeStack.pop(); });
+  auto AssumeStackBuilder =
+      llvm::make_scope_exit([this]() { AssumeStack.pop(); });
 
   ProgramStateRef StTrue = Assume(true);
 

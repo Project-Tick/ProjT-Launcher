@@ -444,6 +444,7 @@ bool HexagonRegisterInfo::useFPForScavengingIndex(const MachineFunction &MF)
 }
 
 const TargetRegisterClass *
-HexagonRegisterInfo::getPointerRegClass(unsigned Kind) const {
+HexagonRegisterInfo::getPointerRegClass(const MachineFunction &MF,
+                                        unsigned Kind) const {
   return &Hexagon::IntRegsRegClass;
 }

@@ -7,11 +7,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "Hexagon.h"
-#include "clang/Driver/CommonArgs.h"
+#include "CommonArgs.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
+#include "clang/Driver/DriverDiagnostic.h"
 #include "clang/Driver/InputInfo.h"
-#include "clang/Options/Options.h"
+#include "clang/Driver/Options.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"

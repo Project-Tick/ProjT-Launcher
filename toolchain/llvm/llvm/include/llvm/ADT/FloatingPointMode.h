@@ -17,7 +17,6 @@
 
 #include "llvm/ADT/BitmaskEnum.h"
 #include "llvm/ADT/StringSwitch.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace llvm {
@@ -153,11 +152,6 @@ struct DenormalMode {
            Input == DenormalModeKind::PositiveZero;
   }
 
-  /// Return true if input denormals may be implicitly treated as 0.
-  constexpr bool inputsMayBeZero() const {
-    return inputsAreZero() || Input == DenormalMode::Dynamic;
-  }
-
   /// Return true if output denormals should be flushed to 0.
   constexpr bool outputsAreZero() const {
     return Output == DenormalModeKind::PreserveSign ||
@@ -196,7 +190,7 @@ inline DenormalMode::DenormalModeKind
 parseDenormalFPAttributeComponent(StringRef Str) {
   // Assume ieee on unspecified attribute.
   return StringSwitch<DenormalMode::DenormalModeKind>(Str)
-      .Cases({"", "ieee"}, DenormalMode::IEEE)
+      .Cases("", "ieee", DenormalMode::IEEE)
       .Case("preserve-sign", DenormalMode::PreserveSign)
       .Case("positive-zero", DenormalMode::PositiveZero)
       .Case("dynamic", DenormalMode::Dynamic)
@@ -273,17 +267,17 @@ enum FPClassTest : unsigned {
 LLVM_DECLARE_ENUM_AS_BITMASK(FPClassTest, /* LargestValue */ fcPosInf);
 
 /// Return the test mask which returns true if the value's sign bit is flipped.
-LLVM_ABI FPClassTest fneg(FPClassTest Mask);
+FPClassTest fneg(FPClassTest Mask);
 
 /// Return the test mask which returns true after fabs is applied to the value.
-LLVM_ABI FPClassTest inverse_fabs(FPClassTest Mask);
+FPClassTest inverse_fabs(FPClassTest Mask);
 
 /// Return the test mask which returns true if the value could have the same set
 /// of classes, but with a different sign.
-LLVM_ABI FPClassTest unknown_sign(FPClassTest Mask);
+FPClassTest unknown_sign(FPClassTest Mask);
 
 /// Write a human readable form of \p Mask to \p OS
-LLVM_ABI raw_ostream &operator<<(raw_ostream &OS, FPClassTest Mask);
+raw_ostream &operator<<(raw_ostream &OS, FPClassTest Mask);
 
 } // namespace llvm
 

@@ -7,10 +7,14 @@
 //===----------------------------------------------------------------------===//
 
 #include "src/math/ilogbf16.h"
-#include "src/__support/math/ilogbf16.h"
+#include "src/__support/FPUtil/ManipulationFunctions.h"
+#include "src/__support/common.h"
+#include "src/__support/macros/config.h"
 
 namespace LIBC_NAMESPACE_DECL {
 
-LLVM_LIBC_FUNCTION(int, ilogbf16, (float16 x)) { return math::ilogbf16(x); }
+LLVM_LIBC_FUNCTION(int, ilogbf16, (float16 x)) {
+  return fputil::intlogb<int>(x);
+}
 
 } // namespace LIBC_NAMESPACE_DECL

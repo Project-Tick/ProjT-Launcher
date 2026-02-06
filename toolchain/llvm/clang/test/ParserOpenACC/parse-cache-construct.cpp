@@ -1,43 +1,42 @@
 // RUN: %clang_cc1 %s -verify -fopenacc
 
 namespace NS {
-  static char* NSArray; // expected-note {{'NS::NSArray' declared here}}
-  static int NSInt;     // expected-note 2 {{'NS::NSInt' declared here}}
+  static char* NSArray;// expected-note{{declared here}}
+  static int NSInt;// expected-note 2{{declared here}}
 }
 char *getArrayPtr();
 template<typename T, int I>
 void func() {
   char *ArrayPtr = getArrayPtr();
-#pragma acc loop
   for (int i = 0; i < 10; ++i) {
-    // expected-warning@+1{{left operand of comma operator has no effect}}
-    #pragma acc cache(ArrayPtr[T::value + I:I + 3], T::array[(T::value, 2): 2])
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
+    #pragma acc cache(ArrayPtr[T::value + I:I + 5], T::array[(i + T::value, 5): 6])
   }
-#pragma acc loop
   for (int i = 0; i < 10; ++i) {
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(NS::NSArray[NS::NSInt])
   }
 
-#pragma acc loop
   for (int i = 0; i < 10; ++i) {
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(NS::NSArray[NS::NSInt : NS::NSInt])
   }
 
-#pragma acc loop
   for (int i = 0; i < 10; ++i) {
-    // expected-error@+1{{use of undeclared identifier 'NSArray'}}
+    // expected-error@+2{{use of undeclared identifier 'NSArray'; did you mean 'NS::NSArray'}}
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(NSArray[NS::NSInt : NS::NSInt])
   }
 
-#pragma acc loop
   for (int i = 0; i < 10; ++i) {
-    // expected-error@+1{{use of undeclared identifier 'NSInt'}}
+    // expected-error@+2{{use of undeclared identifier 'NSInt'; did you mean 'NS::NSInt'}}
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(NS::NSArray[NSInt : NS::NSInt])
   }
 
-#pragma acc loop
   for (int i = 0; i < 10; ++i) {
-    // expected-error@+1{{use of undeclared identifier 'NSInt'}}
+    // expected-error@+2{{use of undeclared identifier 'NSInt'; did you mean 'NS::NSInt'}}
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(NS::NSArray[NS::NSInt : NSInt])
   }
 }
@@ -59,57 +58,57 @@ struct HasMembersArray {
 void use() {
 
   Members s;
-#pragma acc loop
   for (int i = 0; i < 10; ++i) {
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(s.array[s.value])
   }
   HasMembersArray Arrs;
-#pragma acc loop
   for (int i = 0; i < 10; ++i) {
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(Arrs.MemArr[3].array[4])
   }
-#pragma acc loop
   for (int i = 0; i < 10; ++i) {
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(Arrs.MemArr[3].array[1:4])
   }
-#pragma acc loop
   for (int i = 0; i < 10; ++i) {
-    // expected-error@+1{{OpenACC sub-array is not allowed here}}
+    // expected-error@+2{{OpenACC sub-array is not allowed here}}
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(Arrs.MemArr[2:1].array[1:4])
   }
-#pragma acc parallel loop
   for (int i = 0; i < 10; ++i) {
-    // expected-error@+1{{OpenACC sub-array is not allowed here}}
+    // expected-error@+2{{OpenACC sub-array is not allowed here}}
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(Arrs.MemArr[2:1].array[4])
   }
-#pragma acc parallel loop
   for (int i = 0; i < 10; ++i) {
-    // expected-error@+2{{expected ']'}}
-    // expected-note@+1{{to match this '['}}
+    // expected-error@+3{{expected ']'}}
+    // expected-note@+2{{to match this '['}}
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(Arrs.MemArr[3:4:].array[4])
   }
-#pragma acc parallel loop
   for (int i = 0; i < 10; ++i) {
-    // expected-error@+1{{OpenACC sub-array is not allowed here}}
+    // expected-error@+2{{OpenACC sub-array is not allowed here}}
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(Arrs.MemArr[:].array[4])
   }
-#pragma acc parallel loop
   for (int i = 0; i < 10; ++i) {
-    // expected-error@+1{{expected unqualified-id}}
+    // expected-error@+2{{expected unqualified-id}}
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(Arrs.MemArr[::].array[4])
   }
-#pragma acc parallel loop
   for (int i = 0; i < 10; ++i) {
-    // expected-error@+3{{expected expression}}
-    // expected-error@+2{{expected ']'}}
-    // expected-note@+1{{to match this '['}}
+    // expected-error@+4{{expected expression}}
+    // expected-error@+3{{expected ']'}}
+    // expected-note@+2{{to match this '['}}
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(Arrs.MemArr[: :].array[4])
   }
-#pragma acc parallel loop
   for (int i = 0; i < 10; ++i) {
-    // expected-error@+1{{OpenACC sub-array is not allowed here}}
+    // expected-error@+2{{OpenACC sub-array is not allowed here}}
+    // expected-warning@+1{{OpenACC construct 'cache' not yet implemented, pragma ignored}}
     #pragma acc cache(Arrs.MemArr[3:].array[4])
   }
-  func<S, 5>(); // expected-note{{in instantiation of function template specialization}}
+  func<S, 5>();
 }
 

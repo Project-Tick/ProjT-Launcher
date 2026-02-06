@@ -12,7 +12,6 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
 #include "llvm/DebugInfo/GSYM/ExtractRanges.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 
 namespace llvm {
@@ -43,14 +42,8 @@ public:
   ///
   /// \param LDCS Flag to indicate whether we should load the call site
   /// information from DWARF `DW_TAG_call_site` entries
-  ///
-  /// \param MachO Flag to indicate if the object file is mach-o (Apple's
-  /// executable format). Apple has some compile unit attributes that look like
-  /// split DWARF, but they aren't and they can cause warnins to be emitted
-  /// about missing DWO files.
-  DwarfTransformer(DWARFContext &D, GsymCreator &G, bool LDCS = false,
-                   bool MachO = false)
-      : DICtx(D), Gsym(G), LoadDwarfCallSites(LDCS), IsMachO(MachO) {}
+  DwarfTransformer(DWARFContext &D, GsymCreator &G, bool LDCS = false)
+      : DICtx(D), Gsym(G), LoadDwarfCallSites(LDCS) {}
 
   /// Extract the DWARF from the supplied object file and convert it into the
   /// Gsym format in the GsymCreator object that is passed in. Returns an
@@ -64,9 +57,9 @@ public:
   ///
   /// \returns An error indicating any fatal issues that happen when parsing
   /// the DWARF, or Error::success() if all goes well.
-  LLVM_ABI llvm::Error convert(uint32_t NumThreads, OutputAggregator &OS);
+  llvm::Error convert(uint32_t NumThreads, OutputAggregator &OS);
 
-  LLVM_ABI llvm::Error verify(StringRef GsymPath, OutputAggregator &OS);
+  llvm::Error verify(StringRef GsymPath, OutputAggregator &OS);
 
 private:
 
@@ -103,7 +96,6 @@ private:
   DWARFContext &DICtx;
   GsymCreator &Gsym;
   bool LoadDwarfCallSites;
-  bool IsMachO;
 
   friend class DwarfTransformerTest;
 };

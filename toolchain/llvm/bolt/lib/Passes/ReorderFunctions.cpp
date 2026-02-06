@@ -296,7 +296,7 @@ Error ReorderFunctions::runOnFunctions(BinaryContext &BC) {
   case RT_NONE:
     break;
   case RT_EXEC_COUNT: {
-    BinaryFunctionListType SortedFunctions(BFs.size());
+    std::vector<BinaryFunction *> SortedFunctions(BFs.size());
     llvm::transform(llvm::make_second_range(BFs), SortedFunctions.begin(),
                     [](BinaryFunction &BF) { return &BF; });
     llvm::stable_sort(SortedFunctions,
@@ -471,7 +471,7 @@ Error ReorderFunctions::runOnFunctions(BinaryContext &BC) {
   }
 
   if (FuncsFile || LinkSectionsFile) {
-    BinaryFunctionListType SortedFunctions(BFs.size());
+    std::vector<BinaryFunction *> SortedFunctions(BFs.size());
     llvm::transform(llvm::make_second_range(BFs), SortedFunctions.begin(),
                     [](BinaryFunction &BF) { return &BF; });
 

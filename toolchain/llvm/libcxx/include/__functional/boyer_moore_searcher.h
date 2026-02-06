@@ -17,10 +17,12 @@
 #include <__config>
 #include <__functional/hash.h>
 #include <__functional/operations.h>
+#include <__iterator/distance.h>
 #include <__iterator/iterator_traits.h>
 #include <__memory/shared_ptr.h>
 #include <__type_traits/make_unsigned.h>
 #include <__utility/pair.h>
+#include <__vector/vector.h>
 #include <array>
 #include <limits>
 #include <unordered_map>
@@ -86,7 +88,7 @@ public:
 template <class _RandomAccessIterator1,
           class _Hash            = hash<typename iterator_traits<_RandomAccessIterator1>::value_type>,
           class _BinaryPredicate = equal_to<>>
-class boyer_moore_searcher {
+class _LIBCPP_TEMPLATE_VIS boyer_moore_searcher {
 private:
   using difference_type = typename std::iterator_traits<_RandomAccessIterator1>::difference_type;
   using value_type      = typename std::iterator_traits<_RandomAccessIterator1>::value_type;
@@ -123,8 +125,8 @@ public:
   template <class _RandomAccessIterator2>
   _LIBCPP_HIDE_FROM_ABI pair<_RandomAccessIterator2, _RandomAccessIterator2>
   operator()(_RandomAccessIterator2 __first, _RandomAccessIterator2 __last) const {
-    static_assert(is_same_v<__remove_cvref_t<typename iterator_traits<_RandomAccessIterator1>::value_type>,
-                            __remove_cvref_t<typename iterator_traits<_RandomAccessIterator2>::value_type>>,
+    static_assert(__is_same_uncvref<typename iterator_traits<_RandomAccessIterator1>::value_type,
+                                    typename iterator_traits<_RandomAccessIterator2>::value_type>::value,
                   "Corpus and Pattern iterators must point to the same type");
     if (__first == __last)
       return std::make_pair(__last, __last);
@@ -194,7 +196,7 @@ private:
     if (__count == 0)
       return;
 
-    auto __scratch = std::make_unique<difference_type[]>(__count);
+    vector<difference_type> __scratch(__count);
 
     __compute_bm_prefix(__first, __last, __pred, __scratch);
     for (size_t __i = 0; __i <= __count; ++__i)
@@ -217,7 +219,7 @@ _LIBCPP_CTAD_SUPPORTED_FOR_TYPE(boyer_moore_searcher);
 template <class _RandomAccessIterator1,
           class _Hash            = hash<typename iterator_traits<_RandomAccessIterator1>::value_type>,
           class _BinaryPredicate = equal_to<>>
-class boyer_moore_horspool_searcher {
+class _LIBCPP_TEMPLATE_VIS boyer_moore_horspool_searcher {
 private:
   using difference_type = typename iterator_traits<_RandomAccessIterator1>::difference_type;
   using value_type      = typename iterator_traits<_RandomAccessIterator1>::value_type;
@@ -254,8 +256,8 @@ public:
   template <class _RandomAccessIterator2>
   _LIBCPP_HIDE_FROM_ABI pair<_RandomAccessIterator2, _RandomAccessIterator2>
   operator()(_RandomAccessIterator2 __first, _RandomAccessIterator2 __last) const {
-    static_assert(is_same_v<__remove_cvref_t<typename std::iterator_traits<_RandomAccessIterator1>::value_type>,
-                            __remove_cvref_t<typename std::iterator_traits<_RandomAccessIterator2>::value_type>>,
+    static_assert(__is_same_uncvref<typename std::iterator_traits<_RandomAccessIterator1>::value_type,
+                                    typename std::iterator_traits<_RandomAccessIterator2>::value_type>::value,
                   "Corpus and Pattern iterators must point to the same type");
     if (__first == __last)
       return std::make_pair(__last, __last);

@@ -20,15 +20,11 @@ public:
     Update();
   }
 
-  llvm::Expected<size_t> GetIndexOfChildWithName(ConstString name) override {
-    auto optional_idx = formatters::ExtractIndexFromString(name.GetCString());
-    if (!optional_idx) {
-      return llvm::createStringError("Type has no child named '%s'",
-                                     name.AsCString());
-    }
-    return *optional_idx;
+  size_t GetIndexOfChildWithName(ConstString name) override {
+    return formatters::ExtractIndexFromString(name.GetCString());
   }
 
+  bool MightHaveChildren() override { return true; }
   lldb::ChildCacheState Update() override;
   llvm::Expected<uint32_t> CalculateNumChildren() override {
     return m_elements.size();

@@ -27,10 +27,6 @@ class raw_ostream;
 class TargetMachine;
 
   class HexagonAsmPrinter : public AsmPrinter {
-  public:
-    static char ID;
-
-  private:
     const HexagonSubtarget *Subtarget = nullptr;
 
     void emitAttributes();
@@ -38,7 +34,7 @@ class TargetMachine;
   public:
     explicit HexagonAsmPrinter(TargetMachine &TM,
                                std::unique_ptr<MCStreamer> Streamer)
-        : AsmPrinter(TM, std::move(Streamer), ID) {}
+      : AsmPrinter(TM, std::move(Streamer)) {}
 
     bool runOnMachineFunction(MachineFunction &Fn) override {
       Subtarget = &Fn.getSubtarget<HexagonSubtarget>();

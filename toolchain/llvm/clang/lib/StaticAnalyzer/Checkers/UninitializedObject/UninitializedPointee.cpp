@@ -15,6 +15,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "UninitializedObject.h"
+#include "clang/StaticAnalyzer/Core/BugReporter/BugType.h"
+#include "clang/StaticAnalyzer/Core/Checker.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/DynamicType.h"
 #include <optional>
 
 using namespace clang;
@@ -217,7 +221,7 @@ bool FindUninitializedFields::isDereferencableUninit(
 static std::optional<DereferenceInfo> dereference(ProgramStateRef State,
                                                   const FieldRegion *FR) {
 
-  llvm::SmallPtrSet<const TypedValueRegion *, 5> VisitedRegions;
+  llvm::SmallSet<const TypedValueRegion *, 5> VisitedRegions;
 
   SVal V = State->getSVal(FR);
   assert(V.getAsRegion() && "V must have an underlying region!");

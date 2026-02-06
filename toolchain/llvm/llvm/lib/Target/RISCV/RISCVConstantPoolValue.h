@@ -37,7 +37,7 @@ private:
   RISCVCPKind Kind;
 
 public:
-  ~RISCVConstantPoolValue() override = default;
+  ~RISCVConstantPoolValue() = default;
 
   static RISCVConstantPoolValue *Create(const GlobalValue *GV);
   static RISCVConstantPoolValue *Create(LLVMContext &C, StringRef S);

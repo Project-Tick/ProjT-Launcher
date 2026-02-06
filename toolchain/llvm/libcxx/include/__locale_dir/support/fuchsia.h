@@ -49,10 +49,10 @@ struct __locale_guard {
 #define _LIBCPP_ALL_MASK LC_ALL_MASK
 #define _LIBCPP_LC_ALL LC_ALL
 
-using __locale_t _LIBCPP_NODEBUG = locale_t;
+using __locale_t = locale_t;
 
 #if defined(_LIBCPP_BUILDING_LIBRARY)
-using __lconv_t _LIBCPP_NODEBUG = std::lconv;
+using __lconv_t = std::lconv;
 
 inline _LIBCPP_HIDE_FROM_ABI __locale_t __newlocale(int __category_mask, const char* __name, __locale_t __loc) {
   return ::newlocale(__category_mask, __name, __loc);
@@ -141,6 +141,13 @@ _LIBCPP_HIDE_FROM_ABI _LIBCPP_VARIADIC_ATTRIBUTE_FORMAT(__printf__, 3, 4) int __
   __locale_guard __current(__loc);
   return ::asprintf(__s, __format, std::forward<_Args>(__args)...); // non-standard
 }
+template <class... _Args>
+_LIBCPP_HIDE_FROM_ABI _LIBCPP_VARIADIC_ATTRIBUTE_FORMAT(__scanf__, 3, 4) int __sscanf(
+    const char* __s, __locale_t __loc, const char* __format, _Args&&... __args) {
+  __locale_guard __current(__loc);
+  return std::sscanf(__s, __format, std::forward<_Args>(__args)...);
+}
+
 _LIBCPP_DIAGNOSTIC_POP
 #undef _LIBCPP_VARIADIC_ATTRIBUTE_FORMAT
 

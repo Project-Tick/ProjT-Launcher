@@ -14,6 +14,7 @@ body:             |
     liveins: $w0
 
     ; x slt c => x sle c - 1
+    ;
     ; log_2(4096) == 12, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -25,7 +26,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(sle), %reg(s32), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: slt_to_sle_s32
     ; SELECT: liveins: $w0
     ; SELECT-NEXT: {{  $}}
@@ -50,6 +50,7 @@ body:             |
     liveins: $x0
 
     ; x slt c => x sle c - 1
+    ;
     ; log_2(4096) == 12, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -61,7 +62,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(sle), %reg(s64), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: slt_to_sle_s64
     ; SELECT: liveins: $x0
     ; SELECT-NEXT: {{  $}}
@@ -86,6 +86,7 @@ body:             |
     liveins: $w0
 
     ; x sge c => x sgt c - 1
+    ;
     ; log_2(4096) == 12, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -97,7 +98,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(sgt), %reg(s32), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: sge_to_sgt_s32
     ; SELECT: liveins: $w0
     ; SELECT-NEXT: {{  $}}
@@ -122,6 +122,7 @@ body:             |
     liveins: $x0
 
     ; x sge c => x sgt c - 1
+    ;
     ; log_2(4096) == 12, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -133,7 +134,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(sgt), %reg(s64), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: sge_to_sgt_s64
     ; SELECT: liveins: $x0
     ; SELECT-NEXT: {{  $}}
@@ -158,6 +158,7 @@ body:             |
     liveins: $w0
 
     ; x ult c => x ule c - 1
+    ;
     ; log_2(4096) == 12, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -169,7 +170,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(ule), %reg(s32), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: ult_to_ule_s32
     ; SELECT: liveins: $w0
     ; SELECT-NEXT: {{  $}}
@@ -194,6 +194,7 @@ body:             |
     liveins: $x0
 
     ; x ult c => x ule c - 1
+    ;
     ; log_2(4096) == 12, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -205,7 +206,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(ule), %reg(s64), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: ult_to_ule_s64
     ; SELECT: liveins: $x0
     ; SELECT-NEXT: {{  $}}
@@ -230,6 +230,7 @@ body:             |
     liveins: $w0
 
     ; x uge c => x ugt c - 1
+    ;
     ; log_2(4096) == 12, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -241,7 +242,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(ugt), %reg(s32), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: uge_to_ugt_s32
     ; SELECT: liveins: $w0
     ; SELECT-NEXT: {{  $}}
@@ -266,6 +266,7 @@ body:             |
     liveins: $x0
 
     ; x uge c => x ugt c - 1
+    ;
     ; log_2(4096) == 12, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -277,7 +278,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(ugt), %reg(s64), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: uge_to_ugt_s64
     ; SELECT: liveins: $x0
     ; SELECT-NEXT: {{  $}}
@@ -302,8 +302,10 @@ body:             |
     liveins: $w0
 
     ; x sle c => x slt c + 1
+    ;
     ; log_2(8192) == 13, so we can represent this as a 12 bit value with a
     ; left shift.
+    ;
     ; (We can't use 4095 here, because that's a legal arithmetic immediate.)
 
     ; LOWER-LABEL: name: sle_to_slt_s32
@@ -314,7 +316,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(slt), %reg(s32), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: sle_to_slt_s32
     ; SELECT: liveins: $w0
     ; SELECT-NEXT: {{  $}}
@@ -339,6 +340,7 @@ body:             |
     liveins: $x0
 
     ; x sle c => x slt c + 1
+    ;
     ; log_2(8192) == 13, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -350,7 +352,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(slt), %reg(s64), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: sle_to_slt_s64
     ; SELECT: liveins: $x0
     ; SELECT-NEXT: {{  $}}
@@ -375,6 +376,7 @@ body:             |
     liveins: $w0
 
     ; x sgt c => s sge c + 1
+    ;
     ; log_2(8192) == 13, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -386,7 +388,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(sge), %reg(s32), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: sgt_to_sge_s32
     ; SELECT: liveins: $w0
     ; SELECT-NEXT: {{  $}}
@@ -411,6 +412,7 @@ body:             |
     liveins: $x0
 
     ; x sgt c => s sge c + 1
+    ;
     ; log_2(8192) == 13, so we can represent this as a 12 bit value with a
     ; left shift.
 
@@ -422,7 +424,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(sge), %reg(s64), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: sgt_to_sge_s64
     ; SELECT: liveins: $x0
     ; SELECT-NEXT: {{  $}}
@@ -447,8 +448,10 @@ body:             |
     liveins: $w0
 
     ; The cmp should not change.
+    ;
     ; If we subtract 1 from the constant, it will wrap around, and so it's not
     ; true that
+    ;
     ; x slt c => x sle c - 1
     ; x sge c => x sgt c - 1
 
@@ -460,7 +463,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(slt), %reg(s32), %cst
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: no_opt_int32_min
     ; SELECT: liveins: $w0
     ; SELECT-NEXT: {{  $}}
@@ -486,8 +488,10 @@ body:             |
     liveins: $x0
 
     ; The cmp should not change.
+    ;
     ; If we subtract 1 from the constant, it will wrap around, and so it's not
     ; true that
+    ;
     ; x slt c => x sle c - 1
     ; x sge c => x sgt c - 1
 
@@ -499,7 +503,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(slt), %reg(s64), %cst
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: no_opt_int64_min
     ; SELECT: liveins: $x0
     ; SELECT-NEXT: {{  $}}
@@ -525,8 +528,10 @@ body:             |
     liveins: $w0
 
     ; The cmp should not change.
+    ;
     ; If we add 1 to the constant, it will wrap around, and so it's not true
     ; that
+    ;
     ; x slt c => x sle c - 1
     ; x sge c => x sgt c - 1
 
@@ -538,7 +543,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(sle), %reg(s32), %cst
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: no_opt_int32_max
     ; SELECT: liveins: $w0
     ; SELECT-NEXT: {{  $}}
@@ -564,8 +568,10 @@ body:             |
     liveins: $x0
 
     ; The cmp should not change.
+    ;
     ; If we add 1 to the constant, it will wrap around, and so it's not true
     ; that
+    ;
     ; x slt c => x sle c - 1
     ; x sge c => x sgt c - 1
 
@@ -578,7 +584,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(sle), %reg(s64), %cst
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: no_opt_int64_max
     ; SELECT: liveins: $x0
     ; SELECT-NEXT: {{  $}}
@@ -604,8 +609,10 @@ body:             |
     liveins: $x0
 
     ; The cmp should not change during the lowering pass.
+    ;
     ; This is an unsigned comparison, so when the constant is 0, the following
     ; does not hold:
+    ;
     ; x slt c => x sle c - 1
     ; x sge c => x sgt c - 1
 
@@ -617,7 +624,6 @@ body:             |
     ; LOWER-NEXT: %cmp:_(s32) = G_ICMP intpred(ult), %reg(s64), %cst
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: no_opt_zero
     ; SELECT: liveins: $x0
     ; SELECT-NEXT: {{  $}}
@@ -654,14 +660,13 @@ body:             |
     ; LOWER-NEXT: %select:_(s32) = G_SELECT %cmp(s32), %reg0, %reg1
     ; LOWER-NEXT: $w0 = COPY %select(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: cmp_and_select
     ; SELECT: liveins: $w0, $w1
     ; SELECT-NEXT: {{  $}}
     ; SELECT-NEXT: %reg0:gpr32common = COPY $w0
     ; SELECT-NEXT: %reg1:gpr32 = COPY $w1
     ; SELECT-NEXT: [[SUBSWri:%[0-9]+]]:gpr32 = SUBSWri %reg0, 0, 0, implicit-def $nzcv
-    ; SELECT-NEXT: %select:gpr32 = CSELWr %reg0, %reg1, 4, implicit $nzcv
+    ; SELECT-NEXT: %select:gpr32 = CSELWr %reg0, %reg1, 11, implicit $nzcv
     ; SELECT-NEXT: $w0 = COPY %select
     ; SELECT-NEXT: RET_ReallyLR implicit $w0
     %reg0:_(s32) = COPY $w0
@@ -693,13 +698,12 @@ body:             |
     ; LOWER-NEXT: %cmp:gpr(s32) = G_ICMP intpred(sge), %and(s64), [[C]]
     ; LOWER-NEXT: $w0 = COPY %cmp(s32)
     ; LOWER-NEXT: RET_ReallyLR implicit $w0
-    ;
     ; SELECT-LABEL: name: andsxri
     ; SELECT: liveins: $x0
     ; SELECT-NEXT: {{  $}}
     ; SELECT-NEXT: %reg0:gpr64 = COPY $x0
     ; SELECT-NEXT: [[ANDSXri:%[0-9]+]]:gpr64 = ANDSXri %reg0, 8000, implicit-def $nzcv
-    ; SELECT-NEXT: %cmp:gpr32 = CSINCWr $wzr, $wzr, 4, implicit $nzcv
+    ; SELECT-NEXT: %cmp:gpr32 = CSINCWr $wzr, $wzr, 11, implicit $nzcv
     ; SELECT-NEXT: $w0 = COPY %cmp
     ; SELECT-NEXT: RET_ReallyLR implicit $w0
     %reg0:gpr(s64) = COPY $x0

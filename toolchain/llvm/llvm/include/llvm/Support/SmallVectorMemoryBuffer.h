@@ -15,7 +15,6 @@
 #define LLVM_SUPPORT_SMALLVECTORMEMORYBUFFER_H
 
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -27,7 +26,7 @@ namespace llvm {
 /// instances. This is useful for MCJIT and Orc, where object files are streamed
 /// into SmallVectors, then inspected using ObjectFile (which takes a
 /// MemoryBuffer).
-class LLVM_ABI SmallVectorMemoryBuffer : public MemoryBuffer {
+class SmallVectorMemoryBuffer : public MemoryBuffer {
 public:
   /// Construct a SmallVectorMemoryBuffer from the given SmallVector r-value.
   SmallVectorMemoryBuffer(SmallVectorImpl<char> &&SV,

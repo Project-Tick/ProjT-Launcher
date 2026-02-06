@@ -41,7 +41,6 @@ origin/release/12.x) are deduplicated in output.
 
 import argparse
 import collections
-import itertools
 import logging
 import re
 import subprocess
@@ -212,12 +211,7 @@ Revert = NamedTuple(
 
 
 def _find_common_parent_commit(git_dir: str, ref_a: str, ref_b: str) -> str:
-    """Finds the closest common parent commit between `ref_a` and `ref_b`.
-
-    Returns:
-        A SHA. Note that `ref_a` will be returned if `ref_a` is a parent of
-        `ref_b`, and vice-versa.
-    """
+    """Finds the closest common parent commit between `ref_a` and `ref_b`."""
     return subprocess.check_output(
         ["git", "-C", git_dir, "merge-base", ref_a, ref_b],
         encoding="utf-8",
@@ -247,11 +241,7 @@ def _load_pr_commit_mappings(
 # enough for the 99% case of reverts: rarely should someone land a cleanish
 # revert of a >6 month old change...
 def find_reverts(
-    git_dir: str,
-    across_ref: str,
-    root: str,
-    max_pr_lookback: int = 20000,
-    stop_at_sha: Optional[str] = None,
+    git_dir: str, across_ref: str, root: str, max_pr_lookback: int = 20000
 ) -> List[Revert]:
     """Finds reverts across `across_ref` in `git_dir`, starting from `root`.
 
@@ -265,9 +255,6 @@ def find_reverts(
             SHAs. These heuristics require that commit history from `root` to
             `some_parent_of_root` is loaded in memory. `max_pr_lookback` is how
             many commits behind `across_ref` should be loaded in memory.
-        stop_at_sha: If non-None and `stop_at_sha` is encountered while walking
-            to `across_ref` from `root`, stop checking for reverts. This allows for
-            faster incremental checking between `find_reverts` calls.
     """
     across_sha = _rev_parse(git_dir, across_ref)
     root_sha = _rev_parse(git_dir, root)
@@ -289,16 +276,10 @@ def find_reverts(
         root_sha,
     )
 
-    commit_log_stream: Iterable[_LogEntry] = _log_stream(git_dir, root_sha, across_sha)
-    if stop_at_sha:
-        commit_log_stream = itertools.takewhile(
-            lambda x: x.sha != stop_at_sha, commit_log_stream
-        )
-
     all_reverts = []
     # Lazily load PR <-> commit mappings, since it can be expensive.
     pr_commit_mappings = None
-    for sha, commit_message in commit_log_stream:
+    for sha, commit_message in _log_stream(git_dir, root_sha, across_sha):
         reverts, pr_reverts = _try_parse_reverts_from_commit_message(
             commit_message,
         )
@@ -360,31 +341,16 @@ def find_reverts(
                 )
                 continue
 
-            if object_type != "commit":
-                logging.error(
-                    "%s claims to revert the %s %s, which isn't a commit",
-                    sha,
-                    object_type,
-                    reverted_sha,
-                )
+            if object_type == "commit":
+                all_reverts.append(Revert(sha, reverted_sha))
                 continue
 
-            # Rarely, reverts will cite SHAs on other branches (e.g., revert
-            # commit says it reverts a commit with SHA ${X}, but ${X} is not a
-            # parent of the revert). This can happen if e.g., the revert has
-            # been mirrored to another branch. Treat them the same as
-            # reverts of non-commits.
-            if _find_common_parent_commit(git_dir, sha, reverted_sha) != reverted_sha:
-                logging.error(
-                    "%s claims to revert %s, which is a commit that is not "
-                    "a parent of the revert",
-                    sha,
-                    reverted_sha,
-                )
-                continue
-
-            all_reverts.append(Revert(sha, reverted_sha))
-
+            logging.error(
+                "%s claims to revert %s -- which isn't a commit -- %s",
+                sha,
+                object_type,
+                reverted_sha,
+            )
 
     # Since `all_reverts` contains reverts in log order (e.g., newer comes before
     # older), we need to reverse this to keep with our guarantee of older =

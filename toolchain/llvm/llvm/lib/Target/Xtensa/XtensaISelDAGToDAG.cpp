@@ -12,7 +12,6 @@
 
 #include "MCTargetDesc/XtensaMCTargetDesc.h"
 #include "Xtensa.h"
-#include "XtensaSelectionDAGInfo.h"
 #include "XtensaTargetMachine.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
@@ -60,9 +59,10 @@ public:
     }
 
     if (TM.isPositionIndependent()) {
-      CurDAG->getContext()->diagnose(DiagnosticInfoUnsupported(
-          CurDAG->getMachineFunction().getFunction(),
-          "PIC relocations are not supported", Addr.getDebugLoc()));
+      DiagnosticInfoUnsupported Diag(CurDAG->getMachineFunction().getFunction(),
+                                     "PIC relocations are not supported ",
+                                     Addr.getDebugLoc());
+      CurDAG->getContext()->diagnose(Diag);
     }
 
     if ((Addr.getOpcode() == ISD::TargetExternalSymbol ||

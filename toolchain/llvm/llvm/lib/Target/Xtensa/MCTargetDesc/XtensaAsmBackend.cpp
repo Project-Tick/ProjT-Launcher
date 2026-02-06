@@ -1,4 +1,6 @@
-//===----------------------------------------------------------------------===//
+//===-- XtensaMCAsmBackend.cpp - Xtensa assembler backend -----------------===//
+//
+//                     The LLVM Compiler Infrastructure
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -12,32 +14,37 @@
 #include "llvm/MC/MCAssembler.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCELFObjectWriter.h"
+#include "llvm/MC/MCFixupKindInfo.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCObjectWriter.h"
 #include "llvm/MC/MCSubtargetInfo.h"
-#include "llvm/MC/MCValue.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 
 namespace llvm {
 class MCObjectTargetWriter;
-}
-namespace {
-class XtensaAsmBackend : public MCAsmBackend {
+class XtensaMCAsmBackend : public MCAsmBackend {
   uint8_t OSABI;
   bool IsLittleEndian;
 
 public:
-  XtensaAsmBackend(uint8_t osABI, bool isLE)
+  XtensaMCAsmBackend(uint8_t osABI, bool isLE)
       : MCAsmBackend(llvm::endianness::little), OSABI(osABI),
         IsLittleEndian(isLE) {}
 
-  MCFixupKindInfo getFixupKindInfo(MCFixupKind Kind) const override;
-  std::optional<bool> evaluateFixup(const MCFragment &, MCFixup &, MCValue &,
-                                    uint64_t &) override;
-  void applyFixup(const MCFragment &, const MCFixup &, const MCValue &Target,
-                  uint8_t *Data, uint64_t Value, bool IsResolved) override;
+  unsigned getNumFixupKinds() const override {
+    return Xtensa::NumTargetFixupKinds;
+  }
+  const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override;
+  void applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
+                  const MCValue &Target, MutableArrayRef<char> Data,
+                  uint64_t Value, bool IsResolved,
+                  const MCSubtargetInfo *STI) const override;
+  bool mayNeedRelaxation(const MCInst &Inst,
+                         const MCSubtargetInfo &STI) const override;
+  void relaxInstruction(MCInst &Inst,
+                        const MCSubtargetInfo &STI) const override;
   bool writeNopData(raw_ostream &OS, uint64_t Count,
                     const MCSubtargetInfo *STI) const override;
 
@@ -45,23 +52,26 @@ public:
     return createXtensaObjectWriter(OSABI, IsLittleEndian);
   }
 };
-} // namespace
+} // namespace llvm
 
-MCFixupKindInfo XtensaAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
+const MCFixupKindInfo &
+XtensaMCAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
   const static MCFixupKindInfo Infos[Xtensa::NumTargetFixupKinds] = {
       // name                     offset bits  flags
-      {"fixup_xtensa_branch_6", 0, 16, 0},
-      {"fixup_xtensa_branch_8", 16, 8, 0},
-      {"fixup_xtensa_branch_12", 12, 12, 0},
-      {"fixup_xtensa_jump_18", 6, 18, 0},
-      {"fixup_xtensa_call_18", 6, 18, 0},
-      {"fixup_xtensa_l32r_16", 8, 16, 0},
-      {"fixup_xtensa_loop_8", 16, 8, 0},
-  };
+      {"fixup_xtensa_branch_6", 0, 16, MCFixupKindInfo::FKF_IsPCRel},
+      {"fixup_xtensa_branch_8", 16, 8, MCFixupKindInfo::FKF_IsPCRel},
+      {"fixup_xtensa_branch_12", 12, 12, MCFixupKindInfo::FKF_IsPCRel},
+      {"fixup_xtensa_jump_18", 6, 18, MCFixupKindInfo::FKF_IsPCRel},
+      {"fixup_xtensa_call_18", 6, 18,
+       MCFixupKindInfo::FKF_IsPCRel |
+           MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},
+      {"fixup_xtensa_l32r_16", 8, 16,
+       MCFixupKindInfo::FKF_IsPCRel |
+           MCFixupKindInfo::FKF_IsAlignedDownTo32Bits}};
 
   if (Kind < FirstTargetFixupKind)
     return MCAsmBackend::getFixupKindInfo(Kind);
-  assert(unsigned(Kind - FirstTargetFixupKind) < Xtensa::NumTargetFixupKinds &&
+  assert(unsigned(Kind - FirstTargetFixupKind) < getNumFixupKinds() &&
          "Invalid kind!");
   return Infos[Kind - FirstTargetFixupKind];
 }
@@ -109,11 +119,6 @@ static uint64_t adjustFixupValue(const MCFixup &Fixup, uint64_t Value,
     if (Value & 0x3)
       Ctx.reportError(Fixup.getLoc(), "fixup value must be 4-byte aligned");
     return (Value & 0xffffc) >> 2;
-  case Xtensa::fixup_xtensa_loop_8:
-    Value -= 4;
-    if (!isUInt<8>(Value))
-      Ctx.reportError(Fixup.getLoc(), "loop fixup value out of range");
-    return (Value & 0xff);
   case Xtensa::fixup_xtensa_l32r_16:
     unsigned Offset = Fixup.getOffset();
     if (Offset & 0x3)
@@ -130,32 +135,19 @@ static unsigned getSize(unsigned Kind) {
   switch (Kind) {
   default:
     return 3;
-  case FK_Data_4:
+  case MCFixupKind::FK_Data_4:
     return 4;
   case Xtensa::fixup_xtensa_branch_6:
     return 2;
   }
 }
 
-std::optional<bool> XtensaAsmBackend::evaluateFixup(const MCFragment &F,
-                                                    MCFixup &Fixup, MCValue &,
-                                                    uint64_t &Value) {
-  // For a few PC-relative fixups, offsets need to be aligned down. We
-  // compensate here because the default handler's `Value` decrement doesn't
-  // account for this alignment.
-  switch (Fixup.getKind()) {
-  case Xtensa::fixup_xtensa_call_18:
-  case Xtensa::fixup_xtensa_l32r_16:
-    Value = (Asm->getFragmentOffset(F) + Fixup.getOffset()) % 4;
-  }
-  return {};
-}
-
-void XtensaAsmBackend::applyFixup(const MCFragment &F, const MCFixup &Fixup,
-                                  const MCValue &Target, uint8_t *Data,
-                                  uint64_t Value, bool IsResolved) {
-  maybeAddReloc(F, Fixup, Target, Value, IsResolved);
-  MCContext &Ctx = getContext();
+void XtensaMCAsmBackend::applyFixup(const MCAssembler &Asm,
+                                    const MCFixup &Fixup, const MCValue &Target,
+                                    MutableArrayRef<char> Data, uint64_t Value,
+                                    bool IsResolved,
+                                    const MCSubtargetInfo *STI) const {
+  MCContext &Ctx = Asm.getContext();
   MCFixupKindInfo Info = getFixupKindInfo(Fixup.getKind());
 
   Value = adjustFixupValue(Fixup, Value, Ctx);
@@ -166,15 +158,24 @@ void XtensaAsmBackend::applyFixup(const MCFragment &F, const MCFixup &Fixup,
   if (!Value)
     return; // Doesn't change encoding.
 
+  unsigned Offset = Fixup.getOffset();
   unsigned FullSize = getSize(Fixup.getKind());
 
   for (unsigned i = 0; i != FullSize; ++i) {
-    Data[i] |= uint8_t((Value >> (i * 8)) & 0xff);
+    Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
   }
 }
 
-bool XtensaAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
-                                    const MCSubtargetInfo *STI) const {
+bool XtensaMCAsmBackend::mayNeedRelaxation(const MCInst &Inst,
+                                           const MCSubtargetInfo &STI) const {
+  return false;
+}
+
+void XtensaMCAsmBackend::relaxInstruction(MCInst &Inst,
+                                          const MCSubtargetInfo &STI) const {}
+
+bool XtensaMCAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
+                                      const MCSubtargetInfo *STI) const {
   uint64_t NumNops24b = Count / 3;
 
   for (uint64_t i = 0; i != NumNops24b; ++i) {
@@ -207,11 +208,11 @@ bool XtensaAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
   return true;
 }
 
-MCAsmBackend *llvm::createXtensaAsmBackend(const Target &T,
-                                           const MCSubtargetInfo &STI,
-                                           const MCRegisterInfo &MRI,
-                                           const MCTargetOptions &Options) {
+MCAsmBackend *llvm::createXtensaMCAsmBackend(const Target &T,
+                                             const MCSubtargetInfo &STI,
+                                             const MCRegisterInfo &MRI,
+                                             const MCTargetOptions &Options) {
   uint8_t OSABI =
       MCELFObjectTargetWriter::getOSABI(STI.getTargetTriple().getOS());
-  return new XtensaAsmBackend(OSABI, true);
+  return new llvm::XtensaMCAsmBackend(OSABI, true);
 }

@@ -24,5 +24,6 @@
 ! in certain cases. But it is not clear that it is worth checking for each
 ! platform individually.
 
-! CHECK-NOT: "-lflang_rt.runtime"
+! CHECK-NOT: "-lFortranRuntime"
+! CHECK-NOT: "-lFortranDecimal"
 ! CHECK-NOT: "-lgcc"

@@ -8,7 +8,7 @@
 ; then it will try to scalarize the argument to an s32, which may drop elements.
 define <vscale x 1 x half> @test_ret_nxv1f16() {
 entry:
-  ret <vscale x 1 x half> poison
+  ret <vscale x 1 x half> undef
 }
 
 ; CHECK: LLVM ERROR: unable to translate instruction: ret (in function: test_ret_nxv1f16)

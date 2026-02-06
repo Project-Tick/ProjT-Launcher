@@ -76,8 +76,10 @@ static void findReturnsToZap(Function &F,
                if (!isa<CallBase>(U))
                  return true;
                if (U->getType()->isStructTy()) {
-                 return none_of(Solver.getStructLatticeValueFor(U),
-                                SCCPSolver::isOverdefined);
+                 return all_of(Solver.getStructLatticeValueFor(U),
+                               [](const ValueLatticeElement &LV) {
+                                 return !SCCPSolver::isOverdefined(LV);
+                               });
                }
 
                // We don't consider assume-like intrinsics to be actual address
@@ -169,13 +171,6 @@ static bool runIPSCCP(
   for (Function &F : M) {
     if (F.isDeclaration())
       continue;
-    // Skip the dead functions marked by FunctionSpecializer, avoiding removing
-    // blocks in dead functions. Set MadeChanges if there is any dead function
-    // that will be removed later.
-    if (IsFuncSpecEnabled && Specializer.isDeadFunction(&F)) {
-      MadeChanges = true;
-      continue;
-    }
 
     SmallVector<BasicBlock *, 512> BlocksToErase;
 
@@ -196,10 +191,8 @@ static bool runIPSCCP(
           if (ME == MemoryEffects::unknown())
             return AL;
 
-          ModRefInfo ArgMemMR = ME.getModRef(IRMemLocation::ArgMem);
-          ME |= MemoryEffects(IRMemLocation::ErrnoMem, ArgMemMR);
-          ME |= MemoryEffects(IRMemLocation::Other, ArgMemMR);
-
+          ME |= MemoryEffects(IRMemLocation::Other,
+                              ME.getModRef(IRMemLocation::ArgMem));
           return AL.addFnAttribute(
               F.getContext(),
               Attribute::getWithMemoryEffects(F.getContext(), ME));
@@ -257,7 +250,19 @@ static bool runIPSCCP(
       if (!DeadBB->hasAddressTaken())
         DTU.deleteBB(DeadBB);
 
-    Solver.removeSSACopies(F);
+    for (BasicBlock &BB : F) {
+      for (Instruction &Inst : llvm::make_early_inc_range(BB)) {
+        if (Solver.getPredicateInfoFor(&Inst)) {
+          if (auto *II = dyn_cast<IntrinsicInst>(&Inst)) {
+            if (II->getIntrinsicID() == Intrinsic::ssa_copy) {
+              Value *Op = II->getOperand(0);
+              Inst.replaceAllUsesWith(Op);
+              Inst.eraseFromParent();
+            }
+          }
+        }
+      }
+    }
   }
 
   // If we inferred constant or undef return values for a function, we replaced
@@ -311,10 +316,11 @@ static bool runIPSCCP(
     for (Use &U : F->uses()) {
       CallBase *CB = dyn_cast<CallBase>(U.getUser());
       if (!CB) {
-        assert(isa<Constant>(U.getUser()) &&
-               all_of(U.getUser()->users(), [](const User *UserUser) {
-                 return cast<IntrinsicInst>(UserUser)->isAssumeLikeIntrinsic();
-               }));
+        assert(isa<BlockAddress>(U.getUser()) ||
+               (isa<Constant>(U.getUser()) &&
+                all_of(U.getUser()->users(), [](const User *UserUser) {
+                  return cast<IntrinsicInst>(UserUser)->isAssumeLikeIntrinsic();
+                })));
         continue;
       }
 
@@ -333,15 +339,12 @@ static bool runIPSCCP(
     LLVM_DEBUG(dbgs() << "Found that GV '" << GV->getName()
                       << "' is constant!\n");
     for (User *U : make_early_inc_range(GV->users())) {
-      // We can remove LoadInst here. The LoadInsts in dead functions marked by
-      // FuncSpec are not simplified to constants, thus poison them.
+      // We can remove LoadInst here, because we already replaced its users
+      // with a constant.
       assert((isa<StoreInst>(U) || isa<LoadInst>(U)) &&
              "Only Store|Load Instruction can be user of GlobalVariable at "
              "reaching here.");
-      Instruction *I = cast<Instruction>(U);
-      if (isa<LoadInst>(I))
-        I->replaceAllUsesWith(PoisonValue::get(I->getType()));
-      I->eraseFromParent();
+      cast<Instruction>(U)->eraseFromParent();
     }
 
     // Try to create a debug constant expression for the global variable

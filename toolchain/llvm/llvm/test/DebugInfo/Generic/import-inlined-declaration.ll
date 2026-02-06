@@ -1,5 +1,6 @@
 ; RUN: %llc_dwarf -O0 -filetype=obj < %s | llvm-dwarfdump - | FileCheck --implicit-check-not "{{DW_TAG|NULL}}" %s
 
+; RUN: %llc_dwarf --try-experimental-debuginfo-iterators -O0 -filetype=obj < %s | llvm-dwarfdump - | FileCheck --implicit-check-not "{{DW_TAG|NULL}}" %s
 
 ; namespace ns {
 ; inline __attribute__((always_inline))
@@ -30,7 +31,7 @@
 ; CHECK:       DW_TAG_variable
 ; CHECK:       NULL
 ; CHECK:     DW_TAG_imported_declaration
-; CHECK:       DW_AT_import ([[FOO]] "_ZN2ns3fooEv")
+; CHECK:       DW_AT_import ([[FOO]])
 ; CHECK:     NULL
 ; CHECK:   NULL
 

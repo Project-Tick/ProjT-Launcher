@@ -64,10 +64,3 @@ target_link_libraries(ClangTidyTests
   LLVMTestingAnnotations
   LLVMTestingSupport
   )
-
-if(CLANG_TIDY_ENABLE_QUERY_BASED_CUSTOM_CHECKS)
-  target_link_libraries(ClangTidyTests
-    PRIVATE
-    clangTidyCustomModule
-    )
-endif()

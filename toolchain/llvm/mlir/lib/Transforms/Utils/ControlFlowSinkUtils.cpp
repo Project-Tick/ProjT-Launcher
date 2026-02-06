@@ -21,10 +21,7 @@
 #include "mlir/Transforms/ControlFlowSinkUtils.h"
 #include "mlir/IR/Dominance.h"
 #include "mlir/IR/Matchers.h"
-#include "mlir/IR/Operation.h"
-#include "mlir/IR/OperationSupport.h"
 #include "mlir/Interfaces/ControlFlowInterfaces.h"
-#include "llvm/Support/DebugLog.h"
 #include <vector>
 
 #define DEBUG_TYPE "cf-sink"
@@ -87,15 +84,13 @@ bool Sinker::allUsersDominatedBy(Operation *op, Region *region) {
 
 void Sinker::tryToSinkPredecessors(Operation *user, Region *region,
                                    std::vector<Operation *> &stack) {
-  LDBG() << "Contained op: "
-         << OpWithFlags(user, OpPrintingFlags().skipRegions());
+  LLVM_DEBUG(user->print(llvm::dbgs() << "\nContained op:\n"));
   for (Value value : user->getOperands()) {
     Operation *op = value.getDefiningOp();
     // Ignore block arguments and ops that are already inside the region.
     if (!op || op->getParentRegion() == region)
       continue;
-    LDBG() << "Try to sink:\n"
-           << OpWithFlags(op, OpPrintingFlags().skipRegions());
+    LLVM_DEBUG(op->print(llvm::dbgs() << "\nTry to sink:\n"));
 
     // If the op's users are all in the region and it can be moved, then do so.
     if (allUsersDominatedBy(op, region) && shouldMoveIntoRegion(op, region)) {

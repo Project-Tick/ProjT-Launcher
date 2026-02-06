@@ -17,6 +17,8 @@ entry:
   ret i1 %allow
 }
 
+declare i1 @llvm.allow.runtime.check(metadata) nounwind
+
 define i1 @test_ubsan() local_unnamed_addr {
 ; CHECK-LABEL: test_ubsan:
 ; CHECK:       # %bb.0: # %entry
@@ -27,3 +29,4 @@ entry:
   ret i1 %allow
 }
 
+declare i1 @llvm.allow.ubsan.check(i8) nounwind

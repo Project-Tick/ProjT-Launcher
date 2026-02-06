@@ -9,12 +9,13 @@
 #include "mlir/Analysis/DataLayoutAnalysis.h"
 #include "mlir/Conversion/ConvertToLLVM/ToLLVMInterface.h"
 #include "mlir/Conversion/ConvertToLLVM/ToLLVMPass.h"
+#include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/PatternMatch.h"
+#include "mlir/Pass/Pass.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "llvm/Support/DebugLog.h"
 #include <memory>
 
 #define DEBUG_TYPE "convert-to-llvm"
@@ -32,8 +33,7 @@ namespace {
 class ConvertToLLVMPassInterface {
 public:
   ConvertToLLVMPassInterface(MLIRContext *context,
-                             ArrayRef<std::string> filterDialects,
-                             bool allowPatternRollback = true);
+                             ArrayRef<std::string> filterDialects);
   virtual ~ConvertToLLVMPassInterface() = default;
 
   /// Get the dependent dialects used by `convert-to-llvm`.
@@ -62,9 +62,6 @@ protected:
   MLIRContext *context;
   /// List of dialects names to use as filters.
   ArrayRef<std::string> filterDialects;
-  /// An experimental flag to disallow pattern rollback. This is more efficient
-  /// but not supported by all lowering patterns.
-  bool allowPatternRollback;
 };
 
 /// This DialectExtension can be attached to the context, which will invoke the
@@ -80,13 +77,13 @@ public:
 
   void apply(MLIRContext *context,
              MutableArrayRef<Dialect *> dialects) const final {
-    LDBG() << "Convert to LLVM extension load";
+    LLVM_DEBUG(llvm::dbgs() << "Convert to LLVM extension load\n");
     for (Dialect *dialect : dialects) {
       auto *iface = dyn_cast<ConvertToLLVMPatternInterface>(dialect);
       if (!iface)
         continue;
-      LDBG() << "Convert to LLVM found dialect interface for "
-             << dialect->getNamespace();
+      LLVM_DEBUG(llvm::dbgs() << "Convert to LLVM found dialect interface for "
+                              << dialect->getNamespace() << "\n");
       iface->loadDependentDialects(context);
     }
   }
@@ -133,9 +130,7 @@ struct StaticConvertToLLVM : public ConvertToLLVMPassInterface {
 
   /// Apply the conversion driver.
   LogicalResult transform(Operation *op, AnalysisManager manager) const final {
-    ConversionConfig config;
-    config.allowPatternRollback = allowPatternRollback;
-    if (failed(applyPartialConversion(op, *target, *patterns, config)))
+    if (failed(applyPartialConversion(op, *target, *patterns)))
       return failure();
     return success();
   }
@@ -174,9 +169,7 @@ struct DynamicConvertToLLVM : public ConvertToLLVMPassInterface {
     target.addLegalDialect<LLVM::LLVMDialect>();
     // Get the data layout analysis.
     const auto &dlAnalysis = manager.getAnalysis<DataLayoutAnalysis>();
-    const DataLayout &dl = dlAnalysis.getAtOrAbove(op);
-    LowerToLLVMOptions options(context, dl);
-    LLVMTypeConverter typeConverter(context, options, &dlAnalysis);
+    LLVMTypeConverter typeConverter(context, &dlAnalysis);
 
     // Configure the conversion with dialect level interfaces.
     for (ConvertToLLVMPatternInterface *iface : *interfaces)
@@ -188,9 +181,7 @@ struct DynamicConvertToLLVM : public ConvertToLLVMPassInterface {
                                               patterns);
 
     // Apply the conversion.
-    ConversionConfig config;
-    config.allowPatternRollback = allowPatternRollback;
-    if (failed(applyPartialConversion(op, target, std::move(patterns), config)))
+    if (failed(applyPartialConversion(op, target, std::move(patterns))))
       return failure();
     return success();
   }
@@ -217,11 +208,9 @@ public:
     std::shared_ptr<ConvertToLLVMPassInterface> impl;
     // Choose the pass implementation.
     if (useDynamic)
-      impl = std::make_shared<DynamicConvertToLLVM>(context, filterDialects,
-                                                    allowPatternRollback);
+      impl = std::make_shared<DynamicConvertToLLVM>(context, filterDialects);
     else
-      impl = std::make_shared<StaticConvertToLLVM>(context, filterDialects,
-                                                   allowPatternRollback);
+      impl = std::make_shared<StaticConvertToLLVM>(context, filterDialects);
     if (failed(impl->initialize()))
       return failure();
     this->impl = impl;
@@ -241,10 +230,8 @@ public:
 //===----------------------------------------------------------------------===//
 
 ConvertToLLVMPassInterface::ConvertToLLVMPassInterface(
-    MLIRContext *context, ArrayRef<std::string> filterDialects,
-    bool allowPatternRollback)
-    : context(context), filterDialects(filterDialects),
-      allowPatternRollback(allowPatternRollback) {}
+    MLIRContext *context, ArrayRef<std::string> filterDialects)
+    : context(context), filterDialects(filterDialects) {}
 
 void ConvertToLLVMPassInterface::getDependentDialects(
     DialectRegistry &registry) {
@@ -292,4 +279,8 @@ LogicalResult ConvertToLLVMPassInterface::visitInterfaces(
 void mlir::registerConvertToLLVMDependentDialectLoading(
     DialectRegistry &registry) {
   registry.addExtensions<LoadDependentDialectExtension>();
+}
+
+std::unique_ptr<Pass> mlir::createConvertToLLVMPass() {
+  return std::make_unique<ConvertToLLVMPass>();
 }

@@ -4,7 +4,6 @@ static_library("Symbolize") {
     "//llvm/include/llvm/Config:config",
     "//llvm/lib/DebugInfo/BTF",
     "//llvm/lib/DebugInfo/DWARF",
-    "//llvm/lib/DebugInfo/GSYM",
     "//llvm/lib/DebugInfo/PDB",
     "//llvm/lib/Demangle",
     "//llvm/lib/Object",

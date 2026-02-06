@@ -48,12 +48,13 @@ void MSP430InstPrinter::printPCRelImmOperand(const MCInst *MI, unsigned OpNo,
     O << Imm;
   } else {
     assert(Op.isExpr() && "unknown pcrel immediate operand");
-    MAI.printExpr(O, *Op.getExpr());
+    Op.getExpr()->print(O, &MAI);
   }
 }
 
 void MSP430InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
-                                     raw_ostream &O) {
+                                     raw_ostream &O, const char *Modifier) {
+  assert((Modifier == nullptr || Modifier[0] == 0) && "No modifiers supported");
   const MCOperand &Op = MI->getOperand(OpNo);
   if (Op.isReg()) {
     O << getRegisterName(Op.getReg());
@@ -62,12 +63,13 @@ void MSP430InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
   } else {
     assert(Op.isExpr() && "unknown operand kind in printOperand");
     O << '#';
-    MAI.printExpr(O, *Op.getExpr());
+    Op.getExpr()->print(O, &MAI);
   }
 }
 
 void MSP430InstPrinter::printSrcMemOperand(const MCInst *MI, unsigned OpNo,
-                                           raw_ostream &O) {
+                                           raw_ostream &O,
+                                           const char *Modifier) {
   const MCOperand &Base = MI->getOperand(OpNo);
   const MCOperand &Disp = MI->getOperand(OpNo+1);
 
@@ -83,7 +85,7 @@ void MSP430InstPrinter::printSrcMemOperand(const MCInst *MI, unsigned OpNo,
     O << '&';
 
   if (Disp.isExpr())
-    MAI.printExpr(O, *Disp.getExpr());
+    Disp.getExpr()->print(O, &MAI);
   else {
     assert(Disp.isImm() && "Expected immediate in displacement field");
     O << Disp.getImm();

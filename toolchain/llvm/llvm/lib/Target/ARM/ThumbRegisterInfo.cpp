@@ -35,13 +35,12 @@ extern cl::opt<bool> ReuseFrameIndexVals;
 
 using namespace llvm;
 
-ThumbRegisterInfo::ThumbRegisterInfo(const ARMSubtarget &STI)
-    : IsThumb1Only(STI.isThumb1Only()) {}
+ThumbRegisterInfo::ThumbRegisterInfo() = default;
 
 const TargetRegisterClass *
 ThumbRegisterInfo::getLargestLegalSuperClass(const TargetRegisterClass *RC,
                                               const MachineFunction &MF) const {
-  if (!IsThumb1Only)
+  if (!MF.getSubtarget<ARMSubtarget>().isThumb1Only())
     return ARMBaseRegisterInfo::getLargestLegalSuperClass(RC, MF);
 
   if (ARM::tGPRRegClass.hasSubClassEq(RC))
@@ -50,9 +49,10 @@ ThumbRegisterInfo::getLargestLegalSuperClass(const TargetRegisterClass *RC,
 }
 
 const TargetRegisterClass *
-ThumbRegisterInfo::getPointerRegClass(unsigned Kind) const {
-  if (!IsThumb1Only)
-    return ARMBaseRegisterInfo::getPointerRegClass(Kind);
+ThumbRegisterInfo::getPointerRegClass(const MachineFunction &MF,
+                                      unsigned Kind) const {
+  if (!MF.getSubtarget<ARMSubtarget>().isThumb1Only())
+    return ARMBaseRegisterInfo::getPointerRegClass(MF, Kind);
   return &ARM::tGPRRegClass;
 }
 
@@ -66,8 +66,8 @@ static void emitThumb1LoadConstPool(MachineBasicBlock &MBB,
   const ARMSubtarget &STI = MF.getSubtarget<ARMSubtarget>();
   const TargetInstrInfo &TII = *STI.getInstrInfo();
   MachineConstantPool *ConstantPool = MF.getConstantPool();
-  const Constant *C = ConstantInt::getSigned(
-      Type::getInt32Ty(MBB.getParent()->getFunction().getContext()), Val);
+  const Constant *C = ConstantInt::get(
+          Type::getInt32Ty(MBB.getParent()->getFunction().getContext()), Val);
   unsigned Idx = ConstantPool->getConstantPoolIndex(C, Align(4));
 
   BuildMI(MBB, MBBI, dl, TII.get(ARM::tLDRpci))
@@ -85,8 +85,8 @@ static void emitThumb2LoadConstPool(MachineBasicBlock &MBB,
   MachineFunction &MF = *MBB.getParent();
   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
   MachineConstantPool *ConstantPool = MF.getConstantPool();
-  const Constant *C = ConstantInt::getSigned(
-      Type::getInt32Ty(MBB.getParent()->getFunction().getContext()), Val);
+  const Constant *C = ConstantInt::get(
+           Type::getInt32Ty(MBB.getParent()->getFunction().getContext()), Val);
   unsigned Idx = ConstantPool->getConstantPoolIndex(C, Align(4));
 
   BuildMI(MBB, MBBI, dl, TII.get(ARM::t2LDRpci))
@@ -105,7 +105,7 @@ void ThumbRegisterInfo::emitLoadConstPool(
   MachineFunction &MF = *MBB.getParent();
   const ARMSubtarget &STI = MF.getSubtarget<ARMSubtarget>();
   if (STI.isThumb1Only()) {
-    assert((DestReg.isVirtual() || isARMLowRegister(DestReg)) &&
+    assert((isARMLowRegister(DestReg) || DestReg.isVirtual()) &&
            "Thumb1 does not have ldr to high register");
     return emitThumb1LoadConstPool(MBB, MBBI, dl, DestReg, SubIdx, Val, Pred,
                                    PredReg, MIFlags);

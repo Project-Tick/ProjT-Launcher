@@ -249,8 +249,8 @@ static Config parseLipoOptions(ArrayRef<const char *> ArgsArr) {
 
   switch (ActionArgs[0]->getOption().getID()) {
   case LIPO_verify_arch:
-    llvm::append_range(C.VerifyArchList,
-                       InputArgs.getAllArgValues(LIPO_verify_arch));
+    for (auto A : InputArgs.getAllArgValues(LIPO_verify_arch))
+      C.VerifyArchList.push_back(A);
     if (C.VerifyArchList.empty())
       reportError(
           "verify_arch requires at least one architecture to be specified");
@@ -425,11 +425,6 @@ static void printBinaryArchs(LLVMContext &LLVMCtx, const Binary *Binary,
     return;
   }
 
-  if (const auto *A = dyn_cast<Archive>(Binary)) {
-    OS << createSliceFromArchive(LLVMCtx, *A).getArchString() << "\n";
-    return;
-  }
-
   // This should be always the case, as this is tested in readInputBinaries
   const auto *IR = cast<IRObjectFile>(Binary);
   Expected<Slice> SliceOrErr = createSliceFromIR(*IR, 0);
@@ -460,8 +455,7 @@ printInfo(LLVMContext &LLVMCtx, ArrayRef<OwningBinary<Binary>> InputBinaries) {
   for (auto &IB : InputBinaries) {
     const Binary *Binary = IB.getBinary();
     if (!Binary->isMachOUniversalBinary()) {
-      assert((Binary->isMachO() || Binary->isArchive()) &&
-             "expected MachO binary");
+      assert(Binary->isMachO() && "expected MachO binary");
       outs() << "Non-fat file: " << Binary->getFileName()
              << " is architecture: ";
       printBinaryArchs(LLVMCtx, Binary, outs());

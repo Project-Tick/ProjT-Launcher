@@ -17,6 +17,7 @@ namespace llvm {
 
 class ELFObjectWriter;
 class MCContext;
+class MCDataFragment;
 class MCFragment;
 class MCObjectWriter;
 class MCSection;
@@ -50,10 +51,13 @@ public:
   void initSections(bool NoExecStack, const MCSubtargetInfo &STI) override;
   void changeSection(MCSection *Section, uint32_t Subsection = 0) override;
   void emitLabel(MCSymbol *Symbol, SMLoc Loc = SMLoc()) override;
-  void emitLabelAtPos(MCSymbol *Symbol, SMLoc Loc, MCFragment &F,
+  void emitLabelAtPos(MCSymbol *Symbol, SMLoc Loc, MCDataFragment &F,
                       uint64_t Offset) override;
-  void emitWeakReference(MCSymbol *Alias, const MCSymbol *Target) override;
+  void emitAssemblerFlag(MCAssemblerFlag Flag) override;
+  void emitThumbFunc(MCSymbol *Func) override;
+  void emitWeakReference(MCSymbol *Alias, const MCSymbol *Symbol) override;
   bool emitSymbolAttribute(MCSymbol *Symbol, MCSymbolAttr Attribute) override;
+  void emitSymbolDesc(MCSymbol *Symbol, unsigned DescValue) override;
   void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
                         Align ByteAlignment) override;
 
@@ -64,7 +68,17 @@ public:
   void emitLocalCommonSymbol(MCSymbol *Symbol, uint64_t Size,
                              Align ByteAlignment) override;
 
+  void emitZerofill(MCSection *Section, MCSymbol *Symbol = nullptr,
+                    uint64_t Size = 0, Align ByteAlignment = Align(1),
+                    SMLoc L = SMLoc()) override;
+  void emitTBSSSymbol(MCSection *Section, MCSymbol *Symbol, uint64_t Size,
+                      Align ByteAlignment = Align(1)) override;
+  void emitValueImpl(const MCExpr *Value, unsigned Size,
+                     SMLoc Loc = SMLoc()) override;
+
   void emitIdent(StringRef IdentString) override;
+
+  void emitValueToAlignment(Align, int64_t, unsigned, unsigned) override;
 
   void emitCGProfileEntry(const MCSymbolRefExpr *From,
                           const MCSymbolRefExpr *To, uint64_t Count) override;
@@ -72,6 +86,10 @@ public:
   // This is final. Override MCTargetStreamer::finish instead for
   // target-specific code.
   void finishImpl() final;
+
+  void emitBundleAlignMode(Align Alignment) override;
+  void emitBundleLock(bool AlignToEnd) override;
+  void emitBundleUnlock() override;
 
   /// ELF object attributes section emission support
   struct AttributeItem {
@@ -88,7 +106,7 @@ public:
     unsigned IntValue;
     std::string StringValue;
     AttributeItem(Types Ty, unsigned Tg, unsigned IV, std::string SV)
-        : Type(Ty), Tag(Tg), IntValue(IV), StringValue(std::move(SV)) {}
+        : Type(Ty), Tag(Tg), IntValue(IV), StringValue(SV) {}
   };
 
   /// ELF object attributes subsection support
@@ -141,8 +159,12 @@ public:
   }
 
 private:
-  void finalizeCGProfileEntry(const MCSymbolRefExpr *Sym, uint64_t Offset,
-                              const MCSymbolRefExpr *&S);
+  bool isBundleLocked() const;
+  void emitInstToFragment(const MCInst &Inst, const MCSubtargetInfo &) override;
+  void emitInstToData(const MCInst &Inst, const MCSubtargetInfo &) override;
+
+  void fixSymbolsInTLSFixups(const MCExpr *expr);
+  void finalizeCGProfileEntry(const MCSymbolRefExpr *&S, uint64_t Offset);
   void finalizeCGProfile();
 
   bool SeenIdent = false;

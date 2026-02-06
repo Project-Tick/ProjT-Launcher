@@ -17,16 +17,15 @@
 
 #include "llvm/MC/MCInstPrinter.h"
 #include "llvm/MCA/HWEventListener.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/JSON.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace llvm {
 namespace mca {
 
-class LLVM_ABI View : public HWEventListener {
+class View : public HWEventListener {
 public:
-  ~View() override = default;
+  virtual ~View() = default;
 
   virtual void printView(llvm::raw_ostream &OS) const = 0;
   virtual StringRef getNameAsString() const = 0;

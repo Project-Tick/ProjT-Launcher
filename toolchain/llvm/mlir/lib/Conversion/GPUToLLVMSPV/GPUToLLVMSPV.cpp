@@ -54,8 +54,8 @@ static LLVM::LLVMFuncOp lookupOrCreateSPIRVFn(Operation *symbolTable,
       SymbolTable::lookupSymbolIn(symbolTable, name));
   if (!func) {
     OpBuilder b(symbolTable->getRegion(0));
-    func = LLVM::LLVMFuncOp::create(
-        b, symbolTable->getLoc(), name,
+    func = b.create<LLVM::LLVMFuncOp>(
+        symbolTable->getLoc(), name,
         LLVM::LLVMFunctionType::get(resultType, paramTypes));
     func.setCConv(LLVM::cconv::CConv::SPIR_FUNC);
     func.setNoUnwind(true);
@@ -66,10 +66,7 @@ static LLVM::LLVMFuncOp lookupOrCreateSPIRVFn(Operation *symbolTable,
       constexpr auto noModRef = mlir::LLVM::ModRefInfo::NoModRef;
       auto memAttr = b.getAttr<LLVM::MemoryEffectsAttr>(
           /*other=*/noModRef,
-          /*argMem=*/noModRef, /*inaccessibleMem=*/noModRef,
-          /*errnoMem=*/noModRef,
-          /*targetMem0=*/noModRef,
-          /*targetMem1=*/noModRef);
+          /*argMem=*/noModRef, /*inaccessibleMem=*/noModRef);
       func.setMemoryEffectsAttr(memAttr);
     }
 
@@ -82,7 +79,7 @@ static LLVM::CallOp createSPIRVBuiltinCall(Location loc,
                                            ConversionPatternRewriter &rewriter,
                                            LLVM::LLVMFuncOp func,
                                            ValueRange args) {
-  auto call = LLVM::CallOp::create(rewriter, loc, func, args);
+  auto call = rewriter.create<LLVM::CallOp>(loc, func, args);
   call.setCConv(func.getCConv());
   call.setConvergentAttr(func.getConvergentAttr());
   call.setNoUnwindAttr(func.getNoUnwindAttr());
@@ -96,14 +93,12 @@ namespace {
 // Barriers
 //===----------------------------------------------------------------------===//
 
-/// Replace `gpu.barrier` with an `llvm.call` to `barrier` using
-/// `CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE`, ensuring that all memory
-/// accesses are visible to all work-items in the work-group.
+/// Replace `gpu.barrier` with an `llvm.call` to `barrier` with
+/// `CLK_LOCAL_MEM_FENCE` argument, indicating work-group memory scope:
 /// ```
 /// // gpu.barrier
-/// // 3 = CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE
-/// %c3 = llvm.mlir.constant(3: i32) : i32
-/// llvm.call spir_funccc @_Z7barrierj(%c3) : (i32) -> ()
+/// %c1 = llvm.mlir.constant(1: i32) : i32
+/// llvm.call spir_funccc @_Z7barrierj(%c1) : (i32) -> ()
 /// ```
 struct GPUBarrierConversion final : ConvertOpToLLVMPattern<gpu::BarrierOp> {
   using ConvertOpToLLVMPattern::ConvertOpToLLVMPattern;
@@ -121,16 +116,12 @@ struct GPUBarrierConversion final : ConvertOpToLLVMPattern<gpu::BarrierOp> {
         lookupOrCreateSPIRVFn(moduleOp, funcName, flagTy, voidTy,
                               /*isMemNone=*/false, /*isConvergent=*/true);
 
-    // Values used by SPIR-V backend to represent a combination of
-    // `CLK_LOCAL_MEM_FENCE` and `CLK_GLOBAL_MEM_FENCE`.
+    // Value used by SPIR-V backend to represent `CLK_LOCAL_MEM_FENCE`.
     // See `llvm/lib/Target/SPIRV/SPIRVBuiltins.td`.
     constexpr int64_t localMemFenceFlag = 1;
-    constexpr int64_t globalMemFenceFlag = 2;
-    constexpr int64_t localGlobalMemFenceFlag =
-        localMemFenceFlag | globalMemFenceFlag;
     Location loc = op->getLoc();
-    Value flag = LLVM::ConstantOp::create(rewriter, loc, flagTy,
-                                          localGlobalMemFenceFlag);
+    Value flag =
+        rewriter.create<LLVM::ConstantOp>(loc, flagTy, localMemFenceFlag);
     rewriter.replaceOp(op, createSPIRVBuiltinCall(loc, rewriter, func, flag));
     return success();
   }
@@ -171,8 +162,8 @@ struct LaunchConfigConversion : ConvertToLLVMPattern {
 
     Location loc = op->getLoc();
     gpu::Dimension dim = getDimension(op);
-    Value dimVal = LLVM::ConstantOp::create(rewriter, loc, dimTy,
-                                            static_cast<int64_t>(dim));
+    Value dimVal = rewriter.create<LLVM::ConstantOp>(loc, dimTy,
+                                                     static_cast<int64_t>(dim));
     rewriter.replaceOp(op, createSPIRVBuiltinCall(loc, rewriter, func, dimVal));
     return success();
   }
@@ -268,7 +259,7 @@ struct GPUShuffleConversion final : ConvertOpToLLVMPattern<gpu::ShuffleOp> {
           }
           return std::nullopt;
         })
-        .Default(std::nullopt);
+        .Default([](auto) { return std::nullopt; });
   }
 
   static std::optional<std::string> getFuncName(gpu::ShuffleMode mode,
@@ -300,13 +291,13 @@ struct GPUShuffleConversion final : ConvertOpToLLVMPattern<gpu::ShuffleOp> {
                                          ConversionPatternRewriter &rewriter) {
     return TypeSwitch<Type, Value>(oldVal.getType())
         .Case([&](BFloat16Type) {
-          return LLVM::BitcastOp::create(rewriter, loc, rewriter.getI16Type(),
-                                         oldVal);
+          return rewriter.create<LLVM::BitcastOp>(loc, rewriter.getI16Type(),
+                                                  oldVal);
         })
         .Case([&](IntegerType intTy) -> Value {
           if (intTy.getWidth() == 1)
-            return LLVM::ZExtOp::create(rewriter, loc, rewriter.getI8Type(),
-                                        oldVal);
+            return rewriter.create<LLVM::ZExtOp>(loc, rewriter.getI8Type(),
+                                                 oldVal);
           return oldVal;
         })
         .Default(oldVal);
@@ -317,11 +308,11 @@ struct GPUShuffleConversion final : ConvertOpToLLVMPattern<gpu::ShuffleOp> {
                                           ConversionPatternRewriter &rewriter) {
     return TypeSwitch<Type, Value>(newTy)
         .Case([&](BFloat16Type) {
-          return LLVM::BitcastOp::create(rewriter, loc, newTy, oldVal);
+          return rewriter.create<LLVM::BitcastOp>(loc, newTy, oldVal);
         })
         .Case([&](IntegerType intTy) -> Value {
           if (intTy.getWidth() == 1)
-            return LLVM::TruncOp::create(rewriter, loc, newTy, oldVal);
+            return rewriter.create<LLVM::TruncOp>(loc, newTy, oldVal);
           return oldVal;
         })
         .Default(oldVal);
@@ -358,7 +349,7 @@ struct GPUShuffleConversion final : ConvertOpToLLVMPattern<gpu::ShuffleOp> {
         bitcastOrTruncAfterShuffle(result, op.getType(0), loc, rewriter);
 
     Value trueVal =
-        LLVM::ConstantOp::create(rewriter, loc, rewriter.getI1Type(), true);
+        rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI1Type(), true);
     rewriter.replaceOp(op, {resultOrConversion, trueVal});
     return success();
   }
@@ -435,7 +426,7 @@ struct GPUSubgroupOpConversion final : ConvertOpToLLVMPattern<SubgroupOp> {
       if (indexTy.getIntOrFloatBitWidth() < resultTy.getIntOrFloatBitWidth()) {
         return failure();
       }
-      result = LLVM::ZExtOp::create(rewriter, loc, indexTy, result);
+      result = rewriter.create<LLVM::ZExtOp>(loc, indexTy, result);
     }
 
     rewriter.replaceOp(op, result);
@@ -479,13 +470,10 @@ struct GPUToLLVMSPVConversionPass final
                         gpu::GPUFuncOp, gpu::GlobalIdOp, gpu::GridDimOp,
                         gpu::LaneIdOp, gpu::NumSubgroupsOp, gpu::ReturnOp,
                         gpu::ShuffleOp, gpu::SubgroupIdOp, gpu::SubgroupSizeOp,
-                        gpu::ThreadIdOp, gpu::PrintfOp>();
+                        gpu::ThreadIdOp>();
 
     populateGpuToLLVMSPVConversionPatterns(converter, patterns);
     populateGpuMemorySpaceAttributeConversions(converter);
-    patterns.add<GPUPrintfOpToLLVMCallLowering>(converter, /*addressSpace=*/2,
-                                                LLVM::cconv::CConv::SPIR_FUNC,
-                                                "_Z6printfPU3AS2Kcz");
 
     if (failed(applyPartialConversion(getOperation(), target,
                                       std::move(patterns))))
@@ -533,8 +521,7 @@ void populateGpuToLLVMSPVConversionPatterns(
       GPUFuncOpLoweringOptions{
           privateAddressSpace, localAddressSpace,
           /*kernelAttributeName=*/{}, kernelBlockSizeAttributeName,
-          /*kernelClusterSizeAttributeName=*/{}, LLVM::CConv::SPIR_KERNEL,
-          LLVM::CConv::SPIR_FUNC,
+          LLVM::CConv::SPIR_KERNEL, LLVM::CConv::SPIR_FUNC,
           /*encodeWorkgroupAttributionsAsArguments=*/true});
 }
 

@@ -19,7 +19,6 @@
 // the predicate register, they cannot use the .new form. In such cases it
 // is better to collapse them back to a single MUX instruction.
 
-#include "Hexagon.h"
 #include "HexagonInstrInfo.h"
 #include "HexagonRegisterInfo.h"
 #include "HexagonSubtarget.h"
@@ -43,10 +42,18 @@
 #include <cassert>
 #include <iterator>
 #include <limits>
+#include <utility>
 
 #define DEBUG_TYPE "hexmux"
 
 using namespace llvm;
+
+namespace llvm {
+
+  FunctionPass *createHexagonGenMux();
+  void initializeHexagonGenMuxPass(PassRegistry& Registry);
+
+} // end namespace llvm
 
 // Initialize this to 0 to always prefer generating mux by default.
 static cl::opt<unsigned> MinPredDist("hexagon-gen-mux-threshold", cl::Hidden,
@@ -72,7 +79,8 @@ namespace {
     bool runOnMachineFunction(MachineFunction &MF) override;
 
     MachineFunctionProperties getRequiredProperties() const override {
-      return MachineFunctionProperties().setNoVRegs();
+      return MachineFunctionProperties().set(
+          MachineFunctionProperties::Property::NoVRegs);
     }
 
   private:
@@ -243,7 +251,8 @@ bool HexagonGenMux::genMuxInBlock(MachineBasicBlock &B) {
       F = CM.end();
     }
     if (F == CM.end()) {
-      F = CM.try_emplace(DR).first;
+      auto It = CM.insert(std::make_pair(DR, CondsetInfo()));
+      F = It.first;
       F->second.PredR = PR;
     }
     CondsetInfo &CI = F->second;

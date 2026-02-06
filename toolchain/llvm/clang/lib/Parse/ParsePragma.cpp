@@ -300,6 +300,12 @@ struct PragmaMSRuntimeChecksHandler : public EmptyPragmaHandler {
   PragmaMSRuntimeChecksHandler() : EmptyPragmaHandler("runtime_checks") {}
 };
 
+struct PragmaMSIntrinsicHandler : public PragmaHandler {
+  PragmaMSIntrinsicHandler() : PragmaHandler("intrinsic") {}
+  void HandlePragma(Preprocessor &PP, PragmaIntroducer Introducer,
+                    Token &FirstToken) override;
+};
+
 // "\#pragma fenv_access (on)".
 struct PragmaMSFenvAccessHandler : public PragmaHandler {
   PragmaMSFenvAccessHandler() : PragmaHandler("fenv_access") {}
@@ -511,7 +517,7 @@ void Parser::initializePragmaHandlers() {
     PP.AddPragmaHandler(MSOptimize.get());
     MSRuntimeChecks = std::make_unique<PragmaMSRuntimeChecksHandler>();
     PP.AddPragmaHandler(MSRuntimeChecks.get());
-    MSIntrinsic = std::make_unique<PragmaMSPragma>("intrinsic");
+    MSIntrinsic = std::make_unique<PragmaMSIntrinsicHandler>();
     PP.AddPragmaHandler(MSIntrinsic.get());
     MSFenvAccess = std::make_unique<PragmaMSFenvAccessHandler>();
     PP.AddPragmaHandler(MSFenvAccess.get());
@@ -698,6 +704,11 @@ void Parser::resetPragmaHandlers() {
   }
 }
 
+/// Handle the annotation token produced for #pragma unused(...)
+///
+/// Each annot_pragma_unused is followed by the argument token so e.g.
+/// "#pragma unused(x,y)" becomes:
+/// annot_pragma_unused 'x' annot_pragma_unused 'y'
 void Parser::HandlePragmaUnused() {
   assert(Tok.is(tok::annot_pragma_unused));
   SourceLocation UnusedLoc = ConsumeAnnotationToken();
@@ -743,8 +754,9 @@ void Parser::HandlePragmaMSStruct() {
 
 void Parser::HandlePragmaAlign() {
   assert(Tok.is(tok::annot_pragma_align));
-  PragmaOptionsAlignKind Kind = static_cast<PragmaOptionsAlignKind>(
-      reinterpret_cast<uintptr_t>(Tok.getAnnotationValue()));
+  Sema::PragmaOptionsAlignKind Kind =
+    static_cast<Sema::PragmaOptionsAlignKind>(
+    reinterpret_cast<uintptr_t>(Tok.getAnnotationValue()));
   Actions.ActOnPragmaOptionsAlign(Kind, Tok.getLocation());
   // Consume the token after processing the pragma to enable pragma-specific
   // #include warnings.
@@ -1040,8 +1052,7 @@ void Parser::HandlePragmaMSPragma() {
           .Case("strict_gs_check", &Parser::HandlePragmaMSStrictGuardStackCheck)
           .Case("function", &Parser::HandlePragmaMSFunction)
           .Case("alloc_text", &Parser::HandlePragmaMSAllocText)
-          .Case("optimize", &Parser::HandlePragmaMSOptimize)
-          .Case("intrinsic", &Parser::HandlePragmaMSIntrinsic);
+          .Case("optimize", &Parser::HandlePragmaMSOptimize);
 
   if (!(this->*Handler)(PragmaName, PragmaLocation)) {
     // Pragma handling failed, and has been diagnosed.  Slurp up the tokens
@@ -1216,6 +1227,7 @@ bool Parser::HandlePragmaMSSegment(StringRef PragmaName,
   return true;
 }
 
+// #pragma init_seg({ compiler | lib | user | "section-name" [, func-name]} )
 bool Parser::HandlePragmaMSInitSeg(StringRef PragmaName,
                                    SourceLocation PragmaLocation) {
   if (getTargetInfo().getTriple().getEnvironment() != llvm::Triple::MSVC) {
@@ -1277,6 +1289,9 @@ bool Parser::HandlePragmaMSInitSeg(StringRef PragmaName,
   return true;
 }
 
+// #pragma strict_gs_check(pop)
+// #pragma strict_gs_check(push, "on" | "off")
+// #pragma strict_gs_check("on" | "off")
 bool Parser::HandlePragmaMSStrictGuardStackCheck(
     StringRef PragmaName, SourceLocation PragmaLocation) {
   if (ExpectAndConsume(tok::l_paren, diag::warn_pragma_expected_lparen,
@@ -1404,26 +1419,25 @@ bool Parser::HandlePragmaLoopHint(LoopHint &Hint) {
       static_cast<PragmaLoopHintInfo *>(Tok.getAnnotationValue());
 
   IdentifierInfo *PragmaNameInfo = Info->PragmaName.getIdentifierInfo();
-  Hint.PragmaNameLoc = new (Actions.Context)
-      IdentifierLoc(Info->PragmaName.getLocation(), PragmaNameInfo);
+  Hint.PragmaNameLoc = IdentifierLoc::create(
+      Actions.Context, Info->PragmaName.getLocation(), PragmaNameInfo);
 
   // It is possible that the loop hint has no option identifier, such as
   // #pragma unroll(4).
   IdentifierInfo *OptionInfo = Info->Option.is(tok::identifier)
                                    ? Info->Option.getIdentifierInfo()
                                    : nullptr;
-  Hint.OptionLoc = new (Actions.Context)
-      IdentifierLoc(Info->Option.getLocation(), OptionInfo);
+  Hint.OptionLoc = IdentifierLoc::create(
+      Actions.Context, Info->Option.getLocation(), OptionInfo);
 
   llvm::ArrayRef<Token> Toks = Info->Toks;
 
   // Return a valid hint if pragma unroll or nounroll were specified
   // without an argument.
-  auto IsLoopHint =
-      llvm::StringSwitch<bool>(PragmaNameInfo->getName())
-          .Cases({"unroll", "nounroll", "unroll_and_jam", "nounroll_and_jam"},
-                 true)
-          .Default(false);
+  auto IsLoopHint = llvm::StringSwitch<bool>(PragmaNameInfo->getName())
+                        .Cases("unroll", "nounroll", "unroll_and_jam",
+                               "nounroll_and_jam", true)
+                        .Default(false);
 
   if (Toks.empty() && IsLoopHint) {
     ConsumeAnnotationToken();
@@ -1494,7 +1508,7 @@ bool Parser::HandlePragmaLoopHint(LoopHint &Hint) {
     if (Toks.size() > 2)
       Diag(Tok.getLocation(), diag::warn_pragma_extra_tokens_at_eol)
           << PragmaLoopHintString(Info->PragmaName, Info->Option);
-    Hint.StateLoc = new (Actions.Context) IdentifierLoc(StateLoc, StateInfo);
+    Hint.StateLoc = IdentifierLoc::create(Actions.Context, StateLoc, StateInfo);
   } else if (OptionInfo && OptionInfo->getName() == "vectorize_width") {
     PP.EnterTokenStream(Toks, /*DisableMacroExpansion=*/false,
                         /*IsReinject=*/false);
@@ -1515,7 +1529,8 @@ bool Parser::HandlePragmaLoopHint(LoopHint &Hint) {
           ConsumeAnyToken();
       }
 
-      Hint.StateLoc = new (Actions.Context) IdentifierLoc(StateLoc, StateInfo);
+      Hint.StateLoc =
+          IdentifierLoc::create(Actions.Context, StateLoc, StateInfo);
 
       ConsumeToken(); // Consume the constant expression eof terminator.
     } else {
@@ -1531,7 +1546,7 @@ bool Parser::HandlePragmaLoopHint(LoopHint &Hint) {
         PP.Lex(Tok); // ,
 
         StateInfo = Tok.getIdentifierInfo();
-        IsScalableStr = StateInfo ? StateInfo->getName() : "";
+        IsScalableStr = StateInfo->getName();
 
         if (IsScalableStr != "scalable" && IsScalableStr != "fixed") {
           Diag(Tok.getLocation(),
@@ -1539,7 +1554,7 @@ bool Parser::HandlePragmaLoopHint(LoopHint &Hint) {
           Arg2Error = true;
         } else
           Hint.StateLoc =
-              new (Actions.Context) IdentifierLoc(StateLoc, StateInfo);
+              IdentifierLoc::create(Actions.Context, StateLoc, StateInfo);
 
         PP.Lex(Tok); // Identifier
       }
@@ -1927,7 +1942,7 @@ void Parser::HandlePragmaAttribute() {
       SourceLocation AttrNameLoc = ConsumeToken();
 
       if (Tok.isNot(tok::l_paren))
-        Attrs.addNew(AttrName, AttrNameLoc, AttributeScopeInfo(), nullptr, 0,
+        Attrs.addNew(AttrName, AttrNameLoc, nullptr, AttrNameLoc, nullptr, 0,
                      ParsedAttr::Form::GNU());
       else
         ParseGNUAttributeArgs(AttrName, AttrNameLoc, Attrs, /*EndLoc=*/nullptr,
@@ -2300,7 +2315,7 @@ void PragmaClangSectionHandler::HandlePragma(Preprocessor &PP,
                                              Token &FirstToken) {
 
   Token Tok;
-  auto SecKind = PragmaClangSectionKind::Invalid;
+  auto SecKind = Sema::PragmaClangSectionKind::PCSK_Invalid;
 
   PP.Lex(Tok); // eat 'section'
   while (Tok.isNot(tok::eod)) {
@@ -2311,15 +2326,15 @@ void PragmaClangSectionHandler::HandlePragma(Preprocessor &PP,
 
     const IdentifierInfo *SecType = Tok.getIdentifierInfo();
     if (SecType->isStr("bss"))
-      SecKind = PragmaClangSectionKind::BSS;
+      SecKind = Sema::PragmaClangSectionKind::PCSK_BSS;
     else if (SecType->isStr("data"))
-      SecKind = PragmaClangSectionKind::Data;
+      SecKind = Sema::PragmaClangSectionKind::PCSK_Data;
     else if (SecType->isStr("rodata"))
-      SecKind = PragmaClangSectionKind::Rodata;
+      SecKind = Sema::PragmaClangSectionKind::PCSK_Rodata;
     else if (SecType->isStr("relro"))
-      SecKind = PragmaClangSectionKind::Relro;
+      SecKind = Sema::PragmaClangSectionKind::PCSK_Relro;
     else if (SecType->isStr("text"))
-      SecKind = PragmaClangSectionKind::Text;
+      SecKind = Sema::PragmaClangSectionKind::PCSK_Text;
     else {
       PP.Diag(Tok.getLocation(), diag::err_pragma_expected_clang_section_name) << "clang section";
       return;
@@ -2328,8 +2343,7 @@ void PragmaClangSectionHandler::HandlePragma(Preprocessor &PP,
     SourceLocation PragmaLocation = Tok.getLocation();
     PP.Lex(Tok); // eat ['bss'|'data'|'rodata'|'text']
     if (Tok.isNot(tok::equal)) {
-      PP.Diag(Tok.getLocation(), diag::err_pragma_clang_section_expected_equal)
-          << SecKind;
+      PP.Diag(Tok.getLocation(), diag::err_pragma_clang_section_expected_equal) << SecKind;
       return;
     }
 
@@ -2337,11 +2351,11 @@ void PragmaClangSectionHandler::HandlePragma(Preprocessor &PP,
     if (!PP.LexStringLiteral(Tok, SecName, "pragma clang section", false))
       return;
 
-    Actions.ActOnPragmaClangSection(PragmaLocation,
-                                    (SecName.size()
-                                         ? PragmaClangSectionAction::Set
-                                         : PragmaClangSectionAction::Clear),
-                                    SecKind, SecName);
+    Actions.ActOnPragmaClangSection(
+        PragmaLocation,
+        (SecName.size() ? Sema::PragmaClangSectionAction::PCSA_Set
+                        : Sema::PragmaClangSectionAction::PCSA_Clear),
+        SecKind, SecName);
   }
 }
 
@@ -2380,20 +2394,20 @@ static void ParseAlignPragma(Preprocessor &PP, Token &FirstTok,
     return;
   }
 
-  PragmaOptionsAlignKind Kind = PragmaOptionsAlignKind::Natural;
+  Sema::PragmaOptionsAlignKind Kind = Sema::POAK_Natural;
   const IdentifierInfo *II = Tok.getIdentifierInfo();
   if (II->isStr("native"))
-    Kind = PragmaOptionsAlignKind::Native;
+    Kind = Sema::POAK_Native;
   else if (II->isStr("natural"))
-    Kind = PragmaOptionsAlignKind::Natural;
+    Kind = Sema::POAK_Natural;
   else if (II->isStr("packed"))
-    Kind = PragmaOptionsAlignKind::Packed;
+    Kind = Sema::POAK_Packed;
   else if (II->isStr("power"))
-    Kind = PragmaOptionsAlignKind::Power;
+    Kind = Sema::POAK_Power;
   else if (II->isStr("mac68k"))
-    Kind = PragmaOptionsAlignKind::Mac68k;
+    Kind = Sema::POAK_Mac68k;
   else if (II->isStr("reset"))
-    Kind = PragmaOptionsAlignKind::Reset;
+    Kind = Sema::POAK_Reset;
   else {
     PP.Diag(Tok.getLocation(), diag::warn_pragma_align_invalid_option)
       << IsOptions;
@@ -3442,6 +3456,7 @@ void PragmaSTDC_FENV_ROUNDHandler::HandlePragma(Preprocessor &PP,
                                                 PragmaIntroducer Introducer,
                                                 Token &Tok) {
   Token PragmaName = Tok;
+  SmallVector<Token, 1> TokenList;
   if (!PP.getTargetInfo().hasStrictFP() && !PP.getLangOpts().ExpStrictFP) {
     PP.Diag(Tok.getLocation(), diag::warn_pragma_fp_ignored)
         << PragmaName.getIdentifierInfo()->getName();
@@ -3758,6 +3773,56 @@ void PragmaUnrollHintHandler::HandlePragma(Preprocessor &PP,
                       /*DisableMacroExpansion=*/false, /*IsReinject=*/false);
 }
 
+/// Handle the Microsoft \#pragma intrinsic extension.
+///
+/// The syntax is:
+/// \code
+///  #pragma intrinsic(memset)
+///  #pragma intrinsic(strlen, memcpy)
+/// \endcode
+///
+/// Pragma intrisic tells the compiler to use a builtin version of the
+/// function. Clang does it anyway, so the pragma doesn't really do anything.
+/// Anyway, we emit a warning if the function specified in \#pragma intrinsic
+/// isn't an intrinsic in clang and suggest to include intrin.h.
+void PragmaMSIntrinsicHandler::HandlePragma(Preprocessor &PP,
+                                            PragmaIntroducer Introducer,
+                                            Token &Tok) {
+  PP.Lex(Tok);
+
+  if (Tok.isNot(tok::l_paren)) {
+    PP.Diag(Tok.getLocation(), diag::warn_pragma_expected_lparen)
+        << "intrinsic";
+    return;
+  }
+  PP.Lex(Tok);
+
+  bool SuggestIntrinH = !PP.isMacroDefined("__INTRIN_H");
+
+  while (Tok.is(tok::identifier)) {
+    IdentifierInfo *II = Tok.getIdentifierInfo();
+    if (!II->getBuiltinID())
+      PP.Diag(Tok.getLocation(), diag::warn_pragma_intrinsic_builtin)
+          << II << SuggestIntrinH;
+
+    PP.Lex(Tok);
+    if (Tok.isNot(tok::comma))
+      break;
+    PP.Lex(Tok);
+  }
+
+  if (Tok.isNot(tok::r_paren)) {
+    PP.Diag(Tok.getLocation(), diag::warn_pragma_expected_rparen)
+        << "intrinsic";
+    return;
+  }
+  PP.Lex(Tok);
+
+  if (Tok.isNot(tok::eod))
+    PP.Diag(Tok.getLocation(), diag::warn_pragma_extra_tokens_at_eol)
+        << "intrinsic";
+}
+
 bool Parser::HandlePragmaMSFunction(StringRef PragmaName,
                                     SourceLocation PragmaLocation) {
   Token FirstTok = Tok;
@@ -3793,6 +3858,7 @@ bool Parser::HandlePragmaMSFunction(StringRef PragmaName,
   return true;
 }
 
+// #pragma optimize("gsty", on|off)
 bool Parser::HandlePragmaMSOptimize(StringRef PragmaName,
                                     SourceLocation PragmaLocation) {
   Token FirstTok = Tok;
@@ -3850,56 +3916,6 @@ bool Parser::HandlePragmaMSOptimize(StringRef PragmaName,
     return false;
 
   Actions.ActOnPragmaMSOptimize(FirstTok.getLocation(), IsOn);
-  return true;
-}
-
-/// Handle the Microsoft \#pragma intrinsic extension.
-///
-/// The syntax is:
-/// \code
-///  #pragma intrinsic(memset)
-///  #pragma intrinsic(strlen, memcpy)
-/// \endcode
-///
-/// Pragma intrisic tells the compiler to use a builtin version of the
-/// function. Clang does it anyway, so the pragma doesn't really do anything.
-/// Anyway, we emit a warning if the function specified in \#pragma intrinsic
-/// isn't an intrinsic in clang and suggest to include intrin.h, as well as
-/// declare the builtin if it has not been declared.
-bool Parser::HandlePragmaMSIntrinsic(StringRef PragmaName,
-                                     SourceLocation PragmaLocation) {
-  if (ExpectAndConsume(tok::l_paren, diag::warn_pragma_expected_lparen,
-                       PragmaName))
-    return false;
-
-  bool SuggestIntrinH = !PP.isMacroDefined("__INTRIN_H");
-
-  while (Tok.is(tok::identifier)) {
-    IdentifierInfo *II = Tok.getIdentifierInfo();
-    if (!II->getBuiltinID())
-      PP.Diag(Tok.getLocation(), diag::warn_pragma_intrinsic_builtin)
-          << II << SuggestIntrinH;
-    // If the builtin hasn't already been declared, declare it now.
-    DeclarationNameInfo NameInfo(II, Tok.getLocation());
-    LookupResult Previous(Actions, NameInfo, Sema::LookupOrdinaryName,
-                          RedeclarationKind::NotForRedeclaration);
-    Actions.LookupName(Previous, Actions.getCurScope(),
-                       /*CreateBuiltins*/ false);
-    if (Previous.empty())
-      Actions.LazilyCreateBuiltin(II, II->getBuiltinID(), Actions.getCurScope(),
-                                  /*ForRedeclaration*/ true, Tok.getLocation());
-    PP.Lex(Tok);
-    if (Tok.isNot(tok::comma))
-      break;
-    PP.Lex(Tok);
-  }
-  if (ExpectAndConsume(tok::r_paren, diag::warn_pragma_expected_rparen,
-                       PragmaName))
-    return false;
-
-  if (ExpectAndConsume(tok::eof, diag::warn_pragma_extra_tokens_at_eol,
-                       PragmaName))
-    return false;
   return true;
 }
 
@@ -4135,7 +4151,6 @@ void PragmaMaxTokensTotalHandler::HandlePragma(Preprocessor &PP,
 
 // Handle '#pragma clang riscv intrinsic vector'.
 //        '#pragma clang riscv intrinsic sifive_vector'.
-//        '#pragma clang riscv intrinsic andes_vector'.
 void PragmaRISCVHandler::HandlePragma(Preprocessor &PP,
                                       PragmaIntroducer Introducer,
                                       Token &FirstToken) {
@@ -4151,11 +4166,10 @@ void PragmaRISCVHandler::HandlePragma(Preprocessor &PP,
 
   PP.Lex(Tok);
   II = Tok.getIdentifierInfo();
-  if (!II || !(II->isStr("vector") || II->isStr("sifive_vector") ||
-               II->isStr("andes_vector"))) {
+  if (!II || !(II->isStr("vector") || II->isStr("sifive_vector"))) {
     PP.Diag(Tok.getLocation(), diag::warn_pragma_invalid_argument)
         << PP.getSpelling(Tok) << "riscv" << /*Expected=*/true
-        << "'vector', 'sifive_vector' or 'andes_vector'";
+        << "'vector' or 'sifive_vector'";
     return;
   }
 
@@ -4170,6 +4184,4 @@ void PragmaRISCVHandler::HandlePragma(Preprocessor &PP,
     Actions.RISCV().DeclareRVVBuiltins = true;
   else if (II->isStr("sifive_vector"))
     Actions.RISCV().DeclareSiFiveVectorBuiltins = true;
-  else if (II->isStr("andes_vector"))
-    Actions.RISCV().DeclareAndesVectorBuiltins = true;
 }

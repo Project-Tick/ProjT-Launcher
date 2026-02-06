@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- NoexceptSwapCheck.h - clang-tidy -----------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -27,9 +27,10 @@ public:
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
 
 private:
-  DiagnosticBuilder reportMissingNoexcept(const FunctionDecl *FuncDecl) final;
+  DiagnosticBuilder
+  reportMissingNoexcept(const FunctionDecl *FuncDecl) final override;
   void reportNoexceptEvaluatedToFalse(const FunctionDecl *FuncDecl,
-                                      const Expr *NoexceptExpr) final;
+                                      const Expr *NoexceptExpr) final override;
 };
 
 } // namespace clang::tidy::performance

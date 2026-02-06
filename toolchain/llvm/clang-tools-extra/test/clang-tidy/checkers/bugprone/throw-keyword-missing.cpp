@@ -20,7 +20,6 @@ typedef basic_string<char> string;
 typedef basic_string<wchar_t> wstring;
 
 // std::exception and std::runtime_error declaration.
-// CHECK-MESSAGES-DAG: [[#EXCEPTION_LINE:@LINE + 1]]:8
 struct exception {
   exception();
   exception(const exception &other);
@@ -33,9 +32,8 @@ struct runtime_error : public exception {
 
 } // namespace std
 
-// The usage of these classes should never emit a warning.
+// The usage of this class should never emit a warning.
 struct RegularClass {};
-struct RegularDerived : public RegularClass {};
 
 // Class name contains the substring "exception", in certain cases using this class should emit a warning.
 struct RegularException {
@@ -43,21 +41,18 @@ struct RegularException {
 
   // Constructors with a single argument are treated differently (cxxFunctionalCastExpr).
   RegularException(int) {}
-
-  typedef RegularClass RegularAlias;
 };
 
 // --------------
 
-void stdExceptionNotThrownTest(int i) {
+void stdExceptionNotTrownTest(int i) {
   if (i < 0)
-    // CHECK-MESSAGES-DAG: :[[@LINE+1]]:5: warning: suspicious exception object created but not thrown; did you mean 'throw {{.*}}'? [bugprone-throw-keyword-missing]
+    // CHECK-MESSAGES: :[[@LINE+1]]:5: warning: suspicious exception object created but not thrown; did you mean 'throw {{.*}}'? [bugprone-throw-keyword-missing]
     std::exception();
 
   if (i > 0)
-    // CHECK-MESSAGES-DAG: :[[@LINE+1]]:5: warning: suspicious exception
+    // CHECK-MESSAGES: :[[@LINE+1]]:5: warning: suspicious exception
     std::runtime_error("Unexpected argument");
-    // CHECK-MESSAGES: note: object type inherits from base class declared here
 }
 
 void stdExceptionThrownTest(int i) {
@@ -71,10 +66,6 @@ void stdExceptionThrownTest(int i) {
 void regularClassNotThrownTest(int i) {
   if (i < 0)
     RegularClass();
-}
-
-void regularClassWithAliasNotThrownTest(int i) {
-  RegularDerived();
 }
 
 void regularClassThrownTest(int i) {
@@ -183,7 +174,6 @@ class RegularError : public ERROR_BASE {};
 void typedefTest() {
   // CHECK-MESSAGES: :[[@LINE+1]]:3: warning: suspicious exception
   RegularError();
-  // CHECK-MESSAGES: :[[#EXCEPTION_LINE]]:8: note: object type inherits from base class declared here
 }
 
 struct ExceptionRAII {
@@ -205,24 +195,3 @@ void placeMentNewTest() {
   alignas(RegularException) unsigned char expr[sizeof(RegularException)];
   new (expr) RegularException{};
 }
-
-void lambdaAsVariableInitializerTest() {
-  const auto var = [] {
-    // CHECK-MESSAGES: :[[@LINE+1]]:5: warning: suspicious exception
-    RegularException{0};
-  };
-}
-
-void lambdaInReturnTest() {
-  return [] {
-    // CHECK-MESSAGES: :[[@LINE+1]]:5: warning: suspicious exception
-    RegularException{0};
-  }();
-}
-
-struct ExceptionInConstructorTest {
-  ExceptionInConstructorTest() {
-    // CHECK-MESSAGES: :[[@LINE+1]]:5: warning: suspicious exception
-    RegularException{0};
-  }
-};

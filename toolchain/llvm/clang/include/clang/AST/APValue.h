@@ -51,8 +51,8 @@ public:
   const Type *getType() const { return T; }
   explicit operator bool() const { return T; }
 
-  const void *getOpaqueValue() const { return T; }
-  static TypeInfoLValue getFromOpaqueValue(const void *Value) {
+  void *getOpaqueValue() { return const_cast<Type*>(T); }
+  static TypeInfoLValue getFromOpaqueValue(void *Value) {
     TypeInfoLValue V;
     V.T = reinterpret_cast<const Type*>(Value);
     return V;
@@ -72,11 +72,11 @@ public:
 
   explicit operator bool() const { return Index != 0; }
 
-  const void *getOpaqueValue() const {
-    return reinterpret_cast<const void *>(static_cast<uintptr_t>(Index)
-                                          << NumLowBitsAvailable);
+  void *getOpaqueValue() {
+    return reinterpret_cast<void *>(static_cast<uintptr_t>(Index)
+                                    << NumLowBitsAvailable);
   }
-  static DynamicAllocLValue getFromOpaqueValue(const void *Value) {
+  static DynamicAllocLValue getFromOpaqueValue(void *Value) {
     DynamicAllocLValue V;
     V.Index = reinterpret_cast<uintptr_t>(Value) >> NumLowBitsAvailable;
     return V;
@@ -92,10 +92,10 @@ public:
 
 namespace llvm {
 template<> struct PointerLikeTypeTraits<clang::TypeInfoLValue> {
-  static const void *getAsVoidPointer(clang::TypeInfoLValue V) {
+  static void *getAsVoidPointer(clang::TypeInfoLValue V) {
     return V.getOpaqueValue();
   }
-  static clang::TypeInfoLValue getFromVoidPointer(const void *P) {
+  static clang::TypeInfoLValue getFromVoidPointer(void *P) {
     return clang::TypeInfoLValue::getFromOpaqueValue(P);
   }
   // Validated by static_assert in APValue.cpp; hardcoded to avoid needing
@@ -104,10 +104,10 @@ template<> struct PointerLikeTypeTraits<clang::TypeInfoLValue> {
 };
 
 template<> struct PointerLikeTypeTraits<clang::DynamicAllocLValue> {
-  static const void *getAsVoidPointer(clang::DynamicAllocLValue V) {
+  static void *getAsVoidPointer(clang::DynamicAllocLValue V) {
     return V.getOpaqueValue();
   }
-  static clang::DynamicAllocLValue getFromVoidPointer(const void *P) {
+  static clang::DynamicAllocLValue getFromVoidPointer(void *P) {
     return clang::DynamicAllocLValue::getFromOpaqueValue(P);
   }
   static constexpr int NumLowBitsAvailable =
@@ -143,7 +143,7 @@ public:
     AddrLabelDiff
   };
 
-  class alignas(uint64_t) LValueBase {
+  class LValueBase {
     typedef llvm::PointerUnion<const ValueDecl *, const Expr *, TypeInfoLValue,
                                DynamicAllocLValue>
         PtrTy;

@@ -109,12 +109,11 @@ public:
   }
 
   const PseudoProbeDescriptor *getDesc(StringRef FProfileName) const {
-    return getDesc(Function::getGUIDAssumingExternalLinkage(FProfileName));
+    return getDesc(Function::getGUID(FProfileName));
   }
 
   const PseudoProbeDescriptor *getDesc(const Function &F) const {
-    return getDesc(Function::getGUIDAssumingExternalLinkage(
-        FunctionSamples::getCanonicalFnName(F)));
+    return getDesc(Function::getGUID(FunctionSamples::getCanonicalFnName(F)));
   }
 
   bool profileIsHashMismatched(const PseudoProbeDescriptor &FuncDesc,
@@ -647,12 +646,13 @@ void SampleProfileLoaderBaseImpl<BT>::findEquivalenceClasses(FunctionT &F) {
     BasicBlockT *BB1 = &BB;
 
     // Compute BB1's equivalence class once.
-    // By default, blocks are in their own equivalence class.
-    auto [It, Inserted] = EquivalenceClass.try_emplace(BB1, BB1);
-    if (!Inserted) {
+    if (EquivalenceClass.count(BB1)) {
       LLVM_DEBUG(printBlockEquivalence(dbgs(), BB1));
       continue;
     }
+
+    // By default, blocks are in their own equivalence class.
+    EquivalenceClass[BB1] = BB1;
 
     // Traverse all the blocks dominated by BB1. We are looking for
     // every basic block BB2 such that:
@@ -745,9 +745,8 @@ bool SampleProfileLoaderBaseImpl<BT>::propagateThroughEdges(
 
       if (i == 0) {
         // First, visit all predecessor edges.
-        auto &Preds = Predecessors[BB];
-        NumTotalEdges = Preds.size();
-        for (auto *Pred : Preds) {
+        NumTotalEdges = Predecessors[BB].size();
+        for (auto *Pred : Predecessors[BB]) {
           Edge E = std::make_pair(Pred, BB);
           TotalWeight += visitEdge(E, &NumUnknownEdges, &UnknownEdge);
           if (E.first == E.second)
@@ -758,9 +757,8 @@ bool SampleProfileLoaderBaseImpl<BT>::propagateThroughEdges(
         }
       } else {
         // On the second round, visit all successor edges.
-        auto &Succs = Successors[BB];
-        NumTotalEdges = Succs.size();
-        for (auto *Succ : Succs) {
+        NumTotalEdges = Successors[BB].size();
+        for (auto *Succ : Successors[BB]) {
           Edge E = std::make_pair(BB, Succ);
           TotalWeight += visitEdge(E, &NumUnknownEdges, &UnknownEdge);
         }
@@ -883,21 +881,19 @@ void SampleProfileLoaderBaseImpl<BT>::buildEdges(FunctionT &F) {
 
     // Add predecessors for B1.
     SmallPtrSet<BasicBlockT *, 16> Visited;
-    auto &Preds = Predecessors[B1];
-    if (!Preds.empty())
+    if (!Predecessors[B1].empty())
       llvm_unreachable("Found a stale predecessors list in a basic block.");
     for (auto *B2 : getPredecessors(B1))
       if (Visited.insert(B2).second)
-        Preds.push_back(B2);
+        Predecessors[B1].push_back(B2);
 
     // Add successors for B1.
     Visited.clear();
-    auto &Succs = Successors[B1];
-    if (!Succs.empty())
+    if (!Successors[B1].empty())
       llvm_unreachable("Found a stale successors list in a basic block.");
     for (auto *B2 : getSuccessors(B1))
       if (Visited.insert(B2).second)
-        Succs.push_back(B2);
+        Successors[B1].push_back(B2);
   }
 }
 
@@ -1088,6 +1084,7 @@ void SampleProfileLoaderBaseImpl<BT>::finalizeWeightPropagation(
   // Samples->getHeadSamples() + 1 to avoid functions with zero count.
   if (SampleProfileUseProfi) {
     const BasicBlockT *EntryBB = getEntryBB(&F);
+    ErrorOr<uint64_t> EntryWeight = getBlockWeight(EntryBB);
     if (BlockWeights[EntryBB] > 0) {
       getFunction(F).setEntryCount(
           ProfileCount(BlockWeights[EntryBB], Function::PCT_Real),

@@ -10,7 +10,6 @@ tablegen(LLVM AVRGenDisassemblerTables.inc -gen-disassembler)
 tablegen(LLVM AVRGenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM AVRGenMCCodeEmitter.inc -gen-emitter)
 tablegen(LLVM AVRGenRegisterInfo.inc -gen-register-info)
-tablegen(LLVM AVRGenSDNodeInfo.inc -gen-sd-node-info)
 tablegen(LLVM AVRGenSubtargetInfo.inc -gen-subtarget)
 
 add_public_tablegen_target(AVRCommonTableGen)
@@ -24,18 +23,15 @@ add_llvm_target(AVRCodeGen
   AVRISelLowering.cpp
   AVRMCInstLower.cpp
   AVRRegisterInfo.cpp
-  AVRSelectionDAGInfo.cpp
   AVRShiftExpand.cpp
   AVRSubtarget.cpp
   AVRTargetMachine.cpp
   AVRTargetObjectFile.cpp
-  AVRTargetTransformInfo.cpp
 
   DEPENDS
   intrinsics_gen
 
   LINK_COMPONENTS
-  Analysis
   AVRDesc
   AVRInfo
   AsmPrinter
@@ -46,8 +42,6 @@ add_llvm_target(AVRCodeGen
   SelectionDAG
   Support
   Target
-  TargetParser
-  TransformUtils
 
   ADD_TO_COMPONENT
   AVR

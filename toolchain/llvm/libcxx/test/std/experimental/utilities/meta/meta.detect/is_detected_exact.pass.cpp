@@ -11,7 +11,6 @@
 
 #include <experimental/type_traits>
 #include <string>
-#include <utility>
 
 #include "test_macros.h"
 

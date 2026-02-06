@@ -17,7 +17,6 @@
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/FoldingSet.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/raw_ostream.h"
 #include <memory>
 
@@ -71,9 +70,7 @@ public:
 
   virtual void print(raw_ostream &OS) const = 0;
 
-#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
   LLVM_DUMP_METHOD void dump() const;
-#endif
 
 protected:
   /// Query the SMT solver and returns true if two sorts are equal (same kind
@@ -120,9 +117,7 @@ public:
 
   virtual void print(raw_ostream &OS) const = 0;
 
-#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
   LLVM_DUMP_METHOD void dump() const;
-#endif
 
 protected:
   /// Query the SMT solver and returns true if two sorts are equal (same kind
@@ -140,9 +135,7 @@ public:
 
   virtual void print(raw_ostream &OS) const = 0;
 
-#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
   LLVM_DUMP_METHOD void dump() const;
-#endif
 };
 
 /// Shared pointer for SMTExprs, used by SMTSolver API.
@@ -158,9 +151,7 @@ public:
   SMTSolver() = default;
   virtual ~SMTSolver() = default;
 
-#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
   LLVM_DUMP_METHOD void dump() const;
-#endif
 
   // Returns an appropriate floating-point sort for the given bitwidth.
   SMTSortRef getFloatSort(unsigned BitWidth) {
@@ -468,7 +459,7 @@ public:
 using SMTSolverRef = std::shared_ptr<SMTSolver>;
 
 /// Convenience method to create and Z3Solver object
-LLVM_ABI SMTSolverRef CreateZ3Solver();
+SMTSolverRef CreateZ3Solver();
 
 } // namespace llvm
 

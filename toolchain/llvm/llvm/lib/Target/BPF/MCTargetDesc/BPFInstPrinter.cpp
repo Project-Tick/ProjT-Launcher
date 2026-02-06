@@ -16,6 +16,7 @@
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCSymbol.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 using namespace llvm;
 
@@ -31,8 +32,27 @@ void BPFInstPrinter::printInst(const MCInst *MI, uint64_t Address,
   printAnnotation(O, Annot);
 }
 
+static void printExpr(const MCExpr *Expr, raw_ostream &O) {
+  const MCSymbolRefExpr *SRE;
+
+  if (const MCBinaryExpr *BE = dyn_cast<MCBinaryExpr>(Expr))
+    SRE = dyn_cast<MCSymbolRefExpr>(BE->getLHS());
+  else
+    SRE = dyn_cast<MCSymbolRefExpr>(Expr);
+  if (!SRE)
+    report_fatal_error("Unexpected MCExpr type.");
+
+#ifndef NDEBUG
+  MCSymbolRefExpr::VariantKind Kind = SRE->getKind();
+
+  assert(Kind == MCSymbolRefExpr::VK_None);
+#endif
+  O << *Expr;
+}
+
 void BPFInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
-                                  raw_ostream &O) {
+                                  raw_ostream &O, const char *Modifier) {
+  assert((Modifier == nullptr || Modifier[0] == 0) && "No modifiers supported");
   const MCOperand &Op = MI->getOperand(OpNo);
   if (Op.isReg()) {
     O << getRegisterName(Op.getReg());
@@ -40,12 +60,12 @@ void BPFInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
     O << formatImm((int32_t)Op.getImm());
   } else {
     assert(Op.isExpr() && "Expected an expression");
-    MAI.printExpr(O, *Op.getExpr());
+    printExpr(Op.getExpr(), O);
   }
 }
 
-void BPFInstPrinter::printMemOperand(const MCInst *MI, int OpNo,
-                                     raw_ostream &O) {
+void BPFInstPrinter::printMemOperand(const MCInst *MI, int OpNo, raw_ostream &O,
+                                     const char *Modifier) {
   const MCOperand &RegOp = MI->getOperand(OpNo);
   const MCOperand &OffsetOp = MI->getOperand(OpNo + 1);
 
@@ -71,7 +91,7 @@ void BPFInstPrinter::printImm64Operand(const MCInst *MI, unsigned OpNo,
   if (Op.isImm())
     O << formatImm(Op.getImm());
   else if (Op.isExpr())
-    MAI.printExpr(O, *Op.getExpr());
+    printExpr(Op.getExpr(), O);
   else
     O << Op;
 }
@@ -88,7 +108,7 @@ void BPFInstPrinter::printBrTargetOperand(const MCInst *MI, unsigned OpNo,
       O << ((Imm >= 0) ? "+" : "") << formatImm(Imm);
     }
   } else if (Op.isExpr()) {
-    MAI.printExpr(O, *Op.getExpr());
+    printExpr(Op.getExpr(), O);
   } else {
     O << Op;
   }

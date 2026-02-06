@@ -22,7 +22,6 @@
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/Support/CodeGen.h"
-#include "llvm/Support/Compiler.h"
 #include <memory>
 #include <vector>
 
@@ -38,7 +37,6 @@ class InstrItineraryData;
 struct InstrStage;
 class InstructionSelector;
 class LegalizerInfo;
-class LibcallLoweringInfo;
 class MachineInstr;
 struct MachineSchedPolicy;
 struct MCReadAdvanceEntry;
@@ -55,7 +53,6 @@ class TargetRegisterClass;
 class TargetRegisterInfo;
 class TargetSchedModel;
 class Triple;
-struct SchedRegion;
 
 //===----------------------------------------------------------------------===//
 ///
@@ -63,7 +60,7 @@ struct SchedRegion;
 /// Target-specific options that control code generation and printing should
 /// be exposed through a TargetSubtargetInfo-derived class.
 ///
-class LLVM_ABI TargetSubtargetInfo : public MCSubtargetInfo {
+class TargetSubtargetInfo : public MCSubtargetInfo {
 protected: // Can only create subclasses...
   TargetSubtargetInfo(const Triple &TT, StringRef CPU, StringRef TuneCPU,
                       StringRef FS, ArrayRef<StringRef> PN,
@@ -127,8 +124,9 @@ public:
 
   virtual const LegalizerInfo *getLegalizerInfo() const { return nullptr; }
 
-  /// Return the target's register information.
-  virtual const TargetRegisterInfo *getRegisterInfo() const = 0;
+  /// getRegisterInfo - If register information is available, return it.  If
+  /// not, return null.
+  virtual const TargetRegisterInfo *getRegisterInfo() const { return nullptr; }
 
   /// If the information for the register banks is available, return it.
   /// Otherwise return nullptr.
@@ -139,12 +137,6 @@ public:
   virtual const InstrItineraryData *getInstrItineraryData() const {
     return nullptr;
   }
-
-  /// Configure the LibcallLoweringInfo for this subtarget. The libcalls will be
-  /// pre-configured with defaults based on RuntimeLibcallsInfo. This may be
-  /// used to override those decisions, such as disambiguating alternative
-  /// implementations.
-  virtual void initLibcallLoweringInfo(LibcallLoweringInfo &Info) const {}
 
   /// Resolve a SchedClass at runtime, where SchedClass identifies an
   /// MCSchedClassDesc with the isVariant property. This may return the ID of
@@ -217,10 +209,6 @@ public:
   /// can be overridden.
   virtual bool enableJoinGlobalCopies() const;
 
-  /// Hack to bring up option. This should be unconditionally true, all targets
-  /// should enable it and delete this.
-  virtual bool enableTerminalRule() const { return false; }
-
   /// True if the subtarget should run a scheduler after register allocation.
   ///
   /// By default this queries the PostRAScheduling bit in the scheduling model
@@ -243,7 +231,7 @@ public:
   /// scheduling heuristics (no custom MachineSchedStrategy) to make
   /// changes to the generic scheduling policy.
   virtual void overrideSchedPolicy(MachineSchedPolicy &Policy,
-                                   const SchedRegion &Region) const {}
+                                   unsigned NumRegionInstrs) const {}
 
   /// Override generic post-ra scheduling policy within a region.
   ///
@@ -253,7 +241,7 @@ public:
   /// Note that some options like tracking register pressure won't take effect
   /// in post-ra scheduling.
   virtual void overridePostRASchedPolicy(MachineSchedPolicy &Policy,
-                                         const SchedRegion &Region) const {}
+                                         unsigned NumRegionInstrs) const {}
 
   // Perform target-specific adjustments to the latency of a schedule
   // dependency.

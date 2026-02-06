@@ -13,14 +13,13 @@
 
 namespace llvm {
 class MCSymbolELF : public MCSymbol {
-  friend class MCAsmInfoELF;
   /// An expression describing how to calculate the size of a symbol. If a
   /// symbol has no size this field will be NULL.
   const MCExpr *SymbolSize = nullptr;
 
 public:
   MCSymbolELF(const MCSymbolTableEntry *Name, bool isTemporary)
-      : MCSymbol(Name, isTemporary) {}
+      : MCSymbol(SymbolKindELF, Name, isTemporary) {}
   void setSize(const MCExpr *SS) { SymbolSize = SS; }
 
   const MCExpr *getSize() const { return SymbolSize; }
@@ -39,14 +38,16 @@ public:
 
   bool isBindingSet() const;
 
-  void setIsWeakref() const;
-  bool isWeakref() const;
+  void setIsWeakrefUsedInReloc() const;
+  bool isWeakrefUsedInReloc() const;
 
   void setIsSignature() const;
   bool isSignature() const;
 
   void setMemtag(bool Tagged);
   bool isMemtag() const;
+
+  static bool classof(const MCSymbol *S) { return S->isELF(); }
 
 private:
   void setIsBindingSet() const;

@@ -13,7 +13,6 @@
 #include <cstdint>
 
 #include "Shared/Debug.h"
-#include "Shared/Utils.h"
 #include "Utils/ELF.h"
 
 #include "omptarget.h"
@@ -27,7 +26,7 @@ namespace plugin {
 namespace hsa_utils {
 
 // The implicit arguments of COV5 AMDGPU kernels.
-struct alignas(alignof(void *)) AMDGPUImplicitArgsTy {
+struct AMDGPUImplicitArgsTy {
   uint32_t BlockCountX;
   uint32_t BlockCountY;
   uint32_t BlockCountZ;
@@ -41,10 +40,17 @@ struct alignas(alignof(void *)) AMDGPUImplicitArgsTy {
   uint8_t Unused2[132]; // 132 byte offset.
 };
 
+// Dummy struct for COV4 implicitargs.
+struct AMDGPUImplicitArgsTyCOV4 {
+  uint8_t Unused[56];
+};
+
 /// Returns the size in bytes of the implicit arguments of AMDGPU kernels.
 /// `Version` is the ELF ABI version, e.g. COV5.
 inline uint32_t getImplicitArgsSize(uint16_t Version) {
-  return sizeof(AMDGPUImplicitArgsTy);
+  return Version < ELF::ELFABIVERSION_AMDGPU_HSA_V5
+             ? sizeof(AMDGPUImplicitArgsTyCOV4)
+             : sizeof(AMDGPUImplicitArgsTy);
 }
 
 /// Reads the AMDGPU specific metadata from the ELF file and propagates the
@@ -59,18 +65,6 @@ inline Error readAMDGPUMetaDataFromImage(
     return Err;
   DP("ELFABIVERSION Version: %u\n", ELFABIVersion);
   return Err;
-}
-
-/// Initializes the HSA implicit argument if the struct size permits it. This is
-/// necessary because optimizations can modify the size of the struct if
-/// portions of it are unused.
-template <typename MemberTy, typename T>
-void initImplArg(AMDGPUImplicitArgsTy *Base,
-                 MemberTy AMDGPUImplicitArgsTy::*Member, size_t AvailableSize,
-                 T Value) {
-  uint64_t Offset = utils::getPtrDiff(&(Base->*Member), Base);
-  if (Offset + sizeof(MemberTy) <= AvailableSize)
-    Base->*Member = static_cast<MemberTy>(Value);
 }
 
 } // namespace hsa_utils

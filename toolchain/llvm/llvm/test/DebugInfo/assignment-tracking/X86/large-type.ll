@@ -1,7 +1,9 @@
 ; RUN: llc %s -stop-after=finalize-isel -o - \
 ; RUN: | FileCheck %s --implicit-check-not=DBG_
 
-target triple = "x86_64-unknown-linux-gnu"
+
+; RUN: llc --try-experimental-debuginfo-iterators %s -stop-after=finalize-isel -o - \
+; RUN: | FileCheck %s --implicit-check-not=DBG_
 
 ;; Based on optimized IR from C source:
 ;; int main () {

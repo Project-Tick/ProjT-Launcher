@@ -62,16 +62,17 @@ using namespace sema;
 ///  is at the top of the stack and has the highest index.
 /// \param VarToCapture - the variable to capture.  If NULL, capture 'this'.
 ///
-/// \returns An UnsignedOrNone Index that if evaluates to 'true'
+/// \returns An std::optional<unsigned> Index that if evaluates to 'true'
 /// contains the index (into Sema's FunctionScopeInfo stack) of the innermost
 /// lambda which is capture-ready.  If the return value evaluates to 'false'
 /// then no lambda is capture-ready for \p VarToCapture.
 
-static inline UnsignedOrNone getStackIndexOfNearestEnclosingCaptureReadyLambda(
+static inline std::optional<unsigned>
+getStackIndexOfNearestEnclosingCaptureReadyLambda(
     ArrayRef<const clang::sema::FunctionScopeInfo *> FunctionScopes,
     ValueDecl *VarToCapture) {
   // Label failure to capture.
-  const UnsignedOrNone NoLambdaIsCaptureReady = std::nullopt;
+  const std::optional<unsigned> NoLambdaIsCaptureReady;
 
   // Ignore all inner captured regions.
   unsigned CurScopeIndex = FunctionScopes.size() - 1;
@@ -172,18 +173,19 @@ static inline UnsignedOrNone getStackIndexOfNearestEnclosingCaptureReadyLambda(
 /// \param VarToCapture - the variable to capture.  If NULL, capture 'this'.
 ///
 ///
-/// \returns An UnsignedOrNone Index that if evaluates to 'true'
+/// \returns An std::optional<unsigned> Index that if evaluates to 'true'
 /// contains the index (into Sema's FunctionScopeInfo stack) of the innermost
 /// lambda which is capture-capable.  If the return value evaluates to 'false'
 /// then no lambda is capture-capable for \p VarToCapture.
 
-UnsignedOrNone clang::getStackIndexOfNearestEnclosingCaptureCapableLambda(
+std::optional<unsigned>
+clang::getStackIndexOfNearestEnclosingCaptureCapableLambda(
     ArrayRef<const sema::FunctionScopeInfo *> FunctionScopes,
     ValueDecl *VarToCapture, Sema &S) {
 
-  const UnsignedOrNone NoLambdaIsCaptureCapable = std::nullopt;
+  const std::optional<unsigned> NoLambdaIsCaptureCapable;
 
-  const UnsignedOrNone OptionalStackIndex =
+  const std::optional<unsigned> OptionalStackIndex =
       getStackIndexOfNearestEnclosingCaptureReadyLambda(FunctionScopes,
                                                         VarToCapture);
   if (!OptionalStackIndex)
@@ -207,12 +209,13 @@ UnsignedOrNone clang::getStackIndexOfNearestEnclosingCaptureCapableLambda(
     // checking whether all enclosing lambdas of the capture-ready lambda allow
     // the capture - i.e. make sure it is capture-capable.
     QualType CaptureType, DeclRefType;
-    const bool CanCaptureVariable = !S.tryCaptureVariable(
-        VarToCapture,
-        /*ExprVarIsUsedInLoc*/ SourceLocation(), TryCaptureKind::Implicit,
-        /*EllipsisLoc*/ SourceLocation(),
-        /*BuildAndDiagnose*/ false, CaptureType, DeclRefType,
-        &IndexOfCaptureReadyLambda);
+    const bool CanCaptureVariable =
+        !S.tryCaptureVariable(VarToCapture,
+                              /*ExprVarIsUsedInLoc*/ SourceLocation(),
+                              clang::Sema::TryCapture_Implicit,
+                              /*EllipsisLoc*/ SourceLocation(),
+                              /*BuildAndDiagnose*/ false, CaptureType,
+                              DeclRefType, &IndexOfCaptureReadyLambda);
     if (!CanCaptureVariable)
       return NoLambdaIsCaptureCapable;
   } else {
@@ -235,10 +238,10 @@ getGenericLambdaTemplateParameterList(LambdaScopeInfo *LSI, Sema &SemaRef) {
   if (!LSI->GLTemplateParameterList && !LSI->TemplateParams.empty()) {
     LSI->GLTemplateParameterList = TemplateParameterList::Create(
         SemaRef.Context,
-        /*Begin loc of the lambda expression*/ LSI->IntroducerRange.getBegin(),
+        /*Template kw loc*/ SourceLocation(),
         /*L angle loc*/ LSI->ExplicitTemplateParamsRange.getBegin(),
         LSI->TemplateParams,
-        /*R angle loc*/ LSI->ExplicitTemplateParamsRange.getEnd(),
+        /*R angle loc*/LSI->ExplicitTemplateParamsRange.getEnd(),
         LSI->RequiresClause.get());
   }
   return LSI->GLTemplateParameterList;
@@ -249,6 +252,8 @@ Sema::createLambdaClosureType(SourceRange IntroducerRange, TypeSourceInfo *Info,
                               unsigned LambdaDependencyKind,
                               LambdaCaptureDefault CaptureDefault) {
   DeclContext *DC = CurContext;
+  while (!(DC->isFunctionOrMethod() || DC->isRecord() || DC->isFileContext()))
+    DC = DC->getParent();
 
   bool IsGenericLambda =
       Info && getGenericLambdaTemplateParameterList(getCurLambda(), *this);
@@ -287,8 +292,7 @@ Sema::getCurrentMangleNumberContext(const DeclContext *DC) {
     DataMember,
     InlineVariable,
     TemplatedVariable,
-    Concept,
-    NonInlineInModulePurview
+    Concept
   } Kind = Normal;
 
   bool IsInNonspecializedTemplate =
@@ -297,51 +301,29 @@ Sema::getCurrentMangleNumberContext(const DeclContext *DC) {
   // Default arguments of member function parameters that appear in a class
   // definition, as well as the initializers of data members, receive special
   // treatment. Identify them.
-  Kind = [&]() {
-    if (auto *ND = dyn_cast<NamedDecl>(ManglingContextDecl ? ManglingContextDecl
-                                                           : cast<Decl>(DC))) {
-      // See discussion in https://github.com/itanium-cxx-abi/cxx-abi/issues/186
-      //
-      // zygoloid:
-      //    Yeah, I think the only cases left where lambdas don't need a
-      //    mangling are when they have (effectively) internal linkage or appear
-      //    in a non-inline function in a non-module translation unit.
-      Module *M = ND->getOwningModule();
-      if (M && M->getTopLevelModule()->isNamedModuleUnit() &&
-          ND->isExternallyVisible())
-        return NonInlineInModulePurview;
-    }
-
-    if (!ManglingContextDecl)
-      return Normal;
-
+  if (ManglingContextDecl) {
     if (ParmVarDecl *Param = dyn_cast<ParmVarDecl>(ManglingContextDecl)) {
       if (const DeclContext *LexicalDC
           = Param->getDeclContext()->getLexicalParent())
         if (LexicalDC->isRecord())
-          return DefaultArgument;
+          Kind = DefaultArgument;
     } else if (VarDecl *Var = dyn_cast<VarDecl>(ManglingContextDecl)) {
       if (Var->getMostRecentDecl()->isInline())
-        return InlineVariable;
-
-      if (Var->getDeclContext()->isRecord() && IsInNonspecializedTemplate)
-        return TemplatedVariable;
-
-      if (Var->getDescribedVarTemplate())
-        return TemplatedVariable;
-
-      if (auto *VTS = dyn_cast<VarTemplateSpecializationDecl>(Var)) {
+        Kind = InlineVariable;
+      else if (Var->getDeclContext()->isRecord() && IsInNonspecializedTemplate)
+        Kind = TemplatedVariable;
+      else if (Var->getDescribedVarTemplate())
+        Kind = TemplatedVariable;
+      else if (auto *VTS = dyn_cast<VarTemplateSpecializationDecl>(Var)) {
         if (!VTS->isExplicitSpecialization())
-          return TemplatedVariable;
+          Kind = TemplatedVariable;
       }
     } else if (isa<FieldDecl>(ManglingContextDecl)) {
-      return DataMember;
+      Kind = DataMember;
     } else if (isa<ImplicitConceptSpecializationDecl>(ManglingContextDecl)) {
-      return Concept;
+      Kind = Concept;
     }
-
-    return Normal;
-  }();
+  }
 
   // Itanium ABI [5.1.7]:
   //   In the following contexts [...] the one-definition rule requires closure
@@ -360,7 +342,6 @@ Sema::getCurrentMangleNumberContext(const DeclContext *DC) {
     return std::make_tuple(nullptr, nullptr);
   }
 
-  case NonInlineInModulePurview:
   case Concept:
     // Concept definitions aren't code generated and thus aren't mangled,
     // however the ManglingContextDecl is important for the purposes of
@@ -426,7 +407,7 @@ bool Sema::DiagnoseInvalidExplicitObjectParameterInLambda(
                                              .getNonReferenceType()
                                              .getUnqualifiedType()
                                              .getDesugaredType(getASTContext());
-  CanQualType LambdaType = getASTContext().getCanonicalTagType(RD);
+  QualType LambdaType = getASTContext().getRecordType(RD);
   if (LambdaType == ExplicitObjectParameterType)
     return false;
 
@@ -458,7 +439,7 @@ bool Sema::DiagnoseInvalidExplicitObjectParameterInLambda(
     return true;
   }
 
-  if (Paths.isAmbiguous(LambdaType)) {
+  if (Paths.isAmbiguous(LambdaType->getCanonicalTypeUnqualified())) {
     std::string PathsDisplay = getAmbiguousPathsDisplayString(Paths);
     Diag(CallLoc, diag::err_explicit_object_lambda_ambiguous_base)
         << LambdaType << PathsDisplay;
@@ -642,8 +623,9 @@ static EnumDecl *findEnumForBlockReturn(Expr *E) {
   }
 
   //   - it is an expression of that formal enum type.
-  if (auto *ED = E->getType()->getAsEnumDecl())
-    return ED;
+  if (const EnumType *ET = E->getType()->getAs<EnumType>()) {
+    return ET->getDecl();
+  }
 
   // Otherwise, nope.
   return nullptr;
@@ -759,7 +741,7 @@ void Sema::deduceClosureReturnType(CapturingScopeInfo &CSI) {
     assert(isa<BlockScopeInfo>(CSI));
     const EnumDecl *ED = findCommonEnumForBlockReturns(CSI.Returns);
     if (ED) {
-      CSI.ReturnType = Context.getCanonicalTagType(ED);
+      CSI.ReturnType = Context.getTypeDeclType(ED);
       adjustBlockReturnsToEnum(*this, CSI.Returns, CSI.ReturnType);
       return;
     }
@@ -803,8 +785,8 @@ void Sema::deduceClosureReturnType(CapturingScopeInfo &CSI) {
 
 QualType Sema::buildLambdaInitCaptureInitialization(
     SourceLocation Loc, bool ByRef, SourceLocation EllipsisLoc,
-    UnsignedOrNone NumExpansions, IdentifierInfo *Id, bool IsDirectInit,
-    Expr *&Init) {
+    std::optional<unsigned> NumExpansions, IdentifierInfo *Id,
+    bool IsDirectInit, Expr *&Init) {
   // Create an 'auto' or 'auto&' TypeSourceInfo that we can use to
   // deduce against.
   QualType DeductType = Context.getAutoDeductType();
@@ -1010,7 +992,7 @@ CXXMethodDecl *Sema::CreateLambdaCallOperator(SourceRange IntroducerRange,
       QualType(), /*Tinfo=*/nullptr, SC_None,
       getCurFPFeatures().isFPConstrained(),
       /*isInline=*/true, ConstexprSpecKind::Unspecified, SourceLocation(),
-      /*TrailingRequiresClause=*/{});
+      /*TrailingRequiresClause=*/nullptr);
   Method->setAccess(AS_public);
   return Method;
 }
@@ -1028,8 +1010,7 @@ void Sema::AddTemplateParametersToLambdaCallOperator(
 
 void Sema::CompleteLambdaCallOperator(
     CXXMethodDecl *Method, SourceLocation LambdaLoc,
-    SourceLocation CallOperatorLoc,
-    const AssociatedConstraint &TrailingRequiresClause,
+    SourceLocation CallOperatorLoc, Expr *TrailingRequiresClause,
     TypeSourceInfo *MethodTyInfo, ConstexprSpecKind ConstexprKind,
     StorageClass SC, ArrayRef<ParmVarDecl *> Params,
     bool HasExplicitResultType) {
@@ -1102,7 +1083,7 @@ void Sema::ActOnLambdaExpressionAfterIntroducer(LambdaIntroducer &Intro,
       CXXRecordDecl::LDK_Unknown;
   if (CurScope->getTemplateParamParent() != nullptr) {
     LambdaDependencyKind = CXXRecordDecl::LDK_AlwaysDependent;
-  } else if (Scope *ParentScope = CurScope->getParent()) {
+  } else if (Scope *P = CurScope->getParent()) {
     // Given a lambda defined inside a requires expression,
     //
     // struct S {
@@ -1113,14 +1094,10 @@ void Sema::ActOnLambdaExpressionAfterIntroducer(LambdaIntroducer &Intro,
     // The parameter var is not injected into the function Decl at the point of
     // parsing lambda. In such scenarios, perceiving it as dependent could
     // result in the constraint being evaluated, which matches what GCC does.
-    Scope *LookupScope = ParentScope;
-    while (LookupScope->getEntity() &&
-           LookupScope->getEntity()->isRequiresExprBody())
-      LookupScope = LookupScope->getParent();
-
-    if (LookupScope != ParentScope &&
-        LookupScope->isFunctionDeclarationScope() &&
-        llvm::any_of(LookupScope->decls(), [](Decl *D) {
+    while (P->getEntity() && P->getEntity()->isRequiresExprBody())
+      P = P->getParent();
+    if (P->isFunctionDeclarationScope() &&
+        llvm::any_of(P->decls(), [](Decl *D) {
           return isa<ParmVarDecl>(D) &&
                  cast<ParmVarDecl>(D)->getType()->isTemplateTypeParmType();
         }))
@@ -1349,9 +1326,8 @@ void Sema::ActOnLambdaExpressionAfterIntroducer(LambdaIntroducer &Intro,
     if (C->Init.isUsable()) {
       addInitCapture(LSI, cast<VarDecl>(Var), C->Kind == LCK_ByRef);
     } else {
-      TryCaptureKind Kind = C->Kind == LCK_ByRef
-                                ? TryCaptureKind::ExplicitByRef
-                                : TryCaptureKind::ExplicitByVal;
+      TryCaptureKind Kind = C->Kind == LCK_ByRef ? TryCapture_ExplicitByRef
+                                                 : TryCapture_ExplicitByVal;
       tryCaptureVariable(Var, C->Loc, Kind, EllipsisLoc);
     }
     if (!LSI->Captures.empty())
@@ -1444,16 +1420,16 @@ void Sema::ActOnStartOfLambdaDefinition(LambdaIntroducer &Intro,
   TypeSourceInfo *MethodTyInfo = getLambdaType(
       *this, Intro, ParamInfo, getCurScope(), TypeLoc, ExplicitResultType);
 
-  if (ParamInfo.isFunctionDeclarator() != 0) {
+  LSI->ExplicitParams = ParamInfo.getNumTypeObjects() != 0;
+
+  if (ParamInfo.isFunctionDeclarator() != 0 &&
+      !FTIHasSingleVoidParameter(ParamInfo.getFunctionTypeInfo())) {
     const auto &FTI = ParamInfo.getFunctionTypeInfo();
-    LSI->ExplicitParams = FTI.getLParenLoc().isValid();
-    if (!FTIHasSingleVoidParameter(FTI)) {
-      Params.reserve(Params.size());
-      for (unsigned I = 0; I < FTI.NumParams; ++I) {
-        auto *Param = cast<ParmVarDecl>(FTI.Params[I].Param);
-        Param->setScopeInfo(0, Params.size());
-        Params.push_back(Param);
-      }
+    Params.reserve(Params.size());
+    for (unsigned I = 0; I < FTI.NumParams; ++I) {
+      auto *Param = cast<ParmVarDecl>(FTI.Params[I].Param);
+      Param->setScopeInfo(0, Params.size());
+      Params.push_back(Param);
     }
   }
 
@@ -1462,7 +1438,7 @@ void Sema::ActOnStartOfLambdaDefinition(LambdaIntroducer &Intro,
 
   CompleteLambdaCallOperator(
       Method, Intro.Range.getBegin(), CallOperatorLoc,
-      AssociatedConstraint(ParamInfo.getTrailingRequiresClause()), MethodTyInfo,
+      ParamInfo.getTrailingRequiresClause(), MethodTyInfo,
       ParamInfo.getDeclSpec().getConstexprSpecifier(),
       IsLambdaStatic ? SC_Static : SC_None, Params, ExplicitResultType);
 
@@ -1546,7 +1522,7 @@ void Sema::ActOnStartOfLambdaDefinition(LambdaIntroducer &Intro,
   // The optional requires-clause ([temp.pre]) in an init-declarator or
   // member-declarator shall be present only if the declarator declares a
   // templated function ([dcl.fct]).
-  if (const AssociatedConstraint &TRC = Method->getTrailingRequiresClause()) {
+  if (Expr *TRC = Method->getTrailingRequiresClause()) {
     // [temp.pre]/8:
     // An entity is templated if it is
     // - a template,
@@ -1569,15 +1545,20 @@ void Sema::ActOnStartOfLambdaDefinition(LambdaIntroducer &Intro,
     // applies to the call operator, which we already know is a member function,
     // AND defined.
     if (!Method->getDescribedFunctionTemplate() && !Method->isTemplated()) {
-      Diag(TRC.ConstraintExpr->getBeginLoc(),
-           diag::err_constrained_non_templated_function);
+      Diag(TRC->getBeginLoc(), diag::err_constrained_non_templated_function);
     }
   }
 
   // Enter a new evaluation context to insulate the lambda from any
   // cleanups from the enclosing full-expression.
-  PushExpressionEvaluationContextForFunction(
-      ExpressionEvaluationContext::PotentiallyEvaluated, LSI->CallOperator);
+  PushExpressionEvaluationContext(
+      LSI->CallOperator->isConsteval()
+          ? ExpressionEvaluationContext::ImmediateFunctionContext
+          : ExpressionEvaluationContext::PotentiallyEvaluated);
+  ExprEvalContexts.back().InImmediateFunctionContext =
+      LSI->CallOperator->isConsteval();
+  ExprEvalContexts.back().InImmediateEscalatingFunctionContext =
+      getLangOpts().CPlusPlus20 && LSI->CallOperator->isImmediateEscalating();
 }
 
 void Sema::ActOnLambdaError(SourceLocation StartLoc, Scope *CurScope,
@@ -1629,8 +1610,8 @@ static void repeatForLambdaConversionFunctionCallingConvs(
         CC_C,        CC_X86StdCall, CC_X86FastCall, CC_X86VectorCall,
         DefaultFree, DefaultMember, CallOpCC};
     llvm::sort(Convs);
-    llvm::iterator_range<CallingConv *> Range(std::begin(Convs),
-                                              llvm::unique(Convs));
+    llvm::iterator_range<CallingConv *> Range(
+        std::begin(Convs), std::unique(std::begin(Convs), std::end(Convs)));
     const TargetInfo &TI = S.getASTContext().getTargetInfo();
 
     for (CallingConv C : Range) {
@@ -1787,8 +1768,7 @@ static void addFunctionPointerConversion(Sema &S, SourceRange IntroducerRange,
 
   // A non-generic lambda may still be a templated entity. We need to preserve
   // constraints when converting the lambda to a function pointer. See GH63181.
-  if (const AssociatedConstraint &Requires =
-          CallOperator->getTrailingRequiresClause())
+  if (Expr *Requires = CallOperator->getTrailingRequiresClause())
     Conversion->setTrailingRequiresClause(Requires);
 
   if (Class->isGenericLambda()) {
@@ -1972,15 +1952,14 @@ ExprResult Sema::BuildCaptureInit(const Capture &Cap,
 }
 
 ExprResult Sema::ActOnLambdaExpr(SourceLocation StartLoc, Stmt *Body) {
-  LambdaScopeInfo &LSI = *cast<LambdaScopeInfo>(FunctionScopes.back());
+  LambdaScopeInfo LSI = *cast<LambdaScopeInfo>(FunctionScopes.back());
 
   if (LSI.CallOperator->hasAttr<SYCLKernelEntryPointAttr>())
     SYCL().CheckSYCLEntryPointFunctionDecl(LSI.CallOperator);
 
-  ActOnFinishFunctionBody(LSI.CallOperator, Body, /*IsInstantiation=*/false,
-                          /*RetainFunctionScopeInfo=*/true);
+  ActOnFinishFunctionBody(LSI.CallOperator, Body);
 
-  return BuildLambdaExpr(StartLoc, Body->getEndLoc());
+  return BuildLambdaExpr(StartLoc, Body->getEndLoc(), &LSI);
 }
 
 static LambdaCaptureDefault
@@ -2025,7 +2004,6 @@ bool Sema::CaptureHasSideEffects(const Capture &From) {
 }
 
 bool Sema::DiagnoseUnusedLambdaCapture(SourceRange CaptureRange,
-                                       SourceRange FixItRange,
                                        const Capture &From) {
   if (CaptureHasSideEffects(From))
     return false;
@@ -2045,12 +2023,7 @@ bool Sema::DiagnoseUnusedLambdaCapture(SourceRange CaptureRange,
   else
     diag << From.getVariable();
   diag << From.isNonODRUsed();
-  // If we were able to resolve the fixit range we'll create a fixit,
-  // otherwise we just use the raw capture range for the diagnostic.
-  if (FixItRange.isValid())
-    diag << FixItHint::CreateRemoval(FixItRange);
-  else
-    diag << CaptureRange;
+  diag << FixItHint::CreateRemoval(CaptureRange);
   return true;
 }
 
@@ -2104,186 +2077,165 @@ FieldDecl *Sema::BuildCaptureField(RecordDecl *RD,
   return Field;
 }
 
-static SourceRange
-ConstructFixItRangeForUnusedCapture(Sema &S, SourceRange CaptureRange,
-                                    SourceLocation PrevCaptureLoc,
-                                    bool CurHasPreviousCapture, bool IsLast) {
-  if (!CaptureRange.isValid())
-    return SourceRange();
-
-  auto GetTrailingEndLocation = [&](SourceLocation StartPoint) {
-    SourceRange NextToken = S.getRangeForNextToken(
-        StartPoint, /*IncludeMacros=*/false, /*IncludeComments=*/true);
-    if (!NextToken.isValid())
-      return SourceLocation();
-    // Return the last location preceding the next token
-    return NextToken.getBegin().getLocWithOffset(-1);
-  };
-
-  if (!CurHasPreviousCapture && !IsLast) {
-    // If there are no captures preceding this capture, remove the
-    // trailing comma and anything up to the next token
-    SourceRange CommaRange =
-        S.getRangeForNextToken(CaptureRange.getEnd(), /*IncludeMacros=*/false,
-                               /*IncludeComments=*/false, tok::comma);
-    SourceLocation FixItEnd = GetTrailingEndLocation(CommaRange.getBegin());
-    return SourceRange(CaptureRange.getBegin(), FixItEnd);
-  }
-
-  // Otherwise, remove the comma since the last used capture, and
-  // anything up to the next token
-  SourceLocation FixItStart = S.getLocForEndOfToken(PrevCaptureLoc);
-  SourceLocation FixItEnd = GetTrailingEndLocation(CaptureRange.getEnd());
-  return SourceRange(FixItStart, FixItEnd);
-}
-
-ExprResult Sema::BuildLambdaExpr(SourceLocation StartLoc,
-                                 SourceLocation EndLoc) {
-  LambdaScopeInfo *LSI = cast<LambdaScopeInfo>(FunctionScopes.back());
+ExprResult Sema::BuildLambdaExpr(SourceLocation StartLoc, SourceLocation EndLoc,
+                                 LambdaScopeInfo *LSI) {
   // Collect information from the lambda scope.
   SmallVector<LambdaCapture, 4> Captures;
   SmallVector<Expr *, 4> CaptureInits;
   SourceLocation CaptureDefaultLoc = LSI->CaptureDefaultLoc;
   LambdaCaptureDefault CaptureDefault =
       mapImplicitCaptureStyle(LSI->ImpCaptureStyle);
-  CXXRecordDecl *Class = LSI->Lambda;
-  CXXMethodDecl *CallOperator = LSI->CallOperator;
-  SourceRange IntroducerRange = LSI->IntroducerRange;
-  bool ExplicitParams = LSI->ExplicitParams;
-  bool ExplicitResultType = !LSI->HasImplicitReturnType;
-  CleanupInfo LambdaCleanup = LSI->Cleanup;
-  bool ContainsUnexpandedParameterPack = LSI->ContainsUnexpandedParameterPack;
-  bool IsGenericLambda = Class->isGenericLambda();
-
-  CallOperator->setLexicalDeclContext(Class);
-  Decl *TemplateOrNonTemplateCallOperatorDecl =
-      CallOperator->getDescribedFunctionTemplate()
-          ? CallOperator->getDescribedFunctionTemplate()
-          : cast<Decl>(CallOperator);
-
-  // FIXME: Is this really the best choice? Keeping the lexical decl context
-  // set as CurContext seems more faithful to the source.
-  TemplateOrNonTemplateCallOperatorDecl->setLexicalDeclContext(Class);
-
+  CXXRecordDecl *Class;
+  CXXMethodDecl *CallOperator;
+  SourceRange IntroducerRange;
+  bool ExplicitParams;
+  bool ExplicitResultType;
+  CleanupInfo LambdaCleanup;
+  bool ContainsUnexpandedParameterPack;
+  bool IsGenericLambda;
   {
-    // TreeTransform of immediate functions may call getCurLambda, which
-    // requires both the paired LSI and the lambda DeclContext.
-    ContextRAII SavedContext(*this, CallOperator, /*NewThisContext=*/false);
+    CallOperator = LSI->CallOperator;
+    Class = LSI->Lambda;
+    IntroducerRange = LSI->IntroducerRange;
+    ExplicitParams = LSI->ExplicitParams;
+    ExplicitResultType = !LSI->HasImplicitReturnType;
+    LambdaCleanup = LSI->Cleanup;
+    ContainsUnexpandedParameterPack = LSI->ContainsUnexpandedParameterPack;
+    IsGenericLambda = Class->isGenericLambda();
+
+    CallOperator->setLexicalDeclContext(Class);
+    Decl *TemplateOrNonTemplateCallOperatorDecl =
+        CallOperator->getDescribedFunctionTemplate()
+        ? CallOperator->getDescribedFunctionTemplate()
+        : cast<Decl>(CallOperator);
+
+    // FIXME: Is this really the best choice? Keeping the lexical decl context
+    // set as CurContext seems more faithful to the source.
+    TemplateOrNonTemplateCallOperatorDecl->setLexicalDeclContext(Class);
+
     PopExpressionEvaluationContext();
-  }
 
-  sema::AnalysisBasedWarnings::Policy WP =
-      AnalysisWarnings.getPolicyInEffectAt(EndLoc);
-  // We cannot release LSI until we finish computing captures, which
-  // requires the scope to be popped.
-  Sema::PoppedFunctionScopePtr _ = PopFunctionScopeInfo(&WP, LSI->CallOperator);
+    // True if the current capture has a used capture or default before it.
+    bool CurHasPreviousCapture = CaptureDefault != LCD_None;
+    SourceLocation PrevCaptureLoc = CurHasPreviousCapture ?
+        CaptureDefaultLoc : IntroducerRange.getBegin();
 
-  // True if the current capture has a used capture or default before it.
-  bool CurHasPreviousCapture = CaptureDefault != LCD_None;
-  SourceLocation PrevCaptureLoc =
-      CurHasPreviousCapture ? CaptureDefaultLoc : IntroducerRange.getBegin();
+    for (unsigned I = 0, N = LSI->Captures.size(); I != N; ++I) {
+      const Capture &From = LSI->Captures[I];
 
-  for (unsigned I = 0, N = LSI->Captures.size(); I != N; ++I) {
-    const Capture &From = LSI->Captures[I];
+      if (From.isInvalid())
+        return ExprError();
 
-    if (From.isInvalid())
-      return ExprError();
+      assert(!From.isBlockCapture() && "Cannot capture __block variables");
+      bool IsImplicit = I >= LSI->NumExplicitCaptures;
+      SourceLocation ImplicitCaptureLoc =
+          IsImplicit ? CaptureDefaultLoc : SourceLocation();
 
-    assert(!From.isBlockCapture() && "Cannot capture __block variables");
-    bool IsImplicit = I >= LSI->NumExplicitCaptures;
-    SourceLocation ImplicitCaptureLoc =
-        IsImplicit ? CaptureDefaultLoc : SourceLocation();
+      // Use source ranges of explicit captures for fixits where available.
+      SourceRange CaptureRange = LSI->ExplicitCaptureRanges[I];
 
-    // Use source ranges of explicit captures for fixits where available.
-    SourceRange CaptureRange = LSI->ExplicitCaptureRanges[I];
+      // Warn about unused explicit captures.
+      bool IsCaptureUsed = true;
+      if (!CurContext->isDependentContext() && !IsImplicit &&
+          !From.isODRUsed()) {
+        // Initialized captures that are non-ODR used may not be eliminated.
+        // FIXME: Where did the IsGenericLambda here come from?
+        bool NonODRUsedInitCapture =
+            IsGenericLambda && From.isNonODRUsed() && From.isInitCapture();
+        if (!NonODRUsedInitCapture) {
+          bool IsLast = (I + 1) == LSI->NumExplicitCaptures;
+          SourceRange FixItRange;
+          if (CaptureRange.isValid()) {
+            if (!CurHasPreviousCapture && !IsLast) {
+              // If there are no captures preceding this capture, remove the
+              // following comma.
+              FixItRange = SourceRange(CaptureRange.getBegin(),
+                                       getLocForEndOfToken(CaptureRange.getEnd()));
+            } else {
+              // Otherwise, remove the comma since the last used capture.
+              FixItRange = SourceRange(getLocForEndOfToken(PrevCaptureLoc),
+                                       CaptureRange.getEnd());
+            }
+          }
 
-    // Warn about unused explicit captures.
-    bool IsCaptureUsed = true;
-    if (!CurContext->isDependentContext() && !IsImplicit && !From.isODRUsed()) {
-      // Initialized captures that are non-ODR used may not be eliminated.
-      // FIXME: Where did the IsGenericLambda here come from?
-      bool NonODRUsedInitCapture =
-          IsGenericLambda && From.isNonODRUsed() && From.isInitCapture();
-      if (!NonODRUsedInitCapture) {
-        bool IsLast = (I + 1) == LSI->NumExplicitCaptures;
-        SourceRange FixItRange = ConstructFixItRangeForUnusedCapture(
-            *this, CaptureRange, PrevCaptureLoc, CurHasPreviousCapture, IsLast);
-        IsCaptureUsed =
-            !DiagnoseUnusedLambdaCapture(CaptureRange, FixItRange, From);
-      }
-    }
-
-    if (CaptureRange.isValid()) {
-      CurHasPreviousCapture |= IsCaptureUsed;
-      PrevCaptureLoc = CaptureRange.getEnd();
-    }
-
-    // Map the capture to our AST representation.
-    LambdaCapture Capture = [&] {
-      if (From.isThisCapture()) {
-        // Capturing 'this' implicitly with a default of '[=]' is deprecated,
-        // because it results in a reference capture. Don't warn prior to
-        // C++2a; there's nothing that can be done about it before then.
-        if (getLangOpts().CPlusPlus20 && IsImplicit &&
-            CaptureDefault == LCD_ByCopy) {
-          Diag(From.getLocation(), diag::warn_deprecated_this_capture);
-          Diag(CaptureDefaultLoc, diag::note_deprecated_this_capture)
-              << FixItHint::CreateInsertion(
-                     getLocForEndOfToken(CaptureDefaultLoc), ", this");
+          IsCaptureUsed = !DiagnoseUnusedLambdaCapture(FixItRange, From);
         }
-        return LambdaCapture(From.getLocation(), IsImplicit,
-                             From.isCopyCapture() ? LCK_StarThis : LCK_This);
-      } else if (From.isVLATypeCapture()) {
-        return LambdaCapture(From.getLocation(), IsImplicit, LCK_VLAType);
-      } else {
-        assert(From.isVariableCapture() && "unknown kind of capture");
-        ValueDecl *Var = From.getVariable();
-        LambdaCaptureKind Kind = From.isCopyCapture() ? LCK_ByCopy : LCK_ByRef;
-        return LambdaCapture(From.getLocation(), IsImplicit, Kind, Var,
-                             From.getEllipsisLoc());
       }
-    }();
 
-    // Form the initializer for the capture field.
-    ExprResult Init = BuildCaptureInit(From, ImplicitCaptureLoc);
+      if (CaptureRange.isValid()) {
+        CurHasPreviousCapture |= IsCaptureUsed;
+        PrevCaptureLoc = CaptureRange.getEnd();
+      }
 
-    // FIXME: Skip this capture if the capture is not used, the initializer
-    // has no side-effects, the type of the capture is trivial, and the
-    // lambda is not externally visible.
+      // Map the capture to our AST representation.
+      LambdaCapture Capture = [&] {
+        if (From.isThisCapture()) {
+          // Capturing 'this' implicitly with a default of '[=]' is deprecated,
+          // because it results in a reference capture. Don't warn prior to
+          // C++2a; there's nothing that can be done about it before then.
+          if (getLangOpts().CPlusPlus20 && IsImplicit &&
+              CaptureDefault == LCD_ByCopy) {
+            Diag(From.getLocation(), diag::warn_deprecated_this_capture);
+            Diag(CaptureDefaultLoc, diag::note_deprecated_this_capture)
+                << FixItHint::CreateInsertion(
+                       getLocForEndOfToken(CaptureDefaultLoc), ", this");
+          }
+          return LambdaCapture(From.getLocation(), IsImplicit,
+                               From.isCopyCapture() ? LCK_StarThis : LCK_This);
+        } else if (From.isVLATypeCapture()) {
+          return LambdaCapture(From.getLocation(), IsImplicit, LCK_VLAType);
+        } else {
+          assert(From.isVariableCapture() && "unknown kind of capture");
+          ValueDecl *Var = From.getVariable();
+          LambdaCaptureKind Kind =
+              From.isCopyCapture() ? LCK_ByCopy : LCK_ByRef;
+          return LambdaCapture(From.getLocation(), IsImplicit, Kind, Var,
+                               From.getEllipsisLoc());
+        }
+      }();
 
-    // Add a FieldDecl for the capture and form its initializer.
-    BuildCaptureField(Class, From);
-    Captures.push_back(Capture);
-    CaptureInits.push_back(Init.get());
+      // Form the initializer for the capture field.
+      ExprResult Init = BuildCaptureInit(From, ImplicitCaptureLoc);
 
-    if (LangOpts.CUDA)
-      CUDA().CheckLambdaCapture(CallOperator, From);
+      // FIXME: Skip this capture if the capture is not used, the initializer
+      // has no side-effects, the type of the capture is trivial, and the
+      // lambda is not externally visible.
+
+      // Add a FieldDecl for the capture and form its initializer.
+      BuildCaptureField(Class, From);
+      Captures.push_back(Capture);
+      CaptureInits.push_back(Init.get());
+
+      if (LangOpts.CUDA)
+        CUDA().CheckLambdaCapture(CallOperator, From);
+    }
+
+    Class->setCaptures(Context, Captures);
+
+    // C++11 [expr.prim.lambda]p6:
+    //   The closure type for a lambda-expression with no lambda-capture
+    //   has a public non-virtual non-explicit const conversion function
+    //   to pointer to function having the same parameter and return
+    //   types as the closure type's function call operator.
+    if (Captures.empty() && CaptureDefault == LCD_None)
+      addFunctionPointerConversions(*this, IntroducerRange, Class,
+                                    CallOperator);
+
+    // Objective-C++:
+    //   The closure type for a lambda-expression has a public non-virtual
+    //   non-explicit const conversion function to a block pointer having the
+    //   same parameter and return types as the closure type's function call
+    //   operator.
+    // FIXME: Fix generic lambda to block conversions.
+    if (getLangOpts().Blocks && getLangOpts().ObjC && !IsGenericLambda)
+      addBlockPointerConversion(*this, IntroducerRange, Class, CallOperator);
+
+    // Finalize the lambda class.
+    SmallVector<Decl*, 4> Fields(Class->fields());
+    ActOnFields(nullptr, Class->getLocation(), Class, Fields, SourceLocation(),
+                SourceLocation(), ParsedAttributesView());
+    CheckCompletedCXXClass(nullptr, Class);
   }
-
-  Class->setCaptures(Context, Captures);
-
-  // C++11 [expr.prim.lambda]p6:
-  //   The closure type for a lambda-expression with no lambda-capture
-  //   has a public non-virtual non-explicit const conversion function
-  //   to pointer to function having the same parameter and return
-  //   types as the closure type's function call operator.
-  if (Captures.empty() && CaptureDefault == LCD_None)
-    addFunctionPointerConversions(*this, IntroducerRange, Class, CallOperator);
-
-  // Objective-C++:
-  //   The closure type for a lambda-expression has a public non-virtual
-  //   non-explicit const conversion function to a block pointer having the
-  //   same parameter and return types as the closure type's function call
-  //   operator.
-  // FIXME: Fix generic lambda to block conversions.
-  if (getLangOpts().Blocks && getLangOpts().ObjC && !IsGenericLambda)
-    addBlockPointerConversion(*this, IntroducerRange, Class, CallOperator);
-
-  // Finalize the lambda class.
-  SmallVector<Decl *, 4> Fields(Class->fields());
-  ActOnFields(nullptr, Class->getLocation(), Class, Fields, SourceLocation(),
-              SourceLocation(), ParsedAttributesView());
-  CheckCompletedCXXClass(nullptr, Class);
 
   Cleanup.mergeFrom(LambdaCleanup);
 

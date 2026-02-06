@@ -87,9 +87,6 @@ public:
   void visitCallOperand(OpOperand &operand) override;
 
   void setToExitState(Liveness *lattice) override;
-
-  void visitNonControlFlowArguments(RegionSuccessor &successor,
-                                    ArrayRef<BlockArgument> arguments) override;
 };
 
 //===----------------------------------------------------------------------===//

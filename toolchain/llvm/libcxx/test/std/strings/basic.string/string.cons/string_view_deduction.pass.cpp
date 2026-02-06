@@ -19,18 +19,17 @@
 //  The deduction guide shall not participate in overload resolution if Allocator
 //  is a type that does not qualify as an allocator.
 
-#include <cassert>
-#include <cstddef>
-#include <iterator>
-#include <memory>
 #include <string>
 #include <string_view>
+#include <iterator>
+#include <memory>
 #include <type_traits>
-#include <utility>
+#include <cassert>
+#include <cstddef>
 
-#include "min_allocator.h"
-#include "test_allocator.h"
 #include "test_macros.h"
+#include "test_allocator.h"
+#include "min_allocator.h"
 
 template <class StringView, class Allocator, class = void>
 struct CanDeduce : std::false_type {};

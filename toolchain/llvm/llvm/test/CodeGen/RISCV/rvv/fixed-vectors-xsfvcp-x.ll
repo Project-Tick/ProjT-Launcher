@@ -15,6 +15,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.x.se.e8mf8.iXLen.i8.iXLen(iXLen, iXLen, iXLen, i8, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_x_se_e8mf4(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e8mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -25,6 +27,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.x.se.e8mf4.iXLen.i8.iXLen(iXLen 3, iXLen 31, iXLen 31, i8 %rs1, iXLen 8, iXLen 6, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.x.se.e8mf4.iXLen.i8.iXLen(iXLen, iXLen, iXLen, i8, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_x_se_e8mf2(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e8mf2:
@@ -37,6 +41,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.x.se.e8mf2.iXLen.i8.iXLen(iXLen, iXLen, iXLen, i8, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_x_se_e8m1(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e8m1:
 ; CHECK:       # %bb.0: # %entry
@@ -47,6 +53,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.x.se.e8m1.iXLen.i8.iXLen(iXLen 3, iXLen 31, iXLen 31, i8 %rs1, iXLen 8, iXLen 0, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.x.se.e8m1.iXLen.i8.iXLen(iXLen, iXLen, iXLen, i8, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_x_se_e8m2(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e8m2:
@@ -59,6 +67,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.x.se.e8m2.iXLen.i8.iXLen(iXLen, iXLen, iXLen, i8, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_x_se_e8m4(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e8m4:
 ; CHECK:       # %bb.0: # %entry
@@ -69,6 +79,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.x.se.e8m4.iXLen.i8.iXLen(iXLen 3, iXLen 31, iXLen 31, i8 %rs1, iXLen 8, iXLen 2, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.x.se.e8m4.iXLen.i8.iXLen(iXLen, iXLen, iXLen, i8, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_x_se_e8m8(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e8m8:
@@ -81,6 +93,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.x.se.e8m8.iXLen.i8.iXLen(iXLen, iXLen, iXLen, i8, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_x_se_e16mf4(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e16mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -91,6 +105,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.x.se.e16mf4.iXLen.i16.iXLen(iXLen 3, iXLen 31, iXLen 31, i16 %rs1, iXLen 16, iXLen 6, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.x.se.e16mf4.iXLen.i16.iXLen(iXLen, iXLen, iXLen, i16, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_x_se_e16mf2(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e16mf2:
@@ -103,6 +119,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.x.se.e16mf2.iXLen.i16.iXLen(iXLen, iXLen, iXLen, i16, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_x_se_e16m1(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e16m1:
 ; CHECK:       # %bb.0: # %entry
@@ -113,6 +131,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.x.se.e16m1.iXLen.i16.iXLen(iXLen 3, iXLen 31, iXLen 31, i16 %rs1, iXLen 16, iXLen 0, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.x.se.e16m1.iXLen.i16.iXLen(iXLen, iXLen, iXLen, i16, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_x_se_e16m2(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e16m2:
@@ -125,6 +145,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.x.se.e16m2.iXLen.i16.iXLen(iXLen, iXLen, iXLen, i16, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_x_se_e16m4(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e16m4:
 ; CHECK:       # %bb.0: # %entry
@@ -135,6 +157,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.x.se.e16m4.iXLen.i16.iXLen(iXLen 3, iXLen 31, iXLen 31, i16 %rs1, iXLen 16, iXLen 2, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.x.se.e16m4.iXLen.i16.iXLen(iXLen, iXLen, iXLen, i16, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_x_se_e16m8(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e16m8:
@@ -147,6 +171,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.x.se.e16m8.iXLen.i16.iXLen(iXLen, iXLen, iXLen, i16, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_x_se_e32mf2(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e32mf2:
 ; CHECK:       # %bb.0: # %entry
@@ -157,6 +183,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.x.se.e32mf2.iXLen.i32.iXLen(iXLen 3, iXLen 31, iXLen 31, i32 %rs1, iXLen 32, iXLen 7, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.x.se.e32mf2.iXLen.i32.iXLen(iXLen, iXLen, iXLen, i32, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_x_se_e32m1(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e32m1:
@@ -169,6 +197,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.x.se.e32m1.iXLen.i32.iXLen(iXLen, iXLen, iXLen, i32, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_x_se_e32m2(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e32m2:
 ; CHECK:       # %bb.0: # %entry
@@ -179,6 +209,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.x.se.e32m2.iXLen.i32.iXLen(iXLen 3, iXLen 31, iXLen 31, i32 %rs1, iXLen 32, iXLen 1, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.x.se.e32m2.iXLen.i32.iXLen(iXLen, iXLen, iXLen, i32, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_x_se_e32m4(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e32m4:
@@ -191,6 +223,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.x.se.e32m4.iXLen.i32.iXLen(iXLen, iXLen, iXLen, i32, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_x_se_e32m8(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_x_se_e32m8:
 ; CHECK:       # %bb.0: # %entry
@@ -201,6 +235,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.x.se.e32m8.iXLen.i32.iXLen(iXLen 3, iXLen 31, iXLen 31, i32 %rs1, iXLen 32, iXLen 3, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.x.se.e32m8.iXLen.i32.iXLen(iXLen, iXLen, iXLen, i32, iXLen, iXLen, iXLen)
 
 define <1 x i8> @test_sf_vc_v_x_se_e8mf8(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e8mf8:
@@ -213,6 +249,8 @@ entry:
   ret <1 x i8> %0
 }
 
+declare <1 x i8> @llvm.riscv.sf.vc.v.x.se.nxv1i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
+
 define <2 x i8> @test_sf_vc_v_x_se_e8mf4(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e8mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -223,6 +261,8 @@ entry:
   %0 = tail call <2 x i8> @llvm.riscv.sf.vc.v.x.se.nxv2i8.iXLen.i8.iXLen(iXLen 3, iXLen 31, i8 %rs1, iXLen %vl)
   ret <2 x i8> %0
 }
+
+declare <2 x i8> @llvm.riscv.sf.vc.v.x.se.nxv2i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
 
 define <4 x i8> @test_sf_vc_v_x_se_e8mf2(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e8mf2:
@@ -235,6 +275,8 @@ entry:
   ret <4 x i8> %0
 }
 
+declare <4 x i8> @llvm.riscv.sf.vc.v.x.se.nxv4i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
+
 define <8 x i8> @test_sf_vc_v_x_se_e8m1(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e8m1:
 ; CHECK:       # %bb.0: # %entry
@@ -245,6 +287,8 @@ entry:
   %0 = tail call <8 x i8> @llvm.riscv.sf.vc.v.x.se.nxv8i8.iXLen.i8.iXLen(iXLen 3, iXLen 31, i8 %rs1, iXLen %vl)
   ret <8 x i8> %0
 }
+
+declare <8 x i8> @llvm.riscv.sf.vc.v.x.se.nxv8i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
 
 define <16 x i8> @test_sf_vc_v_x_se_e8m2(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e8m2:
@@ -257,6 +301,8 @@ entry:
   ret <16 x i8> %0
 }
 
+declare <16 x i8> @llvm.riscv.sf.vc.v.x.se.nxv16i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
+
 define <32 x i8> @test_sf_vc_v_x_se_e8m4(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e8m4:
 ; CHECK:       # %bb.0: # %entry
@@ -267,6 +313,8 @@ entry:
   %0 = tail call <32 x i8> @llvm.riscv.sf.vc.v.x.se.nxv32i8.iXLen.i8.iXLen(iXLen 3, iXLen 31, i8 %rs1, iXLen %vl)
   ret <32 x i8> %0
 }
+
+declare <32 x i8> @llvm.riscv.sf.vc.v.x.se.nxv32i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
 
 define <64 x i8> @test_sf_vc_v_x_se_e8m8(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e8m8:
@@ -279,6 +327,8 @@ entry:
   ret <64 x i8> %0
 }
 
+declare <64 x i8> @llvm.riscv.sf.vc.v.x.se.nxv64i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
+
 define <1 x i16> @test_sf_vc_v_x_se_e16mf4(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e16mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -289,6 +339,8 @@ entry:
   %0 = tail call <1 x i16> @llvm.riscv.sf.vc.v.x.se.nxv1i16.iXLen.i16.iXLen(iXLen 3, iXLen 31, i16 %rs1, iXLen %vl)
   ret <1 x i16> %0
 }
+
+declare <1 x i16> @llvm.riscv.sf.vc.v.x.se.nxv1i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
 
 define <2 x i16> @test_sf_vc_v_x_se_e16mf2(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e16mf2:
@@ -301,6 +353,8 @@ entry:
   ret <2 x i16> %0
 }
 
+declare <2 x i16> @llvm.riscv.sf.vc.v.x.se.nxv2i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
+
 define <4 x i16> @test_sf_vc_v_x_se_e16m1(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e16m1:
 ; CHECK:       # %bb.0: # %entry
@@ -311,6 +365,8 @@ entry:
   %0 = tail call <4 x i16> @llvm.riscv.sf.vc.v.x.se.nxv4i16.iXLen.i16.iXLen(iXLen 3, iXLen 31, i16 %rs1, iXLen %vl)
   ret <4 x i16> %0
 }
+
+declare <4 x i16> @llvm.riscv.sf.vc.v.x.se.nxv4i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
 
 define <8 x i16> @test_sf_vc_v_x_se_e16m2(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e16m2:
@@ -323,6 +379,8 @@ entry:
   ret <8 x i16> %0
 }
 
+declare <8 x i16> @llvm.riscv.sf.vc.v.x.se.nxv8i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
+
 define <16 x i16> @test_sf_vc_v_x_se_e16m4(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e16m4:
 ; CHECK:       # %bb.0: # %entry
@@ -333,6 +391,8 @@ entry:
   %0 = tail call <16 x i16> @llvm.riscv.sf.vc.v.x.se.nxv16i16.iXLen.i16.iXLen(iXLen 3, iXLen 31, i16 %rs1, iXLen %vl)
   ret <16 x i16> %0
 }
+
+declare <16 x i16> @llvm.riscv.sf.vc.v.x.se.nxv16i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
 
 define <32 x i16> @test_sf_vc_v_x_se_e16m8(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e16m8:
@@ -345,6 +405,8 @@ entry:
   ret <32 x i16> %0
 }
 
+declare <32 x i16> @llvm.riscv.sf.vc.v.x.se.nxv32i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
+
 define <1 x i32> @test_sf_vc_v_x_se_e32mf2(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e32mf2:
 ; CHECK:       # %bb.0: # %entry
@@ -355,6 +417,8 @@ entry:
   %0 = tail call <1 x i32> @llvm.riscv.sf.vc.v.x.se.nxv1i32.iXLen.i32.iXLen(iXLen 3, iXLen 31, i32 %rs1, iXLen %vl)
   ret <1 x i32> %0
 }
+
+declare <1 x i32> @llvm.riscv.sf.vc.v.x.se.nxv1i32.iXLen.i32.iXLen(iXLen, iXLen, i32, iXLen)
 
 define <2 x i32> @test_sf_vc_v_x_se_e32m1(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e32m1:
@@ -367,6 +431,8 @@ entry:
   ret <2 x i32> %0
 }
 
+declare <2 x i32> @llvm.riscv.sf.vc.v.x.se.nxv2i32.iXLen.i32.iXLen(iXLen, iXLen, i32, iXLen)
+
 define <4 x i32> @test_sf_vc_v_x_se_e32m2(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e32m2:
 ; CHECK:       # %bb.0: # %entry
@@ -377,6 +443,8 @@ entry:
   %0 = tail call <4 x i32> @llvm.riscv.sf.vc.v.x.se.nxv4i32.iXLen.i32.iXLen(iXLen 3, iXLen 31, i32 %rs1, iXLen %vl)
   ret <4 x i32> %0
 }
+
+declare <4 x i32> @llvm.riscv.sf.vc.v.x.se.nxv4i32.iXLen.i32.iXLen(iXLen, iXLen, i32, iXLen)
 
 define <8 x i32> @test_sf_vc_v_x_se_e32m4(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e32m4:
@@ -389,6 +457,8 @@ entry:
   ret <8 x i32> %0
 }
 
+declare <8 x i32> @llvm.riscv.sf.vc.v.x.se.nxv8i32.iXLen.i32.iXLen(iXLen, iXLen, i32, iXLen)
+
 define <16 x i32> @test_sf_vc_v_x_se_e32m8(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_se_e32m8:
 ; CHECK:       # %bb.0: # %entry
@@ -399,6 +469,8 @@ entry:
   %0 = tail call <16 x i32> @llvm.riscv.sf.vc.v.x.se.nxv16i32.iXLen.i32.iXLen(iXLen 3, iXLen 31, i32 %rs1, iXLen %vl)
   ret <16 x i32> %0
 }
+
+declare <16 x i32> @llvm.riscv.sf.vc.v.x.se.nxv16i32.iXLen.i32.iXLen(iXLen, iXLen, i32, iXLen)
 
 define <1 x i8> @test_sf_vc_v_x_e8mf8(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e8mf8:
@@ -411,6 +483,8 @@ entry:
   ret <1 x i8> %0
 }
 
+declare <1 x i8> @llvm.riscv.sf.vc.v.x.nxv1i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
+
 define <2 x i8> @test_sf_vc_v_x_e8mf4(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e8mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -421,6 +495,8 @@ entry:
   %0 = tail call <2 x i8> @llvm.riscv.sf.vc.v.x.nxv2i8.iXLen.i8.iXLen(iXLen 3, iXLen 31, i8 %rs1, iXLen %vl)
   ret <2 x i8> %0
 }
+
+declare <2 x i8> @llvm.riscv.sf.vc.v.x.nxv2i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
 
 define <4 x i8> @test_sf_vc_v_x_e8mf2(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e8mf2:
@@ -433,6 +509,8 @@ entry:
   ret <4 x i8> %0
 }
 
+declare <4 x i8> @llvm.riscv.sf.vc.v.x.nxv4i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
+
 define <8 x i8> @test_sf_vc_v_x_e8m1(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e8m1:
 ; CHECK:       # %bb.0: # %entry
@@ -443,6 +521,8 @@ entry:
   %0 = tail call <8 x i8> @llvm.riscv.sf.vc.v.x.nxv8i8.iXLen.i8.iXLen(iXLen 3, iXLen 31, i8 %rs1, iXLen %vl)
   ret <8 x i8> %0
 }
+
+declare <8 x i8> @llvm.riscv.sf.vc.v.x.nxv8i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
 
 define <16 x i8> @test_sf_vc_v_x_e8m2(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e8m2:
@@ -455,6 +535,8 @@ entry:
   ret <16 x i8> %0
 }
 
+declare <16 x i8> @llvm.riscv.sf.vc.v.x.nxv16i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
+
 define <32 x i8> @test_sf_vc_v_x_e8m4(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e8m4:
 ; CHECK:       # %bb.0: # %entry
@@ -465,6 +547,8 @@ entry:
   %0 = tail call <32 x i8> @llvm.riscv.sf.vc.v.x.nxv32i8.iXLen.i8.iXLen(iXLen 3, iXLen 31, i8 %rs1, iXLen %vl)
   ret <32 x i8> %0
 }
+
+declare <32 x i8> @llvm.riscv.sf.vc.v.x.nxv32i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
 
 define <64 x i8> @test_sf_vc_v_x_e8m8(i8 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e8m8:
@@ -477,6 +561,8 @@ entry:
   ret <64 x i8> %0
 }
 
+declare <64 x i8> @llvm.riscv.sf.vc.v.x.nxv64i8.iXLen.i8.iXLen(iXLen, iXLen, i8, iXLen)
+
 define <1 x i16> @test_sf_vc_v_x_e16mf4(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e16mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -487,6 +573,8 @@ entry:
   %0 = tail call <1 x i16> @llvm.riscv.sf.vc.v.x.nxv1i16.iXLen.i16.iXLen(iXLen 3, iXLen 31, i16 %rs1, iXLen %vl)
   ret <1 x i16> %0
 }
+
+declare <1 x i16> @llvm.riscv.sf.vc.v.x.nxv1i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
 
 define <2 x i16> @test_sf_vc_v_x_e16mf2(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e16mf2:
@@ -499,6 +587,8 @@ entry:
   ret <2 x i16> %0
 }
 
+declare <2 x i16> @llvm.riscv.sf.vc.v.x.nxv2i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
+
 define <4 x i16> @test_sf_vc_v_x_e16m1(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e16m1:
 ; CHECK:       # %bb.0: # %entry
@@ -509,6 +599,8 @@ entry:
   %0 = tail call <4 x i16> @llvm.riscv.sf.vc.v.x.nxv4i16.iXLen.i16.iXLen(iXLen 3, iXLen 31, i16 %rs1, iXLen %vl)
   ret <4 x i16> %0
 }
+
+declare <4 x i16> @llvm.riscv.sf.vc.v.x.nxv4i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
 
 define <8 x i16> @test_sf_vc_v_x_e16m2(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e16m2:
@@ -521,6 +613,8 @@ entry:
   ret <8 x i16> %0
 }
 
+declare <8 x i16> @llvm.riscv.sf.vc.v.x.nxv8i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
+
 define <16 x i16> @test_sf_vc_v_x_e16m4(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e16m4:
 ; CHECK:       # %bb.0: # %entry
@@ -531,6 +625,8 @@ entry:
   %0 = tail call <16 x i16> @llvm.riscv.sf.vc.v.x.nxv16i16.iXLen.i16.iXLen(iXLen 3, iXLen 31, i16 %rs1, iXLen %vl)
   ret <16 x i16> %0
 }
+
+declare <16 x i16> @llvm.riscv.sf.vc.v.x.nxv16i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
 
 define <32 x i16> @test_sf_vc_v_x_e16m8(i16 zeroext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e16m8:
@@ -543,6 +639,8 @@ entry:
   ret <32 x i16> %0
 }
 
+declare <32 x i16> @llvm.riscv.sf.vc.v.x.nxv32i16.iXLen.i16.iXLen(iXLen, iXLen, i16, iXLen)
+
 define <1 x i32> @test_sf_vc_v_x_e32mf2(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e32mf2:
 ; CHECK:       # %bb.0: # %entry
@@ -553,6 +651,8 @@ entry:
   %0 = tail call <1 x i32> @llvm.riscv.sf.vc.v.x.nxv1i32.iXLen.i32.iXLen(iXLen 3, iXLen 31, i32 %rs1, iXLen %vl)
   ret <1 x i32> %0
 }
+
+declare <1 x i32> @llvm.riscv.sf.vc.v.x.nxv1i32.iXLen.i32.iXLen(iXLen, iXLen, i32, iXLen)
 
 define <2 x i32> @test_sf_vc_v_x_e32m1(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e32m1:
@@ -565,6 +665,8 @@ entry:
   ret <2 x i32> %0
 }
 
+declare <2 x i32> @llvm.riscv.sf.vc.v.x.nxv2i32.iXLen.i32.iXLen(iXLen, iXLen, i32, iXLen)
+
 define <4 x i32> @test_sf_vc_v_x_e32m2(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e32m2:
 ; CHECK:       # %bb.0: # %entry
@@ -575,6 +677,8 @@ entry:
   %0 = tail call <4 x i32> @llvm.riscv.sf.vc.v.x.nxv4i32.iXLen.i32.iXLen(iXLen 3, iXLen 31, i32 %rs1, iXLen %vl)
   ret <4 x i32> %0
 }
+
+declare <4 x i32> @llvm.riscv.sf.vc.v.x.nxv4i32.iXLen.i32.iXLen(iXLen, iXLen, i32, iXLen)
 
 define <8 x i32> @test_sf_vc_v_x_e32m4(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e32m4:
@@ -587,6 +691,8 @@ entry:
   ret <8 x i32> %0
 }
 
+declare <8 x i32> @llvm.riscv.sf.vc.v.x.nxv8i32.iXLen.i32.iXLen(iXLen, iXLen, i32, iXLen)
+
 define <16 x i32> @test_sf_vc_v_x_e32m8(i32 signext %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_x_e32m8:
 ; CHECK:       # %bb.0: # %entry
@@ -597,6 +703,8 @@ entry:
   %0 = tail call <16 x i32> @llvm.riscv.sf.vc.v.x.nxv16i32.iXLen.i32.iXLen(iXLen 3, iXLen 31, i32 %rs1, iXLen %vl)
   ret <16 x i32> %0
 }
+
+declare <16 x i32> @llvm.riscv.sf.vc.v.x.nxv16i32.iXLen.i32.iXLen(iXLen, iXLen, i32, iXLen)
 
 define void @test_sf_vc_i_se_e8mf8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e8mf8:
@@ -609,6 +717,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e8mf8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e8mf4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e8mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -619,6 +729,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e8mf4.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 8, iXLen 6, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e8mf4.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_i_se_e8mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e8mf2:
@@ -631,6 +743,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e8mf2.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e8m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e8m1:
 ; CHECK:       # %bb.0: # %entry
@@ -641,6 +755,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e8m1.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 8, iXLen 0, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e8m1.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_i_se_e8m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e8m2:
@@ -653,6 +769,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e8m2.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e8m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e8m4:
 ; CHECK:       # %bb.0: # %entry
@@ -663,6 +781,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e8m4.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 8, iXLen 2, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e8m4.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_i_se_e8m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e8m8:
@@ -675,6 +795,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e8m8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e16mf4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e16mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -685,6 +807,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e16mf4.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 16, iXLen 6, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e16mf4.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_i_se_e16mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e16mf2:
@@ -697,6 +821,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e16mf2.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e16m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e16m1:
 ; CHECK:       # %bb.0: # %entry
@@ -707,6 +833,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e16m1.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 16, iXLen 0, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e16m1.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_i_se_e16m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e16m2:
@@ -719,6 +847,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e16m2.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e16m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e16m4:
 ; CHECK:       # %bb.0: # %entry
@@ -729,6 +859,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e16m4.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 16, iXLen 2, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e16m4.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_i_se_e16m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e16m8:
@@ -741,6 +873,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e16m8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e32mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e32mf2:
 ; CHECK:       # %bb.0: # %entry
@@ -751,6 +885,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e32mf2.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 32, iXLen 7, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e32mf2.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_i_se_e32m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e32m1:
@@ -763,6 +899,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e32m1.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e32m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e32m2:
 ; CHECK:       # %bb.0: # %entry
@@ -773,6 +911,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e32m2.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 32, iXLen 1, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e32m2.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_i_se_e32m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e32m4:
@@ -785,6 +925,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e32m4.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e32m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e32m8:
 ; CHECK:       # %bb.0: # %entry
@@ -795,6 +937,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e32m8.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 32, iXLen 3, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e32m8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_i_se_e64m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e64m1:
@@ -807,6 +951,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e64m1.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e64m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e64m2:
 ; CHECK:       # %bb.0: # %entry
@@ -817,6 +963,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e64m2.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 64, iXLen 1, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e64m2.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define void @test_sf_vc_i_se_e64m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e64m4:
@@ -829,6 +977,8 @@ entry:
   ret void
 }
 
+declare void @llvm.riscv.sf.vc.i.se.e64m4.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
+
 define void @test_sf_vc_i_se_e64m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_i_se_e64m8:
 ; CHECK:       # %bb.0: # %entry
@@ -839,6 +989,8 @@ entry:
   tail call void @llvm.riscv.sf.vc.i.se.e64m8.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 31, iXLen 10, iXLen 64, iXLen 3, iXLen %vl)
   ret void
 }
+
+declare void @llvm.riscv.sf.vc.i.se.e64m8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen, iXLen, iXLen, iXLen)
 
 define <1 x i8> @test_sf_vc_v_i_se_e8mf8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e8mf8:
@@ -851,6 +1003,8 @@ entry:
   ret <1 x i8> %0
 }
 
+declare <1 x i8> @llvm.riscv.sf.vc.v.i.se.nxv1i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <2 x i8> @test_sf_vc_v_i_se_e8mf4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e8mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -861,6 +1015,8 @@ entry:
   %0 = tail call <2 x i8> @llvm.riscv.sf.vc.v.i.se.nxv2i8.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <2 x i8> %0
 }
+
+declare <2 x i8> @llvm.riscv.sf.vc.v.i.se.nxv2i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <4 x i8> @test_sf_vc_v_i_se_e8mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e8mf2:
@@ -873,6 +1029,8 @@ entry:
   ret <4 x i8> %0
 }
 
+declare <4 x i8> @llvm.riscv.sf.vc.v.i.se.nxv4i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <8 x i8> @test_sf_vc_v_i_se_e8m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e8m1:
 ; CHECK:       # %bb.0: # %entry
@@ -883,6 +1041,8 @@ entry:
   %0 = tail call <8 x i8> @llvm.riscv.sf.vc.v.i.se.nxv8i8.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <8 x i8> %0
 }
+
+declare <8 x i8> @llvm.riscv.sf.vc.v.i.se.nxv8i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <16 x i8> @test_sf_vc_v_i_se_e8m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e8m2:
@@ -895,6 +1055,8 @@ entry:
   ret <16 x i8> %0
 }
 
+declare <16 x i8> @llvm.riscv.sf.vc.v.i.se.nxv16i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <32 x i8> @test_sf_vc_v_i_se_e8m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e8m4:
 ; CHECK:       # %bb.0: # %entry
@@ -905,6 +1067,8 @@ entry:
   %0 = tail call <32 x i8> @llvm.riscv.sf.vc.v.i.se.nxv32i8.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <32 x i8> %0
 }
+
+declare <32 x i8> @llvm.riscv.sf.vc.v.i.se.nxv32i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <64 x i8> @test_sf_vc_v_i_se_e8m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e8m8:
@@ -917,6 +1081,8 @@ entry:
   ret <64 x i8> %0
 }
 
+declare <64 x i8> @llvm.riscv.sf.vc.v.i.se.nxv64i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <1 x i16> @test_sf_vc_v_i_se_e16mf4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e16mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -927,6 +1093,8 @@ entry:
   %0 = tail call <1 x i16> @llvm.riscv.sf.vc.v.i.se.nxv1i16.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <1 x i16> %0
 }
+
+declare <1 x i16> @llvm.riscv.sf.vc.v.i.se.nxv1i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <2 x i16> @test_sf_vc_v_i_se_e16mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e16mf2:
@@ -939,6 +1107,8 @@ entry:
   ret <2 x i16> %0
 }
 
+declare <2 x i16> @llvm.riscv.sf.vc.v.i.se.nxv2i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <4 x i16> @test_sf_vc_v_i_se_e16m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e16m1:
 ; CHECK:       # %bb.0: # %entry
@@ -949,6 +1119,8 @@ entry:
   %0 = tail call <4 x i16> @llvm.riscv.sf.vc.v.i.se.nxv4i16.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <4 x i16> %0
 }
+
+declare <4 x i16> @llvm.riscv.sf.vc.v.i.se.nxv4i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <8 x i16> @test_sf_vc_v_i_se_e16m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e16m2:
@@ -961,6 +1133,8 @@ entry:
   ret <8 x i16> %0
 }
 
+declare <8 x i16> @llvm.riscv.sf.vc.v.i.se.nxv8i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <16 x i16> @test_sf_vc_v_i_se_e16m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e16m4:
 ; CHECK:       # %bb.0: # %entry
@@ -971,6 +1145,8 @@ entry:
   %0 = tail call <16 x i16> @llvm.riscv.sf.vc.v.i.se.nxv16i16.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <16 x i16> %0
 }
+
+declare <16 x i16> @llvm.riscv.sf.vc.v.i.se.nxv16i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <32 x i16> @test_sf_vc_v_i_se_e16m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e16m8:
@@ -983,6 +1159,8 @@ entry:
   ret <32 x i16> %0
 }
 
+declare <32 x i16> @llvm.riscv.sf.vc.v.i.se.nxv32i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <1 x i32> @test_sf_vc_v_i_se_e32mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e32mf2:
 ; CHECK:       # %bb.0: # %entry
@@ -993,6 +1171,8 @@ entry:
   %0 = tail call <1 x i32> @llvm.riscv.sf.vc.v.i.se.nxv1i32.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <1 x i32> %0
 }
+
+declare <1 x i32> @llvm.riscv.sf.vc.v.i.se.nxv1i32.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <2 x i32> @test_sf_vc_v_i_se_e32m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e32m1:
@@ -1005,6 +1185,8 @@ entry:
   ret <2 x i32> %0
 }
 
+declare <2 x i32> @llvm.riscv.sf.vc.v.i.se.nxv2i32.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <4 x i32> @test_sf_vc_v_i_se_e32m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e32m2:
 ; CHECK:       # %bb.0: # %entry
@@ -1015,6 +1197,8 @@ entry:
   %0 = tail call <4 x i32> @llvm.riscv.sf.vc.v.i.se.nxv4i32.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <4 x i32> %0
 }
+
+declare <4 x i32> @llvm.riscv.sf.vc.v.i.se.nxv4i32.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <8 x i32> @test_sf_vc_v_i_se_e32m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e32m4:
@@ -1027,6 +1211,8 @@ entry:
   ret <8 x i32> %0
 }
 
+declare <8 x i32> @llvm.riscv.sf.vc.v.i.se.nxv8i32.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <16 x i32> @test_sf_vc_v_i_se_e32m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e32m8:
 ; CHECK:       # %bb.0: # %entry
@@ -1037,6 +1223,8 @@ entry:
   %0 = tail call <16 x i32> @llvm.riscv.sf.vc.v.i.se.nxv16i32.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <16 x i32> %0
 }
+
+declare <16 x i32> @llvm.riscv.sf.vc.v.i.se.nxv16i32.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <1 x i64> @test_sf_vc_v_i_se_e64m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e64m1:
@@ -1049,6 +1237,8 @@ entry:
   ret <1 x i64> %0
 }
 
+declare <1 x i64> @llvm.riscv.sf.vc.v.i.se.nxv1i64.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <2 x i64> @test_sf_vc_v_i_se_e64m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e64m2:
 ; CHECK:       # %bb.0: # %entry
@@ -1059,6 +1249,8 @@ entry:
   %0 = tail call <2 x i64> @llvm.riscv.sf.vc.v.i.se.nxv2i64.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <2 x i64> %0
 }
+
+declare <2 x i64> @llvm.riscv.sf.vc.v.i.se.nxv2i64.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <4 x i64> @test_sf_vc_v_i_se_e64m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e64m4:
@@ -1071,6 +1263,8 @@ entry:
   ret <4 x i64> %0
 }
 
+declare <4 x i64> @llvm.riscv.sf.vc.v.i.se.nxv4i64.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <8 x i64> @test_sf_vc_v_i_se_e64m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_se_e64m8:
 ; CHECK:       # %bb.0: # %entry
@@ -1081,6 +1275,8 @@ entry:
   %0 = tail call <8 x i64> @llvm.riscv.sf.vc.v.i.se.nxv8i64.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <8 x i64> %0
 }
+
+declare <8 x i64> @llvm.riscv.sf.vc.v.i.se.nxv8i64.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <1 x i8> @test_sf_vc_v_i_e8mf8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e8mf8:
@@ -1093,6 +1289,8 @@ entry:
   ret <1 x i8> %0
 }
 
+declare <1 x i8> @llvm.riscv.sf.vc.v.i.nxv1i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <2 x i8> @test_sf_vc_v_i_e8mf4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e8mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -1103,6 +1301,8 @@ entry:
   %0 = tail call <2 x i8> @llvm.riscv.sf.vc.v.i.nxv2i8.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <2 x i8> %0
 }
+
+declare <2 x i8> @llvm.riscv.sf.vc.v.i.nxv2i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <4 x i8> @test_sf_vc_v_i_e8mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e8mf2:
@@ -1115,6 +1315,8 @@ entry:
   ret <4 x i8> %0
 }
 
+declare <4 x i8> @llvm.riscv.sf.vc.v.i.nxv4i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <8 x i8> @test_sf_vc_v_i_e8m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e8m1:
 ; CHECK:       # %bb.0: # %entry
@@ -1125,6 +1327,8 @@ entry:
   %0 = tail call <8 x i8> @llvm.riscv.sf.vc.v.i.nxv8i8.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <8 x i8> %0
 }
+
+declare <8 x i8> @llvm.riscv.sf.vc.v.i.nxv8i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <16 x i8> @test_sf_vc_v_i_e8m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e8m2:
@@ -1137,6 +1341,8 @@ entry:
   ret <16 x i8> %0
 }
 
+declare <16 x i8> @llvm.riscv.sf.vc.v.i.nxv16i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <32 x i8> @test_sf_vc_v_i_e8m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e8m4:
 ; CHECK:       # %bb.0: # %entry
@@ -1147,6 +1353,8 @@ entry:
   %0 = tail call <32 x i8> @llvm.riscv.sf.vc.v.i.nxv32i8.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <32 x i8> %0
 }
+
+declare <32 x i8> @llvm.riscv.sf.vc.v.i.nxv32i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <64 x i8> @test_sf_vc_v_i_e8m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e8m8:
@@ -1159,6 +1367,8 @@ entry:
   ret <64 x i8> %0
 }
 
+declare <64 x i8> @llvm.riscv.sf.vc.v.i.nxv64i8.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <1 x i16> @test_sf_vc_v_i_e16mf4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e16mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -1169,6 +1379,8 @@ entry:
   %0 = tail call <1 x i16> @llvm.riscv.sf.vc.v.i.nxv1i16.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <1 x i16> %0
 }
+
+declare <1 x i16> @llvm.riscv.sf.vc.v.i.nxv1i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <2 x i16> @test_sf_vc_v_i_e16mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e16mf2:
@@ -1181,6 +1393,8 @@ entry:
   ret <2 x i16> %0
 }
 
+declare <2 x i16> @llvm.riscv.sf.vc.v.i.nxv2i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <4 x i16> @test_sf_vc_v_i_e16m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e16m1:
 ; CHECK:       # %bb.0: # %entry
@@ -1191,6 +1405,8 @@ entry:
   %0 = tail call <4 x i16> @llvm.riscv.sf.vc.v.i.nxv4i16.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <4 x i16> %0
 }
+
+declare <4 x i16> @llvm.riscv.sf.vc.v.i.nxv4i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <8 x i16> @test_sf_vc_v_i_e16m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e16m2:
@@ -1203,6 +1419,8 @@ entry:
   ret <8 x i16> %0
 }
 
+declare <8 x i16> @llvm.riscv.sf.vc.v.i.nxv8i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <16 x i16> @test_sf_vc_v_i_e16m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e16m4:
 ; CHECK:       # %bb.0: # %entry
@@ -1213,6 +1431,8 @@ entry:
   %0 = tail call <16 x i16> @llvm.riscv.sf.vc.v.i.nxv16i16.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <16 x i16> %0
 }
+
+declare <16 x i16> @llvm.riscv.sf.vc.v.i.nxv16i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <32 x i16> @test_sf_vc_v_i_e16m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e16m8:
@@ -1225,6 +1445,8 @@ entry:
   ret <32 x i16> %0
 }
 
+declare <32 x i16> @llvm.riscv.sf.vc.v.i.nxv32i16.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <1 x i32> @test_sf_vc_v_i_e32mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e32mf2:
 ; CHECK:       # %bb.0: # %entry
@@ -1235,6 +1457,8 @@ entry:
   %0 = tail call <1 x i32> @llvm.riscv.sf.vc.v.i.nxv1i32.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <1 x i32> %0
 }
+
+declare <1 x i32> @llvm.riscv.sf.vc.v.i.nxv1i32.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <2 x i32> @test_sf_vc_v_i_e32m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e32m1:
@@ -1247,6 +1471,8 @@ entry:
   ret <2 x i32> %0
 }
 
+declare <2 x i32> @llvm.riscv.sf.vc.v.i.nxv2i32.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <4 x i32> @test_sf_vc_v_i_e32m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e32m2:
 ; CHECK:       # %bb.0: # %entry
@@ -1257,6 +1483,8 @@ entry:
   %0 = tail call <4 x i32> @llvm.riscv.sf.vc.v.i.nxv4i32.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <4 x i32> %0
 }
+
+declare <4 x i32> @llvm.riscv.sf.vc.v.i.nxv4i32.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <8 x i32> @test_sf_vc_v_i_e32m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e32m4:
@@ -1269,6 +1497,8 @@ entry:
   ret <8 x i32> %0
 }
 
+declare <8 x i32> @llvm.riscv.sf.vc.v.i.nxv8i32.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <16 x i32> @test_sf_vc_v_i_e32m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e32m8:
 ; CHECK:       # %bb.0: # %entry
@@ -1279,6 +1509,8 @@ entry:
   %0 = tail call <16 x i32> @llvm.riscv.sf.vc.v.i.nxv16i32.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <16 x i32> %0
 }
+
+declare <16 x i32> @llvm.riscv.sf.vc.v.i.nxv16i32.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <1 x i64> @test_sf_vc_v_i_e64m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e64m1:
@@ -1291,6 +1523,8 @@ entry:
   ret <1 x i64> %0
 }
 
+declare <1 x i64> @llvm.riscv.sf.vc.v.i.nxv1i64.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <2 x i64> @test_sf_vc_v_i_e64m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e64m2:
 ; CHECK:       # %bb.0: # %entry
@@ -1301,6 +1535,8 @@ entry:
   %0 = tail call <2 x i64> @llvm.riscv.sf.vc.v.i.nxv2i64.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <2 x i64> %0
 }
+
+declare <2 x i64> @llvm.riscv.sf.vc.v.i.nxv2i64.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <4 x i64> @test_sf_vc_v_i_e64m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e64m4:
@@ -1313,6 +1549,8 @@ entry:
   ret <4 x i64> %0
 }
 
+declare <4 x i64> @llvm.riscv.sf.vc.v.i.nxv4i64.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <8 x i64> @test_sf_vc_v_i_e64m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_v_i_e64m8:
 ; CHECK:       # %bb.0: # %entry
@@ -1323,6 +1561,8 @@ entry:
   %0 = tail call <8 x i64> @llvm.riscv.sf.vc.v.i.nxv8i64.iXLen.iXLen.iXLen(iXLen 3, iXLen 31, iXLen 10, iXLen %vl)
   ret <8 x i64> %0
 }
+
+declare <8 x i64> @llvm.riscv.sf.vc.v.i.nxv8i64.iXLen.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <1 x half> @test_sf_vc_fv_x_se_e16mf4(i16 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e16mf4:
@@ -1335,6 +1575,8 @@ entry:
   ret <1 x half> %0
 }
 
+declare <1 x half> @llvm.riscv.sf.vc.v.x.se.nxv1f16.i16.iXLen(iXLen, iXLen, i16, iXLen)
+
 define <2 x half> @test_sf_vc_fv_x_se_e16mf2(i16 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e16mf2:
 ; CHECK:       # %bb.0: # %entry
@@ -1345,6 +1587,8 @@ entry:
   %0 = tail call <2 x half> @llvm.riscv.sf.vc.v.x.se.nxv2f16.i16.iXLen(iXLen 3, iXLen 4, i16 %rs1, iXLen %vl)
   ret <2 x half> %0
 }
+
+declare <2 x half> @llvm.riscv.sf.vc.v.x.se.nxv2f16.i16.iXLen(iXLen, iXLen, i16, iXLen)
 
 define <4 x half> @test_sf_vc_fv_x_se_e16m1(i16 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e16m1:
@@ -1357,6 +1601,8 @@ entry:
   ret <4 x half> %0
 }
 
+declare <4 x half> @llvm.riscv.sf.vc.v.x.se.nxv4f16.i16.iXLen(iXLen, iXLen, i16, iXLen)
+
 define <8 x half> @test_sf_vc_fv_x_se_e16m2(i16 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e16m2:
 ; CHECK:       # %bb.0: # %entry
@@ -1367,6 +1613,8 @@ entry:
   %0 = tail call <8 x half> @llvm.riscv.sf.vc.v.x.se.nxv8f16.i16.iXLen(iXLen 3, iXLen 4, i16 %rs1, iXLen %vl)
   ret <8 x half> %0
 }
+
+declare <8 x half> @llvm.riscv.sf.vc.v.x.se.nxv8f16.i16.iXLen(iXLen, iXLen, i16, iXLen)
 
 define <16 x half> @test_sf_vc_fv_x_se_e16m4(i16 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e16m4:
@@ -1379,6 +1627,8 @@ entry:
   ret <16 x half> %0
 }
 
+declare <16 x half> @llvm.riscv.sf.vc.v.x.se.nxv16f16.i16.iXLen(iXLen, iXLen, i16, iXLen)
+
 define <32 x half> @test_sf_vc_fv_x_se_e16m8(i16 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e16m8:
 ; CHECK:       # %bb.0: # %entry
@@ -1389,6 +1639,8 @@ entry:
   %0 = tail call <32 x half> @llvm.riscv.sf.vc.v.x.se.nxv32f16.i16.iXLen(iXLen 3, iXLen 4, i16 %rs1, iXLen %vl)
   ret <32 x half> %0
 }
+
+declare <32 x half> @llvm.riscv.sf.vc.v.x.se.nxv32f16.i16.iXLen(iXLen, iXLen, i16, iXLen)
 
 define <1 x float> @test_sf_vc_fv_x_se_e32mf2(i32 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e32mf2:
@@ -1401,6 +1653,8 @@ entry:
   ret <1 x float> %0
 }
 
+declare <1 x float> @llvm.riscv.sf.vc.v.x.se.nxv1f32.i32.iXLen(iXLen, iXLen, i32, iXLen)
+
 define <2 x float> @test_sf_vc_fv_x_se_e32m1(i32 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e32m1:
 ; CHECK:       # %bb.0: # %entry
@@ -1411,6 +1665,8 @@ entry:
   %0 = tail call <2 x float> @llvm.riscv.sf.vc.v.x.se.nxv2f32.i32.iXLen(iXLen 3, iXLen 4, i32 %rs1, iXLen %vl)
   ret <2 x float> %0
 }
+
+declare <2 x float> @llvm.riscv.sf.vc.v.x.se.nxv2f32.i32.iXLen(iXLen, iXLen, i32, iXLen)
 
 define <4 x float> @test_sf_vc_fv_x_se_e32m2(i32 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e32m2:
@@ -1423,6 +1679,8 @@ entry:
   ret <4 x float> %0
 }
 
+declare <4 x float> @llvm.riscv.sf.vc.v.x.se.nxv4f32.i32.iXLen(iXLen, iXLen, i32, iXLen)
+
 define <8 x float> @test_sf_vc_fv_x_se_e32m4(i32 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e32m4:
 ; CHECK:       # %bb.0: # %entry
@@ -1433,6 +1691,8 @@ entry:
   %0 = tail call <8 x float> @llvm.riscv.sf.vc.v.x.se.nxv8f32.i32.iXLen(iXLen 3, iXLen 4, i32 %rs1, iXLen %vl)
   ret <8 x float> %0
 }
+
+declare <8 x float> @llvm.riscv.sf.vc.v.x.se.nxv8f32.i32.iXLen(iXLen, iXLen, i32, iXLen)
 
 define <16 x float> @test_sf_vc_fv_x_se_e32m8(i32 %rs1, iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_x_se_e32m8:
@@ -1445,6 +1705,8 @@ entry:
   ret <16 x float> %0
 }
 
+declare <16 x float> @llvm.riscv.sf.vc.v.x.se.nxv16f32.i32.iXLen(iXLen, iXLen, i32, iXLen)
+
 define <1 x half> @test_sf_vc_fv_i_se_e16mf4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e16mf4:
 ; CHECK:       # %bb.0: # %entry
@@ -1455,6 +1717,8 @@ entry:
   %0 = tail call <1 x half> @llvm.riscv.sf.vc.v.i.se.nxv1f16.iXLen.iXLen(iXLen 3, iXLen 8, iXLen 4, iXLen %vl)
   ret <1 x half> %0
 }
+
+declare <1 x half> @llvm.riscv.sf.vc.v.i.se.nxv1f16.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <2 x half> @test_sf_vc_fv_i_se_e16mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e16mf2:
@@ -1467,6 +1731,8 @@ entry:
   ret <2 x half> %0
 }
 
+declare <2 x half> @llvm.riscv.sf.vc.v.i.se.nxv2f16.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <4 x half> @test_sf_vc_fv_i_se_e16m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e16m1:
 ; CHECK:       # %bb.0: # %entry
@@ -1477,6 +1743,8 @@ entry:
   %0 = tail call <4 x half> @llvm.riscv.sf.vc.v.i.se.nxv4f16.iXLen.iXLen(iXLen 3, iXLen 8, iXLen 4, iXLen %vl)
   ret <4 x half> %0
 }
+
+declare <4 x half> @llvm.riscv.sf.vc.v.i.se.nxv4f16.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <8 x half> @test_sf_vc_fv_i_se_e16m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e16m2:
@@ -1489,6 +1757,8 @@ entry:
   ret <8 x half> %0
 }
 
+declare <8 x half> @llvm.riscv.sf.vc.v.i.se.nxv8f16.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <16 x half> @test_sf_vc_fv_i_se_e16m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e16m4:
 ; CHECK:       # %bb.0: # %entry
@@ -1499,6 +1769,8 @@ entry:
   %0 = tail call <16 x half> @llvm.riscv.sf.vc.v.i.se.nxv16f16.iXLen.iXLen(iXLen 3, iXLen 8, iXLen 4, iXLen %vl)
   ret <16 x half> %0
 }
+
+declare <16 x half> @llvm.riscv.sf.vc.v.i.se.nxv16f16.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <32 x half> @test_sf_vc_fv_i_se_e16m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e16m8:
@@ -1511,6 +1783,8 @@ entry:
   ret <32 x half> %0
 }
 
+declare <32 x half> @llvm.riscv.sf.vc.v.i.se.nxv32f16.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <1 x float> @test_sf_vc_fv_i_se_e32mf2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e32mf2:
 ; CHECK:       # %bb.0: # %entry
@@ -1521,6 +1795,8 @@ entry:
   %0 = tail call <1 x float> @llvm.riscv.sf.vc.v.i.se.nxv1f32.iXLen.iXLen(iXLen 3, iXLen 8, iXLen 4, iXLen %vl)
   ret <1 x float> %0
 }
+
+declare <1 x float> @llvm.riscv.sf.vc.v.i.se.nxv1f32.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <2 x float> @test_sf_vc_fv_i_se_e32m1(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e32m1:
@@ -1533,6 +1809,8 @@ entry:
   ret <2 x float> %0
 }
 
+declare <2 x float> @llvm.riscv.sf.vc.v.i.se.nxv2f32.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <4 x float> @test_sf_vc_fv_i_se_e32m2(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e32m2:
 ; CHECK:       # %bb.0: # %entry
@@ -1543,6 +1821,8 @@ entry:
   %0 = tail call <4 x float> @llvm.riscv.sf.vc.v.i.se.nxv4f32.iXLen.iXLen(iXLen 3, iXLen 8, iXLen 4, iXLen %vl)
   ret <4 x float> %0
 }
+
+declare <4 x float> @llvm.riscv.sf.vc.v.i.se.nxv4f32.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
 
 define <8 x float> @test_sf_vc_fv_i_se_e32m4(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e32m4:
@@ -1555,6 +1835,8 @@ entry:
   ret <8 x float> %0
 }
 
+declare <8 x float> @llvm.riscv.sf.vc.v.i.se.nxv8f32.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)
+
 define <16 x float> @test_sf_vc_fv_i_se_e32m8(iXLen %vl) {
 ; CHECK-LABEL: test_sf_vc_fv_i_se_e32m8:
 ; CHECK:       # %bb.0: # %entry
@@ -1566,3 +1848,4 @@ entry:
   ret <16 x float> %0
 }
 
+declare <16 x float> @llvm.riscv.sf.vc.v.i.se.nxv16f32.iXLen.iXLen(iXLen, iXLen, iXLen, iXLen)

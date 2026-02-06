@@ -41,7 +41,6 @@ struct OmpClauseList;
 
 namespace semantics {
 class Symbol;
-class Scope;
 class SemanticsContext;
 } // namespace semantics
 
@@ -58,7 +57,6 @@ struct Variable;
 struct OMPDeferredDeclareTargetInfo {
   mlir::omp::DeclareTargetCaptureClause declareTargetCaptureClause;
   mlir::omp::DeclareTargetDeviceType declareTargetDeviceType;
-  bool automap = false;
   const Fortran::semantics::Symbol &sym;
 };
 
@@ -81,6 +79,7 @@ void genOpenMPDeclarativeConstruct(AbstractConverter &,
 void genOpenMPSymbolProperties(AbstractConverter &converter,
                                const pft::Variable &var);
 
+int64_t getCollapseValue(const Fortran::parser::OmpClauseList &clauseList);
 void genThreadprivateOp(AbstractConverter &, const pft::Variable &);
 void genDeclareTargetIntGlobal(AbstractConverter &, const pft::Variable &);
 bool isOpenMPTargetConstruct(const parser::OpenMPConstruct &);
@@ -97,13 +96,6 @@ bool markOpenMPDeferredDeclareTargetFunctions(
     mlir::Operation *, llvm::SmallVectorImpl<OMPDeferredDeclareTargetInfo> &,
     AbstractConverter &);
 void genOpenMPRequires(mlir::Operation *, const Fortran::semantics::Symbol *);
-
-// Materialize omp.declare_mapper ops for mapper declarations found in
-// imported modules. If \p scope is null, materialize for the whole
-// semantics global scope; otherwise, operate recursively starting at \p scope.
-void materializeOpenMPDeclareMappers(
-    Fortran::lower::AbstractConverter &, Fortran::semantics::SemanticsContext &,
-    const Fortran::semantics::Scope *scope = nullptr);
 
 } // namespace lower
 } // namespace Fortran

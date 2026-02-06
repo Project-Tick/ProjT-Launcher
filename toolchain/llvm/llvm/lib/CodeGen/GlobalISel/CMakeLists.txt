@@ -1,6 +1,6 @@
 add_llvm_component_library(LLVMGlobalISel
   CSEInfo.cpp
-  GISelValueTracking.cpp
+  GISelKnownBits.cpp
   CSEMIRBuilder.cpp
   CallLowering.cpp
   GlobalISel.cpp
@@ -25,7 +25,6 @@ add_llvm_component_library(LLVMGlobalISel
   LoadStoreOpt.cpp
   Localizer.cpp
   LostDebugLocObserver.cpp
-  MachineFloatingPointPredicateUtils.cpp
   MachineIRBuilder.cpp
   RegBankSelect.cpp
   Utils.cpp

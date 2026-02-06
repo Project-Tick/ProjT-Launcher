@@ -12,6 +12,7 @@
 #include "mlir/IR/Region.h"
 #include "llvm/Support/raw_ostream.h"
 #include <iterator>
+#include <sstream>
 
 using namespace mlir;
 
@@ -37,7 +38,9 @@ static void printRegion(llvm::raw_ostream &os, Region *region,
 static void printBlock(llvm::raw_ostream &os, Block *block,
                        OpPrintingFlags &flags) {
   Region *region = block->getParent();
-  os << "Block #" << block->computeBlockNumber() << " for ";
+  Block *entry = &region->front();
+  int blockId = std::distance(entry->getIterator(), block->getIterator());
+  os << "Block #" << blockId << " for ";
   bool shouldSkipRegions = flags.shouldSkipRegions();
   printRegion(os, region, flags.skipRegions());
   if (!shouldSkipRegions)

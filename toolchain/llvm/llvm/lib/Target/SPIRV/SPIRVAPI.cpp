@@ -11,6 +11,7 @@
 #include "SPIRVTargetMachine.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/CodeGen/CommandFlags.h"
+#include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
@@ -19,8 +20,13 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/InitializePasses.h"
+#include "llvm/MC/MCTargetOptionsCommandFlags.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Pass.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Support/FormattedStream.h"
+#include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetMachine.h"
@@ -28,6 +34,7 @@
 #include "llvm/TargetParser/Triple.h"
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace llvm;
@@ -72,7 +79,7 @@ SPIRVTranslate(Module *M, std::string &SpirvObj, std::string &ErrMsg,
 
   if (TargetTriple.getTriple().empty()) {
     TargetTriple.setTriple(DefaultTriple);
-    M->setTargetTriple(TargetTriple);
+    M->setTargetTriple(DefaultTriple);
   }
   const Target *TheTarget =
       TargetRegistry::lookupTarget(DefaultMArch, TargetTriple, ErrMsg);
@@ -87,7 +94,7 @@ SPIRVTranslate(Module *M, std::string &SpirvObj, std::string &ErrMsg,
   std::optional<Reloc::Model> RM;
   std::optional<CodeModel::Model> CM;
   std::unique_ptr<TargetMachine> Target(TheTarget->createTargetMachine(
-      TargetTriple, "", "", Options, RM, CM, OLevel));
+      TargetTriple.getTriple(), "", "", Options, RM, CM, OLevel));
   if (!Target) {
     ErrMsg = "Could not allocate target machine!";
     return false;
@@ -111,13 +118,13 @@ SPIRVTranslate(Module *M, std::string &SpirvObj, std::string &ErrMsg,
   }
   M->setDataLayout(MaybeDL.get());
 
-  TargetLibraryInfoImpl TLII(M->getTargetTriple());
+  TargetLibraryInfoImpl TLII(Triple(M->getTargetTriple()));
   legacy::PassManager PM;
   PM.add(new TargetLibraryInfoWrapperPass(TLII));
   std::unique_ptr<MachineModuleInfoWrapperPass> MMIWP(
       new MachineModuleInfoWrapperPass(Target.get()));
-  Target->getObjFileLowering()->Initialize(MMIWP->getMMI().getContext(),
-                                           *Target);
+  const_cast<TargetLoweringObjectFile *>(Target->getObjFileLowering())
+      ->Initialize(MMIWP.get()->getMMI().getContext(), *Target);
 
   SmallString<4096> OutBuffer;
   raw_svector_ostream OutStream(OutBuffer);
@@ -141,9 +148,9 @@ SPIRVTranslateModule(Module *M, std::string &SpirvObj, std::string &ErrMsg,
                      const std::vector<std::string> &Opts) {
   // optional: Opts[0] is a string representation of Triple,
   // take Module triple otherwise
-  Triple TargetTriple = Opts.empty() || Opts[0].empty()
-                            ? M->getTargetTriple()
-                            : Triple(Triple::normalize(Opts[0]));
+  Triple TargetTriple(Opts.empty() || Opts[0].empty()
+                          ? M->getTargetTriple()
+                          : Triple::normalize(Opts[0]));
   // optional: Opts[1] is a string representation of CodeGenOptLevel,
   // no optimization otherwise
   llvm::CodeGenOptLevel OLevel = CodeGenOptLevel::None;
@@ -156,7 +163,7 @@ SPIRVTranslateModule(Module *M, std::string &SpirvObj, std::string &ErrMsg,
     }
   }
   return SPIRVTranslate(M, SpirvObj, ErrMsg, AllowExtNames, OLevel,
-                        std::move(TargetTriple));
+                        TargetTriple);
 }
 
 } // namespace llvm

@@ -15,11 +15,10 @@ FAR_BRANCH_NEGATIVE:
 
 NEAR_NEGATIVE:
   c.nop
-  call relax
 
 start:
   c.bnez a0, NEAR
-#INSTR: c.bnez a0, 0x92e
+#INSTR: c.bnez a0, 0x91e
 #RELAX-INSTR: c.bnez a0, 0
 #RELAX-RELOC: R_RISCV_RVC_BRANCH
   c.bnez a0, NEAR_NEGATIVE
@@ -27,7 +26,7 @@ start:
 #RELAX-INSTR: c.bnez a0, 0
 #RELAX-RELOC: R_RISCV_RVC_BRANCH
   c.bnez a0, FAR_BRANCH
-#INSTR-NEXT: bne a0, zero, 0xa30
+#INSTR-NEXT: bne a0, zero, 0xa20
 #RELAX-INSTR-NEXT: bne a0, zero, 0
 #RELAX-RELOC: R_RISCV_BRANCH
   c.bnez a0, FAR_BRANCH_NEGATIVE
@@ -35,7 +34,7 @@ start:
 #RELAX-INSTR-NEXT: bne a0, zero, 0
 #RELAX-RELOC: R_RISCV_BRANCH
   c.bnez a0, FAR_JUMP
-#INSTR-NEXT: bne a0, zero, 0x1202
+#INSTR-NEXT: bne a0, zero, 0x11f2
 #RELAX-INSTR-NEXT: bne a0, zero, 0
 #RELAX-RELOC: R_RISCV_BRANCH
   c.bnez a0, FAR_JUMP_NEGATIVE
@@ -44,7 +43,7 @@ start:
 #RELAX-RELOC: R_RISCV_BRANCH
 
   c.beqz a0, NEAR
-#INSTR-NEXT: c.beqz a0, 0x92e
+#INSTR-NEXT: c.beqz a0, 0x91e
 #RELAX-INSTR-NEXT: c.beqz a0, 0
 #RELAX-RELOC: R_RISCV_RVC_BRANCH
   c.beqz a0, NEAR_NEGATIVE
@@ -52,7 +51,7 @@ start:
 #RELAX-INSTR-NEXT: c.beqz a0, 0
 #RELAX-RELOC: R_RISCV_RVC_BRANCH
   c.beqz a0, FAR_BRANCH
-#INSTR-NEXT: beq a0, zero, 0xa30
+#INSTR-NEXT: beq a0, zero, 0xa20
 #RELAX-INSTR-NEXT: beq a0, zero, 0
 #RELAX-RELOC: R_RISCV_BRANCH
   c.beqz a0, FAR_BRANCH_NEGATIVE
@@ -60,7 +59,7 @@ start:
 #RELAX-INSTR-NEXT: beq a0, zero, 0
 #RELAX-RELOC: R_RISCV_BRANCH
   c.beqz a0, FAR_JUMP
-#INSTR-NEXT: beq a0, zero, 0x1202
+#INSTR-NEXT: beq a0, zero, 0x11f2
 #RELAX-INSTR-NEXT: beq a0, zero, 0
 #RELAX-RELOC: R_RISCV_BRANCH
   c.beqz a0, FAR_JUMP_NEGATIVE
@@ -69,7 +68,7 @@ start:
 #RELAX-RELOC: R_RISCV_BRANCH
 
   c.j NEAR
-#INSTR-NEXT: c.j 0x92e
+#INSTR-NEXT: c.j 0x91e
 #RELAX-INSTR-NEXT: c.j 0
 #RELAX-RELOC: R_RISCV_RVC_JUMP
   c.j NEAR_NEGATIVE
@@ -77,7 +76,7 @@ start:
 #RELAX-INSTR-NEXT: c.j 0
 #RELAX-RELOC: R_RISCV_RVC_JUMP
   c.j FAR_BRANCH
-#INSTR-NEXT: c.j 0xa30
+#INSTR-NEXT: c.j 0xa20
 #RELAX-INSTR-NEXT: c.j 0
 #RELAX-RELOC: R_RISCV_RVC_JUMP
   c.j FAR_BRANCH_NEGATIVE
@@ -85,7 +84,7 @@ start:
 #RELAX-INSTR-NEXT: c.j 0
 #RELAX-RELOC: R_RISCV_RVC_JUMP
   c.j FAR_JUMP
-#INSTR-NEXT: jal zero, 0x1202
+#INSTR-NEXT: jal zero, 0x11f2
 #RELAX-INSTR-NEXT: jal zero, 0
 #RELAX-RELOC: R_RISCV_JAL
   c.j FAR_JUMP_NEGATIVE
@@ -94,7 +93,7 @@ start:
 #RELAX-RELOC: R_RISCV_JAL
 
   c.jal NEAR
-#INSTR: c.jal 0x92e
+#INSTR: c.jal 0x91e
 #RELAX-INSTR: c.jal 0
 #RELAX-RELOC: R_RISCV_RVC_JUMP
   c.jal NEAR_NEGATIVE
@@ -102,7 +101,7 @@ start:
 #RELAX-INSTR: c.jal 0
 #RELAX-RELOC: R_RISCV_RVC_JUMP
   c.jal FAR_BRANCH
-#INSTR-NEXT: c.jal 0xa30
+#INSTR-NEXT: c.jal 0xa20
 #RELAX-INSTR-NEXT: c.jal 0
 #RELAX-RELOC: R_RISCV_RVC_JUMP
   c.jal FAR_BRANCH_NEGATIVE
@@ -110,7 +109,7 @@ start:
 #RELAX-INSTR-NEXT: c.jal 0
 #RELAX-RELOC: R_RISCV_RVC_JUMP
   c.jal FAR_JUMP
-#INSTR-NEXT: jal ra, 0x1202
+#INSTR-NEXT: jal ra, 0x11f2
 #RELAX-INSTR-NEXT: jal ra, 0
 #RELAX-RELOC: R_RISCV_JAL
   c.jal FAR_JUMP_NEGATIVE
@@ -118,7 +117,6 @@ start:
 #RELAX-INSTR-NEXT: jal ra, 0
 #RELAX-RELOC: R_RISCV_JAL
 
-  call relax
 NEAR:
   c.nop
 .space 256

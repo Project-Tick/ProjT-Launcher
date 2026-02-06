@@ -17,7 +17,7 @@ namespace pdb {
 
 class OutputStyle {
 public:
-  virtual ~OutputStyle() = default;
+  virtual ~OutputStyle() {}
 
   virtual Error dump() = 0;
 };

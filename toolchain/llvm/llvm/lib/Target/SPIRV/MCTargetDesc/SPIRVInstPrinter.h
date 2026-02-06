@@ -16,12 +16,11 @@
 #include "MCTargetDesc/SPIRVBaseInfo.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/MC/MCInstPrinter.h"
-#include "llvm/MC/MCRegister.h"
 
 namespace llvm {
 class SPIRVInstPrinter : public MCInstPrinter {
 private:
-  SmallDenseMap<MCRegister, SPIRV::InstructionSet::InstructionSet> ExtInstSetIDs;
+  SmallDenseMap<unsigned, SPIRV::InstructionSet::InstructionSet> ExtInstSetIDs;
   void recordOpExtInstImport(const MCInst *MI);
 
 public:
@@ -29,13 +28,13 @@ public:
 
   void printInst(const MCInst *MI, uint64_t Address, StringRef Annot,
                  const MCSubtargetInfo &STI, raw_ostream &OS) override;
-  void printOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O);
+  void printOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O,
+                    const char *Modifier = nullptr);
 
   void printStringImm(const MCInst *MI, unsigned OpNo, raw_ostream &O);
 
   void printOpDecorate(const MCInst *MI, raw_ostream &O);
   void printOpExtInst(const MCInst *MI, raw_ostream &O);
-  void printUnknownType(const MCInst *MI, raw_ostream &O);
   void printRemainingVariableOps(const MCInst *MI, unsigned StartIndex,
                                  raw_ostream &O, bool SkipFirstSpace = false,
                                  bool SkipImmediates = false);

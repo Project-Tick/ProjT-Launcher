@@ -136,10 +136,8 @@ try.cont:
 ; X64: callq f
 ; X64: [[contbb:\.LBB0_[0-9]+]]: # Block address taken
 ; X64-NEXT:                      # %try.cont
-; X64: .seh_startepilogue
 ; X64: addq $[[STCK_ALLOC]], %rsp
 ; X64: popq %rbp
-; X64: .seh_endepilogue
 ; X64: retq
 
 ; X64: "?catch$[[catch1bb:[0-9]+]]@?0?try_catch_catch@4HA":
@@ -155,10 +153,8 @@ try.cont:
 ; X64-DAG: movl -4(%rbp), %ecx
 ; X64: callq f
 ; X64: leaq [[contbb]](%rip), %rax
-; X64-NEXT: .seh_startepilogue
 ; X64-NEXT: addq $32, %rsp
 ; X64-NEXT: popq %rbp
-; X64-NEXT: .seh_endepilogue
 ; X64-NEXT: retq
 
 ; X64: "?catch$[[catch2bb:[0-9]+]]@?0?try_catch_catch@4HA":
@@ -174,20 +170,18 @@ try.cont:
 ; X64-DAG: movl $3, %ecx
 ; X64: callq f
 ; X64: leaq [[contbb]](%rip), %rax
-; X64-NEXT: .seh_startepilogue
 ; X64-NEXT: addq $32, %rsp
 ; X64-NEXT: popq %rbp
-; X64-NEXT: .seh_endepilogue
 ; X64-NEXT: retq
 
 ; X64: $cppxdata$try_catch_catch:
 ; X64-NEXT: .long   429065506
 ; X64-NEXT: .long   2
-; X64-NEXT: .long   $stateUnwindMap$try_catch_catch@IMGREL
+; X64-NEXT: .long   ($stateUnwindMap$try_catch_catch)@IMGREL
 ; X64-NEXT: .long   1
-; X64-NEXT: .long   $tryMap$try_catch_catch@IMGREL
+; X64-NEXT: .long   ($tryMap$try_catch_catch)@IMGREL
 ; X64-NEXT: .long   5
-; X64-NEXT: .long   $ip2state$try_catch_catch@IMGREL
+; X64-NEXT: .long   ($ip2state$try_catch_catch)@IMGREL
 ; X64-NEXT: .long   48
 ; X64-NEXT: .long   0
 ; X64-NEXT: .long   1
@@ -197,7 +191,7 @@ try.cont:
 ; X64-NEXT: .long   0
 ; X64-NEXT: .long   1
 ; X64-NEXT: .long   2
-; X64-NEXT: .long   $handlerMap$0$try_catch_catch@IMGREL
+; X64-NEXT: .long   ($handlerMap$0$try_catch_catch)@IMGREL
 
 ; X64: $handlerMap$0$try_catch_catch:
 ; X64-NEXT:   .long   0
@@ -214,9 +208,9 @@ try.cont:
 ; X64: $ip2state$try_catch_catch:
 ; X64-NEXT: .long   .Lfunc_begin0@IMGREL
 ; X64-NEXT: .long   -1
-; X64-NEXT: .long   .Ltmp0@IMGREL
+; X64-NEXT: .long   .Ltmp0@IMGREL+1
 ; X64-NEXT: .long   0
-; X64-NEXT: .long   .Ltmp1@IMGREL
+; X64-NEXT: .long   .Ltmp1@IMGREL+1
 ; X64-NEXT: .long   -1
 ; X64-NEXT: .long   "?catch$[[catch1bb]]@?0?try_catch_catch@4HA"@IMGREL
 ; X64-NEXT: .long   1
@@ -295,10 +289,8 @@ try.cont:
 ; X64: .Ltmp[[after_call:[0-9]+]]:
 ; X64: [[contbb:\.LBB1_[0-9]+]]: # Block address taken
 ; X64-NEXT:                      # %try.cont
-; X64: .seh_startepilogue
 ; X64: addq $48, %rsp
 ; X64: popq %rbp
-; X64: .seh_endepilogue
 ; X64: retq
 
 ; X64: "?catch$[[catchbb:[0-9]+]]@?0?branch_to_normal_dest@4HA":
@@ -316,20 +308,18 @@ try.cont:
 ; X64: jne     .LBB1_[[normal_dest_bb]]
 ; X64: # %catch.done
 ; X64: leaq [[contbb]](%rip), %rax
-; X64-NEXT: .seh_startepilogue
 ; X64-NEXT: addq $32, %rsp
 ; X64-NEXT: popq %rbp
-; X64-NEXT: .seh_endepilogue
 ; X64-NEXT: retq
 
 ; X64-LABEL: $cppxdata$branch_to_normal_dest:
 ; X64-NEXT: .long   429065506
 ; X64-NEXT: .long   2
-; X64-NEXT: .long   $stateUnwindMap$branch_to_normal_dest@IMGREL
+; X64-NEXT: .long   ($stateUnwindMap$branch_to_normal_dest)@IMGREL
 ; X64-NEXT: .long   1
-; X64-NEXT: .long   $tryMap$branch_to_normal_dest@IMGREL
+; X64-NEXT: .long   ($tryMap$branch_to_normal_dest)@IMGREL
 ; X64-NEXT: .long   4
-; X64-NEXT: .long   $ip2state$branch_to_normal_dest@IMGREL
+; X64-NEXT: .long   ($ip2state$branch_to_normal_dest)@IMGREL
 ; X64-NEXT: .long   40
 ; X64-NEXT: .long   0
 ; X64-NEXT: .long   1
@@ -345,7 +335,7 @@ try.cont:
 ; X64-NEXT: .long   0
 ; X64-NEXT: .long   1
 ; X64-NEXT: .long   1
-; X64-NEXT: .long   $handlerMap$0$branch_to_normal_dest@IMGREL
+; X64-NEXT: .long   ($handlerMap$0$branch_to_normal_dest)@IMGREL
 
 ; X64-LABEL: $handlerMap$0$branch_to_normal_dest:
 ; X64-NEXT: .long   64
@@ -357,9 +347,9 @@ try.cont:
 ; X64-LABEL: $ip2state$branch_to_normal_dest:
 ; X64-NEXT: .long   .Lfunc_begin1@IMGREL
 ; X64-NEXT: .long   -1
-; X64-NEXT: .long   .Ltmp[[before_call]]@IMGREL
+; X64-NEXT: .long   .Ltmp[[before_call]]@IMGREL+1
 ; X64-NEXT: .long   0
-; X64-NEXT: .long   .Ltmp[[after_call]]@IMGREL
+; X64-NEXT: .long   .Ltmp[[after_call]]@IMGREL+1
 ; X64-NEXT: .long   -1
 ; X64-NEXT: .long   "?catch$[[catchbb]]@?0?branch_to_normal_dest@4HA"@IMGREL
 ; X64-NEXT: .long   1

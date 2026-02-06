@@ -86,9 +86,6 @@ public:
 
   Status InitializeConnection(std::unique_ptr<Connection> connection);
 
-  GDBRemoteCommunication::PacketResult
-  SendStructuredDataPacket(const llvm::json::Value &value);
-
   struct DebuggedProcess {
     enum class Flag {
       vkilled = (1u << 0),
@@ -187,8 +184,6 @@ protected:
   PacketResult Handle_qfThreadInfo(StringExtractorGDBRemote &packet);
 
   PacketResult Handle_qsThreadInfo(StringExtractorGDBRemote &packet);
-
-  PacketResult Handle_qStructuredDataPlugins(StringExtractorGDBRemote &packet);
 
   PacketResult Handle_p(StringExtractorGDBRemote &packet);
 

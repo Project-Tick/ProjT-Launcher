@@ -38,3 +38,4 @@ entry:
 
 declare void @foo(ptr)
 
+declare ptr @llvm.eh.dwarf.cfa(i32) nounwind

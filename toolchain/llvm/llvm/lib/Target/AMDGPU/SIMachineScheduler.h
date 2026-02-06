@@ -389,7 +389,7 @@ private:
                             SIBlockSchedCandidate &TryCand);
   SIScheduleBlock *pickBlock();
 
-  void addLiveRegs(std::set<VirtRegOrUnit> &Regs);
+  void addLiveRegs(std::set<Register> &Regs);
   void decreaseLiveRegs(SIScheduleBlock *Block, std::set<Register> &Regs);
   void releaseBlockSuccs(SIScheduleBlock *Parent);
   void blockScheduled(SIScheduleBlock *Block);
@@ -462,18 +462,18 @@ public:
                                                      unsigned &VgprUsage,
                                                      unsigned &SgprUsage);
 
-  std::set<VirtRegOrUnit> getInRegs() {
-    std::set<VirtRegOrUnit> InRegs;
+  std::set<Register> getInRegs() {
+    std::set<Register> InRegs;
     for (const auto &RegMaskPair : RPTracker.getPressure().LiveInRegs) {
-      InRegs.insert(RegMaskPair.VRegOrUnit);
+      InRegs.insert(RegMaskPair.RegUnit);
     }
     return InRegs;
   }
 
-  std::set<VirtRegOrUnit> getOutRegs() {
-    std::set<VirtRegOrUnit> OutRegs;
+  std::set<unsigned> getOutRegs() {
+    std::set<unsigned> OutRegs;
     for (const auto &RegMaskPair : RPTracker.getPressure().LiveOutRegs) {
-      OutRegs.insert(RegMaskPair.VRegOrUnit);
+      OutRegs.insert(RegMaskPair.RegUnit);
     }
     return OutRegs;
   };

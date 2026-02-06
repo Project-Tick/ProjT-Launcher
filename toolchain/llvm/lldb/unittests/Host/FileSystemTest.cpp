@@ -186,7 +186,7 @@ TEST(FileSystemTest, FileAndDirectoryComponents) {
 }
 
 static IntrusiveRefCntPtr<DummyFileSystem> GetSimpleDummyFS() {
-  auto D = makeIntrusiveRefCnt<DummyFileSystem>();
+  IntrusiveRefCntPtr<DummyFileSystem> D(new DummyFileSystem());
   D->addRegularFile("/foo");
   D->addDirectory("/bar");
   D->addSymlink("/baz");

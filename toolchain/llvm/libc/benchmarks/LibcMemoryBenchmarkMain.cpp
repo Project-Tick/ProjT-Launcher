@@ -161,11 +161,11 @@ private:
     if (Percent == LastPercent)
       return;
     LastPercent = Percent;
-    size_t i = 0;
+    size_t I = 0;
     errs() << '[';
-    for (; i <= Percent; ++i)
+    for (; I <= Percent; ++I)
       errs() << '#';
-    for (; i <= 100; ++i)
+    for (; I <= 100; ++I)
       errs() << '_';
     errs() << "] " << Percent << '%' << '\r';
   }

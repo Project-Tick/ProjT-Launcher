@@ -6,8 +6,9 @@
 // clang-format on
 
 // UNSUPPORTED: aarch64-unknown-linux-gnu
+// UNSUPPORTED: aarch64-unknown-linux-gnu-LTO
 // UNSUPPORTED: x86_64-unknown-linux-gnu
-// XFAIL: intelgpu
+// UNSUPPORTED: x86_64-unknown-linux-gnu-LTO
 
 #include <stdio.h>
 

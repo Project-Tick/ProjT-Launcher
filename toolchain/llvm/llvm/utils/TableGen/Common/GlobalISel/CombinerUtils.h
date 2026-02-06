@@ -67,7 +67,6 @@ inline const DagInit *getDagWithOperatorOfSubClass(const Init &N,
 }
 
 /// Copies a StringRef into a static pool to preserve it.
-// FIXME: Use UniqueStringSaver instead.
 StringRef insertStrRef(StringRef S);
 
 } // namespace llvm

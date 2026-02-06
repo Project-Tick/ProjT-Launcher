@@ -7,20 +7,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "src/ctype/toupper.h"
-
-#include "src/__support/CPP/limits.h"
-#include "src/__support/common.h"
 #include "src/__support/ctype_utils.h"
+
+#include "src/__support/common.h"
 #include "src/__support/macros/config.h"
 
 namespace LIBC_NAMESPACE_DECL {
 
-LLVM_LIBC_FUNCTION(int, toupper, (int c)) {
-  if (c < cpp::numeric_limits<char>::min() ||
-      c > cpp::numeric_limits<char>::max()) {
-    return c;
-  }
-  return static_cast<int>(internal::toupper(static_cast<char>(c)));
-}
+LLVM_LIBC_FUNCTION(int, toupper, (int c)) { return internal::toupper(c); }
 
 } // namespace LIBC_NAMESPACE_DECL

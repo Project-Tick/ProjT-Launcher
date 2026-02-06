@@ -78,6 +78,11 @@
 
 using namespace llvm;
 
+static const char LintAbortOnErrorArgName[] = "lint-abort-on-error";
+static cl::opt<bool>
+    LintAbortOnError(LintAbortOnErrorArgName, cl::init(false),
+                     cl::desc("In the Lint pass, abort on errors."));
+
 namespace {
 namespace MemRef {
 static const unsigned Read = 1;
@@ -122,7 +127,7 @@ class Lint : public InstVisitor<Lint> {
 
 public:
   Module *Mod;
-  const Triple &TT;
+  Triple TT;
   const DataLayout *DL;
   AliasAnalysis *AA;
   AssumptionCache *AC;
@@ -134,8 +139,8 @@ public:
 
   Lint(Module *Mod, const DataLayout *DL, AliasAnalysis *AA,
        AssumptionCache *AC, DominatorTree *DT, TargetLibraryInfo *TLI)
-      : Mod(Mod), TT(Mod->getTargetTriple()), DL(DL), AA(AA), AC(AC), DT(DT),
-        TLI(TLI), MessagesStr(Messages) {}
+      : Mod(Mod), TT(Triple::normalize(Mod->getTargetTriple())), DL(DL), AA(AA),
+        AC(AC), DT(DT), TLI(TLI), MessagesStr(Messages) {}
 
   void WriteValues(ArrayRef<const Value *> Vs) {
     for (const Value *V : Vs) {
@@ -344,13 +349,19 @@ void Lint::visitCallBase(CallBase &I) {
                            MMI->getSourceAlign(), nullptr, MemRef::Read);
       break;
     }
-    case Intrinsic::memset:
-    case Intrinsic::memset_inline: {
+    case Intrinsic::memset: {
       MemSetInst *MSI = cast<MemSetInst>(&I);
       visitMemoryReference(I, MemoryLocation::getForDest(MSI),
                            MSI->getDestAlign(), nullptr, MemRef::Write);
       break;
     }
+    case Intrinsic::memset_inline: {
+      MemSetInlineInst *MSII = cast<MemSetInlineInst>(&I);
+      visitMemoryReference(I, MemoryLocation::getForDest(MSII),
+                           MSII->getDestAlign(), nullptr, MemRef::Write);
+      break;
+    }
+
     case Intrinsic::vastart:
       // vastart in non-varargs function is rejected by the verifier
       visitMemoryReference(I, MemoryLocation::getForArgument(&I, 0, TLI),
@@ -373,6 +384,13 @@ void Lint::visitCallBase(CallBase &I) {
       // at any time, so check it for both readability and writeability.
       visitMemoryReference(I, MemoryLocation::getForArgument(&I, 0, TLI),
                            std::nullopt, nullptr, MemRef::Read | MemRef::Write);
+      break;
+    case Intrinsic::get_active_lane_mask:
+      if (auto *TripCount = dyn_cast<ConstantInt>(I.getArgOperand(1)))
+        Check(!TripCount->isZero(),
+              "get_active_lane_mask: operand #2 "
+              "must be greater than 0",
+              &I);
       break;
     }
 }
@@ -544,7 +562,8 @@ static bool isZero(Value *V, const DataLayout &DL, DominatorTree *DT,
 
   VectorType *VecTy = dyn_cast<VectorType>(V->getType());
   if (!VecTy) {
-    KnownBits Known = computeKnownBits(V, DL, AC, dyn_cast<Instruction>(V), DT);
+    KnownBits Known =
+        computeKnownBits(V, DL, 0, AC, dyn_cast<Instruction>(V), DT);
     return Known.isZero();
   }
 
@@ -728,17 +747,11 @@ PreservedAnalyses LintPass::run(Function &F, FunctionAnalysisManager &AM) {
   Lint L(Mod, DL, AA, AC, DT, TLI);
   L.visit(F);
   dbgs() << L.MessagesStr.str();
-  if (AbortOnError && !L.MessagesStr.str().empty())
-    report_fatal_error(
-        "linter found errors, aborting. (enabled by abort-on-error)", false);
+  if (LintAbortOnError && !L.MessagesStr.str().empty())
+    report_fatal_error(Twine("Linter found errors, aborting. (enabled by --") +
+                           LintAbortOnErrorArgName + ")",
+                       false);
   return PreservedAnalyses::all();
-}
-
-void LintPass::printPipeline(
-    raw_ostream &OS, function_ref<StringRef(StringRef)> MapClassName2PassName) {
-  PassInfoMixin<LintPass>::printPipeline(OS, MapClassName2PassName);
-  if (AbortOnError)
-    OS << "<abort-on-error>";
 }
 
 //===----------------------------------------------------------------------===//
@@ -747,7 +760,7 @@ void LintPass::printPipeline(
 
 /// lintFunction - Check a function for errors, printing messages on stderr.
 ///
-void llvm::lintFunction(const Function &f, bool AbortOnError) {
+void llvm::lintFunction(const Function &f) {
   Function &F = const_cast<Function &>(f);
   assert(!F.isDeclaration() && "Cannot lint external functions");
 
@@ -762,14 +775,14 @@ void llvm::lintFunction(const Function &f, bool AbortOnError) {
     AA.registerFunctionAnalysis<TypeBasedAA>();
     return AA;
   });
-  LintPass(AbortOnError).run(F, FAM);
+  LintPass().run(F, FAM);
 }
 
 /// lintModule - Check a module for errors, printing messages on stderr.
 ///
-void llvm::lintModule(const Module &M, bool AbortOnError) {
+void llvm::lintModule(const Module &M) {
   for (const Function &F : M) {
     if (!F.isDeclaration())
-      lintFunction(F, AbortOnError);
+      lintFunction(F);
   }
 }

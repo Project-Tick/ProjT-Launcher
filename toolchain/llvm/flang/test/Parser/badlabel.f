@@ -6,7 +6,9 @@
 ! CHECK-NOT: Label is not in fixed-form label field
       con
      3 tinue
-      end
+! CHECK: Character in fixed-form label field must be a digit
+end
 ! CHECK: 1continue
 ! CHECK: 12continue
+! CHECK: continue
 ! CHECK: end

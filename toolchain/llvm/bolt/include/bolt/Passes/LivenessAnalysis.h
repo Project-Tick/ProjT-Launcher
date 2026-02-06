@@ -37,9 +37,10 @@ public:
   virtual ~LivenessAnalysis();
 
   bool isAlive(ProgramPoint PP, MCPhysReg Reg) const {
-    const BitVector &BV = *this->getStateAt(PP);
+    BitVector BV = (*this->getStateAt(PP));
     const BitVector &RegAliases = BC.MIB->getAliases(Reg);
-    return BV.anyCommon(RegAliases);
+    BV &= RegAliases;
+    return BV.any();
   }
 
   void run() { Parent::run(); }

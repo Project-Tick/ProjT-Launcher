@@ -20,7 +20,8 @@
 #include "container_test_types.h"
 #include "../../../map_allocator_requirement_test_templates.h"
 
-int main(int, char**) {
+int main(int, char**)
+{
   testMultimapInsert<TCT::unordered_multimap<> >();
   testMultimapInsertHint<TCT::unordered_multimap<> >();
 

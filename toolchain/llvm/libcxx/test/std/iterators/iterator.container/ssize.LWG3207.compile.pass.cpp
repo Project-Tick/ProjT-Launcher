@@ -22,7 +22,6 @@
 #include <iterator>
 #include <climits>
 #include <cstddef>
-#include <cstdint>
 
 // Test the test:
 static_assert(sizeof(std::ptrdiff_t) == 4, "Run only on these platforms");

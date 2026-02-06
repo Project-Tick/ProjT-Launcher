@@ -30,6 +30,4 @@ MLIR_DECLARE_CAPI_DIALECT_REGISTRATION(MemRef, memref);
 }
 #endif
 
-#include "mlir/Dialect/MemRef/Transforms/Passes.capi.h.inc"
-
 #endif // MLIR_C_DIALECT_MEMREF_H

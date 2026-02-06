@@ -18,6 +18,9 @@
 namespace llvm {
 
 class MCSPIRVObjectTargetWriter : public MCObjectTargetWriter {
+protected:
+  explicit MCSPIRVObjectTargetWriter() {}
+
 public:
   Triple::ObjectFormatType getFormat() const override { return Triple::SPIRV; }
   static bool classof(const MCObjectTargetWriter *W) {
@@ -43,7 +46,11 @@ public:
   void setBuildVersion(unsigned Major, unsigned Minor, unsigned Bound);
 
 private:
-  uint64_t writeObject() override;
+  void recordRelocation(MCAssembler &Asm, const MCFragment *Fragment,
+                        const MCFixup &Fixup, MCValue Target,
+                        uint64_t &FixedValue) override {}
+
+  uint64_t writeObject(MCAssembler &Asm) override;
   void writeHeader(const MCAssembler &Asm);
 };
 

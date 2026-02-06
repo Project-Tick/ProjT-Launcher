@@ -12,8 +12,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "BPFMCInstLower.h"
-#include "BPFAsmPrinter.h"
-#include "BPFISelLowering.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineInstr.h"
@@ -21,7 +19,6 @@
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
-#include "llvm/MC/MCStreamer.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
@@ -79,9 +76,6 @@ void BPFMCInstLower::Lower(const MachineInstr *MI, MCInst &OutMI) const {
       break;
     case MachineOperand::MO_ConstantPoolIndex:
       MCOp = LowerSymbolOperand(MO, Printer.GetCPISymbol(MO.getIndex()));
-      break;
-    case MachineOperand::MO_JumpTableIndex:
-      MCOp = LowerSymbolOperand(MO, Printer.getJTPublicSymbol(MO.getIndex()));
       break;
     }
 

@@ -6,6 +6,9 @@
 
 ; Verify that we lower @llvm.trap() and @llvm.debugtrap() correctly.
 
+declare void @llvm.trap()
+declare void @llvm.debugtrap()
+
 define void @test_trap() nounwind {
 ; RV32I-LABEL: test_trap:
 ; RV32I:       # %bb.0:

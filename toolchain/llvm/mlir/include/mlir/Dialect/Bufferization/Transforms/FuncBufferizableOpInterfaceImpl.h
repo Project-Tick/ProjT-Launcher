@@ -69,9 +69,6 @@ struct FuncAnalysisState : public OneShotAnalysisState::Extension {
   /// analyzed.
   DenseMap<FuncOp, FuncOpAnalysisState> analyzedFuncOps;
 
-  /// A collection of cached SymbolTables used for faster function lookup.
-  mutable SymbolTableCollection symbolTables;
-
   /// This function is called right before analyzing the given FuncOp. It
   /// initializes the data structures for the FuncOp in this state object.
   void startFunctionAnalysis(FuncOp funcOp);

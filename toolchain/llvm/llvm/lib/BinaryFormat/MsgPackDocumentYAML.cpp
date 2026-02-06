@@ -29,10 +29,6 @@ struct ScalarDocNode : DocNode {
   StringRef getYAMLTag() const;
 };
 
-bool isJSONSchemaBoolLiteral(StringRef S) {
-  return S == "true" || S == "false";
-}
-
 } // namespace
 
 /// Convert this DocNode to a string, assuming it is scalar.
@@ -88,18 +84,11 @@ StringRef DocNode::fromString(StringRef S, StringRef Tag) {
     *this = getDocument()->getNode();
     return "";
   }
-  if (Tag == "!bool") {
+  if (Tag == "!bool" || Tag == "") {
     *this = getDocument()->getNode(false);
-    return yaml::ScalarTraits<bool>::input(S, nullptr, getBool());
-  }
-  // FIXME: This enforces the "JSON Schema" tag resolution for boolean literals,
-  // defined at https://yaml.org/spec/1.2.2/#json-schema which we adopt because
-  // the more general pre-1.2 resolution includes many common strings (e.g. "n",
-  // "no", "y", "yes", ...). This should be handled at the YAMLTraits level, but
-  // that change would have a much broader impact.
-  if (Tag == "" && isJSONSchemaBoolLiteral(S)) {
-    *this = getDocument()->getNode(S == "true");
-    return "";
+    StringRef Err = yaml::ScalarTraits<bool>::input(S, nullptr, getBool());
+    if (Err == "" || Tag != "")
+      return Err;
   }
   if (Tag == "!float" || Tag == "") {
     *this = getDocument()->getNode(0.0);
@@ -220,12 +209,12 @@ template <> struct CustomMappingTraits<MapDocNode> {
   static void inputOne(IO &IO, StringRef Key, MapDocNode &M) {
     ScalarDocNode KeyObj = M.getDocument()->getNode();
     KeyObj.fromString(Key, "");
-    IO.mapRequired(Key, M.getMap()[KeyObj]);
+    IO.mapRequired(Key.str().c_str(), M.getMap()[KeyObj]);
   }
 
   static void output(IO &IO, MapDocNode &M) {
     for (auto I : M.getMap()) {
-      IO.mapRequired(I.first.toString(), I.second);
+      IO.mapRequired(I.first.toString().c_str(), I.second);
     }
   }
 };

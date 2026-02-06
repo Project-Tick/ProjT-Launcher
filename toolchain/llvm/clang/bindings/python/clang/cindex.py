@@ -62,24 +62,7 @@ from __future__ import annotations
 #
 # o implement additional SourceLocation, SourceRange, and File methods.
 
-from ctypes import (
-    Array,
-    CDLL,
-    CFUNCTYPE,
-    POINTER,
-    Structure,
-    byref,
-    c_char_p,
-    c_int,
-    c_longlong,
-    c_uint,
-    c_ulong,
-    c_ulonglong,
-    c_void_p,
-    cast,
-    cdll,
-    py_object,
-)
+from ctypes import *
 
 import os
 import sys
@@ -88,12 +71,8 @@ from enum import Enum
 from typing import (
     Any,
     Callable,
-    cast as Tcast,
     Generic,
-    Iterator,
-    Literal,
     Optional,
-    Sequence,
     Type as TType,
     TypeVar,
     TYPE_CHECKING,
@@ -110,7 +89,6 @@ if TYPE_CHECKING:
         "tuple[str, Optional[list[Any]], Any]",
         "tuple[str, Optional[list[Any]], Any, Callable[..., Any]]",
     ]
-    CObjP: TypeAlias = _Pointer[Any]
 
     TSeq = TypeVar("TSeq", covariant=True)
 
@@ -333,18 +311,16 @@ class SourceLocation(Structure):
     @property
     def is_in_system_header(self):
         """Returns true if the given source location is in a system header."""
-        return bool(conf.lib.clang_Location_isInSystemHeader(self))
+        return conf.lib.clang_Location_isInSystemHeader(self)  # type: ignore [no-any-return]
 
     def __eq__(self, other):
-        return isinstance(other, SourceLocation) and bool(
-            conf.lib.clang_equalLocations(self, other)
-        )
+        return conf.lib.clang_equalLocations(self, other)  # type: ignore [no-any-return]
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __lt__(self, other: SourceLocation) -> bool:
-        return bool(conf.lib.clang_isBeforeInTranslationUnit(self, other))
+        return conf.lib.clang_isBeforeInTranslationUnit(self, other)  # type: ignore [no-any-return]
 
     def __le__(self, other: SourceLocation) -> bool:
         return self < other or self == other
@@ -396,9 +372,7 @@ class SourceRange(Structure):
         return conf.lib.clang_getRangeEnd(self)  # type: ignore [no-any-return]
 
     def __eq__(self, other):
-        return isinstance(other, SourceRange) and bool(
-            conf.lib.clang_equalRanges(self, other)
-        )
+        return conf.lib.clang_equalRanges(self, other)  # type: ignore [no-any-return]
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -674,39 +648,40 @@ class CursorKind(BaseEnumeration):
 
     def is_declaration(self):
         """Test if this is a declaration kind."""
-        return bool(conf.lib.clang_isDeclaration(self))
+        return conf.lib.clang_isDeclaration(self)  # type: ignore [no-any-return]
 
     def is_reference(self):
         """Test if this is a reference kind."""
-        return bool(conf.lib.clang_isReference(self))
+        return conf.lib.clang_isReference(self)  # type: ignore [no-any-return]
 
     def is_expression(self):
         """Test if this is an expression kind."""
-        return bool(conf.lib.clang_isExpression(self))
+        return conf.lib.clang_isExpression(self)  # type: ignore [no-any-return]
 
     def is_statement(self):
         """Test if this is a statement kind."""
-        return bool(conf.lib.clang_isStatement(self))
+        return conf.lib.clang_isStatement(self)  # type: ignore [no-any-return]
 
     def is_attribute(self):
         """Test if this is an attribute kind."""
-        return bool(conf.lib.clang_isAttribute(self))
+        return conf.lib.clang_isAttribute(self)  # type: ignore [no-any-return]
 
     def is_invalid(self):
         """Test if this is an invalid kind."""
-        return bool(conf.lib.clang_isInvalid(self))
+        return conf.lib.clang_isInvalid(self)  # type: ignore [no-any-return]
 
     def is_translation_unit(self):
         """Test if this is a translation unit kind."""
-        return bool(conf.lib.clang_isTranslationUnit(self))
+        return conf.lib.clang_isTranslationUnit(self)  # type: ignore [no-any-return]
 
     def is_preprocessing(self):
         """Test if this is a preprocessing kind."""
-        return bool(conf.lib.clang_isPreprocessing(self))
+        return conf.lib.clang_isPreprocessing(self)  # type: ignore [no-any-return]
 
     def is_unexposed(self):
         """Test if this is an unexposed kind."""
-        return bool(conf.lib.clang_isUnexposed(self))
+        return conf.lib.clang_isUnexposed(self)  # type: ignore [no-any-return]
+
 
     ###
     # Declaration Kinds
@@ -833,6 +808,7 @@ class CursorKind(BaseEnumeration):
 
     # A C++ access specifier decl.
     CXX_ACCESS_SPEC_DECL = 39
+
 
     ###
     # Reference Kinds
@@ -1434,62 +1410,8 @@ class CursorKind(BaseEnumeration):
     # OpenMP scope directive.
     OMP_SCOPE_DIRECTIVE = 306
 
-    # OpenMP reverse directive.
-    OMP_REVERSE_DIRECTIVE = 307
-
-    # OpenMP interchange directive.
-    OMP_INTERCHANGE_DIRECTIVE = 308
-
-    # OpenMP assume directive.
-    OMP_ASSUME_DIRECTIVE = 309
-
-    # OpenMP stripe directive.
-    OMP_STRIPE_DIRECTIVE = 310
-
-    # OpenMP fuse directive.
-    OMP_FUSE_DIRECTIVE = 311
-
     # OpenACC Compute Construct.
     OPEN_ACC_COMPUTE_DIRECTIVE = 320
-
-    # OpenACC Loop Construct.
-    OPEN_ACC_LOOP_CONSTRUCT = 321
-
-    # OpenACC Combined Constructs.
-    OPEN_ACC_COMBINED_CONSTRUCT = 322
-
-    # OpenACC data Construct.
-    OPEN_ACC_DATA_CONSTRUCT = 323
-
-    # OpenACC enter data Construct.
-    OPEN_ACC_ENTER_DATA_CONSTRUCT = 324
-
-    # OpenACC exit data Construct.
-    OPEN_ACC_EXIT_DATA_CONSTRUCT = 325
-
-    # OpenACC host_data Construct.
-    OPEN_ACC_HOST_DATA_CONSTRUCT = 326
-
-    # OpenACC wait Construct.
-    OPEN_ACC_WAIT_CONSTRUCT = 327
-
-    # OpenACC init Construct.
-    OPEN_ACC_INIT_CONSTRUCT = 328
-
-    # OpenACC shutdown Construct.
-    OPEN_ACC_SHUTDOWN_CONSTRUCT = 329
-
-    # OpenACC set Construct.
-    OPEN_ACC_SET_CONSTRUCT = 330
-
-    # OpenACC update Construct.
-    OPEN_ACC_UPDATE_CONSTRUCT = 331
-
-    # OpenACC atomic Construct.
-    OPEN_ACC_ATOMIC_CONSTRUCT = 332
-
-    # OpenACC cache Construct.
-    OPEN_ACC_CACHE_CONSTRUCT = 333
 
     ###
     # Other Kinds
@@ -1609,114 +1531,75 @@ class ExceptionSpecificationKind(BaseEnumeration):
     UNEVALUATED = 6
     UNINSTANTIATED = 7
     UNPARSED = 8
-    NOTHROW = 9
 
 ### Cursors ###
-
-
-def cursor_null_guard(func):
-    """
-    This decorator is used to ensure that no methods are called on null-cursors.
-    The bindings map null cursors to `None`, so users are not expected
-    to encounter them.
-
-    If necessary, you can check whether a cursor is the null-cursor by
-    calling its `is_null` method.
-    """
-
-    def inner(self, *args, **kwargs):
-        if self.is_null():
-            raise Exception("Tried calling method on a null-cursor.")
-        return func(self, *args, **kwargs)
-
-    return inner
 
 
 class Cursor(Structure):
     """
     The Cursor class represents a reference to an element within the AST. It
     acts as a kind of iterator.
-
-    Null cursors are mapped to None.
     """
 
     _fields_ = [("_kind_id", c_int), ("xdata", c_int), ("data", c_void_p * 3)]
 
-    _tu: TranslationUnit
-
     @staticmethod
-    def from_location(tu: TranslationUnit, location: SourceLocation) -> Cursor | None:
-        return Cursor.from_result(conf.lib.clang_getCursor(tu, location), tu)
+    def from_location(tu, location):
+        # We store a reference to the TU in the instance so the TU won't get
+        # collected before the cursor.
+        cursor = conf.lib.clang_getCursor(tu, location)
+        cursor._tu = tu
 
-    # This function is not null-guarded because it is used in cursor_null_guard itself
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, Cursor) and bool(
-            conf.lib.clang_equalCursors(self, other)
-        )
+        return cursor
 
-    # Not null-guarded for consistency with __eq__
-    def __ne__(self, other: object) -> bool:
+    def __eq__(self, other):
+        return conf.lib.clang_equalCursors(self, other)  # type: ignore [no-any-return]
+
+    def __ne__(self, other):
         return not self.__eq__(other)
 
-    @cursor_null_guard
-    def __hash__(self) -> int:
-        return self.hash
-
-    # This function is not null-guarded because it is used in cursor_null_guard itself
-    def is_null(self) -> bool:
-        return self == conf.null_cursor
-
-    @cursor_null_guard
-    def is_definition(self) -> bool:
+    def is_definition(self):
         """
         Returns true if the declaration pointed at by the cursor is also a
         definition of that entity.
         """
-        return bool(conf.lib.clang_isCursorDefinition(self))
+        return conf.lib.clang_isCursorDefinition(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_const_method(self) -> bool:
+    def is_const_method(self):
         """Returns True if the cursor refers to a C++ member function or member
         function template that is declared 'const'.
         """
-        return bool(conf.lib.clang_CXXMethod_isConst(self))
+        return conf.lib.clang_CXXMethod_isConst(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_converting_constructor(self) -> bool:
+    def is_converting_constructor(self):
         """Returns True if the cursor refers to a C++ converting constructor."""
-        return bool(conf.lib.clang_CXXConstructor_isConvertingConstructor(self))
+        return conf.lib.clang_CXXConstructor_isConvertingConstructor(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_copy_constructor(self) -> bool:
+    def is_copy_constructor(self):
         """Returns True if the cursor refers to a C++ copy constructor."""
-        return bool(conf.lib.clang_CXXConstructor_isCopyConstructor(self))
+        return conf.lib.clang_CXXConstructor_isCopyConstructor(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_default_constructor(self) -> bool:
+    def is_default_constructor(self):
         """Returns True if the cursor refers to a C++ default constructor."""
-        return bool(conf.lib.clang_CXXConstructor_isDefaultConstructor(self))
+        return conf.lib.clang_CXXConstructor_isDefaultConstructor(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_move_constructor(self) -> bool:
+    def is_move_constructor(self):
         """Returns True if the cursor refers to a C++ move constructor."""
-        return bool(conf.lib.clang_CXXConstructor_isMoveConstructor(self))
+        return conf.lib.clang_CXXConstructor_isMoveConstructor(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_default_method(self) -> bool:
+    def is_default_method(self):
         """Returns True if the cursor refers to a C++ member function or member
         function template that is declared '= default'.
         """
-        return bool(conf.lib.clang_CXXMethod_isDefaulted(self))
+        return conf.lib.clang_CXXMethod_isDefaulted(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_deleted_method(self) -> bool:
+    def is_deleted_method(self):
         """Returns True if the cursor refers to a C++ member function or member
         function template that is declared '= delete'.
         """
-        return bool(conf.lib.clang_CXXMethod_isDeleted(self))
+        return conf.lib.clang_CXXMethod_isDeleted(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_copy_assignment_operator_method(self) -> bool:
+    def is_copy_assignment_operator_method(self):
         """Returnrs True if the cursor refers to a copy-assignment operator.
 
         A copy-assignment operator `X::operator=` is a non-static,
@@ -1739,10 +1622,9 @@ class Cursor(Structure):
 
         Is not.
         """
-        return bool(conf.lib.clang_CXXMethod_isCopyAssignmentOperator(self))
+        return conf.lib.clang_CXXMethod_isCopyAssignmentOperator(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_move_assignment_operator_method(self) -> bool:
+    def is_move_assignment_operator_method(self):
         """Returnrs True if the cursor refers to a move-assignment operator.
 
         A move-assignment operator `X::operator=` is a non-static,
@@ -1765,10 +1647,9 @@ class Cursor(Structure):
 
         Is not.
         """
-        return bool(conf.lib.clang_CXXMethod_isMoveAssignmentOperator(self))
+        return conf.lib.clang_CXXMethod_isMoveAssignmentOperator(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_explicit_method(self) -> bool:
+    def is_explicit_method(self):
         """Determines if a C++ constructor or conversion function is
         explicit, returning 1 if such is the case and 0 otherwise.
 
@@ -1811,50 +1692,43 @@ class Cursor(Structure):
         This method will return 0 for the constructor and 1 for
         the conversion function.
         """
-        return bool(conf.lib.clang_CXXMethod_isExplicit(self))
+        return conf.lib.clang_CXXMethod_isExplicit(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_mutable_field(self) -> bool:
+    def is_mutable_field(self):
         """Returns True if the cursor refers to a C++ field that is declared
         'mutable'.
         """
-        return bool(conf.lib.clang_CXXField_isMutable(self))
+        return conf.lib.clang_CXXField_isMutable(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_pure_virtual_method(self) -> bool:
+    def is_pure_virtual_method(self):
         """Returns True if the cursor refers to a C++ member function or member
         function template that is declared pure virtual.
         """
-        return bool(conf.lib.clang_CXXMethod_isPureVirtual(self))
+        return conf.lib.clang_CXXMethod_isPureVirtual(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_static_method(self) -> bool:
+    def is_static_method(self):
         """Returns True if the cursor refers to a C++ member function or member
         function template that is declared 'static'.
         """
-        return bool(conf.lib.clang_CXXMethod_isStatic(self))
+        return conf.lib.clang_CXXMethod_isStatic(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_virtual_method(self) -> bool:
+    def is_virtual_method(self):
         """Returns True if the cursor refers to a C++ member function or member
         function template that is declared 'virtual'.
         """
-        return bool(conf.lib.clang_CXXMethod_isVirtual(self))
+        return conf.lib.clang_CXXMethod_isVirtual(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_abstract_record(self) -> bool:
+    def is_abstract_record(self):
         """Returns True if the cursor refers to a C++ record declaration
         that has pure virtual member functions.
         """
-        return bool(conf.lib.clang_CXXRecord_isAbstract(self))
+        return conf.lib.clang_CXXRecord_isAbstract(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_scoped_enum(self) -> bool:
+    def is_scoped_enum(self):
         """Returns True if the cursor refers to a scoped enum declaration."""
-        return bool(conf.lib.clang_EnumDecl_isScoped(self))
+        return conf.lib.clang_EnumDecl_isScoped(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def get_definition(self) -> Cursor | None:
+    def get_definition(self):
         """
         If the cursor is a reference to a declaration or a declaration of
         some entity, return a cursor that points to the definition of that
@@ -1864,10 +1738,9 @@ class Cursor(Structure):
         # declaration prior to issuing the lookup.
         return Cursor.from_result(conf.lib.clang_getCursorDefinition(self), self)
 
-    @cursor_null_guard
-    def get_usr(self) -> str:
+    def get_usr(self):
         """Return the Unified Symbol Resolution (USR) for the entity referenced
-        by the given cursor.
+        by the given cursor (or None).
 
         A Unified Symbol Resolution (USR) is a string that identifies a
         particular entity (function, class, variable, etc.) within a
@@ -1876,22 +1749,19 @@ class Cursor(Structure):
         another translation unit."""
         return _CXString.from_result(conf.lib.clang_getCursorUSR(self))
 
-    @cursor_null_guard
-    def get_included_file(self) -> File:
+    def get_included_file(self):
         """Returns the File that is included by the current inclusion cursor."""
         assert self.kind == CursorKind.INCLUSION_DIRECTIVE
 
         return File.from_result(conf.lib.clang_getIncludedFile(self), self)
 
     @property
-    @cursor_null_guard
-    def kind(self) -> CursorKind:
+    def kind(self):
         """Return the kind of this cursor."""
         return CursorKind.from_id(self._kind_id)
 
     @property
-    @cursor_null_guard
-    def spelling(self) -> str:
+    def spelling(self):
         """Return the spelling of the entity pointed at by the cursor."""
         if not hasattr(self, "_spelling"):
             self._spelling = _CXString.from_result(
@@ -1900,8 +1770,7 @@ class Cursor(Structure):
 
         return self._spelling
 
-    @cursor_null_guard
-    def pretty_printed(self, policy: PrintingPolicy) -> str:
+    def pretty_printed(self, policy):
         """
         Pretty print declarations.
         Parameters:
@@ -1912,8 +1781,7 @@ class Cursor(Structure):
         )
 
     @property
-    @cursor_null_guard
-    def displayname(self) -> str:
+    def displayname(self):
         """
         Return the display name for the entity referenced by this cursor.
 
@@ -1929,8 +1797,7 @@ class Cursor(Structure):
         return self._displayname
 
     @property
-    @cursor_null_guard
-    def mangled_name(self) -> str:
+    def mangled_name(self):
         """Return the mangled name for the entity referenced by this cursor."""
         if not hasattr(self, "_mangled_name"):
             self._mangled_name = _CXString.from_result(
@@ -1940,20 +1807,18 @@ class Cursor(Structure):
         return self._mangled_name
 
     @property
-    @cursor_null_guard
-    def location(self) -> SourceLocation:
+    def location(self):
         """
         Return the source location (the starting character) of the entity
         pointed at by the cursor.
         """
         if not hasattr(self, "_loc"):
-            self._loc: SourceLocation = conf.lib.clang_getCursorLocation(self)
+            self._loc = conf.lib.clang_getCursorLocation(self)
 
         return self._loc
 
     @property
-    @cursor_null_guard
-    def linkage(self) -> LinkageKind:
+    def linkage(self):
         """Return the linkage of this cursor."""
         if not hasattr(self, "_linkage"):
             self._linkage = conf.lib.clang_getCursorLinkage(self)
@@ -1961,17 +1826,7 @@ class Cursor(Structure):
         return LinkageKind.from_id(self._linkage)
 
     @property
-    @cursor_null_guard
-    def language(self) -> LanguageKind:
-        """Determine the "language" of the entity referred to by a given cursor."""
-        if not hasattr(self, "_language"):
-            self._language = conf.lib.clang_getCursorLanguage(self)
-
-        return LanguageKind.from_id(self._language)
-
-    @property
-    @cursor_null_guard
-    def tls_kind(self) -> TLSKind:
+    def tls_kind(self):
         """Return the thread-local storage (TLS) kind of this cursor."""
         if not hasattr(self, "_tls_kind"):
             self._tls_kind = conf.lib.clang_getCursorTLSKind(self)
@@ -1979,20 +1834,18 @@ class Cursor(Structure):
         return TLSKind.from_id(self._tls_kind)
 
     @property
-    @cursor_null_guard
-    def extent(self) -> SourceRange:
+    def extent(self):
         """
         Return the source range (the range of text) occupied by the entity
         pointed at by the cursor.
         """
         if not hasattr(self, "_extent"):
-            self._extent: SourceRange = conf.lib.clang_getCursorExtent(self)
+            self._extent = conf.lib.clang_getCursorExtent(self)
 
         return self._extent
 
     @property
-    @cursor_null_guard
-    def storage_class(self) -> StorageClass:
+    def storage_class(self):
         """
         Retrieves the storage class (if any) of the entity pointed at by the
         cursor.
@@ -2003,8 +1856,7 @@ class Cursor(Structure):
         return StorageClass.from_id(self._storage_class)
 
     @property
-    @cursor_null_guard
-    def availability(self) -> AvailabilityKind:
+    def availability(self):
         """
         Retrieves the availability of the entity pointed at by the cursor.
         """
@@ -2014,21 +1866,19 @@ class Cursor(Structure):
         return AvailabilityKind.from_id(self._availability)
 
     @property
-    @cursor_null_guard
-    def binary_operator(self) -> BinaryOperator:
+    def binary_operator(self):
         """
         Retrieves the opcode if this cursor points to a binary operator
         :return:
         """
 
         if not hasattr(self, "_binopcode"):
-            self._binopcode = conf.lib.clang_getCursorBinaryOperatorKind(self)
+            self._binopcode = conf.lib.clang_Cursor_getBinaryOpcode(self)
 
         return BinaryOperator.from_id(self._binopcode)
 
     @property
-    @cursor_null_guard
-    def access_specifier(self) -> AccessSpecifier:
+    def access_specifier(self):
         """
         Retrieves the access specifier (if any) of the entity pointed at by the
         cursor.
@@ -2039,19 +1889,17 @@ class Cursor(Structure):
         return AccessSpecifier.from_id(self._access_specifier)
 
     @property
-    @cursor_null_guard
-    def type(self) -> Type:
+    def type(self):
         """
         Retrieve the Type (if any) of the entity pointed at by the cursor.
         """
         if not hasattr(self, "_type"):
-            self._type = Type.from_result(conf.lib.clang_getCursorType(self), self)
+            self._type = Type.from_result(conf.lib.clang_getCursorType(self), (self,))
 
         return self._type
 
     @property
-    @cursor_null_guard
-    def canonical(self) -> Cursor:
+    def canonical(self):
         """Return the canonical Cursor corresponding to this Cursor.
 
         The canonical cursor is the cursor which is representative for the
@@ -2060,26 +1908,24 @@ class Cursor(Structure):
         declarations will be identical.
         """
         if not hasattr(self, "_canonical"):
-            self._canonical = Cursor.from_non_null_cursor_result(
+            self._canonical = Cursor.from_cursor_result(
                 conf.lib.clang_getCanonicalCursor(self), self
             )
 
         return self._canonical
 
     @property
-    @cursor_null_guard
-    def result_type(self) -> Type:
+    def result_type(self):
         """Retrieve the Type of the result for this Cursor."""
         if not hasattr(self, "_result_type"):
             self._result_type = Type.from_result(
-                conf.lib.clang_getCursorResultType(self), self
+                conf.lib.clang_getCursorResultType(self), (self,)
             )
 
         return self._result_type
 
     @property
-    @cursor_null_guard
-    def exception_specification_kind(self) -> ExceptionSpecificationKind:
+    def exception_specification_kind(self):
         """
         Retrieve the exception specification kind, which is one of the values
         from the ExceptionSpecificationKind enumeration.
@@ -2093,8 +1939,7 @@ class Cursor(Structure):
         return self._exception_specification_kind
 
     @property
-    @cursor_null_guard
-    def underlying_typedef_type(self) -> Type:
+    def underlying_typedef_type(self):
         """Return the underlying type of a typedef declaration.
 
         Returns a Type for the typedef this cursor is a declaration for. If
@@ -2103,14 +1948,13 @@ class Cursor(Structure):
         if not hasattr(self, "_underlying_type"):
             assert self.kind.is_declaration()
             self._underlying_type = Type.from_result(
-                conf.lib.clang_getTypedefDeclUnderlyingType(self), self
+                conf.lib.clang_getTypedefDeclUnderlyingType(self), (self,)
             )
 
         return self._underlying_type
 
     @property
-    @cursor_null_guard
-    def enum_type(self) -> Type:
+    def enum_type(self):
         """Return the integer type of an enum declaration.
 
         Returns a Type corresponding to an integer. If the cursor is not for an
@@ -2119,17 +1963,15 @@ class Cursor(Structure):
         if not hasattr(self, "_enum_type"):
             assert self.kind == CursorKind.ENUM_DECL
             self._enum_type = Type.from_result(
-                conf.lib.clang_getEnumDeclIntegerType(self), self
+                conf.lib.clang_getEnumDeclIntegerType(self), (self,)
             )
 
         return self._enum_type
 
     @property
-    @cursor_null_guard
-    def enum_value(self) -> int:
+    def enum_value(self):
         """Return the value of an enum constant."""
         if not hasattr(self, "_enum_value"):
-            self._enum_value: int
             assert self.kind == CursorKind.ENUM_CONSTANT_DECL
             # Figure out the underlying type of the enum to know if it
             # is a signed or unsigned quantity.
@@ -2153,8 +1995,7 @@ class Cursor(Structure):
         return self._enum_value
 
     @property
-    @cursor_null_guard
-    def objc_type_encoding(self) -> str:
+    def objc_type_encoding(self):
         """Return the Objective-C type encoding as a str."""
         if not hasattr(self, "_objc_type_encoding"):
             self._objc_type_encoding = _CXString.from_result(
@@ -2164,17 +2005,15 @@ class Cursor(Structure):
         return self._objc_type_encoding
 
     @property
-    @cursor_null_guard
-    def hash(self) -> int:
+    def hash(self):
         """Returns a hash of the cursor as an int."""
         if not hasattr(self, "_hash"):
-            self._hash: int = conf.lib.clang_hashCursor(self)
+            self._hash = conf.lib.clang_hashCursor(self)
 
         return self._hash
 
     @property
-    @cursor_null_guard
-    def semantic_parent(self) -> Cursor | None:
+    def semantic_parent(self):
         """Return the semantic parent for this cursor."""
         if not hasattr(self, "_semantic_parent"):
             self._semantic_parent = Cursor.from_cursor_result(
@@ -2184,8 +2023,7 @@ class Cursor(Structure):
         return self._semantic_parent
 
     @property
-    @cursor_null_guard
-    def lexical_parent(self) -> Cursor | None:
+    def lexical_parent(self):
         """Return the lexical parent for this cursor."""
         if not hasattr(self, "_lexical_parent"):
             self._lexical_parent = Cursor.from_cursor_result(
@@ -2195,24 +2033,14 @@ class Cursor(Structure):
         return self._lexical_parent
 
     @property
-    @cursor_null_guard
-    def specialized_template(self) -> Cursor | None:
-        """Return the primary template that this cursor is a specialization of, if any."""
-        return Cursor.from_cursor_result(
-            conf.lib.clang_getSpecializedCursorTemplate(self), self
-        )
-
-    @property
-    @cursor_null_guard
-    def translation_unit(self) -> TranslationUnit:
+    def translation_unit(self):
         """Returns the TranslationUnit to which this Cursor belongs."""
         # If this triggers an AttributeError, the instance was not properly
         # created.
         return self._tu
 
     @property
-    @cursor_null_guard
-    def referenced(self) -> Cursor | None:
+    def referenced(self):
         """
         For a cursor that is a reference, returns a cursor
         representing the entity that it references.
@@ -2225,62 +2053,54 @@ class Cursor(Structure):
         return self._referenced
 
     @property
-    @cursor_null_guard
-    def brief_comment(self) -> str:
+    def brief_comment(self):
         """Returns the brief comment text associated with that Cursor"""
         return _CXString.from_result(conf.lib.clang_Cursor_getBriefCommentText(self))
 
     @property
-    @cursor_null_guard
-    def raw_comment(self) -> str:
+    def raw_comment(self):
         """Returns the raw comment text associated with that Cursor"""
         return _CXString.from_result(conf.lib.clang_Cursor_getRawCommentText(self))
 
-    @cursor_null_guard
-    def get_arguments(self) -> Iterator[Cursor | None]:
+    def get_arguments(self):
         """Return an iterator for accessing the arguments of this cursor."""
         num_args = conf.lib.clang_Cursor_getNumArguments(self)
         for i in range(0, num_args):
             yield Cursor.from_result(conf.lib.clang_Cursor_getArgument(self, i), self)
 
-    @cursor_null_guard
-    def get_num_template_arguments(self) -> int:
+    def get_num_template_arguments(self):
         """Returns the number of template args associated with this cursor."""
         return conf.lib.clang_Cursor_getNumTemplateArguments(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def get_template_argument_kind(self, num: int) -> TemplateArgumentKind:
+    def get_template_argument_kind(self, num):
         """Returns the TemplateArgumentKind for the indicated template
         argument."""
         return TemplateArgumentKind.from_id(
             conf.lib.clang_Cursor_getTemplateArgumentKind(self, num)
         )
 
-    @cursor_null_guard
-    def get_template_argument_type(self, num: int) -> Type:
+    def get_template_argument_type(self, num):
         """Returns the CXType for the indicated template argument."""
         return Type.from_result(
-            conf.lib.clang_Cursor_getTemplateArgumentType(self, num), self
+            conf.lib.clang_Cursor_getTemplateArgumentType(self, num), (self, num)
         )
 
-    @cursor_null_guard
-    def get_template_argument_value(self, num: int) -> int:
+    def get_template_argument_value(self, num):
         """Returns the value of the indicated arg as a signed 64b integer."""
         return conf.lib.clang_Cursor_getTemplateArgumentValue(self, num)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def get_template_argument_unsigned_value(self, num: int) -> int:
+    def get_template_argument_unsigned_value(self, num):
         """Returns the value of the indicated arg as an unsigned 64b integer."""
         return conf.lib.clang_Cursor_getTemplateArgumentUnsignedValue(self, num)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def get_children(self) -> Iterator[Cursor]:
+    def get_children(self):
         """Return an iterator for accessing the children of this cursor."""
 
         # FIXME: Expose iteration from CIndex, PR6125.
-        def visitor(child: Cursor, _: Cursor, children: list[Cursor]) -> int:
+        def visitor(child, parent, children):
             # FIXME: Document this assertion in API.
-            assert not child.is_null()
+            # FIXME: There should just be an isNull method.
+            assert child != conf.lib.clang_getNullCursor()
 
             # Create reference to TU so it isn't GC'd before Cursor.
             child._tu = self._tu
@@ -2291,8 +2111,7 @@ class Cursor(Structure):
         conf.lib.clang_visitChildren(self, cursor_visit_callback(visitor), children)
         return iter(children)
 
-    @cursor_null_guard
-    def walk_preorder(self) -> Iterator[Cursor]:
+    def walk_preorder(self):
         """Depth-first preorder walk over the cursor and its descendants.
 
         Yields cursors.
@@ -2302,8 +2121,7 @@ class Cursor(Structure):
             for descendant in child.walk_preorder():
                 yield descendant
 
-    @cursor_null_guard
-    def get_tokens(self) -> Iterator[Token]:
+    def get_tokens(self):
         """Obtain Token instances formulating that compose this Cursor.
 
         This is a generator for Token instances. It returns all tokens which
@@ -2311,23 +2129,19 @@ class Cursor(Structure):
         """
         return TokenGroup.get_tokens(self._tu, self.extent)
 
-    @cursor_null_guard
-    def get_field_offsetof(self) -> int:
+    def get_field_offsetof(self):
         """Returns the offsetof the FIELD_DECL pointed by this Cursor."""
         return conf.lib.clang_Cursor_getOffsetOfField(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def get_base_offsetof(self, parent: Cursor) -> int:
+    def get_base_offsetof(self, parent):
         """Returns the offsetof the CXX_BASE_SPECIFIER pointed by this Cursor."""
         return conf.lib.clang_getOffsetOfBase(parent, self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_virtual_base(self) -> bool:
+    def is_virtual_base(self):
         """Returns whether the CXX_BASE_SPECIFIER pointed by this Cursor is virtual."""
-        return bool(conf.lib.clang_isVirtualBase(self))
+        return conf.lib.clang_isVirtualBase(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_anonymous(self) -> bool:
+    def is_anonymous(self):
         """
         Check whether this is a record type without a name, or a field where
         the type is a record type without a name.
@@ -2337,10 +2151,9 @@ class Cursor(Structure):
         """
         if self.kind == CursorKind.FIELD_DECL:
             return self.type.get_declaration().is_anonymous()
-        return bool(conf.lib.clang_Cursor_isAnonymous(self))
+        return conf.lib.clang_Cursor_isAnonymous(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_anonymous_record_decl(self) -> bool:
+    def is_anonymous_record_decl(self):
         """
         Check if the record is an anonymous union as defined in the C/C++ standard
         (or an "anonymous struct", the corresponding non-standard extension for
@@ -2348,40 +2161,25 @@ class Cursor(Structure):
         """
         if self.kind == CursorKind.FIELD_DECL:
             return self.type.get_declaration().is_anonymous_record_decl()
-        return bool(conf.lib.clang_Cursor_isAnonymousRecordDecl(self))
+        return conf.lib.clang_Cursor_isAnonymousRecordDecl(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_bitfield(self) -> bool:
+    def is_bitfield(self):
         """
         Check if the field is a bitfield.
         """
-        return bool(conf.lib.clang_Cursor_isBitField(self))
+        return conf.lib.clang_Cursor_isBitField(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def get_bitfield_width(self) -> int:
+    def get_bitfield_width(self):
         """
         Retrieve the width of a bitfield.
         """
         return conf.lib.clang_getFieldDeclBitWidth(self)  # type: ignore [no-any-return]
 
-    @cursor_null_guard
-    def is_function_inlined(self) -> bool:
-        """
-        Check if the function is inlined.
-        """
-        return bool(conf.lib.clang_Cursor_isFunctionInlined(self))
-
-    @cursor_null_guard
-    def has_attrs(self) -> bool:
-        """
-        Determine whether the given cursor has any attributes.
-        """
-        return bool(conf.lib.clang_Cursor_hasAttrs(self))
-
     @staticmethod
-    def from_result(res: Cursor, arg: Cursor | TranslationUnit | Type) -> Cursor | None:
+    def from_result(res, arg):
         assert isinstance(res, Cursor)
-        if res.is_null():
+        # FIXME: There should just be an isNull method.
+        if res == conf.lib.clang_getNullCursor():
             return None
 
         # Store a reference to the TU in the Python object so it won't get GC'd
@@ -2398,18 +2196,10 @@ class Cursor(Structure):
         return res
 
     @staticmethod
-    def from_cursor_result(res: Cursor, arg: Cursor) -> Cursor | None:
+    def from_cursor_result(res, arg):
         assert isinstance(res, Cursor)
-        if res.is_null():
+        if res == conf.lib.clang_getNullCursor():
             return None
-
-        res._tu = arg._tu
-        return res
-
-    @staticmethod
-    def from_non_null_cursor_result(res: Cursor, arg: Cursor | Type) -> Cursor:
-        assert isinstance(res, Cursor)
-        assert not res.is_null()
 
         res._tu = arg._tu
         return res
@@ -2503,6 +2293,7 @@ class AccessSpecifier(BaseEnumeration):
     PUBLIC = 1
     PROTECTED = 2
     PRIVATE = 3
+    NONE = 4
 
 ### Type Kinds ###
 
@@ -2549,17 +2340,7 @@ class TypeKind(BaseEnumeration):
     OBJCSEL = 29
     FLOAT128 = 30
     HALF = 31
-    FLOAT16 = 32
-    SHORTACCUM = 33
-    ACCUM = 34
-    LONGACCUM = 35
-    USHORTACCUM = 36
-    UACCUM = 37
-    ULONGACCUM = 38
-    BFLOAT16 = 39
     IBM128 = 40
-    FIRSTBUILTIN = VOID
-    LASTBUILTIN = IBM128
     COMPLEX = 100
     POINTER = 101
     BLOCKPOINTER = 102
@@ -2643,10 +2424,6 @@ class TypeKind(BaseEnumeration):
     ATOMIC = 177
     BTFTAGATTRIBUTED = 178
 
-    HLSLRESOURCE = 179
-    HLSLATTRIBUTEDRESOURCE = 180
-    HLSLINLINESPIRV = 181
-
 class RefQualifierKind(BaseEnumeration):
     """Describes a specific ref-qualifier of a type."""
 
@@ -2665,17 +2442,6 @@ class LinkageKind(BaseEnumeration):
     EXTERNAL = 4
 
 
-class LanguageKind(BaseEnumeration):
-    """
-    Describe the "language" of the entity referred to by a cursor.
-    """
-
-    INVALID = 0
-    C = 1
-    OBJ_C = 2
-    C_PLUS_PLUS = 3
-
-
 class TLSKind(BaseEnumeration):
     """Describes the kind of thread-local storage (TLS) of a cursor."""
 
@@ -2691,10 +2457,8 @@ class Type(Structure):
 
     _fields_ = [("_kind_id", c_int), ("data", c_void_p * 2)]
 
-    _tu: TranslationUnit
-
     @property
-    def kind(self) -> TypeKind:
+    def kind(self):
         """Return the kind of this type."""
         return TypeKind.from_id(self._kind_id)
 
@@ -2731,7 +2495,7 @@ class Type(Structure):
                     )
 
                 result = Type.from_result(
-                    conf.lib.clang_getArgType(self.parent, key), self.parent
+                    conf.lib.clang_getArgType(self.parent, key), (self.parent, key)
                 )
                 if result.kind == TypeKind.INVALID:
                     raise IndexError("Argument could not be retrieved.")
@@ -2742,56 +2506,63 @@ class Type(Structure):
         return ArgumentsIterator(self)
 
     @property
-    def element_type(self) -> Type:
+    def element_type(self):
         """Retrieve the Type of elements within this Type.
 
         If accessed on a type that is not an array, complex, or vector type, an
         exception will be raised.
         """
-        result = Type.from_result(conf.lib.clang_getElementType(self), self)
+        result = Type.from_result(conf.lib.clang_getElementType(self), (self,))
         if result.kind == TypeKind.INVALID:
             raise Exception("Element type not available on this type.")
 
         return result
 
     @property
-    def element_count(self) -> int:
+    def element_count(self):
         """Retrieve the number of elements in this type.
 
         Returns an int.
 
         If the Type is not an array or vector, this raises.
         """
-        result: int = conf.lib.clang_getNumElements(self)
+        result = conf.lib.clang_getNumElements(self)
         if result < 0:
             raise Exception("Type does not have elements.")
 
         return result
 
     @property
-    def translation_unit(self) -> TranslationUnit:
+    def translation_unit(self):
         """The TranslationUnit to which this Type is associated."""
         # If this triggers an AttributeError, the instance was not properly
         # instantiated.
         return self._tu
 
     @staticmethod
-    def from_result(res: Type, arg: Cursor | Type) -> Type:
+    def from_result(res, args):
         assert isinstance(res, Type)
-        assert arg.translation_unit is not None
-        res._tu = arg.translation_unit
+
+        tu = None
+        for arg in args:
+            if hasattr(arg, "translation_unit"):
+                tu = arg.translation_unit
+                break
+
+        assert tu is not None
+        res._tu = tu
 
         return res
 
-    def get_num_template_arguments(self) -> int:
+    def get_num_template_arguments(self):
         return conf.lib.clang_Type_getNumTemplateArguments(self)  # type: ignore [no-any-return]
 
-    def get_template_argument_type(self, num: int) -> Type:
+    def get_template_argument_type(self, num):
         return Type.from_result(
-            conf.lib.clang_Type_getTemplateArgumentAsType(self, num), self
+            conf.lib.clang_Type_getTemplateArgumentAsType(self, num), (self, num)
         )
 
-    def get_canonical(self) -> Type:
+    def get_canonical(self):
         """
         Return the canonical type for a Type.
 
@@ -2801,136 +2572,119 @@ class Type(Structure):
         example, if 'T' is a typedef for 'int', the canonical type for
         'T' would be 'int'.
         """
-        return Type.from_result(conf.lib.clang_getCanonicalType(self), self)
+        return Type.from_result(conf.lib.clang_getCanonicalType(self), (self,))
 
-    def get_fully_qualified_name(
-        self, policy: PrintingPolicy, with_global_ns_prefix: bool = False
-    ) -> str:
-        """
-        Get the fully qualified name for a type.
-
-        This includes full qualification of all template parameters.
-
-        policy - This PrintingPolicy can further refine the type formatting
-        with_global_ns_prefix - If true, prepend '::' to qualified names
-        """
-        return _CXString.from_result(
-            conf.lib.clang_getFullyQualifiedName(self, policy, with_global_ns_prefix)
-        )
-
-    def is_const_qualified(self) -> bool:
+    def is_const_qualified(self):
         """Determine whether a Type has the "const" qualifier set.
 
         This does not look through typedefs that may have added "const"
         at a different level.
         """
-        return bool(conf.lib.clang_isConstQualifiedType(self))
+        return conf.lib.clang_isConstQualifiedType(self)  # type: ignore [no-any-return]
 
-    def is_volatile_qualified(self) -> bool:
+    def is_volatile_qualified(self):
         """Determine whether a Type has the "volatile" qualifier set.
 
         This does not look through typedefs that may have added "volatile"
         at a different level.
         """
-        return bool(conf.lib.clang_isVolatileQualifiedType(self))
+        return conf.lib.clang_isVolatileQualifiedType(self)  # type: ignore [no-any-return]
 
-    def is_restrict_qualified(self) -> bool:
+    def is_restrict_qualified(self):
         """Determine whether a Type has the "restrict" qualifier set.
 
         This does not look through typedefs that may have added "restrict" at
         a different level.
         """
-        return bool(conf.lib.clang_isRestrictQualifiedType(self))
+        return conf.lib.clang_isRestrictQualifiedType(self)  # type: ignore [no-any-return]
 
-    def is_function_variadic(self) -> bool:
+    def is_function_variadic(self):
         """Determine whether this function Type is a variadic function type."""
         assert self.kind == TypeKind.FUNCTIONPROTO
 
-        return bool(conf.lib.clang_isFunctionTypeVariadic(self))
+        return conf.lib.clang_isFunctionTypeVariadic(self)  # type: ignore [no-any-return]
 
-    def get_address_space(self) -> int:
+    def get_address_space(self):
         return conf.lib.clang_getAddressSpace(self)  # type: ignore [no-any-return]
 
-    def get_typedef_name(self) -> str:
+    def get_typedef_name(self):
         return _CXString.from_result(conf.lib.clang_getTypedefName(self))
 
-    def is_pod(self) -> bool:
+    def is_pod(self):
         """Determine whether this Type represents plain old data (POD)."""
-        return bool(conf.lib.clang_isPODType(self))
+        return conf.lib.clang_isPODType(self)  # type: ignore [no-any-return]
 
-    def get_pointee(self) -> Type:
+    def get_pointee(self):
         """
         For pointer types, returns the type of the pointee.
         """
-        return Type.from_result(conf.lib.clang_getPointeeType(self), self)
+        return Type.from_result(conf.lib.clang_getPointeeType(self), (self,))
 
-    def get_declaration(self) -> Cursor:
+    def get_declaration(self):
         """
         Return the cursor for the declaration of the given type.
         """
-        return Cursor.from_non_null_cursor_result(
-            conf.lib.clang_getTypeDeclaration(self), self
-        )
+        return Cursor.from_result(conf.lib.clang_getTypeDeclaration(self), self)
 
-    def get_result(self) -> Type:
+    def get_result(self):
         """
         Retrieve the result type associated with a function type.
         """
-        return Type.from_result(conf.lib.clang_getResultType(self), self)
+        return Type.from_result(conf.lib.clang_getResultType(self), (self,))
 
-    def get_array_element_type(self) -> Type:
+    def get_array_element_type(self):
         """
         Retrieve the type of the elements of the array type.
         """
-        return Type.from_result(conf.lib.clang_getArrayElementType(self), self)
+        return Type.from_result(conf.lib.clang_getArrayElementType(self), (self,))
 
-    def get_array_size(self) -> int:
+    def get_array_size(self):
         """
         Retrieve the size of the constant array.
         """
         return conf.lib.clang_getArraySize(self)  # type: ignore [no-any-return]
 
-    def get_class_type(self) -> Type:
+    def get_class_type(self):
         """
         Retrieve the class type of the member pointer type.
         """
-        return Type.from_result(conf.lib.clang_Type_getClassType(self), self)
+        return Type.from_result(conf.lib.clang_Type_getClassType(self), (self,))
 
-    def get_named_type(self) -> Type:
+    def get_named_type(self):
         """
         Retrieve the type named by the qualified-id.
         """
-        return Type.from_result(conf.lib.clang_Type_getNamedType(self), self)
+        return Type.from_result(conf.lib.clang_Type_getNamedType(self), (self,))
 
-    def get_align(self) -> int:
+    def get_align(self):
         """
         Retrieve the alignment of the record.
         """
         return conf.lib.clang_Type_getAlignOf(self)  # type: ignore [no-any-return]
 
-    def get_size(self) -> int:
+    def get_size(self):
         """
         Retrieve the size of the record.
         """
         return conf.lib.clang_Type_getSizeOf(self)  # type: ignore [no-any-return]
 
-    def get_offset(self, fieldname: str) -> int:
+    def get_offset(self, fieldname):
         """
         Retrieve the offset of a field in the record.
         """
         return conf.lib.clang_Type_getOffsetOf(self, fieldname)  # type: ignore [no-any-return]
 
-    def get_ref_qualifier(self) -> RefQualifierKind:
+    def get_ref_qualifier(self):
         """
         Retrieve the ref-qualifier of the type.
         """
         return RefQualifierKind.from_id(conf.lib.clang_Type_getCXXRefQualifier(self))
 
-    def get_fields(self) -> Iterator[Cursor]:
+    def get_fields(self):
         """Return an iterator for accessing the fields of this type."""
 
-        def visitor(field: Cursor, _: Any) -> Literal[1]:
-            assert not field.is_null()
+        def visitor(field, children):
+            assert field != conf.lib.clang_getNullCursor()
 
             # Create reference to TU so it isn't GC'd before Cursor.
             field._tu = self._tu
@@ -2941,11 +2695,11 @@ class Type(Structure):
         conf.lib.clang_Type_visitFields(self, fields_visit_callback(visitor), fields)
         return iter(fields)
 
-    def get_bases(self) -> Iterator[Cursor]:
+    def get_bases(self):
         """Return an iterator for accessing the base classes of this type."""
 
-        def visitor(base: Cursor, _: Any) -> Literal[1]:
-            assert not base.is_null()
+        def visitor(base, children):
+            assert base != conf.lib.clang_getNullCursor()
 
             # Create reference to TU so it isn't GC'd before Cursor.
             base._tu = self._tu
@@ -2956,22 +2710,7 @@ class Type(Structure):
         conf.lib.clang_visitCXXBaseClasses(self, fields_visit_callback(visitor), bases)
         return iter(bases)
 
-    def get_methods(self) -> Iterator[Cursor]:
-        """Return an iterator for accessing the methods of this type."""
-
-        def visitor(method: Cursor, _: Any) -> Literal[1]:
-            assert not method.is_null()
-
-            # Create reference to TU so it isn't GC'd before Cursor.
-            method._tu = self._tu
-            methods.append(method)
-            return 1  # continue
-
-        methods: list[Cursor] = []
-        conf.lib.clang_visitCXXMethods(self, fields_visit_callback(visitor), methods)
-        return iter(methods)
-
-    def get_exception_specification_kind(self) -> ExceptionSpecificationKind:
+    def get_exception_specification_kind(self):
         """
         Return the kind of the exception specification; a value from
         the ExceptionSpecificationKind enumeration.
@@ -2981,18 +2720,21 @@ class Type(Structure):
         )
 
     @property
-    def spelling(self) -> str:
+    def spelling(self):
         """Retrieve the spelling of this Type."""
         return _CXString.from_result(conf.lib.clang_getTypeSpelling(self))
 
-    def pretty_printed(self, policy: PrintingPolicy) -> str:
+    def pretty_printed(self, policy):
         """Pretty-prints this Type with the given PrintingPolicy"""
         return _CXString.from_result(conf.lib.clang_getTypePrettyPrinted(self, policy))
 
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, Type) and bool(conf.lib.clang_equalTypes(self, other))
+    def __eq__(self, other):
+        if type(other) != type(self):
+            return False
 
-    def __ne__(self, other: object) -> bool:
+        return conf.lib.clang_equalTypes(self, other)  # type: ignore [no-any-return]
+
+    def __ne__(self, other):
         return not self.__eq__(other)
 
 
@@ -3024,9 +2766,9 @@ class _CXUnsavedFile(Structure):
 
 
 # Functions calls through the python interface are rather slow. Fortunately,
-# for most symbols, we do not need to perform a function call. Their spelling
+# for most symboles, we do not need to perform a function call. Their spelling
 # never changes and is consequently provided by this spelling cache.
-SPELLING_CACHE = {
+SpellingCache = {
     # 0: CompletionChunk.Kind("Optional"),
     # 1: CompletionChunk.Kind("TypedText"),
     # 2: CompletionChunk.Kind("Text"),
@@ -3053,27 +2795,27 @@ SPELLING_CACHE = {
 
 class CompletionChunk:
     class Kind:
-        def __init__(self, name: str):
+        def __init__(self, name):
             self.name = name
 
-        def __str__(self) -> str:
+        def __str__(self):
             return self.name
 
-        def __repr__(self) -> str:
+        def __repr__(self):
             return "<ChunkKind: %s>" % self
 
-    def __init__(self, completionString: CObjP, key: int):
+    def __init__(self, completionString, key):
         self.cs = completionString
         self.key = key
         self.__kindNumberCache = -1
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return "{'" + self.spelling + "', " + str(self.kind) + "}"
 
     @CachedProperty
-    def spelling(self) -> str:
-        if self.__kindNumber in SPELLING_CACHE:
-            return SPELLING_CACHE[self.__kindNumber]
+    def spelling(self):
+        if self.__kindNumber in SpellingCache:
+            return SpellingCache[self.__kindNumber]
         return _CXString.from_result(
             conf.lib.clang_getCompletionChunkText(self.cs, self.key)
         )
@@ -3082,7 +2824,7 @@ class CompletionChunk:
     # apparently still significantly faster. Please profile carefully if you
     # would like to add CachedProperty back.
     @property
-    def __kindNumber(self) -> int:
+    def __kindNumber(self):
         if self.__kindNumberCache == -1:
             self.__kindNumberCache = conf.lib.clang_getCompletionChunkKind(
                 self.cs, self.key
@@ -3090,30 +2832,31 @@ class CompletionChunk:
         return self.__kindNumberCache
 
     @CachedProperty
-    def kind(self) -> Kind:
+    def kind(self):
         return completionChunkKindMap[self.__kindNumber]
 
     @CachedProperty
-    def string(self) -> CompletionString | None:
+    def string(self):
         res = conf.lib.clang_getCompletionChunkCompletionString(self.cs, self.key)
 
-        if not res:
-            return None
-        return CompletionString(res)
+        if res:
+            return CompletionString(res)
+        else:
+            None
 
-    def isKindOptional(self) -> bool:
+    def isKindOptional(self):
         return self.__kindNumber == 0
 
-    def isKindTypedText(self) -> bool:
+    def isKindTypedText(self):
         return self.__kindNumber == 1
 
-    def isKindPlaceHolder(self) -> bool:
+    def isKindPlaceHolder(self):
         return self.__kindNumber == 3
 
-    def isKindInformative(self) -> bool:
+    def isKindInformative(self):
         return self.__kindNumber == 4
 
-    def isKindResultType(self) -> bool:
+    def isKindResultType(self):
         return self.__kindNumber == 15
 
 
@@ -3153,39 +2896,36 @@ class CompletionString(ClangObject):
         def __repr__(self):
             return "<Availability: %s>" % self
 
-    def __len__(self) -> int:
+    def __len__(self):
         return self.num_chunks
 
     @CachedProperty
-    def num_chunks(self) -> int:
+    def num_chunks(self):
         return conf.lib.clang_getNumCompletionChunks(self.obj)  # type: ignore [no-any-return]
 
-    def __getitem__(self, key: int) -> CompletionChunk:
+    def __getitem__(self, key):
         if self.num_chunks <= key:
             raise IndexError
         return CompletionChunk(self.obj, key)
 
-    if TYPE_CHECKING:
-        # Defining __getitem__ and __len__ is enough to make an iterable
-        # but the typechecker doesn't understand that.
-        def __iter__(self) -> Iterator[CompletionChunk]:
-            for i in range(len(self)):
-                yield self[i]
-
     @property
-    def priority(self) -> int:
+    def priority(self):
         return conf.lib.clang_getCompletionPriority(self.obj)  # type: ignore [no-any-return]
 
     @property
-    def availability(self) -> CompletionChunk.Kind:
+    def availability(self):
         res = conf.lib.clang_getCompletionAvailability(self.obj)
         return availabilityKinds[res]
 
     @property
-    def briefComment(self) -> str:
-        return _CXString.from_result(conf.lib.clang_getCompletionBriefComment(self.obj))
+    def briefComment(self):
+        if conf.function_exists("clang_getCompletionBriefComment"):
+            return _CXString.from_result(
+                conf.lib.clang_getCompletionBriefComment(self.obj)
+            )
+        return _CXString()
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return (
             " | ".join([str(a) for a in self])
             + " || Priority: "
@@ -3208,28 +2948,25 @@ availabilityKinds = {
 class CodeCompletionResult(Structure):
     _fields_ = [("cursorKind", c_int), ("completionString", c_object_p)]
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return str(CompletionString(self.completionString))
 
     @property
-    def kind(self) -> CursorKind:
+    def kind(self):
         return CursorKind.from_id(self.cursorKind)
 
     @property
-    def string(self) -> CompletionString:
+    def string(self):
         return CompletionString(self.completionString)
 
 
 class CCRStructure(Structure):
-    _fields_ = [("results", POINTER(CodeCompletionResult)), ("numResults", c_uint)]
+    _fields_ = [("results", POINTER(CodeCompletionResult)), ("numResults", c_int)]
 
-    results: NoSliceSequence[CodeCompletionResult]
-    numResults: int
-
-    def __len__(self) -> int:
+    def __len__(self):
         return self.numResults
 
-    def __getitem__(self, key: int) -> CodeCompletionResult:
+    def __getitem__(self, key):
         if len(self) <= key:
             raise IndexError
 
@@ -3237,18 +2974,18 @@ class CCRStructure(Structure):
 
 
 class CodeCompletionResults(ClangObject):
-    def __init__(self, ptr: _Pointer[CCRStructure]):
+    def __init__(self, ptr):
         assert isinstance(ptr, POINTER(CCRStructure)) and ptr
         self.ptr = self._as_parameter_ = ptr
 
-    def from_param(self) -> _Pointer[CCRStructure]:
+    def from_param(self):
         return self._as_parameter_
 
-    def __del__(self) -> None:
+    def __del__(self):
         conf.lib.clang_disposeCodeCompleteResults(self)
 
     @property
-    def results(self) -> CCRStructure:
+    def results(self):
         return self.ptr.contents
 
     @property
@@ -3371,8 +3108,8 @@ class TranslationUnit(ClangObject):
         a list via args. These can be used to specify include paths, warnings,
         etc. e.g. ["-Wall", "-I/path/to/include"].
 
-        In-memory file content can be provided via unsaved_files. This is a
-        list of 2-tuples. The first element is the filename (str or
+        In-memory file content can be provided via unsaved_files. This is an
+        iterable of 2-tuples. The first element is the filename (str or
         PathLike). The second element defines the content. Content can be
         provided as str source code or as file objects (anything with a read()
         method). If a file object is being used, content will be read until EOF
@@ -3544,7 +3281,6 @@ class TranslationUnit(ClangObject):
         start_location, end_location = locations
 
         if hasattr(start_location, "__len__"):
-            start_location = Tcast(Sequence[int], start_location)
             start_location = SourceLocation.from_position(
                 self, f, start_location[0], start_location[1]
             )
@@ -3552,7 +3288,6 @@ class TranslationUnit(ClangObject):
             start_location = SourceLocation.from_offset(self, f, start_location)
 
         if hasattr(end_location, "__len__"):
-            end_location = Tcast(Sequence[int], end_location)
             end_location = SourceLocation.from_position(
                 self, f, end_location[0], end_location[1]
             )
@@ -3598,14 +3333,9 @@ class TranslationUnit(ClangObject):
             unsaved_files = []
 
         unsaved_files_array = self.process_unsaved_files(unsaved_files)
-        result = int(
-            conf.lib.clang_reparseTranslationUnit(
-                self, len(unsaved_files), unsaved_files_array, options
-            )
+        ptr = conf.lib.clang_reparseTranslationUnit(
+            self, len(unsaved_files), unsaved_files_array, options
         )
-        if result != 0:
-            msg = "Error reparsing translation unit. Error code: " + str(result)
-            raise TranslationUnitLoadError(msg)
 
     def save(self, filename):
         """Saves the TranslationUnit to a file.
@@ -3687,8 +3417,6 @@ class TranslationUnit(ClangObject):
         2-tuple of SourceLocation or as a SourceRange. If both are defined,
         behavior is undefined.
         """
-        if locations is None and extent is None:
-            raise TypeError("get_tokens() requires at least one argument")
         if locations is not None:
             extent = SourceRange(start=locations[0], end=locations[1])
 
@@ -3724,22 +3452,14 @@ class File(ClangObject):
     def __repr__(self):
         return "<File: %s>" % (self.name)
 
-    def __eq__(self, other) -> bool:
-        return isinstance(other, File) and bool(
-            conf.lib.clang_File_isEqual(self, other)
-        )
-
-    def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
-
     @staticmethod
     def from_result(res, arg):
         assert isinstance(res, c_object_p)
-        file = File(res)
+        res = File(res)
 
         # Copy a reference to the TranslationUnit to prevent premature GC.
-        file._tu = arg._tu
-        return file
+        res._tu = arg._tu
+        return res
 
 
 class FileInclusion:
@@ -3818,7 +3538,7 @@ class CompileCommand:
     def arguments(self):
         """
         Get an iterable object providing each argument in the
-        command line for the compiler invocation as a string.
+        command line for the compiler invocation as a _CXString.
 
         Invariant : the first argument is the compiler executable
         """
@@ -3884,7 +3604,7 @@ class CompilationDatabase(ClangObject):
                     os.fspath(buildDir), byref(errorCode)
                 )
             )
-        except CompilationDatabaseError:
+        except CompilationDatabaseError as e:
             raise CompilationDatabaseError(
                 int(errorCode.value), "CompilationDatabase loading failed"
             )
@@ -3953,8 +3673,6 @@ class Token(Structure):
         cursor._tu = self._tu
 
         conf.lib.clang_annotateTokens(self._tu, byref(self), 1, byref(cursor))
-        if cursor.is_null():
-            return None
 
         return cursor
 
@@ -4094,7 +3812,7 @@ cursor_visit_callback = CFUNCTYPE(c_int, Cursor, Cursor, py_object)
 fields_visit_callback = CFUNCTYPE(c_int, Cursor, py_object)
 
 # Functions strictly alphabetical order.
-FUNCTION_LIST: list[LibFunc] = [
+functionList: list[LibFunc] = [
     (
         "clang_annotateTokens",
         [TranslationUnit, POINTER(Token), c_uint, POINTER(Cursor)],
@@ -4134,22 +3852,22 @@ FUNCTION_LIST: list[LibFunc] = [
     ("clang_CXRewriter_removeText", [Rewriter, SourceRange]),
     ("clang_CXRewriter_replaceText", [Rewriter, SourceRange, c_interop_string]),
     ("clang_CXRewriter_writeMainFileToStdOut", [Rewriter]),
-    ("clang_CXXConstructor_isConvertingConstructor", [Cursor], c_uint),
-    ("clang_CXXConstructor_isCopyConstructor", [Cursor], c_uint),
-    ("clang_CXXConstructor_isDefaultConstructor", [Cursor], c_uint),
-    ("clang_CXXConstructor_isMoveConstructor", [Cursor], c_uint),
-    ("clang_CXXField_isMutable", [Cursor], c_uint),
-    ("clang_CXXMethod_isConst", [Cursor], c_uint),
-    ("clang_CXXMethod_isDefaulted", [Cursor], c_uint),
-    ("clang_CXXMethod_isDeleted", [Cursor], c_uint),
-    ("clang_CXXMethod_isCopyAssignmentOperator", [Cursor], c_uint),
-    ("clang_CXXMethod_isMoveAssignmentOperator", [Cursor], c_uint),
-    ("clang_CXXMethod_isExplicit", [Cursor], c_uint),
-    ("clang_CXXMethod_isPureVirtual", [Cursor], c_uint),
-    ("clang_CXXMethod_isStatic", [Cursor], c_uint),
-    ("clang_CXXMethod_isVirtual", [Cursor], c_uint),
-    ("clang_CXXRecord_isAbstract", [Cursor], c_uint),
-    ("clang_EnumDecl_isScoped", [Cursor], c_uint),
+    ("clang_CXXConstructor_isConvertingConstructor", [Cursor], bool),
+    ("clang_CXXConstructor_isCopyConstructor", [Cursor], bool),
+    ("clang_CXXConstructor_isDefaultConstructor", [Cursor], bool),
+    ("clang_CXXConstructor_isMoveConstructor", [Cursor], bool),
+    ("clang_CXXField_isMutable", [Cursor], bool),
+    ("clang_CXXMethod_isConst", [Cursor], bool),
+    ("clang_CXXMethod_isDefaulted", [Cursor], bool),
+    ("clang_CXXMethod_isDeleted", [Cursor], bool),
+    ("clang_CXXMethod_isCopyAssignmentOperator", [Cursor], bool),
+    ("clang_CXXMethod_isMoveAssignmentOperator", [Cursor], bool),
+    ("clang_CXXMethod_isExplicit", [Cursor], bool),
+    ("clang_CXXMethod_isPureVirtual", [Cursor], bool),
+    ("clang_CXXMethod_isStatic", [Cursor], bool),
+    ("clang_CXXMethod_isVirtual", [Cursor], bool),
+    ("clang_CXXRecord_isAbstract", [Cursor], bool),
+    ("clang_EnumDecl_isScoped", [Cursor], bool),
     ("clang_defaultDiagnosticDisplayOptions", [], c_uint),
     ("clang_defaultSaveOptions", [TranslationUnit], c_uint),
     ("clang_disposeCodeCompleteResults", [CodeCompletionResults]),
@@ -4160,12 +3878,11 @@ FUNCTION_LIST: list[LibFunc] = [
     ("clang_disposeString", [_CXString]),
     ("clang_disposeTokens", [TranslationUnit, POINTER(Token), c_uint]),
     ("clang_disposeTranslationUnit", [TranslationUnit]),
-    ("clang_equalCursors", [Cursor, Cursor], c_uint),
-    ("clang_equalLocations", [SourceLocation, SourceLocation], c_uint),
-    ("clang_equalRanges", [SourceRange, SourceRange], c_uint),
-    ("clang_equalTypes", [Type, Type], c_uint),
+    ("clang_equalCursors", [Cursor, Cursor], bool),
+    ("clang_equalLocations", [SourceLocation, SourceLocation], bool),
+    ("clang_equalRanges", [SourceRange, SourceRange], bool),
+    ("clang_equalTypes", [Type, Type], bool),
     ("clang_formatDiagnostic", [Diagnostic, c_uint], _CXString),
-    ("clang_getAddressSpace", [Type], c_uint),
     ("clang_getArgType", [Type, c_uint], Type),
     ("clang_getArrayElementType", [Type], Type),
     ("clang_getArraySize", [Type], c_longlong),
@@ -4184,11 +3901,8 @@ FUNCTION_LIST: list[LibFunc] = [
     ("clang_getCursorAvailability", [Cursor], c_int),
     ("clang_getCursorDefinition", [Cursor], Cursor),
     ("clang_getCursorDisplayName", [Cursor], _CXString),
-    ("clang_getCursorExceptionSpecificationType", [Cursor], c_int),
     ("clang_getCursorExtent", [Cursor], SourceRange),
-    ("clang_getCursorLanguage", [Cursor], c_int),
     ("clang_getCursorLexicalParent", [Cursor], Cursor),
-    ("clang_getCursorLinkage", [Cursor], c_int),
     ("clang_getCursorLocation", [Cursor], SourceLocation),
     ("clang_getCursorPrettyPrinted", [Cursor, PrintingPolicy], _CXString),
     ("clang_getCursorPrintingPolicy", [Cursor], c_object_p),
@@ -4197,11 +3911,9 @@ FUNCTION_LIST: list[LibFunc] = [
     ("clang_getCursorResultType", [Cursor], Type),
     ("clang_getCursorSemanticParent", [Cursor], Cursor),
     ("clang_getCursorSpelling", [Cursor], _CXString),
-    ("clang_getCursorTLSKind", [Cursor], c_int),
     ("clang_getCursorType", [Cursor], Type),
     ("clang_getCursorUSR", [Cursor], _CXString),
     ("clang_Cursor_getMangling", [Cursor], _CXString),
-    ("clang_Cursor_hasAttrs", [Cursor], c_uint),
     # ("clang_getCXTUResourceUsage",
     #  [TranslationUnit],
     #  CXTUResourceUsage),
@@ -4223,11 +3935,9 @@ FUNCTION_LIST: list[LibFunc] = [
     ("clang_getEnumConstantDeclUnsignedValue", [Cursor], c_ulonglong),
     ("clang_getEnumConstantDeclValue", [Cursor], c_longlong),
     ("clang_getEnumDeclIntegerType", [Cursor], Type),
-    ("clang_getExceptionSpecificationType", [Type], c_int),
     ("clang_getFile", [TranslationUnit, c_interop_string], c_object_p),
     ("clang_getFileName", [File], _CXString),
     ("clang_getFileTime", [File], c_uint),
-    ("clang_File_isEqual", [File, File], c_int),
     ("clang_getIBOutletCollectionType", [Cursor], Type),
     ("clang_getIncludedFile", [Cursor], c_object_p),
     (
@@ -4276,25 +3986,24 @@ FUNCTION_LIST: list[LibFunc] = [
     ("clang_getTypePrettyPrinted", [Type, PrintingPolicy], _CXString),
     ("clang_getTypeSpelling", [Type], _CXString),
     ("clang_hashCursor", [Cursor], c_uint),
-    ("clang_isAttribute", [CursorKind], c_uint),
-    ("clang_getFullyQualifiedName", [Type, PrintingPolicy, c_uint], _CXString),
-    ("clang_isConstQualifiedType", [Type], c_uint),
-    ("clang_isCursorDefinition", [Cursor], c_uint),
-    ("clang_isDeclaration", [CursorKind], c_uint),
-    ("clang_isExpression", [CursorKind], c_uint),
-    ("clang_isFileMultipleIncludeGuarded", [TranslationUnit, File], c_uint),
-    ("clang_isFunctionTypeVariadic", [Type], c_uint),
-    ("clang_isInvalid", [CursorKind], c_uint),
-    ("clang_isPODType", [Type], c_uint),
-    ("clang_isPreprocessing", [CursorKind], c_uint),
-    ("clang_isReference", [CursorKind], c_uint),
-    ("clang_isRestrictQualifiedType", [Type], c_uint),
-    ("clang_isStatement", [CursorKind], c_uint),
-    ("clang_isTranslationUnit", [CursorKind], c_uint),
-    ("clang_isUnexposed", [CursorKind], c_uint),
-    ("clang_isVirtualBase", [Cursor], c_uint),
-    ("clang_isVolatileQualifiedType", [Type], c_uint),
-    ("clang_isBeforeInTranslationUnit", [SourceLocation, SourceLocation], c_uint),
+    ("clang_isAttribute", [CursorKind], bool),
+    ("clang_isConstQualifiedType", [Type], bool),
+    ("clang_isCursorDefinition", [Cursor], bool),
+    ("clang_isDeclaration", [CursorKind], bool),
+    ("clang_isExpression", [CursorKind], bool),
+    ("clang_isFileMultipleIncludeGuarded", [TranslationUnit, File], bool),
+    ("clang_isFunctionTypeVariadic", [Type], bool),
+    ("clang_isInvalid", [CursorKind], bool),
+    ("clang_isPODType", [Type], bool),
+    ("clang_isPreprocessing", [CursorKind], bool),
+    ("clang_isReference", [CursorKind], bool),
+    ("clang_isRestrictQualifiedType", [Type], bool),
+    ("clang_isStatement", [CursorKind], bool),
+    ("clang_isTranslationUnit", [CursorKind], bool),
+    ("clang_isUnexposed", [CursorKind], bool),
+    ("clang_isVirtualBase", [Cursor], bool),
+    ("clang_isVolatileQualifiedType", [Type], bool),
+    ("clang_isBeforeInTranslationUnit", [SourceLocation, SourceLocation], bool),
     (
         "clang_parseTranslationUnit",
         [Index, c_interop_string, c_void_p, c_int, c_void_p, c_int, c_int],
@@ -4308,7 +4017,6 @@ FUNCTION_LIST: list[LibFunc] = [
     ),
     ("clang_visitChildren", [Cursor, cursor_visit_callback, py_object], c_uint),
     ("clang_visitCXXBaseClasses", [Type, fields_visit_callback, py_object], c_uint),
-    ("clang_visitCXXMethods", [Type, fields_visit_callback, py_object], c_uint),
     ("clang_Cursor_getNumArguments", [Cursor], c_int),
     ("clang_Cursor_getArgument", [Cursor, c_uint], Cursor),
     ("clang_Cursor_getNumTemplateArguments", [Cursor], c_int),
@@ -4316,16 +4024,14 @@ FUNCTION_LIST: list[LibFunc] = [
     ("clang_Cursor_getTemplateArgumentType", [Cursor, c_uint], Type),
     ("clang_Cursor_getTemplateArgumentValue", [Cursor, c_uint], c_longlong),
     ("clang_Cursor_getTemplateArgumentUnsignedValue", [Cursor, c_uint], c_ulonglong),
-    ("clang_getCursorBinaryOperatorKind", [Cursor], c_int),
+    ("clang_Cursor_getBinaryOpcode", [Cursor], c_int),
     ("clang_Cursor_getBriefCommentText", [Cursor], _CXString),
     ("clang_Cursor_getRawCommentText", [Cursor], _CXString),
     ("clang_Cursor_getOffsetOfField", [Cursor], c_longlong),
-    ("clang_Cursor_getStorageClass", [Cursor], c_int),
-    ("clang_Cursor_isAnonymous", [Cursor], c_uint),
-    ("clang_Cursor_isAnonymousRecordDecl", [Cursor], c_uint),
-    ("clang_Cursor_isBitField", [Cursor], c_uint),
-    ("clang_Cursor_isFunctionInlined", [Cursor], c_uint),
-    ("clang_Location_isInSystemHeader", [SourceLocation], c_int),
+    ("clang_Cursor_isAnonymous", [Cursor], bool),
+    ("clang_Cursor_isAnonymousRecordDecl", [Cursor], bool),
+    ("clang_Cursor_isBitField", [Cursor], bool),
+    ("clang_Location_isInSystemHeader", [SourceLocation], bool),
     ("clang_PrintingPolicy_dispose", [PrintingPolicy]),
     ("clang_PrintingPolicy_getProperty", [PrintingPolicy, c_int], c_uint),
     ("clang_PrintingPolicy_setProperty", [PrintingPolicy, c_int, c_uint]),
@@ -4383,13 +4089,13 @@ def register_functions(lib: CDLL, ignore_errors: bool) -> None:
     def register(item: LibFunc) -> None:
         register_function(lib, item, ignore_errors)
 
-    for f in FUNCTION_LIST:
+    for f in functionList:
         register(f)
 
 
 class Config:
-    library_path: str | None = os.environ.get("LIBCLANG_LIBRARY_PATH")
-    library_file: str | None = os.environ.get("LIBCLANG_LIBRARY_FILE")
+    library_path = None
+    library_file: str | None = None
     compatibility_check = True
     loaded = False
 
@@ -4445,7 +4151,6 @@ class Config:
     def lib(self) -> CDLL:
         lib = self.get_cindex_library()
         register_functions(lib, not Config.compatibility_check)
-        self.null_cursor = lib.clang_getNullCursor()
         Config.loaded = True
         return lib
 
@@ -4473,15 +4178,22 @@ class Config:
         try:
             library = cdll.LoadLibrary(self.get_filename())
         except OSError as e:
-            msg = str(e) + (
-                "To provide the path to the directory containing libclang, you can use the environment variable "
-                "LIBCLANG_LIBRARY_PATH or call Config.set_library_path(). "
-                "Alternatively, you can specify the path of the library file using "
-                "LIBCLANG_LIBRARY_FILE or Config.set_library_file()."
+            msg = (
+                str(e) + ". To provide a path to libclang use "
+                "Config.set_library_path() or "
+                "Config.set_library_file()."
             )
             raise LibclangError(msg)
 
         return library
+
+    def function_exists(self, name: str) -> bool:
+        try:
+            getattr(self.lib, name)
+        except AttributeError:
+            return False
+
+        return True
 
 
 conf = Config()

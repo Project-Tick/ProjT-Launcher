@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- AssertSideEffectCheck.cpp - clang-tidy ---------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -15,6 +15,8 @@
 #include "clang/Lex/Lexer.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Casting.h"
+#include <algorithm>
 #include <string>
 
 using namespace clang::ast_matchers;
@@ -29,13 +31,14 @@ AST_MATCHER_P2(Expr, hasSideEffect, bool, CheckFunctionCalls,
   const Expr *E = &Node;
 
   if (const auto *Op = dyn_cast<UnaryOperator>(E)) {
-    const UnaryOperator::Opcode OC = Op->getOpcode();
+    UnaryOperator::Opcode OC = Op->getOpcode();
     return OC == UO_PostInc || OC == UO_PostDec || OC == UO_PreInc ||
            OC == UO_PreDec;
   }
 
-  if (const auto *Op = dyn_cast<BinaryOperator>(E))
+  if (const auto *Op = dyn_cast<BinaryOperator>(E)) {
     return Op->isAssignmentOp();
+  }
 
   if (const auto *OpCallExpr = dyn_cast<CXXOperatorCallExpr>(E)) {
     if (const auto *MethodDecl =
@@ -43,7 +46,7 @@ AST_MATCHER_P2(Expr, hasSideEffect, bool, CheckFunctionCalls,
       if (MethodDecl->isConst())
         return false;
 
-    const OverloadedOperatorKind OpKind = OpCallExpr->getOperator();
+    OverloadedOperatorKind OpKind = OpCallExpr->getOperator();
     return OpKind == OO_Equal || OpKind == OO_PlusEqual ||
            OpKind == OO_MinusEqual || OpKind == OO_StarEqual ||
            OpKind == OO_SlashEqual || OpKind == OO_AmpEqual ||
@@ -91,7 +94,7 @@ AssertSideEffectCheck::AssertSideEffectCheck(StringRef Name,
       RawAssertList(Options.get("AssertMacros", "assert,NSAssert,NSCAssert")),
       IgnoredFunctions(utils::options::parseListPair(
           "__builtin_expect;", Options.get("IgnoredFunctions", ""))) {
-  RawAssertList.split(AssertMacros, ",", -1, false);
+  StringRef(RawAssertList).split(AssertMacros, ",", -1, false);
 }
 
 // The options are explained in AssertSideEffectCheck.h.
@@ -104,7 +107,7 @@ void AssertSideEffectCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
 
 void AssertSideEffectCheck::registerMatchers(MatchFinder *Finder) {
   auto IgnoredFunctionsMatcher =
-      matchers::matchesAnyListedRegexName(IgnoredFunctions);
+      matchers::matchesAnyListedName(IgnoredFunctions);
 
   auto DescendantWithSideEffect =
       traverse(TK_AsIs, hasDescendant(expr(hasSideEffect(
@@ -129,7 +132,7 @@ void AssertSideEffectCheck::check(const MatchFinder::MatchResult &Result) {
 
   StringRef AssertMacroName;
   while (Loc.isValid() && Loc.isMacroID()) {
-    const StringRef MacroName = Lexer::getImmediateMacroName(Loc, SM, LangOpts);
+    StringRef MacroName = Lexer::getImmediateMacroName(Loc, SM, LangOpts);
     Loc = SM.getImmediateMacroCallerLoc(Loc);
 
     // Check if this macro is an assert.

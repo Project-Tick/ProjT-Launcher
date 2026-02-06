@@ -317,7 +317,6 @@ def CopyTileOp : ArmSME_Op<"copy_tile", [
 def TileLoadOp : ArmSME_Op<"tile_load", [
   ArmSMETileOpInterface,
   AttrSizedOperandSegments,
-  AllElementTypesMatch<["result", "base"]>,
   OptionalTypesMatchWith<
     "padding type matches element type of result",
     "result", "padding",
@@ -370,7 +369,7 @@ def TileLoadOp : ArmSME_Op<"tile_load", [
     ```
   }];
   let arguments = (ins
-    Arg<MemRefRankOf<[AnyType], [2]>, "the reference to load from", [MemRead]>:$base,
+    Arg<AnyMemRef, "the reference to load from", [MemRead]>:$base,
     Variadic<Index>:$indices,
     Optional<AnyType>:$padding, Optional<AnyVectorOfNonZeroRank>:$mask,
     ArmSME_TileSliceLayoutAttr:$layout
@@ -408,7 +407,6 @@ def TileLoadOp : ArmSME_Op<"tile_load", [
 def TileStoreOp : ArmSME_Op<"tile_store", [
   ArmSMETileOpInterface,
   AttrSizedOperandSegments,
-  AllElementTypesMatch<["valueToStore", "base"]>,
   HasMatchingMaskTypeConstraint<"valueToStore", "mask">,
 ]> {
   let summary = "Tile store operation";
@@ -445,7 +443,7 @@ def TileStoreOp : ArmSME_Op<"tile_store", [
     ```
   }];
   let arguments = (ins SMETile:$valueToStore,
-    Arg<MemRefRankOf<[AnyType], [2]>, "the reference to store to", [MemWrite]>:$base,
+    Arg<AnyMemRef, "the reference to store to", [MemWrite]>:$base,
     Variadic<Index>:$indices, Optional<AnyVectorOfNonZeroRank>:$mask,
     ArmSME_TileSliceLayoutAttr:$layout
   );
@@ -475,7 +473,6 @@ def TileStoreOp : ArmSME_Op<"tile_store", [
 
 def LoadTileSliceOp : ArmSME_Op<"load_tile_slice", [
   ArmSMETileOpInterface,
-  AllElementTypesMatch<["tile", "base"]>,
   AllTypesMatch<["tile", "result"]>, TileSliceMaskConstraint<"result", "mask">
 ]> {
   let summary = "Tile slice load and update operation";
@@ -538,7 +535,6 @@ def LoadTileSliceOp : ArmSME_Op<"load_tile_slice", [
 
 def StoreTileSliceOp : ArmSME_Op<"store_tile_slice", [
   ArmSMETileOpInterface,
-  AllElementTypesMatch<["tile", "base"]>,
   TileSliceMaskConstraint<"tile", "mask">
 ]> {
   let summary = "Tile slice store operation";

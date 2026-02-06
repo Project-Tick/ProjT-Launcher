@@ -24,9 +24,6 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
-#include "llvm/Support/BranchProbability.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/FileSystem.h"
 #include "llvm/Transforms/Utils/CallGraphUpdater.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 
@@ -35,11 +32,6 @@
 using namespace llvm;
 
 #define DEBUG_TYPE "coro-annotation-elide"
-
-static cl::opt<float> CoroElideBranchRatio(
-    "coro-elide-branch-ratio", cl::init(0.55), cl::Hidden,
-    cl::desc("Minimum BranchProbability to consider a elide a coroutine."));
-extern cl::opt<unsigned> MinBlockCounterExecution;
 
 static Instruction *getFirstNonAllocaInTheEntryBlock(Function *F) {
   for (Instruction &I : F->getEntryBlock())
@@ -153,27 +145,6 @@ PreservedAnalyses CoroAnnotationElidePass::run(LazyCallGraph::SCC &C,
       bool IsCallerPresplitCoroutine = Caller->isPresplitCoroutine();
       bool HasAttr = CB->hasFnAttr(llvm::Attribute::CoroElideSafe);
       if (IsCallerPresplitCoroutine && HasAttr) {
-        auto &BFI = FAM.getResult<BlockFrequencyAnalysis>(*Caller);
-
-        auto BlockFreq = BFI.getBlockFreq(CB->getParent()).getFrequency();
-        auto EntryFreq = BFI.getEntryFreq().getFrequency();
-        uint64_t MinFreq =
-            static_cast<uint64_t>(EntryFreq * CoroElideBranchRatio);
-
-        if (BlockFreq < MinFreq) {
-          ORE.emit([&]() {
-            return OptimizationRemarkMissed(
-                       DEBUG_TYPE, "CoroAnnotationElideUnlikely", Caller)
-                   << "'" << ore::NV("callee", Callee->getName())
-                   << "' not elided in '"
-                   << ore::NV("caller", Caller->getName())
-                   << "' because of low frequency: "
-                   << ore::NV("block_freq", BlockFreq)
-                   << " (threshold: " << ore::NV("min_freq", MinFreq) << ")";
-          });
-          continue;
-        }
-
         auto *CallerN = CG.lookup(*Caller);
         auto *CallerC = CallerN ? CG.lookupSCC(*CallerN) : nullptr;
         // If CallerC is nullptr, it means LazyCallGraph hasn't visited Caller
@@ -185,8 +156,7 @@ PreservedAnalyses CoroAnnotationElidePass::run(LazyCallGraph::SCC &C,
           return OptimizationRemark(DEBUG_TYPE, "CoroAnnotationElide", Caller)
                  << "'" << ore::NV("callee", Callee->getName())
                  << "' elided in '" << ore::NV("caller", Caller->getName())
-                 << "' (block_freq: " << ore::NV("block_freq", BlockFreq)
-                 << ")";
+                 << "'";
         });
 
         FAM.invalidate(*Caller, PreservedAnalyses::none());

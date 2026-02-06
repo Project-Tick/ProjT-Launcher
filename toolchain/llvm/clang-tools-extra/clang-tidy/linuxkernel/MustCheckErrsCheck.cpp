@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- MustCheckErrsCheck.cpp - clang-tidy ------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "MustCheckErrsCheck.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
 using namespace clang::ast_matchers;
@@ -19,7 +20,8 @@ void MustCheckErrsCheck::registerMatchers(MatchFinder *Finder) {
                               "ERR_CAST", "PTR_ERR_OR_ZERO"));
   auto NonCheckingStmts = stmt(anyOf(compoundStmt(), labelStmt()));
   Finder->addMatcher(
-      callExpr(callee(ErrFn), hasParent(NonCheckingStmts)).bind("call"), this);
+      callExpr(callee(ErrFn), hasParent(NonCheckingStmts)).bind("call"),
+      this);
 
   auto ReturnToCheck = returnStmt(hasReturnValue(callExpr(callee(ErrFn))));
   auto ReturnsErrFn = functionDecl(hasDescendant(ReturnToCheck));

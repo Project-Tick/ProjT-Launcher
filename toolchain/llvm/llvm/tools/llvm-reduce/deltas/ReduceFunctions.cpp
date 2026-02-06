@@ -13,15 +13,17 @@
 //===----------------------------------------------------------------------===//
 
 #include "ReduceFunctions.h"
+#include "Delta.h"
 #include "Utils.h"
-#include "llvm/Transforms/Utils/Cloning.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/Transforms/Utils/ModuleUtils.h"
+#include <iterator>
 
 using namespace llvm;
 
 /// Removes all the Defined Functions
 /// that aren't inside any of the desired Chunks.
-void llvm::reduceFunctionsDeltaPass(Oracle &O, ReducerWorkItem &WorkItem) {
+static void extractFunctionsFromModule(Oracle &O, ReducerWorkItem &WorkItem) {
   Module &Program = WorkItem.getModule();
 
   // Record all out-of-chunk functions.
@@ -30,7 +32,7 @@ void llvm::reduceFunctionsDeltaPass(Oracle &O, ReducerWorkItem &WorkItem) {
     // Intrinsics don't have function bodies that are useful to
     // reduce. Additionally, intrinsics may have additional operand
     // constraints. But, do drop intrinsics that are not referenced.
-    if ((!F.isIntrinsic() || F.use_empty()) && !hasAliasUse(F) &&
+    if ((!F.isIntrinsic() || F.use_empty()) && !hasAliasOrBlockAddressUse(F) &&
         !O.shouldKeep())
       FuncsToRemove.insert(&F);
   }
@@ -40,7 +42,7 @@ void llvm::reduceFunctionsDeltaPass(Oracle &O, ReducerWorkItem &WorkItem) {
   });
 
   // Then, drop body of each of them. We want to batch this and do nothing else
-  // here so that minimal number of remaining external uses will remain.
+  // here so that minimal number of remaining exteranal uses will remain.
   for (Constant *F : FuncsToRemove)
     F->dropAllReferences();
 
@@ -51,4 +53,8 @@ void llvm::reduceFunctionsDeltaPass(Oracle &O, ReducerWorkItem &WorkItem) {
     // And finally, fully drop it.
     cast<Function>(F)->eraseFromParent();
   }
+}
+
+void llvm::reduceFunctionsDeltaPass(TestRunner &Test) {
+  runDeltaPass(Test, extractFunctionsFromModule, "Reducing Functions");
 }

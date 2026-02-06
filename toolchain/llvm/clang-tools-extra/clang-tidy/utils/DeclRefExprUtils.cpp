@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- DeclRefExprUtils.cpp - clang-tidy---------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -19,22 +19,26 @@ namespace clang::tidy::utils::decl_ref_expr {
 using namespace ::clang::ast_matchers;
 using llvm::SmallPtrSet;
 
-template <typename S>
-static bool isSetDifferenceEmpty(const S &S1, const S &S2) {
-  return llvm::none_of(S1, [&S2](const auto &E) { return !S2.contains(E); });
+namespace {
+
+template <typename S> bool isSetDifferenceEmpty(const S &S1, const S &S2) {
+  for (auto E : S1)
+    if (S2.count(E) == 0)
+      return false;
+  return true;
 }
 
 // Extracts all Nodes keyed by ID from Matches and inserts them into Nodes.
 template <typename Node>
-static void extractNodesByIdTo(ArrayRef<BoundNodes> Matches, StringRef ID,
-                               SmallPtrSet<const Node *, 16> &Nodes) {
+void extractNodesByIdTo(ArrayRef<BoundNodes> Matches, StringRef ID,
+                        SmallPtrSet<const Node *, 16> &Nodes) {
   for (const auto &Match : Matches)
     Nodes.insert(Match.getNodeAs<Node>(ID));
 }
 
 // Returns true if both types refer to the same type,
 // ignoring the const-qualifier.
-static bool isSameTypeIgnoringConst(QualType A, QualType B) {
+bool isSameTypeIgnoringConst(QualType A, QualType B) {
   A = A.getCanonicalType();
   B = B.getCanonicalType();
   A.addConst();
@@ -43,23 +47,23 @@ static bool isSameTypeIgnoringConst(QualType A, QualType B) {
 }
 
 // Returns true if `D` and `O` have the same parameter types.
-static bool hasSameParameterTypes(const CXXMethodDecl &D,
-                                  const CXXMethodDecl &O) {
+bool hasSameParameterTypes(const CXXMethodDecl &D, const CXXMethodDecl &O) {
   if (D.getNumParams() != O.getNumParams())
     return false;
-  for (int I = 0, E = D.getNumParams(); I < E; ++I)
+  for (int I = 0, E = D.getNumParams(); I < E; ++I) {
     if (!isSameTypeIgnoringConst(D.getParamDecl(I)->getType(),
                                  O.getParamDecl(I)->getType()))
       return false;
+  }
   return true;
 }
 
 // If `D` has a const-qualified overload with otherwise identical
 // ref-qualifiers and parameter types, returns that overload.
-static const CXXMethodDecl *findConstOverload(const CXXMethodDecl &D) {
+const CXXMethodDecl *findConstOverload(const CXXMethodDecl &D) {
   assert(!D.isConst());
 
-  const DeclContext::lookup_result LookupResult =
+  DeclContext::lookup_result LookupResult =
       D.getParent()->lookup(D.getNameInfo().getName());
   if (LookupResult.isSingleResult()) {
     // No overload.
@@ -77,7 +81,7 @@ static const CXXMethodDecl *findConstOverload(const CXXMethodDecl &D) {
 
 // Returns true if both types are pointers or reference to the same type,
 // ignoring the const-qualifier.
-static bool pointsToSameTypeIgnoringConst(QualType A, QualType B) {
+bool pointsToSameTypeIgnoringConst(QualType A, QualType B) {
   assert(A->isPointerType() || A->isReferenceType());
   assert(B->isPointerType() || B->isReferenceType());
   return isSameTypeIgnoringConst(A->getPointeeType(), B->getPointeeType());
@@ -118,14 +122,15 @@ static bool pointsToSameTypeIgnoringConst(QualType A, QualType B) {
 //
 // This function checks (A) ad (B), but the caller should make sure that the
 // object is not mutated through the return value.
-static bool isLikelyShallowConst(const CXXMethodDecl &M) {
+bool isLikelyShallowConst(const CXXMethodDecl &M) {
   assert(!M.isConst());
   // The method can mutate our variable.
 
   // (A)
   const CXXMethodDecl *ConstOverload = findConstOverload(M);
-  if (ConstOverload == nullptr)
+  if (ConstOverload == nullptr) {
     return false;
+  }
 
   // (B)
   const QualType CallTy = M.getReturnType().getCanonicalType();
@@ -140,8 +145,6 @@ static bool isLikelyShallowConst(const CXXMethodDecl &M) {
   }
   return isSameTypeIgnoringConst(CallTy, OverloadTy);
 }
-
-namespace {
 
 // A matcher that matches DeclRefExprs that are used in ways such that the
 // underlying declaration is not modified.
@@ -289,8 +292,9 @@ AST_MATCHER_P(DeclRefExpr, doesNotMutateObject, int, Indirections) {
       if (const auto *const OpCall = dyn_cast<CXXOperatorCallExpr>(P)) {
         // Operator calls have function call syntax. The `*this` parameter
         // is the first parameter.
-        if (OpCall->getNumArgs() == 0 || OpCall->getArg(0) != Entry.E)
+        if (OpCall->getNumArgs() == 0 || OpCall->getArg(0) != Entry.E) {
           return false;
+        }
         const auto *const Method =
             dyn_cast_or_null<CXXMethodDecl>(OpCall->getDirectCallee());
 
@@ -300,8 +304,9 @@ AST_MATCHER_P(DeclRefExpr, doesNotMutateObject, int, Indirections) {
           return false;
         }
 
-        if (Method->isConst() || Method->isStatic())
+        if (Method->isConst() || Method->isStatic()) {
           continue;
+        }
         if (isLikelyShallowConst(*Method)) {
           // We still have to check that the object is not modified through
           // the operator's return value (C).

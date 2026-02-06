@@ -393,7 +393,7 @@ static bool isUseTriviallyOptimizableToLiveOnEntry(AliasAnalysisType &AA,
 /// \param AA        The AliasAnalysis we used for our search.
 /// \param AllowImpreciseClobber Always false, unless we do relaxed verify.
 
-[[maybe_unused]] static void
+LLVM_ATTRIBUTE_UNUSED static void
 checkClobberSanity(const MemoryAccess *Start, MemoryAccess *ClobberAt,
                    const MemoryLocation &StartLoc, const MemorySSA &MSSA,
                    const UpwardsMemoryQuery &Query, BatchAAResults &AA,
@@ -1277,7 +1277,7 @@ MemorySSA::~MemorySSA() {
 }
 
 MemorySSA::AccessList *MemorySSA::getOrCreateAccessList(const BasicBlock *BB) {
-  auto Res = PerBlockAccesses.try_emplace(BB);
+  auto Res = PerBlockAccesses.insert(std::make_pair(BB, nullptr));
 
   if (Res.second)
     Res.first->second = std::make_unique<AccessList>();
@@ -1285,7 +1285,7 @@ MemorySSA::AccessList *MemorySSA::getOrCreateAccessList(const BasicBlock *BB) {
 }
 
 MemorySSA::DefsList *MemorySSA::getOrCreateDefsList(const BasicBlock *BB) {
-  auto Res = PerBlockDefs.try_emplace(BB);
+  auto Res = PerBlockDefs.insert(std::make_pair(BB, nullptr));
 
   if (Res.second)
     Res.first->second = std::make_unique<DefsList>();
@@ -1573,7 +1573,7 @@ void MemorySSA::buildMemorySSA(BatchAAResults &BAA, IterT Blocks) {
     // the loop, to limit the scope of the renaming.
     SmallVector<BasicBlock *> ExitBlocks;
     L->getExitBlocks(ExitBlocks);
-    Visited.insert_range(ExitBlocks);
+    Visited.insert(ExitBlocks.begin(), ExitBlocks.end());
     renamePass(DT->getNode(L->getLoopPreheader()), LiveOnEntryDef.get(),
                Visited);
   } else {
@@ -2414,7 +2414,9 @@ PreservedAnalyses MemorySSAVerifierPass::run(Function &F,
 
 char MemorySSAWrapperPass::ID = 0;
 
-MemorySSAWrapperPass::MemorySSAWrapperPass() : FunctionPass(ID) {}
+MemorySSAWrapperPass::MemorySSAWrapperPass() : FunctionPass(ID) {
+  initializeMemorySSAWrapperPassPass(*PassRegistry::getPassRegistry());
+}
 
 void MemorySSAWrapperPass::releaseMemory() { MSSA.reset(); }
 

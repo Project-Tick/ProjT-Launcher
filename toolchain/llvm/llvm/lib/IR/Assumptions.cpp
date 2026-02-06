@@ -20,8 +20,9 @@
 
 using namespace llvm;
 
-static bool hasAssumption(const Attribute &A,
-                          const KnownAssumptionString &AssumptionStr) {
+namespace {
+bool hasAssumption(const Attribute &A,
+                   const KnownAssumptionString &AssumptionStr) {
   if (!A.isValid())
     return false;
   assert(A.isStringAttribute() && "Expected a string attribute!");
@@ -32,7 +33,7 @@ static bool hasAssumption(const Attribute &A,
   return llvm::is_contained(Strings, AssumptionStr);
 }
 
-static DenseSet<StringRef> getAssumptions(const Attribute &A) {
+DenseSet<StringRef> getAssumptions(const Attribute &A) {
   if (!A.isValid())
     return DenseSet<StringRef>();
   assert(A.isStringAttribute() && "Expected a string attribute!");
@@ -41,13 +42,14 @@ static DenseSet<StringRef> getAssumptions(const Attribute &A) {
   SmallVector<StringRef, 8> Strings;
   A.getValueAsString().split(Strings, ",");
 
-  Assumptions.insert_range(Strings);
+  for (StringRef Str : Strings)
+    Assumptions.insert(Str);
   return Assumptions;
 }
 
 template <typename AttrSite>
-static bool addAssumptionsImpl(AttrSite &Site,
-                               const DenseSet<StringRef> &Assumptions) {
+bool addAssumptionsImpl(AttrSite &Site,
+                        const DenseSet<StringRef> &Assumptions) {
   if (Assumptions.empty())
     return false;
 
@@ -63,6 +65,7 @@ static bool addAssumptionsImpl(AttrSite &Site,
 
   return true;
 }
+} // namespace
 
 bool llvm::hasAssumption(const Function &F,
                          const KnownAssumptionString &AssumptionStr) {
@@ -99,16 +102,11 @@ bool llvm::addAssumptions(CallBase &CB,
   return ::addAssumptionsImpl(CB, Assumptions);
 }
 
-StringSet<> &llvm::getKnownAssumptionStrings() {
-  static StringSet<> Object({
-      "omp_no_openmp",            // OpenMP 5.1
-      "omp_no_openmp_routines",   // OpenMP 5.1
-      "omp_no_parallelism",       // OpenMP 5.1
-      "omp_no_openmp_constructs", // OpenMP 6.0
-      "ompx_spmd_amenable",       // OpenMPOpt extension
-      "ompx_no_call_asm",         // OpenMPOpt extension
-      "ompx_aligned_barrier",     // OpenMPOpt extension
-  });
-
-  return Object;
-}
+StringSet<> llvm::KnownAssumptionStrings({
+    "omp_no_openmp",          // OpenMP 5.1
+    "omp_no_openmp_routines", // OpenMP 5.1
+    "omp_no_parallelism",     // OpenMP 5.1
+    "ompx_spmd_amenable",     // OpenMPOpt extension
+    "ompx_no_call_asm",       // OpenMPOpt extension
+    "ompx_aligned_barrier",   // OpenMPOpt extension
+});

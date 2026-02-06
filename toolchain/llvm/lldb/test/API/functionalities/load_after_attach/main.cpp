@@ -1,10 +1,9 @@
-#include "attach.h"
 #include "dylib.h"
 #include <cassert>
-#include <chrono>
 #include <cstdio>
-#include <fstream>
 #include <thread>
+#include <chrono>
+#include <fstream>
 
 int main(int argc, char* argv[]) {
   lldb_enable_attach();
