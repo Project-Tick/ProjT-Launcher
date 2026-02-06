@@ -47,11 +47,17 @@ jobs:
               branch="main"
             fi
 
-            echo "Updating $name ($path) from $repo ($branch)"
+            # LLVM needs --squash due to its massive unrelated history
+            squash_flag=""
+            if [ "$name" = "llvm" ]; then
+              squash_flag="--squash"
+            fi
+
+            echo "Updating $name ($path) from $repo ($branch)${squash_flag:+ [squash]}"
             if [ -d "$path" ]; then
-              git subtree pull --prefix="$path" "$repo" "$branch" -m "chore(subtrees): update $name"
+              git subtree pull --prefix="$path" "$repo" "$branch" $squash_flag -m "chore(subtrees): update $name"
             else
-              git subtree add --prefix="$path" "$repo" "$branch" -m "chore(subtrees): add $name"
+              git subtree add --prefix="$path" "$repo" "$branch" $squash_flag -m "chore(subtrees): add $name"
             fi
           done < .github/subtrees.txt
 
