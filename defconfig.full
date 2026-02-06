@@ -140,9 +140,9 @@ CONFIG_MOD_LIBNBTPLUSPLUS=y
 #
 # Packaging
 #
-CONFIG_PACKAGE_NAME="projt-launcher"
+CONFIG_PACKAGE_NAME="projtlauncher"
 CONFIG_PACKAGE_VERSION="0.0.5.1"
-CONFIG_PACKAGE_MAINTAINER="Project Tick <contact@projecttick.org>"
+CONFIG_PACKAGE_MAINTAINER="Project Tick <projecttick@projecttick.org>"
 # CONFIG_PACKAGE_DEB is not set
 # CONFIG_PACKAGE_RPM is not set
 CONFIG_PACKAGE_APPIMAGE=y

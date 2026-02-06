@@ -265,7 +265,7 @@ launcher-link: launcher-main
 	$(Q)cp -a $(QT_INSTALL_PREFIX)/lib/libQt6*.so* $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
 	@# Copy cmark library
 	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.so* $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
-	$(Q)$(CXX) -o $(KBUILD_OUTPUT)/bin/projt-launcher \
+	$(Q)$(CXX) -o $(KBUILD_OUTPUT)/bin/projtlauncher \
 		-Wl,--whole-archive \
 		$(KBUILD_OUTPUT)/launcher/liblauncher.a \
 		$(KBUILD_OUTPUT)/ui/libui.a \
@@ -299,10 +299,10 @@ launcher-link: launcher-main
 		$(KBUILD_OUTPUT)/lib/libbz2.a \
 		-L$(KBUILD_OUTPUT)/lib -lcmark \
 		$(QT_LIBS) \
-		-L$(QT_INSTALL_PREFIX)/lib -lQt6OpenGLWidgets -lQt6OpenGL -lQt6NetworkAuth -lQt6Xml \
+		-L$(QT_INSTALL_PREFIX)/lib -lQt6OpenGLWidgets -lQt6OpenGL -lQt6NetworkAuth -lQt6Xml -lQt6DBus \
 		-lz -lpthread -ldl \
 		-Wl,-rpath,'$$ORIGIN/../lib:$(QT_INSTALL_PREFIX)/lib'
-	@echo "  LINK    $(KBUILD_OUTPUT)/bin/projt-launcher"
+	@echo "  LINK    $(KBUILD_OUTPUT)/bin/projtlauncher"
 
 # ============================================================================
 # TEST TARGETS

@@ -730,6 +730,9 @@ QRC_OBJS := $(QRC_SRCS:.cpp=.o)
 # ============================================================================
 # COMPILER FLAGS
 # ============================================================================
+# Get Qt include dir from pkg-config for system Qt
+QT_INCLUDE_DIR := $(shell pkg-config --variable=includedir Qt6Core 2>/dev/null || echo $(QT_PREFIX)/include)
+
 LAUNCHER_CXXFLAGS := \
 	-I$(srctree)/launcher \
 	-I$(srctree)/include \
@@ -748,9 +751,10 @@ LAUNCHER_CXXFLAGS := \
 	-I$(srctree)/systeminfo/include \
 	-I$(srctree)/libqrencode \
 	-I$(KBUILD_OUTPUT)/ui \
-	-I$(QT_PREFIX)/include/QtConcurrent \
-	-I$(QT_PREFIX)/include/QtNetworkAuth \
-	-I$(QT_PREFIX)/include/QtXml \
+	-I$(QT_INCLUDE_DIR)/QtConcurrent \
+	-I$(QT_INCLUDE_DIR)/QtNetworkAuth \
+	-I$(QT_INCLUDE_DIR)/QtXml \
+	-I$(QT_INCLUDE_DIR)/QtDBus \
 	-I$(obj) \
 	-DLAUNCHER_APPLICATION \
 	$(QT_CFLAGS) \

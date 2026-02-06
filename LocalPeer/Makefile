@@ -54,10 +54,13 @@ $(OBJDIR)/moc_LocalPeer.o: $(OBJDIR)/moc_LocalPeer.cpp
 	@echo "  CXX     $<"
 	$(Q)$(CXX) $(BASE_CXXFLAGS) $(QT_CFLAGS) -I$(srctree)/LocalPeer/include -c -o $@ $<
 
+# Mark that we have custom STATIC_LIB rule
+CUSTOM_STATIC_LIB_RULE := 1
+
 # Include common build rules
 include $(srctree)/mk/module.mk
 
-# Override library to include MOC objects
+# Custom library rule to include MOC objects
 $(STATIC_LIB): $(OBJS) $(EXTRA_OBJS) | $(LIBDIR)
 	@echo "  AR      $@"
 	$(Q)$(AR) rcs $@ $^

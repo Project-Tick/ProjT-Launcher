@@ -78,7 +78,7 @@ Launcher_SVGFileName    ?= $(if $(LAUNCHER_SVGFILENAME),$(LAUNCHER_SVGFILENAME),
 Launcher_UserAgent      ?= $(if $(LAUNCHER_USERAGENT),$(LAUNCHER_USERAGENT),ProjTLauncher/$(VERSION).$(PATCHLEVEL).$(SUBLEVEL))
 Launcher_BUILD_ARTIFACT ?= $(BUILD_ARTIFACT)
 Launcher_UPDATER_GITHUB_REPO ?= $(if $(LAUNCHER_GITHUB_REPO),$(LAUNCHER_GITHUB_REPO),Project-Tick/ProjT-Launcher)
-Launcher_APP_BINARY_NAME ?= projt-launcher
+Launcher_APP_BINARY_NAME ?= projtlauncher
 
 # Note: These URLs are already defined at top of file with ?= defaults
 # Only override if main Makefile exports different values

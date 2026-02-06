@@ -72,10 +72,13 @@ endif
 all: $(STATIC_LIB)
 	@echo "  Built $(lib)"
 
+# Only define STATIC_LIB rule if not already defined by including Makefile
+ifndef CUSTOM_STATIC_LIB_RULE
 $(STATIC_LIB): $(OBJS) | $(LIBDIR)
 	@echo "  AR      $@"
 	$(Q)$(AR) rcs $@ $^
 	$(Q)$(RANLIB) $@
+endif
 
 # Object compilation rules - search in current module directory
 $(OBJDIR)/%.o: $(CURDIR)/%.c | $(OBJDIR)

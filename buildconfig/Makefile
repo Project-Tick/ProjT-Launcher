@@ -55,11 +55,6 @@ $(OBJDIR):
 	@mkdir -p $@
 
 clean:
-	rm -rf $(OBJDIR) $(LIBDIR)/libbuildconfig.a
-
-.PHONY: all clean
-
-clean:
 	$(Q)rm -rf $(OBJDIR) $(LIBDIR)/libbuildconfig.a
 
 .PHONY: all clean

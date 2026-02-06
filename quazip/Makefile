@@ -78,10 +78,13 @@ $(OBJDIR)/moc_%.o: $(OBJDIR)/moc_%.cpp
 	@echo "  CXX     $<"
 	$(Q)$(CXX) $(BASE_CXXFLAGS) $(QT_CFLAGS) -DQUAZIP_STATIC -I$(srctree)/quazip -I$(srctree)/zlib -c -o $@ $<
 
+# Mark that we have custom STATIC_LIB rule
+CUSTOM_STATIC_LIB_RULE := 1
+
 # Include common build rules
 include $(srctree)/mk/module.mk
 
-# Override library to include MOC objects
+# Custom library rule to include MOC objects
 $(STATIC_LIB): $(OBJS) $(EXTRA_OBJS) | $(LIBDIR)
 	@echo "  AR      $@"
 	$(Q)$(AR) rcs $@ $^

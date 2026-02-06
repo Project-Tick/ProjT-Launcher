@@ -14,7 +14,7 @@ include mk/platform.mk
 
 PKG_NAME := $(call cfg-unquote,$(CONFIG_PACKAGE_NAME))
 ifeq ($(PKG_NAME),)
-    PKG_NAME := projt-launcher
+    PKG_NAME := projtlauncher
 endif
 
 PKG_VERSION := $(call cfg-unquote,$(CONFIG_PACKAGE_VERSION))
@@ -24,12 +24,12 @@ endif
 
 PKG_MAINTAINER := $(call cfg-unquote,$(CONFIG_PACKAGE_MAINTAINER))
 ifeq ($(PKG_MAINTAINER),)
-    PKG_MAINTAINER := Project Tick <contact@projecttick.org>
+    PKG_MAINTAINER := Project Tick <projecttick@projecttick.org>
 endif
 
 PKG_DESCRIPTION := A custom Minecraft launcher
-PKG_HOMEPAGE := https://projecttick.org/product/projt-launcher
-PKG_LICENSE := GPL-3.0
+PKG_HOMEPAGE := https://projecttick.org/p/projt-launcher
+PKG_LICENSE := GPL-3.0-only
 
 # Package output directory
 PKG_OUTPUT := $(KBUILD_OUTPUT)/packages
@@ -156,7 +156,7 @@ package-rpm: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	$(Q)rm -rf $(PKG_STAGING)/rpm
 	$(Q)mkdir -p $(PKG_STAGING)/rpm/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/bin
-	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/lib/projt-launcher
+	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/lib/projtlauncher
 	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/applications
 	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/scalable/apps
 	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/usr/share/icons/hicolor/16x16/apps
@@ -173,19 +173,19 @@ package-rpm: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	$(Q)mkdir -p $(PKG_STAGING)/rpm/BUILDROOT/etc/ld.so.conf.d
 	
 	# Copy binary
-	$(Q)cp $(BINDIR)/projt-launcher$(EXE_SUFFIX) $(PKG_STAGING)/rpm/BUILDROOT/usr/bin/
-	$(Q)chmod 755 $(PKG_STAGING)/rpm/BUILDROOT/usr/bin/projt-launcher
+	$(Q)cp $(BINDIR)/projtlauncher$(EXE_SUFFIX) $(PKG_STAGING)/rpm/BUILDROOT/usr/bin/
+	$(Q)chmod 755 $(PKG_STAGING)/rpm/BUILDROOT/usr/bin/projtlauncher
 	
 	# Copy shared libraries from build
-	$(Q)cp -P $(LIBDIR)/libcmark.so* $(PKG_STAGING)/rpm/BUILDROOT/usr/lib/projt-launcher/ 2>/dev/null || true
+	$(Q)cp -P $(LIBDIR)/libcmark.so* $(PKG_STAGING)/rpm/BUILDROOT/usr/lib/projtlauncher/ 2>/dev/null || true
 	$(Q)for lib in $(LIBDIR)/*.so*; do \
 		if [ -f "$$lib" ]; then \
-			cp -P "$$lib" $(PKG_STAGING)/rpm/BUILDROOT/usr/lib/projt-launcher/; \
+			cp -P "$$lib" $(PKG_STAGING)/rpm/BUILDROOT/usr/lib/projtlauncher/; \
 		fi; \
 	done 2>/dev/null || true
 	
 	# Create ldconfig file so system can find our bundled libraries
-	@echo '/usr/lib/projt-launcher' > $(PKG_STAGING)/rpm/BUILDROOT/etc/ld.so.conf.d/projt-launcher.conf
+	@echo '/usr/lib/projtlauncher' > $(PKG_STAGING)/rpm/BUILDROOT/etc/ld.so.conf.d/projtlauncher.conf
 	
 	# Generate and copy desktop file
 	$(Q)sed -e 's|@Launcher_DisplayName@|$(APP_DISPLAY_NAME)|g' \
@@ -217,8 +217,8 @@ package-rpm: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	
 	# Generate man page if scdoc available
 	$(Q)if command -v scdoc >/dev/null 2>&1; then \
-	    scdoc < $(PROGRAM_INFO)/projtlauncher.6.scd > $(PKG_STAGING)/rpm/BUILDROOT/usr/share/man/man6/projt-launcher.6 2>/dev/null || true; \
-	    gzip -9 $(PKG_STAGING)/rpm/BUILDROOT/usr/share/man/man6/projt-launcher.6 2>/dev/null || true; \
+	    scdoc < $(PROGRAM_INFO)/projtlauncher.6.scd > $(PKG_STAGING)/rpm/BUILDROOT/usr/share/man/man6/projtlauncher.6 2>/dev/null || true; \
+	    gzip -9 $(PKG_STAGING)/rpm/BUILDROOT/usr/share/man/man6/projtlauncher.6 2>/dev/null || true; \
 	fi
 	
 	# Copy license and docs
@@ -241,10 +241,10 @@ package-rpm: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	@echo "resource packs, and more. Supports CurseForge, Modrinth, and others." >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "%files" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
-	@echo "/usr/bin/projt-launcher" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
-	@echo "%dir /usr/lib/projt-launcher" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
-	@echo "/usr/lib/projt-launcher/*" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
-	@echo "%config /etc/ld.so.conf.d/projt-launcher.conf" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/bin/projtlauncher" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%dir /usr/lib/projtlauncher" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "/usr/lib/projtlauncher/*" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%config /etc/ld.so.conf.d/projtlauncher.conf" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "/usr/share/applications/$(APP_ID).desktop" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "/usr/share/icons/hicolor/scalable/apps/$(APP_ID).svg" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "/usr/share/icons/hicolor/*/apps/$(APP_ID).png" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
@@ -252,7 +252,7 @@ package-rpm: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	@echo "/usr/share/doc/$(PKG_NAME)/*" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "%ghost /usr/share/metainfo/$(APP_ID).metainfo.xml" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "%ghost /usr/share/mime/packages/modrinth-mrpack-mime.xml" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
-	@echo "%ghost /usr/share/man/man6/projt-launcher.6.gz" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
+	@echo "%ghost /usr/share/man/man6/projtlauncher.6.gz" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "%post" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
 	@echo "/sbin/ldconfig" >> $(PKG_STAGING)/rpm/SPECS/$(PKG_NAME).spec
@@ -289,14 +289,14 @@ package-appimage: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	$(Q)mkdir -p $(PKG_STAGING)/AppDir/usr/share/icons/hicolor/256x256/apps
 	
 	# Copy binary
-	$(Q)cp $(BINDIR)/projt-launcher$(EXE_SUFFIX) $(PKG_STAGING)/AppDir/usr/bin/
+	$(Q)cp $(BINDIR)/projtlauncher$(EXE_SUFFIX) $(PKG_STAGING)/AppDir/usr/bin/
 	
 	# Create desktop file
 	@echo "[Desktop Entry]" > $(PKG_STAGING)/AppDir/usr/share/applications/$(PKG_NAME).desktop
 	@echo "Type=Application" >> $(PKG_STAGING)/AppDir/usr/share/applications/$(PKG_NAME).desktop
 	@echo "Name=ProjT Launcher" >> $(PKG_STAGING)/AppDir/usr/share/applications/$(PKG_NAME).desktop
-	@echo "Exec=projt-launcher" >> $(PKG_STAGING)/AppDir/usr/share/applications/$(PKG_NAME).desktop
-	@echo "Icon=projt-launcher" >> $(PKG_STAGING)/AppDir/usr/share/applications/$(PKG_NAME).desktop
+	@echo "Exec=projtlauncher" >> $(PKG_STAGING)/AppDir/usr/share/applications/$(PKG_NAME).desktop
+	@echo "Icon=projtlauncher" >> $(PKG_STAGING)/AppDir/usr/share/applications/$(PKG_NAME).desktop
 	@echo "Categories=Game;" >> $(PKG_STAGING)/AppDir/usr/share/applications/$(PKG_NAME).desktop
 	
 	# Link desktop and icon to AppDir root
@@ -306,7 +306,7 @@ package-appimage: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	@echo '#!/bin/bash' > $(PKG_STAGING)/AppDir/AppRun
 	@echo 'APPDIR="$$(dirname "$$(readlink -f "$$0")")"' >> $(PKG_STAGING)/AppDir/AppRun
 	@echo 'export LD_LIBRARY_PATH="$$APPDIR/usr/lib:$$LD_LIBRARY_PATH"' >> $(PKG_STAGING)/AppDir/AppRun
-	@echo 'exec "$$APPDIR/usr/bin/projt-launcher" "$$@"' >> $(PKG_STAGING)/AppDir/AppRun
+	@echo 'exec "$$APPDIR/usr/bin/projtlauncher" "$$@"' >> $(PKG_STAGING)/AppDir/AppRun
 	$(Q)chmod +x $(PKG_STAGING)/AppDir/AppRun
 	
 	# Build AppImage
@@ -328,12 +328,12 @@ package-flatpak: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	@echo "runtime: org.kde.Platform" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
 	@echo "runtime-version: '6.6'" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
 	@echo "sdk: org.kde.Sdk" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
-	@echo "command: projt-launcher" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
+	@echo "command: projtlauncher" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
 	@echo "modules:" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
-	@echo "  - name: projt-launcher" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
+	@echo "  - name: projtlauncher" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
 	@echo "    buildsystem: simple" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
 	@echo "    build-commands:" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
-	@echo "      - install -Dm755 projt-launcher /app/bin/projt-launcher" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
+	@echo "      - install -Dm755 projtlauncher /app/bin/projtlauncher" >> $(PKG_STAGING)/flatpak/$(FLATPAK_ID).yaml
 	
 	# Build
 	$(Q)cd $(PKG_STAGING)/flatpak && \
@@ -354,7 +354,7 @@ package-nsis: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	$(Q)mkdir -p $(PKG_STAGING)/nsis
 	
 	# Copy files
-	$(Q)cp $(BINDIR)/projt-launcher.exe $(PKG_STAGING)/nsis/
+	$(Q)cp $(BINDIR)/projtlauncher.exe $(PKG_STAGING)/nsis/
 	
 	# Create NSIS script
 	@echo '!define PRODUCT_NAME "ProjT Launcher"' > $(PKG_STAGING)/nsis/installer.nsi
@@ -369,15 +369,15 @@ package-nsis: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	@echo '' >> $(PKG_STAGING)/nsis/installer.nsi
 	@echo 'Section "Install"' >> $(PKG_STAGING)/nsis/installer.nsi
 	@echo '  SetOutPath $$INSTDIR' >> $(PKG_STAGING)/nsis/installer.nsi
-	@echo '  File "projt-launcher.exe"' >> $(PKG_STAGING)/nsis/installer.nsi
-	@echo '  CreateShortcut "$$DESKTOP\ProjT Launcher.lnk" "$$INSTDIR\projt-launcher.exe"' >> $(PKG_STAGING)/nsis/installer.nsi
+	@echo '  File "projtlauncher.exe"' >> $(PKG_STAGING)/nsis/installer.nsi
+	@echo '  CreateShortcut "$$DESKTOP\ProjT Launcher.lnk" "$$INSTDIR\projtlauncher.exe"' >> $(PKG_STAGING)/nsis/installer.nsi
 	@echo '  CreateDirectory "$$SMPROGRAMS\ProjT Launcher"' >> $(PKG_STAGING)/nsis/installer.nsi
-	@echo '  CreateShortcut "$$SMPROGRAMS\ProjT Launcher\ProjT Launcher.lnk" "$$INSTDIR\projt-launcher.exe"' >> $(PKG_STAGING)/nsis/installer.nsi
+	@echo '  CreateShortcut "$$SMPROGRAMS\ProjT Launcher\ProjT Launcher.lnk" "$$INSTDIR\projtlauncher.exe"' >> $(PKG_STAGING)/nsis/installer.nsi
 	@echo '  WriteUninstaller "$$INSTDIR\uninstall.exe"' >> $(PKG_STAGING)/nsis/installer.nsi
 	@echo 'SectionEnd' >> $(PKG_STAGING)/nsis/installer.nsi
 	@echo '' >> $(PKG_STAGING)/nsis/installer.nsi
 	@echo 'Section "Uninstall"' >> $(PKG_STAGING)/nsis/installer.nsi
-	@echo '  Delete "$$INSTDIR\projt-launcher.exe"' >> $(PKG_STAGING)/nsis/installer.nsi
+	@echo '  Delete "$$INSTDIR\projtlauncher.exe"' >> $(PKG_STAGING)/nsis/installer.nsi
 	@echo '  Delete "$$INSTDIR\uninstall.exe"' >> $(PKG_STAGING)/nsis/installer.nsi
 	@echo '  Delete "$$DESKTOP\ProjT Launcher.lnk"' >> $(PKG_STAGING)/nsis/installer.nsi
 	@echo '  RMDir /r "$$SMPROGRAMS\ProjT Launcher"' >> $(PKG_STAGING)/nsis/installer.nsi
@@ -398,7 +398,7 @@ package-zip: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	@echo "Building ZIP package..."
 	$(Q)rm -rf $(PKG_STAGING)/zip
 	$(Q)mkdir -p $(PKG_STAGING)/zip/$(PKG_NAME)
-	$(Q)cp $(BINDIR)/projt-launcher.exe $(PKG_STAGING)/zip/$(PKG_NAME)/
+	$(Q)cp $(BINDIR)/projtlauncher.exe $(PKG_STAGING)/zip/$(PKG_NAME)/
 	$(Q)cd $(PKG_STAGING)/zip && zip -r $(ZIP_FILE) $(PKG_NAME)
 	@echo "Created: $(ZIP_FILE)"
 
@@ -417,7 +417,7 @@ package-dmg: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	$(Q)mkdir -p $(APP_BUNDLE)/Contents/Frameworks
 	
 	# Copy binary
-	$(Q)cp $(BINDIR)/projt-launcher $(APP_BUNDLE)/Contents/MacOS/
+	$(Q)cp $(BINDIR)/projtlauncher $(APP_BUNDLE)/Contents/MacOS/
 	
 	# Create Info.plist
 	@echo '<?xml version="1.0" encoding="UTF-8"?>' > $(APP_BUNDLE)/Contents/Info.plist
@@ -425,7 +425,7 @@ package-dmg: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	@echo '<plist version="1.0">' >> $(APP_BUNDLE)/Contents/Info.plist
 	@echo '<dict>' >> $(APP_BUNDLE)/Contents/Info.plist
 	@echo '    <key>CFBundleExecutable</key>' >> $(APP_BUNDLE)/Contents/Info.plist
-	@echo '    <string>projt-launcher</string>' >> $(APP_BUNDLE)/Contents/Info.plist
+	@echo '    <string>projtlauncher</string>' >> $(APP_BUNDLE)/Contents/Info.plist
 	@echo '    <key>CFBundleIdentifier</key>' >> $(APP_BUNDLE)/Contents/Info.plist
 	@echo '    <string>org.projecttick.ProjTLauncher</string>' >> $(APP_BUNDLE)/Contents/Info.plist
 	@echo '    <key>CFBundleName</key>' >> $(APP_BUNDLE)/Contents/Info.plist
