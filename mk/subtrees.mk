@@ -68,15 +68,29 @@ $(LIBDIR)/libz.a: $(ZLIB_OBJS)
 	$(Q)$(AR) rcs $@ $^
 	$(Q)$(RANLIB) $@ 2>/dev/null || true
 
+# Shared library version of zlib (for tests to avoid symbol conflicts with Qt)
+ZLIB_SHARED_OBJS := $(addprefix $(ZLIB_OBJDIR)/shared/,$(ZLIB_SOURCES:.c=.o))
+
+$(ZLIB_OBJDIR)/shared/%.o: $(ZLIB_DIR)/%.c
+	@mkdir -p $(@D)
+	$(Q)$(CC) $(ZLIB_CFLAGS) -fPIC $(ZLIB_INCLUDES) -c -o $@ $<
+
+$(LIBDIR)/libprojtZ.so.1: $(ZLIB_SHARED_OBJS)
+	@mkdir -p $(@D)
+	$(Q)$(CC) -shared -Wl,-soname,libprojtZ.so.1 -o $@ $^
+	$(Q)ln -sf libprojtZ.so.1 $(LIBDIR)/libprojtZ.so
+
 $(ZLIB_OBJDIR):
 	@mkdir -p $@
 
 zlib: $(LIBDIR)/libz.a
 
-zlib-clean:
-	$(Q)rm -rf $(ZLIB_OBJDIR) $(LIBDIR)/libz.a
+zlib-shared: $(LIBDIR)/libprojtZ.so.1
 
-.PHONY: zlib zlib-clean
+zlib-clean:
+	$(Q)rm -rf $(ZLIB_OBJDIR) $(LIBDIR)/libz.a $(LIBDIR)/libprojtZ.so*
+
+.PHONY: zlib zlib-shared zlib-clean
 
 # ============================================================================
 # tomlplusplus Subtree Wrapper (Header-Only, mostly config)

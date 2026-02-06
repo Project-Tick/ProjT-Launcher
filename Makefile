@@ -683,9 +683,19 @@ uninstall:
 
 test check: build
 ifeq ($(CONFIG_BUILD_TESTS),y)
-	$(Q)$(MAKE) -f $(srctree)/mk/tests.mk test
+	@echo ""
+	@echo "=== Running Tests ==="
+	$(Q)$(MAKE) -f $(srctree)/mk/tests.mk srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) test
 else
 	@echo "Tests not enabled. Run 'make menuconfig' and enable BUILD_TESTS."
+	@echo "Or run: ./configure --enable-tests"
+endif
+
+tests-build: build
+ifeq ($(CONFIG_BUILD_TESTS),y)
+	$(Q)$(MAKE) -f $(srctree)/mk/tests.mk srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) tests-build
+else
+	@echo "Tests not enabled."
 endif
 
 fuzz:

@@ -737,9 +737,7 @@ QT_INCLUDE_DIR := $(shell pkg-config --variable=includedir Qt6Core 2>/dev/null |
 LAUNCHER_CXXFLAGS := \
 	-I$(srctree)/launcher \
 	-I$(srctree)/include \
-	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
-	-I$(srctree)/libnbtplusplus/include \
-	-I$(srctree)/quazip/quazip \
+        -I$(srctree)/zlib \
 	-I$(srctree)/quazip \
 	-I$(srctree)/qdcss/include \
 	-I$(srctree)/tomlplusplus/include \

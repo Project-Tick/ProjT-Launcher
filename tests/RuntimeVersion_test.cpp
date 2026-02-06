@@ -64,7 +64,7 @@ class RuntimeVersionTest : public QObject
 		QVERIFY(base < higher);
 		QVERIFY(higher > base);
 		QVERIFY(prerelease < higher);
-		QVERIFY(prerelease != higher);
+		QVERIFY(!(prerelease == higher));  // Use negated == instead of !=
 	}
 };
 
