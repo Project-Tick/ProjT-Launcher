@@ -363,7 +363,7 @@ jobs:
         if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc'
         shell: cmd
         run: |
-          nmake
+          make -j%NUMBER_OF_PROCESSORS%
 
       # Run Tests
       - name: Run Tests (Linux/macOS/MinGW)
@@ -375,7 +375,7 @@ jobs:
         if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc'
         shell: cmd
         run: |
-          nmake test TEST_VERBOSE=1
+          make test TEST_VERBOSE=1
 
       # Upload Artifacts
       - name: Upload build
